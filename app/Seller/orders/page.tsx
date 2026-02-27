@@ -236,6 +236,8 @@ export default function OrdersPage() {
   const [page,           setPage]           = useState(1);
   const [selectedId,     setSelectedId]     = useState<number | null>(null);
 
+  const empty: PaginatedResponse<Order> = { data: [], current_page: 1, last_page: 1, per_page: 12, total: 0, from: 0, to: 0 };
+
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
@@ -246,7 +248,12 @@ export default function OrdersPage() {
         ...(filterStatus  && { status: filterStatus }),
         ...(filterPayment && { payment_status: filterPayment }),
       });
-      setData(res.data as PaginatedResponse<Order>);
+      // res is ApiResponse<PaginatedResponse<Order>>
+      // res.data is the PaginatedResponse — safely unwrap
+      const payload = (res as any)?.data ?? res;
+      setData(Array.isArray(payload?.data) ? payload : empty);
+    } catch {
+      setData(empty);
     } finally {
       setLoading(false);
     }

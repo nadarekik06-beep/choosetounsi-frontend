@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Package,
@@ -32,6 +33,15 @@ export default function Sidebar({
   onMobileClose,
 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter(); // ✅ add router
+  const handleLogout = () => {
+    // Remove your token or session data here
+    localStorage.removeItem('session'); // or whatever you use
+
+    // Redirect to login page
+    router.push('/auth/login');
+  };
+
 
   return (
     <>
@@ -143,6 +153,8 @@ export default function Sidebar({
           </button>
 
           <button
+          onClick={handleLogout} // ← this is all you add
+
             className={`
               flex w-full items-center gap-3 px-3 py-2.5 rounded-xl
               text-xs font-semibold text-white/40 hover:text-red-400 hover:bg-red-500/10

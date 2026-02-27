@@ -21,22 +21,26 @@ const api = axios.create({
   timeout: 15_000,
 });
 
-// Attach auth token when available (swap for cookie strategy if needed)
+// Attach Bearer token — MUST match the key used in lib/auth.ts
+// lib/auth.ts saves the token under 'ct_auth_token'
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('ct_auth_token'); // ← fixed key
     if (token) config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Global error logging — extend for toast notifications if desired
+// On 401 — token expired/invalid → redirect to login
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
-      // redirect to login when auth is wired
-      console.warn('[sellerApi] 401 Unauthorised');
+    if (err.response?.status === 401 && typeof window !== 'undefined') {
+      // Clear session and send to login
+      localStorage.removeItem('ct_auth_token');
+      localStorage.removeItem('ct_auth_user');
+      document.cookie = 'ct_token_exists=; path=/; max-age=0; SameSite=Lax';
+      window.location.href = '/auth/login';
     }
     return Promise.reject(err);
   }
@@ -53,17 +57,15 @@ export const dashboardApi = {
 
 export type ProductFilters = {
   search?: string;
-  is_active?: string;       // 'true' | 'false' | ''
-  is_approved?: string;     // 'true' | 'false' | ''
+  is_active?: string;
+  is_approved?: string;
   category_id?: string;
   page?: number;
   per_page?: number;
 };
 
 export const productsApi = {
-  getAll: (
-    filters: ProductFilters = {}
-  ): Promise<ApiResponse<PaginatedResponse<Product>>> =>
+  getAll: (filters: ProductFilters = {}): Promise<ApiResponse<PaginatedResponse<Product>>> =>
     api.get('/seller/products', { params: filters }).then((r) => r.data),
 
   getStats: (): Promise<ApiResponse<ProductStats>> =>
@@ -72,15 +74,10 @@ export const productsApi = {
   getOne: (id: number): Promise<ApiResponse<Product>> =>
     api.get(`/seller/products/${id}`).then((r) => r.data),
 
-  create: (
-    payload: Partial<Product>
-  ): Promise<ApiResponse<Product>> =>
+  create: (payload: Partial<Product>): Promise<ApiResponse<Product>> =>
     api.post('/seller/products', payload).then((r) => r.data),
 
-  update: (
-    id: number,
-    payload: Partial<Product>
-  ): Promise<ApiResponse<Product>> =>
+  update: (id: number, payload: Partial<Product>): Promise<ApiResponse<Product>> =>
     api.put(`/seller/products/${id}`, payload).then((r) => r.data),
 
   delete: (id: number): Promise<ApiResponse<null>> =>
@@ -100,9 +97,7 @@ export type OrderFilters = {
 };
 
 export const ordersApi = {
-  getAll: (
-    filters: OrderFilters = {}
-  ): Promise<ApiResponse<PaginatedResponse<Order>>> =>
+  getAll: (filters: OrderFilters = {}): Promise<ApiResponse<PaginatedResponse<Order>>> =>
     api.get('/seller/orders', { params: filters }).then((r) => r.data),
 
   getStats: (): Promise<ApiResponse<OrderStats>> =>
@@ -111,10 +106,7 @@ export const ordersApi = {
   getOne: (id: number): Promise<ApiResponse<OrderDetail>> =>
     api.get(`/seller/orders/${id}`).then((r) => r.data),
 
-  updateStatus: (
-    id: number,
-    status: string
-  ): Promise<ApiResponse<Order>> =>
+  updateStatus: (id: number, status: string): Promise<ApiResponse<Order>> =>
     api.patch(`/seller/orders/${id}/status`, { status }).then((r) => r.data),
 };
 
