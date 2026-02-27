@@ -63,12 +63,15 @@ export default function Navbar() {
 
           {/* Icons */}
           <div className="flex items-center gap-3">
-            <button className="hidden md:flex flex-col items-center text-zinc-600 hover:text-red-600 transition-colors group">
-              <UserIcon />
-              <span className="text-[10px] mt-0.5 font-medium tracking-wider group-hover:text-red-600">
-                Account
-              </span>
-            </button>
+           <Link
+  href="/auth/login"
+  className="hidden md:flex flex-col items-center text-zinc-600 hover:text-red-600 transition-colors group"
+>
+  <UserIcon />
+  <span className="text-[10px] mt-0.5 font-medium tracking-wider group-hover:text-red-600">
+    Account
+  </span>
+</Link>
 
             <button className="flex flex-col items-center text-zinc-600 hover:text-red-600 transition-colors group relative">
               <CartIcon />

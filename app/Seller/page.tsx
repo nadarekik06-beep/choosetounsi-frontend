@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { dashboardApi } from '../lib/sellerApi';
-import type { DashboardData } from '../types/seller';
+import { dashboardApi } from '../../lib/sellerApi';
+import type { DashboardData } from '../../types/seller';
 import StatCard     from './components/StatCard';
 import RevenueChart from './components/RevenueChart';
 import {
