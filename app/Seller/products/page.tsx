@@ -382,7 +382,8 @@ export default function ProductsPage() {
                     {/* Price */}
                     <td className="px-5 py-3.5 text-right">
                       <span className="font-extrabold text-slate-900 text-xs">
-                        {product.price.toFixed(3)} TND
+                        {Number(product.price).toFixed(3)} TND
+
                       </span>
                     </td>
 
