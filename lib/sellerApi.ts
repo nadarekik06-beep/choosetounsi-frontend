@@ -42,6 +42,21 @@ api.interceptors.response.use(
   }
 );
 
+// ─── Storage URL helper ───────────────────────────────────────────────────────
+// Converts Laravel storage paths to full URLs pointing to the backend (port 8000)
+// Fixes images loading from :3000 (Next.js) instead of :8000 (Laravel)
+
+export function storageUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  // Already a full URL — return as-is
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  // Build base from API URL by stripping /api
+  const base =
+    (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/api$/, '');
+  // Ensure single slash between base and path
+  return `${base}/${path.replace(/^\//, '')}`;
+}
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export const dashboardApi = {
@@ -90,14 +105,9 @@ export type ProductPayload = {
   delete_image_ids?: number[];
 };
 
-/**
- * Builds a FormData object for multipart/form-data requests.
- * Required for image file uploads.
- */
 function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
   const fd = new FormData();
 
-  // Laravel method spoofing for PUT via POST (multipart doesn't support PUT natively)
   if (isUpdate) {
     fd.append('_method', 'PUT');
   }
@@ -144,7 +154,6 @@ export const productsApi = {
   },
 
   update: (id: number, payload: ProductPayload): Promise<ApiResponse<Product>> => {
-    // POST with _method=PUT for multipart compatibility
     const fd = buildFormData(payload, true);
     return api.post(`/seller/products/${id}`, fd, {
       headers: { 'Content-Type': 'multipart/form-data' },

@@ -5,7 +5,7 @@ import {
   X, Upload, Trash2, Star, Loader2, AlertCircle,
   ImageIcon, GripVertical,
 } from 'lucide-react';
-import { productsApi, categoriesApi, type Category, type ProductPayload } from '@/lib/sellerApi';
+import { productsApi, categoriesApi, storageUrl, type Category, type ProductPayload } from '@/lib/sellerApi';
 import type { Product } from '@/types/seller';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -202,7 +202,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const [existingImages, setExistingImages] = useState<ExistingImage[]>(
     (product as any)?.images?.map((img: any) => ({
       ...img,
-      url: img.url ?? img.image_path,
+      url: storageUrl(img.url ?? img.image_path) ?? img.image_path,
     })) ?? []
   );
   const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);

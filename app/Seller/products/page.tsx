@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { productsApi } from '@/lib/sellerApi';
+import { productsApi, storageUrl } from '@/lib/sellerApi';
 import type { Product, PaginatedResponse } from '@/types/seller';
 import {
   Plus, Search, Filter, Edit2, Trash2, Package,
@@ -164,7 +164,7 @@ export default function ProductsPage() {
                         <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex-shrink-0 overflow-hidden">
                           {(product as any).primary_image_url ? (
                             <img
-                              src={(product as any).primary_image_url}
+                              src={storageUrl((product as any).primary_image_url) ?? ''}
                               alt={product.name}
                               className="w-full h-full object-cover"
                             />
