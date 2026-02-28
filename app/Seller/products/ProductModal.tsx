@@ -8,6 +8,21 @@ import {
 import { productsApi, categoriesApi, storageUrl, type Category, type ProductPayload } from '@/lib/sellerApi';
 import type { Product } from '@/types/seller';
 
+// ─── Extended Product type (adds fields not yet in the base type) ─────────────
+
+type FullProduct = Product & {
+  slug?: string;
+  sku?: string;
+  short_description?: string;
+  images?: Array<{
+    id: number;
+    url?: string;
+    image_path: string;
+    is_primary: boolean;
+    order: number;
+  }>;
+};
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ExistingImage {
@@ -179,17 +194,20 @@ const inputCls = (err?: string) =>
 export default function ProductModal({ product, onClose, onSaved }: ProductModalProps) {
   const isEdit = !!product;
 
+  // Cast to FullProduct to safely access extended fields
+  const fullProduct = product as FullProduct | null;
+
   // Form state
   const [form, setForm] = useState({
-    name:              product?.name              ?? '',
-    slug:              product?.slug              ?? '',
-    sku:               product?.sku               ?? '',
-    description:       product?.description       ?? '',
-    short_description: product?.short_description ?? '',
-    price:             product?.price?.toString() ?? '',
-    stock:             product?.stock?.toString() ?? '',
-    category_id:       product?.category_id?.toString() ?? '',
-    is_active:         product?.is_active ?? true,
+    name:              fullProduct?.name              ?? '',
+    slug:              fullProduct?.slug              ?? '',
+    sku:               fullProduct?.sku               ?? '',
+    description:       fullProduct?.description       ?? '',
+    short_description: fullProduct?.short_description ?? '',
+    price:             fullProduct?.price?.toString() ?? '',
+    stock:             fullProduct?.stock?.toString() ?? '',
+    category_id:       fullProduct?.category_id?.toString() ?? '',
+    is_active:         fullProduct?.is_active ?? true,
   });
 
   const [categories,     setCategories]     = useState<Category[]>([]);
@@ -200,7 +218,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
 
   // Existing images (edit mode)
   const [existingImages, setExistingImages] = useState<ExistingImage[]>(
-    (product as any)?.images?.map((img: any) => ({
+    fullProduct?.images?.map((img) => ({
       ...img,
       url: storageUrl(img.url ?? img.image_path) ?? img.image_path,
     })) ?? []
@@ -225,7 +243,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   }, []);
 
   // Auto-generate slug from name (only if slug is empty / untouched)
-  const slugTouched = useRef(!!product?.slug);
+  const slugTouched = useRef(!!fullProduct?.slug);
   useEffect(() => {
     if (!slugTouched.current && form.name) {
       const slug = form.name
@@ -325,7 +343,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         await productsApi.update(product!.id, payload);
         // Update primary image if changed
         if (primaryImageId !== null) {
-          const original = (product as any)?.images?.find((i: any) => i.is_primary);
+          const original = fullProduct?.images?.find((i) => i.is_primary);
           if (!original || original.id !== primaryImageId) {
             await productsApi.setPrimaryImage(product!.id, primaryImageId);
           }

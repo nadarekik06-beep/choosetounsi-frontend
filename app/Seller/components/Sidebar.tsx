@@ -33,13 +33,22 @@ export default function Sidebar({
   onMobileClose,
 }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter(); // ✅ add router
-  const handleLogout = () => {
-    // Remove your token or session data here
-    localStorage.removeItem('session'); // or whatever you use
+  const router = useRouter();
 
-    // Redirect to login page
-    router.push('/auth/login');
+  const handleLogout = () => {
+    // Clear ALL localStorage and sessionStorage
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Clear all cookies (works for non-HttpOnly cookies)
+    document.cookie.split(';').forEach((cookie) => {
+      const name = cookie.split('=')[0].trim();
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
+    });
+
+    // Hard redirect — clears any in-memory state too
+    window.location.href = '/auth/login';
   };
 
 
@@ -153,8 +162,7 @@ export default function Sidebar({
           </button>
 
           <button
-          onClick={handleLogout} // ← this is all you add
-
+            onClick={handleLogout}
             className={`
               flex w-full items-center gap-3 px-3 py-2.5 rounded-xl
               text-xs font-semibold text-white/40 hover:text-red-400 hover:bg-red-500/10

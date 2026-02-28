@@ -62,17 +62,29 @@ export interface Category {
   name: string;
 }
 
+export interface ProductImage {
+  id: number;
+  url?: string;
+  image_path: string;
+  is_primary: boolean;
+  order: number;
+}
+
 export interface Product {
   id: number;
   seller_id: number;
   category_id: number;
   category?: Category;
   name: string;
+  slug?: string;
+  sku?: string;
   description: string | null;
+  short_description?: string | null;
   price: number;
   stock: number;
   is_approved: boolean;
   is_active: boolean;
+  images?: ProductImage[];
   created_at: string;
 }
 
