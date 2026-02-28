@@ -18,25 +18,21 @@ const api = axios.create({
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
-  timeout: 15_000,
+  timeout: 30_000,
 });
 
-// Attach Bearer token — MUST match the key used in lib/auth.ts
-// lib/auth.ts saves the token under 'ct_auth_token'
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('ct_auth_token'); // ← fixed key
+    const token = localStorage.getItem('ct_auth_token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// On 401 — token expired/invalid → redirect to login
 api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401 && typeof window !== 'undefined') {
-      // Clear session and send to login
       localStorage.removeItem('ct_auth_token');
       localStorage.removeItem('ct_auth_user');
       document.cookie = 'ct_token_exists=; path=/; max-age=0; SameSite=Lax';
@@ -53,6 +49,22 @@ export const dashboardApi = {
     api.get('/seller/dashboard').then((r) => r.data),
 };
 
+// ─── Categories ───────────────────────────────────────────────────────────────
+
+export interface Category {
+  id: number;
+  name: string;
+  name_ar?: string;
+  slug: string;
+  icon?: string;
+  image?: string;
+}
+
+export const categoriesApi = {
+  getAll: (): Promise<ApiResponse<Category[]>> =>
+    api.get('/categories').then((r) => r.data),
+};
+
 // ─── Products ─────────────────────────────────────────────────────────────────
 
 export type ProductFilters = {
@@ -64,6 +76,56 @@ export type ProductFilters = {
   per_page?: number;
 };
 
+export type ProductPayload = {
+  name: string;
+  description?: string | null;
+  short_description?: string | null;
+  price: number;
+  stock: number;
+  category_id: number;
+  sku?: string | null;
+  slug?: string | null;
+  is_active?: boolean;
+  images?: File[];
+  delete_image_ids?: number[];
+};
+
+/**
+ * Builds a FormData object for multipart/form-data requests.
+ * Required for image file uploads.
+ */
+function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
+  const fd = new FormData();
+
+  // Laravel method spoofing for PUT via POST (multipart doesn't support PUT natively)
+  if (isUpdate) {
+    fd.append('_method', 'PUT');
+  }
+
+  fd.append('name', payload.name);
+  fd.append('price', String(payload.price));
+  fd.append('stock', String(payload.stock));
+  fd.append('category_id', String(payload.category_id));
+  fd.append('is_active', payload.is_active ? '1' : '0');
+
+  if (payload.description != null) fd.append('description', payload.description);
+  if (payload.short_description != null) fd.append('short_description', payload.short_description);
+  if (payload.sku) fd.append('sku', payload.sku);
+  if (payload.slug) fd.append('slug', payload.slug);
+
+  if (payload.images?.length) {
+    payload.images.forEach((file) => fd.append('images[]', file));
+  }
+
+  if (payload.delete_image_ids?.length) {
+    payload.delete_image_ids.forEach((id) =>
+      fd.append('delete_image_ids[]', String(id))
+    );
+  }
+
+  return fd;
+}
+
 export const productsApi = {
   getAll: (filters: ProductFilters = {}): Promise<ApiResponse<PaginatedResponse<Product>>> =>
     api.get('/seller/products', { params: filters }).then((r) => r.data),
@@ -74,14 +136,29 @@ export const productsApi = {
   getOne: (id: number): Promise<ApiResponse<Product>> =>
     api.get(`/seller/products/${id}`).then((r) => r.data),
 
-  create: (payload: Partial<Product>): Promise<ApiResponse<Product>> =>
-    api.post('/seller/products', payload).then((r) => r.data),
+  create: (payload: ProductPayload): Promise<ApiResponse<Product>> => {
+    const fd = buildFormData(payload);
+    return api.post('/seller/products', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data);
+  },
 
-  update: (id: number, payload: Partial<Product>): Promise<ApiResponse<Product>> =>
-    api.put(`/seller/products/${id}`, payload).then((r) => r.data),
+  update: (id: number, payload: ProductPayload): Promise<ApiResponse<Product>> => {
+    // POST with _method=PUT for multipart compatibility
+    const fd = buildFormData(payload, true);
+    return api.post(`/seller/products/${id}`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data);
+  },
 
   delete: (id: number): Promise<ApiResponse<null>> =>
     api.delete(`/seller/products/${id}`).then((r) => r.data),
+
+  deleteImage: (productId: number, imageId: number): Promise<ApiResponse<null>> =>
+    api.delete(`/seller/products/${productId}/images/${imageId}`).then((r) => r.data),
+
+  setPrimaryImage: (productId: number, imageId: number): Promise<ApiResponse<null>> =>
+    api.patch(`/seller/products/${productId}/images/${imageId}/primary`).then((r) => r.data),
 };
 
 // ─── Orders ───────────────────────────────────────────────────────────────────

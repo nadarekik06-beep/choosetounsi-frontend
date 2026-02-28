@@ -1,231 +1,14 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { productsApi }  from '@/lib/sellerApi';
+import { productsApi } from '@/lib/sellerApi';
 import type { Product, PaginatedResponse } from '@/types/seller';
 import {
   Plus, Search, Filter, Edit2, Trash2, Package,
   CheckCircle, XCircle, ChevronLeft, ChevronRight,
-  X, Loader2, AlertCircle,
+  Loader2, Clock, Image as ImageIcon,
 } from 'lucide-react';
-
-// ─── Product Form Modal ───────────────────────────────────────────────────────
-
-interface ModalProps {
-  product: Product | null;
-  onClose: () => void;
-  onSaved: () => void;
-}
-
-function ProductModal({ product, onClose, onSaved }: ModalProps) {
-  const isEdit = !!product;
-
-  const [form, setForm] = useState({
-    name:        product?.name        ?? '',
-    description: product?.description ?? '',
-    price:       product?.price?.toString()       ?? '',
-    stock:       product?.stock?.toString()       ?? '',
-    category_id: product?.category_id?.toString() ?? '',
-    is_active:   product?.is_active   ?? true,
-  });
-  const [saving,  setSaving]  = useState(false);
-  const [errors,  setErrors]  = useState<Record<string, string>>({});
-  const [apiError, setApiError] = useState('');
-
-  const set = (field: string, value: unknown) =>
-    setForm((f) => ({ ...f, [field]: value }));
-
-  const validate = () => {
-    const e: Record<string, string> = {};
-    if (!form.name.trim())          e.name        = 'Product name is required.';
-    if (!form.category_id.trim())   e.category_id = 'Category ID is required.';
-    if (isNaN(Number(form.price)) || Number(form.price) < 0) e.price = 'Valid price required.';
-    if (isNaN(Number(form.stock)) || Number(form.stock) < 0) e.stock = 'Valid stock required.';
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-    setSaving(true);
-    setApiError('');
-    try {
-      const payload = {
-        name:        form.name.trim(),
-        description: form.description.trim() || null,
-        price:       parseFloat(form.price),
-        stock:       parseInt(form.stock, 10),
-        category_id: parseInt(form.category_id, 10),
-        is_active:   form.is_active,
-      };
-      if (isEdit) {
-        await productsApi.update(product!.id, payload);
-      } else {
-        await productsApi.create(payload);
-      }
-      onSaved();
-      onClose();
-    } catch (err: any) {
-      setApiError(
-        err?.response?.data?.message ??
-        err?.response?.data?.error   ??
-        'Failed to save. Please try again.'
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="font-extrabold text-slate-900">
-            {isEdit ? 'Edit Product' : 'Add New Product'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {apiError && (
-            <div className="flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-xl px-3.5 py-3 text-sm text-red-600">
-              <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
-              <span>{apiError}</span>
-            </div>
-          )}
-
-          {/* Name */}
-          <div>
-            <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
-              Product Name *
-            </label>
-            <input
-              value={form.name}
-              onChange={(e) => set('name', e.target.value)}
-              placeholder="e.g. Handmade Pottery Mug"
-              className={`w-full border rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-300
-                focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition
-                ${errors.name ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white'}`}
-            />
-            {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
-              Description
-            </label>
-            <textarea
-              rows={3}
-              value={form.description}
-              onChange={(e) => set('description', e.target.value)}
-              placeholder="Describe your product…"
-              className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-300
-                focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition resize-none"
-            />
-          </div>
-
-          {/* Price + Stock */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
-                Price (TND) *
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.001"
-                value={form.price}
-                onChange={(e) => set('price', e.target.value)}
-                className={`w-full border rounded-xl px-3.5 py-2.5 text-sm text-slate-900
-                  focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition
-                  ${errors.price ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
-              />
-              {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
-                Stock *
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={form.stock}
-                onChange={(e) => set('stock', e.target.value)}
-                className={`w-full border rounded-xl px-3.5 py-2.5 text-sm text-slate-900
-                  focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition
-                  ${errors.stock ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
-              />
-              {errors.stock && <p className="text-xs text-red-500 mt-1">{errors.stock}</p>}
-            </div>
-          </div>
-
-          {/* Category + Status */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
-                Category ID *
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={form.category_id}
-                onChange={(e) => set('category_id', e.target.value)}
-                placeholder="e.g. 3"
-                className={`w-full border rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-300
-                  focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition
-                  ${errors.category_id ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
-              />
-              {errors.category_id && <p className="text-xs text-red-500 mt-1">{errors.category_id}</p>}
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
-                Status
-              </label>
-              <select
-                value={form.is_active ? 'active' : 'inactive'}
-                onChange={(e) => set('is_active', e.target.value === 'active')}
-                className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900
-                  focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition bg-white"
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
-            >
-              {saving && <Loader2 size={14} className="animate-spin" />}
-              {isEdit ? 'Save Changes' : 'Create Product'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
+import ProductModal from './ProductModal';
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -236,10 +19,13 @@ export default function ProductsPage() {
   const [isActive,   setIsActive]   = useState('');
   const [isApproved, setIsApproved] = useState('');
   const [page,       setPage]       = useState(1);
-  const [modal,      setModal]      = useState<{ open: boolean; product: Product | null }>({ open: false, product: null });
-  const [deleting,   setDeleting]   = useState<number | null>(null);
+  const [modal,      setModal]      = useState<{ open: boolean; product: Product | null }>({
+    open: false,
+    product: null,
+  });
+  const [deleting, setDeleting] = useState<number | null>(null);
 
-  const fetch = useCallback(async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
       const res = await productsApi.getAll({
@@ -249,24 +35,34 @@ export default function ProductsPage() {
         ...(isActive   && { is_active: isActive }),
         ...(isApproved && { is_approved: isApproved }),
       });
-      setData(res.data as PaginatedResponse<Product>);
+      setData(res.data as unknown as PaginatedResponse<Product>);
     } catch {
-      // error handled per-action
+      // silently fail per-action
     } finally {
       setLoading(false);
     }
   }, [page, search, isActive, isApproved]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete this product? This action cannot be undone.')) return;
+    if (!confirm('Delete this product? This cannot be undone.')) return;
     setDeleting(id);
     try {
       await productsApi.delete(id);
-      fetch();
+      fetchProducts();
     } finally {
       setDeleting(null);
+    }
+  };
+
+  // ── Open edit — fetch fresh product with images ────────────────────
+  const handleEdit = async (product: Product) => {
+    try {
+      const res = await productsApi.getOne(product.id);
+      setModal({ open: true, product: res.data as unknown as Product });
+    } catch {
+      setModal({ open: true, product });
     }
   };
 
@@ -295,7 +91,7 @@ export default function ProductsPage() {
           <input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Search by name…"
+            placeholder="Search by name or SKU…"
             className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-sm
               focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 focus:bg-white transition"
           />
@@ -348,7 +144,7 @@ export default function ProductsPage() {
                     <th
                       key={h}
                       className={`px-5 py-3 font-bold ${
-                        ['Price', 'Stock'].includes(h) ? 'text-right' :
+                        ['Price', 'Stock'].includes(h)         ? 'text-right' :
                         ['Status', 'Approval', 'Actions'].includes(h) ? 'text-center' : 'text-left'
                       }`}
                     >
@@ -364,37 +160,55 @@ export default function ProductsPage() {
                     {/* Product */}
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0">
-                          <Package size={15} className="text-blue-400" />
+                        {/* Thumbnail */}
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex-shrink-0 overflow-hidden">
+                          {(product as any).primary_image_url ? (
+                            <img
+                              src={(product as any).primary_image_url}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon size={14} className="text-slate-300" />
+                            </div>
+                          )}
                         </div>
                         <div className="min-w-0">
                           <p className="font-bold text-slate-900 truncate max-w-[180px]">{product.name}</p>
-                          <p className="text-[10px] text-slate-400">ID #{product.id}</p>
+                          <p className="text-[10px] text-slate-400">
+                            {(product as any).sku ? `SKU: ${(product as any).sku}` : `ID #${product.id}`}
+                          </p>
                         </div>
                       </div>
                     </td>
 
                     {/* Category */}
                     <td className="px-5 py-3.5 text-slate-500 text-xs font-medium">
-                      {product.category?.name ?? `Cat. #${product.category_id}`}
+                      {(product as any).category?.name ?? '—'}
                     </td>
 
                     {/* Price */}
                     <td className="px-5 py-3.5 text-right">
                       <span className="font-extrabold text-slate-900 text-xs">
                         {Number(product.price).toFixed(3)} TND
-
                       </span>
                     </td>
 
                     {/* Stock */}
                     <td className="px-5 py-3.5 text-right">
                       <span className={`font-bold text-xs ${
-                        product.stock === 0   ? 'text-red-500' :
-                        product.stock <= 10   ? 'text-amber-500' :
-                                                'text-slate-700'
+                        product.stock === 0 ? 'text-red-500' :
+                        product.stock <= 10 ? 'text-amber-500' :
+                                              'text-slate-700'
                       }`}>
                         {product.stock}
+                        {product.stock === 0 && (
+                          <span className="ml-1 text-[10px] font-bold text-red-400">(Out)</span>
+                        )}
+                        {product.stock > 0 && product.stock <= 10 && (
+                          <span className="ml-1 text-[10px] font-bold text-amber-400">(Low)</span>
+                        )}
                       </span>
                     </td>
 
@@ -413,12 +227,14 @@ export default function ProductsPage() {
 
                     {/* Approval */}
                     <td className="px-5 py-3.5 text-center">
-                      <span className={`inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full
                         ${product.is_approved
                           ? 'bg-blue-50 text-blue-700'
                           : 'bg-amber-50 text-amber-700'}`}
                       >
-                        {product.is_approved ? 'Approved' : 'Pending'}
+                        {product.is_approved
+                          ? <><CheckCircle size={9} /> Approved</>
+                          : <><Clock size={9} /> Pending</>}
                       </span>
                     </td>
 
@@ -426,7 +242,7 @@ export default function ProductsPage() {
                     <td className="px-5 py-3.5">
                       <div className="flex items-center justify-center gap-1">
                         <button
-                          onClick={() => setModal({ open: true, product })}
+                          onClick={() => handleEdit(product)}
                           className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition"
                           title="Edit"
                         >
@@ -452,7 +268,7 @@ export default function ProductsPage() {
                     <td colSpan={7} className="px-5 py-14 text-center">
                       <Package size={28} className="mx-auto mb-3 text-slate-200" />
                       <p className="text-sm font-semibold text-slate-400">No products found</p>
-                      <p className="text-xs text-slate-300 mt-1">Try adjusting your filters</p>
+                      <p className="text-xs text-slate-300 mt-1">Try adjusting your filters or add a new product</p>
                     </td>
                   </tr>
                 )}
@@ -495,7 +311,7 @@ export default function ProductsPage() {
         <ProductModal
           product={modal.product}
           onClose={() => setModal({ open: false, product: null })}
-          onSaved={fetch}
+          onSaved={fetchProducts}
         />
       )}
     </div>
