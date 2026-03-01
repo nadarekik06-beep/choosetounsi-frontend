@@ -1,18 +1,21 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { productsApi, storageUrl } from '@/lib/sellerApi';
 import type { Product, PaginatedResponse } from '@/types/seller';
 import {
   Plus, Search, Filter, Edit2, Trash2, Package,
   CheckCircle, XCircle, ChevronLeft, ChevronRight,
-  Loader2, Clock, Image as ImageIcon,
+  Loader2, Clock, Image as ImageIcon, Eye,
 } from 'lucide-react';
 import ProductModal from './ProductModal';
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ProductsPage() {
+  const router = useRouter();
+
   const [data,       setData]       = useState<PaginatedResponse<Product> | null>(null);
   const [loading,    setLoading]    = useState(true);
   const [search,     setSearch]     = useState('');
@@ -144,8 +147,8 @@ export default function ProductsPage() {
                     <th
                       key={h}
                       className={`px-5 py-3 font-bold ${
-                        ['Price', 'Stock'].includes(h)         ? 'text-right' :
-                        ['Status', 'Approval', 'Actions'].includes(h) ? 'text-center' : 'text-left'
+                        ['Price', 'Stock'].includes(h)                    ? 'text-right' :
+                        ['Status', 'Approval', 'Actions'].includes(h)     ? 'text-center' : 'text-left'
                       }`}
                     >
                       {h}
@@ -241,6 +244,15 @@ export default function ProductsPage() {
                     {/* Actions */}
                     <td className="px-5 py-3.5">
                       <div className="flex items-center justify-center gap-1">
+                        {/* View */}
+                        <button
+                          onClick={() => router.push(`/seller/products/${product.id}`)}
+                          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
+                          title="View details"
+                        >
+                          <Eye size={13} />
+                        </button>
+                        {/* Edit */}
                         <button
                           onClick={() => handleEdit(product)}
                           className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition"
@@ -248,6 +260,7 @@ export default function ProductsPage() {
                         >
                           <Edit2 size={13} />
                         </button>
+                        {/* Delete */}
                         <button
                           onClick={() => handleDelete(product.id)}
                           disabled={deleting === product.id}

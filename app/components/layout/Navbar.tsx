@@ -23,14 +23,17 @@ export default function Navbar() {
       {/* Main nav */}
       <nav className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <span className="bg-red-600 text-white text-xs font-black px-1.5 py-0.5 tracking-tight">
-            CT
-          </span>
-          <span className="text-zinc-950 font-black text-xl tracking-tight">
-            Choose<span className="text-red-600">Tounsi</span>
-          </span>
-        </Link>
+       <Link href="/" className="flex items-center gap-2 shrink-0">
+  <img
+    src="/images/logo.png"
+    alt="ChooseTounsi Logo"
+    className="w-20 h-20 object-contain"
+  />
+  
+  <span className="text-zinc-950 font-black text-xl tracking-tight">
+    Choose<span className="text-red-600">Tounsi</span>
+  </span>
+</Link>
 
         {/* Search bar — desktop */}
         <div className="hidden md:flex flex-1 mx-10">
