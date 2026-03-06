@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { logout, isAuthenticated } from "@/lib/auth";
 
 const NAV_LINKS = [
   { label: "Shop", href: "/shop" },
@@ -11,7 +13,35 @@ const NAV_LINKS = [
 ];
 
 export default function Navbar() {
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Check auth state on mount (localStorage is client-side only)
+  useEffect(() => {
+    setLoggedIn(isAuthenticated());
+  }, []);
+
+  const handleLogout = async () => {
+    setDropdownOpen(false);
+    setMenuOpen(false);
+    await logout(); // calls POST /api/auth/logout + clears localStorage + cookie
+    setLoggedIn(false);
+    router.push("/auth/login");
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <header className="w-full bg-white border-b border-zinc-100 sticky top-0 z-50">
@@ -23,17 +53,16 @@ export default function Navbar() {
       {/* Main nav */}
       <nav className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-       <Link href="/" className="flex items-center gap-2 shrink-0">
-  <img
-    src="/images/logo.png"
-    alt="ChooseTounsi Logo"
-    className="w-20 h-20 object-contain"
-  />
-  
-  <span className="text-zinc-950 font-black text-xl tracking-tight">
-    Choose<span className="text-red-600">Tounsi</span>
-  </span>
-</Link>
+        <Link href="/" className="flex items-center gap-2 shrink-0">
+          <img
+            src="/images/logo.png"
+            alt="ChooseTounsi Logo"
+            className="w-20 h-20 object-contain"
+          />
+          <span className="text-zinc-950 font-black text-xl tracking-tight">
+            Choose<span className="text-red-600">Tounsi</span>
+          </span>
+        </Link>
 
         {/* Search bar — desktop */}
         <div className="hidden md:flex flex-1 mx-10">
@@ -66,16 +95,63 @@ export default function Navbar() {
 
           {/* Icons */}
           <div className="flex items-center gap-3">
-           <Link
-  href="/auth/login"
-  className="hidden md:flex flex-col items-center text-zinc-600 hover:text-red-600 transition-colors group"
->
-  <UserIcon />
-  <span className="text-[10px] mt-0.5 font-medium tracking-wider group-hover:text-red-600">
-    Account
-  </span>
-</Link>
 
+            {/* Account icon + dropdown */}
+            <div className="relative hidden md:block" ref={dropdownRef}>
+              <button
+                onClick={() => setDropdownOpen((o) => !o)}
+                className="flex flex-col items-center text-zinc-600 hover:text-red-600 transition-colors group"
+                aria-haspopup="true"
+                aria-expanded={dropdownOpen}
+              >
+                <UserIcon />
+                <span className="text-[10px] mt-0.5 font-medium tracking-wider group-hover:text-red-600">
+                  Account
+                </span>
+              </button>
+
+              {/* Dropdown */}
+              {dropdownOpen && (
+                <div className="absolute right-0 top-full mt-3 w-48 bg-white border border-zinc-100 rounded-lg shadow-xl py-1.5 z-50">
+                  
+                  {/* Log In — always visible, goes to your login page */}
+                  <Link
+                    href="/auth/login"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950 transition-colors"
+                  >
+                    <UserIcon />
+                    Log In
+                  </Link>
+
+                  {/* Register — always visible */}
+                  <Link
+                    href="/auth/register"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950 transition-colors"
+                  >
+                    <RegisterIcon />
+                    Register
+                  </Link>
+
+                  {/* Log Out — only shown when logged in */}
+                  {loggedIn && (
+                    <>
+                      <div className="my-1 border-t border-zinc-100" />
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogoutIcon />
+                        Log Out
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Cart */}
             <button className="flex flex-col items-center text-zinc-600 hover:text-red-600 transition-colors group relative">
               <CartIcon />
               <span className="text-[10px] mt-0.5 font-medium tracking-wider group-hover:text-red-600">
@@ -113,7 +189,7 @@ export default function Navbar() {
             </button>
           </div>
 
-          {/* Mobile links */}
+          {/* Mobile nav links */}
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -125,20 +201,41 @@ export default function Navbar() {
             </Link>
           ))}
 
+          {/* Log In — always visible */}
           <Link
-            href="/account"
+            href="/auth/login"
             onClick={() => setMenuOpen(false)}
-            className="text-sm font-semibold text-zinc-800 hover:text-red-600 transition-colors py-1"
+            className="text-sm font-semibold text-zinc-800 hover:text-red-600 transition-colors py-1 border-b border-zinc-50"
           >
-            My Account
+            Log In
           </Link>
+
+          {/* Register — always visible */}
+          <Link
+            href="/auth/register"
+            onClick={() => setMenuOpen(false)}
+            className="text-sm font-semibold text-zinc-800 hover:text-red-600 transition-colors py-1 border-b border-zinc-50"
+          >
+            Register
+          </Link>
+
+          {/* Log Out — only shown when logged in */}
+          {loggedIn && (
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold text-sm py-3 rounded-md transition-colors"
+            >
+              <LogoutIcon />
+              Log Out
+            </button>
+          )}
         </div>
       )}
     </header>
   );
 }
 
-/* ─── SVG Icons ─── */
+/* ─── SVG Icons ──────────────────────────────────────────────────────────── */
 function SearchIcon() {
   return (
     <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -178,6 +275,27 @@ function CloseIcon() {
   return (
     <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
       <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+function LogoutIcon() {
+  return (
+    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+
+function RegisterIcon() {
+  return (
+    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <line x1="19" y1="8" x2="19" y2="14" />
+      <line x1="22" y1="11" x2="16" y2="11" />
     </svg>
   );
 }

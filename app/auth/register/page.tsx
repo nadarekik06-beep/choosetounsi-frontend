@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { login, loginWithGoogle, getToken, getUser, clearLocalSession } from '@/lib/auth';
+import { register, loginWithGoogle, getToken, getUser } from '@/lib/auth';
 import {
-  Eye, EyeOff, Mail, Lock, AlertCircle,
-  Loader2, ShoppingBag, Store, TrendingUp, Shield,
+  Eye, EyeOff, Mail, Lock, User, AlertCircle,
+  Loader2, ShoppingBag, Store, TrendingUp, Shield, CheckCircle2,
 } from 'lucide-react';
 
-// Google SVG icon
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 48 48">
@@ -21,43 +20,43 @@ function GoogleIcon() {
   );
 }
 
-function LoginForm() {
-  const router       = useRouter();
-  const searchParams = useSearchParams();
-  const callbackUrl  = useRef(searchParams.get('callbackUrl')).current;
+function RegisterForm() {
+  const router = useRouter();
 
-  const [email,       setEmail]       = useState('');
-  const [password,    setPassword]    = useState('');
-  const [showPass,    setShowPass]    = useState(false);
-  const [loading,     setLoading]     = useState(false);
+  const [name,          setName]          = useState('');
+  const [email,         setEmail]         = useState('');
+  const [password,      setPassword]      = useState('');
+  const [confirm,       setConfirm]       = useState('');
+  const [showPass,      setShowPass]      = useState(false);
+  const [showConfirm,   setShowConfirm]   = useState(false);
+  const [loading,       setLoading]       = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [error,       setError]       = useState('');
-  const [checked,     setChecked]     = useState(false);
+  const [error,         setError]         = useState('');
+  const [checked,       setChecked]       = useState(false);
 
   useEffect(() => {
     const token = getToken();
     const user  = getUser();
     if (token && user) {
-      router.replace(callbackUrl ?? (user.role === 'seller' ? '/seller' : '/'));
+      router.replace(user.role === 'seller' ? '/seller' : '/');
       return;
     }
-    clearLocalSession();
     setChecked(true);
-
-    // Show error from Google callback if any
-    const urlError = searchParams.get('error');
-    if (urlError === 'google_failed')      setError('Google sign-in failed. Please try again.');
-    if (urlError === 'account_deactivated') setError('Your account is deactivated.');
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) { setError('Please fill in all fields.'); return; }
-    setLoading(true);
     setError('');
+    if (!name.trim() || !email.trim() || !password.trim() || !confirm.trim()) {
+      setError('Please fill in all fields.'); return;
+    }
+    if (password !== confirm) { setError('Passwords do not match.'); return; }
+    if (password.length < 8)  { setError('Password must be at least 8 characters.'); return; }
+
+    setLoading(true);
     try {
-      const { redirectTo } = await login({ email: email.trim(), password });
-      router.push((callbackUrl?.startsWith('/seller') ? callbackUrl : redirectTo) ?? '/');
+      await register({ name: name.trim(), email: email.trim(), password, password_confirmation: confirm });
+      router.push('/');
     } catch (err: any) {
       setError(err?.message ?? 'Something went wrong. Please try again.');
       setLoading(false);
@@ -68,7 +67,7 @@ function LoginForm() {
     setGoogleLoading(true);
     setError('');
     try {
-      await loginWithGoogle(); // redirects browser to Google
+      await loginWithGoogle();
     } catch {
       setError('Could not connect to Google. Please try again.');
       setGoogleLoading(false);
@@ -85,13 +84,13 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl shadow-black/10 overflow-hidden flex min-h-[560px]">
+      <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl shadow-black/10 overflow-hidden flex min-h-[620px]">
 
         {/* ══ LEFT — form ══ */}
         <div className="flex-1 flex flex-col justify-center px-10 py-12 lg:px-14">
 
           {/* Logo */}
-          <div className="flex items-center gap-2.5 mb-10">
+          <div className="flex items-center gap-2.5 mb-8">
             <div className="w-9 h-9 rounded-xl bg-[#E63946] flex items-center justify-center shadow-lg shadow-red-500/30">
               <ShoppingBag size={18} className="text-white" />
             </div>
@@ -101,9 +100,9 @@ function LoginForm() {
           </div>
 
           {/* Heading */}
-          <div className="mb-8">
+          <div className="mb-7">
             <h1 className="text-3xl font-black text-slate-900 leading-tight">
-              Sign in to your<br />
+              Create your<br />
               <span className="text-[#E63946]">Account</span>
             </h1>
             <div className="w-10 h-1 bg-[#E63946] rounded-full mt-3" />
@@ -123,21 +122,26 @@ function LoginForm() {
             disabled={googleLoading || loading}
             className="w-full flex items-center justify-center gap-3 py-3 rounded-2xl border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all duration-150 text-sm font-semibold text-slate-700 mb-5 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {googleLoading
-              ? <Loader2 size={18} className="animate-spin" />
-              : <GoogleIcon />}
+            {googleLoading ? <Loader2 size={18} className="animate-spin" /> : <GoogleIcon />}
             Continue with Google
           </button>
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-5">
             <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs text-slate-400 font-medium">or sign in with email</span>
+            <span className="text-xs text-slate-400 font-medium">or register with email</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="relative group">
+              <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+                placeholder="Full name" autoComplete="name" required
+                className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150" />
+            </div>
+
             <div className="relative group">
               <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
@@ -148,7 +152,7 @@ function LoginForm() {
             <div className="relative group">
               <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
               <input type={showPass ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password" autoComplete="current-password" required
+                placeholder="Password (min. 8 characters)" autoComplete="new-password" required
                 className="w-full pl-11 pr-12 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150" />
               <button type="button" onClick={() => setShowPass(!showPass)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition" tabIndex={-1}>
@@ -156,27 +160,29 @@ function LoginForm() {
               </button>
             </div>
 
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <input type="checkbox" className="w-4 h-4 rounded border-slate-300 accent-[#E63946] cursor-pointer" />
-                <span className="text-xs text-slate-500 group-hover:text-slate-700 transition font-medium">Remember me</span>
-              </label>
-              <button type="button" className="text-xs font-semibold text-[#E63946] hover:text-red-700 transition">
-                Forgot Password?
+            <div className="relative group">
+              <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
+              <input type={showConfirm ? 'text' : 'password'} value={confirm} onChange={(e) => setConfirm(e.target.value)}
+                placeholder="Confirm password" autoComplete="new-password" required
+                className="w-full pl-11 pr-12 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150" />
+              <button type="button" onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition" tabIndex={-1}>
+                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                {confirm && password === confirm && (
+                  <CheckCircle2 size={16} className="absolute -top-2 -right-2 text-green-500" />
+                )}
               </button>
             </div>
 
             <button type="submit" disabled={loading || googleLoading}
               className="w-full py-3.5 mt-2 rounded-2xl bg-[#E63946] hover:bg-[#c1121f] active:scale-[0.98] text-white text-sm font-bold tracking-wide transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-500/25">
-              {loading ? <><Loader2 size={16} className="animate-spin" /> Signing in…</> : 'Sign In'}
+              {loading ? <><Loader2 size={16} className="animate-spin" /> Creating account…</> : 'Create Account'}
             </button>
           </form>
 
           <p className="mt-6 text-xs text-center text-slate-400">
-            Don&apos;t have an account?{' '}
-            <Link href="/auth/register" className="text-[#E63946] font-semibold hover:text-red-700 transition">Create one</Link>
-            {' · '}
-            <Link href="/" className="text-[#E63946] font-semibold hover:text-red-700 transition">Browse as guest</Link>
+            Already have an account?{' '}
+            <Link href="/auth/login" className="text-[#E63946] font-semibold hover:text-red-700 transition">Sign in</Link>
           </p>
         </div>
 
@@ -189,16 +195,16 @@ function LoginForm() {
             <div className="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur flex items-center justify-center mx-auto mb-8 shadow-xl">
               <Store size={36} className="text-white" />
             </div>
-            <h2 className="text-3xl font-black text-white leading-tight mb-4">Welcome to<br />ChooseTounsi</h2>
+            <h2 className="text-3xl font-black text-white leading-tight mb-4">Join<br />ChooseTounsi</h2>
             <div className="w-10 h-1 bg-white/60 rounded-full mx-auto mb-6" />
             <p className="text-white/80 text-sm leading-relaxed mb-10 font-medium">
               Tunisia&apos;s marketplace for<br />authentic local products.
             </p>
             <div className="space-y-3 text-left">
               {[
-                { icon: Store,      text: 'Manage your store' },
-                { icon: TrendingUp, text: 'Track your sales'  },
-                { icon: Shield,     text: 'Secure & verified' },
+                { icon: Store,      text: 'Shop local vendors' },
+                { icon: TrendingUp, text: 'Exclusive deals'     },
+                { icon: Shield,     text: 'Secure & verified'   },
               ].map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
@@ -216,14 +222,14 @@ function LoginForm() {
   );
 }
 
-export default function LoginPage() {
+export default function RegisterPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
         <Loader2 size={22} className="animate-spin text-[#E63946]" />
       </div>
     }>
-      <LoginForm />
+      <RegisterForm />
     </Suspense>
   );
 }
