@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Package,
@@ -11,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Home,
 } from 'lucide-react';
 
 const NAV = [
@@ -33,24 +33,17 @@ export default function Sidebar({
   onMobileClose,
 }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const handleLogout = () => {
-    // Clear ALL localStorage and sessionStorage
     localStorage.clear();
     sessionStorage.clear();
-
-    // Clear all cookies (works for non-HttpOnly cookies)
     document.cookie.split(';').forEach((cookie) => {
       const name = cookie.split('=')[0].trim();
       document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
       document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
     });
-
-    // Hard redirect — clears any in-memory state too
     window.location.href = '/auth/login';
   };
-
 
   return (
     <>
@@ -121,10 +114,7 @@ export default function Sidebar({
                 `}
               >
                 <Icon size={17} className="flex-shrink-0" />
-
                 {!collapsed && <span>{label}</span>}
-
-                {/* Tooltip when collapsed */}
                 {collapsed && (
                   <span className="
                     absolute left-full ml-3 px-2.5 py-1.5
@@ -132,8 +122,7 @@ export default function Sidebar({
                     whitespace-nowrap pointer-events-none
                     opacity-0 group-hover:opacity-100
                     translate-x-1 group-hover:translate-x-0
-                    transition-all duration-150 shadow-xl
-                    z-50
+                    transition-all duration-150 shadow-xl z-50
                   ">
                     {label}
                   </span>
@@ -145,7 +134,35 @@ export default function Sidebar({
 
         {/* ── Footer ── */}
         <div className="px-2.5 pb-4 pt-3 border-t border-white/[0.06] space-y-1">
-          {/* Collapse toggle – desktop only */}
+
+          {/* Go to Homepage */}
+          <Link
+            href="/"
+            onClick={onMobileClose}
+            className={`
+              relative flex w-full items-center gap-3 px-3 py-2.5 rounded-xl
+              text-xs font-semibold text-white/40 hover:text-white/70 hover:bg-white/[0.06]
+              transition-all duration-150 group
+              ${collapsed ? 'justify-center' : ''}
+            `}
+          >
+            <Home size={15} className="flex-shrink-0" />
+            {!collapsed && <span>Go to Homepage</span>}
+            {collapsed && (
+              <span className="
+                absolute left-full ml-3 px-2.5 py-1.5
+                bg-slate-800 text-white text-xs font-semibold rounded-lg
+                whitespace-nowrap pointer-events-none
+                opacity-0 group-hover:opacity-100
+                translate-x-1 group-hover:translate-x-0
+                transition-all duration-150 shadow-xl z-50
+              ">
+                Go to Homepage
+              </span>
+            )}
+          </Link>
+
+          {/* Collapse toggle — desktop only */}
           <button
             onClick={() => onCollapse(!collapsed)}
             className={`
@@ -161,6 +178,7 @@ export default function Sidebar({
             }
           </button>
 
+          {/* Sign Out */}
           <button
             onClick={handleLogout}
             className={`

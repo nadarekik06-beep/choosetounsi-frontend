@@ -1,7 +1,3 @@
-/**
- * lib/auth.ts
- */
-
 import axios from 'axios';
 
 export interface AuthUser {
@@ -75,6 +71,14 @@ export function getUserRole(): AuthUser['role'] | null {
   return getUser()?.role ?? null;
 }
 
+export function isSeller(): boolean {
+  return getUser()?.role === 'seller';
+}
+
+export function isClient(): boolean {
+  return getUser()?.role === 'client';
+}
+
 export function saveSession(token: string, user: AuthUser): void {
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -98,7 +102,8 @@ export async function login(credentials: LoginCredentials): Promise<{ user: Auth
   try {
     const { data } = await api.post<LoginResponse>('/auth/login', credentials);
     saveSession(data.token, data.user);
-    return { user: data.user, redirectTo: data.user.role === 'seller' ? '/seller' : '/' };
+    // Always redirect to home — seller dashboard accessible via navbar icon
+    return { user: data.user, redirectTo: '/' };
   } catch (err: any) {
     throw {
       message: err?.response?.data?.message ?? 'Unable to connect.',
@@ -111,7 +116,8 @@ export async function register(credentials: RegisterCredentials): Promise<{ user
   try {
     const { data } = await api.post<LoginResponse>('/auth/register', credentials);
     saveSession(data.token, data.user);
-    return { user: data.user, redirectTo: data.user.role === 'seller' ? '/seller' : '/' };
+    // Always redirect to home — seller dashboard accessible via navbar icon
+    return { user: data.user, redirectTo: '/' };
   } catch (err: any) {
     const validationErrors = err?.response?.data?.errors;
     const firstError = validationErrors
@@ -138,11 +144,6 @@ export async function refreshUser(): Promise<AuthUser | null> {
   } catch { clearSession(); return null; }
 }
 
-// ─── Google OAuth ─────────────────────────────────────────────────────────────
-
-/**
- * Fetches the Google OAuth URL from backend and redirects the browser to it.
- */
 export async function loginWithGoogle(): Promise<void> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
   const res = await fetch(`${baseUrl}/auth/google/redirect`);
