@@ -10,8 +10,8 @@ function GoogleCallbackHandler() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const token    = searchParams.get('token');
-    const userRaw  = searchParams.get('user');
+    const token   = searchParams.get('token');
+    const userRaw = searchParams.get('user');
 
     if (!token || !userRaw) {
       router.replace('/auth/login?error=google_failed');
@@ -21,7 +21,7 @@ function GoogleCallbackHandler() {
     try {
       const user: AuthUser = JSON.parse(atob(userRaw));
       saveSession(token, user);
-      // Always redirect to home regardless of role
+      // Always go home — navbar shows avatar + role immediately
       router.replace('/');
     } catch {
       router.replace('/auth/login?error=google_failed');

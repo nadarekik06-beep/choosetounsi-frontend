@@ -7,6 +7,7 @@ export interface AuthUser {
   role: 'seller' | 'client' | 'admin';
   is_approved: boolean;
   is_active: boolean;
+  avatar: string | null;   // Google profile photo URL (or null for email users)
 }
 
 export interface LoginCredentials {
@@ -102,7 +103,6 @@ export async function login(credentials: LoginCredentials): Promise<{ user: Auth
   try {
     const { data } = await api.post<LoginResponse>('/auth/login', credentials);
     saveSession(data.token, data.user);
-    // Always redirect to home — seller dashboard accessible via navbar icon
     return { user: data.user, redirectTo: '/' };
   } catch (err: any) {
     throw {
@@ -116,7 +116,6 @@ export async function register(credentials: RegisterCredentials): Promise<{ user
   try {
     const { data } = await api.post<LoginResponse>('/auth/register', credentials);
     saveSession(data.token, data.user);
-    // Always redirect to home — seller dashboard accessible via navbar icon
     return { user: data.user, redirectTo: '/' };
   } catch (err: any) {
     const validationErrors = err?.response?.data?.errors;
