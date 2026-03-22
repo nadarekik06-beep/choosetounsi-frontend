@@ -1,364 +1,592 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { dashboardApi } from '../../lib/sellerApi';
 import type { DashboardData } from '../../types/seller';
-import StatCard     from './components/StatCard';
 import RevenueChart from './components/RevenueChart';
+import { useTheme } from './layout';
 import {
   DollarSign, ShoppingBag, Package, Clock,
-  Users, MapPin, Award, AlertCircle, RefreshCw,
-  TrendingUp,
+  MapPin, Award, AlertCircle, RefreshCw,
+  TrendingUp, TrendingDown, ArrowUpRight,
 } from 'lucide-react';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
+/* ─────────────────────────────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────────────────────────────── */
 const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 0, maximumFractionDigits: 3 })
-    .format(n) + ' TND';
+  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(n) + ' TND';
 
 const STATUS_COLORS: Record<string, string> = {
-  pending:    'bg-amber-400',
-  processing: 'bg-blue-500',
-  completed:  'bg-emerald-500',
-  delivered:  'bg-teal-500',
-  cancelled:  'bg-red-400',
-  refunded:   'bg-purple-400',
+  pending:    '#f59e0b',
+  processing: '#3b82f6',
+  completed:  '#10b981',
+  delivered:  '#14b8a6',
+  cancelled:  '#ef4444',
+  refunded:   '#a855f7',
 };
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────────────────────────
+   HOOK — returns animated number as a plain STRING (not JSX)
+   This is the fix: never pass JSX to a string | number prop.
+───────────────────────────────────────────────────────────────── */
+function useCount(target: number): string {
+  const [val, setVal]  = useState(0);
+  const rafRef = useRef<number>(0);
 
-function Skeleton({ className = '' }: { className?: string }) {
-  return (
-    <div className={`animate-pulse bg-slate-100 rounded-2xl ${className}`} />
-  );
+  useEffect(() => {
+    if (target === 0) { setVal(0); return; }
+    const duration = 900;
+    const start    = performance.now();
+    const tick = (now: number) => {
+      const p    = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      setVal(Math.round(target * ease));
+      if (p < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [target]);
+
+  return val.toLocaleString();
 }
 
-function DashboardSkeleton() {
+/* ─────────────────────────────────────────────────────────────────
+   KPI CARD  —  value is strictly string | number (no JSX allowed)
+───────────────────────────────────────────────────────────────── */
+function KpiCard({
+  title, value, subtitle, change, icon: Icon, accent, dark,
+}: {
+  title:    string;
+  value:    string | number;       // ← plain string/number only
+  subtitle?: string;
+  change?:  number;
+  icon:     React.ElementType;
+  accent:   string;
+  dark:     boolean;
+}) {
+  const bg        = dark ? '#161b27' : '#ffffff';
+  const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const textMain  = dark ? '#fff'  : '#111';
+  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+
   return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28" />)}
+    <div className="kpi-card" style={{
+      background: bg, borderRadius: 18,
+      border: `1px solid ${border}`,
+      padding: '20px 20px 16px',
+      position: 'relative', overflow: 'hidden',
+      transition: 'transform 0.22s ease, box-shadow 0.22s ease',
+      cursor: 'default',
+    }}>
+      {/* glow blob */}
+      <div style={{
+        position: 'absolute', top: -30, right: -30,
+        width: 100, height: 100, borderRadius: '50%',
+        background: accent, opacity: dark ? 0.12 : 0.08,
+        filter: 'blur(28px)', pointerEvents: 'none',
+      }} />
+
+      {/* icon + change badge */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{
+          width: 42, height: 42, borderRadius: 12,
+          background: `${accent}22`, border: `1px solid ${accent}44`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: accent, flexShrink: 0,
+        }}>
+          <Icon size={19} />
+        </div>
+
+        {change !== undefined && (
+          <span style={{
+            display: 'flex', alignItems: 'center', gap: 3,
+            fontSize: 11, fontWeight: 800,
+            color:      change >= 0 ? '#10b981' : '#ef4444',
+            background: change >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+            padding: '3px 8px', borderRadius: 999,
+          }}>
+            {change >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+            {Math.abs(change).toFixed(1)}%
+          </span>
+        )}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Skeleton className="lg:col-span-2 h-[340px]" />
-        <Skeleton className="h-[340px]" />
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Skeleton className="h-56" />
-        <Skeleton className="h-56" />
-      </div>
+
+      {/* value */}
+      <p style={{ fontSize: 22, fontWeight: 900, color: textMain, margin: '0 0 4px', letterSpacing: '-0.02em', lineHeight: 1 }}>
+        {value}
+      </p>
+
+      {/* title */}
+      <p style={{ fontSize: 11, fontWeight: 700, color: accent, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        {title}
+      </p>
+
+      {/* subtitle */}
+      {subtitle && (
+        <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>{subtitle}</p>
+      )}
+
+      {/* bottom accent line */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: 3,
+        background: `linear-gradient(90deg,${accent},transparent)`,
+        borderRadius: '0 0 18px 18px', opacity: 0.6,
+      }} />
+
+      <style>{`.kpi-card:hover{transform:translateY(-4px)!important;box-shadow:0 16px 40px rgba(0,0,0,0.15)!important}`}</style>
     </div>
   );
 }
 
-// ─── Error state ──────────────────────────────────────────────────────────────
-
-function ErrorState({ onRetry }: { onRetry: () => void }) {
+/* ─────────────────────────────────────────────────────────────────
+   SKELETON
+───────────────────────────────────────────────────────────────── */
+function Skeleton({ dark, style = {} }: { dark: boolean; style?: React.CSSProperties }) {
   return (
-    <div className="flex items-center justify-center min-h-[50vh]">
-      <div className="text-center max-w-sm">
-        <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-4">
-          <AlertCircle size={24} className="text-red-400" />
+    <div style={{
+      borderRadius: 18,
+      background: dark ? 'rgba(255,255,255,0.05)' : '#e5e7eb',
+      animation: 'shimmer 1.4s infinite linear',
+      ...style,
+    }} />
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   ERROR STATE
+───────────────────────────────────────────────────────────────── */
+function ErrorState({ onRetry, dark }: { onRetry: () => void; dark: boolean }) {
+  const textMain  = dark ? '#fff' : '#111';
+  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
+      <div style={{ textAlign: 'center', maxWidth: 340 }}>
+        <div style={{
+          width: 56, height: 56, borderRadius: 16,
+          background: 'rgba(219,20,46,0.1)', border: '1px solid rgba(219,20,46,0.2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
+        }}>
+          <AlertCircle size={24} color="#db142e" />
         </div>
-        <h3 className="font-extrabold text-slate-900 mb-1">Connection Error</h3>
-        <p className="text-sm text-slate-500 mb-5">
+        <h3 style={{ fontWeight: 800, color: textMain, margin: '0 0 6px' }}>Connection Error</h3>
+        <p style={{ fontSize: 13, color: textMuted, margin: '0 0 18px' }}>
           Could not reach the API. Make sure Laravel is running on{' '}
-          <code className="bg-slate-100 px-1 rounded text-xs">localhost:8000</code>.
+          <code style={{ background: 'rgba(255,255,255,0.08)', padding: '1px 5px', borderRadius: 5, fontSize: 11 }}>
+            localhost:8000
+          </code>.
         </p>
-        <button
-          onClick={onRetry}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-500/25"
-        >
-          <RefreshCw size={14} />
-          Retry
+        <button onClick={onRetry} style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '10px 20px',
+          background: 'linear-gradient(135deg,#db142e,#a00f22)',
+          color: '#fff', fontWeight: 700, fontSize: 13,
+          borderRadius: 12, border: 'none', cursor: 'pointer',
+          boxShadow: '0 6px 20px rgba(219,20,46,0.35)',
+        }}>
+          <RefreshCw size={14} /> Retry
         </button>
       </div>
     </div>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
+/* ═════════════════════════════════════════════════════════════════
+   PAGE
+═════════════════════════════════════════════════════════════════*/
 export default function SellerDashboardPage() {
+  const { dark } = useTheme();
+
   const [data,    setData]    = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
+  const [visible, setVisible] = useState(false);
 
   const load = () => {
     setLoading(true);
     setError(false);
-    dashboardApi
-      .getOverview()
-      .then((res) => setData(res.data))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
+    dashboardApi.getOverview()
+      .then(res => { setData(res.data); setTimeout(() => setVisible(true), 80); })
+      .catch(()  => setError(true))
+      .finally(()=> setLoading(false));
   };
 
   useEffect(load, []);
 
-  if (loading) return <DashboardSkeleton />;
-  if (error)   return <ErrorState onRetry={load} />;
-  if (!data)   return null;
+  /* ── ALL hooks must be called before any early return ─────────── */
+  const animTotalOrders      = useCount(data?.summary.total_orders            ?? 0);
+  const animTotalProducts    = useCount(data?.summary.total_products          ?? 0);
+  const animPendingOrders    = useCount(data?.summary.pending_orders          ?? 0);
+  const animActiveProducts   = useCount(data?.summary.active_products         ?? 0);
+  const animPendingApprovals = useCount(data?.summary.pending_product_approvals ?? 0);
+
+  /* ── theme vars ─────────────────────────────────────────────────── */
+  const cardBg    = dark ? '#161b27' : '#ffffff';
+  const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const textMain  = dark ? '#fff'  : '#111';
+  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+
+  /* ── early returns AFTER all hooks ──────────────────────────────── */
+  if (loading) return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <style>{`@keyframes shimmer{0%{opacity:0.4}50%{opacity:0.8}100%{opacity:0.4}}`}</style>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+        {[...Array(4)].map((_, i) => <Skeleton key={i} dark={dark} style={{ height: 120 }} />)}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+        <Skeleton dark={dark} style={{ height: 320 }} />
+        <Skeleton dark={dark} style={{ height: 320 }} />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Skeleton dark={dark} style={{ height: 220 }} />
+        <Skeleton dark={dark} style={{ height: 220 }} />
+      </div>
+    </div>
+  );
+
+  if (error) return <ErrorState onRetry={load} dark={dark} />;
+  if (!data)  return null;
 
   const { summary, charts, order_status_distribution, top_clients, top_wilayas, recent_orders } = data;
-  const maxWilayaRevenue = Math.max(...top_wilayas.map((w) => w.revenue), 1);
+  const maxWilaya   = Math.max(...top_wilayas.map(w => w.revenue), 1);
+  const totalOrders = Object.values(order_status_distribution).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="space-y-5">
+    <>
+      <style>{`
+        @keyframes fadeUp {
+          from { opacity:0; transform:translateY(16px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+        @keyframes shimmer { 0%{opacity:0.4} 50%{opacity:0.8} 100%{opacity:0.4} }
 
-      {/* ── Page header ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-extrabold text-slate-900">Dashboard</h1>
-          <p className="text-xs text-slate-400 mt-0.5 font-medium">
-            Overview of your store performance
-          </p>
-        </div>
-        <span className="hidden sm:block text-[11px] font-bold bg-blue-50 border border-blue-100 text-blue-600 px-3 py-1.5 rounded-full">
-          Seller ID: 1
-        </span>
-      </div>
+        .fade-up { opacity:0; }
+        .fade-up.show { animation: fadeUp 0.45s ease forwards; }
+        .fade-up:nth-child(1){animation-delay:0.04s}
+        .fade-up:nth-child(2){animation-delay:0.10s}
+        .fade-up:nth-child(3){animation-delay:0.16s}
+        .fade-up:nth-child(4){animation-delay:0.22s}
+        .fade-up:nth-child(5){animation-delay:0.28s}
+        .fade-up:nth-child(6){animation-delay:0.34s}
+        .fade-up:nth-child(7){animation-delay:0.40s}
 
-      {/* ── KPIs ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Revenue"
-          value={fmt(summary.total_revenue)}
-          subtitle="Completed & paid orders"
-          change={summary.revenue_growth}
-          icon={DollarSign}
-          iconClassName="text-blue-500"
-        />
-        <StatCard
-          title="Total Orders"
-          value={summary.total_orders.toLocaleString()}
-          subtitle={`${summary.pending_orders} pending`}
-          icon={ShoppingBag}
-          iconClassName="text-violet-500"
-        />
-        <StatCard
-          title="Products"
-          value={summary.total_products}
-          subtitle={`${summary.active_products} active · ${summary.pending_product_approvals} pending`}
-          icon={Package}
-          iconClassName="text-emerald-500"
-        />
-        <StatCard
-          title="This Month"
-          value={fmt(summary.revenue_this_month)}
-          subtitle={`Last: ${fmt(summary.revenue_last_month)}`}
-          icon={TrendingUp}
-          iconClassName="text-orange-500"
-        />
-      </div>
+        tr.order-row:hover td { background:${dark ? 'rgba(255,255,255,0.03)' : '#f9fafb'} !important; }
+        .client-row:hover     { background:${dark ? 'rgba(255,255,255,0.03)' : '#fafafa'} !important; }
+      `}</style>
 
-      {/* ── Chart + Top Wilayas ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* Revenue chart */}
-        <div className="lg:col-span-2">
-          <RevenueChart data={charts.monthly_revenue} />
+        {/* ── Header ── */}
+        <div className={`fade-up ${visible ? 'show' : ''}`}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.02em' }}>
+              Dashboard
+            </h1>
+            <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>
+              Overview of your store performance
+            </p>
+          </div>
+          <span style={{
+            fontSize: 11, fontWeight: 800,
+            background: 'rgba(219,20,46,0.12)', color: '#db142e',
+            border: '1px solid rgba(219,20,46,0.25)',
+            padding: '5px 14px', borderRadius: 999,
+          }}>
+            🟢 Live
+          </span>
         </div>
 
-        {/* Top Wilayas */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center">
-              <MapPin size={15} className="text-orange-500" />
+        {/* ── KPI Cards ── */}
+        <div className={`fade-up ${visible ? 'show' : ''}`}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+
+          {/* value={fmt(...)} → plain string ✓ */}
+          <KpiCard dark={dark} title="Total Revenue" icon={DollarSign} accent="#db142e"
+            value={fmt(summary.total_revenue)}
+            subtitle="Completed & paid"
+            change={summary.revenue_growth} />
+
+          {/* value={animTotalOrders} → string from hook ✓ */}
+          <KpiCard dark={dark} title="Total Orders" icon={ShoppingBag} accent="#3b82f6"
+            value={animTotalOrders}
+            subtitle={`${summary.pending_orders} pending`} />
+
+          <KpiCard dark={dark} title="Products" icon={Package} accent="#198f41"
+            value={animTotalProducts}
+            subtitle={`${summary.active_products} active`} />
+
+          <KpiCard dark={dark} title="This Month" icon={TrendingUp} accent="#f59e0b"
+            value={fmt(summary.revenue_this_month)}
+            subtitle={`Last: ${fmt(summary.revenue_last_month)}`} />
+        </div>
+
+        {/* ── Secondary KPIs ── */}
+        <div className={`fade-up ${visible ? 'show' : ''}`}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+          {[
+            { label: 'Pending Orders',    val: animPendingOrders,    accent: '#f59e0b', icon: Clock       },
+            { label: 'Active Products',   val: animActiveProducts,   accent: '#198f41', icon: Package     },
+            { label: 'Pending Approvals', val: animPendingApprovals, accent: '#db142e', icon: AlertCircle },
+          ].map(({ label, val, accent, icon: Icon }) => (
+            <div key={label} style={{
+              background: cardBg, borderRadius: 16, border: `1px solid ${border}`,
+              padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14,
+            }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 12,
+                background: `${accent}1a`, border: `1px solid ${accent}33`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: accent, flexShrink: 0,
+              }}>
+                <Icon size={18} />
+              </div>
+              <div>
+                {/* val is already a plain string from useCount() hook */}
+                <p style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', lineHeight: 1 }}>
+                  {val}
+                </p>
+                <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 600 }}>{label}</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-sm">Top Wilayas</h3>
-              <p className="text-[10px] text-slate-400 font-medium">By revenue</p>
-            </div>
+          ))}
+        </div>
+
+        {/* ── Revenue Chart + Top Wilayas ── */}
+        <div className={`fade-up ${visible ? 'show' : ''}`}
+          style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+
+          {/* Chart */}
+          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+            <RevenueChart data={charts.monthly_revenue} />
           </div>
 
-          {top_wilayas.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-8">No data yet</p>
-          ) : (
-            <div className="space-y-4">
-              {top_wilayas.map((w, i) => (
-                <div key={w.wilaya}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                      <span className="text-slate-300 text-[10px] font-bold w-4">{i + 1}.</span>
-                      {w.wilaya}
+          {/* Top Wilayas */}
+          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'rgba(219,20,46,0.12)', border: '1px solid rgba(219,20,46,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#db142e',
+              }}>
+                <MapPin size={16} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Top Wilayas</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0, fontWeight: 500 }}>By revenue</p>
+              </div>
+            </div>
+
+            {top_wilayas.length === 0
+              ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '24px 0' }}>No data yet</p>
+              : top_wilayas.map((w, i) => (
+                <div key={w.wilaya} style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: textMain, display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <span style={{ color: textMuted, fontSize: 10 }}>{i + 1}.</span>{w.wilaya}
                     </span>
-                    <span className="text-[11px] font-bold text-slate-500">
-                      {fmt(w.revenue)}
-                    </span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>{fmt(w.revenue)}</span>
                   </div>
-                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-700"
-                      style={{ width: `${(w.revenue / maxWilayaRevenue) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Top Clients + Order Status ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-        {/* Top Clients */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
-              <Award size={15} className="text-blue-500" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-sm">Top Clients</h3>
-              <p className="text-[10px] text-slate-400 font-medium">By lifetime revenue</p>
-            </div>
-          </div>
-
-          <div className="divide-y divide-slate-50">
-            {top_clients.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-8">No data yet</p>
-            ) : (
-              top_clients.map((client, i) => (
-                <div key={client.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50/60 transition">
-                  <span className={`
-                    w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-extrabold flex-shrink-0
-                    ${i === 0 ? 'bg-amber-100 text-amber-700' :
-                      i === 1 ? 'bg-slate-200 text-slate-600' :
-                      i === 2 ? 'bg-orange-100 text-orange-600' :
-                               'bg-slate-100 text-slate-400'}
-                  `}>
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-900 truncate">{client.name}</p>
-                    <p className="text-[11px] text-slate-400 truncate">{client.email}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-extrabold text-blue-600">{fmt(client.total_revenue)}</p>
-                    <p className="text-[10px] text-slate-400">{client.total_orders} orders</p>
+                  <div style={{ height: 5, background: dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%', borderRadius: 999,
+                      background: 'linear-gradient(90deg,#db142e,#ff4d6a)',
+                      width: `${(w.revenue / maxWilaya) * 100}%`,
+                      transition: 'width 0.8s ease',
+                    }} />
                   </div>
                 </div>
               ))
-            )}
+            }
           </div>
         </div>
 
-        {/* Order Status Distribution */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-            <div className="w-8 h-8 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center">
-              <ShoppingBag size={15} className="text-violet-500" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-sm">Order Status</h3>
-              <p className="text-[10px] text-slate-400 font-medium">Distribution across all orders</p>
-            </div>
-          </div>
+        {/* ── Top Clients + Order Status ── */}
+        <div className={`fade-up ${visible ? 'show' : ''}`}
+          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
 
-          <div className="px-5 py-4 space-y-3">
-            {Object.entries(order_status_distribution).length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-8">No orders yet</p>
-            ) : (
-              Object.entries(order_status_distribution).map(([status, count]) => {
-                const total = Object.values(order_status_distribution).reduce((a, b) => a + b, 0);
-                const pct   = total > 0 ? Math.round((count / total) * 100) : 0;
-                return (
-                  <div key={status}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="flex items-center gap-2 text-xs font-semibold text-slate-700 capitalize">
-                        <span className={`w-2 h-2 rounded-full ${STATUS_COLORS[status] ?? 'bg-slate-400'}`} />
-                        {status}
-                      </span>
-                      <span className="text-[11px] font-bold text-slate-500">{count} ({pct}%)</span>
-                    </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-700 ${STATUS_COLORS[status] ?? 'bg-slate-400'}`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
+          {/* Top Clients */}
+          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6',
+              }}>
+                <Award size={16} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Top Clients</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>By lifetime revenue</p>
+              </div>
+            </div>
+
+            {top_clients.length === 0
+              ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '28px 0' }}>No data yet</p>
+              : top_clients.map((c, i) => (
+                <div key={c.id} className="client-row" style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '12px 20px', borderBottom: `1px solid ${border}`,
+                  transition: 'background 0.15s ease',
+                }}>
+                  <span style={{
+                    width: 24, height: 24, borderRadius: '50%',
+                    background: i === 0 ? 'rgba(245,158,11,0.2)' : i === 1 ? 'rgba(148,163,184,0.2)' : i === 2 ? 'rgba(249,115,22,0.2)' : 'rgba(100,116,139,0.12)',
+                    color:      i === 0 ? '#f59e0b'               : i === 1 ? '#94a3b8'                : i === 2 ? '#f97316'               : '#64748b',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 10, fontWeight: 800, flexShrink: 0,
+                  }}>
+                    {i + 1}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 12, fontWeight: 800, color: textMain, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</p>
+                    <p style={{ fontSize: 10, color: textMuted, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.email}</p>
                   </div>
-                );
-              })
-            )}
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <p style={{ fontSize: 12, fontWeight: 900, color: '#db142e', margin: 0 }}>{fmt(c.total_revenue)}</p>
+                    <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{c.total_orders} orders</p>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+
+          {/* Order Status */}
+          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'rgba(25,143,65,0.12)', border: '1px solid rgba(25,143,65,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#198f41',
+              }}>
+                <ShoppingBag size={16} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Order Status</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>Distribution</p>
+              </div>
+            </div>
+            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {Object.entries(order_status_distribution).length === 0
+                ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '24px 0' }}>No orders yet</p>
+                : Object.entries(order_status_distribution).map(([status, count]) => {
+                  const pct   = totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0;
+                  const color = STATUS_COLORS[status] ?? '#94a3b8';
+                  return (
+                    <div key={status}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: textMain, textTransform: 'capitalize' }}>
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }} />
+                          {status}
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>{count} ({pct}%)</span>
+                      </div>
+                      <div style={{ height: 5, background: dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%', borderRadius: 999,
+                          background: color, width: `${pct}%`,
+                          transition: 'width 0.8s ease',
+                        }} />
+                      </div>
+                    </div>
+                  );
+                })
+              }
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* ── Recent Orders ── */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center">
-              <Clock size={15} className="text-slate-500" />
+        {/* ── Recent Orders ── */}
+        <div className={`fade-up ${visible ? 'show' : ''}`}
+          style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'rgba(255,255,255,0.06)', border: `1px solid ${border}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: textMuted,
+              }}>
+                <Clock size={16} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Recent Orders</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>Latest 5 orders with your products</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-sm">Recent Orders</h3>
-              <p className="text-[10px] text-slate-400 font-medium">Latest 5 orders containing your products</p>
-            </div>
+            <a href="/seller/orders" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none',
+            }}>
+              View all <ArrowUpRight size={12} />
+            </a>
           </div>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
-                <th className="px-5 py-3 text-left font-bold">Order</th>
-                <th className="px-5 py-3 text-left font-bold">Customer</th>
-                <th className="px-5 py-3 text-center font-bold">Status</th>
-                <th className="px-5 py-3 text-right font-bold">Amount</th>
-                <th className="px-5 py-3 text-left font-bold">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {recent_orders.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-slate-400 text-sm">
-                    No recent orders
-                  </td>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: dark ? 'rgba(255,255,255,0.03)' : '#f9fafb' }}>
+                  {['Order', 'Customer', 'Status', 'Amount', 'Date'].map((h, i) => (
+                    <th key={h} style={{
+                      padding: '10px 20px',
+                      textAlign: i === 2 ? 'center' : i === 3 ? 'right' : 'left',
+                      fontSize: 10, fontWeight: 800,
+                      textTransform: 'uppercase', letterSpacing: '0.08em',
+                      color: textMuted,
+                    }}>{h}</th>
+                  ))}
                 </tr>
-              ) : (
-                recent_orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <span className="font-mono font-bold text-slate-700 text-xs bg-slate-100 px-2 py-0.5 rounded-lg">
-                        {order.order_number}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-600 text-xs font-medium">
-                      {order.user?.name ?? `User #${order.user_id}`}
-                    </td>
-                    <td className="px-5 py-3.5 text-center">
-                      <span className={`
-                        inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full capitalize
-                        ${order.status === 'completed' || order.status === 'delivered'
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : order.status === 'pending'
-                          ? 'bg-amber-50 text-amber-700'
-                          : order.status === 'cancelled'
-                          ? 'bg-red-50 text-red-600'
-                          : 'bg-blue-50 text-blue-700'}
-                      `}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${STATUS_COLORS[order.status] ?? 'bg-slate-400'}`} />
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-right font-extrabold text-slate-900 text-xs">
-                      {fmt(order.total_amount)}
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-400 text-xs">
-                      {new Date(order.created_at).toLocaleDateString('fr-TN')}
+              </thead>
+              <tbody>
+                {recent_orders.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '32px 20px', textAlign: 'center', color: textMuted, fontSize: 13 }}>
+                      No recent orders
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : recent_orders.map(order => {
+                  const sc = STATUS_COLORS[order.status] ?? '#94a3b8';
+                  return (
+                    <tr key={order.id} className="order-row"
+                      style={{ borderBottom: `1px solid ${border}`, transition: 'background 0.15s' }}>
+                      <td style={{ padding: '12px 20px' }}>
+                        <span style={{
+                          fontFamily: 'monospace', fontWeight: 800, fontSize: 11,
+                          background: dark ? 'rgba(255,255,255,0.07)' : '#f1f5f9',
+                          color: textMain, padding: '3px 8px', borderRadius: 6,
+                        }}>
+                          {order.order_number}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 20px', color: textMain, fontWeight: 600 }}>
+                        {order.user?.name ?? `User #${order.user_id}`}
+                      </td>
+                      <td style={{ padding: '12px 20px', textAlign: 'center' }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 999,
+                          background: `${sc}18`, color: sc,
+                          border: `1px solid ${sc}33`, textTransform: 'capitalize',
+                        }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc }} />
+                          {order.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 900, color: textMain }}>
+                        {fmt(order.total_amount)}
+                      </td>
+                      <td style={{ padding: '12px 20px', color: textMuted, fontWeight: 500 }}>
+                        {new Date(order.created_at).toLocaleDateString('fr-TN')}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-    </div>
+      </div>
+    </>
   );
 }

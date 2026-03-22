@@ -1,77 +1,155 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
-import { Menu, Search, Bell, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Menu, Bell, Sun, Moon } from 'lucide-react';
+import { getUser, AuthUser } from '@/lib/auth';
+import { useTheme } from '../layout';
 
-const BREADCRUMB: Record<string, string> = {
-  '/seller':          'Dashboard',
-  '/seller/products': 'Products',
-  '/seller/orders':   'Orders',
-};
-
-interface TopbarProps {
-  onMobileMenuOpen: () => void;
+const AVATAR_COLORS = [
+  ['#fde68a','#92400e'],['#bfdbfe','#1e40af'],['#bbf7d0','#14532d'],
+  ['#fecaca','#991b1b'],['#e9d5ff','#4c1d95'],['#fed7aa','#7c2d12'],
+];
+function avatarMeta(name: string) {
+  const p = name.trim().split(/\s+/);
+  const initials = p.length >= 2 ? (p[0][0]+p[1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+  let h = 0; for (let i=0;i<name.length;i++) h = name.charCodeAt(i)+((h<<5)-h);
+  const [bg,fg] = AVATAR_COLORS[Math.abs(h)%AVATAR_COLORS.length];
+  return { initials, bg, fg };
 }
+function fixGoogle(url: string) { return url.replace(/=s\d+-?c?$/,'=s200-c'); }
 
-export default function Topbar({ onMobileMenuOpen }: TopbarProps) {
-  const pathname = usePathname();
-  const currentPage = BREADCRUMB[pathname] ?? 'Seller';
+export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => void }) {
+  const { dark, toggle } = useTheme();
+  const [user, setUser]  = useState<AuthUser | null>(null);
+  const [imgErr, setImgErr] = useState(false);
+
+  useEffect(() => { setUser(getUser()); }, []);
+
+  const bg        = dark ? '#161b27' : '#ffffff';
+  const border    = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
+  const textMain  = dark ? '#fff' : '#111';
+  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+
+  const today = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  const { initials, bg: aBg, fg: aFg } = user ? avatarMeta(user.name) : { initials:'?', bg:'#eee', fg:'#999' };
+  const avatarSrc = user?.avatar && !imgErr ? fixGoogle(user.avatar) : null;
 
   return (
-    <header className="sticky top-0 z-20 h-16 flex items-center gap-4 px-4 lg:px-6 bg-white/90 backdrop-blur-md border-b border-slate-100">
+    <header style={{
+      height: 64,
+      background: bg,
+      borderBottom: `1px solid ${border}`,
+      display: 'flex', alignItems: 'center',
+      padding: '0 20px', gap: 12,
+      position: 'sticky', top: 0, zIndex: 20,
+      transition: 'background 0.3s ease',
+    }}>
       {/* Mobile hamburger */}
       <button
         onClick={onMobileMenuOpen}
-        className="lg:hidden p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition"
+        className="lg:hidden"
+        style={{ background:'transparent', border:'none', cursor:'pointer', color: textMuted, padding: 4 }}
       >
         <Menu size={20} />
       </button>
 
-      {/* Breadcrumb */}
-      <div className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-400">
-        <span>Seller</span>
-        <ChevronRight size={12} />
-        <span className="text-slate-700">{currentPage}</span>
+      {/* Page title + date */}
+      <div style={{ flex: 1 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 800, color: textMain, margin: 0, lineHeight: 1.2 }}>
+          Dashboard
+        </h2>
+        <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>{today}</p>
       </div>
 
-      {/* Search */}
-      <div className="flex-1 max-w-sm relative hidden md:block">
-        <Search
-          size={14}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-        />
-        <input
-          type="text"
-          placeholder="Search orders, products…"
-          className="
-            w-full bg-slate-50 border border-slate-200
-            rounded-xl pl-9 pr-4 py-2 text-sm text-slate-700
-            placeholder:text-slate-400
-            focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400
-            focus:bg-white transition-all duration-150
-          "
-        />
-      </div>
+      {/* Right side */}
+      <div style={{ display:'flex', alignItems:'center', gap: 8 }}>
 
-      {/* Right actions */}
-      <div className="flex items-center gap-2.5 ml-auto">
-        {/* Store status pill */}
-        <div className="hidden sm:flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wide">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          Store Live
-        </div>
-
-        {/* Notifications */}
-        <button className="relative p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition">
-          <Bell size={17} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+        {/* Dark/Light toggle */}
+        <button
+          onClick={toggle}
+          title={dark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          style={{
+            width: 38, height: 38,
+            borderRadius: 10,
+            background: dark ? 'rgba(255,255,255,0.07)' : '#f0f2f5',
+            border: `1px solid ${border}`,
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: dark ? '#f59e0b' : '#6366f1',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          {dark ? <Sun size={16} /> : <Moon size={16} />}
         </button>
 
-        {/* Avatar */}
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-sm font-extrabold shadow cursor-pointer select-none">
-          S
+        {/* Notifications */}
+        <button style={{
+          width: 38, height: 38, borderRadius: 10,
+          background: dark ? 'rgba(255,255,255,0.07)' : '#f0f2f5',
+          border: `1px solid ${border}`,
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: textMuted, position: 'relative',
+          transition: 'all 0.2s ease',
+        }}>
+          <Bell size={16} />
+          <span style={{
+            position:'absolute', top: 6, right: 6,
+            width: 8, height: 8, borderRadius:'50%',
+            background: '#db142e',
+            border: `2px solid ${bg}`,
+          }} />
+        </button>
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 28, background: border }} />
+
+        {/* User pill */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '6px 12px 6px 6px',
+          borderRadius: 12,
+          background: dark ? 'rgba(255,255,255,0.05)' : '#f0f2f5',
+          border: `1px solid ${border}`,
+          cursor: 'pointer',
+        }}>
+          {avatarSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatarSrc} alt={user?.name} referrerPolicy="no-referrer" onError={() => setImgErr(true)}
+              style={{ width:32, height:32, borderRadius:'50%', objectFit:'cover', flexShrink:0 }} />
+          ) : (
+            <span style={{
+              width:32, height:32, borderRadius:'50%',
+              background: aBg, color: aFg,
+              display:'flex', alignItems:'center', justifyContent:'center',
+              fontSize:11, fontWeight:800, flexShrink:0,
+            }}>{initials}</span>
+          )}
+          <div style={{ lineHeight: 1.3 }}>
+            <p style={{ fontSize:12, fontWeight:800, color:textMain, margin:0 }}>
+              {user?.name?.split(' ')[0] ?? 'Seller'}
+            </p>
+            <p style={{ fontSize:10, fontWeight:600, color:'#198f41', margin:0, textTransform:'uppercase', letterSpacing:'0.05em' }}>
+              {user?.role ?? 'seller'}
+            </p>
+          </div>
+          {/* online dot */}
+          <span style={{
+            width:8, height:8, borderRadius:'50%',
+            background:'#198f41',
+            boxShadow:'0 0 0 2px rgba(25,143,65,0.3)',
+            animation:'pulse-green 2s infinite',
+          }} />
         </div>
       </div>
+
+      <style>{`
+        @keyframes pulse-green {
+          0%,100% { box-shadow: 0 0 0 2px rgba(25,143,65,0.3); }
+          50%      { box-shadow: 0 0 0 5px rgba(25,143,65,0.1); }
+        }
+      `}</style>
     </header>
   );
 }

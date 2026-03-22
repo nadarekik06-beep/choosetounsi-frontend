@@ -2,418 +2,368 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { ordersApi } from '@/lib/sellerApi';
-import type {
-  Order, OrderDetail, OrderStatus, PaginatedResponse,
-} from '@/types/seller';
+import type { Order, OrderDetail, PaginatedResponse } from '@/types/seller';
 import {
-  Search, Eye, ChevronLeft, ChevronRight,
-  X, Loader2, ShoppingBag, AlertCircle,
-  User, MapPin, Package, Hash, Calendar,
-  RefreshCw, CheckCircle, XCircle, Clock,
+  Search, Eye, ChevronLeft, ChevronRight, X, Loader2,
+  ShoppingBag, AlertCircle, User, MapPin, Package,
+  Hash, Calendar, RefreshCw, CheckCircle, XCircle, Clock,
 } from 'lucide-react';
+import { useTheme } from '../layout';
 
-// ─── Status helpers ───────────────────────────────────────────────────────────
-
-type StatusConfig = { label: string; bg: string; text: string; icon: React.ElementType };
-
-const STATUS: Record<string, StatusConfig> = {
-  pending:    { label: 'Pending',    bg: 'bg-amber-50',   text: 'text-amber-700',  icon: Clock        },
-  processing: { label: 'Processing', bg: 'bg-blue-50',    text: 'text-blue-700',   icon: RefreshCw    },
-  completed:  { label: 'Completed',  bg: 'bg-emerald-50', text: 'text-emerald-700',icon: CheckCircle  },
-  delivered:  { label: 'Delivered',  bg: 'bg-teal-50',    text: 'text-teal-700',   icon: CheckCircle  },
-  cancelled:  { label: 'Cancelled',  bg: 'bg-red-50',     text: 'text-red-600',    icon: XCircle      },
-  refunded:   { label: 'Refunded',   bg: 'bg-purple-50',  text: 'text-purple-700', icon: RefreshCw    },
+/* ── status config ── */
+const STATUS_COLORS: Record<string, string> = {
+  pending:    '#f59e0b',
+  processing: '#3b82f6',
+  completed:  '#10b981',
+  delivered:  '#14b8a6',
+  cancelled:  '#ef4444',
+  refunded:   '#a855f7',
 };
 
-function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS[status] ?? STATUS.pending;
-  const Icon = cfg.icon;
+function StatusBadge({ status, dark }: { status: string; dark: boolean }) {
+  const color = STATUS_COLORS[status] ?? '#94a3b8';
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${cfg.bg} ${cfg.text}`}>
-      <Icon size={9} />
-      {cfg.label}
+    <span style={{
+      display:'inline-flex', alignItems:'center', gap:5,
+      fontSize:10, fontWeight:800, padding:'3px 9px', borderRadius:999,
+      background:`${color}18`, color, border:`1px solid ${color}30`,
+      textTransform:'capitalize',
+    }}>
+      <span style={{ width:6, height:6, borderRadius:'50%', background:color }}/>
+      {status}
     </span>
   );
 }
 
-const PAYMENT_STYLE: Record<string, string> = {
-  paid:     'bg-emerald-50 text-emerald-700',
-  unpaid:   'bg-amber-50 text-amber-700',
-  refunded: 'bg-purple-50 text-purple-700',
-};
+const PAYMENT_COLORS: Record<string,string> = { paid:'#10b981', unpaid:'#f59e0b', refunded:'#a855f7' };
 
-// ─── Order Detail Modal ───────────────────────────────────────────────────────
-
-interface DetailModalProps {
-  orderId: number;
-  onClose: () => void;
-  onUpdated: () => void;
+function PaymentBadge({ status }: { status: string }) {
+  const color = PAYMENT_COLORS[status] ?? '#94a3b8';
+  return (
+    <span style={{
+      display:'inline-flex', fontSize:10, fontWeight:800,
+      padding:'3px 9px', borderRadius:999, textTransform:'capitalize',
+      background:`${color}18`, color, border:`1px solid ${color}30`,
+    }}>{status}</span>
+  );
 }
 
-function OrderDetailModal({ orderId, onClose, onUpdated }: DetailModalProps) {
-  const [detail,    setDetail]    = useState<OrderDetail | null>(null);
-  const [loading,   setLoading]   = useState(true);
-  const [newStatus, setNewStatus] = useState<string>('');
-  const [updating,  setUpdating]  = useState(false);
-  const [error,     setError]     = useState('');
+/* ── Order Detail Modal ── */
+function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
+  orderId: number; onClose:()=>void; onUpdated:()=>void; dark:boolean;
+}) {
+  const [detail,   setDetail]   = useState<OrderDetail | null>(null);
+  const [loading,  setLoading]  = useState(true);
+  const [newStatus,setNewStatus]= useState('');
+  const [updating, setUpdating] = useState(false);
+  const [error,    setError]    = useState('');
+
+  const bg      = dark ? '#161b27' : '#ffffff';
+  const bgSub   = dark ? '#1e2535' : '#f8fafc';
+  const border  = dark ? 'rgba(255,255,255,0.08)' : '#e2e8f0';
+  const textMain = dark ? '#fff' : '#0f172a';
+  const textMuted= dark ? 'rgba(255,255,255,0.4)' : '#64748b';
 
   useEffect(() => {
     ordersApi.getOne(orderId)
-      .then((res) => setDetail(res.data))
-      .catch(() => setError('Failed to load order details.'))
-      .finally(() => setLoading(false));
+      .then(res => setDetail(res.data))
+      .catch(()  => setError('Failed to load order details.'))
+      .finally(()=> setLoading(false));
   }, [orderId]);
 
-  const handleUpdateStatus = async () => {
+  const handleUpdate = async () => {
     if (!newStatus) return;
     setUpdating(true);
-    try {
-      await ordersApi.updateStatus(orderId, newStatus);
-      onUpdated();
-      onClose();
-    } catch {
-      setError('Failed to update status. Try again.');
-    } finally {
-      setUpdating(false);
-    }
+    try { await ordersApi.updateStatus(orderId, newStatus); onUpdated(); onClose(); }
+    catch { setError('Failed to update status.'); }
+    finally { setUpdating(false); }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
-
-        {/* Modal header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
-          <h2 className="font-extrabold text-slate-900">Order Details</h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-          >
-            <X size={16} />
+    <div style={{
+      position:'fixed', inset:0,
+      background:'rgba(0,0,0,0.65)', backdropFilter:'blur(4px)',
+      zIndex:50, display:'flex', alignItems:'center', justifyContent:'center', padding:16,
+    }}>
+      <div style={{
+        background:bg, borderRadius:20, width:'100%', maxWidth:680,
+        maxHeight:'92vh', display:'flex', flexDirection:'column',
+        boxShadow:'0 24px 64px rgba(0,0,0,0.4)',
+        border:`1px solid ${border}`,
+      }}>
+        {/* header */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 24px', borderBottom:`1px solid ${border}` }}>
+          <h2 style={{ fontSize:15, fontWeight:800, color:textMain, margin:0 }}>Order Details</h2>
+          <button onClick={onClose} style={{ background:'transparent', border:'none', cursor:'pointer', color:textMuted, padding:6, borderRadius:10 }}>
+            <X size={16}/>
           </button>
         </div>
 
-        {/* Modal body */}
-        <div className="overflow-y-auto flex-1 p-6">
+        <div style={{ overflowY:'auto', flex:1, padding:24 }}>
           {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 size={24} className="animate-spin text-blue-400" />
+            <div style={{ display:'flex', justifyContent:'center', padding:'48px 0' }}>
+              <Loader2 size={24} style={{ animation:'spin 0.8s linear infinite', color:'#3b82f6' }}/>
             </div>
           ) : error ? (
-            <div className="flex items-center gap-2.5 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-600">
-              <AlertCircle size={15} />
-              {error}
+            <div style={{ display:'flex', alignItems:'center', gap:8, background:'rgba(219,20,46,0.1)', border:'1px solid rgba(219,20,46,0.2)', borderRadius:12, padding:'12px 16px', color:'#db142e', fontSize:13 }}>
+              <AlertCircle size={15}/>{error}
             </div>
           ) : detail ? (
-            <div className="space-y-5">
-
-              {/* Meta grid */}
-              <div className="grid grid-cols-2 gap-3">
+            <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+              {/* meta grid */}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
                 {[
-                  { icon: Hash,     label: 'Order Number', value: detail.order.order_number },
-                  { icon: Calendar, label: 'Date',         value: new Date(detail.order.created_at).toLocaleDateString('fr-TN') },
-                  { icon: User,     label: 'Customer',     value: detail.order.customer?.name, sub: detail.order.customer?.email },
-                  { icon: MapPin,   label: 'Wilaya',       value: detail.order.wilaya ?? detail.order.customer?.state ?? '—' },
-                ].map(({ icon: Icon, label, value, sub }) => (
-                  <div key={label} className="bg-slate-50 rounded-xl p-3.5 border border-slate-100">
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
-                      <Icon size={10} /> {label}
+                  { icon:Hash,     label:'Order Number', value:detail.order.order_number },
+                  { icon:Calendar, label:'Date',         value:new Date(detail.order.created_at).toLocaleDateString('fr-TN') },
+                  { icon:User,     label:'Customer',     value:detail.order.customer?.name, sub:detail.order.customer?.email },
+                  { icon:MapPin,   label:'Wilaya',       value:detail.order.wilaya ?? detail.order.customer?.state ?? '—' },
+                ].map(({ icon:Icon, label, value, sub }) => (
+                  <div key={label} style={{ background:bgSub, borderRadius:12, padding:'12px 14px', border:`1px solid ${border}` }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:9, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.1em', color:textMuted, marginBottom:6 }}>
+                      <Icon size={9}/>{label}
                     </div>
-                    <p className="font-bold text-slate-900 text-sm truncate">{value}</p>
-                    {sub && <p className="text-xs text-slate-400 truncate">{sub}</p>}
+                    <p style={{ fontWeight:800, color:textMain, fontSize:13, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{value}</p>
+                    {sub && <p style={{ fontSize:11, color:textMuted, margin:'2px 0 0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{sub}</p>}
                   </div>
                 ))}
               </div>
 
-              {/* Status row */}
-              <div className="flex items-center gap-4 flex-wrap">
+              {/* status + payment */}
+              <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Order Status</p>
-                  <StatusBadge status={detail.order.status} />
+                  <p style={{ fontSize:9, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.1em', color:textMuted, marginBottom:6 }}>Order Status</p>
+                  <StatusBadge status={detail.order.status} dark={dark}/>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Payment</p>
-                  <span className={`inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full capitalize
-                    ${PAYMENT_STYLE[detail.order.payment_status] ?? 'bg-slate-50 text-slate-500'}`}
-                  >
-                    {detail.order.payment_status}
-                  </span>
+                  <p style={{ fontSize:9, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.1em', color:textMuted, marginBottom:6 }}>Payment</p>
+                  <PaymentBadge status={detail.order.payment_status}/>
                 </div>
               </div>
 
-              {/* Seller's items */}
+              {/* items table */}
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Package size={14} className="text-blue-500" />
-                  <h3 className="text-sm font-extrabold text-slate-900">Your Items in this Order</h3>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
+                  <Package size={14} color="#3b82f6"/>
+                  <h3 style={{ fontSize:13, fontWeight:800, color:textMain, margin:0 }}>Your Items</h3>
                 </div>
-                <div className="border border-slate-100 rounded-2xl overflow-hidden">
-                  <table className="w-full text-sm">
+                <div style={{ border:`1px solid ${border}`, borderRadius:14, overflow:'hidden' }}>
+                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
                     <thead>
-                      <tr className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
-                        <th className="px-4 py-2.5 text-left font-bold">Product</th>
-                        <th className="px-4 py-2.5 text-right font-bold">Qty</th>
-                        <th className="px-4 py-2.5 text-right font-bold">Unit</th>
-                        <th className="px-4 py-2.5 text-right font-bold">Total</th>
+                      <tr style={{ background:bgSub }}>
+                        {['Product','Qty','Unit','Total'].map((h,i) => (
+                          <th key={h} style={{ padding:'8px 14px', textAlign:i>0?'right':'left', fontSize:9, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.08em', color:textMuted }}>{h}</th>
+                        ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {detail.items.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-50/50">
-                          <td className="px-4 py-3 font-semibold text-slate-900 text-xs">{item.product_name}</td>
-                          <td className="px-4 py-3 text-right text-slate-600 text-xs">{item.quantity}</td>
-                          <td className="px-4 py-3 text-right text-slate-600 text-xs">{item.unit_price.toFixed(3)}</td>
-                          <td className="px-4 py-3 text-right font-extrabold text-blue-600 text-xs">
-                            {item.total.toFixed(3)} TND
-                          </td>
+                    <tbody>
+                      {detail.items.map(item => (
+                        <tr key={item.id} style={{ borderTop:`1px solid ${border}` }}>
+                          <td style={{ padding:'10px 14px', fontWeight:700, color:textMain, fontSize:12 }}>{item.product_name}</td>
+                          <td style={{ padding:'10px 14px', textAlign:'right', color:textMuted }}>{item.quantity}</td>
+                          <td style={{ padding:'10px 14px', textAlign:'right', color:textMuted }}>{item.unit_price.toFixed(3)}</td>
+                          <td style={{ padding:'10px 14px', textAlign:'right', fontWeight:800, color:'#3b82f6' }}>{item.total.toFixed(3)} TND</td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="bg-blue-50 border-t border-blue-100">
-                        <td colSpan={3} className="px-4 py-3 text-xs font-extrabold text-blue-900">
-                          Your Subtotal
-                        </td>
-                        <td className="px-4 py-3 text-right font-extrabold text-blue-700 text-sm">
-                          {detail.seller_subtotal.toFixed(3)} TND
-                        </td>
+                      <tr style={{ background:dark?'rgba(59,130,246,0.1)':'#eff6ff', borderTop:`1px solid ${border}` }}>
+                        <td colSpan={3} style={{ padding:'10px 14px', fontSize:12, fontWeight:800, color:dark?'#93c5fd':'#1e40af' }}>Your Subtotal</td>
+                        <td style={{ padding:'10px 14px', textAlign:'right', fontWeight:900, color:'#3b82f6', fontSize:13 }}>{detail.seller_subtotal.toFixed(3)} TND</td>
                       </tr>
                     </tfoot>
                   </table>
                 </div>
               </div>
 
-              {/* Update status */}
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                <p className="text-xs font-extrabold text-slate-700 uppercase tracking-widest mb-3">
-                  Update Order Status
-                </p>
-                {error && (
-                  <p className="text-xs text-red-500 mb-2">{error}</p>
-                )}
-                <div className="flex gap-2.5">
-                  <select
-                    value={newStatus}
-                    onChange={(e) => setNewStatus(e.target.value)}
-                    className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700
-                      focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 bg-white transition"
-                  >
+              {/* update status */}
+              <div style={{ background:bgSub, borderRadius:14, padding:16, border:`1px solid ${border}` }}>
+                <p style={{ fontSize:10, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.1em', color:textMuted, marginBottom:10 }}>Update Status</p>
+                {error && <p style={{ fontSize:11, color:'#ef4444', marginBottom:6 }}>{error}</p>}
+                <div style={{ display:'flex', gap:10 }}>
+                  <select value={newStatus} onChange={e=>setNewStatus(e.target.value)}
+                    style={{
+                      flex:1, border:`1px solid ${border}`, borderRadius:10,
+                      padding:'8px 12px', fontSize:13, fontWeight:600,
+                      background:dark?'#0d1117':'#fff', color:textMain,
+                      outline:'none',
+                    }}>
                     <option value="">Select new status…</option>
-                    <option value="pending">Pending</option>
-                    <option value="processing">Processing</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
+                    {['pending','processing','completed','cancelled'].map(s => (
+                      <option key={s} value={s} style={{ textTransform:'capitalize' }}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>
+                    ))}
                   </select>
-                  <button
-                    onClick={handleUpdateStatus}
-                    disabled={!newStatus || updating}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold
-                      hover:bg-blue-700 transition disabled:opacity-50
-                      flex items-center gap-2 shadow-lg shadow-blue-500/25"
-                  >
-                    {updating && <Loader2 size={13} className="animate-spin" />}
+                  <button onClick={handleUpdate} disabled={!newStatus||updating}
+                    style={{
+                      padding:'8px 18px', background:'linear-gradient(135deg,#3b82f6,#2563eb)',
+                      color:'#fff', fontWeight:700, fontSize:13, borderRadius:10,
+                      border:'none', cursor:'pointer',
+                      opacity:(!newStatus||updating)?0.5:1,
+                      display:'flex', alignItems:'center', gap:6,
+                    }}>
+                    {updating && <Loader2 size={13} style={{ animation:'spin 0.8s linear infinite' }}/>}
                     Update
                   </button>
                 </div>
               </div>
-
             </div>
           ) : null}
         </div>
       </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
+/* ═══════════════════════════════ PAGE ═══════════════════════════════ */
 export default function OrdersPage() {
-  const [data,           setData]           = useState<PaginatedResponse<Order> | null>(null);
-  const [loading,        setLoading]        = useState(true);
-  const [search,         setSearch]         = useState('');
-  const [filterStatus,   setFilterStatus]   = useState('');
-  const [filterPayment,  setFilterPayment]  = useState('');
-  const [page,           setPage]           = useState(1);
-  const [selectedId,     setSelectedId]     = useState<number | null>(null);
+  const { dark } = useTheme();
+  const [data,          setData]          = useState<PaginatedResponse<Order> | null>(null);
+  const [loading,       setLoading]       = useState(true);
+  const [search,        setSearch]        = useState('');
+  const [filterStatus,  setFilterStatus]  = useState('');
+  const [filterPayment, setFilterPayment] = useState('');
+  const [page,          setPage]          = useState(1);
+  const [selectedId,    setSelectedId]    = useState<number | null>(null);
 
-  const empty: PaginatedResponse<Order> = { data: [], current_page: 1, last_page: 1, per_page: 12, total: 0, from: 0, to: 0 };
+  const empty: PaginatedResponse<Order> = { data:[], current_page:1, last_page:1, per_page:12, total:0, from:0, to:0 };
 
-  const fetch = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await ordersApi.getAll({
-        page,
-        per_page: 12,
+        page, per_page:12,
         ...(search        && { search }),
-        ...(filterStatus  && { status: filterStatus }),
-        ...(filterPayment && { payment_status: filterPayment }),
+        ...(filterStatus  && { status:filterStatus }),
+        ...(filterPayment && { payment_status:filterPayment }),
       });
-      // res is ApiResponse<PaginatedResponse<Order>>
-      // res.data is the PaginatedResponse — safely unwrap
       const payload = (res as any)?.data ?? res;
       setData(Array.isArray(payload?.data) ? payload : empty);
-    } catch {
-      setData(empty);
-    } finally {
-      setLoading(false);
-    }
+    } catch { setData(empty); }
+    finally  { setLoading(false); }
   }, [page, search, filterStatus, filterPayment]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  /* theme vars */
+  const bg        = dark ? '#0D1117' : '#f0f2f5';
+  const cardBg    = dark ? '#161b27' : '#ffffff';
+  const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const textMain  = dark ? '#ffffff' : '#0f172a';
+  const textMuted = dark ? 'rgba(255,255,255,0.38)' : '#94a3b8';
+  const inputBg   = dark ? '#0d1117' : '#f8fafc';
+  const theadBg   = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
+  const rowHover  = dark ? 'rgba(255,255,255,0.03)' : '#f9fafb';
+
+  const inputStyle: React.CSSProperties = {
+    border:`1px solid ${border}`, borderRadius:10,
+    padding:'8px 12px', fontSize:13, fontWeight:500,
+    background:inputBg, color:textMain, outline:'none',
+    transition:'border 0.15s ease',
+  };
 
   return (
-    <div className="space-y-4">
+    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+      <style>{`
+        .order-row:hover td { background:${rowHover}!important; }
+        @keyframes spin{to{transform:rotate(360deg)}}
+      `}</style>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div>
-        <h1 className="text-xl font-extrabold text-slate-900">Orders</h1>
-        <p className="text-xs text-slate-400 font-medium">
-          Orders that contain your products
-        </p>
+        <h1 style={{ fontSize:20, fontWeight:900, color:textMain, margin:'0 0 2px', letterSpacing:'-0.02em' }}>Orders</h1>
+        <p style={{ fontSize:11, color:textMuted, margin:0, fontWeight:500 }}>Orders that contain your products</p>
       </div>
 
-      {/* ── Filters ── */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[180px]">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <input
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+      {/* Filters */}
+      <div style={{ background:cardBg, borderRadius:16, padding:16, border:`1px solid ${border}`, display:'flex', flexWrap:'wrap', gap:10, alignItems:'center' }}>
+        <div style={{ position:'relative', flex:1, minWidth:180 }}>
+          <Search size={13} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:textMuted, pointerEvents:'none' }}/>
+          <input value={search} onChange={e=>{ setSearch(e.target.value); setPage(1); }}
             placeholder="Search order number…"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-sm
-              focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 focus:bg-white transition"
-          />
+            style={{ ...inputStyle, width:'100%', paddingLeft:32 }}/>
         </div>
-
-        <select
-          value={filterStatus}
-          onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
-          className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600
-            focus:outline-none focus:ring-2 focus:ring-blue-500/25 bg-white"
-        >
+        <select value={filterStatus} onChange={e=>{ setFilterStatus(e.target.value); setPage(1); }}
+          style={inputStyle}>
           <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="processing">Processing</option>
-          <option value="completed">Completed</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
+          {['pending','processing','completed','delivered','cancelled'].map(s=>(
+            <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>
+          ))}
         </select>
-
-        <select
-          value={filterPayment}
-          onChange={(e) => { setFilterPayment(e.target.value); setPage(1); }}
-          className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600
-            focus:outline-none focus:ring-2 focus:ring-blue-500/25 bg-white"
-        >
+        <select value={filterPayment} onChange={e=>{ setFilterPayment(e.target.value); setPage(1); }}
+          style={inputStyle}>
           <option value="">All Payments</option>
-          <option value="unpaid">Unpaid</option>
-          <option value="paid">Paid</option>
-          <option value="refunded">Refunded</option>
+          {['unpaid','paid','refunded'].map(s=>(
+            <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>
+          ))}
         </select>
-
         {data && (
-          <span className="text-xs font-semibold text-slate-400 ml-auto">
-            {data.total} order{data.total !== 1 ? 's' : ''}
+          <span style={{ fontSize:11, fontWeight:700, color:textMuted, marginLeft:'auto' }}>
+            {data.total} order{data.total!==1?'s':''}
           </span>
         )}
       </div>
 
-      {/* ── Table ── */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      {/* Table */}
+      <div style={{ background:cardBg, borderRadius:18, border:`1px solid ${border}`, overflow:'hidden' }}>
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 size={24} className="animate-spin text-blue-400" />
+          <div style={{ display:'flex', justifyContent:'center', padding:'64px 0' }}>
+            <Loader2 size={24} style={{ animation:'spin 0.8s linear infinite', color:'#3b82f6' }}/>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div style={{ overflowX:'auto' }}>
+            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
               <thead>
-                <tr className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
-                  {['Order', 'Customer', 'Wilaya', 'Status', 'Payment', 'Amount', 'Date', ''].map((h) => (
-                    <th
-                      key={h}
-                      className={`px-5 py-3 font-bold ${h === 'Amount' ? 'text-right' : h === '' ? 'text-center' : 'text-left'}`}
-                    >
-                      {h}
-                    </th>
+                <tr style={{ background:theadBg }}>
+                  {['Order','Customer','Wilaya','Status','Payment','Amount','Date',''].map((h,i)=>(
+                    <th key={h+i} style={{
+                      padding:'10px 20px', fontSize:9, fontWeight:800,
+                      textTransform:'uppercase', letterSpacing:'0.1em', color:textMuted,
+                      textAlign: h==='Amount'?'right': h===''?'center':'left',
+                    }}>{h}</th>
                   ))}
                 </tr>
               </thead>
-
-              <tbody className="divide-y divide-slate-50">
-                {data?.data.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50/60 transition-colors">
-
-                    {/* Order number */}
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0">
-                          <ShoppingBag size={13} className="text-blue-500" />
+              <tbody>
+                {data?.data.map(order=>(
+                  <tr key={order.id} className="order-row" style={{ borderTop:`1px solid ${border}` }}>
+                    <td style={{ padding:'13px 20px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        <div style={{
+                          width:32, height:32, borderRadius:10,
+                          background:'rgba(59,130,246,0.12)', border:'1px solid rgba(59,130,246,0.2)',
+                          display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
+                        }}>
+                          <ShoppingBag size={13} color="#3b82f6"/>
                         </div>
-                        <span className="font-mono font-bold text-slate-800 text-xs bg-slate-100 px-2 py-0.5 rounded-lg">
+                        <span style={{ fontFamily:'monospace', fontWeight:800, fontSize:11, background:dark?'rgba(255,255,255,0.07)':'#f1f5f9', color:textMain, padding:'2px 7px', borderRadius:6 }}>
                           {order.order_number}
                         </span>
                       </div>
                     </td>
-
-                    {/* Customer */}
-                    <td className="px-5 py-3.5">
-                      <p className="font-semibold text-slate-900 text-xs">{order.user?.name ?? `User #${order.user_id}`}</p>
-                      <p className="text-[10px] text-slate-400">{order.user?.email}</p>
+                    <td style={{ padding:'13px 20px' }}>
+                      <p style={{ fontWeight:700, color:textMain, margin:'0 0 2px', fontSize:12 }}>{order.user?.name??`User #${order.user_id}`}</p>
+                      <p style={{ fontSize:10, color:textMuted, margin:0 }}>{order.user?.email}</p>
                     </td>
-
-                    {/* Wilaya */}
-                    <td className="px-5 py-3.5 text-xs font-medium text-slate-500">
-                      {order.wilaya ?? order.user?.state ?? '—'}
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-5 py-3.5">
-                      <StatusBadge status={order.status} />
-                    </td>
-
-                    {/* Payment */}
-                    <td className="px-5 py-3.5">
-                      <span className={`inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full capitalize
-                        ${PAYMENT_STYLE[order.payment_status] ?? 'bg-slate-50 text-slate-500'}`}
-                      >
-                        {order.payment_status}
-                      </span>
-                    </td>
-
-                    {/* Amount */}
-                    <td className="px-5 py-3.5 text-right">
-                      <span className="font-extrabold text-slate-900 text-xs">
-                        {order.total_amount.toFixed(3)} TND
-                      </span>
-                    </td>
-
-                    {/* Date */}
-                    <td className="px-5 py-3.5 text-xs text-slate-400 font-medium">
-                      {new Date(order.created_at).toLocaleDateString('fr-TN')}
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-5 py-3.5 text-center">
-                      <button
-                        onClick={() => setSelectedId(order.id)}
-                        className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition"
-                        title="View details"
-                      >
-                        <Eye size={14} />
+                    <td style={{ padding:'13px 20px', fontSize:12, fontWeight:500, color:textMuted }}>{order.wilaya??order.user?.state??'—'}</td>
+                    <td style={{ padding:'13px 20px' }}><StatusBadge status={order.status} dark={dark}/></td>
+                    <td style={{ padding:'13px 20px' }}><PaymentBadge status={order.payment_status}/></td>
+                    <td style={{ padding:'13px 20px', textAlign:'right', fontWeight:900, color:textMain, fontSize:12 }}>{order.total_amount.toFixed(3)} TND</td>
+                    <td style={{ padding:'13px 20px', fontSize:11, color:textMuted, fontWeight:500 }}>{new Date(order.created_at).toLocaleDateString('fr-TN')}</td>
+                    <td style={{ padding:'13px 20px', textAlign:'center' }}>
+                      <button onClick={()=>setSelectedId(order.id)}
+                        style={{ background:'transparent', border:'none', cursor:'pointer', padding:6, borderRadius:8, color:textMuted }}
+                        className="eye-btn">
+                        <Eye size={14}/>
                       </button>
                     </td>
                   </tr>
                 ))}
-
-                {data?.data.length === 0 && (
-                  <tr>
-                    <td colSpan={8} className="px-5 py-14 text-center">
-                      <ShoppingBag size={28} className="mx-auto mb-3 text-slate-200" />
-                      <p className="text-sm font-semibold text-slate-400">No orders found</p>
-                      <p className="text-xs text-slate-300 mt-1">Try adjusting your filters</p>
-                    </td>
-                  </tr>
+                {data?.data.length===0 && (
+                  <tr><td colSpan={8} style={{ padding:'56px 20px', textAlign:'center' }}>
+                    <ShoppingBag size={28} style={{ margin:'0 auto 10px', display:'block', color:textMuted, opacity:0.4 }}/>
+                    <p style={{ fontSize:13, fontWeight:700, color:textMuted, margin:'0 0 4px' }}>No orders found</p>
+                    <p style={{ fontSize:11, color:textMuted, opacity:0.6, margin:0 }}>Try adjusting your filters</p>
+                  </td></tr>
                 )}
               </tbody>
             </table>
@@ -421,43 +371,29 @@ export default function OrdersPage() {
         )}
 
         {/* Pagination */}
-        {data && data.last_page > 1 && (
-          <div className="flex items-center justify-between px-5 py-3.5 border-t border-slate-100">
-            <span className="text-xs font-semibold text-slate-400">
-              Showing {data.from}–{data.to} of {data.total}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 transition"
-              >
-                <ChevronLeft size={14} />
+        {data && data.last_page>1 && (
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 20px', borderTop:`1px solid ${border}` }}>
+            <span style={{ fontSize:11, fontWeight:700, color:textMuted }}>Showing {data.from}–{data.to} of {data.total}</span>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page===1}
+                style={{ padding:6, borderRadius:8, border:`1px solid ${border}`, background:'transparent', cursor:'pointer', color:textMuted, opacity:page===1?0.4:1 }}>
+                <ChevronLeft size={14}/>
               </button>
-              <span className="text-xs font-bold text-slate-600 px-1">
-                {data.current_page} / {data.last_page}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(data.last_page, p + 1))}
-                disabled={page === data.last_page}
-                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 transition"
-              >
-                <ChevronRight size={14} />
+              <span style={{ fontSize:11, fontWeight:800, color:textMain, padding:'0 4px' }}>{data.current_page}/{data.last_page}</span>
+              <button onClick={()=>setPage(p=>Math.min(data.last_page,p+1))} disabled={page===data.last_page}
+                style={{ padding:6, borderRadius:8, border:`1px solid ${border}`, background:'transparent', cursor:'pointer', color:textMuted, opacity:page===data.last_page?0.4:1 }}>
+                <ChevronRight size={14}/>
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Detail modal */}
-      {selectedId !== null && (
-        <OrderDetailModal
-          orderId={selectedId}
-          onClose={() => setSelectedId(null)}
-          onUpdated={fetch}
-        />
-      )}
+      <style>{`.eye-btn:hover{background:${dark?'rgba(59,130,246,0.12)':'rgba(59,130,246,0.08)'}!important;color:#3b82f6!important}`}</style>
 
+      {selectedId!==null && (
+        <OrderDetailModal orderId={selectedId} onClose={()=>setSelectedId(null)} onUpdated={fetchData} dark={dark}/>
+      )}
     </div>
   );
 }

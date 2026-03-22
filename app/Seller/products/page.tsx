@@ -10,11 +10,11 @@ import {
   Loader2, Clock, Image as ImageIcon, Eye,
 } from 'lucide-react';
 import ProductModal from './ProductModal';
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
+import { useTheme } from '../layout';
 
 export default function ProductsPage() {
   const router = useRouter();
+  const { dark } = useTheme();
 
   const [data,       setData]       = useState<PaginatedResponse<Product> | null>(null);
   const [loading,    setLoading]    = useState(true);
@@ -22,268 +22,209 @@ export default function ProductsPage() {
   const [isActive,   setIsActive]   = useState('');
   const [isApproved, setIsApproved] = useState('');
   const [page,       setPage]       = useState(1);
-  const [modal,      setModal]      = useState<{ open: boolean; product: Product | null }>({
-    open: false,
-    product: null,
-  });
-  const [deleting, setDeleting] = useState<number | null>(null);
+  const [modal,      setModal]      = useState<{ open:boolean; product:Product|null }>({ open:false, product:null });
+  const [deleting,   setDeleting]   = useState<number|null>(null);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
       const res = await productsApi.getAll({
-        page,
-        per_page: 12,
+        page, per_page:12,
         ...(search     && { search }),
-        ...(isActive   && { is_active: isActive }),
-        ...(isApproved && { is_approved: isApproved }),
+        ...(isActive   && { is_active:isActive }),
+        ...(isApproved && { is_approved:isApproved }),
       });
       setData(res.data as unknown as PaginatedResponse<Product>);
-    } catch {
-      // silently fail per-action
-    } finally {
-      setLoading(false);
-    }
+    } catch {} finally { setLoading(false); }
   }, [page, search, isActive, isApproved]);
 
-  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+  useEffect(()=>{ fetchProducts(); }, [fetchProducts]);
 
   const handleDelete = async (id: number) => {
     if (!confirm('Delete this product? This cannot be undone.')) return;
     setDeleting(id);
-    try {
-      await productsApi.delete(id);
-      fetchProducts();
-    } finally {
-      setDeleting(null);
-    }
+    try { await productsApi.delete(id); fetchProducts(); }
+    finally { setDeleting(null); }
   };
 
-  // ── Open edit — fetch fresh product with images ────────────────────
   const handleEdit = async (product: Product) => {
-    try {
-      const res = await productsApi.getOne(product.id);
-      setModal({ open: true, product: res.data as unknown as Product });
-    } catch {
-      setModal({ open: true, product });
-    }
+    try { const res = await productsApi.getOne(product.id); setModal({ open:true, product:res.data as unknown as Product }); }
+    catch { setModal({ open:true, product }); }
+  };
+
+  /* theme */
+  const cardBg    = dark ? '#161b27' : '#ffffff';
+  const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const textMain  = dark ? '#ffffff' : '#0f172a';
+  const textMuted = dark ? 'rgba(255,255,255,0.38)' : '#94a3b8';
+  const inputBg   = dark ? '#0d1117' : '#f8fafc';
+  const theadBg   = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
+  const rowHover  = dark ? 'rgba(255,255,255,0.03)' : '#f9fafb';
+
+  const inputStyle: React.CSSProperties = {
+    border:`1px solid ${border}`, borderRadius:10,
+    padding:'8px 12px', fontSize:13, fontWeight:500,
+    background:inputBg, color:textMain, outline:'none',
   };
 
   return (
-    <div className="space-y-4">
+    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+      <style>{`
+        .product-row:hover td{background:${rowHover}!important}
+        .act-btn:hover{opacity:1!important}
+        @keyframes spin{to{transform:rotate(360deg)}}
+      `}</style>
 
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between gap-3">
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900">Products</h1>
-          <p className="text-xs text-slate-400 font-medium">Manage your store listings</p>
+          <h1 style={{ fontSize:20, fontWeight:900, color:textMain, margin:'0 0 2px', letterSpacing:'-0.02em' }}>Products</h1>
+          <p style={{ fontSize:11, color:textMuted, margin:0, fontWeight:500 }}>Manage your store listings</p>
         </div>
-        <button
-          onClick={() => setModal({ open: true, product: null })}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/25"
-        >
-          <Plus size={15} />
-          <span className="hidden sm:inline">Add Product</span>
+        <button onClick={()=>setModal({ open:true, product:null })}
+          style={{
+            display:'flex', alignItems:'center', gap:7,
+            padding:'10px 18px',
+            background:'linear-gradient(135deg,#db142e,#a00f22)',
+            color:'#fff', fontWeight:800, fontSize:13,
+            borderRadius:12, border:'none', cursor:'pointer',
+            boxShadow:'0 6px 20px rgba(219,20,46,0.35)',
+          }}>
+          <Plus size={15}/> Add Product
         </button>
       </div>
 
-      {/* ── Filters ── */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[180px]">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <input
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+      {/* Filters */}
+      <div style={{ background:cardBg, borderRadius:16, padding:16, border:`1px solid ${border}`, display:'flex', flexWrap:'wrap', gap:10, alignItems:'center' }}>
+        <div style={{ position:'relative', flex:1, minWidth:180 }}>
+          <Search size={13} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:textMuted, pointerEvents:'none' }}/>
+          <input value={search} onChange={e=>{ setSearch(e.target.value); setPage(1); }}
             placeholder="Search by name or SKU…"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-sm
-              focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 focus:bg-white transition"
-          />
+            style={{ ...inputStyle, width:'100%', paddingLeft:32 }}/>
         </div>
-
-        <div className="flex items-center gap-2">
-          <Filter size={13} className="text-slate-400 flex-shrink-0" />
-          <select
-            value={isActive}
-            onChange={(e) => { setIsActive(e.target.value); setPage(1); }}
-            className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600
-              focus:outline-none focus:ring-2 focus:ring-blue-500/25 bg-white"
-          >
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <Filter size={13} style={{ color:textMuted, flexShrink:0 }}/>
+          <select value={isActive} onChange={e=>{ setIsActive(e.target.value); setPage(1); }} style={inputStyle}>
             <option value="">All Status</option>
             <option value="true">Active</option>
             <option value="false">Inactive</option>
           </select>
-
-          <select
-            value={isApproved}
-            onChange={(e) => { setIsApproved(e.target.value); setPage(1); }}
-            className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600
-              focus:outline-none focus:ring-2 focus:ring-blue-500/25 bg-white"
-          >
+          <select value={isApproved} onChange={e=>{ setIsApproved(e.target.value); setPage(1); }} style={inputStyle}>
             <option value="">All Approvals</option>
             <option value="true">Approved</option>
             <option value="false">Pending</option>
           </select>
         </div>
-
-        {data && (
-          <span className="text-xs font-semibold text-slate-400 ml-auto">
-            {data.total} product{data.total !== 1 ? 's' : ''}
-          </span>
-        )}
+        {data && <span style={{ fontSize:11, fontWeight:700, color:textMuted, marginLeft:'auto' }}>{data.total} product{data.total!==1?'s':''}</span>}
       </div>
 
-      {/* ── Table ── */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      {/* Table */}
+      <div style={{ background:cardBg, borderRadius:18, border:`1px solid ${border}`, overflow:'hidden' }}>
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 size={24} className="animate-spin text-blue-400" />
+          <div style={{ display:'flex', justifyContent:'center', padding:'64px 0' }}>
+            <Loader2 size={24} style={{ animation:'spin 0.8s linear infinite', color:'#db142e' }}/>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div style={{ overflowX:'auto' }}>
+            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
               <thead>
-                <tr className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
-                  {['Product', 'Category', 'Price', 'Stock', 'Status', 'Approval', 'Actions'].map((h) => (
-                    <th
-                      key={h}
-                      className={`px-5 py-3 font-bold ${
-                        ['Price', 'Stock'].includes(h)                    ? 'text-right' :
-                        ['Status', 'Approval', 'Actions'].includes(h)     ? 'text-center' : 'text-left'
-                      }`}
-                    >
-                      {h}
-                    </th>
+                <tr style={{ background:theadBg }}>
+                  {['Product','Category','Price','Stock','Status','Approval','Actions'].map((h,i)=>(
+                    <th key={h} style={{
+                      padding:'10px 20px', fontSize:9, fontWeight:800,
+                      textTransform:'uppercase', letterSpacing:'0.1em', color:textMuted,
+                      textAlign: ['Price','Stock'].includes(h)?'right': ['Status','Approval','Actions'].includes(h)?'center':'left',
+                    }}>{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
-                {data?.data.map((product) => (
-                  <tr key={product.id} className="hover:bg-slate-50/60 transition-colors group">
-
+              <tbody>
+                {data?.data.map(product=>(
+                  <tr key={product.id} className="product-row" style={{ borderTop:`1px solid ${border}` }}>
                     {/* Product */}
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        {/* Thumbnail */}
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex-shrink-0 overflow-hidden">
+                    <td style={{ padding:'12px 20px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                        <div style={{
+                          width:40, height:40, borderRadius:10,
+                          background:dark?'rgba(255,255,255,0.06)':'#f1f5f9',
+                          border:`1px solid ${border}`, flexShrink:0, overflow:'hidden',
+                          display:'flex', alignItems:'center', justifyContent:'center',
+                        }}>
                           {(product as any).primary_image_url ? (
-                            <img
-                              src={storageUrl((product as any).primary_image_url) ?? ''}
-                              alt={product.name}
-                              className="w-full h-full object-cover"
-                            />
+                            <img src={storageUrl((product as any).primary_image_url)??''} alt={product.name}
+                              style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon size={14} className="text-slate-300" />
-                            </div>
+                            <ImageIcon size={14} style={{ color:textMuted, opacity:0.5 }}/>
                           )}
                         </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-slate-900 truncate max-w-[180px]">{product.name}</p>
-                          <p className="text-[10px] text-slate-400">
-                            {(product as any).sku ? `SKU: ${(product as any).sku}` : `ID #${product.id}`}
+                        <div style={{ minWidth:0 }}>
+                          <p style={{ fontWeight:800, color:textMain, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:180 }}>{product.name}</p>
+                          <p style={{ fontSize:10, color:textMuted, margin:0 }}>
+                            {(product as any).sku?`SKU: ${(product as any).sku}`:`ID #${product.id}`}
                           </p>
                         </div>
                       </div>
                     </td>
-
                     {/* Category */}
-                    <td className="px-5 py-3.5 text-slate-500 text-xs font-medium">
-                      {(product as any).category?.name ?? '—'}
-                    </td>
-
+                    <td style={{ padding:'12px 20px', fontSize:12, fontWeight:500, color:textMuted }}>{(product as any).category?.name??'—'}</td>
                     {/* Price */}
-                    <td className="px-5 py-3.5 text-right">
-                      <span className="font-extrabold text-slate-900 text-xs">
-                        {Number(product.price).toFixed(3)} TND
-                      </span>
-                    </td>
-
+                    <td style={{ padding:'12px 20px', textAlign:'right', fontWeight:900, color:textMain }}>{Number(product.price).toFixed(3)} TND</td>
                     {/* Stock */}
-                    <td className="px-5 py-3.5 text-right">
-                      <span className={`font-bold text-xs ${
-                        product.stock === 0 ? 'text-red-500' :
-                        product.stock <= 10 ? 'text-amber-500' :
-                                              'text-slate-700'
-                      }`}>
-                        {product.stock}
-                        {product.stock === 0 && (
-                          <span className="ml-1 text-[10px] font-bold text-red-400">(Out)</span>
-                        )}
-                        {product.stock > 0 && product.stock <= 10 && (
-                          <span className="ml-1 text-[10px] font-bold text-amber-400">(Low)</span>
-                        )}
-                      </span>
+                    <td style={{ padding:'12px 20px', textAlign:'right', fontWeight:800,
+                      color: product.stock===0?'#ef4444': product.stock<=10?'#f59e0b': textMain }}>
+                      {product.stock}
+                      {product.stock===0 && <span style={{ fontSize:10, marginLeft:4, color:'#ef4444' }}>(Out)</span>}
+                      {product.stock>0&&product.stock<=10 && <span style={{ fontSize:10, marginLeft:4, color:'#f59e0b' }}>(Low)</span>}
                     </td>
-
                     {/* Status */}
-                    <td className="px-5 py-3.5 text-center">
-                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full
-                        ${product.is_active
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-red-50 text-red-600'}`}
-                      >
-                        {product.is_active
-                          ? <><CheckCircle size={9} /> Active</>
-                          : <><XCircle    size={9} /> Inactive</>}
+                    <td style={{ padding:'12px 20px', textAlign:'center' }}>
+                      <span style={{
+                        display:'inline-flex', alignItems:'center', gap:5,
+                        fontSize:10, fontWeight:800, padding:'3px 9px', borderRadius:999,
+                        background:product.is_active?'rgba(16,185,129,0.12)':'rgba(239,68,68,0.12)',
+                        color:product.is_active?'#10b981':'#ef4444',
+                        border:`1px solid ${product.is_active?'rgba(16,185,129,0.25)':'rgba(239,68,68,0.25)'}`,
+                      }}>
+                        {product.is_active?<><CheckCircle size={9}/>Active</>:<><XCircle size={9}/>Inactive</>}
                       </span>
                     </td>
-
                     {/* Approval */}
-                    <td className="px-5 py-3.5 text-center">
-                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full
-                        ${product.is_approved
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'bg-amber-50 text-amber-700'}`}
-                      >
-                        {product.is_approved
-                          ? <><CheckCircle size={9} /> Approved</>
-                          : <><Clock size={9} /> Pending</>}
+                    <td style={{ padding:'12px 20px', textAlign:'center' }}>
+                      <span style={{
+                        display:'inline-flex', alignItems:'center', gap:5,
+                        fontSize:10, fontWeight:800, padding:'3px 9px', borderRadius:999,
+                        background:product.is_approved?'rgba(59,130,246,0.12)':'rgba(245,158,11,0.12)',
+                        color:product.is_approved?'#3b82f6':'#f59e0b',
+                        border:`1px solid ${product.is_approved?'rgba(59,130,246,0.25)':'rgba(245,158,11,0.25)'}`,
+                      }}>
+                        {product.is_approved?<><CheckCircle size={9}/>Approved</>:<><Clock size={9}/>Pending</>}
                       </span>
                     </td>
-
                     {/* Actions */}
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center justify-center gap-1">
-                        {/* View */}
-                        <button
-                          onClick={() => router.push(`/seller/products/${product.id}`)}
-                          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-                          title="View details"
-                        >
-                          <Eye size={13} />
-                        </button>
-                        {/* Edit */}
-                        <button
-                          onClick={() => handleEdit(product)}
-                          className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition"
-                          title="Edit"
-                        >
-                          <Edit2 size={13} />
-                        </button>
-                        {/* Delete */}
-                        <button
-                          onClick={() => handleDelete(product.id)}
-                          disabled={deleting === product.id}
-                          className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition disabled:opacity-50"
-                          title="Delete"
-                        >
-                          {deleting === product.id
-                            ? <Loader2 size={13} className="animate-spin" />
-                            : <Trash2 size={13} />}
-                        </button>
+                    <td style={{ padding:'12px 20px' }}>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
+                        {[
+                          { icon:<Eye size={13}/>,   onClick:()=>router.push(`/seller/products/${product.id}`), color:'#94a3b8', hover:'#64748b' },
+                          { icon:<Edit2 size={13}/>,  onClick:()=>handleEdit(product),                           color:'#94a3b8', hover:'#3b82f6' },
+                          { icon:deleting===product.id?<Loader2 size={13} style={{ animation:'spin 0.8s linear infinite' }}/>:<Trash2 size={13}/>,
+                            onClick:()=>handleDelete(product.id), color:'#94a3b8', hover:'#ef4444', disabled:deleting===product.id },
+                        ].map((btn,i)=>(
+                          <button key={i} onClick={btn.onClick} disabled={btn.disabled}
+                            className="act-btn"
+                            style={{ background:'transparent', border:'none', cursor:'pointer', padding:6, borderRadius:8, color:btn.color, opacity:btn.disabled?0.4:0.7, transition:'all 0.15s ease' }}>
+                            {btn.icon}
+                          </button>
+                        ))}
                       </div>
                     </td>
                   </tr>
                 ))}
-
-                {data?.data.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-5 py-14 text-center">
-                      <Package size={28} className="mx-auto mb-3 text-slate-200" />
-                      <p className="text-sm font-semibold text-slate-400">No products found</p>
-                      <p className="text-xs text-slate-300 mt-1">Try adjusting your filters or add a new product</p>
-                    </td>
-                  </tr>
+                {data?.data.length===0 && (
+                  <tr><td colSpan={7} style={{ padding:'56px 20px', textAlign:'center' }}>
+                    <Package size={28} style={{ margin:'0 auto 10px', display:'block', color:textMuted, opacity:0.4 }}/>
+                    <p style={{ fontSize:13, fontWeight:700, color:textMuted, margin:'0 0 4px' }}>No products found</p>
+                    <p style={{ fontSize:11, color:textMuted, opacity:0.6, margin:0 }}>Try adjusting your filters or add a new product</p>
+                  </td></tr>
                 )}
               </tbody>
             </table>
@@ -291,41 +232,26 @@ export default function ProductsPage() {
         )}
 
         {/* Pagination */}
-        {data && data.last_page > 1 && (
-          <div className="flex items-center justify-between px-5 py-3.5 border-t border-slate-100">
-            <span className="text-xs font-semibold text-slate-400">
-              Showing {data.from}–{data.to} of {data.total}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 transition"
-              >
-                <ChevronLeft size={14} />
+        {data && data.last_page>1 && (
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 20px', borderTop:`1px solid ${border}` }}>
+            <span style={{ fontSize:11, fontWeight:700, color:textMuted }}>Showing {data.from}–{data.to} of {data.total}</span>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page===1}
+                style={{ padding:6, borderRadius:8, border:`1px solid ${border}`, background:'transparent', cursor:'pointer', color:textMuted, opacity:page===1?0.4:1 }}>
+                <ChevronLeft size={14}/>
               </button>
-              <span className="text-xs font-bold text-slate-600 px-1">
-                {data.current_page} / {data.last_page}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(data.last_page, p + 1))}
-                disabled={page === data.last_page}
-                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 transition"
-              >
-                <ChevronRight size={14} />
+              <span style={{ fontSize:11, fontWeight:800, color:textMain, padding:'0 4px' }}>{data.current_page}/{data.last_page}</span>
+              <button onClick={()=>setPage(p=>Math.min(data.last_page,p+1))} disabled={page===data.last_page}
+                style={{ padding:6, borderRadius:8, border:`1px solid ${border}`, background:'transparent', cursor:'pointer', color:textMuted, opacity:page===data.last_page?0.4:1 }}>
+                <ChevronRight size={14}/>
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Modal */}
       {modal.open && (
-        <ProductModal
-          product={modal.product}
-          onClose={() => setModal({ open: false, product: null })}
-          onSaved={fetchProducts}
-        />
+        <ProductModal product={modal.product} onClose={()=>setModal({ open:false, product:null })} onSaved={fetchProducts}/>
       )}
     </div>
   );
