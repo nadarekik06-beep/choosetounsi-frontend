@@ -110,6 +110,124 @@ const MEGA: MegaData = {
   ],
 };
 
+
+/* ─────────────────────────────────────────────────────────────
+   SVG ICON MAP — maps category slug/name keywords → SVG path
+───────────────────────────────────────────────────────────── */
+function getCategoryIcon(slug: string, name: string): React.ReactNode {
+  const s = (slug + " " + name).toLowerCase();
+
+  // Fashion & Clothing
+  if (/fashion|clothing|vetement|mode|wear|tenue|femme|homme|male/.test(s))
+    return (
+      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+        <path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/>
+      </svg>
+    );
+
+  // Electronics & Tech
+  if (/electronic|tech|phone|mobile|computer|laptop|informatique/.test(s))
+    return (
+      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+        <rect x="2" y="3" width="20" height="14" rx="2"/>
+        <path d="M8 21h8M12 17v4"/>
+      </svg>
+    );
+
+  // Home & Living
+  if (/home|living|maison|meuble|decoration|furniture|interieur/.test(s))
+    return (
+      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    );
+
+  // Food & Grocery
+  if (/food|grocery|alimentation|epicerie|nourriture|cuisine|eat/.test(s))
+    return (
+      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+        <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+        <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+        <line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>
+      </svg>
+    );
+
+  // Beauty & Personal Care
+  if (/beauty|beaute|cosmetic|soin|makeup|skincare|personal|hygiene|parfum/.test(s))
+    return (
+      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+    );
+
+  // Health & Wellness
+  if (/health|wellness|sante|bien.etre|medical|pharmacie/.test(s))
+    return (
+      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+      </svg>
+    );
+
+  // Sports & Outdoors
+  if (/sport|outdoor|fitness|gym|training|running/.test(s))
+    return (
+      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 8v4l3 3"/>
+        <path d="M3.6 9h16.8M3.6 15h16.8"/>
+      </svg>
+    );
+
+  // Arts & Crafts
+  if (/art|craft|artisanat|handmade|diy|peinture|dessin/.test(s))
+    return (
+      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+        <circle cx="13.5" cy="6.5" r="2.5"/>
+        <circle cx="17.5" cy="10.5" r="2.5"/>
+        <circle cx="8.5" cy="7.5" r="2.5"/>
+        <circle cx="6.5" cy="12.5" r="2.5"/>
+        <path d="M12 20v-8.5c0-1.1.9-2 2-2"/>
+        <path d="M12 20c-3.3 0-6-2.7-6-6v-1.5"/>
+      </svg>
+    );
+
+  // Books & Stationery
+  if (/book|livre|stationery|papeterie|school|ecole/.test(s))
+    return (
+      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+    );
+
+  // Kids & Baby
+  if (/kid|baby|enfant|bebe|child|jouet|toy/.test(s))
+    return (
+      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+        <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46L5.5 8H4a1 1 0 0 1 0-2h1.09A2.5 2.5 0 0 1 9.5 2z"/>
+        <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46L18.5 8H20a1 1 0 0 0 0-2h-1.09A2.5 2.5 0 0 0 14.5 2z"/>
+      </svg>
+    );
+
+  // Automotive
+  if (/auto|car|voiture|moto|vehicule|garage/.test(s))
+    return (
+      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+        <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v9a2 2 0 0 1-2 2h-2"/>
+        <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
+      </svg>
+    );
+
+  // Default / Other
+  return (
+    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+      <rect x="2" y="7" width="20" height="14" rx="2"/>
+      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+    </svg>
+  );
+}
+
 /* ─────────────────────────────────────────────────────────────
    AVATAR HELPERS  (identical to original)
 ───────────────────────────────────────────────────────────── */
@@ -257,7 +375,14 @@ function MegaMenu({
                 color: activeSlug === cat.slug ? "#dc2626" : "#374151",
               }}
             >
-              {cat.icon && <span style={{ fontSize: 16 }}>{cat.icon}</span>}
+              <span style={{
+                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                background: "rgba(220,38,38,0.08)",
+                color: "#dc2626",
+              }}>
+                {getCategoryIcon(cat.slug, cat.name)}
+              </span>
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
                 {cat.name}
               </span>
@@ -643,7 +768,7 @@ export default function Navbar() {
                 {categories.map(cat => (
                   <Link key={cat.slug} href={`/shop?category=${cat.slug}`} onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-2 py-2 text-sm font-medium text-zinc-700 hover:text-red-600 border-b border-zinc-50 transition-colors">
-                    {cat.icon && <span>{cat.icon}</span>}
+                    {getCategoryIcon(cat.slug, cat.name)}
                     {cat.name}
                   </Link>
                 ))}
