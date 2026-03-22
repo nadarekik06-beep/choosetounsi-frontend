@@ -33,6 +33,24 @@ export interface TopWilaya {
   orders: number;
 }
 
+/* ── NEW: Top Products ── */
+export interface TopProduct {
+  id: number;
+  name: string;
+  slug: string;
+  sku: string | null;
+  price: number;
+  stock: number;
+  is_active: boolean;
+  is_approved: boolean;
+  primary_image_url: string | null;
+  category_name: string | null;
+  total_sales: number;       // units sold across all orders
+  total_revenue: number;     // revenue generated
+  total_orders: number;      // number of distinct orders containing this product
+  views: number;             // product view count (if tracked)
+}
+
 export type OrderStatusDistribution = Record<string, number>;
 
 export interface RecentOrder {
@@ -52,6 +70,7 @@ export interface DashboardData {
   order_status_distribution: OrderStatusDistribution;
   top_clients: TopClient[];
   top_wilayas: TopWilaya[];
+  top_products: TopProduct[];   // ← NEW
   recent_orders: RecentOrder[];
 }
 
@@ -85,6 +104,8 @@ export interface Product {
   is_approved: boolean;
   is_active: boolean;
   images?: ProductImage[];
+  primary_image_url?: string | null;
+  views?: number;
   created_at: string;
 }
 
