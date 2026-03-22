@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { X, Upload, CheckCircle, AlertCircle, ChevronDown, Loader2 } from 'lucide-react'
-import { api } from '@/lib/auth'
+import { useState, useRef, useEffect } from 'react'
+import { X, Upload, CheckCircle, AlertCircle, ChevronDown, Loader2, User } from 'lucide-react'
+import { api, getUser } from '@/lib/auth'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const WILAYAS = [
@@ -19,10 +19,7 @@ const CATEGORIES = [
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ⚠️  KEY FIX: Field, inputCls, and ModalShell are defined OUTSIDE the main
-//    component. If they were inside, React would treat them as new component
-//    types on every render, unmounting and remounting them — causing inputs
-//    to lose focus after every keystroke.
+// Helpers defined OUTSIDE component to prevent remount on every render
 // ─────────────────────────────────────────────────────────────────────────────
 
 function inputCls(err?: string) {
@@ -35,13 +32,8 @@ function inputCls(err?: string) {
   )
 }
 
-function Field({
-  label, id, error, children,
-}: {
-  label: string
-  id: string
-  error?: string
-  children: React.ReactNode
+function Field({ label, id, error, children }: {
+  label: string; id: string; error?: string; children: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -95,9 +87,7 @@ interface FormState {
   website_url: string
 }
 
-interface Props {
-  onClose: () => void
-}
+interface Props { onClose: () => void }
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function SellerApplicationModal({ onClose }: Props) {
@@ -107,11 +97,29 @@ export default function SellerApplicationModal({ onClose }: Props) {
   const [error, setError]     = useState<string | null>(null)
   const [errors, setErrors]   = useState<Record<string, string>>({})
 
-  const [form, setForm] = useState<FormState>({
-    full_name: '', phone_number: '', business_name: '',
-    business_category: '', business_description: '',
-    wilaya: '', city: '',
-    facebook_url: '', instagram_url: '', website_url: '',
+  // ── Pre-fill full_name from logged-in user ────────────────────────────────
+  const [form, setForm] = useState<FormState>(() => {
+    // Read user from localStorage at initialisation time
+    // getUser() is safe to call here because useState initialiser runs client-side
+    const user = typeof window !== 'undefined' ? getUser() : null
+    return {
+      full_name:            user?.name  ?? '',
+      phone_number:         '',
+      business_name:        '',
+      business_category:    '',
+      business_description: '',
+      wilaya:               '',
+      city:                 '',
+      facebook_url:         '',
+      instagram_url:        '',
+      website_url:          '',
+    }
+  })
+
+  // Store whether the name came from the logged-in user (for the badge)
+  const [namePrefilled, setNamePrefilled] = useState<boolean>(() => {
+    const user = typeof window !== 'undefined' ? getUser() : null
+    return !!(user?.name)
   })
 
   const [profilePic, setProfilePic]               = useState<File | null>(null)
@@ -129,6 +137,8 @@ export default function SellerApplicationModal({ onClose }: Props) {
       const val = e.target.value
       setForm(prev => ({ ...prev, [key]: val }))
       setErrors(prev => { const n = { ...prev }; delete n[key]; return n })
+      // If user manually edits the name, remove the "auto-filled" badge
+      if (key === 'full_name') setNamePrefilled(false)
     }
 
   // ── Image handlers ────────────────────────────────────────────────────────
@@ -168,8 +178,8 @@ export default function SellerApplicationModal({ onClose }: Props) {
         errs.business_description = 'Please describe your business (at least 30 characters).'
     }
     if (s === 2) {
-      if (!form.wilaya)          errs.wilaya = 'Please select your wilaya.'
-      if (!form.city.trim())     errs.city = 'City is required.'
+      if (!form.wilaya)       errs.wilaya = 'Please select your wilaya.'
+      if (!form.city.trim())  errs.city   = 'City is required.'
     }
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -214,17 +224,12 @@ export default function SellerApplicationModal({ onClose }: Props) {
           <div className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center mb-6">
             <CheckCircle size={40} className="text-green-500" />
           </div>
-          <h2 className="text-2xl font-black text-gray-900 mb-3" style={{ fontFamily: "'Syne', sans-serif" }}>
-            Application Submitted!
-          </h2>
+          <h2 className="text-2xl font-black text-gray-900 mb-3">Application Submitted!</h2>
           <p className="text-gray-500 text-sm leading-relaxed max-w-xs mb-8">
             Your seller application has been received. Our team will review it within{' '}
             <span className="font-semibold text-gray-700">2–3 business days</span> and notify you by email.
           </p>
-          <button
-            onClick={onClose}
-            className="px-8 py-3 bg-gray-900 hover:bg-gray-800 text-white text-sm font-bold rounded-xl transition-colors"
-          >
+          <button onClick={onClose} className="px-8 py-3 bg-gray-900 hover:bg-gray-800 text-white text-sm font-bold rounded-xl transition-colors">
             Back to Homepage
           </button>
         </div>
@@ -242,9 +247,7 @@ export default function SellerApplicationModal({ onClose }: Props) {
           <span className="h-px w-6 bg-red-500" />
           <span className="text-red-500 text-xs font-bold tracking-widest uppercase">Choose Tounsi</span>
         </div>
-        <h2 className="text-xl font-black text-gray-900" style={{ fontFamily: "'Syne', sans-serif" }}>
-          Become a Vendor
-        </h2>
+        <h2 className="text-xl font-black text-gray-900">Become a Vendor</h2>
         <p className="text-gray-400 text-xs mt-0.5">Join 450+ local businesses selling on our platform</p>
 
         {/* Steps */}
@@ -274,13 +277,29 @@ export default function SellerApplicationModal({ onClose }: Props) {
         {step === 1 && (
           <>
             <div className="grid grid-cols-2 gap-4">
+
+              {/* Full name — with auto-fill badge when prefilled */}
               <Field label="Full Name" id="full_name" error={errors.full_name}>
-                <input
-                  id="full_name" type="text" placeholder="Your full name"
-                  value={form.full_name} onChange={handleChange('full_name')}
-                  className={inputCls(errors.full_name)}
-                />
+                <div className="relative">
+                  <input
+                    id="full_name" type="text" placeholder="Your full name"
+                    value={form.full_name} onChange={handleChange('full_name')}
+                    className={inputCls(errors.full_name) + (namePrefilled ? ' pr-10' : '')}
+                  />
+                  {namePrefilled && (
+                    <div
+                      className="absolute right-3 top-1/2 -translate-y-1/2"
+                      title="Auto-filled from your account"
+                    >
+                      <div className="flex items-center gap-1 bg-green-50 border border-green-200 rounded-full px-1.5 py-0.5">
+                        <User size={9} className="text-green-600" />
+                        <span className="text-[9px] font-bold text-green-600 leading-none">Auto</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </Field>
+
               <Field label="Phone Number" id="phone_number" error={errors.phone_number}>
                 <input
                   id="phone_number" type="tel" placeholder="+216 XX XXX XXX"
@@ -336,13 +355,10 @@ export default function SellerApplicationModal({ onClose }: Props) {
                 📍 Your location helps buyers find local vendors near them.
               </p>
             </div>
-
             <Field label="Wilaya" id="wilaya" error={errors.wilaya}>
               <div className="relative">
                 <select
-                  id="wilaya"
-                  value={form.wilaya}
-                  onChange={handleChange('wilaya')}
+                  id="wilaya" value={form.wilaya} onChange={handleChange('wilaya')}
                   className={inputCls(errors.wilaya) + ' appearance-none pr-10'}
                 >
                   <option value="">Select your wilaya…</option>
@@ -351,7 +367,6 @@ export default function SellerApplicationModal({ onClose }: Props) {
                 <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
             </Field>
-
             <Field label="City / Delegation" id="city" error={errors.city}>
               <input
                 id="city" type="text" placeholder="e.g. La Marsa, Sfax Ville…"
