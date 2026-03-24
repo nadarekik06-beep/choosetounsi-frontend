@@ -46,15 +46,14 @@ api.interceptors.response.use(
 // Converts Laravel storage paths to full URLs pointing to the backend (port 8000)
 // Fixes images loading from :3000 (Next.js) instead of :8000 (Laravel)
 
+const BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000')
+  .replace(/\/api$/, '')
+
 export function storageUrl(path: string | null | undefined): string | null {
-  if (!path) return null;
-  // Already a full URL — return as-is
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  // Build base from API URL by stripping /api
-  const base =
-    (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/api$/, '');
-  // Ensure single slash between base and path
-  return `${base}/${path.replace(/^\//, '')}`;
+  if (!path) return null
+  if (path.startsWith('http')) return path
+  const clean = path.replace(/^\/storage\//, '').replace(/^\//, '')
+  return `${BASE}/storage/${clean}`
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────

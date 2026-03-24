@@ -43,10 +43,15 @@ interface Product {
 }
 
 /* ── Helpers ── */
+const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000')
+  .replace(/\/api$/, '') // strip /api if present
+
 function resolveImg(path: string | null | undefined): string | null {
   if (!path) return null
   if (path.startsWith('http')) return path
-  return `${API_URL}/storage/${path.replace(/^\//, '')}`
+  // path might be "products/1/img.jpg" or "/storage/products/1/img.jpg"
+  const clean = path.replace(/^\/storage\//, '').replace(/^\//, '')
+  return `${STORAGE_BASE}/storage/${clean}`
 }
 
 const fmt = (n: number | string) =>
