@@ -1,5 +1,7 @@
 import { Syne } from "next/font/google";
 import "./globals.css";
+import { CartProvider } from '@/context/CartContext'
+import FlashToast from '@/components/FlashToast'
 
 const syne = Syne({
   subsets: ["latin"],
@@ -10,7 +12,7 @@ const syne = Syne({
 export const metadata = {
   title: "ChooseTounsi — Tunisia's #1 Multi-Vendor Marketplace",
   description: "Shop from hundreds of local Tunisian vendors. Fashion, electronics, home goods and more.",
-icons: {
+  icons: {
     icon: "/favicon.ico",
   },
 };
@@ -22,7 +24,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={syne.variable}>
-      <body className="antialiased bg-white text-zinc-900">{children}</body>
+      <body className="antialiased bg-white text-zinc-900">
+        <CartProvider>
+          {children}
+          <FlashToast />
+        </CartProvider>
+      </body>
     </html>
   );
 }
