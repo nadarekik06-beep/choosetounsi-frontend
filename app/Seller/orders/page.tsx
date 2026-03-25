@@ -160,15 +160,15 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                         <tr key={item.id} style={{ borderTop:`1px solid ${border}` }}>
                           <td style={{ padding:'10px 14px', fontWeight:700, color:textMain, fontSize:12 }}>{item.product_name}</td>
                           <td style={{ padding:'10px 14px', textAlign:'right', color:textMuted }}>{item.quantity}</td>
-                          <td style={{ padding:'10px 14px', textAlign:'right', color:textMuted }}>{item.unit_price.toFixed(3)}</td>
-                          <td style={{ padding:'10px 14px', textAlign:'right', fontWeight:800, color:'#3b82f6' }}>{item.total.toFixed(3)} TND</td>
+                          <td style={{ padding:'10px 14px', textAlign:'right', color:textMuted }}>{Number(item.unit_price).toFixed(3)}</td>
+                          <td style={{ padding:'10px 14px', textAlign:'right', fontWeight:800, color:'#3b82f6' }}>{Number(item.total).toFixed(3)} TND</td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
                       <tr style={{ background:dark?'rgba(59,130,246,0.1)':'#eff6ff', borderTop:`1px solid ${border}` }}>
                         <td colSpan={3} style={{ padding:'10px 14px', fontSize:12, fontWeight:800, color:dark?'#93c5fd':'#1e40af' }}>Your Subtotal</td>
-                        <td style={{ padding:'10px 14px', textAlign:'right', fontWeight:900, color:'#3b82f6', fontSize:13 }}>{detail.seller_subtotal.toFixed(3)} TND</td>
+                        <td style={{ padding:'10px 14px', textAlign:'right', fontWeight:900, color:'#3b82f6', fontSize:13 }}>{Number(detail.seller_subtotal).toFixed(3)} TND</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -347,7 +347,7 @@ export default function OrdersPage() {
                     <td style={{ padding:'13px 20px', fontSize:12, fontWeight:500, color:textMuted }}>{order.wilaya??order.user?.state??'—'}</td>
                     <td style={{ padding:'13px 20px' }}><StatusBadge status={order.status} dark={dark}/></td>
                     <td style={{ padding:'13px 20px' }}><PaymentBadge status={order.payment_status}/></td>
-                    <td style={{ padding:'13px 20px', textAlign:'right', fontWeight:900, color:textMain, fontSize:12 }}>{order.total_amount.toFixed(3)} TND</td>
+                    <td style={{ padding:'13px 20px', textAlign:'right', fontWeight:900, color:textMain, fontSize:12 }}>{Number(order.total_amount).toFixed(3)} TND</td>
                     <td style={{ padding:'13px 20px', fontSize:11, color:textMuted, fontWeight:500 }}>{new Date(order.created_at).toLocaleDateString('fr-TN')}</td>
                     <td style={{ padding:'13px 20px', textAlign:'center' }}>
                       <button onClick={()=>setSelectedId(order.id)}
