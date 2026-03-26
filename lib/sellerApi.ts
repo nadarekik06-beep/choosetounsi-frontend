@@ -1,190 +1,275 @@
-import axios from 'axios';
-import type {
-  ApiResponse,
-  DashboardData,
-  PaginatedResponse,
-  Product,
-  ProductStats,
-  Order,
-  OrderDetail,
-  OrderStats,
-} from '@/types/seller';
+/**
+ * lib/sellerApi.ts
+ * All API calls for the seller dashboard.
+ *
+ * The default export mimics axios:
+ *   - api.get(path, { params })  →  Promise<{ data: any }>
+ *   - api.post(path, body)       →  Promise<{ data: any }>
+ *   etc.
+ *
+ * Named exports (productsApi, categoriesApi, etc.) return raw JSON directly.
+ */
 
-// ─── Axios instance ───────────────────────────────────────────────────────────
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api',
-  headers: {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-  },
-  timeout: 30_000,
-});
+// ─── Auth token ───────────────────────────────────────────────────────────────
+// Tries every key name @/lib/auth might use to store the Sanctum token.
 
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('ct_auth_token');
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+const TOKEN_KEYS = [
+  'auth_token',
+  'token',
+  'ct_auth_token',
+  'access_token',
+  'sanctum_token',
+  'user_token',
+]
+
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null
+  for (const key of TOKEN_KEYS) {
+    const val = localStorage.getItem(key)
+    if (val) return val
   }
-  return config;
-});
-
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('ct_auth_token');
-      localStorage.removeItem('ct_auth_user');
-      document.cookie = 'ct_token_exists=; path=/; max-age=0; SameSite=Lax';
-      window.location.href = '/auth/login';
-    }
-    return Promise.reject(err);
+  for (const key of TOKEN_KEYS) {
+    const val = sessionStorage.getItem(key)
+    if (val) return val
   }
-);
-
-// ─── Storage URL helper ───────────────────────────────────────────────────────
-
-const BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000')
-  .replace(/\/api$/, '');
-
-export function storageUrl(path: string | null | undefined): string | null {
-  if (!path) return null;
-  if (path.startsWith('http')) return path;
-  const clean = path.replace(/^\/storage\//, '').replace(/^\//, '');
-  return `${BASE}/storage/${clean}`;
+  return null
 }
 
-// ─── Dashboard ────────────────────────────────────────────────────────────────
+function authHeaders(): Record<string, string> {
+  const token = getToken()
+  return {
+    Accept: 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
 
-export const dashboardApi = {
-  getOverview: (): Promise<ApiResponse<DashboardData>> =>
-    api.get('/seller/dashboard').then((r) => r.data),
-};
+// ─── Core fetch ───────────────────────────────────────────────────────────────
 
-// ─── Categories ───────────────────────────────────────────────────────────────
+async function apiFetch(path: string, options: RequestInit = {}): Promise<any> {
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: { ...authHeaders(), ...(options.headers as Record<string, string> ?? {}) },
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    const err: any = new Error(data?.message ?? 'API error')
+    err.response = { data, status: res.status }
+    throw err
+  }
+  return res.json()
+}
+
+async function apiJSON(path: string, method: string, body: unknown): Promise<any> {
+  return apiFetch(path, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+// ─── Path helpers ─────────────────────────────────────────────────────────────
+
+/** Ensures path always starts with /api */
+function normalizePath(path: string): string {
+  if (path.startsWith('/api/') || path === '/api') return path
+  return `/api${path.startsWith('/') ? path : '/' + path}`
+}
+
+/** Appends query params to a path */
+function withParams(path: string, params?: Record<string, any>): string {
+  if (!params) return path
+  const qs = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null) qs.set(k, String(v))
+  }
+  const q = qs.toString()
+  return q ? `${path}?${q}` : path
+}
+
+// ─── FormData builder ─────────────────────────────────────────────────────────
+
+function buildFormData(payload: Record<string, any>): FormData {
+  const fd = new FormData()
+  for (const [key, value] of Object.entries(payload)) {
+    if (value === null || value === undefined) continue
+
+    if (key === 'images' && Array.isArray(value)) {
+      value.forEach((file: File) => fd.append('images[]', file))
+      continue
+    }
+    if (key === 'delete_image_ids' && Array.isArray(value)) {
+      value.forEach((id: number) => fd.append('delete_image_ids[]', String(id)))
+      continue
+    }
+    if (key === 'attributes' && typeof value === 'object' && !Array.isArray(value)) {
+      for (const [slug, val] of Object.entries(value)) {
+        if (val === null || val === undefined || val === '') continue
+        fd.append(`attributes[${slug}]`, String(val))
+      }
+      continue
+    }
+    if (typeof value === 'boolean') { fd.append(key, value ? '1' : '0'); continue }
+    if (typeof value === 'number')  { fd.append(key, String(value)); continue }
+    if (typeof value === 'string' && value !== '') { fd.append(key, value); continue }
+  }
+  return fd
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface Category {
-  id: number;
-  name: string;
-  name_ar?: string;
-  slug: string;
-  icon?: string;
-  image?: string;
+  id: number
+  name: string
+  name_ar?: string
+  slug: string
+  icon?: string | null
+  image?: string | null
+  is_active?: boolean
+  order?: number
 }
 
+export interface Subcategory {
+  id: number
+  category_id: number
+  name: string
+  name_ar?: string
+  slug: string
+  icon?: string | null
+}
+
+export interface ProductPayload {
+  name: string
+  slug?: string
+  sku?: string
+  description?: string | null
+  short_description?: string | null
+  price: number
+  stock: number
+  category_id: number
+  subcategory_id?: number | null
+  is_active?: boolean
+  images?: File[]
+  delete_image_ids?: number[]
+  attributes?: Record<string, string>
+}
+
+// ─── Storage URL ──────────────────────────────────────────────────────────────
+
+export function storageUrl(path: string | null | undefined): string | null {
+  if (!path) return null
+  if (path.startsWith('http')) return path
+  const base = API_URL.replace(/\/api\/?$/, '')
+  return `${base}/storage/${path.replace(/^\/?(storage\/)?/, '')}`
+}
+
+// ─── Named API exports ────────────────────────────────────────────────────────
+
 export const categoriesApi = {
-  getAll: (): Promise<ApiResponse<Category[]>> =>
-    api.get('/categories').then((r) => r.data),
-};
+  getAll: (): Promise<{ success: boolean; data: Category[] }> =>
+    apiFetch('/api/categories'),
 
-// ─── Products ─────────────────────────────────────────────────────────────────
-
-export type ProductFilters = {
-  search?: string;
-  is_active?: string;
-  is_approved?: string;
-  category_id?: string;
-  page?: number;
-  per_page?: number;
-};
-
-export type ProductPayload = {
-  name: string;
-  description?: string | null;
-  short_description?: string | null;
-  price: number;
-  stock: number;
-  category_id: number;
-  sku?: string | null;
-  slug?: string | null;
-  is_active?: boolean;
-  images?: File[];
-  delete_image_ids?: number[];
-};
-
-function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
-  const fd = new FormData();
-  if (isUpdate) fd.append('_method', 'PUT');
-  fd.append('name', payload.name);
-  fd.append('price', String(payload.price));
-  fd.append('stock', String(payload.stock));
-  fd.append('category_id', String(payload.category_id));
-  fd.append('is_active', payload.is_active ? '1' : '0');
-  if (payload.description != null) fd.append('description', payload.description);
-  if (payload.short_description != null) fd.append('short_description', payload.short_description);
-  if (payload.sku) fd.append('sku', payload.sku);
-  if (payload.slug) fd.append('slug', payload.slug);
-  if (payload.images?.length) {
-    payload.images.forEach((file) => fd.append('images[]', file));
-  }
-  if (payload.delete_image_ids?.length) {
-    payload.delete_image_ids.forEach((id) => fd.append('delete_image_ids[]', String(id)));
-  }
-  return fd;
+  getSubcategories: (categorySlug: string): Promise<{ success: boolean; data: Subcategory[] }> =>
+    apiFetch(`/api/categories/${categorySlug}/subcategories`),
 }
 
 export const productsApi = {
-  getAll: (filters: ProductFilters = {}): Promise<ApiResponse<PaginatedResponse<Product>>> =>
-    api.get('/seller/products', { params: filters }).then((r) => r.data),
+  getAll: (params: Record<string, any> = {}) =>
+    apiFetch(withParams('/api/seller/products', params)),
 
-  getStats: (): Promise<ApiResponse<ProductStats>> =>
-    api.get('/seller/products/stats').then((r) => r.data),
+  getOne: (id: number) =>
+    apiFetch(`/api/seller/products/${id}`),
 
-  getOne: (id: number): Promise<ApiResponse<Product>> =>
-    api.get(`/seller/products/${id}`).then((r) => r.data),
+  getStats: () =>
+    apiFetch('/api/seller/products/stats'),
 
-  create: (payload: ProductPayload): Promise<ApiResponse<Product>> => {
-    const fd = buildFormData(payload);
-    return api.post('/seller/products', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }).then((r) => r.data);
+  create: (payload: ProductPayload) => {
+    const fd = buildFormData(payload as any)
+    return apiFetch('/api/seller/products', { method: 'POST', body: fd })
   },
 
-  update: (id: number, payload: ProductPayload): Promise<ApiResponse<Product>> => {
-    const fd = buildFormData(payload, true);
-    return api.post(`/seller/products/${id}`, fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }).then((r) => r.data);
+  update: (id: number, payload: ProductPayload) => {
+    const fd = buildFormData(payload as any)
+    fd.append('_method', 'PUT')
+    return apiFetch(`/api/seller/products/${id}`, { method: 'POST', body: fd })
   },
 
-  delete: (id: number): Promise<ApiResponse<null>> =>
-    api.delete(`/seller/products/${id}`).then((r) => r.data),
+  delete: (id: number) =>
+    apiFetch(`/api/seller/products/${id}`, { method: 'DELETE' }),
 
-  deleteImage: (productId: number, imageId: number): Promise<ApiResponse<null>> =>
-    api.delete(`/seller/products/${productId}/images/${imageId}`).then((r) => r.data),
+  deleteImage: (productId: number, imageId: number) =>
+    apiFetch(`/api/seller/products/${productId}/images/${imageId}`, { method: 'DELETE' }),
 
-  setPrimaryImage: (productId: number, imageId: number): Promise<ApiResponse<null>> =>
-    api.patch(`/seller/products/${productId}/images/${imageId}/primary`).then((r) => r.data),
-};
+  setPrimaryImage: (productId: number, imageId: number) =>
+    apiFetch(`/api/seller/products/${productId}/images/${imageId}/primary`, { method: 'PATCH' }),
+}
 
-// ─── Orders ───────────────────────────────────────────────────────────────────
-
-export type OrderFilters = {
-  search?: string;
-  status?: string;
-  payment_status?: string;
-  date_from?: string;
-  date_to?: string;
-  page?: number;
-  per_page?: number;
-};
+export const dashboardApi = {
+  get:         () => apiFetch('/api/seller/dashboard'),
+  getOverview: () => apiFetch('/api/seller/dashboard'),
+}
 
 export const ordersApi = {
-  getAll: (filters: OrderFilters = {}): Promise<ApiResponse<PaginatedResponse<Order>>> =>
-    api.get('/seller/orders', { params: filters }).then((r) => r.data),
+  getAll: (params: Record<string, any> = {}) =>
+    apiFetch(withParams('/api/seller/orders', params)),
 
-  getStats: (): Promise<ApiResponse<OrderStats>> =>
-    api.get('/seller/orders/stats').then((r) => r.data),
+  getOne: (id: number) =>
+    apiFetch(`/api/seller/orders/${id}`),
 
-  getOne: (id: number): Promise<ApiResponse<OrderDetail>> =>
-    api.get(`/seller/orders/${id}`).then((r) => r.data),
+  getStats: () =>
+    apiFetch('/api/seller/orders/stats'),
 
-  updateStatus: (id: number, status: string): Promise<ApiResponse<Order>> =>
-    api.patch(`/seller/orders/${id}/status`, { status }).then((r) => r.data),
+  updateStatus: (id: number, status: string) =>
+    apiJSON(`/api/seller/orders/${id}/status`, 'PATCH', { status }),
+}
 
-  // ← NEW: allows seller to confirm cash received for COD orders
-  updatePayment: (id: number, payment_status: string): Promise<ApiResponse<Order>> =>
-    api.patch(`/seller/orders/${id}/payment`, { payment_status }).then((r) => r.data),
-};
+// ─── Default export — axios-compatible ───────────────────────────────────────
+//
+// Returns { data: <parsed json> } to match axios response shape.
+// Supports:
+//   api.get('/notifications', { params: { page: 1 } })
+//   api.patch('/notifications/uuid/read')
+//   api.get('/notifications/unread-count')   ← /api auto-prepended
+//
+// ─────────────────────────────────────────────────────────────────────────────
 
-export default api;
+type ApiOptions = { params?: Record<string, any> }
+
+async function axiosFetch(
+  path: string,
+  method: string,
+  body?: unknown,
+  options?: ApiOptions
+): Promise<{ data: any }> {
+  const url = withParams(normalizePath(path), options?.params)
+
+  const fetchOptions: RequestInit = { method }
+  if (body !== undefined) {
+    fetchOptions.headers = { 'Content-Type': 'application/json' }
+    fetchOptions.body = JSON.stringify(body)
+  }
+
+  const raw = await apiFetch(url, fetchOptions)
+  // Wrap in { data } to match axios shape
+  return { data: raw }
+}
+
+const api = {
+  get:    (path: string, options?: ApiOptions) =>
+    axiosFetch(path, 'GET', undefined, options),
+
+  post:   (path: string, body: unknown = {}, options?: ApiOptions) =>
+    axiosFetch(path, 'POST', body, options),
+
+  put:    (path: string, body: unknown = {}, options?: ApiOptions) =>
+    axiosFetch(path, 'PUT', body, options),
+
+  patch:  (path: string, body: unknown = {}, options?: ApiOptions) =>
+    axiosFetch(path, 'PATCH', body, options),
+
+  delete: (path: string, options?: ApiOptions) =>
+    axiosFetch(path, 'DELETE', undefined, options),
+}
+
+export default api

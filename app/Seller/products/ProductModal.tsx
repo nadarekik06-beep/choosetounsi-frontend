@@ -1,646 +1,585 @@
-'use client';
+'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import {
-  X, Upload, Trash2, Star, Loader2, AlertCircle,
-  ImageIcon, GripVertical,
-} from 'lucide-react';
-import { productsApi, categoriesApi, storageUrl, type Category, type ProductPayload } from '@/lib/sellerApi';
-import type { Product } from '@/types/seller';
-
-// ─── Extended Product type (adds fields not yet in the base type) ─────────────
-
-type FullProduct = Product & {
-  slug?: string;
-  sku?: string;
-  short_description?: string;
-  images?: Array<{
-    id: number;
-    url?: string;
-    image_path: string;
-    is_primary: boolean;
-    order: number;
-  }>;
-};
+import { useEffect, useRef, useState } from 'react'
+import { X, Upload, Trash2, Star, Loader2, AlertCircle, ImageIcon } from 'lucide-react'
+import { productsApi, categoriesApi, storageUrl } from '@/lib/sellerApi'
+import type { Category, Subcategory } from '@/lib/sellerApi'
+import DynamicAttributeSection from '../components/attributes/DynamicAttributeSection'
+import type { AttributeValues } from '@/types/Attributes'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+/**
+ * FullProduct accepts null OR undefined for optional string fields
+ * so it is compatible with the base Product type from @/types/seller
+ * which uses `string | null` for description, short_description, slug, etc.
+ */
+interface FullProduct {
+  id: number
+  name: string
+  slug?: string | null
+  sku?: string | null
+  description?: string | null
+  short_description?: string | null
+  price: number | string
+  stock: number
+  category_id?: number | null
+  subcategory_id?: number | null
+  is_active?: boolean | null
+  is_approved?: boolean | null
+  existing_attributes?: AttributeValues
+  images?: Array<{
+    id: number
+    url?: string | null
+    image_path: string
+    is_primary: boolean
+    order: number
+  }>
+  // Index signature so any Product type is assignable without casting
+  [key: string]: unknown
+}
+
 interface ExistingImage {
-  id: number;
-  url: string;
-  image_path: string;
-  is_primary: boolean;
-  order: number;
+  id: number; url: string; image_path: string; is_primary: boolean; order: number
 }
+interface PreviewImage { file: File; preview: string; id: string }
 
-interface PreviewImage {
-  file: File;
-  preview: string;
-  id: string; // temporary client-side id
-}
+// ─── Attribute serializer ─────────────────────────────────────────────────────
 
-interface ProductModalProps {
-  product: Product | null;
-  onClose: () => void;
-  onSaved: () => void;
-}
-
-// ─── Image Drop Zone ──────────────────────────────────────────────────────────
-
-interface DropZoneProps {
-  onFiles: (files: File[]) => void;
-  disabled?: boolean;
-}
-
-function ImageDropZone({ onFiles, disabled }: DropZoneProps) {
-  const [dragging, setDragging] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    if (disabled) return;
-    const files = Array.from(e.dataTransfer.files).filter((f) =>
-      f.type.startsWith('image/')
-    );
-    if (files.length) onFiles(files);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (files.length) onFiles(files);
-    // Reset so same file can be re-selected
-    e.target.value = '';
-  };
-
-  return (
-    <div
-      onDragOver={(e) => { e.preventDefault(); if (!disabled) setDragging(true); }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={handleDrop}
-      onClick={() => !disabled && inputRef.current?.click()}
-      className={`
-        relative flex flex-col items-center justify-center gap-2 border-2 border-dashed
-        rounded-xl px-4 py-6 cursor-pointer transition-all select-none
-        ${dragging
-          ? 'border-blue-400 bg-blue-50'
-          : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'
-        }
-        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-      `}
-    >
-      <Upload size={20} className="text-slate-400" />
-      <div className="text-center">
-        <p className="text-sm font-semibold text-slate-600">
-          Drop images here or <span className="text-blue-600">browse</span>
-        </p>
-        <p className="text-xs text-slate-400 mt-0.5">
-          JPG, PNG, WebP · max 5 MB each · up to 8 images
-        </p>
-      </div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/jpg,image/webp"
-        multiple
-        className="hidden"
-        onChange={handleChange}
-        disabled={disabled}
-      />
-    </div>
-  );
+function serializeAttributes(values: AttributeValues): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [slug, val] of Object.entries(values)) {
+    if (val === null || val === undefined || val === '') continue
+    if (Array.isArray(val)) {
+      if (val.length === 0) continue
+      out[slug] = JSON.stringify(val)
+    } else if (typeof val === 'boolean') {
+      out[slug] = val ? '1' : '0'
+    } else {
+      out[slug] = String(val)
+    }
+  }
+  return out
 }
 
 // ─── Image Thumbnail ──────────────────────────────────────────────────────────
 
-interface ThumbProps {
-  src: string;
-  isPrimary: boolean;
-  onRemove: () => void;
-  onSetPrimary: () => void;
-}
-
-function ImageThumb({ src, isPrimary, onRemove, onSetPrimary }: ThumbProps) {
+function ImageThumb({ src, isPrimary, onRemove, onSetPrimary }: {
+  src: string; isPrimary: boolean; onRemove: () => void; onSetPrimary: () => void
+}) {
   return (
-    <div className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
-      <img src={src} alt="" className="w-full h-full object-cover" />
-
-      {/* Primary badge */}
+    <div style={{ position:'relative',aspectRatio:'1',borderRadius:12,overflow:'hidden',
+      border:'1.5px solid #e5e7eb',background:'#f8fafc' }} className="group">
+      <img src={src} alt="" style={{ width:'100%',height:'100%',objectFit:'cover' }}/>
       {isPrimary && (
-        <div className="absolute top-1 left-1 bg-blue-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+        <div style={{ position:'absolute',top:4,left:4,background:'#dc2626',color:'#fff',
+          fontSize:9,fontWeight:800,padding:'2px 6px',borderRadius:999 }}>
           Primary
         </div>
       )}
-
-      {/* Hover actions */}
-      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+      <div style={{ position:'absolute',inset:0,background:'rgba(0,0,0,0.45)',display:'flex',
+        alignItems:'center',justifyContent:'center',gap:6,opacity:0,transition:'opacity 0.2s' }}
+        className="group-hover:opacity-100">
         {!isPrimary && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onSetPrimary(); }}
-            title="Set as primary"
-            className="p-1.5 rounded-lg bg-white/90 text-amber-500 hover:bg-white transition"
-          >
-            <Star size={13} />
+          <button type="button" onClick={onSetPrimary}
+            style={{ padding:6,borderRadius:8,background:'rgba(255,255,255,0.9)',
+              border:'none',cursor:'pointer',color:'#f59e0b' }}>
+            <Star size={13}/>
           </button>
         )}
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          title="Remove"
-          className="p-1.5 rounded-lg bg-white/90 text-red-500 hover:bg-white transition"
-        >
-          <Trash2 size={13} />
+        <button type="button" onClick={onRemove}
+          style={{ padding:6,borderRadius:8,background:'rgba(255,255,255,0.9)',
+            border:'none',cursor:'pointer',color:'#ef4444' }}>
+          <Trash2 size={13}/>
         </button>
       </div>
     </div>
-  );
+  )
 }
 
-// ─── Form Field ───────────────────────────────────────────────────────────────
+// ─── Form field ───────────────────────────────────────────────────────────────
 
-function Field({
-  label,
-  required,
-  error,
-  hint,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  error?: string;
-  hint?: string;
-  children: React.ReactNode;
+const inputCls = (err?: string) =>
+  `w-full border rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400
+   outline-none focus:ring-2 focus:ring-red-400/30 focus:border-red-400 transition bg-white
+   ${err ? 'border-red-300 bg-red-50' : 'border-slate-200'}`
+
+function Field({ label, required, error, hint, children }: {
+  label: string; required?: boolean; error?: string; hint?: string; children: React.ReactNode
 }) {
   return (
     <div>
-      <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
-        {label} {required && <span className="text-red-400">*</span>}
+      <label style={{ display:'block',fontSize:11,fontWeight:800,textTransform:'uppercase',
+        letterSpacing:'0.07em',color:'#94a3b8',marginBottom:6 }}>
+        {label} {required && <span style={{ color:'#ef4444' }}>*</span>}
       </label>
       {children}
-      {hint && !error && <p className="text-[11px] text-slate-400 mt-1">{hint}</p>}
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      {hint && !error && <p style={{ fontSize:11,color:'#94a3b8',marginTop:4 }}>{hint}</p>}
+      {error && <p style={{ fontSize:11,color:'#ef4444',marginTop:4 }}>{error}</p>}
     </div>
-  );
+  )
 }
-
-const inputCls = (err?: string) =>
-  `w-full border rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-300
-   focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition
-   ${err ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white'}`;
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
+interface ProductModalProps {
+  /**
+   * Accepts any product-like object or null.
+   * Using Record<string,any> avoids requiring an index signature
+   * on the base Product type from @/types/seller.
+   */
+  product: Record<string, any> | null
+  onClose: () => void
+  onSaved: () => void
+}
+
 export default function ProductModal({ product, onClose, onSaved }: ProductModalProps) {
-  const isEdit = !!product;
+  const isEdit   = !!product
+  const p        = product as FullProduct | null   // safe cast — index sig covers extras
 
-  // Cast to FullProduct to safely access extended fields
-  const fullProduct = product as FullProduct | null;
-
-  // Form state
+  // ── Form state ─────────────────────────────────────────────────────────────
   const [form, setForm] = useState({
-    name:              fullProduct?.name              ?? '',
-    slug:              fullProduct?.slug              ?? '',
-    sku:               fullProduct?.sku               ?? '',
-    description:       fullProduct?.description       ?? '',
-    short_description: fullProduct?.short_description ?? '',
-    price:             fullProduct?.price?.toString() ?? '',
-    stock:             fullProduct?.stock?.toString() ?? '',
-    category_id:       fullProduct?.category_id?.toString() ?? '',
-    is_active:         fullProduct?.is_active ?? true,
-  });
+    name:              (p?.name              ?? '') as string,
+    slug:              (p?.slug              ?? '') as string,
+    sku:               (p?.sku               ?? '') as string,
+    description:       (p?.description       ?? '') as string,
+    short_description: (p?.short_description ?? '') as string,
+    price:             p?.price?.toString()         ?? '',
+    stock:             p?.stock?.toString()         ?? '0',
+    category_id:       p?.category_id?.toString()   ?? '',
+    subcategory_id:    p?.subcategory_id != null ? String(p.subcategory_id) : '',
+    is_active:         p?.is_active ?? true,
+  })
 
-  const [categories,     setCategories]     = useState<Category[]>([]);
-  const [catLoading,     setCatLoading]     = useState(true);
-  const [saving,         setSaving]         = useState(false);
-  const [errors,         setErrors]         = useState<Record<string, string>>({});
-  const [apiError,       setApiError]       = useState('');
+  const [attrValues, setAttrValues] = useState<AttributeValues>(
+    p?.existing_attributes ?? {}
+  )
 
-  // Existing images (edit mode)
-  const [existingImages, setExistingImages] = useState<ExistingImage[]>(
-    fullProduct?.images?.map((img) => ({
-      ...img,
-      url: storageUrl(img.url ?? img.image_path) ?? img.image_path,
+  // ── Categories / subcategories ─────────────────────────────────────────────
+  const [categories,    setCategories]    = useState<Category[]>([])
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([])
+  const [catLoading,    setCatLoading]    = useState(true)
+  const [subLoading,    setSubLoading]    = useState(false)
+
+  // ── Submit state ───────────────────────────────────────────────────────────
+  const [saving,   setSaving]   = useState(false)
+  const [errors,   setErrors]   = useState<Record<string, string>>({})
+  const [apiError, setApiError] = useState('')
+
+  // ── Images ─────────────────────────────────────────────────────────────────
+  const [existingImages,  setExistingImages]  = useState<ExistingImage[]>(
+    p?.images?.map(img => ({
+      id:         img.id,
+      image_path: img.image_path,
+      is_primary: img.is_primary,
+      order:      img.order,
+      url:        storageUrl(img.url ?? img.image_path) ?? img.image_path,
     })) ?? []
-  );
-  const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
+  )
+  const [deletedImageIds, setDeletedImageIds] = useState<number[]>([])
   const [primaryImageId,  setPrimaryImageId]  = useState<number | null>(
-    existingImages.find((i) => i.is_primary)?.id ?? null
-  );
-
-  // New images to upload
-  const [previews, setPreviews] = useState<PreviewImage[]>([]);
+    existingImages.find(i => i.is_primary)?.id ?? null
+  )
+  const [previews, setPreviews] = useState<PreviewImage[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const set = (field: string, value: unknown) =>
-    setForm((f) => ({ ...f, [field]: value }));
+    setForm(f => ({ ...f, [field]: value }))
 
-  // Load categories
+  // ── Load categories ────────────────────────────────────────────────────────
   useEffect(() => {
     categoriesApi.getAll()
-      .then((res) => setCategories(res.data as unknown as Category[]))
+      .then(res => setCategories(res.data ?? []))
       .catch(console.error)
-      .finally(() => setCatLoading(false));
-  }, []);
+      .finally(() => setCatLoading(false))
+  }, [])
 
-  // Auto-generate slug from name (only if slug is empty / untouched)
-  const slugTouched = useRef(!!fullProduct?.slug);
+  // ── Load subcategories on category change ──────────────────────────────────
+  useEffect(() => {
+    if (!form.category_id) {
+      setSubcategories([])
+      set('subcategory_id', '')
+      return
+    }
+    const cat = categories.find(c => c.id === Number(form.category_id))
+    if (!cat?.slug) return
+
+    setSubLoading(true)
+    categoriesApi.getSubcategories(cat.slug)
+      .then(res => setSubcategories(res.data ?? []))
+      .catch(() => setSubcategories([]))
+      .finally(() => setSubLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.category_id, categories])
+
+  // ── Auto-slug from name ────────────────────────────────────────────────────
+  const slugTouched = useRef(!!(p?.slug))
   useEffect(() => {
     if (!slugTouched.current && form.name) {
-      const slug = form.name
-        .toLowerCase()
-        .trim()
+      set('slug', form.name.toLowerCase().trim()
         .replace(/[^a-z0-9\s-]/g, '')
         .replace(/\s+/g, '-')
-        .replace(/-+/g, '-');
-      set('slug', slug);
+        .replace(/-+/g, '-'))
     }
-  }, [form.name]);
+  }, [form.name])
 
-  // Cleanup preview object URLs on unmount
-  useEffect(() => {
-    return () => previews.forEach((p) => URL.revokeObjectURL(p.preview));
-  }, []);
+  // Cleanup preview object URLs
+  useEffect(() => () => previews.forEach(prev => URL.revokeObjectURL(prev.preview)), [])
 
-  // ── Image handlers ────────────────────────────────────────────────────
+  // ── Image handlers ─────────────────────────────────────────────────────────
+  const totalImages = existingImages.length + previews.length
 
-  const totalImages = existingImages.length + previews.length;
+  const addFiles = (files: File[]) => {
+    const toAdd = files.slice(0, 8 - totalImages).map(file => ({
+      file, preview: URL.createObjectURL(file), id: Math.random().toString(36).slice(2),
+    }))
+    setPreviews(prev => [...prev, ...toAdd])
+  }
 
-  const handleNewFiles = (files: File[]) => {
-    const remaining = 8 - totalImages;
-    const toAdd = files.slice(0, remaining);
-    const newPreviews: PreviewImage[] = toAdd.map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-      id: Math.random().toString(36).slice(2),
-    }));
-    setPreviews((prev) => [...prev, ...newPreviews]);
-  };
+  const removeExisting = (id: number) => {
+    setExistingImages(prev => prev.filter(img => img.id !== id))
+    setDeletedImageIds(prev => [...prev, id])
+    if (primaryImageId === id)
+      setPrimaryImageId(existingImages.find(img => img.id !== id)?.id ?? null)
+  }
 
-  const removeExistingImage = (id: number) => {
-    setExistingImages((prev) => prev.filter((img) => img.id !== id));
-    setDeletedImageIds((prev) => [...prev, id]);
-    if (primaryImageId === id) {
-      // Promote the first remaining image
-      const next = existingImages.find((img) => img.id !== id);
-      setPrimaryImageId(next?.id ?? null);
-    }
-  };
-
-  const removePreview = (clientId: string) => {
-    setPreviews((prev) => {
-      const found = prev.find((p) => p.id === clientId);
-      if (found) URL.revokeObjectURL(found.preview);
-      return prev.filter((p) => p.id !== clientId);
-    });
-  };
+  const removePreview = (cid: string) => {
+    setPreviews(prev => {
+      const found = prev.find(prev => prev.id === cid)
+      if (found) URL.revokeObjectURL(found.preview)
+      return prev.filter(prev => prev.id !== cid)
+    })
+  }
 
   const setExistingPrimary = (id: number) => {
-    setPrimaryImageId(id);
-    setExistingImages((prev) =>
-      prev.map((img) => ({ ...img, is_primary: img.id === id }))
-    );
-  };
+    setPrimaryImageId(id)
+    setExistingImages(prev => prev.map(img => ({ ...img, is_primary: img.id === id })))
+  }
 
-  // ── Validation ────────────────────────────────────────────────────────
-
+  // ── Validation ─────────────────────────────────────────────────────────────
   const validate = () => {
-    const e: Record<string, string> = {};
-    if (!form.name.trim())        e.name        = 'Product name is required.';
-    if (!form.category_id)        e.category_id = 'Please select a category.';
-    if (form.price === '' || isNaN(Number(form.price)) || Number(form.price) < 0)
-                                  e.price       = 'Enter a valid price (≥ 0).';
-    if (form.stock === '' || isNaN(Number(form.stock)) || Number(form.stock) < 0)
-                                  e.stock       = 'Enter a valid stock quantity (≥ 0).';
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
+    const e: Record<string, string> = {}
+    if (!form.name.trim())                                                    e.name        = 'Required.'
+    if (!form.category_id)                                                    e.category_id = 'Select a category.'
+    if (form.price === '' || isNaN(Number(form.price)) || Number(form.price) < 0) e.price = 'Enter a valid price.'
+    if (form.stock === '' || isNaN(Number(form.stock)) || Number(form.stock) < 0) e.stock = 'Enter a valid quantity.'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
 
-  // ── Submit ────────────────────────────────────────────────────────────
-
+  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    setSaving(true);
-    setApiError('');
+    e.preventDefault()
+    if (!validate()) return
+    setSaving(true)
+    setApiError('')
 
     try {
-      const payload: ProductPayload = {
+      const subId = form.subcategory_id ? parseInt(form.subcategory_id, 10) : null
+
+      const payload = {
         name:              form.name.trim(),
-        slug:              form.slug.trim() || undefined,
-        sku:               form.sku.trim()  || undefined,
-        description:       form.description.trim()       || null,
-        short_description: form.short_description.trim() || null,
+        slug:              form.slug.trim()              || undefined,
+        sku:               form.sku.trim()               || undefined,
+        description:       form.description.trim()       || undefined,
+        short_description: form.short_description.trim() || undefined,
         price:             parseFloat(form.price),
         stock:             parseInt(form.stock, 10),
         category_id:       parseInt(form.category_id, 10),
-        is_active:         form.is_active,
-        images:            previews.map((p) => p.file),
-        delete_image_ids:  deletedImageIds.length ? deletedImageIds : undefined,
-      };
+        // Only include subcategory_id when a value is selected — null is omitted
+        // from FormData (server interprets missing field as null)
+        ...(subId !== null ? { subcategory_id: subId } : {}),
+        is_active:        form.is_active,
+        images:           previews.map(prev => prev.file),
+        delete_image_ids: deletedImageIds.length ? deletedImageIds : undefined,
+        attributes:       serializeAttributes(attrValues),
+      }
 
       if (isEdit) {
-        await productsApi.update(product!.id, payload);
-        // Update primary image if changed
+        await productsApi.update(product!.id, payload)
         if (primaryImageId !== null) {
-          const original = fullProduct?.images?.find((i) => i.is_primary);
-          if (!original || original.id !== primaryImageId) {
-            await productsApi.setPrimaryImage(product!.id, primaryImageId);
+          const orig = p?.images?.find(i => i.is_primary)
+          if (!orig || orig.id !== primaryImageId) {
+            await productsApi.setPrimaryImage(product!.id, primaryImageId)
           }
         }
       } else {
-        await productsApi.create(payload);
+        await productsApi.create(payload)
       }
 
-      onSaved();
-      onClose();
+      onSaved()
+      onClose()
     } catch (err: any) {
-      const data = err?.response?.data;
-      // Laravel validation errors
+      const data = err?.response?.data
       if (data?.errors) {
-        const mapped: Record<string, string> = {};
+        const mapped: Record<string, string> = {}
         Object.entries(data.errors).forEach(([key, msgs]) => {
-          mapped[key] = (msgs as string[])[0];
-        });
-        setErrors(mapped);
+          mapped[key] = (msgs as string[])[0]
+        })
+        setErrors(mapped)
       } else {
-        setApiError(
-          data?.message ?? data?.error ?? 'Failed to save. Please try again.'
-        );
+        setApiError(data?.message ?? 'Failed to save. Please try again.')
       }
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
-  // ─────────────────────────────────────────────────────────────────────
-
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto flex flex-col">
+    <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',backdropFilter:'blur(4px)',
+      zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',padding:16 }}>
+      <div style={{ background:'#fff',borderRadius:20,boxShadow:'0 24px 64px rgba(0,0,0,0.18)',
+        width:'100%',maxWidth:680,maxHeight:'92vh',overflowY:'auto',display:'flex',flexDirection:'column' }}>
 
-        {/* ── Header ── */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10 rounded-t-2xl">
+        {/* Header */}
+        <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',
+          padding:'18px 24px',borderBottom:'1px solid #f0f0f0',
+          position:'sticky',top:0,background:'#fff',zIndex:10,borderRadius:'20px 20px 0 0' }}>
           <div>
-            <h2 className="font-extrabold text-slate-900 text-base">
+            <h2 style={{ fontSize:16,fontWeight:900,color:'#111',margin:0 }}>
               {isEdit ? 'Edit Product' : 'Add New Product'}
             </h2>
             {!isEdit && (
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Product will be reviewed by admin before going live.
+              <p style={{ fontSize:11,color:'#94a3b8',margin:'3px 0 0' }}>
+                Will be reviewed by admin before going live.
               </p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-          >
-            <X size={16} />
+          <button type="button" onClick={onClose}
+            style={{ padding:6,borderRadius:10,border:'none',background:'transparent',
+              cursor:'pointer',color:'#94a3b8' }}>
+            <X size={18}/>
           </button>
         </div>
 
-        {/* ── Form ── */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 flex-1">
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ padding:24,display:'flex',flexDirection:'column',gap:20 }}>
 
-          {/* API Error */}
           {apiError && (
-            <div className="flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-xl px-3.5 py-3 text-sm text-red-600">
-              <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
-              <span>{apiError}</span>
+            <div style={{ display:'flex',alignItems:'flex-start',gap:10,background:'#fef2f2',
+              border:'1px solid #fecaca',borderRadius:12,padding:'12px 14px',fontSize:13,color:'#dc2626' }}>
+              <AlertCircle size={15} style={{ flexShrink:0,marginTop:1 }}/>{apiError}
             </div>
           )}
 
-          {/* ── Section: Basic Info ── */}
-          <div className="space-y-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pb-1 border-b border-slate-100">
+          {/* Basic Info */}
+          <section>
+            <p style={{ fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'0.1em',
+              color:'#94a3b8',paddingBottom:8,borderBottom:'1px solid #f0f0f0',marginBottom:16 }}>
               Basic Information
             </p>
-
-            {/* Name */}
-            <Field label="Product Name" required error={errors.name}>
-              <input
-                value={form.name}
-                onChange={(e) => set('name', e.target.value)}
-                placeholder="e.g. Handmade Pottery Mug"
-                className={inputCls(errors.name)}
-              />
-            </Field>
-
-            {/* Slug + SKU */}
-            <div className="grid grid-cols-2 gap-3">
-              <Field
-                label="URL Slug"
-                hint="Auto-generated from name"
-                error={errors.slug}
-              >
-                <input
-                  value={form.slug}
-                  onChange={(e) => {
-                    slugTouched.current = true;
-                    set('slug', e.target.value);
-                  }}
-                  placeholder="my-product-name"
-                  className={inputCls(errors.slug)}
-                />
+            <div style={{ display:'flex',flexDirection:'column',gap:12 }}>
+              <Field label="Product Name" required error={errors.name}>
+                <input value={form.name} onChange={e => set('name', e.target.value)}
+                  placeholder="e.g. White Cotton T-Shirt" className={inputCls(errors.name)}/>
               </Field>
-              <Field
-                label="SKU"
-                hint="Auto-generated if empty"
-                error={errors.sku}
-              >
-                <input
-                  value={form.sku}
-                  onChange={(e) => set('sku', e.target.value)}
-                  placeholder="Leave blank to auto-generate"
-                  className={inputCls(errors.sku)}
-                />
+              <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:12 }}>
+                <Field label="URL Slug" hint="Auto-generated from name">
+                  <input value={form.slug}
+                    onChange={e => { slugTouched.current = true; set('slug', e.target.value) }}
+                    placeholder="my-product-name" className={inputCls()}/>
+                </Field>
+                <Field label="SKU" hint="Auto-generated if empty">
+                  <input value={form.sku} onChange={e => set('sku', e.target.value)}
+                    placeholder="Leave blank" className={inputCls()}/>
+                </Field>
+              </div>
+              <Field label="Short Description" hint="Max 500 chars">
+                <input value={form.short_description}
+                  onChange={e => set('short_description', e.target.value)}
+                  maxLength={500} placeholder="One-line summary…" className={inputCls()}/>
+              </Field>
+              <Field label="Full Description">
+                <textarea rows={4} value={form.description}
+                  onChange={e => set('description', e.target.value)}
+                  placeholder="Describe your product in detail…"
+                  className={`${inputCls()} resize-none`}/>
               </Field>
             </div>
+          </section>
 
-            {/* Short Description */}
-            <Field label="Short Description" hint="Brief tagline shown in listings (max 500 chars)">
-              <input
-                value={form.short_description}
-                onChange={(e) => set('short_description', e.target.value)}
-                maxLength={500}
-                placeholder="One-line product summary…"
-                className={inputCls()}
-              />
-            </Field>
-
-            {/* Description */}
-            <Field label="Full Description">
-              <textarea
-                rows={4}
-                value={form.description}
-                onChange={(e) => set('description', e.target.value)}
-                placeholder="Describe your product in detail…"
-                className={`${inputCls()} resize-none`}
-              />
-            </Field>
-          </div>
-
-          {/* ── Section: Pricing & Inventory ── */}
-          <div className="space-y-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pb-1 border-b border-slate-100">
+          {/* Pricing & Inventory */}
+          <section>
+            <p style={{ fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'0.1em',
+              color:'#94a3b8',paddingBottom:8,borderBottom:'1px solid #f0f0f0',marginBottom:16 }}>
               Pricing & Inventory
             </p>
-
-            <div className="grid grid-cols-3 gap-3">
-              {/* Price */}
+            <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12 }}>
               <Field label="Price (TND)" required error={errors.price}>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.001"
-                    value={form.price}
-                    onChange={(e) => set('price', e.target.value)}
-                    placeholder="0.000"
-                    className={`${inputCls(errors.price)} pr-12`}
-                  />
-                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-semibold">
-                    TND
-                  </span>
+                <div style={{ position:'relative' }}>
+                  <input type="number" min="0" step="0.001" value={form.price}
+                    onChange={e => set('price', e.target.value)} placeholder="0.000"
+                    className={inputCls(errors.price)} style={{ paddingRight:44 }}/>
+                  <span style={{ position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',
+                    fontSize:11,color:'#94a3b8',fontWeight:600 }}>TND</span>
                 </div>
               </Field>
-
-              {/* Stock */}
               <Field label="Stock" required error={errors.stock}>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.stock}
-                  onChange={(e) => set('stock', e.target.value)}
-                  placeholder="0"
-                  className={inputCls(errors.stock)}
-                />
+                <input type="number" min="0" value={form.stock}
+                  onChange={e => set('stock', e.target.value)} placeholder="0"
+                  className={inputCls(errors.stock)}/>
               </Field>
-
-              {/* Status */}
               <Field label="Status">
-                <select
-                  value={form.is_active ? 'active' : 'inactive'}
-                  onChange={(e) => set('is_active', e.target.value === 'active')}
-                  className={inputCls()}
-                >
+                <select value={form.is_active ? 'active' : 'inactive'}
+                  onChange={e => set('is_active', e.target.value === 'active')}
+                  className={inputCls()}>
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                 </select>
               </Field>
             </div>
+          </section>
 
-            {/* Category */}
-            <Field label="Category" required error={errors.category_id}>
-              <select
-                value={form.category_id}
-                onChange={(e) => set('category_id', e.target.value)}
-                className={inputCls(errors.category_id)}
-                disabled={catLoading}
-              >
-                <option value="">
-                  {catLoading ? 'Loading categories…' : '— Select a category —'}
-                </option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
+          {/* Category & Subcategory */}
+          <section>
+            <p style={{ fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'0.1em',
+              color:'#94a3b8',paddingBottom:8,borderBottom:'1px solid #f0f0f0',marginBottom:16 }}>
+              Category
+            </p>
+            <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:12 }}>
+              <Field label="Category" required error={errors.category_id}>
+                <select value={form.category_id}
+                  onChange={e => {
+                    set('category_id', e.target.value)
+                    set('subcategory_id', '')
+                    setAttrValues({})
+                  }}
+                  className={inputCls(errors.category_id)} disabled={catLoading}>
+                  <option value="">{catLoading ? 'Loading…' : '— Select category —'}</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Subcategory" hint="Enables precise filtering">
+                <select value={form.subcategory_id}
+                  onChange={e => { set('subcategory_id', e.target.value); setAttrValues({}) }}
+                  className={inputCls()}
+                  disabled={!form.category_id || subLoading}>
+                  <option value="">
+                    {subLoading ? 'Loading…' : !form.category_id ? '— Select category first —' : '— None (optional) —'}
                   </option>
-                ))}
-              </select>
-            </Field>
-          </div>
+                  {subcategories.map(sub => (
+                    <option key={sub.id} value={sub.id}>{sub.name}</option>
+                  ))}
+                </select>
+                {form.subcategory_id && (
+                  <p style={{ fontSize:10,color:'#10b981',marginTop:3 }}>
+                    ✓ Subcategory ID: {form.subcategory_id}
+                  </p>
+                )}
+              </Field>
+            </div>
+          </section>
 
-          {/* ── Section: Images ── */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                Product Images
-              </p>
-              <span className="text-[11px] text-slate-400">
-                {totalImages}/8 images
-              </span>
+          {/* Dynamic Attributes */}
+          {form.subcategory_id && (
+            <section>
+              <DynamicAttributeSection
+                subcategoryId={Number(form.subcategory_id)}
+                values={attrValues}
+                onChange={setAttrValues}
+                disabled={saving}
+              />
+            </section>
+          )}
+
+          {/* Images */}
+          <section>
+            <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',
+              paddingBottom:8,borderBottom:'1px solid #f0f0f0',marginBottom:14 }}>
+              <p style={{ fontSize:10,fontWeight:800,textTransform:'uppercase',
+                letterSpacing:'0.1em',color:'#94a3b8',margin:0 }}>Images</p>
+              <span style={{ fontSize:11,color:'#94a3b8' }}>{totalImages}/8</span>
             </div>
 
-            {/* Existing images (edit mode) */}
             {existingImages.length > 0 && (
-              <div>
-                <p className="text-[11px] text-slate-500 font-semibold mb-2">Current Images</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {existingImages.map((img) => (
-                    <ImageThumb
-                      key={img.id}
-                      src={img.url}
-                      isPrimary={img.id === primaryImageId}
-                      onRemove={() => removeExistingImage(img.id)}
-                      onSetPrimary={() => setExistingPrimary(img.id)}
-                    />
+              <div style={{ marginBottom:12 }}>
+                <p style={{ fontSize:11,color:'#64748b',fontWeight:600,marginBottom:8 }}>Current Images</p>
+                <div style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8 }}>
+                  {existingImages.map(img => (
+                    <ImageThumb key={img.id} src={img.url} isPrimary={img.id === primaryImageId}
+                      onRemove={() => removeExisting(img.id)}
+                      onSetPrimary={() => setExistingPrimary(img.id)}/>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* New image previews */}
             {previews.length > 0 && (
-              <div>
-                <p className="text-[11px] text-slate-500 font-semibold mb-2">New Images</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {previews.map((p) => (
-                    <ImageThumb
-                      key={p.id}
-                      src={p.preview}
-                      isPrimary={existingImages.length === 0 && previews[0]?.id === p.id}
-                      onRemove={() => removePreview(p.id)}
-                      onSetPrimary={() => {/* new uploads: first = primary */}}
-                    />
+              <div style={{ marginBottom:12 }}>
+                <p style={{ fontSize:11,color:'#64748b',fontWeight:600,marginBottom:8 }}>New Images</p>
+                <div style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8 }}>
+                  {previews.map(prev => (
+                    <ImageThumb key={prev.id} src={prev.preview}
+                      isPrimary={existingImages.length === 0 && previews[0]?.id === prev.id}
+                      onRemove={() => removePreview(prev.id)}
+                      onSetPrimary={() => {}}/>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Drop zone (only if under limit) */}
             {totalImages < 8 && (
-              <ImageDropZone onFiles={handleNewFiles} disabled={saving} />
+              <div
+                onDragOver={e => e.preventDefault()}
+                onDrop={e => { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))) }}
+                onClick={() => fileInputRef.current?.click()}
+                style={{ border:'2px dashed #e5e7eb',borderRadius:14,padding:'20px 16px',
+                  display:'flex',flexDirection:'column',alignItems:'center',gap:6,
+                  cursor:'pointer',transition:'border-color 0.18s' }}
+                className="hover:border-red-300">
+                <Upload size={20} color="#94a3b8"/>
+                <p style={{ fontSize:13,fontWeight:600,color:'#64748b',margin:0 }}>
+                  Drop images or <span style={{ color:'#dc2626' }}>browse</span>
+                </p>
+                <p style={{ fontSize:11,color:'#94a3b8',margin:0 }}>JPG, PNG, WebP · max 5 MB each</p>
+                <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display:'none' }}
+                  onChange={e => { addFiles(Array.from(e.target.files ?? [])); e.target.value = '' }}/>
+              </div>
             )}
 
             {totalImages === 0 && (
-              <p className="text-center text-[11px] text-slate-400 -mt-1">
-                <ImageIcon size={11} className="inline mr-1" />
-                No images yet — add some above
+              <p style={{ textAlign:'center',fontSize:11,color:'#94a3b8',marginTop:4,
+                display:'flex',alignItems:'center',justifyContent:'center',gap:4 }}>
+                <ImageIcon size={11}/> No images yet
               </p>
             )}
-          </div>
+          </section>
 
-          {/* ── Approval notice ── */}
+          {/* Approval notice */}
           {!isEdit && (
-            <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-3.5 py-3 text-xs text-amber-700">
-              <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
-              <span>
-                Your product will be submitted for admin review and will go live once approved.
-              </span>
+            <div style={{ display:'flex',alignItems:'flex-start',gap:10,background:'#fffbeb',
+              border:'1px solid #fde68a',borderRadius:12,padding:'12px 14px',fontSize:12,color:'#92400e' }}>
+              <AlertCircle size={14} style={{ flexShrink:0,marginTop:1 }}/>
+              Your product will go live after admin approval.
             </div>
           )}
 
-          {/* ── Actions ── */}
-          <div className="flex gap-3 pt-2 sticky bottom-0 bg-white pb-0">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition"
-            >
+          {/* Actions */}
+          <div style={{ display:'flex',gap:12,paddingTop:4,position:'sticky',bottom:0,
+            background:'#fff',paddingBottom:2 }}>
+            <button type="button" onClick={onClose}
+              style={{ flex:1,padding:'11px 0',border:'1.5px solid #e5e7eb',background:'#fff',
+                color:'#64748b',fontWeight:700,fontSize:13,borderRadius:12,cursor:'pointer' }}>
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={saving || catLoading}
-              className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
-            >
-              {saving && <Loader2 size={14} className="animate-spin" />}
+            <button type="submit" disabled={saving || catLoading}
+              style={{ flex:1,padding:'11px 0',
+                background:'linear-gradient(135deg,#dc2626,#b91c1c)',
+                color:'#fff',fontWeight:800,fontSize:13,borderRadius:12,border:'none',
+                cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,
+                boxShadow:'0 6px 20px rgba(220,38,38,0.3)',
+                opacity:(saving || catLoading) ? 0.6 : 1 }}>
+              {saving && <Loader2 size={14} style={{ animation:'spin 0.8s linear infinite' }}/>}
               {isEdit ? 'Save Changes' : 'Submit for Review'}
             </button>
           </div>
         </form>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     </div>
-  );
+  )
 }
