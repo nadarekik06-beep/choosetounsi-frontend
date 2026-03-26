@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { logout, isAuthenticated, getUser, AuthUser } from "@/lib/auth";
 import { useCart } from "@/context/CartContext";
-import CartDrawer from "@/components/CartDrawer";
 import { Heart, ShoppingBag, ClipboardList } from "lucide-react";
 
 /* ─────────────────────────────────────────────────────────────
@@ -20,21 +19,11 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 /* ─────────────────────────────────────────────────────────────
    MEGA MENU DATA
-   item.slug MUST exactly match the slug the seeder inserts into
-   the `subcategories` table (Str::slug($name)).
-   Seeder name → Str::slug → slug used here:
-     "T-Shirt"      → "t-shirt"
-     "Dress"        → "dress"
-     "Jeans"        → "jeans"
-     "Denim Jacket" → "denim-jacket"
-     "Smartphone"   → "smartphone"
-     etc.
 ───────────────────────────────────────────────────────────── */
 type SubGroup = { title: string; items: { label: string; slug: string }[] }
 type MegaData = Record<string, SubGroup[]>
 
 const MEGA: MegaData = {
-  // ── fashion-clothing ─────────────────────────────────────────────────────
   "fashion-clothing": [
     { title: "Clothing", items: [
       { label: "Dress",         slug: "dress"        },
@@ -70,8 +59,6 @@ const MEGA: MegaData = {
       { label: "Tracksuit",      slug: "tracksuit"  },
     ]},
   ],
-
-  // ── electronics-tech ─────────────────────────────────────────────────────
   "electronics-tech": [
     { title: "Phones", items: [
       { label: "Smartphones",       slug: "smartphone" },
@@ -96,8 +83,6 @@ const MEGA: MegaData = {
       { label: "Consoles", slug: "gaming-console" },
     ]},
   ],
-
-  // ── home-living ───────────────────────────────────────────────────────────
   "home-living": [
     { title: "Furniture", items: [
       { label: "Sofa",         slug: "sofa"         },
@@ -118,8 +103,6 @@ const MEGA: MegaData = {
       { label: "Curtains",   slug: "curtains"   },
     ]},
   ],
-
-  // ── food-grocery ──────────────────────────────────────────────────────────
   "food-grocery": [
     { title: "Grocery", items: [
       { label: "Olive Oil",    slug: "olive-oil"    },
@@ -137,8 +120,6 @@ const MEGA: MegaData = {
       { label: "Organic Products", slug: "organic-products" },
     ]},
   ],
-
-  // ── beauty-personal-care ──────────────────────────────────────────────────
   "beauty-personal-care": [
     { title: "Face Care", items: [
       { label: "Moisturiser", slug: "moisturiser" },
@@ -159,8 +140,6 @@ const MEGA: MegaData = {
       { label: "Argan Oil",  slug: "argan-oil"  },
     ]},
   ],
-
-  // ── sports-outdoors ───────────────────────────────────────────────────────
   "sports-outdoors": [
     { title: "Sportswear", items: [
       { label: "Sports T-Shirt", slug: "sports-t-shirt" },
@@ -177,24 +156,20 @@ const MEGA: MegaData = {
       { label: "Swimming Gear", slug: "swimming-gear" },
     ]},
   ],
-
-  // ── arts-crafts ───────────────────────────────────────────────────────────
   "arts-crafts": [
     { title: "Painting", items: [
       { label: "Acrylic", slug: "acrylic-paint" },
       { label: "Canvas",  slug: "canvas"        },
     ]},
     { title: "Crafts", items: [
-      { label: "Pottery",           slug: "pottery"          },
-      { label: "Jewellery",         slug: "handmade-jewelry" },
-      { label: "Embroidery",        slug: "embroidery-kit"   },
+      { label: "Pottery",    slug: "pottery"          },
+      { label: "Jewellery",  slug: "handmade-jewelry" },
+      { label: "Embroidery", slug: "embroidery-kit"   },
     ]},
     { title: "Creative Hobbies", items: [
       { label: "Knitting Yarn", slug: "knitting-yarn" },
     ]},
   ],
-
-  // ── books-stationery ──────────────────────────────────────────────────────
   "books-stationery": [
     { title: "Books", items: [
       { label: "Novels",         slug: "novel"           },
@@ -207,8 +182,6 @@ const MEGA: MegaData = {
       { label: "Planners",  slug: "planner"  },
     ]},
   ],
-
-  // ── kids-baby ─────────────────────────────────────────────────────────────
   "kids-baby": [
     { title: "Toys", items: [
       { label: "Plush Toys",        slug: "plush-toy"        },
@@ -221,8 +194,6 @@ const MEGA: MegaData = {
       { label: "Baby Bottle",  slug: "baby-bottle"  },
     ]},
   ],
-
-  // ── automotive ────────────────────────────────────────────────────────────
   "automotive": [
     { title: "Accessories", items: [
       { label: "Car Accessory",  slug: "car-accessory"  },
@@ -233,23 +204,21 @@ const MEGA: MegaData = {
       { label: "Motorcycle Gear", slug: "motorcycle-gear" },
     ]},
   ],
-
-  // ── health-wellness ───────────────────────────────────────────────────────
   "health-wellness": [
     { title: "Nutrition", items: [
-      { label: "Vitamins",        slug: "vitamins"        },
-      { label: "Protein Powder",  slug: "protein-powder"  },
+      { label: "Vitamins",       slug: "vitamins"       },
+      { label: "Protein Powder", slug: "protein-powder" },
     ]},
     { title: "Wellness", items: [
-      { label: "Essential Oil",   slug: "essential-oil"   },
-      { label: "Herbal Tea",      slug: "herbal-tea"      },
-      { label: "Medical Device",  slug: "medical-device"  },
+      { label: "Essential Oil",  slug: "essential-oil"  },
+      { label: "Herbal Tea",     slug: "herbal-tea"     },
+      { label: "Medical Device", slug: "medical-device" },
     ]},
   ],
 };
 
 /* ─────────────────────────────────────────────────────────────
-   SVG ICON MAP — EXACT ORIGINAL
+   SVG ICON MAP
 ───────────────────────────────────────────────────────────── */
 function getCategoryIcon(slug: string, name: string): React.ReactNode {
   const s = (slug + " " + name).toLowerCase();
@@ -279,7 +248,7 @@ function getCategoryIcon(slug: string, name: string): React.ReactNode {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   AVATAR — EXACT ORIGINAL
+   AVATAR
 ───────────────────────────────────────────────────────────── */
 const AVATAR_COLORS = [
   ["#fde68a","#92400e"],["#bfdbfe","#1e40af"],["#bbf7d0","#14532d"],
@@ -313,9 +282,7 @@ function RoleBadge({ role }: { role: AuthUser["role"] }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   MEGA MENU — EXACT ORIGINAL DESIGN
-   ONLY change: each item.slug maps to the correct subcategory
-   slug in the database, so ?sub=t-shirt etc. work correctly
+   MEGA MENU
 ───────────────────────────────────────────────────────────── */
 function MegaMenu({ categories, visible, onClose }: {
   categories: ApiCategory[]; visible: boolean; onClose: () => void;
@@ -383,7 +350,6 @@ function MegaMenu({ categories, visible, onClose }: {
               <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:"24px 20px" }}>
                 {activeSubs.map(group => (
                   <div key={group.title}>
-                    {/* Group title → category page (all products) */}
                     <Link href={`/category/${activeSlug}`} onClick={onClose}
                       style={{ display:"block",fontSize:11,fontWeight:800,color:"#dc2626",textDecoration:"none",
                         textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10,
@@ -393,14 +359,6 @@ function MegaMenu({ categories, visible, onClose }: {
                     <ul style={{ listStyle:"none",margin:0,padding:0,display:"flex",flexDirection:"column",gap:5 }}>
                       {group.items.map(item => (
                         <li key={`${group.title}-${item.slug}-${item.label}`}>
-                          {/*
-                            ✅ THE KEY LINK:
-                            /category/fashion-clothing?sub=t-shirt
-                            The category page reads ?sub=t-shirt and sends
-                            subcategory_slug=t-shirt to the backend.
-                            The backend resolves t-shirt → subcategory.id
-                            then filters products.subcategory_id = that id.
-                          */}
                           <Link
                             href={`/category/${activeSlug}?sub=${item.slug}`}
                             onClick={onClose}
@@ -438,7 +396,7 @@ function MegaMenu({ categories, visible, onClose }: {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   NAVBAR — EXACT ORIGINAL
+   NAVBAR
 ═══════════════════════════════════════════════════════════════ */
 const NAV_LINKS = [
   { label:"Shop",    href:"/shop"    },
@@ -454,8 +412,9 @@ export default function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [megaOpen,   setMegaOpen]   = useState(false);
   const [categories, setCategories] = useState<ApiCategory[]>([]);
-  const [cartOpen,   setCartOpen]   = useState(false);
-  const { count, favorites } = useCart();
+
+  // ✅ FIX: get openDrawer from context instead of local state
+  const { count, favorites, openDrawer } = useCart();
 
   useEffect(() => { if (isAuthenticated()) setUser(getUser()); }, []);
 
@@ -484,10 +443,16 @@ export default function Navbar() {
   const toggleMega = () => { setMegaOpen(o=>!o); setDropdownOpen(false); };
   const closeAll   = () => { setMegaOpen(false); setDropdownOpen(false); setMenuOpen(false); };
 
+  // ✅ FIX: open drawer via context, no local cartOpen state needed
+  const handleOpenCart = () => {
+    closeAll();
+    openDrawer();
+  };
+
   return (
     <>
       <MegaMenu categories={categories} visible={megaOpen} onClose={() => setMegaOpen(false)}/>
-      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)}/>
+      {/* ✅ FIX: CartDrawer is rendered in layout.tsx — removed from here */}
 
       <header className="w-full bg-white sticky top-0 z-50" style={{ boxShadow:'0 1px 0 #f1f5f9' }}>
 
@@ -504,18 +469,28 @@ export default function Navbar() {
               .util-link:hover{color:#dc2626;background:rgba(220,38,38,0.06)}
               .util-badge{position:absolute;top:-2px;right:2px;background:#dc2626;color:#fff;font-size:9px;font-weight:900;border-radius:999px;min-width:15px;height:15px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:1.5px solid #fff}
             `}</style>
-            <Link href="/orders" onClick={closeAll} className="util-link"><ClipboardList size={14}/>My Orders</Link>
+
+            <Link href="/orders" onClick={closeAll} className="util-link">
+              <ClipboardList size={14}/>My Orders
+            </Link>
+
             <span style={{ width:1,height:14,background:'#e5e7eb',flexShrink:0 }}/>
+
             <Link href="/favorites" onClick={closeAll} className="util-link" style={{ position:'relative' }}>
               <Heart size={14}/>Favorites
               {favCount>0&&<span className="util-badge">{favCount>9?'9+':favCount}</span>}
             </Link>
+
             <span style={{ width:1,height:14,background:'#e5e7eb',flexShrink:0 }}/>
-            <button onClick={()=>{setCartOpen(true);closeAll();}} className="util-link" style={{ position:'relative' }}>
+
+            {/* ✅ FIX: calls handleOpenCart → context openDrawer() */}
+            <button onClick={handleOpenCart} className="util-link" style={{ position:'relative' }}>
               <ShoppingBag size={14}/>Cart
               {count>0&&<span className="util-badge">{count>99?'99+':count}</span>}
             </button>
+
             <span style={{ width:1,height:14,background:'#e5e7eb',flexShrink:0 }}/>
+
             {!loggedIn ? (
               <>
                 <Link href="/auth/login" onClick={closeAll} className="util-link"><UserIcon/>Log In</Link>
@@ -604,7 +579,7 @@ export default function Navbar() {
           </button>
         </nav>
 
-        {/* Mobile drawer */}
+        {/* Mobile menu */}
         {menuOpen && (
           <div className="lg:hidden border-t border-zinc-100 bg-white px-6 py-4 flex flex-col gap-4">
             {loggedIn&&user&&(
@@ -641,7 +616,8 @@ export default function Navbar() {
                 {l.label}
               </Link>
             ))}
-            <button onClick={()=>{setMenuOpen(false);setCartOpen(true);}}
+            {/* ✅ FIX: mobile cart button also uses context */}
+            <button onClick={handleOpenCart}
               className="text-sm font-semibold text-zinc-800 hover:text-red-600 py-1 border-b border-zinc-50 text-left flex items-center gap-2">
               <ShoppingBag size={16}/> Cart {count>0&&<span className="bg-red-600 text-white text-[9px] font-bold rounded-full px-1.5 py-0.5">{count}</span>}
             </button>
@@ -666,6 +642,7 @@ export default function Navbar() {
   );
 }
 
+/* ─── Icon helpers ─── */
 function SearchIcon()    { return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>; }
 function UserIcon()      { return <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>; }
 function DashboardIcon() { return <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>; }

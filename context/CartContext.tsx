@@ -3,6 +3,8 @@
 /**
  * context/CartContext.tsx
  * Global cart state. Wrap your layout with <CartProvider>.
+ * ✅ Added: drawerOpen, openDrawer, closeDrawer
+ * ✅ Modified: addToCart now auto-opens the drawer on success
  */
 
 import {
@@ -32,6 +34,11 @@ interface CartContextValue {
   // Flash message
   flash: string | null
   clearFlash: () => void
+
+  // ✅ Drawer
+  drawerOpen: boolean
+  openDrawer: () => void
+  closeDrawer: () => void
 }
 
 const CartContext = createContext<CartContextValue | null>(null)
@@ -45,7 +52,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [favorites,   setFavorites]   = useState<FavoriteItem[]>([])
   const [favLoading,  setFavLoading]  = useState(false)
 
-  const [flash, setFlash] = useState<string | null>(null)
+  const [flash,       setFlash]       = useState<string | null>(null)
+
+  // ✅ Drawer state
+  const [drawerOpen,  setDrawerOpen]  = useState(false)
+
+  const openDrawer  = useCallback(() => setDrawerOpen(true),  [])
+  const closeDrawer = useCallback(() => setDrawerOpen(false), [])
 
   const showFlash = (msg: string) => {
     setFlash(msg)
@@ -88,7 +101,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       await cartApi.add(productId, qty)
       await refreshCart()
-      showFlash('Added to cart! 🛒')
+      // ✅ Auto-open the drawer after successfully adding
+      openDrawer()
     } catch (err: any) {
       showFlash(err.message ?? 'Failed to add to cart.')
     } finally {
@@ -154,6 +168,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       addToCart, updateItem, removeItem, clearCart, refreshCart,
       favorites, isFavorited, toggleFavorite, favLoading,
       flash, clearFlash: () => setFlash(null),
+      // ✅ Drawer
+      drawerOpen, openDrawer, closeDrawer,
     }}>
       {children}
     </CartContext.Provider>

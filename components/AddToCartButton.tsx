@@ -1,8 +1,9 @@
 'use client'
 
 /**
- * components/shop/AddToCartButton.tsx
+ * components/AddToCartButton.tsx
  * Drop-in button that handles add-to-cart logic.
+ * ✅ Drawer opens automatically via CartContext — no extra code needed here.
  * Usage: <AddToCartButton productId={42} stock={5} />
  */
 
@@ -26,7 +27,7 @@ export default function AddToCartButton({ productId, stock, className = '', vari
     e.stopPropagation()
     if (stock <= 0 || cartLoading) return
 
-    await addToCart(productId)
+    await addToCart(productId)   // ← CartContext.addToCart now calls openDrawer() internally
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
   }

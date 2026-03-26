@@ -2,6 +2,7 @@ import { Syne } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from '@/context/CartContext'
 import FlashToast from '@/components/FlashToast'
+import CartDrawer from '@/components/CartDrawer'   // ✅ NEW
 
 const syne = Syne({
   subsets: ["latin"],
@@ -28,6 +29,7 @@ export default function RootLayout({
         <CartProvider>
           {children}
           <FlashToast />
+          <CartDrawer />   {/* ✅ Drawer lives here — available on every page */}
         </CartProvider>
       </body>
     </html>
