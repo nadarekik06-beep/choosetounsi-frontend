@@ -43,17 +43,15 @@ api.interceptors.response.use(
 );
 
 // ─── Storage URL helper ───────────────────────────────────────────────────────
-// Converts Laravel storage paths to full URLs pointing to the backend (port 8000)
-// Fixes images loading from :3000 (Next.js) instead of :8000 (Laravel)
 
 const BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000')
-  .replace(/\/api$/, '')
+  .replace(/\/api$/, '');
 
 export function storageUrl(path: string | null | undefined): string | null {
-  if (!path) return null
-  if (path.startsWith('http')) return path
-  const clean = path.replace(/^\/storage\//, '').replace(/^\//, '')
-  return `${BASE}/storage/${clean}`
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  const clean = path.replace(/^\/storage\//, '').replace(/^\//, '');
+  return `${BASE}/storage/${clean}`;
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
@@ -106,32 +104,22 @@ export type ProductPayload = {
 
 function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
   const fd = new FormData();
-
-  if (isUpdate) {
-    fd.append('_method', 'PUT');
-  }
-
+  if (isUpdate) fd.append('_method', 'PUT');
   fd.append('name', payload.name);
   fd.append('price', String(payload.price));
   fd.append('stock', String(payload.stock));
   fd.append('category_id', String(payload.category_id));
   fd.append('is_active', payload.is_active ? '1' : '0');
-
   if (payload.description != null) fd.append('description', payload.description);
   if (payload.short_description != null) fd.append('short_description', payload.short_description);
   if (payload.sku) fd.append('sku', payload.sku);
   if (payload.slug) fd.append('slug', payload.slug);
-
   if (payload.images?.length) {
     payload.images.forEach((file) => fd.append('images[]', file));
   }
-
   if (payload.delete_image_ids?.length) {
-    payload.delete_image_ids.forEach((id) =>
-      fd.append('delete_image_ids[]', String(id))
-    );
+    payload.delete_image_ids.forEach((id) => fd.append('delete_image_ids[]', String(id)));
   }
-
   return fd;
 }
 
@@ -193,6 +181,10 @@ export const ordersApi = {
 
   updateStatus: (id: number, status: string): Promise<ApiResponse<Order>> =>
     api.patch(`/seller/orders/${id}/status`, { status }).then((r) => r.data),
+
+  // ← NEW: allows seller to confirm cash received for COD orders
+  updatePayment: (id: number, payment_status: string): Promise<ApiResponse<Order>> =>
+    api.patch(`/seller/orders/${id}/payment`, { payment_status }).then((r) => r.data),
 };
 
 export default api;
