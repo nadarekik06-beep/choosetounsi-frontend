@@ -1,6 +1,9 @@
+'use client'
+
 /**
  * lib/shopApi.ts
  * Cart, Favorites, and Checkout API calls for the frontend.
+ * Updated to support product variants.
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
@@ -38,11 +41,48 @@ async function request<T>(
   return json
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Variant types ────────────────────────────────────────────────────────────
+
+export interface VariantOptionEntry {
+  id: number
+  value: string
+  color_hex?: string | null
+}
+
+/**
+ * One selectable axis (e.g. "Color" or "Size") with its available options.
+ * Returned in GET /api/products/{slug} as `selectable_axes`.
+ */
+export interface SelectableAxis {
+  slug: string
+  name: string
+  type: 'select' | 'color' | 'multiselect' | string
+  options: VariantOptionEntry[]
+}
+
+/**
+ * A single variant as returned by the API.
+ * `option_map` is keyed by attribute slug for O(1) lookup.
+ */
+export interface ProductVariant {
+  id: number
+  sku: string | null
+  stock: number
+  is_active: boolean
+  price: number                                     // effective price (override ?? base)
+  price_override: number | null
+  label: string                                     // e.g. "Red / M"
+  option_map: Record<string, VariantOptionEntry>    // { color: {...}, size: {...} }
+}
+
+// ─── Cart types ───────────────────────────────────────────────────────────────
 
 export interface CartItem {
   id: number
   product_id: number
+  variant_id: number | null
+  variant_label: string | null
+  variant_options: Record<string, VariantOptionEntry>
   name: string
   slug: string
   sku: string | null
@@ -63,9 +103,14 @@ export interface CartResponse {
   }
 }
 
+// ─── Favorites types ──────────────────────────────────────────────────────────
+
 export interface FavoriteItem {
   id: number
   product_id: number
+  variant_id: number | null
+  variant_label: string | null
+  variant_options: Record<string, VariantOptionEntry>
   name: string
   slug: string
   price: number
@@ -73,6 +118,8 @@ export interface FavoriteItem {
   image_url: string | null
   category: string | null
 }
+
+// ─── Checkout types ───────────────────────────────────────────────────────────
 
 export interface CheckoutPayload {
   wilaya: string
@@ -95,10 +142,16 @@ export const cartApi = {
   get: () =>
     request<CartResponse>('GET', '/cart'),
 
-  add: (productId: number, quantity = 1) =>
+  /**
+   * Add a product (or a specific variant) to the cart.
+   * Pass variantId when the product has variants — the backend will
+   * reject the request if variants exist but no variantId is given.
+   */
+  add: (productId: number, quantity = 1, variantId?: number | null) =>
     request<{ success: boolean; message: string; data: CartItem }>('POST', '/cart', {
       product_id: productId,
       quantity,
+      ...(variantId != null ? { variant_id: variantId } : {}),
     }),
 
   update: (cartItemId: number, quantity: number) =>
@@ -117,16 +170,29 @@ export const favoritesApi = {
   get: () =>
     request<{ success: boolean; data: FavoriteItem[] }>('GET', '/favorites'),
 
-  add: (productId: number) =>
+  /**
+   * Favorite a product or a specific variant of a product.
+   */
+  add: (productId: number, variantId?: number | null) =>
     request<{ success: boolean; favorited: boolean; data: FavoriteItem }>('POST', '/favorites', {
       product_id: productId,
+      ...(variantId != null ? { variant_id: variantId } : {}),
     }),
 
-  remove: (productId: number) =>
-    request<{ success: boolean; favorited: boolean }>('DELETE', `/favorites/${productId}`),
+  /**
+   * Remove favorite. Pass variantId to remove only that specific variant,
+   * omit to remove all favorites for this product.
+   */
+  remove: (productId: number, variantId?: number | null) =>
+    request<{ success: boolean; favorited: boolean }>('DELETE', `/favorites/${productId}`, {
+      ...(variantId != null ? { variant_id: variantId } : {}),
+    }),
 
-  check: (productId: number) =>
-    request<{ success: boolean; favorited: boolean }>('GET', `/favorites/check/${productId}`),
+  check: (productId: number, variantId?: number | null) =>
+    request<{ success: boolean; favorited: boolean }>(
+      'GET',
+      `/favorites/check/${productId}${variantId != null ? `?variant_id=${variantId}` : ''}`
+    ),
 }
 
 // ─── Checkout API ─────────────────────────────────────────────────────────────

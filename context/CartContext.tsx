@@ -3,8 +3,7 @@
 /**
  * context/CartContext.tsx
  * Global cart state. Wrap your layout with <CartProvider>.
- * ✅ Added: drawerOpen, openDrawer, closeDrawer
- * ✅ Modified: addToCart now auto-opens the drawer on success
+ * Updated to support product variants.
  */
 
 import {
@@ -19,7 +18,7 @@ interface CartContextValue {
   count: number
   subtotal: number
   cartLoading: boolean
-  addToCart: (productId: number, qty?: number) => Promise<void>
+  addToCart: (productId: number, qty?: number, variantId?: number | null) => Promise<void>
   updateItem: (cartItemId: number, qty: number) => Promise<void>
   removeItem: (cartItemId: number) => Promise<void>
   clearCart: () => Promise<void>
@@ -27,15 +26,15 @@ interface CartContextValue {
 
   // Favorites
   favorites: FavoriteItem[]
-  isFavorited: (productId: number) => boolean
-  toggleFavorite: (productId: number) => Promise<void>
+  isFavorited: (productId: number, variantId?: number | null) => boolean
+  toggleFavorite: (productId: number, variantId?: number | null) => Promise<void>
   favLoading: boolean
 
   // Flash message
   flash: string | null
   clearFlash: () => void
 
-  // ✅ Drawer
+  // Drawer
   drawerOpen: boolean
   openDrawer: () => void
   closeDrawer: () => void
@@ -54,7 +53,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const [flash,       setFlash]       = useState<string | null>(null)
 
-  // ✅ Drawer state
   const [drawerOpen,  setDrawerOpen]  = useState(false)
 
   const openDrawer  = useCallback(() => setDrawerOpen(true),  [])
@@ -65,7 +63,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setFlash(null), 3000)
   }
 
-  /* ── Load cart & favorites on mount (if authenticated) ── */
+  // ── Load cart & favorites on mount (if authenticated) ─────────────────────
+
   const refreshCart = useCallback(async () => {
     if (!isAuthenticated()) return
     setCartLoading(true)
@@ -94,14 +93,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     refreshFavorites()
   }, [refreshCart, refreshFavorites])
 
-  /* ── Cart actions ── */
+  // ── Cart actions ───────────────────────────────────────────────────────────
 
-  const addToCart = async (productId: number, qty = 1) => {
+  /**
+   * Add a product to cart.
+   * Pass variantId when the product uses the variants system.
+   * The backend will reject if variants exist but no variantId is given.
+   */
+  const addToCart = async (productId: number, qty = 1, variantId?: number | null) => {
     setCartLoading(true)
     try {
-      await cartApi.add(productId, qty)
+      await cartApi.add(productId, qty, variantId)
       await refreshCart()
-      // ✅ Auto-open the drawer after successfully adding
       openDrawer()
     } catch (err: any) {
       showFlash(err.message ?? 'Failed to add to cart.')
@@ -135,23 +138,44 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }
 
-  /* ── Favorites actions ── */
+  // ── Favorites actions ──────────────────────────────────────────────────────
 
-  const isFavorited = (productId: number) =>
-    favorites.some(f => f.product_id === productId)
+  /**
+   * Check if a product (or a specific variant) is in favorites.
+   * When variantId is passed, matches both product AND variant.
+   * When variantId is null/undefined, matches any favorite for this product.
+   */
+  const isFavorited = (productId: number, variantId?: number | null): boolean => {
+    if (variantId != null) {
+      return favorites.some(
+        f => f.product_id === productId && f.variant_id === variantId
+      )
+    }
+    return favorites.some(f => f.product_id === productId)
+  }
 
-  const toggleFavorite = async (productId: number) => {
+  /**
+   * Toggle favorite for a product or a specific variant.
+   */
+  const toggleFavorite = async (productId: number, variantId?: number | null) => {
     if (!isAuthenticated()) {
       showFlash('Please log in to save favorites.')
       return
     }
     setFavLoading(true)
     try {
-      if (isFavorited(productId)) {
-        await favoritesApi.remove(productId)
-        setFavorites(prev => prev.filter(f => f.product_id !== productId))
+      if (isFavorited(productId, variantId ?? undefined)) {
+        await favoritesApi.remove(productId, variantId)
+        setFavorites(prev => {
+          if (variantId != null) {
+            return prev.filter(
+              f => !(f.product_id === productId && f.variant_id === variantId)
+            )
+          }
+          return prev.filter(f => f.product_id !== productId)
+        })
       } else {
-        const res = await favoritesApi.add(productId)
+        const res = await favoritesApi.add(productId, variantId)
         setFavorites(prev => [...prev, res.data])
         showFlash('Saved to favorites! ❤️')
       }
@@ -168,7 +192,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       addToCart, updateItem, removeItem, clearCart, refreshCart,
       favorites, isFavorited, toggleFavorite, favLoading,
       flash, clearFlash: () => setFlash(null),
-      // ✅ Drawer
       drawerOpen, openDrawer, closeDrawer,
     }}>
       {children}

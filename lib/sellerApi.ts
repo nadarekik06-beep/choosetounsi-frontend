@@ -1,119 +1,161 @@
 /**
  * lib/sellerApi.ts
- * All API calls for the seller dashboard.
- *
- * The default export mimics axios:
- *   - api.get(path, { params })  →  Promise<{ data: any }>
- *   - api.post(path, body)       →  Promise<{ data: any }>
- *   etc.
- *
- * Named exports (productsApi, categoriesApi, etc.) return raw JSON directly.
+ * Seller-side API calls.
+ * FIXED: variants are serialized into FormData using PHP-style array notation.
+ *        e.g. variants[0][option_ids][0]=3&variants[0][stock]=10
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+const RAW_URL   = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
+// Strip trailing /api so we can build both /api/... and /storage/... URLs
+const BASE_URL  = RAW_URL.replace(/\/api\/?$/, '')
+const API_URL   = `${BASE_URL}/api`
 
-// ─── Auth token ───────────────────────────────────────────────────────────────
-// Tries every key name @/lib/auth might use to store the Sanctum token.
-
-const TOKEN_KEYS = [
-  'auth_token',
-  'token',
-  'ct_auth_token',
-  'access_token',
-  'sanctum_token',
-  'user_token',
-]
+export function storageUrl(path: string | null | undefined): string | null {
+  if (!path) return null
+  if (path.startsWith('http')) return path
+  const clean = path.replace(/^\/storage\//, '').replace(/^\//, '')
+  return `${BASE_URL}/storage/${clean}`
+}
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
-  for (const key of TOKEN_KEYS) {
-    const val = localStorage.getItem(key)
-    if (val) return val
-  }
-  for (const key of TOKEN_KEYS) {
-    const val = sessionStorage.getItem(key)
-    if (val) return val
-  }
-  return null
+  return localStorage.getItem('ct_auth_token')
 }
 
 function authHeaders(): Record<string, string> {
   const token = getToken()
-  return {
-    Accept: 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  }
+  return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-// ─── Core fetch ───────────────────────────────────────────────────────────────
+// ─── JSON request (GET, DELETE, PATCH) ────────────────────────────────────────
 
-async function apiFetch(path: string, options: RequestInit = {}): Promise<any> {
+async function jsonRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: { ...authHeaders(), ...(options.headers as Record<string, string> ?? {}) },
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...authHeaders(),
+    },
+    body: body != null ? JSON.stringify(body) : undefined,
   })
+  const json = await res.json()
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    const err: any = new Error(data?.message ?? 'API error')
-    err.response = { data, status: res.status }
+    const err: any = new Error(json.message ?? 'Request failed')
+    err.response = { data: json, status: res.status }
     throw err
   }
-  return res.json()
+  return json
 }
 
-async function apiJSON(path: string, method: string, body: unknown): Promise<any> {
-  return apiFetch(path, {
+// ─── FormData request (POST/PUT with file uploads) ────────────────────────────
+
+async function formRequest<T>(method: string, path: string, data: FormData): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
     method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: {
+      Accept: 'application/json',
+      ...authHeaders(),
+      // Do NOT set Content-Type — browser sets it with the correct boundary
+    },
+    body: data,
   })
-}
-
-// ─── Path helpers ─────────────────────────────────────────────────────────────
-
-/** Ensures path always starts with /api */
-function normalizePath(path: string): string {
-  if (path.startsWith('/api/') || path === '/api') return path
-  return `/api${path.startsWith('/') ? path : '/' + path}`
-}
-
-/** Appends query params to a path */
-function withParams(path: string, params?: Record<string, any>): string {
-  if (!params) return path
-  const qs = new URLSearchParams()
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null) qs.set(k, String(v))
+  const json = await res.json()
+  if (!res.ok) {
+    const err: any = new Error(json.message ?? 'Request failed')
+    err.response = { data: json, status: res.status }
+    throw err
   }
-  const q = qs.toString()
-  return q ? `${path}?${q}` : path
+  return json
 }
 
 // ─── FormData builder ─────────────────────────────────────────────────────────
 
-function buildFormData(payload: Record<string, any>): FormData {
+/**
+ * Converts a product payload into a FormData object that Laravel can parse.
+ *
+ * Variants are serialized as PHP array notation:
+ *   variants[0][option_ids][0] = 3
+ *   variants[0][option_ids][1] = 7
+ *   variants[0][stock]         = 10
+ *   variants[0][price_override]= ""
+ *   variants[0][sku]           = ""
+ *   variants[0][is_active]     = 1
+ *
+ * Attributes are serialized as:
+ *   attributes[color] = "[1,2]"
+ *   attributes[size]  = "[3]"
+ *
+ * Images are File objects appended as:
+ *   images[0], images[1], ...
+ *
+ * For PUT requests, Laravel doesn't parse FormData body directly — we use
+ * POST + _method=PUT (method spoofing).
+ */
+function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
   const fd = new FormData()
-  for (const [key, value] of Object.entries(payload)) {
-    if (value === null || value === undefined) continue
 
-    if (key === 'images' && Array.isArray(value)) {
-      value.forEach((file: File) => fd.append('images[]', file))
-      continue
+  // Method spoofing for PUT
+  if (isUpdate) fd.append('_method', 'PUT')
+
+  // Scalar fields
+  const scalars: string[] = [
+    'name', 'slug', 'sku', 'description', 'short_description',
+    'price', 'stock', 'category_id', 'subcategory_id',
+  ]
+  scalars.forEach(key => {
+    const val = (payload as Record<string, any>)[key]
+    if (val !== undefined && val !== null && val !== '') {
+      fd.append(key, String(val))
     }
-    if (key === 'delete_image_ids' && Array.isArray(value)) {
-      value.forEach((id: number) => fd.append('delete_image_ids[]', String(id)))
-      continue
-    }
-    if (key === 'attributes' && typeof value === 'object' && !Array.isArray(value)) {
-      for (const [slug, val] of Object.entries(value)) {
-        if (val === null || val === undefined || val === '') continue
+  })
+
+  // Boolean
+  fd.append('is_active', payload.is_active === false ? '0' : '1')
+
+  // Images (File[])
+  if (payload.images?.length) {
+    payload.images.forEach((file, i) => {
+      fd.append(`images[${i}]`, file)
+    })
+  }
+
+  // Delete image IDs
+  if (payload.delete_image_ids?.length) {
+    payload.delete_image_ids.forEach((id, i) => {
+      fd.append(`delete_image_ids[${i}]`, String(id))
+    })
+  }
+
+  // Attributes (Record<string, string>)
+  if (payload.attributes) {
+    Object.entries(payload.attributes).forEach(([slug, val]) => {
+      if (val !== undefined && val !== null && val !== '') {
         fd.append(`attributes[${slug}]`, String(val))
       }
-      continue
-    }
-    if (typeof value === 'boolean') { fd.append(key, value ? '1' : '0'); continue }
-    if (typeof value === 'number')  { fd.append(key, String(value)); continue }
-    if (typeof value === 'string' && value !== '') { fd.append(key, value); continue }
+    })
   }
+
+  // Variants — PHP array notation
+  if (payload.variants?.length) {
+    payload.variants.forEach((variant, i) => {
+      if (variant.id != null) {
+        fd.append(`variants[${i}][id]`, String(variant.id))
+      }
+      variant.option_ids.forEach((optId, j) => {
+        fd.append(`variants[${i}][option_ids][${j}]`, String(optId))
+      })
+      fd.append(`variants[${i}][stock]`,    String(variant.stock ?? 0))
+      fd.append(`variants[${i}][is_active]`, variant.is_active === false ? '0' : '1')
+      if (variant.price_override != null && variant.price_override !== '') {
+        fd.append(`variants[${i}][price_override]`, String(variant.price_override))
+      }
+      if (variant.sku) {
+        fd.append(`variants[${i}][sku]`, variant.sku)
+      }
+    })
+  }
+
   return fd
 }
 
@@ -122,154 +164,148 @@ function buildFormData(payload: Record<string, any>): FormData {
 export interface Category {
   id: number
   name: string
-  name_ar?: string
   slug: string
-  icon?: string | null
-  image?: string | null
-  is_active?: boolean
-  order?: number
+  subcategories?: Subcategory[]
 }
 
 export interface Subcategory {
   id: number
-  category_id: number
   name: string
-  name_ar?: string
   slug: string
-  icon?: string | null
+  category_id: number
+}
+
+export interface VariantPayload {
+  id?: number
+  option_ids: number[]
+  stock: number
+  price_override?: number | string | null
+  sku?: string
+  is_active?: boolean
 }
 
 export interface ProductPayload {
   name: string
   slug?: string
   sku?: string
-  description?: string | null
-  short_description?: string | null
-  price: number
-  stock: number
-  category_id: number
-  subcategory_id?: number | null
+  description?: string
+  short_description?: string
+  price: number | string
+  stock: number | string
+  category_id: number | string
+  subcategory_id?: number | string | null
   is_active?: boolean
   images?: File[]
   delete_image_ids?: number[]
   attributes?: Record<string, string>
+  variants?: VariantPayload[]
+  [key: string]: any
 }
 
-// ─── Storage URL ──────────────────────────────────────────────────────────────
-
-export function storageUrl(path: string | null | undefined): string | null {
-  if (!path) return null
-  if (path.startsWith('http')) return path
-  const base = API_URL.replace(/\/api\/?$/, '')
-  return `${base}/storage/${path.replace(/^\/?(storage\/)?/, '')}`
-}
-
-// ─── Named API exports ────────────────────────────────────────────────────────
+// ─── Categories API ───────────────────────────────────────────────────────────
 
 export const categoriesApi = {
-  getAll: (): Promise<{ success: boolean; data: Category[] }> =>
-    apiFetch('/api/categories'),
+  getAll: () =>
+    jsonRequest<{ data: Category[] }>('GET', '/categories'),
 
-  getSubcategories: (categorySlug: string): Promise<{ success: boolean; data: Subcategory[] }> =>
-    apiFetch(`/api/categories/${categorySlug}/subcategories`),
+  getSubcategories: (categorySlug: string) =>
+    jsonRequest<{ data: Subcategory[] }>('GET', `/categories/${categorySlug}/subcategories`),
+
+  /**
+   * Fetch attributes for a subcategory.
+   * Returns attributes that have options (color, select, multiselect)
+   * which can be used as variant axes.
+   */
+  getSubcategoryAttributes: (subcategoryId: number) =>
+    jsonRequest<{ data: any[] }>('GET', `/subcategories/${subcategoryId}/attributes`),
 }
 
-export const productsApi = {
-  getAll: (params: Record<string, any> = {}) =>
-    apiFetch(withParams('/api/seller/products', params)),
-
-  getOne: (id: number) =>
-    apiFetch(`/api/seller/products/${id}`),
-
-  getStats: () =>
-    apiFetch('/api/seller/products/stats'),
-
-  create: (payload: ProductPayload) => {
-    const fd = buildFormData(payload as any)
-    return apiFetch('/api/seller/products', { method: 'POST', body: fd })
-  },
-
-  update: (id: number, payload: ProductPayload) => {
-    const fd = buildFormData(payload as any)
-    fd.append('_method', 'PUT')
-    return apiFetch(`/api/seller/products/${id}`, { method: 'POST', body: fd })
-  },
-
-  delete: (id: number) =>
-    apiFetch(`/api/seller/products/${id}`, { method: 'DELETE' }),
-
-  deleteImage: (productId: number, imageId: number) =>
-    apiFetch(`/api/seller/products/${productId}/images/${imageId}`, { method: 'DELETE' }),
-
-  setPrimaryImage: (productId: number, imageId: number) =>
-    apiFetch(`/api/seller/products/${productId}/images/${imageId}/primary`, { method: 'PATCH' }),
-}
+// ─── Seller Dashboard API ─────────────────────────────────────────────────────
 
 export const dashboardApi = {
-  get:         () => apiFetch('/api/seller/dashboard'),
-  getOverview: () => apiFetch('/api/seller/dashboard'),
+  get: () =>
+    jsonRequest<any>('GET', '/seller/dashboard'),
+
+  getOverview: () =>
+    jsonRequest<any>('GET', '/seller/dashboard'),
+
+  stats: () =>
+    jsonRequest<any>('GET', '/seller/products/stats'),
 }
+
+// ─── Seller Orders API ────────────────────────────────────────────────────────
 
 export const ordersApi = {
-  getAll: (params: Record<string, any> = {}) =>
-    apiFetch(withParams('/api/seller/orders', params)),
+  getAll: (params: Record<string, any> = {}) => {
+    const qs = new URLSearchParams(
+      Object.entries(params)
+        .filter(([, v]) => v !== undefined && v !== '')
+        .map(([k, v]) => [k, String(v)])
+    ).toString()
+    return jsonRequest<any>('GET', `/seller/orders${qs ? `?${qs}` : ''}`)
+  },
 
-  getOne: (id: number) =>
-    apiFetch(`/api/seller/orders/${id}`),
-
-  getStats: () =>
-    apiFetch('/api/seller/orders/stats'),
+  get: (id: number) =>
+    jsonRequest<any>('GET', `/seller/orders/${id}`),
 
   updateStatus: (id: number, status: string) =>
-    apiJSON(`/api/seller/orders/${id}/status`, 'PATCH', { status }),
+    jsonRequest<any>('PATCH', `/seller/orders/${id}/status`, { status }),
 }
 
-// ─── Default export — axios-compatible ───────────────────────────────────────
-//
-// Returns { data: <parsed json> } to match axios response shape.
-// Supports:
-//   api.get('/notifications', { params: { page: 1 } })
-//   api.patch('/notifications/uuid/read')
-//   api.get('/notifications/unread-count')   ← /api auto-prepended
-//
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Seller Products API ──────────────────────────────────────────────────────
 
-type ApiOptions = { params?: Record<string, any> }
+export const productsApi = {
+  getAll: (params: Record<string, any> = {}) => {
+    const qs = new URLSearchParams(
+      Object.entries(params)
+        .filter(([, v]) => v !== undefined && v !== '')
+        .map(([k, v]) => [k, String(v)])
+    ).toString()
+    return jsonRequest<any>('GET', `/seller/products${qs ? `?${qs}` : ''}`)
+  },
 
-async function axiosFetch(
-  path: string,
-  method: string,
-  body?: unknown,
-  options?: ApiOptions
-): Promise<{ data: any }> {
-  const url = withParams(normalizePath(path), options?.params)
+  getOne: (id: number) =>
+    jsonRequest<any>('GET', `/seller/products/${id}`),
 
-  const fetchOptions: RequestInit = { method }
-  if (body !== undefined) {
-    fetchOptions.headers = { 'Content-Type': 'application/json' }
-    fetchOptions.body = JSON.stringify(body)
-  }
+  /**
+   * Create a new product.
+   * Uses FormData POST so images + variants are sent together.
+   */
+  create: (payload: ProductPayload) =>
+    formRequest<any>('POST', '/seller/products', buildFormData(payload, false)),
 
-  const raw = await apiFetch(url, fetchOptions)
-  // Wrap in { data } to match axios shape
-  return { data: raw }
+  /**
+   * Update a product.
+   * Uses FormData POST with _method=PUT (Laravel method spoofing).
+   */
+  update: (id: number, payload: ProductPayload) =>
+    formRequest<any>('POST', `/seller/products/${id}`, buildFormData(payload, true)),
+
+  delete: (id: number) =>
+    jsonRequest<any>('DELETE', `/seller/products/${id}`),
+
+  setPrimaryImage: (productId: number, imageId: number) =>
+    jsonRequest<any>('PATCH', `/seller/products/${productId}/images/${imageId}/primary`),
+
+  deleteImage: (productId: number, imageId: number) =>
+    jsonRequest<any>('DELETE', `/seller/products/${productId}/images/${imageId}`),
+
+  stats: () =>
+    jsonRequest<any>('GET', '/seller/products/stats'),
 }
+
+// ─── Default axios-compatible export ─────────────────────────────────────────
+// Some files (notificationApi.ts, etc.) import this as:
+//   import api from './sellerApi'
+// and call api.get('/path'), api.post('/path', data), etc.
+// This shim preserves that interface without requiring axios.
 
 const api = {
-  get:    (path: string, options?: ApiOptions) =>
-    axiosFetch(path, 'GET', undefined, options),
-
-  post:   (path: string, body: unknown = {}, options?: ApiOptions) =>
-    axiosFetch(path, 'POST', body, options),
-
-  put:    (path: string, body: unknown = {}, options?: ApiOptions) =>
-    axiosFetch(path, 'PUT', body, options),
-
-  patch:  (path: string, body: unknown = {}, options?: ApiOptions) =>
-    axiosFetch(path, 'PATCH', body, options),
-
-  delete: (path: string, options?: ApiOptions) =>
-    axiosFetch(path, 'DELETE', undefined, options),
+  get:    <T = any>(path: string)             => jsonRequest<T>('GET',    path),
+  post:   <T = any>(path: string, body?: any) => jsonRequest<T>('POST',   path, body),
+  put:    <T = any>(path: string, body?: any) => jsonRequest<T>('PUT',    path, body),
+  patch:  <T = any>(path: string, body?: any) => jsonRequest<T>('PATCH',  path, body),
+  delete: <T = any>(path: string)             => jsonRequest<T>('DELETE', path),
 }
 
 export default api
