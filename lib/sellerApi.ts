@@ -216,6 +216,13 @@ export interface ProductPayload {
   [key: string]: any
 }
 
+// ─── Subcategory Attributes Response ─────────────────────────────────────────
+
+export interface SubcategoryAttributesResponse {
+  variant_attributes: import('@/types/Attributes').Attribute[]
+  info_attributes:    import('@/types/Attributes').Attribute[]
+}
+
 // ─── Categories API ───────────────────────────────────────────────────────────
 
 export const categoriesApi = {
@@ -227,11 +234,11 @@ export const categoriesApi = {
 
   /**
    * Fetch attributes for a subcategory.
-   * Returns attributes that have options (color, select, multiselect)
-   * which can be used as variant axes.
+   * Returns { variant_attributes: [...], info_attributes: [...] }
+   * variant_attributes can be used as variant axes (is_variant: true).
    */
   getSubcategoryAttributes: (subcategoryId: number) =>
-    jsonRequest<{ data: any[] }>('GET', `/subcategories/${subcategoryId}/attributes`),
+    jsonRequest<{ data: SubcategoryAttributesResponse }>('GET', `/subcategories/${subcategoryId}/attributes`),
 }
 
 // ─── Seller Dashboard API ─────────────────────────────────────────────────────
