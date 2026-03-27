@@ -269,8 +269,14 @@ export const ordersApi = {
   get: (id: number) =>
     jsonRequest<any>('GET', `/seller/orders/${id}`),
 
+  getOne: (id: number) =>
+    jsonRequest<any>('GET', `/seller/orders/${id}`),
+
   updateStatus: (id: number, status: string) =>
     jsonRequest<any>('PATCH', `/seller/orders/${id}/status`, { status }),
+
+  updatePayment: (id: number, payment_status: string) =>
+    jsonRequest<any>('PATCH', `/seller/orders/${id}/payment`, { payment_status }),
 }
 
 // ─── Seller Products API ──────────────────────────────────────────────────────
