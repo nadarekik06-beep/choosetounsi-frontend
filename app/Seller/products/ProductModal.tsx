@@ -2,11 +2,9 @@
 
 /**
  * app/seller/products/ProductModal.tsx
- * FIXED:
- *  1. Variant axes fetched via categoriesApi.getSubcategoryAttributes() (correct URL)
- *  2. productsApi.create/update now send FormData (via fixed sellerApi.ts)
- *  3. VariantBuilder shown even when axes are loading (with skeleton)
- *  4. Variant rows preserved when editing
+ * REFACTORED: splits attributes into variant axes vs informational fields.
+ * Only is_variant=true attributes generate combinations in VariantBuilder.
+ * is_variant=false attributes go to DynamicAttributeSection as before.
  */
 
 import { useEffect, useRef, useState } from 'react'
@@ -14,7 +12,7 @@ import { X, Upload, Trash2, Star, Loader2, AlertCircle, ImageIcon } from 'lucide
 import { productsApi, categoriesApi, storageUrl } from '@/lib/sellerApi'
 import type { Category, Subcategory } from '@/lib/sellerApi'
 import DynamicAttributeSection from '../components/attributes/DynamicAttributeSection'
-import VariantBuilder, { type VariantRow } from '../components/VariantBuilder'
+import VariantBuilder, { type VariantRow, normalizeVariantRow } from '../components/VariantBuilder'
 import type { AttributeValues, Attribute } from '@/types/Attributes'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -34,11 +32,8 @@ interface FullProduct {
   existing_attributes?: AttributeValues
   variant_rows?: VariantRow[]
   images?: Array<{
-    id: number
-    url?: string | null
-    image_path: string
-    is_primary: boolean
-    order: number
+    id: number; url?: string | null; image_path: string
+    is_primary: boolean; order: number
   }>
   [key: string]: unknown
 }
@@ -139,8 +134,10 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     is_active:         p?.is_active ?? true,
   })
 
-  const [attrValues,  setAttrValues]  = useState<AttributeValues>(p?.existing_attributes ?? {})
-  const [variantRows, setVariantRows] = useState<VariantRow[]>(p?.variant_rows ?? [])
+  const [attrValues,   setAttrValues]   = useState<AttributeValues>(p?.existing_attributes ?? {})
+  const [variantRows,  setVariantRows]  = useState<VariantRow[]>(
+    (p?.variant_rows ?? []).map(normalizeVariantRow)
+  )
 
   // ── Categories ─────────────────────────────────────────────────────────────
   const [categories,    setCategories]    = useState<Category[]>([])
@@ -148,9 +145,12 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const [catLoading,    setCatLoading]    = useState(true)
   const [subLoading,    setSubLoading]    = useState(false)
 
-  // ── Variant axes (fetched per subcategory) ─────────────────────────────────
-  const [variantAxes,   setVariantAxes]   = useState<Attribute[]>([])
-  const [axesLoading,   setAxesLoading]   = useState(false)
+  // ── Split attribute sets ───────────────────────────────────────────────────
+  // variantAxes  → is_variant=true  → VariantBuilder (combination matrix)
+  // infoAxes     → is_variant=false → DynamicAttributeSection (simple fields)
+  const [variantAxes,  setVariantAxes]  = useState<Attribute[]>([])
+  const [infoAxes,     setInfoAxes]     = useState<Attribute[]>([])
+  const [axesLoading,  setAxesLoading]  = useState(false)
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const [saving,   setSaving]   = useState(false)
@@ -160,24 +160,21 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   // ── Images ─────────────────────────────────────────────────────────────────
   const [existingImages,  setExistingImages]  = useState<ExistingImage[]>(
     p?.images?.map(img => ({
-      id:         img.id,
-      image_path: img.image_path,
-      is_primary: img.is_primary,
-      order:      img.order,
-      url:        storageUrl(img.url ?? img.image_path) ?? img.image_path,
+      id: img.id, image_path: img.image_path, is_primary: img.is_primary, order: img.order,
+      url: storageUrl(img.url ?? img.image_path) ?? img.image_path,
     })) ?? []
   )
   const [deletedImageIds, setDeletedImageIds] = useState<number[]>([])
   const [primaryImageId,  setPrimaryImageId]  = useState<number | null>(
     existingImages.find(i => i.is_primary)?.id ?? null
   )
-  const [previews,     setPreviews]    = useState<PreviewImage[]>([])
-  const fileInputRef                   = useRef<HTMLInputElement>(null)
+  const [previews,    setPreviews]    = useState<PreviewImage[]>([])
+  const fileInputRef                  = useRef<HTMLInputElement>(null)
 
   const set = (field: string, value: unknown) =>
     setForm(f => ({ ...f, [field]: value }))
 
-  // ── Load categories on mount ───────────────────────────────────────────────
+  // ── Load categories ────────────────────────────────────────────────────────
   useEffect(() => {
     categoriesApi.getAll()
       .then(res => setCategories(res.data ?? []))
@@ -191,11 +188,11 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
       setSubcategories([])
       set('subcategory_id', '')
       setVariantAxes([])
+      setInfoAxes([])
       return
     }
     const cat = categories.find(c => c.id === Number(form.category_id))
     if (!cat?.slug) return
-
     setSubLoading(true)
     categoriesApi.getSubcategories(cat.slug)
       .then(res => setSubcategories(res.data ?? []))
@@ -204,33 +201,33 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.category_id, categories])
 
-  // ── Load variant axes when subcategory changes ─────────────────────────────
-  // FIXED: uses categoriesApi.getSubcategoryAttributes() which calls
-  // GET /api/subcategories/{id}/attributes — the correct route that exists
-  // in routes/api.php and is handled by SubcategoryController@attributes
+  // ── Load & split attributes when subcategory changes ──────────────────────
   useEffect(() => {
     if (!form.subcategory_id) {
       setVariantAxes([])
+      setInfoAxes([])
       return
     }
-
     const subId = Number(form.subcategory_id)
     if (!subId) return
 
     setAxesLoading(true)
     categoriesApi.getSubcategoryAttributes(subId)
       .then(res => {
-        const allAttrs: Attribute[] = res.data ?? []
-        // Only attributes with options (select, color, multiselect) can be variant axes
-        const axes = allAttrs.filter(
-          (a: Attribute) =>
-            ['select', 'color', 'multiselect'].includes(a.type) &&
-            a.options &&
-            a.options.length > 0
+        // API now returns { variant_attributes: [], info_attributes: [] }
+        const data = res.data as { variant_attributes: Attribute[]; info_attributes: Attribute[] }
+
+        // Variant axes: must have options to be usable in the matrix
+        const vAxes = (data.variant_attributes ?? []).filter(
+          a => a.options && a.options.length > 0
         )
-        setVariantAxes(axes)
+        // Info attributes: any type (text, boolean, select, etc.)
+        const iAxes = data.info_attributes ?? []
+
+        setVariantAxes(vAxes)
+        setInfoAxes(iAxes)
       })
-      .catch(() => setVariantAxes([]))
+      .catch(() => { setVariantAxes([]); setInfoAxes([]) })
       .finally(() => setAxesLoading(false))
   }, [form.subcategory_id])
 
@@ -239,13 +236,11 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   useEffect(() => {
     if (!slugTouched.current && form.name) {
       set('slug', form.name.toLowerCase().trim()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-'))
+        .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-'))
     }
   }, [form.name])
 
-  // Cleanup preview URLs on unmount
+  // Cleanup preview URLs
   useEffect(() => () => previews.forEach(prev => URL.revokeObjectURL(prev.preview)), [])
 
   // ── Image handlers ─────────────────────────────────────────────────────────
@@ -281,10 +276,10 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   // ── Validation ─────────────────────────────────────────────────────────────
   const validate = () => {
     const e: Record<string, string> = {}
-    if (!form.name.trim())                                                         e.name        = 'Required.'
-    if (!form.category_id)                                                         e.category_id = 'Select a category.'
-    if (form.price === '' || isNaN(Number(form.price)) || Number(form.price) < 0)  e.price       = 'Enter a valid price.'
-    if (form.stock === '' || isNaN(Number(form.stock)) || Number(form.stock) < 0)  e.stock       = 'Enter a valid quantity.'
+    if (!form.name.trim())                                                        e.name        = 'Required.'
+    if (!form.category_id)                                                        e.category_id = 'Select a category.'
+    if (form.price === '' || isNaN(Number(form.price)) || Number(form.price) < 0) e.price       = 'Enter a valid price.'
+    if (form.stock === '' || isNaN(Number(form.stock)) || Number(form.stock) < 0) e.stock       = 'Enter a valid quantity.'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -299,14 +294,11 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     try {
       const subId = form.subcategory_id ? parseInt(form.subcategory_id, 10) : null
 
-      // Only include variant rows that have all required option_ids filled
+      // Only include variant rows where ALL option_ids are filled
       const validVariants = variantRows
         .filter(row => {
-          const filledOptions = row.option_ids.filter(id => id > 0)
-          // Must have at least 1 option selected (or axes.length options if axes exist)
-          return variantAxes.length === 0
-            ? false
-            : filledOptions.length === variantAxes.length
+          if (variantAxes.length === 0) return false
+          return row.option_ids.filter(id => id > 0).length === variantAxes.length
         })
         .map(row => ({
           ...(row.id ? { id: row.id } : {}),
@@ -331,13 +323,11 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         images:            previews.map(prev => prev.file),
         delete_image_ids:  deletedImageIds.length ? deletedImageIds : undefined,
         attributes:        serializeAttributes(attrValues),
-        // Only send variants when there are valid rows
         ...(validVariants.length > 0 ? { variants: validVariants } : {}),
       }
 
       if (isEdit) {
         await productsApi.update(product!.id, payload)
-        // Set primary image if changed
         if (primaryImageId !== null) {
           const orig = p?.images?.find(i => i.is_primary)
           if (!orig || orig.id !== primaryImageId) {
@@ -369,7 +359,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 24px 64px rgba(0,0,0,0.18)', width: '100%', maxWidth: 720, maxHeight: '92vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 24px 64px rgba(0,0,0,0.18)', width: '100%', maxWidth: 780, maxHeight: '92vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, background: '#fff', zIndex: 10, borderRadius: '20px 20px 0 0' }}>
@@ -377,18 +367,13 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
             <h2 style={{ fontSize: 16, fontWeight: 900, color: '#111', margin: 0 }}>
               {isEdit ? 'Edit Product' : 'Add New Product'}
             </h2>
-            {!isEdit && (
-              <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
-                Will be reviewed by admin before going live.
-              </p>
-            )}
+            {!isEdit && <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>Will be reviewed by admin before going live.</p>}
           </div>
           <button type="button" onClick={onClose} style={{ padding: 6, borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}>
             <X size={18} />
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {apiError && (
@@ -399,60 +384,43 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
 
           {/* ── Basic Information ── */}
           <section>
-            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
-              Basic Information
-            </p>
+            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>Basic Information</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <Field label="Product Name" required error={errors.name}>
-                <input value={form.name} onChange={e => set('name', e.target.value)}
-                  placeholder="e.g. White Cotton T-Shirt" className={inputCls(errors.name)} />
+                <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. White Cotton T-Shirt" className={inputCls(errors.name)} />
               </Field>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <Field label="URL Slug" hint="Auto-generated from name">
-                  <input value={form.slug}
-                    onChange={e => { slugTouched.current = true; set('slug', e.target.value) }}
-                    placeholder="my-product-name" className={inputCls()} />
+                  <input value={form.slug} onChange={e => { slugTouched.current = true; set('slug', e.target.value) }} placeholder="my-product-name" className={inputCls()} />
                 </Field>
                 <Field label="SKU" hint="Auto-generated if empty">
-                  <input value={form.sku} onChange={e => set('sku', e.target.value)}
-                    placeholder="Leave blank" className={inputCls()} />
+                  <input value={form.sku} onChange={e => set('sku', e.target.value)} placeholder="Leave blank" className={inputCls()} />
                 </Field>
               </div>
               <Field label="Short Description" hint="Max 500 chars">
-                <input value={form.short_description} onChange={e => set('short_description', e.target.value)}
-                  maxLength={500} placeholder="One-line summary…" className={inputCls()} />
+                <input value={form.short_description} onChange={e => set('short_description', e.target.value)} maxLength={500} placeholder="One-line summary…" className={inputCls()} />
               </Field>
               <Field label="Full Description">
-                <textarea rows={4} value={form.description} onChange={e => set('description', e.target.value)}
-                  placeholder="Describe your product in detail…" className={`${inputCls()} resize-none`} />
+                <textarea rows={4} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Describe your product in detail…" className={`${inputCls()} resize-none`} />
               </Field>
             </div>
           </section>
 
           {/* ── Pricing & Inventory ── */}
           <section>
-            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
-              Pricing & Inventory
-            </p>
+            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>Pricing & Inventory</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               <Field label="Base Price (TND)" required error={errors.price}>
                 <div style={{ position: 'relative' }}>
-                  <input type="number" min="0" step="0.001" value={form.price}
-                    onChange={e => set('price', e.target.value)} placeholder="0.000"
-                    className={inputCls(errors.price)} style={{ paddingRight: 44 }} />
+                  <input type="number" min="0" step="0.001" value={form.price} onChange={e => set('price', e.target.value)} placeholder="0.000" className={inputCls(errors.price)} style={{ paddingRight: 44 }} />
                   <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>TND</span>
                 </div>
               </Field>
-              <Field label="Stock" required error={errors.stock}
-                hint={variantRows.length > 0 ? 'Product total (variants have own stock)' : undefined}>
-                <input type="number" min="0" value={form.stock}
-                  onChange={e => set('stock', e.target.value)} placeholder="0"
-                  className={inputCls(errors.stock)} />
+              <Field label="Stock" required error={errors.stock} hint={variantRows.length > 0 ? 'Total (variants have own stock)' : undefined}>
+                <input type="number" min="0" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="0" className={inputCls(errors.stock)} />
               </Field>
               <Field label="Status">
-                <select value={form.is_active ? 'active' : 'inactive'}
-                  onChange={e => set('is_active', e.target.value === 'active')}
-                  className={inputCls()}>
+                <select value={form.is_active ? 'active' : 'inactive'} onChange={e => set('is_active', e.target.value === 'active')} className={inputCls()}>
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                 </select>
@@ -462,9 +430,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
 
           {/* ── Category ── */}
           <section>
-            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
-              Category
-            </p>
+            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>Category</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <Field label="Category" required error={errors.category_id}>
                 <select value={form.category_id}
@@ -474,12 +440,11 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                     setAttrValues({})
                     setVariantRows([])
                     setVariantAxes([])
+                    setInfoAxes([])
                   }}
                   className={inputCls(errors.category_id)} disabled={catLoading}>
                   <option value="">{catLoading ? 'Loading…' : '— Select category —'}</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
+                  {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                 </select>
               </Field>
 
@@ -490,37 +455,36 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                     setAttrValues({})
                     setVariantRows([])
                   }}
-                  className={inputCls()}
-                  disabled={!form.category_id || subLoading}>
+                  className={inputCls()} disabled={!form.category_id || subLoading}>
                   <option value="">
                     {subLoading ? 'Loading…' : !form.category_id ? '— Select category first —' : '— None (optional) —'}
                   </option>
-                  {subcategories.map(sub => (
-                    <option key={sub.id} value={sub.id}>{sub.name}</option>
-                  ))}
+                  {subcategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
                 </select>
-                {form.subcategory_id && (
-                  <p style={{ fontSize: 10, color: '#10b981', marginTop: 3 }}>
-                    ✓ Subcategory selected
-                  </p>
-                )}
               </Field>
             </div>
           </section>
 
-          {/* ── Dynamic Attributes (product-level) ── */}
-          {form.subcategory_id && (
+          {/* ── Informational Attributes (is_variant=false) ── */}
+          {form.subcategory_id && !axesLoading && infoAxes.length > 0 && (
             <section>
+              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
+                Product Details
+                <span style={{ marginLeft: 8, fontSize: 9, fontWeight: 500, color: '#c4b5fd', textTransform: 'none' }}>informational only</span>
+              </p>
               <DynamicAttributeSection
                 subcategoryId={Number(form.subcategory_id)}
                 values={attrValues}
                 onChange={setAttrValues}
                 disabled={saving}
+                // Pass only the info axes so DynamicAttributeSection
+                // doesn't re-fetch and show variant attributes too
+                overrideAttributes={infoAxes}
               />
             </section>
           )}
 
-          {/* ── Variants ── */}
+          {/* ── Variant Attributes (is_variant=true) ── */}
           {form.subcategory_id && (
             <section>
               <div style={{ paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -529,16 +493,21 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                 </p>
                 {axesLoading && (
                   <span style={{ fontSize: 10, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Loader2 size={10} style={{ animation: 'spin 0.8s linear infinite' }} /> Loading axes…
+                    <Loader2 size={10} style={{ animation: 'spin 0.8s linear infinite' }} /> Loading…
+                  </span>
+                )}
+                {!axesLoading && variantAxes.length > 0 && (
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '2px 8px', borderRadius: 4 }}>
+                    axes: {variantAxes.map(a => a.name).join(', ')}
                   </span>
                 )}
               </div>
 
               {!axesLoading && variantAxes.length === 0 && (
                 <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#94a3b8' }}>
-                  This subcategory has no selectable attributes (color, size, etc.) configured yet.
-                  Variants require at least one attribute of type <em>select</em> or <em>color</em>.
-                  You can still add the product without variants.
+                  This subcategory has no variant attributes configured.
+                  Products can still be added without variants. An admin can mark
+                  attributes as <em>variant</em> in the subcategory settings.
                 </div>
               )}
 
@@ -567,8 +536,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
                   {existingImages.map(img => (
                     <ImageThumb key={img.id} src={img.url} isPrimary={img.id === primaryImageId}
-                      onRemove={() => removeExisting(img.id)}
-                      onSetPrimary={() => setExistingPrimary(img.id)} />
+                      onRemove={() => removeExisting(img.id)} onSetPrimary={() => setExistingPrimary(img.id)} />
                   ))}
                 </div>
               </div>
@@ -581,25 +549,20 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                   {previews.map(prev => (
                     <ImageThumb key={prev.id} src={prev.preview}
                       isPrimary={existingImages.length === 0 && previews[0]?.id === prev.id}
-                      onRemove={() => removePreview(prev.id)}
-                      onSetPrimary={() => { }} />
+                      onRemove={() => removePreview(prev.id)} onSetPrimary={() => { }} />
                   ))}
                 </div>
               </div>
             )}
 
             {totalImages < 8 && (
-              <div
-                onDragOver={e => e.preventDefault()}
+              <div onDragOver={e => e.preventDefault()}
                 onDrop={e => { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))) }}
                 onClick={() => fileInputRef.current?.click()}
-                style={{ border: '2px dashed #e5e7eb', borderRadius: 14, padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'border-color 0.18s' }}
-                className="hover:border-red-300"
-              >
+                style={{ border: '2px dashed #e5e7eb', borderRadius: 14, padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+                className="hover:border-red-300">
                 <Upload size={20} color="#94a3b8" />
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#64748b', margin: 0 }}>
-                  Drop images or <span style={{ color: '#dc2626' }}>browse</span>
-                </p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#64748b', margin: 0 }}>Drop images or <span style={{ color: '#dc2626' }}>browse</span></p>
                 <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>JPG, PNG, WebP · max 5 MB each</p>
                 <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
                   onChange={e => { addFiles(Array.from(e.target.files ?? [])); e.target.value = '' }} />
@@ -613,7 +576,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
             )}
           </section>
 
-          {/* Approval notice */}
           {!isEdit && (
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '12px 14px', fontSize: 12, color: '#92400e' }}>
               <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
