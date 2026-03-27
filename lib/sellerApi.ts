@@ -19,7 +19,21 @@ export function storageUrl(path: string | null | undefined): string | null {
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
-  return localStorage.getItem('ct_auth_token')
+
+  // Try all possible key names in order of preference
+  const candidates = [
+    'ct_auth_token',
+    'auth_token',
+    'token',
+    'access_token',
+  ]
+
+  for (const key of candidates) {
+    const val = localStorage.getItem(key) ?? sessionStorage.getItem(key)
+    if (val) return val
+  }
+
+  return null
 }
 
 function authHeaders(): Record<string, string> {
