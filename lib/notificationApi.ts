@@ -1,6 +1,9 @@
 // lib/notificationApi.ts
 // Works for BOTH seller and admin dashboards.
-// Uses the default export from sellerApi (axios-compatible, returns { data: ... }).
+//
+// IMPORTANT: This file uses the default export from sellerApi.ts.
+// sellerApi's jsonRequest returns RAW JSON directly (not axios { data: ... } wrapper).
+// So res = the Laravel response body directly — NOT res.data.
 
 import api from './sellerApi'
 
@@ -31,16 +34,12 @@ export interface NotificationListResponse {
   }
 }
 
-// ─── Helper: safely parse list response ───────────────────────────────────────
-// The Laravel API can return the list in several shapes:
-//   { data: [...], meta: {...} }         ← paginated
-//   { data: { data: [...], ... } }       ← nested (when using Resource)
-//   { success: true, data: [...] }       ← simple list
-// We handle all of them.
+// ─── Response parser ──────────────────────────────────────────────────────────
+// sellerApi returns raw Laravel JSON body directly:
+//   { success: true, data: [...], meta: {...} }
+// So `raw` here IS the Laravel body — access raw.data for the array.
 
 function parseListResponse(raw: any): NotificationListResponse {
-  // raw is the full parsed response body (not { data: raw } wrapper)
-
   let items: AppNotification[] = []
   let meta = { current_page: 1, last_page: 1, total: 0 }
 
@@ -49,11 +48,11 @@ function parseListResponse(raw: any): NotificationListResponse {
     items = raw
   } else if (raw?.data) {
     if (Array.isArray(raw.data)) {
-      // { data: [...], meta: {...} }
+      // { success, data: [...], meta: {...} }  ← this is the normal shape
       items = raw.data
       if (raw.meta) meta = raw.meta
     } else if (Array.isArray(raw.data?.data)) {
-      // { data: { data: [...], meta: {...} } }
+      // nested resource: { data: { data: [...], meta: {...} } }
       items = raw.data.data
       if (raw.data.meta) meta = raw.data.meta
     }
@@ -62,26 +61,29 @@ function parseListResponse(raw: any): NotificationListResponse {
   return { data: items, meta }
 }
 
+function parseCount(raw: any): number {
+  // Laravel returns { success: true, count: N }
+  return (
+    raw?.count          ??
+    raw?.data?.count    ??
+    raw?.unread_count   ??
+    raw?.unread         ??
+    0
+  )
+}
+
 // ─── Seller notification API (/api/notifications) ─────────────────────────────
 
 export const sellerNotificationApi = {
   async getAll(page = 1): Promise<NotificationListResponse> {
-    // api.get returns { data: <raw json> }
-    const res = await api.get('/notifications', { params: { page, per_page: 20 } })
-    return parseListResponse(res.data)
+    // api.get returns raw JSON — e.g. { success, data: [...], meta: {...} }
+    const raw = await api.get(`/notifications?page=${page}&per_page=20`)
+    return parseListResponse(raw)
   },
 
   async getUnreadCount(): Promise<number> {
-    const res = await api.get('/notifications/unread-count')
-    // Handle: { count: N } or { data: { count: N } } or { unread: N }
-    const payload = res.data
-    return (
-      payload?.count ??
-      payload?.data?.count ??
-      payload?.unread_count ??
-      payload?.unread ??
-      0
-    )
+    const raw = await api.get('/notifications/unread-count')
+    return parseCount(raw)
   },
 
   async markRead(id: string): Promise<void> {
@@ -97,20 +99,13 @@ export const sellerNotificationApi = {
 
 export const adminNotificationApi = {
   async getAll(page = 1): Promise<NotificationListResponse> {
-    const res = await api.get('/admin/notifications', { params: { page, per_page: 20 } })
-    return parseListResponse(res.data)
+    const raw = await api.get(`/admin/notifications?page=${page}&per_page=20`)
+    return parseListResponse(raw)
   },
 
   async getUnreadCount(): Promise<number> {
-    const res = await api.get('/admin/notifications/unread-count')
-    const payload = res.data
-    return (
-      payload?.count ??
-      payload?.data?.count ??
-      payload?.unread_count ??
-      payload?.unread ??
-      0
-    )
+    const raw = await api.get('/admin/notifications/unread-count')
+    return parseCount(raw)
   },
 
   async markRead(id: string): Promise<void> {
