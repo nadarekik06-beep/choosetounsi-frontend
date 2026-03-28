@@ -110,6 +110,12 @@ export default function VariantBuilder({
     existingVariants.map(normalizeVariantRow)
   )
 
+  // Notify parent whenever rows change — never call onChange inside a setter or render
+  useEffect(() => {
+    onChange(rows)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows])
+
   // Regenerate rows whenever selected options change
   useEffect(() => {
     if (axes.length === 0) return
@@ -118,7 +124,6 @@ export default function VariantBuilder({
     const anyAxisEmpty = selectedPerAxis.some(opts => opts.length === 0)
     if (anyAxisEmpty) {
       setRows([])
-      onChange([])
       return
     }
 
@@ -128,17 +133,14 @@ export default function VariantBuilder({
       const existingMap = new Map<string, VariantRow>()
       prev.forEach(r => existingMap.set(comboKey(r.option_ids), r))
 
-      const next = combinations.map(combo => {
-        const key     = comboKey(combo)
+      return combinations.map(combo => {
+        const key      = comboKey(combo)
         const existing = existingMap.get(key)
         // Preserve stock/price/sku/is_active if this combination already existed
         return existing
           ? { ...existing, option_ids: combo }
           : normalizeVariantRow({ option_ids: combo })
       })
-
-      onChange(next)
-      return next
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPerAxis])
@@ -163,12 +165,11 @@ export default function VariantBuilder({
     value: number | string | boolean
   ) => {
     setRows(prev => {
-      const copy    = [...prev]
-      copy[idx]     = { ...copy[idx], [field]: value }
-      onChange(copy)
+      const copy = [...prev]
+      copy[idx]  = { ...copy[idx], [field]: value }
       return copy
     })
-  }, [onChange])
+  }, [])
 
   // Nothing to render when no axes
   if (axes.length === 0) return null
@@ -382,11 +383,7 @@ export default function VariantBuilder({
                 const stockStr = prompt('Set stock for ALL variants:')
                 if (stockStr === null) return
                 const stock = parseInt(stockStr) || 0
-                setRows(prev => {
-                  const next = prev.map(r => ({ ...r, stock }))
-                  onChange(next)
-                  return next
-                })
+                setRows(prev => prev.map(r => ({ ...r, stock })))
               }}
               style={{ fontSize: 11, fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}
             >
@@ -396,11 +393,7 @@ export default function VariantBuilder({
               type="button"
               disabled={disabled}
               onClick={() => {
-                setRows(prev => {
-                  const next = prev.map(r => ({ ...r, is_active: true }))
-                  onChange(next)
-                  return next
-                })
+                setRows(prev => prev.map(r => ({ ...r, is_active: true })))
               }}
               style={{ fontSize: 11, fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}
             >
@@ -410,11 +403,7 @@ export default function VariantBuilder({
               type="button"
               disabled={disabled}
               onClick={() => {
-                setRows(prev => {
-                  const next = prev.map(r => ({ ...r, is_active: false }))
-                  onChange(next)
-                  return next
-                })
+                setRows(prev => prev.map(r => ({ ...r, is_active: false })))
               }}
               style={{ fontSize: 11, fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}
             >

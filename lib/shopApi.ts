@@ -47,6 +47,8 @@ export interface VariantOptionEntry {
   id: number
   value: string
   color_hex?: string | null
+  /** Primary image URL for this color option — set by the backend when color images exist */
+  primary_image?: string | null
 }
 
 /**

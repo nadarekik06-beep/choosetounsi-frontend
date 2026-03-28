@@ -13,6 +13,7 @@ import { productsApi, categoriesApi, storageUrl } from '@/lib/sellerApi'
 import type { Category, Subcategory } from '@/lib/sellerApi'
 import DynamicAttributeSection from '../components/attributes/DynamicAttributeSection'
 import VariantBuilder, { type VariantRow, normalizeVariantRow } from '../components/VariantBuilder'
+import ColorImageUploader from '../components/ColorImageUploader'
 import type { AttributeValues, Attribute } from '@/types/Attributes'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -138,6 +139,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const [variantRows,  setVariantRows]  = useState<VariantRow[]>(
     (p?.variant_rows ?? []).map(normalizeVariantRow)
   )
+  // colorImages: Record<colorOptionId, File[]> — collected from ColorImageUploader
+  const [colorImages,  setColorImages]  = useState<Record<number, File[]>>({})
 
   // ── Categories ─────────────────────────────────────────────────────────────
   const [categories,    setCategories]    = useState<Category[]>([])
@@ -324,6 +327,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         delete_image_ids:  deletedImageIds.length ? deletedImageIds : undefined,
         attributes:        serializeAttributes(attrValues),
         ...(validVariants.length > 0 ? { variants: validVariants } : {}),
+        // Per-color images: Record<colorOptionId, File[]>
+        color_images:      Object.keys(colorImages).length > 0 ? colorImages : undefined,
       }
 
       if (isEdit) {
@@ -520,6 +525,50 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                   disabled={saving}
                 />
               )}
+
+              {/* ── Per-color image upload (shown when color axis exists) ── */}
+              {!axesLoading && variantAxes.length > 0 && (() => {
+                const colorAxis = variantAxes.find(a => a.type === 'color')
+                if (!colorAxis) return null
+
+                // Collect which color option IDs the seller has selected in VariantBuilder
+                const colorAxisIdx  = variantAxes.indexOf(colorAxis)
+                const selectedColorIds = Array.from(
+                  new Set(
+                    variantRows
+                      .map(r => r.option_ids[colorAxisIdx])
+                      .filter(id => id > 0)
+                  )
+                )
+
+                // Build existing color images map from product images (edit mode)
+                const existingByColor: Record<number, string[]> = {}
+                if (p?.images) {
+                  for (const img of p.images as any[]) {
+                    if (img.color_option_id) {
+                      const url = storageUrl(img.url ?? img.image_path)
+                      if (url) {
+                        existingByColor[img.color_option_id] = [
+                          ...(existingByColor[img.color_option_id] ?? []),
+                          url,
+                        ]
+                      }
+                    }
+                  }
+                }
+
+                return (
+                  <div style={{ marginTop: 16 }}>
+                    <ColorImageUploader
+                      colorAxis={colorAxis}
+                      selectedColorIds={selectedColorIds}
+                      onChange={setColorImages}
+                      existingByColor={existingByColor}
+                      disabled={saving}
+                    />
+                  </div>
+                )
+              })()}
             </section>
           )}
 

@@ -3,6 +3,7 @@
  * Seller-side API calls.
  * FIXED: variants are serialized into FormData using PHP-style array notation.
  *        e.g. variants[0][option_ids][0]=3&variants[0][stock]=10
+ * UPDATED: color_images support added for per-color variant image uploads.
  */
 
 const RAW_URL   = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
@@ -103,6 +104,10 @@ async function formRequest<T>(method: string, path: string, data: FormData): Pro
  * Images are File objects appended as:
  *   images[0], images[1], ...
  *
+ * Color images are serialized as:
+ *   color_images[{colorOptionId}][0] = File
+ *   color_images[{colorOptionId}][1] = File
+ *
  * For PUT requests, Laravel doesn't parse FormData body directly — we use
  * POST + _method=PUT (method spoofing).
  */
@@ -159,7 +164,7 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
       variant.option_ids.forEach((optId, j) => {
         fd.append(`variants[${i}][option_ids][${j}]`, String(optId))
       })
-      fd.append(`variants[${i}][stock]`,    String(variant.stock ?? 0))
+      fd.append(`variants[${i}][stock]`,     String(variant.stock ?? 0))
       fd.append(`variants[${i}][is_active]`, variant.is_active === false ? '0' : '1')
       if (variant.price_override != null && variant.price_override !== '') {
         fd.append(`variants[${i}][price_override]`, String(variant.price_override))
@@ -167,6 +172,18 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
       if (variant.sku) {
         fd.append(`variants[${i}][sku]`, variant.sku)
       }
+    })
+  }
+
+  // Color images — PHP array notation
+  // color_images[{colorOptionId}][0] = File, color_images[{colorOptionId}][1] = File …
+  // Backend: SellerProductController::saveColorImages() reads $request->file('color_images')
+  if (payload.color_images) {
+    Object.entries(payload.color_images).forEach(([colorOptionId, files]) => {
+      if (!Array.isArray(files)) return
+      files.forEach((file, j) => {
+        fd.append(`color_images[${colorOptionId}][${j}]`, file)
+      })
     })
   }
 
@@ -213,6 +230,8 @@ export interface ProductPayload {
   delete_image_ids?: number[]
   attributes?: Record<string, string>
   variants?: VariantPayload[]
+  /** Per-color images: Record<colorOptionId, File[]> — sent as color_images[id][0] */
+  color_images?: Record<number, File[]>
   [key: string]: any
 }
 
@@ -296,7 +315,7 @@ export const productsApi = {
 
   /**
    * Create a new product.
-   * Uses FormData POST so images + variants are sent together.
+   * Uses FormData POST so images + variants + color_images are sent together.
    */
   create: (payload: ProductPayload) =>
     formRequest<any>('POST', '/seller/products', buildFormData(payload, false)),
