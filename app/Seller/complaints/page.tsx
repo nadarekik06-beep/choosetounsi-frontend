@@ -1,65 +1,354 @@
 'use client'
 
 /**
- * FILE: app/seller/complaints/page.tsx  ← REPLACE existing file
+ * FILE: app/seller/complaints/page.tsx
  *
- * Full complaint management for sellers with approve/reject workflow.
- * Seller can: view, add note, approve (direct), reject (needs admin validation).
+ * Redesigned complaint management — premium SaaS aesthetic.
+ * Icons: inline SVG (Lucide-style, zero extra dependency)
+ * Fixes: no JSX namespace, all types use React.ReactNode / React.CSSProperties
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { sellerComplaintApi } from '@/lib/complaintApi'
 import type { Complaint } from '@/types/complaint'
 import { STATUS_CONFIG, COMPLAINT_TYPE_LABELS } from '@/types/complaint'
 import { useTheme } from '../layout'
 
-const RED    = '#db142e'
-const GREEN  = '#198f41'
-const ORANGE = '#f97316'
+// ─── Icon props ───────────────────────────────────────────────────────────────
+
+interface IconProps {
+  size?: number
+  color?: string
+  strokeWidth?: number
+  className?: string
+}
+
+// ─── Inline SVG icons (Lucide-style) ─────────────────────────────────────────
+
+function IconAlertTriangle({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  )
+}
+
+function IconCheckCircle({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  )
+}
+
+function IconXCircle({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="15" y1="9" x2="9" y2="15" />
+      <line x1="9" y1="9" x2="15" y2="15" />
+    </svg>
+  )
+}
+
+function IconClock({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  )
+}
+
+function IconSearch({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  )
+}
+
+function IconChevronRight({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  )
+}
+
+function IconX({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  )
+}
+
+function IconMessageSquare({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  )
+}
+
+function IconPackage({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+      <line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
+  )
+}
+
+function IconUser({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  )
+}
+
+function IconImageIcon({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </svg>
+  )
+}
+
+function IconShieldAlert({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  )
+}
+
+function IconListFilter({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="6" y1="12" x2="18" y2="12" />
+      <line x1="9" y1="18" x2="15" y2="18" />
+    </svg>
+  )
+}
+
+function IconRefreshCw({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 4 23 10 17 10" />
+      <polyline points="1 20 1 14 7 14" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+    </svg>
+  )
+}
+
+function IconInbox({ size = 16, color = 'currentColor', strokeWidth = 2, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+    </svg>
+  )
+}
+
+// ─── Color tokens ─────────────────────────────────────────────────────────────
+
+const C = {
+  red:       '#db142e',
+  redDim:    'rgba(219,20,46,0.12)',
+  green:     '#198f41',
+  greenDim:  'rgba(25,143,65,0.12)',
+  orange:    '#f97316',
+  orangeDim: 'rgba(249,115,22,0.12)',
+  amber:     '#f59e0b',
+  amberDim:  'rgba(245,158,11,0.12)',
+  blue:      '#3b82f6',
+  blueDim:   'rgba(59,130,246,0.12)',
+}
+
+// ─── Status meta ──────────────────────────────────────────────────────────────
+
+interface StatusMeta {
+  icon: React.ReactNode
+  label: string
+  bg: string
+  color: string
+  border: string
+}
+
+const STATUS_META: Record<string, StatusMeta> = {
+  pending:                       { icon: <IconClock size={11} />,        label: 'Pending',        color: C.amber,  bg: C.amberDim,  border: 'rgba(245,158,11,0.3)'  },
+  reviewing:                     { icon: <IconSearch size={11} />,       label: 'Reviewing',      color: C.blue,   bg: C.blueDim,   border: 'rgba(59,130,246,0.3)'  },
+  approved:                      { icon: <IconCheckCircle size={11} />,  label: 'Approved',       color: C.green,  bg: C.greenDim,  border: 'rgba(25,143,65,0.3)'   },
+  seller_rejected_pending_admin: { icon: <IconShieldAlert size={11} />,  label: 'Awaiting Admin', color: C.orange, bg: C.orangeDim, border: 'rgba(249,115,22,0.3)'  },
+  rejected:                      { icon: <IconXCircle size={11} />,      label: 'Rejected',       color: C.red,    bg: C.redDim,    border: 'rgba(219,20,46,0.3)'   },
+}
+
+// ─── Global CSS ───────────────────────────────────────────────────────────────
+
+const GLOBAL_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  @keyframes spin    { to { transform: rotate(360deg) } }
+  @keyframes fadeUp  { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+  @keyframes slideIn { from { transform:translateX(100%) } to { transform:translateX(0) } }
+  @keyframes shimmer { 0% { background-position:-400px 0 } 100% { background-position:400px 0 } }
+  @keyframes pop     { 0%{transform:scale(0.92);opacity:0} 100%{transform:scale(1);opacity:1} }
+  @keyframes toastIn { from{opacity:0;transform:translate(-50%,12px)} to{opacity:1;transform:translate(-50%,0)} }
+
+  .complaint-row {
+    transition: box-shadow 0.2s ease, transform 0.18s ease, border-color 0.18s ease;
+  }
+  .complaint-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.28) !important;
+  }
+  .filter-btn { transition: all 0.15s ease; }
+  .filter-btn:hover { transform: translateY(-1px); }
+  .action-btn { transition: all 0.17s ease; }
+  .action-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+  .action-btn:active { transform: translateY(0); }
+  .stat-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+  .stat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.22) !important; }
+
+  .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 75%);
+    background-size: 400px 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 8px;
+  }
+  textarea:focus, input:focus {
+    outline: none !important;
+    border-color: #db142e !important;
+    box-shadow: 0 0 0 3px rgba(219,20,46,0.15) !important;
+  }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+`
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: Complaint['status'] }) {
-  const cfg = STATUS_CONFIG[status]
+  const m = STATUS_META[status] ?? STATUS_META['pending']
   return (
     <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4,
-      fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: 999,
-      background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}30`,
-      textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap',
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      fontSize: 10, fontWeight: 700, padding: '4px 10px', borderRadius: 6,
+      background: m.bg, color: m.color, border: `1px solid ${m.border}`,
+      letterSpacing: '0.05em', whiteSpace: 'nowrap', fontFamily: "'DM Sans',sans-serif",
     }}>
-      {status === 'pending'                      && '⏳'}
-      {status === 'reviewing'                    && '🔍'}
-      {status === 'approved'                     && '✅'}
-      {status === 'seller_rejected_pending_admin' && '⚠️'}
-      {status === 'rejected'                     && '❌'}
-      {' '}{cfg.label}
+      {m.icon}
+      {m.label.toUpperCase()}
     </span>
   )
 }
 
-// ─── Decision Modal (approve or reject) ──────────────────────────────────────
+// ─── Skeleton loader ──────────────────────────────────────────────────────────
 
-function DecisionModal({
-  complaint, mode, isOpen, onClose, onDone,
-}: {
+function SkeletonRow() {
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+      borderRadius: 14, padding: '18px 20px', display: 'flex', gap: 14, alignItems: 'center',
+    }}>
+      <div className="skeleton" style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0 }} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="skeleton" style={{ height: 13, width: '40%' }} />
+        <div className="skeleton" style={{ height: 11, width: '25%' }} />
+      </div>
+      <div className="skeleton" style={{ height: 24, width: 80, borderRadius: 6 }} />
+    </div>
+  )
+}
+
+// ─── Stat card ────────────────────────────────────────────────────────────────
+
+interface StatCardProps {
+  icon: React.ReactNode
+  label: string
+  value: number
+  color: string
+  delay: number
+}
+
+function StatCard({ icon, label, value, color, delay }: StatCardProps) {
+  return (
+    <div className="stat-card" style={{
+      background: '#111827', border: '1px solid rgba(255,255,255,0.07)',
+      borderRadius: 14, padding: '18px 16px',
+      display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 12,
+      animation: `fadeUp 0.4s ease ${delay}ms both`,
+      cursor: 'default',
+    }}>
+      <div style={{
+        width: 38, height: 38, borderRadius: 10,
+        background: `${color}25`, border: `1px solid ${color}30`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', color,
+      }}>
+        {icon}
+      </div>
+      <div>
+        <p style={{
+          fontSize: 26, fontWeight: 800, color: '#fff', margin: '0 0 4px',
+           lineHeight: 1,
+        }}>
+          {value}
+        </p>
+        <p style={{
+          fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.38)',
+          textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0,
+        }}>
+          {label}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ─── Decision modal ───────────────────────────────────────────────────────────
+
+interface DecisionModalProps {
   complaint: Complaint
   mode: 'approve' | 'reject'
   isOpen: boolean
   onClose: () => void
   onDone: () => void
-}) {
+}
+
+function DecisionModal({ complaint, mode, isOpen, onClose, onDone }: DecisionModalProps) {
   const [sellerNote,      setSellerNote]      = useState('')
   const [rejectionReason, setRejectionReason] = useState('')
   const [saving,          setSaving]          = useState(false)
   const [error,           setError]           = useState('')
 
-  useEffect(() => { if (isOpen) { setSellerNote(''); setRejectionReason(''); setError('') } }, [isOpen])
+  useEffect(() => {
+    if (isOpen) { setSellerNote(''); setRejectionReason(''); setError('') }
+  }, [isOpen])
 
   if (!isOpen) return null
 
+  const isApprove = mode === 'approve'
+  const accent    = isApprove ? C.green : C.orange
+  const accentDim = isApprove ? C.greenDim : C.orangeDim
+
   const handleSubmit = async () => {
-    if (mode === 'approve') {
+    if (isApprove) {
       if (sellerNote.trim().length > 0 && sellerNote.trim().length < 10) {
         setError('Note must be at least 10 characters (or leave empty).')
         return
@@ -74,127 +363,182 @@ function DecisionModal({
         return
       }
     }
-
     setSaving(true)
     try {
-      if (mode === 'approve') {
+      if (isApprove) {
         await sellerComplaintApi.approve(complaint.id, sellerNote || undefined)
       } else {
         await sellerComplaintApi.reject(complaint.id, sellerNote, rejectionReason)
       }
       onDone()
       onClose()
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Action failed. Please try again.')
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } }
+      setError(e?.response?.data?.message ?? 'Action failed. Please try again.')
     } finally {
       setSaving(false)
     }
   }
 
-  const isApprove = mode === 'approve'
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '11px 14px', borderRadius: 10, fontSize: 13,
+    border: '1.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
+    color: '#fff', fontFamily: "'DM Sans',sans-serif", lineHeight: 1.6,
+    resize: 'vertical', transition: 'border-color 0.15s, box-shadow 0.15s',
+  }
 
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', zIndex: 10000 }} />
+      <div
+        onClick={onClose}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)', zIndex: 10000 }}
+      />
       <div style={{
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-        width: '100%', maxWidth: 500,
-        background: '#fff', borderRadius: 20, padding: 28,
-        boxShadow: '0 32px 80px rgba(0,0,0,0.2)', zIndex: 10001,
+        width: '92%', maxWidth: 480,
+        background: '#111827', border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 20, padding: '28px 28px 24px',
+        boxShadow: '0 40px 100px rgba(0,0,0,0.5)', zIndex: 10001,
+        animation: 'pop 0.22s ease',
+        fontFamily: "'DM Sans',sans-serif",
       }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 24 }}>
           <div style={{
-            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-            background: isApprove ? 'rgba(16,185,129,0.1)' : 'rgba(249,115,22,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+            width: 48, height: 48, borderRadius: 14, background: accentDim,
+            border: `1px solid ${accent}30`, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', flexShrink: 0,
           }}>
-            {isApprove ? '✅' : '⚠️'}
+            {isApprove
+              ? <IconCheckCircle size={22} color={accent} strokeWidth={2.2} />
+              : <IconShieldAlert  size={22} color={accent} strokeWidth={2.2} />}
           </div>
           <div>
-            <h3 style={{ fontSize: 16, fontWeight: 900, color: '#0f172a', margin: 0 }}>
+            <h3 style={{ fontSize: 17, fontWeight: 800, color: '#fff', margin: '0 0 5px' }}>
               {isApprove ? 'Approve Complaint' : 'Reject Complaint'}
             </h3>
-            <p style={{ fontSize: 12, color: '#64748b', margin: '3px 0 0' }}>
+            <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5, margin: 0 }}>
               {isApprove
-                ? 'Client will be notified immediately.'
-                : 'Admin will validate your rejection before it becomes final.'}
+                ? 'The customer will be notified immediately after approval.'
+                : 'Admin will review and validate your rejection before it is final.'}
             </p>
           </div>
         </div>
 
-        {/* Complaint summary */}
-        <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', marginBottom: 16, border: '1px solid #f1f5f9' }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: '#374151', margin: 0 }}>
+        {/* Complaint summary chip */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+          background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 10, marginBottom: 20,
+        }}>
+          <IconPackage size={14} color="rgba(255,255,255,0.4)" />
+          <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>
             {COMPLAINT_TYPE_LABELS[complaint.complaint_type]}
-            {complaint.complaint_type === 'other' && complaint.other_reason ? ` — ${complaint.other_reason}` : ''}
-          </p>
-          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>Order #{complaint.order?.order_number ?? complaint.order_id}</p>
+          </span>
+          <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace' }}>
+            #{complaint.order?.order_number ?? complaint.order_id}
+          </span>
         </div>
 
         {/* Seller note */}
-        <div style={{ marginBottom: 14 }}>
-          <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>
-            Your Response / Note {isApprove ? '(optional)' : <span style={{ color: RED }}>*</span>}
-          </label>
-          <textarea
-            value={sellerNote}
-            onChange={e => { setSellerNote(e.target.value); setError('') }}
-            rows={3}
-            placeholder={isApprove
-              ? 'Optional: add a message for the client about this approval…'
-              : 'Explain your position and what you found when reviewing this complaint…'}
-            style={{ width: '100%', padding: '10px 14px', borderRadius: 10, fontSize: 13,
-              border: '1.5px solid #e5e7eb', fontFamily: 'inherit', lineHeight: 1.6,
-              resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
-          />
-        </div>
+        <label style={{
+          display: 'block', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.55)',
+          textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8,
+        }}>
+          Your Response{' '}
+          {isApprove
+            ? <span style={{ fontWeight: 400, textTransform: 'none', color: 'rgba(255,255,255,0.35)' }}>(optional)</span>
+            : <span style={{ color: C.red }}>*</span>}
+        </label>
+        <textarea
+          value={sellerNote}
+          onChange={e => { setSellerNote(e.target.value); setError('') }}
+          rows={3}
+          placeholder={isApprove ? 'Optional message for the customer…' : 'Explain why you are rejecting this complaint…'}
+          style={{ ...inputStyle, marginBottom: 16 }}
+        />
 
-        {/* Rejection reason (only for reject mode) */}
+        {/* Rejection reason (reject only) */}
         {!isApprove && (
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>
-              Rejection Reason <span style={{ color: RED }}>*</span>
+          <>
+            <label style={{
+              display: 'block', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.55)',
+              textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8,
+            }}>
+              Rejection Reason <span style={{ color: C.red }}>*</span>
             </label>
             <textarea
               value={rejectionReason}
               onChange={e => { setRejectionReason(e.target.value); setError('') }}
               rows={3}
-              placeholder="Clearly state why this complaint cannot be accepted (this will be sent to the client if admin confirms)…"
-              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, fontSize: 13,
-                border: '1.5px solid #e5e7eb', fontFamily: 'inherit', lineHeight: 1.6,
-                resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
+              placeholder="Clearly state the reason (visible to customer if admin approves)…"
+              style={{ ...inputStyle, marginBottom: 16 }}
             />
+          </>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
+            background: C.redDim, border: `1px solid ${C.red}40`, borderRadius: 10, marginBottom: 16,
+          }}>
+            <IconAlertTriangle size={14} color={C.red} />
+            <p style={{ fontSize: 12.5, color: C.red, fontWeight: 600, margin: 0 }}>{error}</p>
           </div>
         )}
 
-        {error && (
-          <p style={{ fontSize: 12, color: RED, fontWeight: 600, margin: '0 0 12px' }}>⚠ {error}</p>
-        )}
-
-        {/* Warning for reject */}
+        {/* Admin warning (reject only) */}
         {!isApprove && (
-          <div style={{ background: 'rgba(249,115,22,0.06)', border: '1.5px solid rgba(249,115,22,0.25)',
-            borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
-            <p style={{ fontSize: 12, color: ORANGE, fontWeight: 700, margin: 0 }}>
-              ⚠️ Your rejection will be sent to the admin for final validation. The client will only be notified once admin confirms.
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: 10, padding: '11px 14px',
+            background: C.orangeDim, border: `1px solid ${C.orange}35`, borderRadius: 10, marginBottom: 20,
+          }}>
+            <IconShieldAlert size={15} color={C.orange} strokeWidth={2.2} />
+            <p style={{ fontSize: 12, color: C.orange, fontWeight: 600, margin: 0, lineHeight: 1.6 }}>
+              Your rejection goes to admin for final approval. Customer is notified only after admin confirms.
             </p>
           </div>
         )}
 
+        {/* Buttons */}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} disabled={saving}
-            style={{ padding: '10px 22px', border: '1.5px solid #e5e7eb', borderRadius: 10,
-              background: '#fff', color: '#374151', fontSize: 13, fontWeight: 700,
-              cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="action-btn"
+            style={{
+              padding: '11px 22px', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 10,
+              background: 'transparent', color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', fontFamily: "'DM Sans',sans-serif",
+            }}
+          >
             Cancel
           </button>
-          <button onClick={handleSubmit} disabled={saving}
-            style={{ padding: '10px 22px', borderRadius: 10, fontSize: 13, fontWeight: 800,
-              border: 'none', cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
-              background: saving ? '#94a3b8' : isApprove ? GREEN : ORANGE,
-              color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
-            {saving ? 'Submitting…' : isApprove ? '✅ Confirm Approval' : '⚠️ Submit Rejection'}
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="action-btn"
+            style={{
+              padding: '11px 24px', borderRadius: 10, fontSize: 13, fontWeight: 800, border: 'none',
+              cursor: saving ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans',sans-serif",
+              background: saving ? 'rgba(255,255,255,0.1)' : accent,
+              color: '#fff', display: 'flex', alignItems: 'center', gap: 8, opacity: saving ? 0.7 : 1,
+            }}
+          >
+            {saving ? (
+              <>
+                <div style={{
+                  width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)',
+                  borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+                }} />
+                Submitting…
+              </>
+            ) : isApprove ? (
+              <><IconCheckCircle size={15} /> Confirm Approval</>
+            ) : (
+              <><IconShieldAlert size={15} /> Submit for Review</>
+            )}
           </button>
         </div>
       </div>
@@ -202,194 +546,256 @@ function DecisionModal({
   )
 }
 
+// ─── Drawer section helper ────────────────────────────────────────────────────
+
+interface DrawerSectionProps {
+  icon: React.ReactNode
+  label: string
+  children: React.ReactNode
+}
+
+function DrawerSection({ icon, label, children }: DrawerSectionProps) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ color: 'rgba(255,255,255,0.4)', display: 'flex' }}>{icon}</span>
+        <span style={{
+          fontSize: 10.5, fontWeight: 700, color: 'rgba(255,255,255,0.4)',
+          textTransform: 'uppercase', letterSpacing: '0.07em',
+        }}>
+          {label}
+        </span>
+      </div>
+      {children}
+    </div>
+  )
+}
+
 // ─── Complaint detail drawer ──────────────────────────────────────────────────
 
-function ComplaintDrawer({
-  complaint, dark, onClose, onRefresh,
-}: {
+interface ComplaintDrawerProps {
   complaint: Complaint | null
   dark: boolean
   onClose: () => void
   onRefresh: () => void
-}) {
+}
+
+function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawerProps) {
   const [decisionMode, setDecisionMode] = useState<'approve' | 'reject' | null>(null)
   const [toast,        setToast]        = useState('')
 
+  useEffect(() => { if (!complaint) setDecisionMode(null) }, [complaint])
+
   if (!complaint) return null
 
-  const cfg        = STATUS_CONFIG[complaint.status]
-  const canAct     = ['pending', 'reviewing'].includes(complaint.status)
-  const textMain   = dark ? '#fff' : '#0f172a'
-  const textMuted  = dark ? 'rgba(255,255,255,0.45)' : '#64748b'
-  const border     = dark ? 'rgba(255,255,255,0.07)' : '#f1f5f9'
-  const cardBg     = dark ? '#1e2330' : '#f8fafc'
+  const canAct  = ['pending', 'reviewing'].includes(complaint.status)
+  const border  = 'rgba(255,255,255,0.07)'
+  const cardBg  = 'rgba(255,255,255,0.03)'
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
 
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 9000 }} />
+      <div
+        onClick={onClose}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)', zIndex: 9000 }}
+      />
+
       <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: 540,
-        background: dark ? '#161b27' : '#fff',
-        boxShadow: '-12px 0 48px rgba(0,0,0,0.2)',
+        position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: 520,
+        background: '#0d1117', borderLeft: `1px solid ${border}`,
+        boxShadow: '-24px 0 80px rgba(0,0,0,0.4)',
         zIndex: 9001, overflowY: 'auto', display: 'flex', flexDirection: 'column',
-        animation: 'slideIn 0.25s ease',
+        animation: 'slideIn 0.28s cubic-bezier(0.22,1,0.36,1)',
+        fontFamily: "'DM Sans',sans-serif",
       }}>
-        {/* Header */}
-        <div style={{ padding: '18px 24px 14px', borderBottom: `1px solid ${border}`,
+        {/* Sticky header */}
+        <div style={{
+          padding: '20px 24px 16px', borderBottom: `1px solid ${border}`,
+          position: 'sticky', top: 0, background: '#0d1117', zIndex: 1,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          position: 'sticky', top: 0, background: dark ? '#161b27' : '#fff', zIndex: 1 }}>
+        }}>
           <div>
-            <h2 style={{ fontSize: 16, fontWeight: 900, color: textMain, margin: 0 }}>
-              Complaint #{complaint.id}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
+                COMPLAINT #{complaint.id}
+              </span>
+              <StatusBadge status={complaint.status} />
+            </div>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: 0 }}>
+              {COMPLAINT_TYPE_LABELS[complaint.complaint_type]}
             </h2>
-            <div style={{ marginTop: 6 }}><StatusBadge status={complaint.status} /></div>
           </div>
-          <button onClick={onClose}
-            style={{ width: 32, height: 32, borderRadius: '50%', border: `1.5px solid ${border}`,
-              background: cardBg, cursor: 'pointer', fontSize: 16, color: textMuted,
-              display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            ✕
+          <button
+            onClick={onClose}
+            className="action-btn"
+            style={{
+              width: 36, height: 36, borderRadius: 10, border: `1px solid ${border}`,
+              background: cardBg, cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)',
+            }}
+          >
+            <IconX size={16} />
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 22 }}>
 
-          {/* Client info */}
-          <div style={{ background: cardBg, borderRadius: 12, padding: '14px 16px', border: `1px solid ${border}` }}>
-            <p style={{ fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase',
-              letterSpacing: '0.07em', margin: '0 0 8px' }}>Client</p>
-            <p style={{ fontSize: 14, fontWeight: 800, color: textMain, margin: '0 0 2px' }}>
-              {complaint.user?.name ?? '—'}
-            </p>
-            <p style={{ fontSize: 12, color: textMuted, margin: 0 }}>{complaint.user?.email ?? '—'}</p>
-          </div>
-
-          {/* Order info */}
-          <div style={{ background: cardBg, borderRadius: 12, padding: '14px 16px', border: `1px solid ${border}` }}>
-            <p style={{ fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase',
-              letterSpacing: '0.07em', margin: '0 0 8px' }}>Order</p>
-            <p style={{ fontSize: 14, fontWeight: 800, color: textMain, margin: '0 0 4px', fontFamily: 'monospace' }}>
-              #{complaint.order?.order_number ?? complaint.order_id}
-            </p>
-            {complaint.order?.items && complaint.order.items.length > 0 && (
-              <div style={{ marginTop: 8 }}>
-                {complaint.order.items.map((item, i) => (
-                  <p key={i} style={{ fontSize: 12, color: textMuted, margin: '2px 0' }}>
+          {/* Client + Order */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 12, padding: '14px 16px' }}>
+              <DrawerSection icon={<IconUser size={13} />} label="Customer">
+                <p style={{ fontSize: 14, fontWeight: 700, color: '#fff', margin: '2px 0 1px' }}>
+                  {complaint.user?.name ?? '—'}
+                </p>
+                <p style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+                  {complaint.user?.email ?? '—'}
+                </p>
+              </DrawerSection>
+            </div>
+            <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 12, padding: '14px 16px' }}>
+              <DrawerSection icon={<IconPackage size={13} />} label="Order">
+                <p style={{ fontSize: 14, fontWeight: 700, color: '#fff', margin: '2px 0 1px', fontFamily: 'monospace' }}>
+                  #{complaint.order?.order_number ?? complaint.order_id}
+                </p>
+                {complaint.order?.items?.slice(0, 1).map((item, i) => (
+                  <p key={i} style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.4)', margin: 0 }}>
                     {item.product_name} × {item.quantity}
                   </p>
                 ))}
-              </div>
-            )}
+              </DrawerSection>
+            </div>
           </div>
 
-          {/* Complaint details */}
-          <div>
-            <p style={{ fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase',
-              letterSpacing: '0.07em', margin: '0 0 8px' }}>Complaint Details</p>
-            <div style={{ background: `${cfg.bg}`, border: `1.5px solid ${cfg.color}30`,
-              borderRadius: 12, padding: '14px 16px' }}>
-              <p style={{ fontSize: 13, fontWeight: 800, color: cfg.color, margin: '0 0 8px' }}>
-                {COMPLAINT_TYPE_LABELS[complaint.complaint_type]}
-                {complaint.complaint_type === 'other' && complaint.other_reason ? ` — ${complaint.other_reason}` : ''}
-              </p>
-              <p style={{ fontSize: 13, color: textMain, margin: 0, lineHeight: 1.7 }}>
+          {/* Description */}
+          <DrawerSection icon={<IconMessageSquare size={13} />} label="Description">
+            <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 12, padding: '14px 16px' }}>
+              <p style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.75)', margin: 0, lineHeight: 1.75 }}>
                 {complaint.description}
               </p>
             </div>
-          </div>
+          </DrawerSection>
 
           {/* Proof image */}
           {complaint.image_url && (
-            <div>
-              <p style={{ fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase',
-                letterSpacing: '0.07em', margin: '0 0 8px' }}>Proof Photo</p>
-              <a href={complaint.image_url} target="_blank" rel="noreferrer">
-                <img src={complaint.image_url} alt="Proof"
-                  style={{ width: '100%', maxHeight: 240, objectFit: 'contain',
-                    borderRadius: 12, border: `1.5px solid ${border}`, background: cardBg, cursor: 'zoom-in' }} />
+            <DrawerSection icon={<IconImageIcon size={13} />} label="Proof Photo">
+              <a
+                href={complaint.image_url}
+                target="_blank"
+                rel="noreferrer"
+                style={{ display: 'block', borderRadius: 12, overflow: 'hidden', border: `1px solid ${border}`, transition: 'opacity 0.15s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = '0.85' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = '1' }}
+              >
+                <img
+                  src={complaint.image_url}
+                  alt="Proof"
+                  style={{ width: '100%', maxHeight: 220, objectFit: 'contain', background: 'rgba(255,255,255,0.02)', display: 'block' }}
+                />
               </a>
-            </div>
+            </DrawerSection>
           )}
 
-          {/* Seller note (if already left one) */}
+          {/* Seller existing note */}
           {complaint.seller_note && (
-            <div>
-              <p style={{ fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase',
-                letterSpacing: '0.07em', margin: '0 0 8px' }}>Your Response</p>
-              <div style={{ background: 'rgba(30,64,175,0.06)', border: '1.5px solid rgba(30,64,175,0.2)',
-                borderRadius: 12, padding: '12px 16px' }}>
-                <p style={{ fontSize: 13, color: textMain, margin: 0, lineHeight: 1.7 }}>
+            <DrawerSection icon={<IconMessageSquare size={13} />} label="Your Response">
+              <div style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 12, padding: '14px 16px' }}>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', margin: 0, lineHeight: 1.7 }}>
                   {complaint.seller_note}
                 </p>
+              </div>
+            </DrawerSection>
+          )}
+
+          {/* Awaiting admin */}
+          {complaint.status === 'seller_rejected_pending_admin' && (
+            <div style={{
+              display: 'flex', gap: 12, padding: '14px 16px',
+              background: C.orangeDim, border: `1px solid ${C.orange}35`, borderRadius: 12,
+            }}>
+              <IconShieldAlert size={18} color={C.orange} strokeWidth={2} />
+              <div>
+                <p style={{ fontSize: 12.5, fontWeight: 700, color: C.orange, margin: '0 0 5px' }}>
+                  Awaiting Admin Validation
+                </p>
+                <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.6 }}>
+                  Your rejection is pending admin review. The customer will be notified once a final decision is made.
+                </p>
+                {complaint.rejection_reason && (
+                  <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: '8px 0 0', lineHeight: 1.6 }}>
+                    <strong style={{ color: 'rgba(255,255,255,0.55)' }}>Your reason:</strong> {complaint.rejection_reason}
+                  </p>
+                )}
               </div>
             </div>
           )}
 
-          {/* Seller rejected — waiting for admin */}
-          {complaint.status === 'seller_rejected_pending_admin' && (
-            <div style={{ background: 'rgba(249,115,22,0.08)', border: '1.5px solid rgba(249,115,22,0.3)',
-              borderRadius: 12, padding: '14px 16px' }}>
-              <p style={{ fontSize: 12, fontWeight: 800, color: ORANGE, margin: '0 0 6px',
-                textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                ⚠️ Awaiting Admin Validation
-              </p>
-              <p style={{ fontSize: 13, color: textMain, margin: 0, lineHeight: 1.6 }}>
-                Your rejection has been sent to the admin. They will make the final decision.
-              </p>
-              {complaint.rejection_reason && (
-                <p style={{ fontSize: 12, color: textMuted, margin: '8px 0 0', lineHeight: 1.6 }}>
-                  <strong>Your reason:</strong> {complaint.rejection_reason}
+          {/* Final resolved */}
+          {['approved', 'rejected'].includes(complaint.status) && (
+            <div style={{
+              display: 'flex', gap: 12, padding: '14px 16px', borderRadius: 12,
+              background: complaint.status === 'approved' ? C.greenDim : C.redDim,
+              border: `1px solid ${complaint.status === 'approved' ? C.green : C.red}35`,
+            }}>
+              {complaint.status === 'approved'
+                ? <IconCheckCircle size={18} color={C.green} strokeWidth={2} />
+                : <IconXCircle    size={18} color={C.red}   strokeWidth={2} />}
+              <div>
+                <p style={{
+                  fontSize: 12.5, fontWeight: 700, margin: '0 0 4px',
+                  color: complaint.status === 'approved' ? C.green : C.red,
+                }}>
+                  {complaint.status === 'approved' ? 'Complaint Approved' : 'Complaint Rejected'}
                 </p>
-              )}
+                {complaint.rejection_reason && (
+                  <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+                    {complaint.rejection_reason}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Already resolved */}
-          {['approved','rejected'].includes(complaint.status) ? (
-            <div style={{
-              background: complaint.status === 'approved' ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)',
-              border: `1.5px solid ${complaint.status === 'approved' ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`,
-              borderRadius: 12, padding: '14px 16px',
-            }}>
-              <p style={{ fontSize: 12, fontWeight: 800, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em',
-                color: complaint.status === 'approved' ? '#10b981' : '#ef4444' }}>
-                {complaint.status === 'approved' ? '✅ Approved' : '❌ Rejected (Final)'}
-              </p>
-              {complaint.rejection_reason && (
-                <p style={{ fontSize: 13, color: textMain, margin: 0 }}>{complaint.rejection_reason}</p>
-              )}
-            </div>
-          ) : null}
-
-          <p style={{ fontSize: 11, color: textMuted, fontWeight: 600, margin: 0 }}>
-            Filed: {new Date(complaint.created_at).toLocaleDateString('en-GB', {
+          <p style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.4)', fontWeight: 500, marginTop: 4 }}>
+            Filed on{' '}
+            {new Date(complaint.created_at).toLocaleDateString('en-GB', {
               day: 'numeric', month: 'long', year: 'numeric',
             })}
           </p>
         </div>
 
-        {/* Action footer */}
+        {/* Footer actions */}
         {canAct && (
-          <div style={{ padding: '14px 24px', borderTop: `1px solid ${border}`,
-            position: 'sticky', bottom: 0, background: dark ? '#161b27' : '#fff',
-            display: 'flex', gap: 10 }}>
+          <div style={{
+            padding: '14px 24px', borderTop: `1px solid ${border}`,
+            position: 'sticky', bottom: 0, background: '#0d1117', display: 'flex', gap: 10,
+          }}>
             <button
               onClick={() => setDecisionMode('reject')}
-              style={{ flex: 1, padding: 12, background: 'rgba(249,115,22,0.1)',
-                color: ORANGE, border: `1.5px solid rgba(249,115,22,0.3)`,
-                borderRadius: 10, fontSize: 13, fontWeight: 800,
-                cursor: 'pointer', fontFamily: 'inherit' }}>
-              ⚠️ Reject
+              className="action-btn"
+              style={{
+                flex: 1, padding: '12px 0', background: C.orangeDim,
+                color: C.orange, border: `1px solid ${C.orange}40`,
+                borderRadius: 10, fontSize: 13, fontWeight: 700,
+                cursor: 'pointer', fontFamily: "'DM Sans',sans-serif",
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              <IconXCircle size={16} /> Reject
             </button>
             <button
               onClick={() => setDecisionMode('approve')}
-              style={{ flex: 1, padding: 12, background: GREEN, color: '#fff',
-                border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 800,
-                cursor: 'pointer', fontFamily: 'inherit' }}>
-              ✅ Approve
+              className="action-btn"
+              style={{
+                flex: 1, padding: '12px 0', background: C.green,
+                color: '#fff', border: 'none',
+                borderRadius: 10, fontSize: 13, fontWeight: 700,
+                cursor: 'pointer', fontFamily: "'DM Sans',sans-serif",
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              <IconCheckCircle size={16} /> Approve
             </button>
           </div>
         )}
@@ -402,15 +808,25 @@ function ComplaintDrawer({
           mode={decisionMode}
           isOpen={!!decisionMode}
           onClose={() => setDecisionMode(null)}
-          onDone={() => { showToast(decisionMode === 'approve' ? '✅ Complaint approved!' : '⚠️ Rejection submitted to admin.'); onRefresh(); onClose() }}
+          onDone={() => {
+            showToast(decisionMode === 'approve' ? '✓ Complaint approved' : '⚠ Rejection submitted for review')
+            onRefresh()
+            onClose()
+          }}
         />
       )}
 
       {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)',
-          background: '#111', color: '#fff', padding: '10px 22px', borderRadius: 999,
-          fontSize: 13, fontWeight: 700, zIndex: 99999, boxShadow: '0 8px 28px rgba(0,0,0,0.25)' }}>
+        <div style={{
+          position: 'fixed', bottom: 28, left: '50%',
+          background: '#1a2235', color: '#fff', padding: '11px 22px',
+          borderRadius: 999, fontSize: 13, fontWeight: 700, zIndex: 99999,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)',
+          display: 'flex', alignItems: 'center', gap: 8,
+          animation: 'toastIn 0.22s ease forwards',
+          fontFamily: "'DM Sans',sans-serif",
+        }}>
           {toast}
         </div>
       )}
@@ -420,20 +836,23 @@ function ComplaintDrawer({
   )
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main page ────────────────────────────────────────────────────────────────
+
+interface StatsData {
+  total: number
+  needs_action: number
+  approved: number
+  seller_rejected: number
+  rejected: number
+}
 
 export default function SellerComplaintsPage() {
   const { dark } = useTheme()
   const [complaints, setComplaints] = useState<Complaint[]>([])
-  const [stats,      setStats]      = useState<any>(null)
+  const [stats,      setStats]      = useState<StatsData | null>(null)
   const [loading,    setLoading]    = useState(true)
   const [selected,   setSelected]   = useState<Complaint | null>(null)
   const [filter,     setFilter]     = useState('')
-
-  const textMain  = dark ? '#fff' : '#0f172a'
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#64748b'
-  const cardBg    = dark ? '#161b27' : '#fff'
-  const border    = dark ? 'rgba(255,255,255,0.07)' : '#f1f5f9'
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
@@ -458,150 +877,208 @@ export default function SellerComplaintsPage() {
     try {
       const res = await sellerComplaintApi.getOne(c.id)
       setSelected(res.data)
-    } catch { setSelected(c) }
+    } catch {
+      setSelected(c)
+    }
   }
 
-  const statCards = stats ? [
-    { label: 'Total',          value: stats.total,           color: textMuted, icon: '📋' },
-    { label: 'Needs Action',   value: stats.needs_action,    color: '#f59e0b',  icon: '⏳' },
-    { label: 'Approved',       value: stats.approved,        color: '#10b981',  icon: '✅' },
-    { label: 'Awaiting Admin', value: stats.seller_rejected, color: ORANGE,     icon: '⚠️' },
-    { label: 'Rejected',       value: stats.rejected,        color: '#ef4444',  icon: '❌' },
+  const statCards: StatCardProps[] = stats ? [
+    { icon: <IconInbox size={18} />,       label: 'Total',          value: stats.total,           color: 'rgba(255,255,255,0.7)', delay: 0   },
+    { icon: <IconClock size={18} />,       label: 'Needs Action',   value: stats.needs_action,    color: C.amber,                 delay: 60  },
+    { icon: <IconCheckCircle size={18} />, label: 'Approved',       value: stats.approved,        color: C.green,                 delay: 120 },
+    { icon: <IconShieldAlert size={18} />, label: 'Awaiting Admin', value: stats.seller_rejected, color: C.orange,                delay: 180 },
+    { icon: <IconXCircle size={18} />,     label: 'Rejected',       value: stats.rejected,        color: C.red,                   delay: 240 },
   ] : []
 
-  const FILTERS = [
-    { val: '',                             label: 'All' },
-    { val: 'pending',                      label: 'Pending' },
-    { val: 'reviewing',                    label: 'Reviewing' },
-    { val: 'approved',                     label: 'Approved' },
-    { val: 'seller_rejected_pending_admin',label: 'Awaiting Admin' },
-    { val: 'rejected',                     label: 'Rejected' },
+  interface FilterTab { val: string; label: string; icon: React.ReactNode }
+  const FILTERS: FilterTab[] = [
+    { val: '',                              label: 'All',            icon: <IconListFilter size={13} /> },
+    { val: 'pending',                       label: 'Pending',        icon: <IconClock size={13} />      },
+    { val: 'reviewing',                     label: 'Reviewing',      icon: <IconSearch size={13} />     },
+    { val: 'approved',                      label: 'Approved',       icon: <IconCheckCircle size={13} />},
+    { val: 'seller_rejected_pending_admin', label: 'Awaiting Admin', icon: <IconShieldAlert size={13} />},
+    { val: 'rejected',                      label: 'Rejected',       icon: <IconXCircle size={13} />    },
   ]
 
   return (
     <>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{GLOBAL_CSS}</style>
 
-      <div style={{ fontFamily: "'DM Sans', sans-serif", padding: '4px 0' }}>
+      <div style={{ fontFamily: "'DM Sans',sans-serif", padding: '6px 0', maxWidth: 1100 }}>
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(220,38,38,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-            🚨
+        {/* ── Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexWrap: 'wrap', gap: 12, marginBottom: 28,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              width: 46, height: 46, borderRadius: 13, background: C.redDim,
+              border: `1px solid ${C.red}30`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <IconAlertTriangle size={22} color={C.red} strokeWidth={2.2} />
+            </div>
+            <div>
+              <h1 style={{
+                fontSize: 25, fontWeight: 900, color: dark ? '#fff' : '#0f172a', margin: 0,
+                 letterSpacing: '-0.3px',
+              }}>
+                Complaints
+              </h1>
+              <p style={{ fontSize: 12.5, color: dark ? 'rgba(255,255,255,0.38)' : '#64748b', margin: '3px 0 0', fontWeight: 500 }}>
+                Customer complaints about your products
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: 0 }}>Complaints</h1>
-            <p style={{ fontSize: 12, color: textMuted, margin: 0, fontWeight: 500 }}>
-              Customer complaints about your products
-            </p>
-          </div>
+
+          <button
+            onClick={fetchAll}
+            className="action-btn"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 10, color: 'rgba(255,255,255,0.55)', fontSize: 12.5, fontWeight: 600,
+              cursor: 'pointer', fontFamily: "'DM Sans',sans-serif",
+            }}
+          >
+            <IconRefreshCw size={14} /> Refresh
+          </button>
         </div>
 
-        {/* Stats */}
+        {/* ── Stat cards */}
         {stats && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))',
-            gap: 12, marginBottom: 24 }}>
-            {statCards.map(s => (
-              <div key={s.label} style={{ background: cardBg, borderRadius: 14,
-                border: `1.5px solid ${border}`, padding: '16px 14px', textAlign: 'center' }}>
-                <div style={{ fontSize: 20, marginBottom: 6 }}>{s.icon}</div>
-                <p style={{ fontSize: 22, fontWeight: 900, color: s.color, margin: '0 0 4px', lineHeight: 1 }}>
-                  {s.value}
-                </p>
-                <p style={{ fontSize: 10, fontWeight: 700, color: textMuted,
-                  textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
-                  {s.label}
-                </p>
-              </div>
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12, marginBottom: 28 }}>
+            {statCards.map(s => <StatCard key={s.label} {...s} />)}
           </div>
         )}
 
-        {/* Filter tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        {/* ── Filter tabs */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.3)', fontWeight: 600, marginRight: 4 }}>
+            FILTER
+          </span>
           {FILTERS.map(f => {
             const active = filter === f.val
-            const cfg = f.val ? STATUS_CONFIG[f.val as Complaint['status']] : null
+            const meta   = f.val ? STATUS_META[f.val] : null
+            const color  = active ? (meta?.color  ?? C.red)         : 'rgba(255,255,255,0.38)'
+            const bg     = active ? (meta?.bg     ?? C.redDim)      : 'transparent'
+            const brd    = active ? (meta?.border ?? `${C.red}40`)  : 'rgba(255,255,255,0.08)'
             return (
-              <button key={f.val} onClick={() => setFilter(f.val)}
-                style={{ padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700,
-                  border: `1.5px solid ${active ? (cfg?.color ?? RED) : border}`,
-                  background: active ? `${cfg?.bg ?? 'rgba(220,38,38,0.08)'}` : cardBg,
-                  color: active ? (cfg?.color ?? RED) : textMuted,
-                  cursor: 'pointer', fontFamily: 'inherit', textTransform: 'capitalize' }}>
-                {f.label}
+              <button
+                key={f.val}
+                onClick={() => setFilter(f.val)}
+                className="filter-btn"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                  border: `1px solid ${brd}`, background: bg, color,
+                  cursor: 'pointer', fontFamily: "'DM Sans',sans-serif",
+                }}
+              >
+                {f.icon} {f.label}
               </button>
             )
           })}
         </div>
 
-        {/* List */}
+        {/* ── List */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <div style={{ width: 28, height: 28, border: `3px solid ${border}`,
-              borderTopColor: RED, borderRadius: '50%',
-              animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-            <p style={{ color: textMuted, fontSize: 13 }}>Loading complaints…</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[0, 1, 2, 3].map(i => <SkeletonRow key={i} />)}
           </div>
         ) : complaints.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: textMuted }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
-            <p style={{ fontSize: 14, fontWeight: 800, color: textMain, margin: '0 0 6px' }}>
-              No complaints{filter ? ` with this status` : ''}
+          <div style={{ textAlign: 'center', padding: '72px 0', animation: 'fadeUp 0.4s ease' }}>
+            <div style={{
+              width: 60, height: 60, borderRadius: 18, background: C.greenDim,
+              border: `1px solid ${C.green}30`, margin: '0 auto 16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <IconCheckCircle size={28} color={C.green} strokeWidth={1.8} />
+            </div>
+            <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', margin: '0 0 6px' }}>
+              No complaints{filter ? ' with this status' : ''}
             </p>
-            <p style={{ fontSize: 13 }}>Keep up the great work!</p>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: 0 }}>
+              Keep up the excellent work!
+            </p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {complaints.map(c => {
-              const cfg    = STATUS_CONFIG[c.status]
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {complaints.map((c, idx) => {
+              const meta   = STATUS_META[c.status] ?? STATUS_META['pending']
               const canAct = ['pending', 'reviewing'].includes(c.status)
               return (
-                <div key={c.id}
+                <div
+                  key={c.id}
+                  className="complaint-row"
                   onClick={() => handleSelect(c)}
-                  style={{ background: cardBg, borderRadius: 14, border: `1.5px solid ${border}`,
-                    overflow: 'hidden', cursor: 'pointer', transition: 'box-shadow 0.15s ease' }}
-                  onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)')}
-                  onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}>
+                  style={{
+                    background: '#111827',
+                    border: `1px solid ${canAct ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                    borderRadius: 14, overflow: 'hidden', cursor: 'pointer',
+                    display: 'flex', alignItems: 'stretch',
+                    animation: `fadeUp 0.35s ease ${idx * 55}ms both`,
+                  }}
+                >
+                  {/* Status stripe */}
+                  <div style={{ width: 3, background: meta.color, flexShrink: 0 }} />
 
-                  {/* Left accent */}
-                  <div style={{ display: 'flex' }}>
-                    <div style={{ width: 4, background: canAct ? '#f59e0b' : cfg.color, flexShrink: 0 }} />
-                    <div style={{ flex: 1, padding: '14px 18px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        flexWrap: 'wrap', gap: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                          <div>
-                            <p style={{ fontSize: 11, color: textMuted, fontWeight: 700,
-                              textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px' }}>
-                              #{c.id}
-                            </p>
-                            <p style={{ fontSize: 13, fontWeight: 700, color: textMain, margin: 0 }}>
-                              {COMPLAINT_TYPE_LABELS[c.complaint_type]}
-                            </p>
-                          </div>
-                          <div>
-                            <p style={{ fontSize: 11, color: textMuted, margin: '0 0 2px' }}>Customer</p>
-                            <p style={{ fontSize: 13, fontWeight: 600, color: textMain, margin: 0 }}>
-                              {c.user?.name ?? '—'}
-                            </p>
-                          </div>
-                          <StatusBadge status={c.status} />
-                          {canAct && (
-                            <span style={{ fontSize: 10, fontWeight: 800, color: '#f59e0b',
-                              background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
-                              padding: '3px 10px', borderRadius: 999 }}>
-                              Action Required
-                            </span>
-                          )}
-                        </div>
-                        <span style={{ fontSize: 11, color: textMuted, fontWeight: 600 }}>
-                          {new Date(c.created_at).toLocaleDateString('en-GB', {
-                            day: 'numeric', month: 'short', year: 'numeric',
-                          })}
-                        </span>
+                  {/* Content */}
+                  <div style={{
+                    flex: 1, padding: '15px 20px',
+                    display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap',
+                  }}>
+                    {/* ID + type */}
+                    <div style={{ minWidth: 160 }}>
+                      <p style={{ fontSize: 10, fontFamily: 'monospace', color: 'rgba(255,255,255,0.3)', margin: '0 0 4px', fontWeight: 600 }}>
+                        #{c.id}
+                      </p>
+                      <p style={{ fontSize: 13.5, fontWeight: 700, color: '#fff', margin: 0 }}>
+                        {COMPLAINT_TYPE_LABELS[c.complaint_type]}
+                      </p>
+                    </div>
+
+                    {/* Customer */}
+                    <div style={{ minWidth: 130, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{
+                        width: 30, height: 30, borderRadius: 8,
+                        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'rgba(255,255,255,0.35)', flexShrink: 0,
+                      }}>
+                        <IconUser size={14} />
                       </div>
+                      <div>
+                        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', margin: '0 0 1px', fontWeight: 600 }}>Customer</p>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', margin: 0 }}>
+                          {c.user?.name ?? '—'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Badges */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <StatusBadge status={c.status} />
+                      {canAct && (
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          fontSize: 10, fontWeight: 700, color: C.amber,
+                          background: C.amberDim, border: `1px solid ${C.amber}30`,
+                          padding: '4px 10px', borderRadius: 6, letterSpacing: '0.05em',
+                        }}>
+                          <IconAlertTriangle size={10} /> ACTION REQUIRED
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Date + arrow */}
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.28)', fontWeight: 500 }}>
+                        {new Date(c.created_at).toLocaleDateString('en-GB', {
+                          day: 'numeric', month: 'short', year: 'numeric',
+                        })}
+                      </span>
+                      <IconChevronRight size={16} color="rgba(255,255,255,0.2)" />
                     </div>
                   </div>
                 </div>
