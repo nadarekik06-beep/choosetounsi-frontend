@@ -572,58 +572,66 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
             </section>
           )}
 
-          {/* ── Images ── */}
-          <section>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 14 }}>
-              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>Images</p>
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>{totalImages}/8</span>
-            </div>
+          {/* ── Images ──
+               HIDDEN when the product has a color variant axis.
+               In that case the ColorImageUploader above handles all images
+               per color, so a separate general upload would create confusion
+               and duplicate storage. Real e-commerce platforms (Shopify, etc.)
+               do exactly this: color-variant products use ONLY variant images.
+          ── */}
+          {!variantAxes.find(a => a.type === 'color') && (
+            <section>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 14 }}>
+                <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>Images</p>
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>{totalImages}/8</span>
+              </div>
 
-            {existingImages.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>Current Images</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-                  {existingImages.map(img => (
-                    <ImageThumb key={img.id} src={img.url} isPrimary={img.id === primaryImageId}
-                      onRemove={() => removeExisting(img.id)} onSetPrimary={() => setExistingPrimary(img.id)} />
-                  ))}
+              {existingImages.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>Current Images</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+                    {existingImages.map(img => (
+                      <ImageThumb key={img.id} src={img.url} isPrimary={img.id === primaryImageId}
+                        onRemove={() => removeExisting(img.id)} onSetPrimary={() => setExistingPrimary(img.id)} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {previews.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>New Images</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-                  {previews.map(prev => (
-                    <ImageThumb key={prev.id} src={prev.preview}
-                      isPrimary={existingImages.length === 0 && previews[0]?.id === prev.id}
-                      onRemove={() => removePreview(prev.id)} onSetPrimary={() => { }} />
-                  ))}
+              {previews.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>New Images</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+                    {previews.map(prev => (
+                      <ImageThumb key={prev.id} src={prev.preview}
+                        isPrimary={existingImages.length === 0 && previews[0]?.id === prev.id}
+                        onRemove={() => removePreview(prev.id)} onSetPrimary={() => { }} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {totalImages < 8 && (
-              <div onDragOver={e => e.preventDefault()}
-                onDrop={e => { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))) }}
-                onClick={() => fileInputRef.current?.click()}
-                style={{ border: '2px dashed #e5e7eb', borderRadius: 14, padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}
-                className="hover:border-red-300">
-                <Upload size={20} color="#94a3b8" />
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#64748b', margin: 0 }}>Drop images or <span style={{ color: '#dc2626' }}>browse</span></p>
-                <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>JPG, PNG, WebP · max 5 MB each</p>
-                <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
-                  onChange={e => { addFiles(Array.from(e.target.files ?? [])); e.target.value = '' }} />
-              </div>
-            )}
+              {totalImages < 8 && (
+                <div onDragOver={e => e.preventDefault()}
+                  onDrop={e => { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))) }}
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ border: '2px dashed #e5e7eb', borderRadius: 14, padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+                  className="hover:border-red-300">
+                  <Upload size={20} color="#94a3b8" />
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#64748b', margin: 0 }}>Drop images or <span style={{ color: '#dc2626' }}>browse</span></p>
+                  <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>JPG, PNG, WebP · max 5 MB each</p>
+                  <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
+                    onChange={e => { addFiles(Array.from(e.target.files ?? [])); e.target.value = '' }} />
+                </div>
+              )}
 
-            {totalImages === 0 && (
-              <p style={{ textAlign: 'center', fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                <ImageIcon size={11} /> No images yet
-              </p>
-            )}
-          </section>
+              {totalImages === 0 && (
+                <p style={{ textAlign: 'center', fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                  <ImageIcon size={11} /> No images yet
+                </p>
+              )}
+            </section>
+          )}
 
           {!isEdit && (
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '12px 14px', fontSize: 12, color: '#92400e' }}>

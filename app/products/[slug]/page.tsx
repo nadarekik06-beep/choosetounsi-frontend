@@ -22,8 +22,10 @@ import { useCart } from '@/context/CartContext'
 import { isAuthenticated } from '@/lib/auth'
 import type { ProductVariant, SelectableAxis } from '@/lib/shopApi'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
-const STORAGE_BASE = API_URL.replace(/\/api$/, '')
+// Normalize: strip trailing /api if present so STORAGE_BASE is always the bare origin.
+// Works whether NEXT_PUBLIC_API_URL is 'http://localhost:8000' or 'http://localhost:8000/api'
+const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
+const API_URL      = `${STORAGE_BASE}/api`
 
 function resolveImg(path: string | null | undefined): string | null {
   if (!path) return null
@@ -63,8 +65,8 @@ interface Product {
   selectable_axes: (SelectableAxis & {
     options: (SelectableAxis['options'][0] & { primary_image?: string | null })[]
   })[]
-  /** color_option_id → [url, url, …] — for instant color switching */
-  color_images: Record<number, string[]>
+  /** color_option_id (as string key from JSON) → [url, url, …] — for instant color switching */
+  color_images: Record<string, string[]>
 }
 
 // ─── Attribute Display ────────────────────────────────────────────────────────
@@ -299,7 +301,7 @@ export default function ProductDetailPage() {
     if (!slug) return
     setLoading(true)
     setSelectedOptions({})
-    fetch(`${API_URL}/api/products/${slug}`, { headers: { Accept: 'application/json' } })
+    fetch(`${API_URL}/products/${slug}`, { headers: { Accept: 'application/json' } })
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(json => setProduct(json.data))
       .catch(() => setError(true))
@@ -339,8 +341,9 @@ export default function ProductDetailPage() {
     }
 
     // 2. Color selected — use color group images
-    if (selectedColorId !== undefined && product?.color_images?.[selectedColorId]?.length) {
-      return product.color_images[selectedColorId]
+    // PHP JSON-encodes integer array keys as STRINGS → must look up with String()
+    if (selectedColorId !== undefined && product?.color_images?.[String(selectedColorId) as any]?.length) {
+      return product.color_images[String(selectedColorId) as any]
     }
 
     // 3. Default — use product-level images (no color_option_id)

@@ -1,8 +1,12 @@
 'use client'
 
 /**
- * app/account/orders/page.tsx  (or app/(client)/orders/page.tsx)
+ * app/orders/page.tsx
  * Client order history — shows variant labels per order item.
+ *
+ * FIXED: Uses item.resolved_image_url (variant-aware, set by backend)
+ *        instead of item.product?.primary_image_url (always the product default).
+ * PRESERVED: ComplaintModal integration (Report Issue button for delivered orders).
  */
 
 import { useEffect, useState, useCallback } from 'react'
@@ -14,7 +18,7 @@ import {
 } from 'lucide-react'
 import { isAuthenticated } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
-import ComplaintModal from '@/app/components/ComplaintModal'  // CHANGE 1: Added import
+import ComplaintModal from '@/app/components/ComplaintModal'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api$/, '')
@@ -35,6 +39,11 @@ interface OrderItem {
   quantity: number
   unit_price: number
   total: number
+  /**
+   * Resolved by backend: variant color image → product primary image.
+   * Always prefer this over product.primary_image_url.
+   */
+  resolved_image_url?: string | null
   product?: {
     slug: string
     primary_image_url?: string | null
@@ -92,11 +101,11 @@ function StatusBadge({ status }: { status: string }) {
 
 function OrderCard({ order }: { order: Order }) {
   const [expanded,      setExpanded]      = useState(false)
-  const [complaintOpen, setComplaintOpen] = useState(false)   // CHANGE 2: Added complaint state
+  const [complaintOpen, setComplaintOpen] = useState(false)
 
   const date = new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
-  // CHANGE 2: Complaint button is only shown for delivered orders
+  // Complaint button only shown for delivered orders
   const canComplain = order.status === 'delivered'
 
   return (
@@ -121,7 +130,6 @@ function OrderCard({ order }: { order: Order }) {
             <StatusBadge status={order.status} />
           </div>
 
-          {/* CHANGE 2: Wrapped buttons in a flex container, added complaint button */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {canComplain && (
               <button
@@ -149,7 +157,6 @@ function OrderCard({ order }: { order: Order }) {
               {expanded ? <><ChevronUp size={13} /> Hide</> : <><ChevronDown size={13} /> Details</>}
             </button>
           </div>
-          {/* END CHANGE 2 */}
         </div>
 
         {/* Expanded items */}
@@ -167,10 +174,14 @@ function OrderCard({ order }: { order: Order }) {
             {/* Items */}
             <div style={{ padding: '10px 20px' }}>
               {order.items?.map(item => {
-                const img = resolveImg(item.product?.primary_image_url)
+                // FIXED: resolved_image_url is variant-aware (set by ClientOrderApiController).
+                // Falls back to product.primary_image_url only if backend didn't send it.
+                const img = item.resolved_image_url
+                  ?? resolveImg(item.product?.primary_image_url)
+
                 return (
                   <div key={item.id} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #f8fafc', alignItems: 'center' }}>
-                    {/* Thumbnail */}
+                    {/* Thumbnail — shows the color the customer actually ordered */}
                     <div style={{ width: 52, height: 52, borderRadius: 8, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9', flexShrink: 0 }}>
                       {img
                         ? <img src={img} alt={item.product_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -219,14 +230,13 @@ function OrderCard({ order }: { order: Order }) {
         )}
       </div>
 
-      {/* CHANGE 2: Complaint Modal */}
+      {/* Complaint Modal */}
       <ComplaintModal
         orderId={order.id}
         orderNumber={order.order_number}
         isOpen={complaintOpen}
         onClose={() => setComplaintOpen(false)}
       />
-      {/* END CHANGE 2 */}
     </>
   )
 }
@@ -259,7 +269,7 @@ export default function OrdersPage() {
   }, [])
 
   useEffect(() => {
-    if (!isAuthenticated()) { router.push('/auth/login?redirect=/account/orders'); return }
+    if (!isAuthenticated()) { router.push('/auth/login?redirect=/orders'); return }
     fetchOrders()
   }, [fetchOrders, router])
 

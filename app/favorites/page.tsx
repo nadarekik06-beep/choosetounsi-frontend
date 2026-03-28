@@ -2,129 +2,242 @@
 
 /**
  * app/favorites/page.tsx
+ *
+ * Client wishlist / saved items.
+ * image_url is now variant-aware — fixed in FavoriteController.php.
+ * Shows the color the customer favorited, not always the default product photo.
  */
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Heart, ShoppingBag, ArrowLeft } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import {
+  Heart, ShoppingCart, ChevronRight, Trash2, Package, Loader2,
+} from 'lucide-react'
 import { useCart } from '@/context/CartContext'
-import AddToCartButton from '@/components/AddToCartButton'
-import FavoriteButton from '@/components/FavoriteButton'
+import { isAuthenticated } from '@/lib/auth'
+import type { FavoriteItem } from '@/lib/shopApi'
+
+const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api$/, '')
+
+function resolveImg(path: string | null | undefined): string | null {
+  if (!path) return null
+  if (path.startsWith('http')) return path
+  return `${STORAGE_BASE}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
+}
 
 const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 3 }).format(n) + ' DT'
+  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 2, maximumFractionDigits: 3 }).format(n) + ' DT'
+
+// ─── Favorite Card ────────────────────────────────────────────────────────────
+
+function FavoriteCard({ item, onRemove }: { item: FavoriteItem; onRemove: () => void }) {
+  const { addToCart, cartLoading } = useCart()
+  const [adding, setAdding] = useState(false)
+
+  // image_url is already resolved by backend (variant color → product primary fallback)
+  const imgSrc = resolveImg(item.image_url)
+
+  const colorOptions = Object.values(item.variant_options ?? {}).filter(o => o.color_hex)
+  const otherOptions = Object.values(item.variant_options ?? {}).filter(o => !o.color_hex)
+
+  const handleAddToCart = async () => {
+    setAdding(true)
+    try {
+      await addToCart(item.product_id, 1, item.variant_id ?? null)
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  return (
+    <div style={{
+      background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9',
+      overflow: 'hidden', display: 'flex', flexDirection: 'column',
+    }}>
+      {/* Image */}
+      <Link href={`/products/${item.slug}`} style={{ display: 'block', position: 'relative', aspectRatio: '3/4', overflow: 'hidden', background: '#f8fafc' }}>
+        {imgSrc
+          ? <img src={imgSrc} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }} />
+          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Package size={28} color="#e2e8f0" />
+            </div>
+        }
+        {item.stock <= 0 && (
+          <div style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999 }}>
+            Out of stock
+          </div>
+        )}
+      </Link>
+
+      {/* Info */}
+      <div style={{ padding: '12px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <Link href={`/products/${item.slug}`}
+          style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', textDecoration: 'none', lineHeight: 1.3,
+            overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box',
+            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+          {item.name}
+        </Link>
+
+        {/* Variant indicators */}
+        {item.variant_label && (
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+            {colorOptions.map((opt, i) => (
+              <span key={i} title={opt.value} style={{
+                display: 'inline-block', width: 14, height: 14, borderRadius: '50%',
+                background: opt.color_hex!, border: '1.5px solid rgba(0,0,0,0.12)', flexShrink: 0,
+              }} />
+            ))}
+            {otherOptions.map((opt, i) => (
+              <span key={i} style={{
+                fontSize: 10, fontWeight: 700, color: '#6366f1',
+                background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
+                padding: '1px 7px', borderRadius: 4,
+              }}>
+                {opt.value}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Price */}
+        <p style={{ fontSize: 16, fontWeight: 900, color: '#dc2626', margin: 0 }}>
+          {fmt(item.price)}
+        </p>
+
+        {/* Low stock */}
+        {item.stock > 0 && item.stock <= 10 && (
+          <p style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700, margin: 0 }}>
+            Only {item.stock} left
+          </p>
+        )}
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <button
+            onClick={handleAddToCart}
+            disabled={item.stock <= 0 || cartLoading || adding}
+            style={{
+              flex: 1, height: 38, borderRadius: 10, border: 'none',
+              cursor: item.stock <= 0 ? 'not-allowed' : 'pointer',
+              background: item.stock <= 0 ? '#f1f5f9' : 'linear-gradient(135deg,#dc2626,#b91c1c)',
+              color: item.stock <= 0 ? '#94a3b8' : '#fff',
+              fontSize: 12, fontWeight: 800,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              boxShadow: item.stock <= 0 ? 'none' : '0 4px 14px rgba(220,38,38,0.25)',
+              opacity: (cartLoading || adding) ? 0.6 : 1,
+              fontFamily: 'inherit', transition: 'all 0.15s',
+            }}
+          >
+            {adding
+              ? <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />
+              : <ShoppingCart size={13} />
+            }
+            {item.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+          </button>
+
+          <button
+            onClick={onRemove}
+            style={{
+              width: 38, height: 38, borderRadius: 10,
+              border: '1px solid #fee2e2', background: '#fff',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#ef4444', transition: 'background 0.15s',
+            }}
+            title="Remove from favorites"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function FavoritesPage() {
-  const { favorites, favLoading } = useCart()
+  const router = useRouter()
+  const { favorites, toggleFavorite, favLoading } = useCart()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    if (!isAuthenticated()) {
+      router.push('/auth/login?redirect=/favorites')
+    }
+  }, [router])
+
+  const items = favorites as FavoriteItem[]
 
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap');
-        .fav-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.1); }
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: "'Barlow', sans-serif" }}>
+      <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Barlow', sans-serif" }}>
 
-        {/* Header */}
-        <div style={{ background: '#fff', borderBottom: '1px solid #eee' }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
-              <ArrowLeft size={14} /> Back
-            </Link>
-            <span style={{ color: '#cbd5e1' }}>|</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Heart size={18} color="#dc2626" fill="#dc2626" />
-              <h1 style={{ fontSize: 16, fontWeight: 800, color: '#111', margin: 0 }}>
-                Favorites {favorites.length > 0 && <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>({favorites.length} items)</span>}
-              </h1>
-            </div>
+        {/* Breadcrumb */}
+        <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
+            <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Home</Link>
+            <ChevronRight size={11} />
+            <span style={{ color: '#374151', fontWeight: 600 }}>My Favorites</span>
           </div>
         </div>
 
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 24px' }}>
-          {favorites.length === 0 ? (
-            <div style={{ background: '#fff', borderRadius: 20, padding: '80px 24px', textAlign: 'center', border: '1px solid #eee' }}>
-              <Heart size={56} style={{ margin: '0 auto 16px', display: 'block', color: '#fecdd3' }} fill="#fecdd3" />
-              <p style={{ fontWeight: 800, fontSize: 20, color: '#374151', margin: '0 0 8px' }}>No favorites yet</p>
-              <p style={{ fontSize: 14, color: '#94a3b8', margin: '0 0 28px' }}>Save products you love by tapping the heart icon.</p>
-              <Link href="/shop" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '12px 28px', background: '#dc2626', color: '#fff',
-                fontWeight: 800, fontSize: 14, borderRadius: 12, textDecoration: 'none',
-              }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 24px 60px', animation: 'fadeUp 0.4s ease both' }}>
+
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(220,38,38,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Heart size={18} color="#dc2626" fill="rgba(220,38,38,0.2)" />
+            </div>
+            <div>
+              <h1 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>My Favorites</h1>
+              {mounted && (
+                <p style={{ fontSize: 12, color: '#94a3b8', margin: 0, fontWeight: 500 }}>
+                  {items.length} saved item{items.length !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Loading */}
+          {favLoading && items.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '60px 0' }}>
+              <Loader2 size={28} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626', margin: '0 auto 12px' }} />
+              <p style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>Loading favorites…</p>
+            </div>
+          )}
+
+          {/* Empty */}
+          {mounted && !favLoading && items.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '60px 0' }}>
+              <Heart size={48} color="#e2e8f0" style={{ margin: '0 auto 16px' }} />
+              <p style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>No favorites yet</p>
+              <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 24px' }}>
+                Browse products and tap ♡ to save them here.
+              </p>
+              <Link href="/shop"
+                style={{ padding: '11px 28px', background: 'linear-gradient(135deg,#dc2626,#b91c1c)', color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 10, textDecoration: 'none', boxShadow: '0 4px 14px rgba(220,38,38,0.3)' }}>
                 Browse Products
               </Link>
             </div>
-          ) : (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-              gap: 18,
-            }}>
-              {favorites.map(fav => (
-                <div
-                  key={fav.id}
-                  className="fav-card"
-                  style={{
-                    background: '#fff', borderRadius: 18, border: '1px solid #eee',
-                    overflow: 'hidden', position: 'relative',
-                    transition: 'transform 0.22s ease, box-shadow 0.22s ease',
-                  }}
-                >
-                  {/* Image */}
-                  <Link href={`/products/${fav.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
-                    <div style={{ width: '100%', aspectRatio: '1/1', background: '#f8fafc', overflow: 'hidden', position: 'relative' }}>
-                      {fav.image_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={fav.image_url} alt={fav.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <ShoppingBag size={32} color="#e2e8f0" />
-                        </div>
-                      )}
-                    </div>
-                  </Link>
+          )}
 
-                  {/* Remove favorite */}
-                  <div style={{ position: 'absolute', top: 10, right: 10 }}>
-                    <FavoriteButton productId={fav.product_id} />
-                  </div>
-
-                  {/* Out of stock */}
-                  {fav.stock === 0 && (
-                    <div style={{
-                      position: 'absolute', top: 10, left: 10,
-                      background: 'rgba(0,0,0,0.7)', color: '#fff',
-                      fontSize: 9, fontWeight: 800, letterSpacing: '0.08em',
-                      padding: '3px 8px', borderRadius: 999, textTransform: 'uppercase',
-                    }}>
-                      Out of Stock
-                    </div>
-                  )}
-
-                  {/* Info */}
-                  <div style={{ padding: '14px 16px 16px' }}>
-                    {fav.category && (
-                      <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                        {fav.category}
-                      </p>
-                    )}
-                    <Link href={`/products/${fav.slug}`} style={{ textDecoration: 'none' }}>
-                      <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: '0 0 10px', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                        {fav.name}
-                      </p>
-                    </Link>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <span style={{ fontWeight: 900, fontSize: 16, color: '#dc2626' }}>{fmt(fav.price)}</span>
-                      {fav.stock > 0 && fav.stock <= 10 && (
-                        <span style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700, background: '#fef3c7', padding: '2px 8px', borderRadius: 999 }}>
-                          Only {fav.stock} left
-                        </span>
-                      )}
-                    </div>
-                    <AddToCartButton productId={fav.product_id} stock={fav.stock} />
-                  </div>
-                </div>
+          {/* Grid */}
+          {items.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
+              {items.map(item => (
+                <FavoriteCard
+                  key={`${item.product_id}-${item.variant_id ?? 'base'}`}
+                  item={item}
+                  onRemove={() => toggleFavorite(item.product_id, item.variant_id)}
+                />
               ))}
             </div>
           )}
