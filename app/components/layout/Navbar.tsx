@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { logout, isAuthenticated, getUser, AuthUser } from "@/lib/auth";
 import { useCart } from "@/context/CartContext";
 import { Heart, ShoppingBag, ClipboardList } from "lucide-react";
-
+import { AlertCircle } from "lucide-react";  // CHANGE 1: Added import
 /* ─────────────────────────────────────────────────────────────
    TYPES
 ───────────────────────────────────────────────────────────── */
@@ -476,6 +476,21 @@ export default function Navbar() {
 
             <span style={{ width:1,height:14,background:'#e5e7eb',flexShrink:0 }}/>
 
+            {/* CHANGE 2: Added My Complaints and Help / Complaint links */}
+            <Link href="/complaints" onClick={closeAll} className="util-link">
+              <AlertCircle size={14}/>My Complaints
+            </Link>
+
+            <span style={{ width:1,height:14,background:'#e5e7eb',flexShrink:0 }}/>
+
+            <Link href="/complaints/new" onClick={closeAll} className="util-link"
+              style={{ color: '#dc2626' }}>
+              <AlertCircle size={14}/>Help / Complaint
+            </Link>
+
+            <span style={{ width:1,height:14,background:'#e5e7eb',flexShrink:0 }}/>
+            {/* END CHANGE 2 */}
+
             <Link href="/favorites" onClick={closeAll} className="util-link" style={{ position:'relative' }}>
               <Heart size={14}/>Favorites
               {favCount>0&&<span className="util-badge">{favCount>9?'9+':favCount}</span>}
@@ -524,6 +539,11 @@ export default function Navbar() {
                     <style>{`.dd-item{display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13px;font-weight:600;color:#374151;text-decoration:none;transition:background 0.13s,color 0.13s;border:none;background:transparent;cursor:pointer;width:100%}.dd-item:hover{background:#fafafa;color:#dc2626}.dd-item.danger{color:#dc2626;font-weight:700}.dd-item.danger:hover{background:#fff5f5}`}</style>
                     <Link href="/profile"   onClick={()=>setDropdownOpen(false)} className="dd-item"><UserIcon/>My Profile</Link>
                     <Link href="/orders"    onClick={()=>setDropdownOpen(false)} className="dd-item"><OrdersIcon/>My Orders</Link>
+                    {/* CHANGE 4: Added My Complaints to dropdown menu */}
+                    <Link href="/complaints" onClick={()=>setDropdownOpen(false)} className="dd-item">
+                      <AlertCircle size={15}/>My Complaints
+                    </Link>
+                    {/* END CHANGE 4 */}
                     <Link href="/favorites" onClick={()=>setDropdownOpen(false)} className="dd-item"><HeartIcon/>Favorites</Link>
                     {isSeller&&<Link href="/seller" onClick={()=>setDropdownOpen(false)} className="dd-item"><DashboardIcon/>Dashboard</Link>}
                     <div style={{ height:1,background:'#f1f5f9',margin:'4px 0' }}/>
@@ -621,10 +641,26 @@ export default function Navbar() {
               className="text-sm font-semibold text-zinc-800 hover:text-red-600 py-1 border-b border-zinc-50 text-left flex items-center gap-2">
               <ShoppingBag size={16}/> Cart {count>0&&<span className="bg-red-600 text-white text-[9px] font-bold rounded-full px-1.5 py-0.5">{count}</span>}
             </button>
+            {/* CHANGE 3: Added My Complaints and Help / Complaint to mobile menu */}
             {loggedIn&&<>
-              <Link href="/orders"    onClick={()=>setMenuOpen(false)} className="text-sm font-semibold text-zinc-800 hover:text-red-600 py-1 border-b border-zinc-50 flex items-center gap-2"><ClipboardList size={16}/>My Orders</Link>
-              <Link href="/favorites" onClick={()=>setMenuOpen(false)} className="text-sm font-semibold text-zinc-800 hover:text-red-600 py-1 border-b border-zinc-50 flex items-center gap-2"><Heart size={16}/>Favorites</Link>
+              <Link href="/orders"      onClick={() => setMenuOpen(false)}
+                className="text-sm font-semibold text-zinc-800 hover:text-red-600 py-1 border-b border-zinc-50 flex items-center gap-2">
+                <ClipboardList size={16}/>My Orders
+              </Link>
+              <Link href="/complaints"  onClick={() => setMenuOpen(false)}
+                className="text-sm font-semibold text-zinc-800 hover:text-red-600 py-1 border-b border-zinc-50 flex items-center gap-2">
+                <AlertCircle size={16}/>My Complaints
+              </Link>
+              <Link href="/complaints/new" onClick={() => setMenuOpen(false)}
+                className="text-sm font-semibold text-red-600 hover:text-red-700 py-1 border-b border-zinc-50 flex items-center gap-2">
+                <AlertCircle size={16}/>Help / Complaint
+              </Link>
+              <Link href="/favorites"   onClick={() => setMenuOpen(false)}
+                className="text-sm font-semibold text-zinc-800 hover:text-red-600 py-1 border-b border-zinc-50 flex items-center gap-2">
+                <Heart size={16}/>Favorites
+              </Link>
             </>}
+            {/* END CHANGE 3 */}
             {!loggedIn&&<>
               <Link href="/auth/login"    onClick={()=>setMenuOpen(false)} className="text-sm font-semibold text-zinc-800 hover:text-red-600 py-1 border-b border-zinc-50">Log In</Link>
               <Link href="/auth/register" onClick={()=>setMenuOpen(false)} className="text-sm font-semibold text-zinc-800 hover:text-red-600 py-1 border-b border-zinc-50">Register</Link>

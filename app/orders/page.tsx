@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { isAuthenticated } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
+import ComplaintModal from '@/app/components/ComplaintModal'  // CHANGE 1: Added import
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api$/, '')
@@ -90,104 +91,143 @@ function StatusBadge({ status }: { status: string }) {
 // ─── Order Card ───────────────────────────────────────────────────────────────
 
 function OrderCard({ order }: { order: Order }) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded,      setExpanded]      = useState(false)
+  const [complaintOpen, setComplaintOpen] = useState(false)   // CHANGE 2: Added complaint state
+
   const date = new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
-  return (
-    <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden', marginBottom: 14 }}>
+  // CHANGE 2: Complaint button is only shown for delivered orders
+  const canComplain = order.status === 'delivered'
 
-      {/* Header row */}
-      <div style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-          <div>
-            <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, margin: '0 0 2px' }}>Order</p>
-            <p style={{ fontSize: 14, fontWeight: 900, color: '#0f172a', margin: 0, fontFamily: 'monospace' }}>{order.order_number}</p>
+  return (
+    <>
+      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden', marginBottom: 14 }}>
+
+        {/* Header row */}
+        <div style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <div>
+              <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, margin: '0 0 2px' }}>Order</p>
+              <p style={{ fontSize: 14, fontWeight: 900, color: '#0f172a', margin: 0, fontFamily: 'monospace' }}>{order.order_number}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, margin: '0 0 2px' }}>Date</p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0 }}>{date}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, margin: '0 0 2px' }}>Total</p>
+              <p style={{ fontSize: 15, fontWeight: 900, color: '#dc2626', margin: 0 }}>{fmt(order.total_amount)}</p>
+            </div>
+            <StatusBadge status={order.status} />
           </div>
-          <div>
-            <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, margin: '0 0 2px' }}>Date</p>
-            <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0 }}>{date}</p>
+
+          {/* CHANGE 2: Wrapped buttons in a flex container, added complaint button */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {canComplain && (
+              <button
+                onClick={() => setComplaintOpen(true)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  fontSize: 12, fontWeight: 700, color: '#dc2626',
+                  background: 'rgba(220,38,38,0.06)',
+                  border: '1.5px solid rgba(220,38,38,0.25)',
+                  borderRadius: 8, padding: '6px 12px',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.12)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.06)')}
+              >
+                🚨 Report Issue
+              </button>
+            )}
+
+            <button
+              onClick={() => setExpanded(e => !e)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#64748b', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              {expanded ? <><ChevronUp size={13} /> Hide</> : <><ChevronDown size={13} /> Details</>}
+            </button>
           </div>
-          <div>
-            <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, margin: '0 0 2px' }}>Total</p>
-            <p style={{ fontSize: 15, fontWeight: 900, color: '#dc2626', margin: 0 }}>{fmt(order.total_amount)}</p>
-          </div>
-          <StatusBadge status={order.status} />
+          {/* END CHANGE 2 */}
         </div>
 
-        <button
-          onClick={() => setExpanded(e => !e)}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#64748b', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: 'inherit' }}
-        >
-          {expanded ? <><ChevronUp size={13} /> Hide</> : <><ChevronDown size={13} /> Details</>}
-        </button>
+        {/* Expanded items */}
+        {expanded && (
+          <div style={{ borderTop: '1px solid #f1f5f9' }}>
+            {/* Delivery info */}
+            {(order.wilaya || order.address || order.phone) && (
+              <div style={{ padding: '12px 20px', background: '#fafafa', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                {order.wilaya  && <span style={{ fontSize: 12, color: '#64748b' }}><strong>Wilaya:</strong> {order.wilaya}</span>}
+                {order.phone   && <span style={{ fontSize: 12, color: '#64748b' }}><strong>Phone:</strong> {order.phone}</span>}
+                {order.address && <span style={{ fontSize: 12, color: '#64748b' }}><strong>Address:</strong> {order.address}</span>}
+              </div>
+            )}
+
+            {/* Items */}
+            <div style={{ padding: '10px 20px' }}>
+              {order.items?.map(item => {
+                const img = resolveImg(item.product?.primary_image_url)
+                return (
+                  <div key={item.id} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #f8fafc', alignItems: 'center' }}>
+                    {/* Thumbnail */}
+                    <div style={{ width: 52, height: 52, borderRadius: 8, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9', flexShrink: 0 }}>
+                      {img
+                        ? <img src={img} alt={item.product_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={16} color="#e2e8f0" /></div>
+                      }
+                    </div>
+
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.product?.slug
+                          ? <Link href={`/products/${item.product.slug}`} style={{ color: '#0f172a', textDecoration: 'none' }}>{item.product_name}</Link>
+                          : item.product_name
+                        }
+                      </p>
+                      {/* Variant label from snapshot */}
+                      {item.variant_label && (
+                        <span style={{
+                          display: 'inline-block', marginTop: 3,
+                          fontSize: 11, fontWeight: 700, color: '#6366f1',
+                          background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
+                          padding: '1px 8px', borderRadius: 4,
+                        }}>
+                          {item.variant_label}
+                        </span>
+                      )}
+                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
+                        {item.quantity} × {fmt(item.unit_price)}
+                      </p>
+                    </div>
+
+                    <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', flexShrink: 0 }}>
+                      {fmt(item.total)}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Order total */}
+            <div style={{ padding: '10px 20px 14px', display: 'flex', justifyContent: 'flex-end', gap: 12, alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>Order Total:</span>
+              <span style={{ fontSize: 18, fontWeight: 900, color: '#dc2626' }}>{fmt(order.total_amount)}</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Expanded items */}
-      {expanded && (
-        <div style={{ borderTop: '1px solid #f1f5f9' }}>
-          {/* Delivery info */}
-          {(order.wilaya || order.address || order.phone) && (
-            <div style={{ padding: '12px 20px', background: '#fafafa', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-              {order.wilaya  && <span style={{ fontSize: 12, color: '#64748b' }}><strong>Wilaya:</strong> {order.wilaya}</span>}
-              {order.phone   && <span style={{ fontSize: 12, color: '#64748b' }}><strong>Phone:</strong> {order.phone}</span>}
-              {order.address && <span style={{ fontSize: 12, color: '#64748b' }}><strong>Address:</strong> {order.address}</span>}
-            </div>
-          )}
-
-          {/* Items */}
-          <div style={{ padding: '10px 20px' }}>
-            {order.items?.map(item => {
-              const img = resolveImg(item.product?.primary_image_url)
-              return (
-                <div key={item.id} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #f8fafc', alignItems: 'center' }}>
-                  {/* Thumbnail */}
-                  <div style={{ width: 52, height: 52, borderRadius: 8, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9', flexShrink: 0 }}>
-                    {img
-                      ? <img src={img} alt={item.product_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={16} color="#e2e8f0" /></div>
-                    }
-                  </div>
-
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.product?.slug
-                        ? <Link href={`/products/${item.product.slug}`} style={{ color: '#0f172a', textDecoration: 'none' }}>{item.product_name}</Link>
-                        : item.product_name
-                      }
-                    </p>
-                    {/* Variant label from snapshot */}
-                    {item.variant_label && (
-                      <span style={{
-                        display: 'inline-block', marginTop: 3,
-                        fontSize: 11, fontWeight: 700, color: '#6366f1',
-                        background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
-                        padding: '1px 8px', borderRadius: 4,
-                      }}>
-                        {item.variant_label}
-                      </span>
-                    )}
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
-                      {item.quantity} × {fmt(item.unit_price)}
-                    </p>
-                  </div>
-
-                  <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', flexShrink: 0 }}>
-                    {fmt(item.total)}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Order total */}
-          <div style={{ padding: '10px 20px 14px', display: 'flex', justifyContent: 'flex-end', gap: 12, alignItems: 'center' }}>
-            <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>Order Total:</span>
-            <span style={{ fontSize: 18, fontWeight: 900, color: '#dc2626' }}>{fmt(order.total_amount)}</span>
-          </div>
-        </div>
-      )}
-    </div>
+      {/* CHANGE 2: Complaint Modal */}
+      <ComplaintModal
+        orderId={order.id}
+        orderNumber={order.order_number}
+        isOpen={complaintOpen}
+        onClose={() => setComplaintOpen(false)}
+      />
+      {/* END CHANGE 2 */}
+    </>
   )
 }
 
