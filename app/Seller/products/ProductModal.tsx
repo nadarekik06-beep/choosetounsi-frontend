@@ -1,13 +1,6 @@
 'use client'
 
-/**
- * app/seller/products/ProductModal.tsx
- * REFACTORED: splits attributes into variant axes vs informational fields.
- * Only is_variant=true attributes generate combinations in VariantBuilder.
- * is_variant=false attributes go to DynamicAttributeSection as before.
- */
-
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { X, Upload, Trash2, Star, Loader2, AlertCircle, ImageIcon } from 'lucide-react'
 import { productsApi, categoriesApi, storageUrl } from '@/lib/sellerApi'
 import type { Category, Subcategory } from '@/lib/sellerApi'
@@ -139,7 +132,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const [variantRows,  setVariantRows]  = useState<VariantRow[]>(
     (p?.variant_rows ?? []).map(normalizeVariantRow)
   )
-  // colorImages: Record<colorOptionId, File[]> — collected from ColorImageUploader
   const [colorImages,  setColorImages]  = useState<Record<number, File[]>>({})
 
   // ── Categories ─────────────────────────────────────────────────────────────
@@ -149,8 +141,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const [subLoading,    setSubLoading]    = useState(false)
 
   // ── Split attribute sets ───────────────────────────────────────────────────
-  // variantAxes  → is_variant=true  → VariantBuilder (combination matrix)
-  // infoAxes     → is_variant=false → DynamicAttributeSection (simple fields)
   const [variantAxes,  setVariantAxes]  = useState<Attribute[]>([])
   const [infoAxes,     setInfoAxes]     = useState<Attribute[]>([])
   const [axesLoading,  setAxesLoading]  = useState(false)
@@ -217,16 +207,11 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     setAxesLoading(true)
     categoriesApi.getSubcategoryAttributes(subId)
       .then(res => {
-        // API now returns { variant_attributes: [], info_attributes: [] }
         const data = res.data as { variant_attributes: Attribute[]; info_attributes: Attribute[] }
-
-        // Variant axes: must have options to be usable in the matrix
         const vAxes = (data.variant_attributes ?? []).filter(
           a => a.options && a.options.length > 0
         )
-        // Info attributes: any type (text, boolean, select, etc.)
         const iAxes = data.info_attributes ?? []
-
         setVariantAxes(vAxes)
         setInfoAxes(iAxes)
       })
@@ -245,6 +230,40 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
 
   // Cleanup preview URLs
   useEffect(() => () => previews.forEach(prev => URL.revokeObjectURL(prev.preview)), [])
+
+  // ── Stable colorAxis and selectedColorIds (fixes image reset bug) ──────────
+  const colorAxis = useMemo(
+    () => variantAxes.find(a => a.type === 'color') ?? null,
+    [variantAxes]
+  )
+
+  const selectedColorIds = useMemo(() => {
+    if (!colorAxis) return []
+    const colorAxisIdx = variantAxes.indexOf(colorAxis)
+    return Array.from(
+      new Set(
+        variantRows
+          .map(r => r.option_ids[colorAxisIdx])
+          .filter((id): id is number => id > 0)
+      )
+    )
+  }, [colorAxis, variantAxes, variantRows])
+
+  // ── existingByColor for edit mode ──────────────────────────────────────────
+  const existingByColor = useMemo(() => {
+    const map: Record<number, string[]> = {}
+    if (p?.images) {
+      for (const img of p.images as any[]) {
+        if (img.color_option_id) {
+          const url = storageUrl(img.url ?? img.image_path)
+          if (url) {
+            map[img.color_option_id] = [...(map[img.color_option_id] ?? []), url]
+          }
+        }
+      }
+    }
+    return map
+  }, [p?.images])
 
   // ── Image handlers ─────────────────────────────────────────────────────────
   const totalImages = existingImages.length + previews.length
@@ -297,7 +316,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     try {
       const subId = form.subcategory_id ? parseInt(form.subcategory_id, 10) : null
 
-      // Only include variant rows where ALL option_ids are filled
       const validVariants = variantRows
         .filter(row => {
           if (variantAxes.length === 0) return false
@@ -327,7 +345,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         delete_image_ids:  deletedImageIds.length ? deletedImageIds : undefined,
         attributes:        serializeAttributes(attrValues),
         ...(validVariants.length > 0 ? { variants: validVariants } : {}),
-        // Per-color images: Record<colorOptionId, File[]>
         color_images:      Object.keys(colorImages).length > 0 ? colorImages : undefined,
       }
 
@@ -482,8 +499,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                 values={attrValues}
                 onChange={setAttrValues}
                 disabled={saving}
-                // Pass only the info axes so DynamicAttributeSection
-                // doesn't re-fetch and show variant attributes too
                 overrideAttributes={infoAxes}
               />
             </section>
@@ -526,60 +541,23 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                 />
               )}
 
-              {/* ── Per-color image upload (shown when color axis exists) ── */}
-              {!axesLoading && variantAxes.length > 0 && (() => {
-                const colorAxis = variantAxes.find(a => a.type === 'color')
-                if (!colorAxis) return null
-
-                // Collect which color option IDs the seller has selected in VariantBuilder
-                const colorAxisIdx  = variantAxes.indexOf(colorAxis)
-                const selectedColorIds = Array.from(
-                  new Set(
-                    variantRows
-                      .map(r => r.option_ids[colorAxisIdx])
-                      .filter(id => id > 0)
-                  )
-                )
-
-                // Build existing color images map from product images (edit mode)
-                const existingByColor: Record<number, string[]> = {}
-                if (p?.images) {
-                  for (const img of p.images as any[]) {
-                    if (img.color_option_id) {
-                      const url = storageUrl(img.url ?? img.image_path)
-                      if (url) {
-                        existingByColor[img.color_option_id] = [
-                          ...(existingByColor[img.color_option_id] ?? []),
-                          url,
-                        ]
-                      }
-                    }
-                  }
-                }
-
-                return (
-                  <div style={{ marginTop: 16 }}>
-                    <ColorImageUploader
-                      colorAxis={colorAxis}
-                      selectedColorIds={selectedColorIds}
-                      onChange={setColorImages}
-                      existingByColor={existingByColor}
-                      disabled={saving}
-                    />
-                  </div>
-                )
-              })()}
+              {/* ── Per-color image upload ── */}
+              {!axesLoading && colorAxis && selectedColorIds.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <ColorImageUploader
+                    colorAxis={colorAxis}
+                    selectedColorIds={selectedColorIds}
+                    onChange={setColorImages}
+                    existingByColor={existingByColor}
+                    disabled={saving}
+                  />
+                </div>
+              )}
             </section>
           )}
 
-          {/* ── Images ──
-               HIDDEN when the product has a color variant axis.
-               In that case the ColorImageUploader above handles all images
-               per color, so a separate general upload would create confusion
-               and duplicate storage. Real e-commerce platforms (Shopify, etc.)
-               do exactly this: color-variant products use ONLY variant images.
-          ── */}
-          {!variantAxes.find(a => a.type === 'color') && (
+          {/* ── Images (hidden when color axis exists) ── */}
+          {!colorAxis && (
             <section>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 14 }}>
                 <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>Images</p>

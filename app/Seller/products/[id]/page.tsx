@@ -181,6 +181,7 @@ export default function ProductDetailPage() {
   const id      = Number(params.id);
 
   const [product,     setProduct]     = useState<ProductDetail | null>(null);
+  const [allImages,   setAllImages]   = useState<ProductImage[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState<string | null>(null);
   const [modalOpen,   setModalOpen]   = useState(false);
@@ -191,11 +192,36 @@ export default function ProductDetailPage() {
     try {
       const res  = await productsApi.getOne(id);
       const data = (res as any).data ?? res;
-      if (data.images?.length) {
-        data.images.sort((a: ProductImage, b: ProductImage) =>
-          Number(b.is_primary) - Number(a.is_primary) || a.order - b.order
-        );
+
+      // Merge product-level images + all variant images into one flat array
+      const productImgs: ProductImage[] = (data.images ?? []).map((img: any) => ({
+        ...img,
+        url: img.url ?? img.image_path,
+      }));
+
+      const variantImgs: ProductImage[] = [];
+      if (Array.isArray(data.variant_rows)) {
+        data.variant_rows.forEach((v: any) => {
+          if (Array.isArray(v.images)) {
+            v.images.forEach((img: any) => {
+              variantImgs.push({
+                ...img,
+                url: img.url ?? img.image_path,
+              });
+            });
+          }
+        });
       }
+
+      // Use product images if they exist, otherwise fall back to variant images
+      const merged = productImgs.length > 0 ? productImgs : variantImgs;
+
+      // Sort: primary first, then by order
+      merged.sort((a: ProductImage, b: ProductImage) =>
+        Number(b.is_primary) - Number(a.is_primary) || (a.order ?? 0) - (b.order ?? 0)
+      );
+
+      setAllImages(merged);
       setProduct(data as ProductDetail);
     } catch (e: any) {
       setError(e?.response?.data?.message ?? 'Failed to load product.');
@@ -206,7 +232,6 @@ export default function ProductDetailPage() {
 
   useEffect(() => { fetchProduct(); }, [fetchProduct]);
 
-  // After ProductModal saves, re-fetch so the detail page reflects the changes
   const handleSaved = useCallback(() => {
     setModalOpen(false);
     fetchProduct();
@@ -270,7 +295,6 @@ export default function ProductDetailPage() {
           </span>
         </div>
 
-        {/* ── Edit button — opens ProductModal ── */}
         <button
           onClick={() => setModalOpen(true)}
           className="flex items-center gap-2 bg-rose-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-rose-700 active:scale-95 transition shadow-lg shadow-rose-500/25"
@@ -288,7 +312,7 @@ export default function ProductDetailPage() {
 
           {/* Image Gallery Card */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-            <ImageGallery images={product.images ?? []} />
+            <ImageGallery images={allImages} />
           </div>
 
           {/* Descriptions */}
@@ -344,7 +368,6 @@ export default function ProductDetailPage() {
               <p className="text-xs text-slate-400 font-mono mb-4">/{product.slug}</p>
             )}
 
-            {/* Price + Stock */}
             <div className="flex items-end justify-between gap-3 pt-3 border-t border-slate-50">
               <div>
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">Price</p>
@@ -392,7 +415,7 @@ export default function ProductDetailPage() {
             <InfoRow
               icon={BarChart2}
               label="Images"
-              value={`${product.images?.length ?? 0} image${(product.images?.length ?? 0) !== 1 ? 's' : ''}`}
+              value={`${allImages.length} image${allImages.length !== 1 ? 's' : ''}`}
             />
           </div>
 

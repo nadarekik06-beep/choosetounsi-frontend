@@ -21,6 +21,14 @@ const inputCls = (err?: boolean) =>
    outline-none focus:ring-2 focus:ring-red-400/30 focus:border-red-400 transition
    ${err ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white'}`
 
+/* ── Normalise any stored value to a scalar string safe for <select value> ── */
+function toScalar(value: unknown): string | number {
+  if (value === null || value === undefined) return ''
+  if (Array.isArray(value)) return value.length > 0 ? value[0] : ''
+  if (typeof value === 'object') return ''
+  return value as string | number
+}
+
 export default function AttributeField({ attr, values, onChange, disabled }: Props) {
   const value = values[attr.slug]
 
@@ -30,7 +38,7 @@ export default function AttributeField({ attr, values, onChange, disabled }: Pro
   if (attr.type === 'select') {
     return (
       <select
-        value={(value as number) ?? ''}
+        value={toScalar(value)}
         onChange={e => onChange(attr.slug, e.target.value ? Number(e.target.value) : null)}
         disabled={disabled}
         className={inputCls()}

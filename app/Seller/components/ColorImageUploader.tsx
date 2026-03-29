@@ -6,16 +6,9 @@
  * Shown inside ProductModal when the seller has selected color options
  * in the VariantBuilder. Lets the seller upload images per color.
  *
- * Usage:
- *   <ColorImageUploader
- *     colorAxis={variantAxes.find(a => a.type === 'color')}
- *     selectedColorIds={[3, 7]}          // option IDs the seller picked
- *     onChange={(map) => setColorImages(map)}
- *     existingByColor={existingColorImages}
- *   />
- *
- * `onChange` emits: Record<colorOptionId, File[]>
- * `existingByColor` is: Record<colorOptionId, string[]>  (URLs for preview)
+ * FIX: slots are only initialized for NEW colorIds — existing slots with
+ * already-uploaded files are never reset when selectedColorIds recomputes.
+ * This prevents colorImages from being wiped to {} before submit.
  */
 
 import { useEffect, useRef, useState } from 'react'
@@ -51,7 +44,10 @@ export default function ColorImageUploader({
   const [slots, setSlots] = useState<Record<number, ColorSlot>>({})
   const inputRefs = useRef<Record<number, HTMLInputElement | null>>({})
 
-  // Rebuild slots whenever selected colors or existing images change
+  // ── Sync slots when selectedColorIds changes ───────────────────────────────
+  // CRITICAL: only ADD new color slots and REMOVE deselected ones.
+  // Never reset files/previews for slots that already exist — this preserves
+  // uploaded files across re-renders triggered by VariantBuilder changes.
   useEffect(() => {
     if (!colorAxis) return
 
@@ -62,16 +58,21 @@ export default function ColorImageUploader({
         const option = colorAxis.options.find(o => o.id === optId)
         if (!option) continue
 
-        const existing = prev[optId]
-        next[optId] = {
-          option,
-          files:        existing?.files        ?? [],
-          previews:     existing?.previews      ?? [],
-          existingUrls: existingByColor[optId]  ?? [],
+        if (prev[optId]) {
+          // ← KEY FIX: reuse the existing slot as-is, preserving its files
+          next[optId] = prev[optId]
+        } else {
+          // Brand-new color selected — create an empty slot
+          next[optId] = {
+            option,
+            files:        [],
+            previews:     [],
+            existingUrls: existingByColor[optId] ?? [],
+          }
         }
       }
 
-      // Cleanup revoked object URLs for removed colors
+      // Cleanup object URLs for colors that were deselected
       for (const [id, slot] of Object.entries(prev)) {
         if (!next[Number(id)]) {
           slot.previews.forEach(URL.revokeObjectURL)
@@ -80,6 +81,7 @@ export default function ColorImageUploader({
 
       return next
     })
+  // existingByColor is stable (memoized in parent); colorAxis.id covers axis changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedColorIds.join(','), colorAxis?.id])
 
@@ -91,7 +93,7 @@ export default function ColorImageUploader({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Notify parent after every slots change — never call onChange inside a setter
+  // Notify parent after every slots change
   useEffect(() => {
     const map: Record<number, File[]> = {}
     for (const [id, slot] of Object.entries(slots)) {

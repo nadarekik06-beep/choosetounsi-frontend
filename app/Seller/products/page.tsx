@@ -190,9 +190,13 @@ export default function ProductsPage() {
                 </thead>
                 <tbody>
                   {data?.data.map(product => {
-                    const hasVariants = (product as any).has_variants
+                    const hasVariants  = (product as any).has_variants
                     const variantStock = (product as any).variant_stock
                     const displayStock = hasVariants ? variantStock : product.stock
+                    // ── FIXED: extract as nullable so the icon fallback works
+                    // when primary_image_url is null (no image) instead of a
+                    // broken placeholder string that causes a 404 request.
+                    const thumbUrl     = (product as any).primary_image_url as string | null | undefined
                     return (
                       <tr key={product.id} className="product-row" style={{ borderTop: `1px solid ${border}` }}>
 
@@ -200,8 +204,26 @@ export default function ProductsPage() {
                         <td style={{ padding: '12px 20px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             <div style={{ width: 40, height: 40, borderRadius: 10, background: dark ? 'rgba(255,255,255,0.06)' : '#f1f5f9', border: `1px solid ${border}`, flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              {(product as any).primary_image_url ? (
-                                <img src={storageUrl((product as any).primary_image_url) ?? ''} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              {/* ── FIXED: use thumbUrl (nullable) so ImageIcon shows when no image.
+                                  onError catches any remaining 404s (e.g. deleted files on disk)
+                                  and replaces the broken img with the icon gracefully. */}
+                              {thumbUrl ? (
+                                <img
+                                  src={thumbUrl}
+                                  alt={product.name}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  onError={e => {
+                                    const img = e.currentTarget
+                                    img.style.display = 'none'
+                                    const parent = img.parentElement
+                                    if (parent && !parent.querySelector('svg')) {
+                                      const wrap = document.createElement('div')
+                                      wrap.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%'
+                                      wrap.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${textMuted}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`
+                                      parent.appendChild(wrap)
+                                    }
+                                  }}
+                                />
                               ) : (
                                 <ImageIcon size={14} style={{ color: textMuted, opacity: 0.5 }} />
                               )}
