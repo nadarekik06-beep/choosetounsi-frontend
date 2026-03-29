@@ -3,8 +3,14 @@
 /**
  * components/AddToCartButton.tsx
  * Drop-in button that handles add-to-cart logic.
- * ✅ Drawer opens automatically via CartContext — no extra code needed here.
- * Usage: <AddToCartButton productId={42} stock={5} />
+ * ✅ Accepts variantId — REQUIRED for products with variants.
+ * ✅ Drawer opens automatically via CartContext.
+ *
+ * Usage on product page:
+ *   <AddToCartButton productId={42} variantId={selectedVariant?.id} stock={selectedVariant?.stock ?? product.stock} />
+ *
+ * Usage on listing cards (no variant selection):
+ *   <AddToCartButton productId={42} stock={product.stock} />
  */
 
 import { useState } from 'react'
@@ -13,12 +19,19 @@ import { ShoppingCart, Loader2, CheckCircle } from 'lucide-react'
 
 interface Props {
   productId: number
+  variantId?: number | null    // pass selected variant ID when product has variants
   stock: number
   className?: string
   variant?: 'full' | 'icon'   // full = label+icon, icon = icon only
 }
 
-export default function AddToCartButton({ productId, stock, className = '', variant = 'full' }: Props) {
+export default function AddToCartButton({
+  productId,
+  variantId = null,
+  stock,
+  className = '',
+  variant = 'full',
+}: Props) {
   const { addToCart, cartLoading } = useCart()
   const [added, setAdded] = useState(false)
 
@@ -27,7 +40,8 @@ export default function AddToCartButton({ productId, stock, className = '', vari
     e.stopPropagation()
     if (stock <= 0 || cartLoading) return
 
-    await addToCart(productId)   // ← CartContext.addToCart now calls openDrawer() internally
+    // Pass variantId to CartContext — backend will use it for stock check + image
+    await addToCart(productId, 1, variantId)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
   }
