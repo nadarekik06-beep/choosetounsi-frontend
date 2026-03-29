@@ -187,13 +187,6 @@ function SkeletonCard() {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SMART SIDEBAR
-// Fetches filterable attributes dynamically from the backend per category/sub.
-// Renders the correct control per attribute type:
-//   color       → circular colour swatches
-//   multiselect → checkbox list with count badge
-//   select      → radio-style pills
-//   boolean     → toggle
-// Also contains: search, sort, price range, in-stock toggle.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function SmartSidebar({
@@ -215,10 +208,6 @@ function SmartSidebar({
 
   const upd = (p: Partial<FilterState>) => setFilters({ ...filters, ...p })
 
-  // Fetch filterable attributes whenever category/sub changes
-  // Route: GET /api/subcategories/{id}/attributes   → { attributes: [...], is_filterable }
-  // Route: GET /api/categories/{slug}/filter-attributes → { data: [...] }
-  // NOTE: subcategory route uses numeric ID not slug — we resolve slug→id first
   useEffect(() => {
     if (!categorySlug) return
     setAttrLoading(true)
@@ -228,7 +217,6 @@ function SmartSidebar({
     const loadAttributes = async () => {
       try {
         if (subcategorySlug) {
-          // Step 1: resolve subcategory slug → id
           const subRes = await fetch(
             `${API_URL}/api/categories/${categorySlug}/subcategories`,
             { headers: { Accept: 'application/json' } }
@@ -239,7 +227,6 @@ function SmartSidebar({
           const sub = subcategories.find(s => s.slug === subcategorySlug)
 
           if (!sub) {
-            // Subcategory not found in list — fall back to category-level filters
             const catRes = await fetch(
               `${API_URL}/api/categories/${categorySlug}/filter-attributes`,
               { headers: { Accept: 'application/json' } }
@@ -253,7 +240,6 @@ function SmartSidebar({
             return
           }
 
-          // Step 2: fetch attributes by numeric ID
           const attrRes = await fetch(
             `${API_URL}/api/subcategories/${sub.id}/attributes`,
             { headers: { Accept: 'application/json' } }
@@ -261,7 +247,6 @@ function SmartSidebar({
           if (!attrRes.ok) throw new Error()
           const attrJson = await attrRes.json()
 
-          // Response: { attributes: [{ id, slug, name, type, is_filterable, options }] }
           const raw: Attribute[] = attrJson.attributes ?? []
           const filterable = raw.filter(
             (a: any) => a.is_filterable !== false && a.options?.length > 0
@@ -270,8 +255,6 @@ function SmartSidebar({
           setExpanded(new Set(filterable.slice(0, 4).map((a: Attribute) => a.slug)))
 
         } else {
-          // No subcategory — use category-level filter-attributes
-          // Response: { data: [{ id, slug, name, type, options }] }
           const res = await fetch(
             `${API_URL}/api/categories/${categorySlug}/filter-attributes`,
             { headers: { Accept: 'application/json' } }
@@ -404,7 +387,6 @@ function SmartSidebar({
 
         return (
           <div key={attr.id} className="ct-attr-section">
-            {/* Attr header */}
             <button type="button" className="ct-attr-header" onClick={() => toggleExpanded(attr.slug)}>
               <span className="ct-attr-header__label">
                 {attr.name}
@@ -418,11 +400,9 @@ function SmartSidebar({
               </svg>
             </button>
 
-            {/* Attr options */}
             {isOpen && (
               <div className="ct-attr-options">
 
-                {/* ── COLOR SWATCHES ── */}
                 {attr.type === 'color' && (
                   <div className="ct-color-swatches">
                     {attr.options.map(opt => {
@@ -443,7 +423,6 @@ function SmartSidebar({
                   </div>
                 )}
 
-                {/* ── BOOLEAN TOGGLE ── */}
                 {attr.type === 'boolean' && (
                   <label className="ct-toggle-label" style={{ padding:'4px 0' }}>
                     <span style={{ fontSize:13,fontWeight:500,color:'#374151' }}>Yes</span>
@@ -454,7 +433,6 @@ function SmartSidebar({
                   </label>
                 )}
 
-                {/* ── MULTISELECT → checkboxes ── */}
                 {attr.type === 'multiselect' && (
                   <div className="ct-check-list">
                     {attr.options.map(opt => {
@@ -473,7 +451,6 @@ function SmartSidebar({
                   </div>
                 )}
 
-                {/* ── SELECT → radio pills ── */}
                 {(attr.type === 'select' || attr.type === 'text') && (
                   <div className="ct-pill-list">
                     {attr.options.map(opt => {
@@ -541,7 +518,7 @@ function Pagination({ current, total, onChange }: { current:number; total:number
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// INNER PAGE (needs Suspense for useSearchParams)
+// INNER PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function CategoryPageInner() {
@@ -574,39 +551,41 @@ function CategoryPageInner() {
       .catch(() => setCatError(true))
   }, [slug])
 
-  // Build active attr filter query string
+  // Build active attr filter query string (used as dependency for fetchProducts)
   const attrQueryParams = useMemo(() => {
     const parts: string[] = []
     Object.entries(filters.attrs).forEach(([attrSlug, ids]) => {
-      if (ids.length > 0) parts.push(`attrs[${attrSlug}]=${ids.join(',')}`)
+      if (ids.length > 0) parts.push(`${attrSlug}:${ids.join(',')}`)
     })
-    return parts.join('&')
+    return parts.join('|')
   }, [filters.attrs])
 
-  // Fetch products
+  // ── FIXED fetchProducts ────────────────────────────────────────────────────
+  // Bug 1: was calling /api/categories/${slug}/products — endpoint doesn't exist.
+  //        Fixed to: /api/products with category_slug param.
+  // Bug 2: was sending attrs[color]=1,3 (string) — backend receives ["1,3"] not [1,3].
+  //        Fixed to: attrs[color][]=1&attrs[color][]=3 so PHP gets a real array.
   const fetchProducts = useCallback(async () => {
     if (!slug) return
     setLoading(true)
     try {
-      const sortBy    = filters.sort === 'price_asc' || filters.sort === 'price_desc' ? 'price' : filters.sort
-      const sortOrder = filters.sort === 'price_asc' ? 'asc' : 'desc'
-
       const qp = new URLSearchParams()
-      qp.set('page',  String(page))
-      qp.set('sort',  sortBy)
-      qp.set('order', sortOrder)
+      qp.set('page',          String(page))
+      qp.set('sort',          filters.sort)
+      qp.set('category_slug', slug)
       if (subSlug)          qp.set('subcategory_slug', subSlug)
       if (filters.priceMin) qp.set('price_min', filters.priceMin)
       if (filters.priceMax) qp.set('price_max', filters.priceMax)
       if (filters.inStock)  qp.set('in_stock', '1')
 
-      // Attribute filters — sent as attrs[color]=1,3&attrs[size]=5
+      // Send each option ID as a separate array entry so PHP receives a proper array:
+      // attrs[color][]=1&attrs[color][]=3&attrs[size][]=7
       Object.entries(filters.attrs).forEach(([attrSlug, ids]) => {
-        if (ids.length > 0) qp.set(`attrs[${attrSlug}]`, ids.join(','))
+        ids.forEach(id => qp.append(`attrs[${attrSlug}][]`, String(id)))
       })
 
-      const url = `${API_URL}/api/categories/${slug}/products?${qp.toString()}`
-      const res = await fetch(url, { headers:{ Accept:'application/json' } })
+      const url = `${API_URL}/api/products?${qp.toString()}`
+      const res = await fetch(url, { headers: { Accept: 'application/json' } })
       if (!res.ok) throw new Error()
       const json = await res.json()
       setProducts(json.data)
