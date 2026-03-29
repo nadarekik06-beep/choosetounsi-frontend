@@ -339,6 +339,26 @@ export const productsApi = {
   stats: () =>
     jsonRequest<any>('GET', '/seller/products/stats'),
 }
+// ─── Product Update Requests API (Seller) ─────────────────────────────────────
+
+export interface UpdateRequestPayload {
+  price?:          number | string
+  stock?:          number | string
+  category_id?:    number
+  subcategory_id?: number | null
+  variants?:       VariantPayload[]
+  note?:           string
+}
+
+export const productUpdateRequestsApi = {
+  /** List all requests for a specific product */
+  getAll: (productId: number) =>
+    jsonRequest<any>('GET', `/seller/products/${productId}/update-requests`),
+
+  /** Submit a new update request for an approved product */
+  submit: (productId: number, payload: UpdateRequestPayload) =>
+    jsonRequest<any>('POST', `/seller/products/${productId}/request-update`, payload),
+}
 
 // ─── Default axios-compatible export ─────────────────────────────────────────
 // Some files (notificationApi.ts, etc.) import this as:

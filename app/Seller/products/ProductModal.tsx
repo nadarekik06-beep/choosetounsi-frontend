@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { X, Upload, Trash2, Star, Loader2, AlertCircle, ImageIcon } from 'lucide-react'
-import { productsApi, categoriesApi, storageUrl } from '@/lib/sellerApi'
-import type { Category, Subcategory } from '@/lib/sellerApi'
+import { X, Upload, Trash2, Star, Loader2, AlertCircle, ImageIcon, Lock, Send } from 'lucide-react'
+import { productsApi, categoriesApi, storageUrl, productUpdateRequestsApi } from '@/lib/sellerApi'
+import type { Category, Subcategory, ProductPayload } from '@/lib/sellerApi'
 import DynamicAttributeSection from '../components/attributes/DynamicAttributeSection'
 import VariantBuilder, { type VariantRow, normalizeVariantRow } from '../components/VariantBuilder'
 import ColorImageUploader from '../components/ColorImageUploader'
@@ -23,6 +23,7 @@ interface FullProduct {
   category_id?: number | null
   subcategory_id?: number | null
   is_active?: boolean | null
+  is_approved?: boolean
   existing_attributes?: AttributeValues
   variant_rows?: VariantRow[]
   images?: Array<{
@@ -37,7 +38,7 @@ interface ExistingImage {
 }
 interface PreviewImage { file: File; preview: string; id: string }
 
-// ─── Attribute serializer ─────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function serializeAttributes(values: AttributeValues): Record<string, string> {
   const out: Record<string, string> = {}
@@ -53,6 +54,23 @@ function serializeAttributes(values: AttributeValues): Record<string, string> {
     }
   }
   return out
+}
+
+// ─── Locked Field Wrapper ─────────────────────────────────────────────────────
+
+function LockedField({ children, locked }: { children: React.ReactNode; locked: boolean }) {
+  if (!locked) return <>{children}</>
+  return (
+    <div style={{ position: 'relative' }}>
+      <div style={{ opacity: 0.5, pointerEvents: 'none', userSelect: 'none' }}>{children}</div>
+      <div style={{
+        position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+        paddingRight: 10, pointerEvents: 'none',
+      }}>
+        <Lock size={13} color="#94a3b8" />
+      </div>
+    </div>
+  )
 }
 
 // ─── Image Thumbnail ──────────────────────────────────────────────────────────
@@ -87,22 +105,146 @@ const inputCls = (err?: string) =>
    outline-none focus:ring-2 focus:ring-red-400/30 focus:border-red-400 transition bg-white
    ${err ? 'border-red-300 bg-red-50' : 'border-slate-200'}`
 
-function Field({ label, required, error, hint, children }: {
-  label: string; required?: boolean; error?: string; hint?: string; children: React.ReactNode
+function Field({ label, required, error, hint, children, locked }: {
+  label: string; required?: boolean; error?: string; hint?: string; children: React.ReactNode; locked?: boolean
 }) {
   return (
     <div>
-      <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
         {label} {required && <span style={{ color: '#ef4444' }}>*</span>}
+        {locked && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 6px', borderRadius: 4, textTransform: 'none', letterSpacing: 0 }}>
+            <Lock size={8} /> Requires admin approval
+          </span>
+        )}
       </label>
-      {children}
+      <LockedField locked={!!locked}>{children}</LockedField>
       {hint && !error && <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{hint}</p>}
       {error && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{error}</p>}
     </div>
   )
 }
 
-// ─── Modal ────────────────────────────────────────────────────────────────────
+// ─── Update Request Modal ─────────────────────────────────────────────────────
+
+interface UpdateRequestModalProps {
+  product: FullProduct
+  variantRows: VariantRow[]
+  onClose: () => void
+  onSubmitted: () => void
+}
+
+function UpdateRequestModal({ product, variantRows, onClose, onSubmitted }: UpdateRequestModalProps) {
+  const [price,   setPrice]   = useState(String(product.price ?? ''))
+  const [stock,   setStock]   = useState(String(product.stock ?? '0'))
+  const [note,    setNote]    = useState('')
+  const [saving,  setSaving]  = useState(false)
+  const [error,   setError]   = useState('')
+  const [success, setSuccess] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    setError('')
+    try {
+      const payload: Record<string, any> = {}
+      if (price !== String(product.price)) payload.price = parseFloat(price)
+      if (stock !== String(product.stock)) payload.stock = parseInt(stock, 10)
+      if (note.trim()) payload.note = note.trim()
+
+      if (Object.keys(payload).length === 0) {
+        setError('No changes detected.')
+        setSaving(false)
+        return
+      }
+
+      await productUpdateRequestsApi.submit(product.id, payload)
+      setSuccess(true)
+      setTimeout(() => { onSubmitted(); onClose() }, 1500)
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? 'Failed to submit request.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 24px 64px rgba(0,0,0,0.18)', width: '100%', maxWidth: 480, padding: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div>
+            <h3 style={{ fontSize: 16, fontWeight: 900, color: '#111', margin: 0 }}>Request Product Update</h3>
+            <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>Changes will be reviewed by an admin before applying.</p>
+          </div>
+          <button type="button" onClick={onClose} style={{ padding: 6, borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}>
+            <X size={18} />
+          </button>
+        </div>
+
+        {success ? (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ width: 48, height: 48, background: '#d1fae5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <Send size={20} color="#10b981" />
+            </div>
+            <p style={{ fontWeight: 800, color: '#111', margin: '0 0 4px' }}>Request submitted!</p>
+            <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>You'll be notified when the admin reviews it.</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {error && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 12px', fontSize: 12, color: '#dc2626' }}>
+                <AlertCircle size={13} /> {error}
+              </div>
+            )}
+
+            <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 12, padding: '10px 14px', fontSize: 12, color: '#64748b' }}>
+              <strong style={{ color: '#0f172a' }}>Product:</strong> {product.name}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5 }}>New Price (TND)</label>
+                <div style={{ position: 'relative' }}>
+                  <input type="number" min="0" step="0.001" value={price} onChange={e => setPrice(e.target.value)}
+                    style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 10, padding: '8px 40px 8px 12px', fontSize: 13, fontWeight: 600, outline: 'none', background: '#fff', boxSizing: 'border-box' }} />
+                  <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>TND</span>
+                </div>
+                <p style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Current: {Number(product.price).toFixed(3)} TND</p>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5 }}>New Stock</label>
+                <input type="number" min="0" value={stock} onChange={e => setStock(e.target.value)}
+                  style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 10, padding: '8px 12px', fontSize: 13, fontWeight: 600, outline: 'none', background: '#fff' }} />
+                <p style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Current: {product.stock}</p>
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5 }}>Note to admin (optional)</label>
+              <textarea rows={3} value={note} onChange={e => setNote(e.target.value)} placeholder="Explain why you're requesting this change…"
+                style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 10, padding: '8px 12px', fontSize: 13, outline: 'none', resize: 'none', background: '#fff', fontFamily: 'inherit' }} />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+              <button type="button" onClick={onClose}
+                style={{ flex: 1, padding: '10px 0', border: '1.5px solid #e5e7eb', background: '#fff', color: '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                Cancel
+              </button>
+              <button type="submit" disabled={saving}
+                style={{ flex: 1, padding: '10px 0', background: 'linear-gradient(135deg,#6366f1,#4f46e5)', color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: saving ? 0.6 : 1, fontFamily: 'inherit' }}>
+                {saving && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
+                Submit Request
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Modal ────────────────────────────────────────────────────────────────
 
 interface ProductModalProps {
   product: Record<string, any> | null
@@ -111,8 +253,11 @@ interface ProductModalProps {
 }
 
 export default function ProductModal({ product, onClose, onSaved }: ProductModalProps) {
-  const isEdit = !!product
-  const p      = product as FullProduct | null
+  const isEdit    = !!product
+  const p         = product as FullProduct | null
+  const isLocked  = !!(p?.is_approved)   // critical fields locked when approved
+
+  const [updateRequestModalOpen, setUpdateRequestModalOpen] = useState(false)
 
   // ── Form state ─────────────────────────────────────────────────────────────
   const [form, setForm] = useState({
@@ -140,12 +285,10 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const [catLoading,    setCatLoading]    = useState(true)
   const [subLoading,    setSubLoading]    = useState(false)
 
-  // ── Split attribute sets ───────────────────────────────────────────────────
   const [variantAxes,  setVariantAxes]  = useState<Attribute[]>([])
   const [infoAxes,     setInfoAxes]     = useState<Attribute[]>([])
   const [axesLoading,  setAxesLoading]  = useState(false)
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
   const [saving,   setSaving]   = useState(false)
   const [errors,   setErrors]   = useState<Record<string, string>>({})
   const [apiError, setApiError] = useState('')
@@ -167,7 +310,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const set = (field: string, value: unknown) =>
     setForm(f => ({ ...f, [field]: value }))
 
-  // ── Load categories ────────────────────────────────────────────────────────
   useEffect(() => {
     categoriesApi.getAll()
       .then(res => setCategories(res.data ?? []))
@@ -175,15 +317,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
       .finally(() => setCatLoading(false))
   }, [])
 
-  // ── Load subcategories when category changes ───────────────────────────────
   useEffect(() => {
-    if (!form.category_id) {
-      setSubcategories([])
-      set('subcategory_id', '')
-      setVariantAxes([])
-      setInfoAxes([])
-      return
-    }
+    if (!form.category_id) { setSubcategories([]); set('subcategory_id', ''); setVariantAxes([]); setInfoAxes([]); return }
     const cat = categories.find(c => c.id === Number(form.category_id))
     if (!cat?.slug) return
     setSubLoading(true)
@@ -194,32 +329,21 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.category_id, categories])
 
-  // ── Load & split attributes when subcategory changes ──────────────────────
   useEffect(() => {
-    if (!form.subcategory_id) {
-      setVariantAxes([])
-      setInfoAxes([])
-      return
-    }
+    if (!form.subcategory_id) { setVariantAxes([]); setInfoAxes([]); return }
     const subId = Number(form.subcategory_id)
     if (!subId) return
-
     setAxesLoading(true)
     categoriesApi.getSubcategoryAttributes(subId)
       .then(res => {
         const data = res.data as { variant_attributes: Attribute[]; info_attributes: Attribute[] }
-        const vAxes = (data.variant_attributes ?? []).filter(
-          a => a.options && a.options.length > 0
-        )
-        const iAxes = data.info_attributes ?? []
-        setVariantAxes(vAxes)
-        setInfoAxes(iAxes)
+        setVariantAxes((data.variant_attributes ?? []).filter(a => a.options && a.options.length > 0))
+        setInfoAxes(data.info_attributes ?? [])
       })
       .catch(() => { setVariantAxes([]); setInfoAxes([]) })
       .finally(() => setAxesLoading(false))
   }, [form.subcategory_id])
 
-  // ── Auto-slug from name ────────────────────────────────────────────────────
   const slugTouched = useRef(!!(p?.slug))
   useEffect(() => {
     if (!slugTouched.current && form.name) {
@@ -228,10 +352,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     }
   }, [form.name])
 
-  // Cleanup preview URLs
   useEffect(() => () => previews.forEach(prev => URL.revokeObjectURL(prev.preview)), [])
 
-  // ── Stable colorAxis and selectedColorIds (fixes image reset bug) ──────────
   const colorAxis = useMemo(
     () => variantAxes.find(a => a.type === 'color') ?? null,
     [variantAxes]
@@ -240,32 +362,24 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const selectedColorIds = useMemo(() => {
     if (!colorAxis) return []
     const colorAxisIdx = variantAxes.indexOf(colorAxis)
-    return Array.from(
-      new Set(
-        variantRows
-          .map(r => r.option_ids[colorAxisIdx])
-          .filter((id): id is number => id > 0)
-      )
-    )
+    return Array.from(new Set(
+      variantRows.map(r => r.option_ids[colorAxisIdx]).filter((id): id is number => id > 0)
+    ))
   }, [colorAxis, variantAxes, variantRows])
 
-  // ── existingByColor for edit mode ──────────────────────────────────────────
   const existingByColor = useMemo(() => {
     const map: Record<number, string[]> = {}
     if (p?.images) {
       for (const img of p.images as any[]) {
         if (img.color_option_id) {
           const url = storageUrl(img.url ?? img.image_path)
-          if (url) {
-            map[img.color_option_id] = [...(map[img.color_option_id] ?? []), url]
-          }
+          if (url) map[img.color_option_id] = [...(map[img.color_option_id] ?? []), url]
         }
       }
     }
     return map
   }, [p?.images])
 
-  // ── Image handlers ─────────────────────────────────────────────────────────
   const totalImages = existingImages.length + previews.length
 
   const addFiles = (files: File[]) => {
@@ -278,16 +392,11 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const removeExisting = (id: number) => {
     setExistingImages(prev => prev.filter(img => img.id !== id))
     setDeletedImageIds(prev => [...prev, id])
-    if (primaryImageId === id)
-      setPrimaryImageId(existingImages.find(img => img.id !== id)?.id ?? null)
+    if (primaryImageId === id) setPrimaryImageId(existingImages.find(img => img.id !== id)?.id ?? null)
   }
 
   const removePreview = (cid: string) => {
-    setPreviews(prev => {
-      const found = prev.find(p => p.id === cid)
-      if (found) URL.revokeObjectURL(found.preview)
-      return prev.filter(p => p.id !== cid)
-    })
+    setPreviews(prev => { const found = prev.find(p => p.id === cid); if (found) URL.revokeObjectURL(found.preview); return prev.filter(p => p.id !== cid) })
   }
 
   const setExistingPrimary = (id: number) => {
@@ -295,18 +404,16 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     setExistingImages(prev => prev.map(img => ({ ...img, is_primary: img.id === id })))
   }
 
-  // ── Validation ─────────────────────────────────────────────────────────────
   const validate = () => {
     const e: Record<string, string> = {}
     if (!form.name.trim())                                                        e.name        = 'Required.'
-    if (!form.category_id)                                                        e.category_id = 'Select a category.'
+    if (!form.category_id && !isLocked)                                           e.category_id = 'Select a category.'
     if (form.price === '' || isNaN(Number(form.price)) || Number(form.price) < 0) e.price       = 'Enter a valid price.'
     if (form.stock === '' || isNaN(Number(form.stock)) || Number(form.stock) < 0) e.stock       = 'Enter a valid quantity.'
     setErrors(e)
     return Object.keys(e).length === 0
   }
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
@@ -330,26 +437,34 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
           is_active:      row.is_active,
         }))
 
-      const payload = {
+      // Build payload as unknown then cast to ProductPayload to satisfy the API types
+      // while still allowing optional fields to be conditionally added.
+      const payload: Record<string, any> = {
         name:              form.name.trim(),
         slug:              form.slug.trim()              || undefined,
         sku:               form.sku.trim()               || undefined,
         description:       form.description.trim()       || undefined,
         short_description: form.short_description.trim() || undefined,
-        price:             parseFloat(form.price),
-        stock:             parseInt(form.stock, 10),
-        category_id:       parseInt(form.category_id, 10),
-        ...(subId !== null ? { subcategory_id: subId } : {}),
         is_active:         form.is_active,
         images:            previews.map(prev => prev.file),
         delete_image_ids:  deletedImageIds.length ? deletedImageIds : undefined,
         attributes:        serializeAttributes(attrValues),
-        ...(validVariants.length > 0 ? { variants: validVariants } : {}),
-        color_images:      Object.keys(colorImages).length > 0 ? colorImages : undefined,
+        // Provide required fields with safe fallback values so the cast below is safe.
+        // When isLocked these are overwritten by the API from the existing product.
+        price:       isLocked ? parseFloat(String(p?.price ?? 0)) : parseFloat(form.price),
+        stock:       isLocked ? parseInt(String(p?.stock  ?? 0), 10) : parseInt(form.stock, 10),
+        category_id: isLocked ? (p?.category_id ?? 0)              : parseInt(form.category_id, 10),
+      }
+
+      // Only include mutable locked fields when product is NOT locked (not approved)
+      if (!isLocked) {
+        if (subId !== null) payload.subcategory_id = subId
+        if (validVariants.length > 0) payload.variants = validVariants
+        if (Object.keys(colorImages).length > 0) payload.color_images = colorImages
       }
 
       if (isEdit) {
-        await productsApi.update(product!.id, payload)
+        await productsApi.update(product!.id, payload as ProductPayload)
         if (primaryImageId !== null) {
           const orig = p?.images?.find(i => i.is_primary)
           if (!orig || orig.id !== primaryImageId) {
@@ -357,7 +472,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
           }
         }
       } else {
-        await productsApi.create(payload)
+        await productsApi.create(payload as ProductPayload)
       }
 
       onSaved()
@@ -366,9 +481,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
       const data = err?.response?.data
       if (data?.errors) {
         const mapped: Record<string, string> = {}
-        Object.entries(data.errors).forEach(([key, msgs]) => {
-          mapped[key] = (msgs as string[])[0]
-        })
+        Object.entries(data.errors).forEach(([key, msgs]) => { mapped[key] = (msgs as string[])[0] })
         setErrors(mapped)
       } else {
         setApiError(data?.message ?? 'Failed to save. Please try again.')
@@ -378,261 +491,297 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     }
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 24px 64px rgba(0,0,0,0.18)', width: '100%', maxWidth: 780, maxHeight: '92vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+    <>
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+        <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 24px 64px rgba(0,0,0,0.18)', width: '100%', maxWidth: 780, maxHeight: '92vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, background: '#fff', zIndex: 10, borderRadius: '20px 20px 0 0' }}>
-          <div>
-            <h2 style={{ fontSize: 16, fontWeight: 900, color: '#111', margin: 0 }}>
-              {isEdit ? 'Edit Product' : 'Add New Product'}
-            </h2>
-            {!isEdit && <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>Will be reviewed by admin before going live.</p>}
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, background: '#fff', zIndex: 10, borderRadius: '20px 20px 0 0' }}>
+            <div>
+              <h2 style={{ fontSize: 16, fontWeight: 900, color: '#111', margin: 0 }}>
+                {isEdit ? 'Edit Product' : 'Add New Product'}
+              </h2>
+              {isLocked && (
+                <p style={{ fontSize: 11, color: '#6366f1', margin: '3px 0 0', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                  <Lock size={10} /> Some fields are locked — product is approved
+                </p>
+              )}
+              {!isEdit && <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>Will be reviewed by admin before going live.</p>}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {isLocked && isEdit && (
+                <button
+                  type="button"
+                  onClick={() => setUpdateRequestModalOpen(true)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'linear-gradient(135deg,#6366f1,#4f46e5)', color: '#fff', fontWeight: 700, fontSize: 12, borderRadius: 10, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' }}
+                >
+                  <Send size={12} /> Request Update
+                </button>
+              )}
+              <button type="button" onClick={onClose} style={{ padding: 6, borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}>
+                <X size={18} />
+              </button>
+            </div>
           </div>
-          <button type="button" onClick={onClose} style={{ padding: 6, borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}>
-            <X size={18} />
-          </button>
-        </div>
 
-        <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-          {apiError && (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '12px 14px', fontSize: 13, color: '#dc2626' }}>
-              <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />{apiError}
+          {isLocked && (
+            <div style={{ margin: '16px 24px 0', display: 'flex', alignItems: 'flex-start', gap: 10, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '12px 14px', fontSize: 12, color: '#1e40af' }}>
+              <Lock size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>
+                <strong>Product is approved and live.</strong> Price, stock, category, and variants are locked.
+                {' '}Use <strong>"Request Update"</strong> to propose changes — an admin will review them.
+                Other fields (name, description, images) can still be edited directly.
+              </span>
             </div>
           )}
 
-          {/* ── Basic Information ── */}
-          <section>
-            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>Basic Information</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <Field label="Product Name" required error={errors.name}>
-                <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. White Cotton T-Shirt" className={inputCls(errors.name)} />
-              </Field>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <Field label="URL Slug" hint="Auto-generated from name">
-                  <input value={form.slug} onChange={e => { slugTouched.current = true; set('slug', e.target.value) }} placeholder="my-product-name" className={inputCls()} />
+          <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+            {apiError && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '12px 14px', fontSize: 13, color: '#dc2626' }}>
+                <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />{apiError}
+              </div>
+            )}
+
+            {/* ── Basic Information ── */}
+            <section>
+              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>Basic Information</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <Field label="Product Name" required error={errors.name}>
+                  <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. White Cotton T-Shirt" className={inputCls(errors.name)} />
                 </Field>
-                <Field label="SKU" hint="Auto-generated if empty">
-                  <input value={form.sku} onChange={e => set('sku', e.target.value)} placeholder="Leave blank" className={inputCls()} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <Field label="URL Slug" hint="Auto-generated from name">
+                    <input value={form.slug} onChange={e => { slugTouched.current = true; set('slug', e.target.value) }} placeholder="my-product-name" className={inputCls()} />
+                  </Field>
+                  <Field label="SKU" hint="Auto-generated if empty">
+                    <input value={form.sku} onChange={e => set('sku', e.target.value)} placeholder="Leave blank" className={inputCls()} />
+                  </Field>
+                </div>
+                <Field label="Short Description" hint="Max 500 chars">
+                  <input value={form.short_description} onChange={e => set('short_description', e.target.value)} maxLength={500} placeholder="One-line summary…" className={inputCls()} />
+                </Field>
+                <Field label="Full Description">
+                  <textarea rows={4} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Describe your product in detail…" className={`${inputCls()} resize-none`} />
                 </Field>
               </div>
-              <Field label="Short Description" hint="Max 500 chars">
-                <input value={form.short_description} onChange={e => set('short_description', e.target.value)} maxLength={500} placeholder="One-line summary…" className={inputCls()} />
-              </Field>
-              <Field label="Full Description">
-                <textarea rows={4} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Describe your product in detail…" className={`${inputCls()} resize-none`} />
-              </Field>
-            </div>
-          </section>
-
-          {/* ── Pricing & Inventory ── */}
-          <section>
-            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>Pricing & Inventory</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              <Field label="Base Price (TND)" required error={errors.price}>
-                <div style={{ position: 'relative' }}>
-                  <input type="number" min="0" step="0.001" value={form.price} onChange={e => set('price', e.target.value)} placeholder="0.000" className={inputCls(errors.price)} style={{ paddingRight: 44 }} />
-                  <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>TND</span>
-                </div>
-              </Field>
-              <Field label="Stock" required error={errors.stock} hint={variantRows.length > 0 ? 'Total (variants have own stock)' : undefined}>
-                <input type="number" min="0" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="0" className={inputCls(errors.stock)} />
-              </Field>
-              <Field label="Status">
-                <select value={form.is_active ? 'active' : 'inactive'} onChange={e => set('is_active', e.target.value === 'active')} className={inputCls()}>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </Field>
-            </div>
-          </section>
-
-          {/* ── Category ── */}
-          <section>
-            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>Category</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <Field label="Category" required error={errors.category_id}>
-                <select value={form.category_id}
-                  onChange={e => {
-                    set('category_id', e.target.value)
-                    set('subcategory_id', '')
-                    setAttrValues({})
-                    setVariantRows([])
-                    setVariantAxes([])
-                    setInfoAxes([])
-                  }}
-                  className={inputCls(errors.category_id)} disabled={catLoading}>
-                  <option value="">{catLoading ? 'Loading…' : '— Select category —'}</option>
-                  {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                </select>
-              </Field>
-
-              <Field label="Subcategory" hint="Select to unlock attributes & variants">
-                <select value={form.subcategory_id}
-                  onChange={e => {
-                    set('subcategory_id', e.target.value)
-                    setAttrValues({})
-                    setVariantRows([])
-                  }}
-                  className={inputCls()} disabled={!form.category_id || subLoading}>
-                  <option value="">
-                    {subLoading ? 'Loading…' : !form.category_id ? '— Select category first —' : '— None (optional) —'}
-                  </option>
-                  {subcategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
-                </select>
-              </Field>
-            </div>
-          </section>
-
-          {/* ── Informational Attributes (is_variant=false) ── */}
-          {form.subcategory_id && !axesLoading && infoAxes.length > 0 && (
-            <section>
-              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
-                Product Details
-                <span style={{ marginLeft: 8, fontSize: 9, fontWeight: 500, color: '#c4b5fd', textTransform: 'none' }}>informational only</span>
-              </p>
-              <DynamicAttributeSection
-                subcategoryId={Number(form.subcategory_id)}
-                values={attrValues}
-                onChange={setAttrValues}
-                disabled={saving}
-                overrideAttributes={infoAxes}
-              />
             </section>
-          )}
 
-          {/* ── Variant Attributes (is_variant=true) ── */}
-          {form.subcategory_id && (
+            {/* ── Pricing & Inventory ── */}
             <section>
-              <div style={{ paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>
-                  Variants
+              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>Pricing & Inventory</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <Field label="Base Price (TND)" required error={errors.price} locked={isLocked}>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="number" min="0" step="0.001"
+                      value={form.price}
+                      onChange={e => !isLocked && set('price', e.target.value)}
+                      readOnly={isLocked}
+                      placeholder="0.000"
+                      className={inputCls(errors.price)}
+                      style={{ paddingRight: 44, cursor: isLocked ? 'not-allowed' : undefined }}
+                    />
+                    <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>TND</span>
+                  </div>
+                </Field>
+                <Field label="Stock" required error={errors.stock} locked={isLocked}
+                  hint={!isLocked && variantRows.length > 0 ? 'Total (variants have own stock)' : undefined}>
+                  <input
+                    type="number" min="0"
+                    value={form.stock}
+                    onChange={e => !isLocked && set('stock', e.target.value)}
+                    readOnly={isLocked}
+                    placeholder="0"
+                    className={inputCls(errors.stock)}
+                    style={{ cursor: isLocked ? 'not-allowed' : undefined }}
+                  />
+                </Field>
+                <Field label="Status">
+                  <select value={form.is_active ? 'active' : 'inactive'} onChange={e => set('is_active', e.target.value === 'active')} className={inputCls()}>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </Field>
+              </div>
+            </section>
+
+            {/* ── Category ── */}
+            <section>
+              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>Category</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <Field label="Category" required={!isLocked} error={errors.category_id} locked={isLocked}>
+                  <select
+                    value={form.category_id}
+                    onChange={e => {
+                      if (isLocked) return
+                      set('category_id', e.target.value); set('subcategory_id', ''); setAttrValues({}); setVariantRows([]); setVariantAxes([]); setInfoAxes([])
+                    }}
+                    className={inputCls(errors.category_id)}
+                    disabled={catLoading || isLocked}
+                    style={{ cursor: isLocked ? 'not-allowed' : undefined }}
+                  >
+                    <option value="">{catLoading ? 'Loading…' : '— Select category —'}</option>
+                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                  </select>
+                </Field>
+
+                <Field label="Subcategory" hint={!isLocked ? 'Select to unlock attributes & variants' : undefined} locked={isLocked}>
+                  <select
+                    value={form.subcategory_id}
+                    onChange={e => { if (isLocked) return; set('subcategory_id', e.target.value); setAttrValues({}); setVariantRows([]) }}
+                    className={inputCls()}
+                    disabled={(!form.category_id && !isLocked) || subLoading || isLocked}
+                    style={{ cursor: isLocked ? 'not-allowed' : undefined }}
+                  >
+                    <option value="">
+                      {subLoading ? 'Loading…' : !form.category_id ? '— Select category first —' : '— None (optional) —'}
+                    </option>
+                    {subcategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
+                  </select>
+                </Field>
+              </div>
+            </section>
+
+            {/* ── Informational Attributes ── */}
+            {form.subcategory_id && !axesLoading && infoAxes.length > 0 && (
+              <section>
+                <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
+                  Product Details
+                  <span style={{ marginLeft: 8, fontSize: 9, fontWeight: 500, color: '#c4b5fd', textTransform: 'none' }}>informational only</span>
                 </p>
-                {axesLoading && (
-                  <span style={{ fontSize: 10, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Loader2 size={10} style={{ animation: 'spin 0.8s linear infinite' }} /> Loading…
-                  </span>
+                <DynamicAttributeSection
+                  subcategoryId={Number(form.subcategory_id)}
+                  values={attrValues}
+                  onChange={setAttrValues}
+                  disabled={saving}
+                  overrideAttributes={infoAxes}
+                />
+              </section>
+            )}
+
+            {/* ── Variants ── */}
+            {form.subcategory_id && !isLocked && (
+              <section>
+                <div style={{ paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>Variants</p>
+                  {axesLoading && <span style={{ fontSize: 10, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4 }}><Loader2 size={10} style={{ animation: 'spin 0.8s linear infinite' }} /> Loading…</span>}
+                  {!axesLoading && variantAxes.length > 0 && (
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '2px 8px', borderRadius: 4 }}>
+                      axes: {variantAxes.map(a => a.name).join(', ')}
+                    </span>
+                  )}
+                </div>
+                {!axesLoading && variantAxes.length === 0 && (
+                  <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#94a3b8' }}>
+                    This subcategory has no variant attributes configured.
+                  </div>
                 )}
                 {!axesLoading && variantAxes.length > 0 && (
-                  <span style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '2px 8px', borderRadius: 4 }}>
-                    axes: {variantAxes.map(a => a.name).join(', ')}
-                  </span>
+                  <VariantBuilder axes={variantAxes} existingVariants={variantRows} onChange={setVariantRows} basePrice={form.price} disabled={saving} />
                 )}
-              </div>
-
-              {!axesLoading && variantAxes.length === 0 && (
-                <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#94a3b8' }}>
-                  This subcategory has no variant attributes configured.
-                  Products can still be added without variants. An admin can mark
-                  attributes as <em>variant</em> in the subcategory settings.
-                </div>
-              )}
-
-              {!axesLoading && variantAxes.length > 0 && (
-                <VariantBuilder
-                  axes={variantAxes}
-                  existingVariants={variantRows}
-                  onChange={setVariantRows}
-                  basePrice={form.price}
-                  disabled={saving}
-                />
-              )}
-
-              {/* ── Per-color image upload ── */}
-              {!axesLoading && colorAxis && selectedColorIds.length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <ColorImageUploader
-                    colorAxis={colorAxis}
-                    selectedColorIds={selectedColorIds}
-                    onChange={setColorImages}
-                    existingByColor={existingByColor}
-                    disabled={saving}
-                  />
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* ── Images (hidden when color axis exists) ── */}
-          {!colorAxis && (
-            <section>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 14 }}>
-                <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>Images</p>
-                <span style={{ fontSize: 11, color: '#94a3b8' }}>{totalImages}/8</span>
-              </div>
-
-              {existingImages.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>Current Images</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-                    {existingImages.map(img => (
-                      <ImageThumb key={img.id} src={img.url} isPrimary={img.id === primaryImageId}
-                        onRemove={() => removeExisting(img.id)} onSetPrimary={() => setExistingPrimary(img.id)} />
-                    ))}
+                {!axesLoading && colorAxis && selectedColorIds.length > 0 && (
+                  <div style={{ marginTop: 16 }}>
+                    <ColorImageUploader colorAxis={colorAxis} selectedColorIds={selectedColorIds} onChange={setColorImages} existingByColor={existingByColor} disabled={saving} />
                   </div>
-                </div>
-              )}
+                )}
+              </section>
+            )}
 
-              {previews.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>New Images</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-                    {previews.map(prev => (
-                      <ImageThumb key={prev.id} src={prev.preview}
-                        isPrimary={existingImages.length === 0 && previews[0]?.id === prev.id}
-                        onRemove={() => removePreview(prev.id)} onSetPrimary={() => { }} />
-                    ))}
+            {/* Locked variants display */}
+            {isLocked && (p?.variant_rows ?? []).length > 0 && (
+              <section>
+                <div style={{ paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>Variants</p>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 6px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                    <Lock size={8} /> Locked — use Request Update
+                  </span>
+                </div>
+                <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#64748b' }}>
+                  {(p?.variant_rows ?? []).length} variant(s) — to modify variants, use the <strong>"Request Update"</strong> button.
+                </div>
+              </section>
+            )}
+
+            {/* ── Images ── */}
+            {!colorAxis && (
+              <section>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 14 }}>
+                  <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>Images</p>
+                  <span style={{ fontSize: 11, color: '#94a3b8' }}>{totalImages}/8</span>
+                </div>
+                {existingImages.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>Current Images</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+                      {existingImages.map(img => (
+                        <ImageThumb key={img.id} src={img.url} isPrimary={img.id === primaryImageId}
+                          onRemove={() => removeExisting(img.id)} onSetPrimary={() => setExistingPrimary(img.id)} />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+                {previews.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>New Images</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+                      {previews.map(prev => (
+                        <ImageThumb key={prev.id} src={prev.preview}
+                          isPrimary={existingImages.length === 0 && previews[0]?.id === prev.id}
+                          onRemove={() => removePreview(prev.id)} onSetPrimary={() => { }} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {totalImages < 8 && (
+                  <div onDragOver={e => e.preventDefault()}
+                    onDrop={e => { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))) }}
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{ border: '2px dashed #e5e7eb', borderRadius: 14, padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+                    className="hover:border-red-300">
+                    <Upload size={20} color="#94a3b8" />
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#64748b', margin: 0 }}>Drop images or <span style={{ color: '#dc2626' }}>browse</span></p>
+                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>JPG, PNG, WebP · max 5 MB each</p>
+                    <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
+                      onChange={e => { addFiles(Array.from(e.target.files ?? [])); e.target.value = '' }} />
+                  </div>
+                )}
+              </section>
+            )}
 
-              {totalImages < 8 && (
-                <div onDragOver={e => e.preventDefault()}
-                  onDrop={e => { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))) }}
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{ border: '2px dashed #e5e7eb', borderRadius: 14, padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}
-                  className="hover:border-red-300">
-                  <Upload size={20} color="#94a3b8" />
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#64748b', margin: 0 }}>Drop images or <span style={{ color: '#dc2626' }}>browse</span></p>
-                  <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>JPG, PNG, WebP · max 5 MB each</p>
-                  <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
-                    onChange={e => { addFiles(Array.from(e.target.files ?? [])); e.target.value = '' }} />
-                </div>
-              )}
+            {!isEdit && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '12px 14px', fontSize: 12, color: '#92400e' }}>
+                <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+                Your product will go live after admin approval.
+              </div>
+            )}
 
-              {totalImages === 0 && (
-                <p style={{ textAlign: 'center', fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                  <ImageIcon size={11} /> No images yet
-                </p>
-              )}
-            </section>
-          )}
-
-          {!isEdit && (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '12px 14px', fontSize: 12, color: '#92400e' }}>
-              <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-              Your product will go live after admin approval.
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 12, paddingTop: 4, position: 'sticky', bottom: 0, background: '#fff', paddingBottom: 2 }}>
+              <button type="button" onClick={onClose}
+                style={{ flex: 1, padding: '11px 0', border: '1.5px solid #e5e7eb', background: '#fff', color: '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                Cancel
+              </button>
+              <button type="submit" disabled={saving || catLoading}
+                style={{ flex: 1, padding: '11px 0', background: 'linear-gradient(135deg,#dc2626,#b91c1c)', color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(220,38,38,0.3)', opacity: (saving || catLoading) ? 0.6 : 1, fontFamily: 'inherit' }}>
+                {saving && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
+                {isEdit ? 'Save Changes' : 'Submit for Review'}
+              </button>
             </div>
-          )}
-
-          {/* Actions */}
-          <div style={{ display: 'flex', gap: 12, paddingTop: 4, position: 'sticky', bottom: 0, background: '#fff', paddingBottom: 2 }}>
-            <button type="button" onClick={onClose}
-              style={{ flex: 1, padding: '11px 0', border: '1.5px solid #e5e7eb', background: '#fff', color: '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Cancel
-            </button>
-            <button type="submit" disabled={saving || catLoading}
-              style={{ flex: 1, padding: '11px 0', background: 'linear-gradient(135deg,#dc2626,#b91c1c)', color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(220,38,38,0.3)', opacity: (saving || catLoading) ? 0.6 : 1, fontFamily: 'inherit' }}>
-              {saving && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
-              {isEdit ? 'Save Changes' : 'Submit for Review'}
-            </button>
-          </div>
-        </form>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+          </form>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
       </div>
-    </div>
+
+      {updateRequestModalOpen && p && (
+        <UpdateRequestModal
+          product={p}
+          variantRows={variantRows}
+          onClose={() => setUpdateRequestModalOpen(false)}
+          onSubmitted={() => { setUpdateRequestModalOpen(false); onSaved() }}
+        />
+      )}
+    </>
   )
 }
