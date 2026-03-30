@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useState, useEffect, useCallback, useMemo, Suspense, useRef } from 'react'
+import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useCart } from '@/context/CartContext'
@@ -42,7 +42,182 @@ const SORT_OPTIONS: { key: SortKey; label: string; icon: string }[] = [
 interface FilterState {
   search: string; priceMin: string; priceMax: string
   inStock: boolean; sort: SortKey
-  attrs: Record<string, number[]>   // slug → selected option IDs
+  attrs: Record<string, number[]>
+}
+
+// ─── Suggested price ranges ───────────────────────────────────────────────────
+
+const PRICE_RANGES: { label: string; min: string; max: string }[] = [
+  { label: '0 – 50 DT',    min: '0',   max: '50'  },
+  { label: '50 – 100 DT',  min: '50',  max: '100' },
+  { label: '100 – 200 DT', min: '100', max: '200' },
+  { label: '200 – 500 DT', min: '200', max: '500' },
+]
+
+// ─── Category Icon Map ────────────────────────────────────────────────────────
+// Maps category slugs (and common name keywords) to SVG icon components
+
+function getCategoryIcon(slug: string, name: string): React.ReactNode {
+  const s = slug.toLowerCase()
+  const n = name.toLowerCase()
+
+  // Fashion & Clothing
+  if (s.includes('fashion') || s.includes('cloth') || n.includes('fashion') || n.includes('cloth') || n.includes('apparel')) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/>
+      </svg>
+    )
+  }
+
+  // Electronics & Tech
+  if (s.includes('electron') || s.includes('tech') || s.includes('digit') || n.includes('electron') || n.includes('tech')) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2"/>
+        <path d="M8 21h8M12 17v4"/>
+        <path d="M7 8h2M11 8h6"/>
+        <path d="M7 11.5h4M13 11.5h4"/>
+      </svg>
+    )
+  }
+
+  // Home & Living / Furniture
+  if (s.includes('home') || s.includes('living') || s.includes('furni') || s.includes('decor') || n.includes('home') || n.includes('living')) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    )
+  }
+
+  // Food & Grocery
+  if (s.includes('food') || s.includes('grocer') || s.includes('eat') || n.includes('food') || n.includes('grocer')) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 2v6M6 14v6M6 8a4 4 0 0 0 4-4M6 8a4 4 0 0 1 4 4M18 2a6 6 0 0 1 0 12v8"/>
+      </svg>
+    )
+  }
+
+  // Beauty & Personal Care
+  if (s.includes('beauty') || s.includes('care') || s.includes('cosmet') || s.includes('personal') || n.includes('beauty') || n.includes('care')) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a9.96 9.96 0 0 0-3.6.67C6.14 3.67 4 6.1 4 9c0 4.56 5.16 10.15 7.08 12.08a1.3 1.3 0 0 0 1.84 0C14.84 19.15 20 13.56 20 9c0-2.9-2.14-5.33-4.4-6.33A9.96 9.96 0 0 0 12 2z"/>
+        <circle cx="12" cy="9" r="3"/>
+      </svg>
+    )
+  }
+
+  // Health & Wellness / Medical
+  if (s.includes('health') || s.includes('wellness') || s.includes('medic') || s.includes('pharma') || n.includes('health') || n.includes('wellnes')) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+      </svg>
+    )
+  }
+
+  // Sports & Outdoors
+  if (s.includes('sport') || s.includes('outdoor') || s.includes('fit') || s.includes('gym') || n.includes('sport') || n.includes('outdoor')) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20"/>
+      </svg>
+    )
+  }
+
+  // Automotive / Cars
+  if (s.includes('auto') || s.includes('car') || s.includes('motor') || s.includes('vehic') || n.includes('auto') || n.includes('car')) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l2-4h8l2 4h3a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/>
+        <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
+      </svg>
+    )
+  }
+
+  // Books / Education
+  if (s.includes('book') || s.includes('edu') || s.includes('learn') || s.includes('statio') || n.includes('book') || n.includes('edu')) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+    )
+  }
+
+  // Toys & Kids
+  if (s.includes('toy') || s.includes('kid') || s.includes('baby') || s.includes('child') || n.includes('toy') || n.includes('kid') || n.includes('baby')) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    )
+  }
+
+  // Jewelry & Accessories
+  if (s.includes('jewel') || s.includes('access') || s.includes('watch') || s.includes('bag') || n.includes('jewel') || n.includes('access')) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 3h12l4 6-10 13L2 9l4-6z"/>
+        <path d="M11 3 8 9l4 13 4-13-3-6"/>
+        <path d="M2 9h20"/>
+      </svg>
+    )
+  }
+
+  // Garden / Plants
+  if (s.includes('garden') || s.includes('plant') || s.includes('outdoor') || n.includes('garden') || n.includes('plant')) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22V12M12 12C12 7 7 4 3 6c0 5 4 8 9 6M12 12c0-5 5-8 9-6 0 5-4 8-9 6"/>
+      </svg>
+    )
+  }
+
+  // Pet / Animals
+  if (s.includes('pet') || s.includes('animal') || s.includes('vet') || n.includes('pet') || n.includes('animal')) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 20A7 7 0 0 1 4 13c0-3.87 3.13-7 7-7h2c3.87 0 7 3.13 7 7a7 7 0 0 1-7 7h-2z"/>
+        <path d="M9 13c0-1.66 1.34-3 3-3s3 1.34 3 3"/>
+        <path d="M6 8C6 6.34 7.34 5 9 5M18 8c0-1.66-1.34-3-3-3"/>
+      </svg>
+    )
+  }
+
+  // Default fallback — shopping bag
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <path d="M16 10a4 4 0 0 1-8 0"/>
+    </svg>
+  )
+}
+
+// ─── Icon background color palette per category ───────────────────────────────
+
+function getCategoryAccent(slug: string): { bg: string; color: string } {
+  const s = slug.toLowerCase()
+  if (s.includes('fashion') || s.includes('cloth')) return { bg: '#db142e', color: '#fff' }
+  if (s.includes('electron') || s.includes('tech'))  return { bg: '#111827', color: '#fff' }
+  if (s.includes('home') || s.includes('living'))    return { bg: '#166534', color: '#fff' }
+  if (s.includes('food') || s.includes('grocer'))    return { bg: '#dc2626', color: '#fff' }
+  if (s.includes('beauty') || s.includes('care'))    return { bg: '#be185d', color: '#fff' }
+  if (s.includes('health') || s.includes('well'))    return { bg: '#047857', color: '#fff' }
+  if (s.includes('sport') || s.includes('outdoor'))  return { bg: '#1d4ed8', color: '#fff' }
+  if (s.includes('auto') || s.includes('car'))       return { bg: '#374151', color: '#fff' }
+  if (s.includes('book') || s.includes('edu'))       return { bg: '#92400e', color: '#fff' }
+  if (s.includes('toy') || s.includes('kid'))        return { bg: '#7c3aed', color: '#fff' }
+  if (s.includes('jewel') || s.includes('access'))   return { bg: '#b45309', color: '#fff' }
+  if (s.includes('garden') || s.includes('plant'))   return { bg: '#166534', color: '#fff' }
+  if (s.includes('pet') || s.includes('animal'))     return { bg: '#d97706', color: '#fff' }
+  return { bg: '#db142e', color: '#fff' }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -301,6 +476,17 @@ function SmartSidebar({
 
   const reset = () => setFilters({ search:'', priceMin:'', priceMax:'', inStock:false, sort:filters.sort, attrs:{} })
 
+  const isRangeActive = (min: string, max: string) =>
+    filters.priceMin === min && filters.priceMax === max
+
+  const applyRange = (min: string, max: string) => {
+    if (isRangeActive(min, max)) {
+      upd({ priceMin: '', priceMax: '' })
+    } else {
+      upd({ priceMin: min, priceMax: max })
+    }
+  }
+
   const content = (
     <aside className="ct-sidebar">
 
@@ -355,6 +541,18 @@ function SmartSidebar({
           <button className="ct-price-go" onClick={() => setFilters({...filters})}>
             <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           </button>
+        </div>
+        <div className="ct-price-ranges">
+          {PRICE_RANGES.map(r => (
+            <button
+              key={r.label}
+              type="button"
+              className={`ct-price-range-btn${isRangeActive(r.min, r.max) ? ' ct-price-range-btn--active' : ''}`}
+              onClick={() => applyRange(r.min, r.max)}
+            >
+              {r.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -518,6 +716,184 @@ function Pagination({ current, total, onChange }: { current:number; total:number
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// PRO CATEGORY NAV BAR
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function CategoryNavBar({
+  allCategories,
+  activeSlug,
+  filters,
+  setFilters,
+  viewMode,
+  setViewMode,
+  mobileFilterOpen,
+  setMobileFilterOpen,
+  activeFilterCount,
+  filteredCount,
+  totalCount,
+}: {
+  allCategories: Category[]
+  activeSlug: string
+  filters: FilterState
+  setFilters: (f: FilterState) => void
+  viewMode: ViewMode
+  setViewMode: (v: ViewMode) => void
+  mobileFilterOpen: boolean
+  setMobileFilterOpen: (v: boolean) => void
+  activeFilterCount: number
+  filteredCount: number
+  totalCount: number
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft,  setCanScrollLeft]  = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+  const [isDragging,     setIsDragging]     = useState(false)
+  const dragStartX   = useRef(0)
+  const dragScrollX  = useRef(0)
+
+  // Check overflow state
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+    setCanScrollLeft(el.scrollLeft > 8)
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8)
+  }, [])
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    checkScroll()
+    el.addEventListener('scroll', checkScroll, { passive: true })
+    const ro = new ResizeObserver(checkScroll)
+    ro.observe(el)
+    return () => { el.removeEventListener('scroll', checkScroll); ro.disconnect() }
+  }, [allCategories, checkScroll])
+
+  // Scroll active category into view on mount/change
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || !activeSlug) return
+    const active = el.querySelector(`[data-slug="${activeSlug}"]`) as HTMLElement | null
+    if (active) {
+      const containerRect = el.getBoundingClientRect()
+      const activeRect    = active.getBoundingClientRect()
+      const offset        = activeRect.left - containerRect.left - (containerRect.width / 2) + (activeRect.width / 2)
+      el.scrollBy({ left: offset, behavior: 'smooth' })
+    }
+  }, [activeSlug, allCategories])
+
+  const scrollBy = (dir: 'left' | 'right') => {
+    const el = scrollRef.current
+    if (!el) return
+    el.scrollBy({ left: dir === 'left' ? -260 : 260, behavior: 'smooth' })
+  }
+
+  // Drag-to-scroll
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return
+    setIsDragging(true)
+    dragStartX.current  = e.clientX
+    dragScrollX.current = scrollRef.current.scrollLeft
+  }
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return
+    const dx = e.clientX - dragStartX.current
+    scrollRef.current.scrollLeft = dragScrollX.current - dx
+  }
+  const onMouseUp = () => setIsDragging(false)
+
+  return (
+    <div className="ct-catbar">
+      <div className="ct-catbar__inner">
+
+        {/* Left scroll arrow */}
+        <button
+          className={`ct-catbar__arrow ct-catbar__arrow--left${canScrollLeft ? ' ct-catbar__arrow--visible' : ''}`}
+          onClick={() => scrollBy('left')}
+          aria-label="Scroll categories left"
+        >
+          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+
+        {/* Fade left edge */}
+        <div className={`ct-catbar__fade ct-catbar__fade--left${canScrollLeft ? ' ct-catbar__fade--visible' : ''}`}/>
+
+        {/* Scrollable list */}
+        <div
+          ref={scrollRef}
+          className="ct-catbar__list"
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
+          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        >
+          {allCategories.map(cat => {
+            const isActive = cat.slug === activeSlug
+            const accent   = getCategoryAccent(cat.slug)
+            return (
+              <Link
+                key={cat.id}
+                href={`/category/${cat.slug}`}
+                data-slug={cat.slug}
+                className={`ct-catbar__item${isActive ? ' ct-catbar__item--active' : ''}`}
+                style={isActive ? {
+                  '--cat-bg':    accent.bg,
+                  '--cat-color': accent.color,
+                } as React.CSSProperties : undefined}
+                draggable={false}
+              >
+                <span className={`ct-catbar__icon-wrap${isActive ? ' ct-catbar__icon-wrap--active' : ''}`}
+                  style={isActive ? { background: accent.color === '#fff' ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.1)' } : undefined}>
+                  {getCategoryIcon(cat.slug, cat.name)}
+                </span>
+                <span className="ct-catbar__label">{cat.name}</span>
+                {isActive && <span className="ct-catbar__active-dot"/>}
+              </Link>
+            )
+          })}
+        </div>
+
+        {/* Fade right edge */}
+        <div className={`ct-catbar__fade ct-catbar__fade--right${canScrollRight ? ' ct-catbar__fade--visible' : ''}`}/>
+
+        {/* Right scroll arrow */}
+        <button
+          className={`ct-catbar__arrow ct-catbar__arrow--right${canScrollRight ? ' ct-catbar__arrow--visible' : ''}`}
+          onClick={() => scrollBy('right')}
+          aria-label="Scroll categories right"
+        >
+          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+
+        {/* Controls */}
+        <div className="ct-catbar__controls">
+          <button className="ct-filter-toggle" onClick={() => setMobileFilterOpen(true)}>
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+            Filters
+            {activeFilterCount > 0 && <span className="ct-filter-badge">{activeFilterCount}</span>}
+          </button>
+          {totalCount > 0 && (
+            <span className="ct-toolbar__result-count">{filteredCount} of {totalCount}</span>
+          )}
+          <button className={`ct-view-btn${viewMode==='grid'?' ct-view-btn--active':''}`} onClick={() => setViewMode('grid')} title="Grid">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          </button>
+          <button className={`ct-view-btn${viewMode==='list'?' ct-view-btn--active':''}`} onClick={() => setViewMode('list')} title="List">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // INNER PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -527,14 +903,15 @@ function CategoryPageInner() {
   const slug    = params?.slug as string
   const subSlug = searchParams.get('sub') ?? ''
 
-  const [category, setCategory] = useState<Category | null>(null)
-  const [products, setProducts] = useState<PaginatedProducts | null>(null)
-  const [loading,  setLoading]  = useState(true)
-  const [catError, setCatError] = useState(false)
-  const [page,     setPage]     = useState(1)
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [category,      setCategory]      = useState<Category | null>(null)
+  const [allCategories, setAllCategories] = useState<Category[]>([])
+  const [products,      setProducts]      = useState<PaginatedProducts | null>(null)
+  const [loading,       setLoading]       = useState(true)
+  const [catError,      setCatError]      = useState(false)
+  const [page,          setPage]          = useState(1)
+  const [viewMode,      setViewMode]      = useState<ViewMode>('grid')
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
-  const [mounted,  setMounted]  = useState(false)
+  const [mounted,       setMounted]       = useState(false)
 
   const [filters, setFilters] = useState<FilterState>({
     search:'', priceMin:'', priceMax:'', inStock:false, sort:'created_at', attrs:{},
@@ -542,7 +919,16 @@ function CategoryPageInner() {
 
   useEffect(() => { setMounted(true) }, [])
 
-  // Fetch category info
+  useEffect(() => {
+    fetch(`${API_URL}/api/categories`, { headers:{ Accept:'application/json' } })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(j => {
+        const list: Category[] = Array.isArray(j) ? j : (j.data ?? [])
+        setAllCategories(list.filter((c: Category) => c.slug !== 'other'))
+      })
+      .catch(() => {})
+  }, [])
+
   useEffect(() => {
     if (!slug) return
     fetch(`${API_URL}/api/categories/${slug}`, { headers:{ Accept:'application/json' } })
@@ -551,7 +937,6 @@ function CategoryPageInner() {
       .catch(() => setCatError(true))
   }, [slug])
 
-  // Build active attr filter query string (used as dependency for fetchProducts)
   const attrQueryParams = useMemo(() => {
     const parts: string[] = []
     Object.entries(filters.attrs).forEach(([attrSlug, ids]) => {
@@ -560,11 +945,6 @@ function CategoryPageInner() {
     return parts.join('|')
   }, [filters.attrs])
 
-  // ── FIXED fetchProducts ────────────────────────────────────────────────────
-  // Bug 1: was calling /api/categories/${slug}/products — endpoint doesn't exist.
-  //        Fixed to: /api/products with category_slug param.
-  // Bug 2: was sending attrs[color]=1,3 (string) — backend receives ["1,3"] not [1,3].
-  //        Fixed to: attrs[color][]=1&attrs[color][]=3 so PHP gets a real array.
   const fetchProducts = useCallback(async () => {
     if (!slug) return
     setLoading(true)
@@ -578,8 +958,6 @@ function CategoryPageInner() {
       if (filters.priceMax) qp.set('price_max', filters.priceMax)
       if (filters.inStock)  qp.set('in_stock', '1')
 
-      // Send each option ID as a separate array entry so PHP receives a proper array:
-      // attrs[color][]=1&attrs[color][]=3&attrs[size][]=7
       Object.entries(filters.attrs).forEach(([attrSlug, ids]) => {
         ids.forEach(id => qp.append(`attrs[${attrSlug}][]`, String(id)))
       })
@@ -598,10 +976,8 @@ function CategoryPageInner() {
 
   useEffect(() => { fetchProducts() }, [fetchProducts])
 
-  // Reset page when filters/sub change
   useEffect(() => { setPage(1) }, [filters.sort, filters.priceMin, filters.priceMax, filters.inStock, attrQueryParams, subSlug])
 
-  // Client-side text search
   const filteredProducts = useMemo(() => {
     if (!products?.data) return []
     if (!filters.search) return products.data
@@ -630,6 +1006,9 @@ function CategoryPageInner() {
         @keyframes ct-shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
         @keyframes ct-spin{to{transform:rotate(360deg)}}
         @keyframes ct-pop{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
+        @keyframes ct-dot-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(0.7)}}
+        @keyframes ct-arrow-bounce-left{0%,100%{transform:translateX(0)}50%{transform:translateX(-2px)}}
+        @keyframes ct-arrow-bounce-right{0%,100%{transform:translateX(0)}50%{transform:translateX(2px)}}
 
         /* ── Breadcrumb ── */
         .ct-breadcrumb{background:#fff;border-bottom:1px solid #eee;padding:0}
@@ -652,19 +1031,184 @@ function CategoryPageInner() {
         .ct-hero__stat-label{font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em}
         .ct-hero__bg-shape{position:absolute;right:-60px;top:-40px;width:300px;height:300px;border-radius:50%;background:rgba(219,20,46,0.04);pointer-events:none}
 
-        /* ── Toolbar ── */
-        .ct-toolbar{background:#fff;border-bottom:1px solid #eee;position:sticky;top:0;z-index:40;box-shadow:0 1px 12px rgba(0,0,0,0.04)}
-        .ct-toolbar__inner{max-width:1440px;margin:0 auto;padding:10px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-        .ct-toolbar__left{display:flex;align-items:center;gap:10px;flex:1;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
-        .ct-toolbar__left::-webkit-scrollbar{display:none}
-        .ct-toolbar__right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+        /* ════════════════════════════════════════════════
+           PRO CATEGORY NAV BAR
+        ════════════════════════════════════════════════ */
+        .ct-catbar{
+          background:#fff;
+          border-bottom:1px solid #eee;
+          position:sticky;
+          top:0;
+          z-index:40;
+          box-shadow:0 2px 20px rgba(0,0,0,0.06);
+        }
+        .ct-catbar__inner{
+          max-width:1440px;
+          margin:0 auto;
+          padding:0 8px 0 8px;
+          display:flex;
+          align-items:stretch;
+          position:relative;
+        }
+
+        /* ── Scroll arrow buttons ── */
+        .ct-catbar__arrow{
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          flex-shrink:0;
+          width:36px;
+          height:100%;
+          min-height:56px;
+          background:transparent;
+          border:none;
+          cursor:pointer;
+          color:#9ca3af;
+          opacity:0;
+          pointer-events:none;
+          transition:opacity 0.22s,color 0.18s;
+          z-index:5;
+          border-radius:0;
+          padding:0;
+        }
+        .ct-catbar__arrow--visible{
+          opacity:1;
+          pointer-events:auto;
+        }
+        .ct-catbar__arrow:hover{color:#db142e}
+        .ct-catbar__arrow--left:hover svg{animation:ct-arrow-bounce-left 0.5s ease infinite}
+        .ct-catbar__arrow--right:hover svg{animation:ct-arrow-bounce-right 0.5s ease infinite}
+
+        /* ── Fade gradient edges ── */
+        .ct-catbar__fade{
+          position:absolute;
+          top:0;
+          bottom:0;
+          width:56px;
+          pointer-events:none;
+          z-index:4;
+          opacity:0;
+          transition:opacity 0.25s;
+        }
+        .ct-catbar__fade--left{
+          left:44px;
+          background:linear-gradient(to right, #fff 0%, transparent 100%);
+        }
+        .ct-catbar__fade--right{
+          right:44px;
+          background:linear-gradient(to left, #fff 0%, transparent 100%);
+        }
+        .ct-catbar__fade--visible{opacity:1}
+
+        /* ── The scrollable list ── */
+        .ct-catbar__list{
+          display:flex;
+          align-items:center;
+          gap:4px;
+          flex:1;
+          overflow-x:auto;
+          scrollbar-width:none;
+          padding:8px 4px;
+          user-select:none;
+          -webkit-overflow-scrolling:touch;
+        }
+        .ct-catbar__list::-webkit-scrollbar{display:none}
+
+        /* ── Category item chip ── */
+        .ct-catbar__item{
+          display:flex;
+          align-items:center;
+          gap:8px;
+          padding:7px 14px 7px 8px;
+          border-radius:12px;
+          border:1.5px solid transparent;
+          background:transparent;
+          font-size:13px;
+          font-weight:600;
+          color:#52525b;
+          cursor:pointer;
+          transition:
+            background 0.2s,
+            color 0.2s,
+            border-color 0.2s,
+            transform 0.18s,
+            box-shadow 0.2s;
+          white-space:nowrap;
+          flex-shrink:0;
+          font-family:'DM Sans',sans-serif;
+          text-decoration:none;
+          position:relative;
+        }
+        .ct-catbar__item:hover{
+          background:#f4f4f6;
+          color:#111;
+          border-color:#e5e7eb;
+          transform:translateY(-1px);
+        }
+        .ct-catbar__item--active{
+          background:var(--cat-bg, #db142e);
+          color:var(--cat-color, #fff) !important;
+          border-color:transparent;
+          box-shadow:0 4px 14px rgba(0,0,0,0.18);
+          transform:translateY(-1px);
+        }
+        .ct-catbar__item--active:hover{
+          filter:brightness(1.08);
+          transform:translateY(-2px);
+          box-shadow:0 6px 20px rgba(0,0,0,0.22);
+        }
+
+        /* ── Icon wrapper inside chip ── */
+        .ct-catbar__icon-wrap{
+          width:28px;
+          height:28px;
+          border-radius:8px;
+          background:rgba(0,0,0,0.06);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          flex-shrink:0;
+          transition:background 0.2s;
+        }
+        .ct-catbar__item:hover .ct-catbar__icon-wrap{
+          background:rgba(0,0,0,0.08);
+        }
+        .ct-catbar__icon-wrap--active{
+          /* set inline */
+        }
+
+        /* ── Category label ── */
+        .ct-catbar__label{
+          line-height:1;
+        }
+
+        /* ── Active dot indicator ── */
+        .ct-catbar__active-dot{
+          position:absolute;
+          bottom:-8px;
+          left:50%;
+          transform:translateX(-50%);
+          width:4px;
+          height:4px;
+          border-radius:50%;
+          background:currentColor;
+          animation:ct-dot-pulse 2s ease-in-out infinite;
+        }
+
+        /* ── Controls (filters + view toggle) ── */
+        .ct-catbar__controls{
+          display:flex;
+          align-items:center;
+          gap:8px;
+          flex-shrink:0;
+          border-left:1px solid #f0f0f0;
+          padding:8px 8px 8px 16px;
+          margin-left:4px;
+        }
         .ct-toolbar__result-count{font-size:12px;color:#9ca3af;font-weight:500;white-space:nowrap}
         .ct-filter-toggle{display:none;align-items:center;gap:7px;padding:8px 14px;background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;transition:all 0.18s;white-space:nowrap;flex-shrink:0}
         .ct-filter-toggle:hover{border-color:#db142e;color:#db142e}
         .ct-filter-badge{background:#db142e;color:#fff;font-size:10px;font-weight:800;border-radius:999px;min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px}
-        .ct-sort-pill{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:999px;border:1.5px solid #e5e7eb;background:transparent;font-size:12px;font-weight:600;color:#52525b;cursor:pointer;transition:all 0.18s;white-space:nowrap;flex-shrink:0;font-family:'DM Sans',sans-serif}
-        .ct-sort-pill:hover{border-color:#db142e;color:#db142e}
-        .ct-sort-pill--active{background:#db142e;border-color:#db142e;color:#fff}
         .ct-view-btn{width:36px;height:36px;border-radius:8px;border:1.5px solid #e5e7eb;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#9ca3af;transition:all 0.18s}
         .ct-view-btn:hover{border-color:#db142e;color:#db142e}
         .ct-view-btn--active{border-color:#db142e;color:#db142e;background:#fef2f2}
@@ -707,6 +1251,15 @@ function CategoryPageInner() {
         .ct-toggle__thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.18);transition:transform 0.22s}
         .ct-toggle--on .ct-toggle__thumb{transform:translateX(18px)}
 
+        /* ── Suggested price ranges ── */
+        .ct-price-ranges{display:flex;flex-direction:column;gap:3px;margin-top:10px}
+        .ct-price-range-btn{display:flex;align-items:center;width:100%;padding:8px 10px;border-radius:8px;border:none;background:transparent;font-size:13px;font-weight:500;color:#52525b;cursor:pointer;transition:all 0.15s;text-align:left;font-family:'DM Sans',sans-serif}
+        .ct-price-range-btn::before{content:'';display:inline-block;width:14px;height:14px;border-radius:50%;border:1.5px solid #d1d5db;margin-right:9px;flex-shrink:0;transition:all 0.15s;background:#fff}
+        .ct-price-range-btn:hover{background:#f8f8f8;color:#db142e}
+        .ct-price-range-btn:hover::before{border-color:#db142e}
+        .ct-price-range-btn--active{background:#fef2f2;color:#db142e;font-weight:700}
+        .ct-price-range-btn--active::before{background:#db142e;border-color:#db142e;box-shadow:inset 0 0 0 3px #fff}
+
         /* ── Attribute sections ── */
         .ct-attr-section{border-bottom:1px solid #f7f7f7}
         .ct-attr-header{width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif}
@@ -730,7 +1283,7 @@ function CategoryPageInner() {
         .ct-check-label{font-size:13px;font-weight:500;color:#374151;flex:1;cursor:pointer}
         .ct-check-item--on .ct-check-label{color:#db142e;font-weight:700}
 
-        /* Pill list (select/radio) */
+        /* Pill list */
         .ct-pill-list{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0}
         .ct-pill{padding:5px 12px;border-radius:999px;border:1.5px solid #e5e7eb;background:#fff;font-size:12px;font-weight:600;color:#52525b;cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif}
         .ct-pill:hover{border-color:#db142e;color:#db142e}
@@ -818,12 +1371,19 @@ function CategoryPageInner() {
           .ct-hero__title{font-size:1.8rem}
           .ct-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
           .ct-list-card__img-wrap{width:120px}
+          .ct-catbar__item{padding:6px 11px 6px 7px;font-size:12px}
+          .ct-catbar__icon-wrap{width:24px;height:24px;border-radius:6px}
         }
         @media(max-width:540px){
           .ct-hero{padding:24px 20px}
-          .ct-breadcrumb__inner,.ct-toolbar__inner,.ct-layout{padding-left:16px;padding-right:16px}
+          .ct-breadcrumb__inner,.ct-layout{padding-left:16px;padding-right:16px}
+          .ct-catbar__inner{padding:0 4px}
           .ct-grid{grid-template-columns:repeat(2,1fr);gap:10px}
           .ct-hero__icon-wrap{width:56px;height:56px;font-size:1.5rem}
+          .ct-catbar__controls{padding-left:8px;gap:6px}
+          .ct-catbar__label{display:none}
+          .ct-catbar__item{padding:6px}
+          .ct-catbar__item--active .ct-catbar__label{display:block}
         }
       `}</style>
 
@@ -886,35 +1446,20 @@ function CategoryPageInner() {
           </div>
         </div>
 
-        {/* Toolbar */}
-        <div className="ct-toolbar">
-          <div className="ct-toolbar__inner">
-            <div className="ct-toolbar__left">
-              <button className="ct-filter-toggle" onClick={() => setMobileFilterOpen(true)}>
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
-                Filters
-                {activeFilterCount > 0 && <span className="ct-filter-badge">{activeFilterCount}</span>}
-              </button>
-              {SORT_OPTIONS.map(opt => (
-                <button key={opt.key} className={`ct-sort-pill${filters.sort===opt.key?' ct-sort-pill--active':''}`}
-                  onClick={() => setFilters({...filters, sort:opt.key})}>
-                  {opt.icon} {opt.label}
-                </button>
-              ))}
-            </div>
-            <div className="ct-toolbar__right">
-              {products && (
-                <span className="ct-toolbar__result-count">{filteredProducts.length} of {products.total}</span>
-              )}
-              <button className={`ct-view-btn${viewMode==='grid'?' ct-view-btn--active':''}`} onClick={() => setViewMode('grid')} title="Grid">
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-              </button>
-              <button className={`ct-view-btn${viewMode==='list'?' ct-view-btn--active':''}`} onClick={() => setViewMode('list')} title="List">
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* ── PRO Category Nav Bar ── */}
+        <CategoryNavBar
+          allCategories={allCategories}
+          activeSlug={slug}
+          filters={filters}
+          setFilters={setFilters}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          mobileFilterOpen={mobileFilterOpen}
+          setMobileFilterOpen={setMobileFilterOpen}
+          activeFilterCount={activeFilterCount}
+          filteredCount={filteredProducts.length}
+          totalCount={products?.total ?? 0}
+        />
 
         {/* Layout */}
         <div className="ct-layout">
