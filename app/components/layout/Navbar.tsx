@@ -449,6 +449,12 @@ export default function Navbar() {
     openDrawer();
   };
 
+  // ── NEW: fires the global event that SupportChatWidget listens to ──
+  const handleOpenSupport = () => {
+    closeAll();
+    window.dispatchEvent(new Event('open-support-chat'));
+  };
+
   return (
     <>
       <MegaMenu categories={categories} visible={megaOpen} onClose={() => setMegaOpen(false)}/>
@@ -456,9 +462,31 @@ export default function Navbar() {
 
       <header className="w-full bg-white sticky top-0 z-50" style={{ boxShadow:'0 1px 0 #f1f5f9' }}>
 
-        {/* ROW 1: Announcement */}
-        <div className="bg-zinc-950 text-white text-xs text-center py-2 tracking-widest uppercase font-medium">
-          🇹🇳 Free delivery on orders over 50 DT — Tunisia&apos;s #1 marketplace
+        {/* ROW 1: Announcement + Help & Support ← CHANGED: was text-center only */}
+        <div className="bg-zinc-950 text-white text-xs py-2 tracking-widest uppercase font-medium">
+          <div className="max-w-7xl mx-auto px-6" style={{ display:'flex',alignItems:'center',justifyContent:'space-between' }}>
+            <span>🇹🇳 Free delivery on orders over 50 DT — Tunisia&apos;s #1 marketplace</span>
+            {/* ── NEW: Help & Support button ── */}
+            <button
+              onClick={handleOpenSupport}
+              style={{
+                display:'flex',alignItems:'center',gap:5,
+                background:'transparent',border:'none',cursor:'pointer',
+                color:'rgba(255,255,255,0.85)',fontSize:11,fontWeight:700,
+                letterSpacing:'0.06em',textTransform:'uppercase',
+                fontFamily:'inherit',padding:0,flexShrink:0,
+                transition:'color 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.85)')}>
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17" strokeWidth="2.5" strokeLinecap="round"/>
+              </svg>
+              Help &amp; Support
+            </button>
+          </div>
         </div>
 
         {/* ROW 2: Utility bar */}
@@ -640,6 +668,16 @@ export default function Navbar() {
             <button onClick={handleOpenCart}
               className="text-sm font-semibold text-zinc-800 hover:text-red-600 py-1 border-b border-zinc-50 text-left flex items-center gap-2">
               <ShoppingBag size={16}/> Cart {count>0&&<span className="bg-red-600 text-white text-[9px] font-bold rounded-full px-1.5 py-0.5">{count}</span>}
+            </button>
+            {/* ── NEW: Help & Support in mobile menu ── */}
+            <button onClick={handleOpenSupport}
+              className="text-sm font-semibold text-red-600 hover:text-red-700 py-1 border-b border-zinc-50 text-left flex items-center gap-2">
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17" strokeWidth="2.5" strokeLinecap="round"/>
+              </svg>
+              Help &amp; Support
             </button>
             {/* CHANGE 3: Added My Complaints and Help / Complaint to mobile menu */}
             {loggedIn&&<>
