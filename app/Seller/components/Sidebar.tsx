@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 /**
  * FILE: app/seller/components/Sidebar.tsx  <- REPLACE
@@ -72,12 +72,12 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
           overflow: 'hidden', flexShrink: 0,
         }}>
           <div style={{
-            width: 44, height: 44, borderRadius: 10, flexShrink: 0,
+            width: 48, height: 48, borderRadius: 13, flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: '#ffffff', overflow: 'hidden', padding: 3,
+            background: '#ffffff', overflow: 'hidden', padding: 3, boxShadow: '0 0 0 2px #198f41, 0 0 0 4px #db142e, 0 0 10px 3px rgba(25,143,65,0.4), 0 0 18px 5px rgba(219,20,46,0.22)',
           }}>
-            <img src={LOGO_SRC} alt="ChooseTounsi"
-              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+              <img src={"/images/logo-chili.png"} alt="ChooseTounsi"
+              style={{ width: '99%', height: '99%', objectFit: 'contain', display: 'block', imageRendering: 'crisp-edges' }} />
           </div>
           {!collapsed && (
             <div style={{ minWidth: 0, lineHeight: 1.3 }}>
