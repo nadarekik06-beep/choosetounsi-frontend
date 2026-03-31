@@ -8,22 +8,22 @@
  *  - When color is selected → gallery updates INSTANTLY to that color's images
  *  - When full variant is matched → correct variant_id sent to cart
  *  - Fallback to product-level images if variant has none
+ *  - Buy Now: bypasses cart, goes directly to checkout with query params
  */
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Heart, ShoppingCart, ChevronRight, Star, Shield, Truck,
   RotateCcw, Share2, Minus, Plus, ZoomIn, ChevronLeft,
-  CheckCircle, Loader2, Tag,
+  CheckCircle, Loader2, Tag, Zap,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { isAuthenticated } from '@/lib/auth'
 import type { ProductVariant, SelectableAxis } from '@/lib/shopApi'
 
 // Normalize: strip trailing /api if present so STORAGE_BASE is always the bare origin.
-// Works whether NEXT_PUBLIC_API_URL is 'http://localhost:8000' or 'http://localhost:8000/api'
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL      = `${STORAGE_BASE}/api`
 
@@ -149,7 +149,6 @@ function VariantSelector({
                       transition: 'all 0.15s', flexShrink: 0,
                     }}
                   >
-                    {/* Show the color's primary_image as a small preview if it has one */}
                     {opt.primary_image && (
                       <img
                         src={opt.primary_image}
@@ -202,7 +201,7 @@ function VariantSelector({
 
       {selectorError && (
         <p style={{ fontSize: 12, color: '#dc2626', fontWeight: 700, background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 8, padding: '8px 12px', margin: 0 }}>
-          Please select {axes.filter(a => selectedOptions[a.slug] === undefined).map(a => a.name).join(' and ')} before adding to cart.
+          Please select {axes.filter(a => selectedOptions[a.slug] === undefined).map(a => a.name).join(' and ')} before proceeding.
         </p>
       )}
     </div>
@@ -216,7 +215,6 @@ function Gallery({ images, productName }: { images: string[]; productName: strin
   const [zoom, setZoom]       = useState(false)
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 })
 
-  // Reset to first image when image list changes (e.g. color switch)
   useEffect(() => { setActive(0) }, [images])
 
   const cur = images[active] ?? null
@@ -296,6 +294,10 @@ export default function ProductDetailPage() {
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({})
   const [selectorError,   setSelectorError]   = useState(false)
 
+  // Buy Now state — isolated from Add to Cart state
+  const [buyNowLoading,   setBuyNowLoading]   = useState(false)
+  const buyNowRef = useRef(false) // guard against rapid clicks
+
   // Fetch product
   useEffect(() => {
     if (!slug) return
@@ -335,18 +337,14 @@ export default function ProductDetailPage() {
     const colorAxis = axes.find(a => a.type === 'color')
     const selectedColorId = colorAxis ? selectedOptions[colorAxis.slug] : undefined
 
-    // 1. Full variant matched — use its images
     if (selectedVariant && selectedVariant.image_urls.length > 0) {
       return selectedVariant.image_urls
     }
 
-    // 2. Color selected — use color group images
-    // PHP JSON-encodes integer array keys as STRINGS → must look up with String()
     if (selectedColorId !== undefined && product?.color_images?.[String(selectedColorId) as any]?.length) {
       return product.color_images[String(selectedColorId) as any]
     }
 
-    // 3. Default — use product-level images (no color_option_id)
     if (product) {
       const productImgs = product.images
         .filter(i => !i.color_option_id)
@@ -355,7 +353,6 @@ export default function ProductDetailPage() {
 
       if (productImgs.length > 0) return productImgs
 
-      // Fallback to primary_image_url
       const primary = resolveImg(product.primary_image_url)
       if (primary) return [primary]
     }
@@ -374,6 +371,7 @@ export default function ProductDetailPage() {
   const lowStock       = effectiveStock > 0 && effectiveStock <= 10
   const favorited      = product ? isFavorited(product.id, selectedVariant?.id ?? null) : false
 
+  // ── Add to Cart (unchanged) ────────────────────────────────────────────────
   const handleAddToCart = async () => {
     if (!product || outOfStock) return
     if (!isAuthenticated()) { router.push('/auth/login?redirect=' + window.location.pathname); return }
@@ -382,6 +380,57 @@ export default function ProductDetailPage() {
     await addToCart(product.id, quantity, selectedVariant?.id ?? null)
     setAddedToCart(true)
     setTimeout(() => setAddedToCart(false), 2500)
+  }
+
+  // ── Buy Now ────────────────────────────────────────────────────────────────
+  const handleBuyNow = async () => {
+    if (!product || outOfStock || buyNowLoading || buyNowRef.current) return
+
+    // Auth check — redirect to login, come back after
+    if (!isAuthenticated()) {
+      router.push('/auth/login?redirect=' + window.location.pathname)
+      return
+    }
+
+    // Variant validation: if product has variants, a full match must be selected
+    if (hasVariants && !selectedVariant) {
+      setSelectorError(true)
+      return
+    }
+
+    // Variant stock check (belt-and-suspenders — effectiveStock already reflects this,
+    // but we guard explicitly so the error message is clear)
+    if (selectedVariant && selectedVariant.stock <= 0) {
+      setSelectorError(true)
+      return
+    }
+
+    // Prevent double-click / rapid tap
+    buyNowRef.current = true
+    setBuyNowLoading(true)
+    setSelectorError(false)
+
+    try {
+      // Build query params — checkout page reads these to render a "direct purchase" summary.
+      // We pass the SLUG (not the numeric id) because the API route is /api/products/{slug}.
+      const params = new URLSearchParams({
+        buy_now:      '1',
+        product_slug: product.slug,
+        quantity:     String(quantity),
+      })
+
+      if (selectedVariant?.id) {
+        params.set('variant_id', String(selectedVariant.id))
+      }
+
+      // Small UX delay so loading spinner flashes (feels intentional, not broken)
+      await new Promise(resolve => setTimeout(resolve, 180))
+
+      router.push(`/checkout?${params.toString()}`)
+    } finally {
+      setBuyNowLoading(false)
+      buyNowRef.current = false
+    }
   }
 
   const handleToggleFavorite = () => {
@@ -422,6 +471,7 @@ export default function ProductDetailPage() {
         .qty-btn:hover{background:#dc2626!important;color:#fff!important;border-color:#dc2626!important}
         .trust-item{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:1px solid #f1f5f9}
         .trust-item:last-child{border-bottom:none}
+        .buy-now-btn:hover:not(:disabled){background:rgba(220,38,38,0.05)!important;border-color:#b91c1c!important;color:#b91c1c!important}
         @media(max-width:900px){.pd-grid{grid-template-columns:1fr!important}}
       `}</style>
 
@@ -536,29 +586,78 @@ export default function ProductDetailPage() {
               </p>
             </div>
 
-            {/* CTA */}
-            <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-              <button onClick={handleAddToCart} disabled={outOfStock || cartLoading}
+            {/* ── CTA Buttons ── */}
+            {/* ── CTA Buttons: Buy Now (ghost) | Add to Cart (solid) | Heart ── */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 24, alignItems: 'center' }}>
+
+              {/* Buy Now — ghost/outline, white bg, red border + red text */}
+              <button
+                className="buy-now-btn"
+                onClick={handleBuyNow}
+                disabled={outOfStock || buyNowLoading}
                 style={{
                   flex: 1, height: 52,
-                  background: outOfStock ? '#e5e7eb' : addedToCart ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#dc2626,#b91c1c)',
+                  background: '#fff',
+                  color: outOfStock ? '#9ca3af' : '#dc2626',
+                  border: `2px solid ${outOfStock ? '#e5e7eb' : '#dc2626'}`,
+                  borderRadius: 12,
+                  cursor: outOfStock || buyNowLoading ? 'not-allowed' : 'pointer',
+                  fontWeight: 800, fontSize: 14,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  transition: 'all 0.2s', fontFamily: 'inherit',
+                  letterSpacing: '0.01em',
+                  opacity: outOfStock ? 0.6 : 1,
+                }}
+              >
+                {buyNowLoading
+                  ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} />
+                  : <><Zap size={16} />{outOfStock ? 'Out of Stock' : 'Buy Now'}</>
+                }
+              </button>
+
+              {/* Add to Cart — solid red fill */}
+              <button
+                onClick={handleAddToCart}
+                disabled={outOfStock || cartLoading}
+                style={{
+                  flex: 1, height: 52,
+                  background: outOfStock
+                    ? '#e5e7eb'
+                    : addedToCart
+                      ? 'linear-gradient(135deg,#10b981,#059669)'
+                      : 'linear-gradient(135deg,#dc2626,#b91c1c)',
                   color: outOfStock ? '#9ca3af' : '#fff',
-                  border: 'none', borderRadius: 12, cursor: outOfStock ? 'not-allowed' : 'pointer',
-                  fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  boxShadow: outOfStock ? 'none' : '0 8px 24px rgba(220,38,38,0.3)',
+                  border: 'none',
+                  borderRadius: 12,
+                  cursor: outOfStock ? 'not-allowed' : 'pointer',
+                  fontWeight: 800, fontSize: 14,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  boxShadow: outOfStock ? 'none' : addedToCart ? '0 8px 24px rgba(16,185,129,0.3)' : '0 8px 24px rgba(220,38,38,0.3)',
                   transition: 'all 0.2s', fontFamily: 'inherit',
                 }}>
                 {cartLoading
                   ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} />
                   : addedToCart
-                  ? <><CheckCircle size={18} />Added to Cart!</>
+                  ? <><CheckCircle size={18} />Added!</>
                   : <><ShoppingCart size={18} />{outOfStock ? 'Out of Stock' : 'Add to Cart'}</>
                 }
               </button>
-              <button onClick={handleToggleFavorite}
-                style={{ width: 52, height: 52, borderRadius: 12, border: `1.5px solid ${favorited ? '#dc2626' : '#e5e7eb'}`, background: favorited ? 'rgba(220,38,38,0.06)' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', flexShrink: 0 }}>
+
+              {/* Favorite — circle icon button */}
+              <button
+                onClick={handleToggleFavorite}
+                style={{
+                  width: 52, height: 52, flexShrink: 0,
+                  borderRadius: '50%',
+                  border: `2px solid ${favorited ? '#dc2626' : '#e5e7eb'}`,
+                  background: favorited ? 'rgba(220,38,38,0.06)' : '#fff',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.2s',
+                }}>
                 <Heart size={20} fill={favorited ? '#dc2626' : 'none'} stroke={favorited ? '#dc2626' : '#94a3b8'} strokeWidth={2} />
               </button>
+
             </div>
 
             {/* Trust badges */}

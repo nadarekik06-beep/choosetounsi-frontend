@@ -3,7 +3,7 @@
 /**
  * lib/shopApi.ts
  * Cart, Favorites, and Checkout API calls for the frontend.
- * Updated to support product variants.
+ * Updated to support product variants + Buy Now direct checkout.
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
@@ -47,14 +47,9 @@ export interface VariantOptionEntry {
   id: number
   value: string
   color_hex?: string | null
-  /** Primary image URL for this color option — set by the backend when color images exist */
   primary_image?: string | null
 }
 
-/**
- * One selectable axis (e.g. "Color" or "Size") with its available options.
- * Returned in GET /api/products/{slug} as `selectable_axes`.
- */
 export interface SelectableAxis {
   slug: string
   name: string
@@ -62,19 +57,15 @@ export interface SelectableAxis {
   options: VariantOptionEntry[]
 }
 
-/**
- * A single variant as returned by the API.
- * `option_map` is keyed by attribute slug for O(1) lookup.
- */
 export interface ProductVariant {
   id: number
   sku: string | null
   stock: number
   is_active: boolean
-  price: number                                     // effective price (override ?? base)
+  price: number
   price_override: number | null
-  label: string                                     // e.g. "Red / M"
-  option_map: Record<string, VariantOptionEntry>    // { color: {...}, size: {...} }
+  label: string
+  option_map: Record<string, VariantOptionEntry>
 }
 
 // ─── Cart types ───────────────────────────────────────────────────────────────
@@ -130,6 +121,16 @@ export interface CheckoutPayload {
   notes?: string
 }
 
+export interface BuyNowPayload {
+  product_id: number
+  variant_id?: number | null
+  quantity: number
+  wilaya: string
+  address: string
+  phone: string
+  notes?: string
+}
+
 export interface CheckoutResponse {
   success: boolean
   message: string
@@ -144,11 +145,6 @@ export const cartApi = {
   get: () =>
     request<CartResponse>('GET', '/cart'),
 
-  /**
-   * Add a product (or a specific variant) to the cart.
-   * Pass variantId when the product has variants — the backend will
-   * reject the request if variants exist but no variantId is given.
-   */
   add: (productId: number, quantity = 1, variantId?: number | null) =>
     request<{ success: boolean; message: string; data: CartItem }>('POST', '/cart', {
       product_id: productId,
@@ -172,19 +168,12 @@ export const favoritesApi = {
   get: () =>
     request<{ success: boolean; data: FavoriteItem[] }>('GET', '/favorites'),
 
-  /**
-   * Favorite a product or a specific variant of a product.
-   */
   add: (productId: number, variantId?: number | null) =>
     request<{ success: boolean; favorited: boolean; data: FavoriteItem }>('POST', '/favorites', {
       product_id: productId,
       ...(variantId != null ? { variant_id: variantId } : {}),
     }),
 
-  /**
-   * Remove favorite. Pass variantId to remove only that specific variant,
-   * omit to remove all favorites for this product.
-   */
   remove: (productId: number, variantId?: number | null) =>
     request<{ success: boolean; favorited: boolean }>('DELETE', `/favorites/${productId}`, {
       ...(variantId != null ? { variant_id: variantId } : {}),
@@ -200,6 +189,17 @@ export const favoritesApi = {
 // ─── Checkout API ─────────────────────────────────────────────────────────────
 
 export const checkoutApi = {
+  /**
+   * Cart-based checkout — unchanged.
+   * POST /api/checkout
+   */
   place: (payload: CheckoutPayload) =>
     request<CheckoutResponse>('POST', '/checkout', payload),
+
+  /**
+   * Buy Now — direct single-item order, bypasses cart entirely.
+   * POST /api/checkout/buy-now
+   */
+  buyNow: (payload: BuyNowPayload) =>
+    request<CheckoutResponse>('POST', '/checkout/buy-now', payload),
 }

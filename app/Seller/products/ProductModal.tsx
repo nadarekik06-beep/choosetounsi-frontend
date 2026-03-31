@@ -5,7 +5,12 @@ import { X, Upload, Trash2, Star, Loader2, AlertCircle, ImageIcon, Lock, Send } 
 import { productsApi, categoriesApi, storageUrl, productUpdateRequestsApi } from '@/lib/sellerApi'
 import type { Category, Subcategory, ProductPayload } from '@/lib/sellerApi'
 import DynamicAttributeSection from '../components/attributes/DynamicAttributeSection'
-import VariantBuilder, { type VariantRow, normalizeVariantRow } from '../components/VariantBuilder'
+import VariantBuilder, {
+  type VariantRow,
+  normalizeVariantRow,
+  calculateTotalStock,
+  validateVariantStocks,
+} from '../components/VariantBuilder'
 import ColorImageUploader from '../components/ColorImageUploader'
 import type { AttributeValues, Attribute } from '@/types/Attributes'
 
@@ -255,7 +260,7 @@ interface ProductModalProps {
 export default function ProductModal({ product, onClose, onSaved }: ProductModalProps) {
   const isEdit    = !!product
   const p         = product as FullProduct | null
-  const isLocked  = !!(p?.is_approved)   // critical fields locked when approved
+  const isLocked  = !!(p?.is_approved)
 
   const [updateRequestModalOpen, setUpdateRequestModalOpen] = useState(false)
 
@@ -273,11 +278,51 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     is_active:         p?.is_active ?? true,
   })
 
-  const [attrValues,   setAttrValues]   = useState<AttributeValues>(p?.existing_attributes ?? {})
-  const [variantRows,  setVariantRows]  = useState<VariantRow[]>(
+  const [attrValues,  setAttrValues]  = useState<AttributeValues>(p?.existing_attributes ?? {})
+  const [variantRows, setVariantRows] = useState<VariantRow[]>(
     (p?.variant_rows ?? []).map(normalizeVariantRow)
   )
-  const [colorImages,  setColorImages]  = useState<Record<number, File[]>>({})
+  const [colorImages, setColorImages] = useState<Record<number, File[]>>({})
+
+  // ── Stock management state ─────────────────────────────────────────────────
+  /**
+   * stockMode:
+   *  'auto'   — global stock is read-only, always = sum(variant stocks)
+   *  'manual' — seller typed in a custom value; validated against variant sum
+   */
+  const [stockMode, setStockMode] = useState<'auto' | 'manual'>('auto')
+  /**
+   * Per-row variant stock validation errors surfaced at submit time.
+   * { rowIndex: errorMessage }
+   */
+  const [variantStockErrors, setVariantStockErrors] = useState<Record<number, string>>({})
+
+  // Derived: are there active variants with rows?
+  const hasVariantRows = variantRows.length > 0
+
+  // Auto-calculated total from variant rows
+  const variantTotalStock = useMemo(() => calculateTotalStock(variantRows), [variantRows])
+
+  /**
+   * When variants exist, keep global stock in sync with variant total
+   * unless the seller deliberately switched to manual mode.
+   */
+  useEffect(() => {
+    if (hasVariantRows && stockMode === 'auto') {
+      setForm(f => ({ ...f, stock: String(variantTotalStock) }))
+    }
+  }, [variantTotalStock, hasVariantRows, stockMode])
+
+  /**
+   * If variants are removed (e.g. subcategory changes), reset to auto mode
+   * and allow manual editing again.
+   */
+  useEffect(() => {
+    if (!hasVariantRows) {
+      setStockMode('auto')
+      setVariantStockErrors({})
+    }
+  }, [hasVariantRows])
 
   // ── Categories ─────────────────────────────────────────────────────────────
   const [categories,    setCategories]    = useState<Category[]>([])
@@ -285,9 +330,9 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const [catLoading,    setCatLoading]    = useState(true)
   const [subLoading,    setSubLoading]    = useState(false)
 
-  const [variantAxes,  setVariantAxes]  = useState<Attribute[]>([])
-  const [infoAxes,     setInfoAxes]     = useState<Attribute[]>([])
-  const [axesLoading,  setAxesLoading]  = useState(false)
+  const [variantAxes, setVariantAxes] = useState<Attribute[]>([])
+  const [infoAxes,    setInfoAxes]    = useState<Attribute[]>([])
+  const [axesLoading, setAxesLoading] = useState(false)
 
   const [saving,   setSaving]   = useState(false)
   const [errors,   setErrors]   = useState<Record<string, string>>({})
@@ -304,8 +349,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const [primaryImageId,  setPrimaryImageId]  = useState<number | null>(
     existingImages.find(i => i.is_primary)?.id ?? null
   )
-  const [previews,    setPreviews]    = useState<PreviewImage[]>([])
-  const fileInputRef                  = useRef<HTMLInputElement>(null)
+  const [previews,   setPreviews]   = useState<PreviewImage[]>([])
+  const fileInputRef                = useRef<HTMLInputElement>(null)
 
   const set = (field: string, value: unknown) =>
     setForm(f => ({ ...f, [field]: value }))
@@ -396,7 +441,11 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   }
 
   const removePreview = (cid: string) => {
-    setPreviews(prev => { const found = prev.find(p => p.id === cid); if (found) URL.revokeObjectURL(found.preview); return prev.filter(p => p.id !== cid) })
+    setPreviews(prev => {
+      const found = prev.find(p => p.id === cid)
+      if (found) URL.revokeObjectURL(found.preview)
+      return prev.filter(p => p.id !== cid)
+    })
   }
 
   const setExistingPrimary = (id: number) => {
@@ -404,12 +453,41 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     setExistingImages(prev => prev.map(img => ({ ...img, is_primary: img.id === id })))
   }
 
+  // ── Validation ─────────────────────────────────────────────────────────────
+
   const validate = () => {
     const e: Record<string, string> = {}
-    if (!form.name.trim())                                                        e.name        = 'Required.'
-    if (!form.category_id && !isLocked)                                           e.category_id = 'Select a category.'
-    if (form.price === '' || isNaN(Number(form.price)) || Number(form.price) < 0) e.price       = 'Enter a valid price.'
-    if (form.stock === '' || isNaN(Number(form.stock)) || Number(form.stock) < 0) e.stock       = 'Enter a valid quantity.'
+
+    if (!form.name.trim()) e.name = 'Required.'
+    if (!form.category_id && !isLocked) e.category_id = 'Select a category.'
+    if (form.price === '' || isNaN(Number(form.price)) || Number(form.price) < 0) e.price = 'Enter a valid price.'
+
+    if (hasVariantRows) {
+      // ── Variant mode: validate each variant's stock ──────────────────────
+      const varStockErrs = validateVariantStocks(variantRows)
+      if (Object.keys(varStockErrs).length > 0) {
+        setVariantStockErrors(varStockErrs)
+        e.stock = 'Fix variant stock errors below.'
+      } else {
+        setVariantStockErrors({})
+      }
+
+      // If seller typed a manual value, validate it matches the sum
+      if (stockMode === 'manual') {
+        const manualVal = parseInt(form.stock, 10)
+        if (isNaN(manualVal) || manualVal < 0) {
+          e.stock = 'Enter a valid total stock.'
+        } else if (manualVal !== variantTotalStock) {
+          e.stock = `Total stock must equal sum of variant stocks (${variantTotalStock}).`
+        }
+      }
+    } else {
+      // ── No variants: normal stock validation ─────────────────────────────
+      if (form.stock === '' || isNaN(Number(form.stock)) || Number(form.stock) < 0) {
+        e.stock = 'Enter a valid quantity.'
+      }
+    }
+
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -437,8 +515,13 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
           is_active:      row.is_active,
         }))
 
-      // Build payload as unknown then cast to ProductPayload to satisfy the API types
-      // while still allowing optional fields to be conditionally added.
+      // Compute the definitive stock value to send:
+      //  - Variants exist → always use the calculated sum (authoritative)
+      //  - No variants → use what the seller typed
+      const finalStock = hasVariantRows
+        ? variantTotalStock
+        : parseInt(form.stock, 10)
+
       const payload: Record<string, any> = {
         name:              form.name.trim(),
         slug:              form.slug.trim()              || undefined,
@@ -449,14 +532,11 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         images:            previews.map(prev => prev.file),
         delete_image_ids:  deletedImageIds.length ? deletedImageIds : undefined,
         attributes:        serializeAttributes(attrValues),
-        // Provide required fields with safe fallback values so the cast below is safe.
-        // When isLocked these are overwritten by the API from the existing product.
         price:       isLocked ? parseFloat(String(p?.price ?? 0)) : parseFloat(form.price),
-        stock:       isLocked ? parseInt(String(p?.stock  ?? 0), 10) : parseInt(form.stock, 10),
-        category_id: isLocked ? (p?.category_id ?? 0)              : parseInt(form.category_id, 10),
+        stock:       isLocked ? (p?.stock ?? 0) : finalStock,
+        category_id: isLocked ? (p?.category_id ?? 0) : parseInt(form.category_id, 10),
       }
 
-      // Only include mutable locked fields when product is NOT locked (not approved)
       if (!isLocked) {
         if (subId !== null) payload.subcategory_id = subId
         if (validVariants.length > 0) payload.variants = validVariants
@@ -490,6 +570,11 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
       setSaving(false)
     }
   }
+
+  // ── Stock field mismatch indicator (live, not just on submit) ──────────────
+  const stockMismatch = hasVariantRows && stockMode === 'manual'
+    && parseInt(form.stock, 10) !== variantTotalStock
+    && form.stock !== ''
 
   return (
     <>
@@ -586,18 +671,83 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                     <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>TND</span>
                   </div>
                 </Field>
-                <Field label="Stock" required error={errors.stock} locked={isLocked}
-                  hint={!isLocked && variantRows.length > 0 ? 'Total (variants have own stock)' : undefined}>
-                  <input
-                    type="number" min="0"
-                    value={form.stock}
-                    onChange={e => !isLocked && set('stock', e.target.value)}
-                    readOnly={isLocked}
-                    placeholder="0"
-                    className={inputCls(errors.stock)}
-                    style={{ cursor: isLocked ? 'not-allowed' : undefined }}
-                  />
+
+                {/* ── Stock field — auto-calculated when variants exist ── */}
+                <Field
+                  label="Stock"
+                  required
+                  error={errors.stock}
+                  locked={isLocked}
+                  hint={
+                    !isLocked && hasVariantRows
+                      ? stockMode === 'auto'
+                        ? `Auto-calculated from variant stocks`
+                        : undefined
+                      : undefined
+                  }
+                >
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.stock}
+                      onChange={e => {
+                        if (isLocked) return
+                        const val = e.target.value
+                        if (hasVariantRows) {
+                          // Switching to manual mode when user edits
+                          setStockMode('manual')
+                          set('stock', val)
+                        } else {
+                          set('stock', val)
+                        }
+                      }}
+                      readOnly={isLocked || (hasVariantRows && stockMode === 'auto')}
+                      placeholder="0"
+                      className={inputCls(errors.stock || stockMismatch ? 'err' : undefined)}
+                      style={{
+                        cursor: (isLocked || (hasVariantRows && stockMode === 'auto')) ? 'not-allowed' : undefined,
+                        paddingRight: hasVariantRows && !isLocked ? 72 : undefined,
+                        borderColor: stockMismatch ? '#fca5a5' : undefined,
+                        background: stockMismatch ? '#fef2f2' : undefined,
+                      }}
+                    />
+                    {/* Auto/Manual toggle button — only when variants exist and not locked */}
+                    {hasVariantRows && !isLocked && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (stockMode === 'manual') {
+                            // Switch back to auto: reset to calculated value
+                            setStockMode('auto')
+                            set('stock', String(variantTotalStock))
+                          } else {
+                            setStockMode('manual')
+                          }
+                        }}
+                        title={stockMode === 'auto' ? 'Click to manually override' : 'Click to use auto-calculated sum'}
+                        style={{
+                          position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                          fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 5,
+                          border: `1px solid ${stockMode === 'auto' ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.4)'}`,
+                          background: stockMode === 'auto' ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.1)',
+                          color: stockMode === 'auto' ? '#10b981' : '#d97706',
+                          cursor: 'pointer', fontFamily: 'inherit', textTransform: 'uppercase', letterSpacing: '0.04em',
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {stockMode === 'auto' ? 'AUTO' : 'MANUAL'}
+                      </button>
+                    )}
+                  </div>
+                  {/* Live mismatch warning */}
+                  {stockMismatch && (
+                    <p style={{ fontSize: 11, color: '#d97706', marginTop: 4, fontWeight: 600 }}>
+                      ⚠ Entered value ({form.stock}) ≠ variant sum ({variantTotalStock}). Will be rejected on submit.
+                    </p>
+                  )}
                 </Field>
+
                 <Field label="Status">
                   <select value={form.is_active ? 'active' : 'inactive'} onChange={e => set('is_active', e.target.value === 'active')} className={inputCls()}>
                     <option value="active">Active</option>
@@ -616,7 +766,15 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                     value={form.category_id}
                     onChange={e => {
                       if (isLocked) return
-                      set('category_id', e.target.value); set('subcategory_id', ''); setAttrValues({}); setVariantRows([]); setVariantAxes([]); setInfoAxes([])
+                      set('category_id', e.target.value)
+                      set('subcategory_id', '')
+                      setAttrValues({})
+                      setVariantRows([])
+                      setVariantAxes([])
+                      setInfoAxes([])
+                      // Reset stock mode when category changes (variants cleared)
+                      setStockMode('auto')
+                      setVariantStockErrors({})
                     }}
                     className={inputCls(errors.category_id)}
                     disabled={catLoading || isLocked}
@@ -630,7 +788,15 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                 <Field label="Subcategory" hint={!isLocked ? 'Select to unlock attributes & variants' : undefined} locked={isLocked}>
                   <select
                     value={form.subcategory_id}
-                    onChange={e => { if (isLocked) return; set('subcategory_id', e.target.value); setAttrValues({}); setVariantRows([]) }}
+                    onChange={e => {
+                      if (isLocked) return
+                      set('subcategory_id', e.target.value)
+                      setAttrValues({})
+                      setVariantRows([])
+                      // Reset stock mode when subcategory changes
+                      setStockMode('auto')
+                      setVariantStockErrors({})
+                    }}
                     className={inputCls()}
                     disabled={(!form.category_id && !isLocked) || subLoading || isLocked}
                     style={{ cursor: isLocked ? 'not-allowed' : undefined }}
@@ -679,7 +845,18 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                   </div>
                 )}
                 {!axesLoading && variantAxes.length > 0 && (
-                  <VariantBuilder axes={variantAxes} existingVariants={variantRows} onChange={setVariantRows} basePrice={form.price} disabled={saving} />
+                  <VariantBuilder
+                    axes={variantAxes}
+                    existingVariants={variantRows}
+                    onChange={rows => {
+                      setVariantRows(rows)
+                      // Clear per-row errors when variants change (re-validates on next submit)
+                      setVariantStockErrors({})
+                    }}
+                    basePrice={form.price}
+                    disabled={saving}
+                    externalStockErrors={variantStockErrors}
+                  />
                 )}
                 {!axesLoading && colorAxis && selectedColorIds.length > 0 && (
                   <div style={{ marginTop: 16 }}>

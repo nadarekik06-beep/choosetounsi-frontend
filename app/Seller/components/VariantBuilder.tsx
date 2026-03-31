@@ -2,25 +2,10 @@
 
 /**
  * app/seller/components/VariantBuilder.tsx
- *
- * REFACTORED: Combination matrix approach.
- *
- * Flow:
- *  1. For each variant axis (Color, Size, …) show a multi-select of all options.
- *  2. When the seller picks options, combinations are AUTO-GENERATED (Cartesian product).
- *  3. Each generated combination gets its own stock + optional price inputs.
- *
- * Example:
- *   Color: [Red ✓] [Black ✓]
- *   Size:  [S ✓] [M ✓]
- *   → Generates: Red/S, Red/M, Black/S, Black/M  (4 rows)
- *
- * Only attributes with is_variant=true are passed as `axes`.
- * Informational attributes are handled separately by DynamicAttributeSection.
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { Info } from 'lucide-react'
+import { Info, AlertCircle } from 'lucide-react'
 import type { Attribute, AttributeOption } from '@/types/Attributes'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -51,6 +36,31 @@ export function normalizeVariantRow(
   }
 }
 
+/**
+ * Calculate the total stock across all active variant rows.
+ * Exported so parent (ProductModal) can use it to set the global stock field.
+ */
+export function calculateTotalStock(variants: VariantRow[]): number {
+  return variants.reduce((sum, row) => sum + (Number(row.stock) || 0), 0)
+}
+
+/**
+ * Validate all variant stocks. Returns a map of rowIndex → error message.
+ * Empty object means all valid.
+ */
+export function validateVariantStocks(variants: VariantRow[]): Record<number, string> {
+  const errors: Record<number, string> = {}
+  variants.forEach((row, idx) => {
+    const val = row.stock
+    if (val === null || val === undefined || String(val) === '') {
+      errors[idx] = 'Stock is required.'
+    } else if (!Number.isInteger(Number(val)) || Number(val) < 0) {
+      errors[idx] = 'Must be a whole number ≥ 0.'
+    }
+  })
+  return errors
+}
+
 interface Props {
   /** Attributes with is_variant=true for this subcategory */
   axes: Attribute[]
@@ -59,6 +69,8 @@ interface Props {
   onChange: (variants: VariantRow[]) => void
   basePrice: string
   disabled?: boolean
+  /** Stock validation errors from parent (keyed by row index) */
+  externalStockErrors?: Record<number, string>
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -87,15 +99,14 @@ export default function VariantBuilder({
   onChange,
   basePrice,
   disabled = false,
+  externalStockErrors = {},
 }: Props) {
 
-  // Which options are selected per axis (index → Set of option IDs)
+  // Which options are selected per axis (index → array of option IDs)
   const [selectedPerAxis, setSelectedPerAxis] = useState<number[][]>(() => {
     if (existingVariants.length === 0 || axes.length === 0) {
       return axes.map(() => [])
     }
-
-    // Re-derive selected options from existing variant rows
     const perAxis: Set<number>[] = axes.map(() => new Set())
     existingVariants.forEach(row => {
       row.option_ids.forEach((optId, axisIdx) => {
@@ -105,14 +116,19 @@ export default function VariantBuilder({
     return perAxis.map(s => Array.from(s))
   })
 
-  // Generated combination rows (keyed by sorted option_ids string for stable identity)
+  // Generated combination rows
   const [rows, setRows] = useState<VariantRow[]>(() =>
     existingVariants.map(normalizeVariantRow)
   )
 
-  // Notify parent whenever rows change — never call onChange inside a setter or render
+  // Internal stock validation errors (row index → message)
+  const [stockErrors, setStockErrors] = useState<Record<number, string>>({})
+
+  // Notify parent whenever rows change
   useEffect(() => {
     onChange(rows)
+    // Revalidate stocks on change so errors clear when corrected
+    setStockErrors(validateVariantStocks(rows))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows])
 
@@ -120,14 +136,13 @@ export default function VariantBuilder({
   useEffect(() => {
     if (axes.length === 0) return
 
-    // Only generate if every axis has at least one option selected
     const anyAxisEmpty = selectedPerAxis.some(opts => opts.length === 0)
     if (anyAxisEmpty) {
       setRows([])
       return
     }
 
-    const combinations = cartesian(selectedPerAxis)   // [[optId1, optId2], ...]
+    const combinations = cartesian(selectedPerAxis)
 
     setRows(prev => {
       const existingMap = new Map<string, VariantRow>()
@@ -136,7 +151,6 @@ export default function VariantBuilder({
       return combinations.map(combo => {
         const key      = comboKey(combo)
         const existing = existingMap.get(key)
-        // Preserve stock/price/sku/is_active if this combination already existed
         return existing
           ? { ...existing, option_ids: combo }
           : normalizeVariantRow({ option_ids: combo })
@@ -147,9 +161,9 @@ export default function VariantBuilder({
 
   const toggleOption = useCallback((axisIdx: number, optId: number) => {
     setSelectedPerAxis(prev => {
-      const copy     = prev.map(a => [...a])
-      const current  = copy[axisIdx]
-      const pos      = current.indexOf(optId)
+      const copy    = prev.map(a => [...a])
+      const current = copy[axisIdx]
+      const pos     = current.indexOf(optId)
       if (pos === -1) {
         copy[axisIdx] = [...current, optId]
       } else {
@@ -171,14 +185,26 @@ export default function VariantBuilder({
     })
   }, [])
 
-  // Nothing to render when no axes
+  // Merge internal + external stock errors (external from parent's submit validation)
+  const mergedStockErrors: Record<number, string> = { ...stockErrors, ...externalStockErrors }
+
+  const totalStock = calculateTotalStock(rows)
+  const hasStockErrors = Object.keys(mergedStockErrors).length > 0
+
   if (axes.length === 0) return null
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', border: '1px solid #e5e7eb', borderRadius: 8,
-    padding: '6px 10px', fontSize: 13, background: '#fff',
-    color: '#111', outline: 'none', fontFamily: 'inherit',
-  }
+  const inputStyle = (hasError?: boolean): React.CSSProperties => ({
+    width: '100%',
+    border: `1px solid ${hasError ? '#fca5a5' : '#e5e7eb'}`,
+    borderRadius: 8,
+    padding: '6px 10px',
+    fontSize: 13,
+    background: hasError ? '#fef2f2' : '#fff',
+    color: '#111',
+    outline: 'none',
+    fontFamily: 'inherit',
+    transition: 'border-color 0.15s, background 0.15s',
+  })
 
   const totalCombinations = selectedPerAxis.every(a => a.length > 0)
     ? selectedPerAxis.reduce((acc, a) => acc * a.length, 1)
@@ -216,7 +242,8 @@ export default function VariantBuilder({
                         onClick={() => toggleOption(axisIdx, opt.id)}
                         style={{
                           display: 'inline-flex', alignItems: 'center', gap: 6,
-                          padding: '5px 12px', borderRadius: 8, cursor: disabled ? 'not-allowed' : 'pointer',
+                          padding: '5px 12px', borderRadius: 8,
+                          cursor: disabled ? 'not-allowed' : 'pointer',
                           border: isSelected ? '2px solid #dc2626' : '1.5px solid #e5e7eb',
                           background: isSelected ? 'rgba(220,38,38,0.06)' : '#fff',
                           color: isSelected ? '#dc2626' : '#374151',
@@ -224,7 +251,6 @@ export default function VariantBuilder({
                           transition: 'all 0.15s', fontFamily: 'inherit',
                         }}
                       >
-                        {/* Color swatch for color-type attributes */}
                         {axis.type === 'color' && opt.color_hex && (
                           <span style={{
                             display: 'inline-block', width: 12, height: 12,
@@ -233,9 +259,7 @@ export default function VariantBuilder({
                           }} />
                         )}
                         {opt.value}
-                        {isSelected && (
-                          <span style={{ fontSize: 10, color: '#dc2626' }}>✓</span>
-                        )}
+                        {isSelected && <span style={{ fontSize: 10, color: '#dc2626' }}>✓</span>}
                       </button>
                     )
                   })}
@@ -245,7 +269,6 @@ export default function VariantBuilder({
           })}
         </div>
 
-        {/* Summary hint */}
         {totalCombinations > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '8px 12px' }}>
             <Info size={13} style={{ color: '#3b82f6', flexShrink: 0 }} />
@@ -269,50 +292,77 @@ export default function VariantBuilder({
       {/* ── Step 2: Stock/price per combination ── */}
       {rows.length > 0 && (
         <div>
-          <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: '0 0 12px' }}>
-            Step 2 — Set stock & price per combination ({rows.length} variants)
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>
+              Step 2 — Set stock & price per combination ({rows.length} variants)
+            </p>
+            {/* Live total stock indicator */}
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: hasStockErrors ? 'rgba(239,68,68,0.08)' : 'rgba(16,185,129,0.08)',
+              border: `1px solid ${hasStockErrors ? 'rgba(239,68,68,0.25)' : 'rgba(16,185,129,0.25)'}`,
+              borderRadius: 8, padding: '4px 10px',
+            }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total</span>
+              <span style={{ fontSize: 13, fontWeight: 900, color: hasStockErrors ? '#ef4444' : '#10b981' }}>
+                {totalStock}
+              </span>
+            </div>
+          </div>
+
+          {/* Stock validation summary banner */}
+          {hasStockErrors && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '8px 12px', marginBottom: 10 }}>
+              <AlertCircle size={13} style={{ color: '#dc2626', flexShrink: 0 }} />
+              <p style={{ fontSize: 12, color: '#dc2626', margin: 0, fontWeight: 600 }}>
+                All variant stocks are required and must be whole numbers ≥ 0.
+              </p>
+            </div>
+          )}
 
           {/* Table header */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 90px 120px 120px 80px',
+            gridTemplateColumns: '1fr 100px 120px 120px 80px',
             gap: 8, padding: '6px 12px',
             background: '#f8fafc', borderRadius: '8px 8px 0 0',
             border: '1px solid #e5e7eb', borderBottom: 'none',
           }}>
-            {['Combination', 'Stock', 'Price (TND)', 'SKU', 'Active'].map(h => (
-              <span key={h} style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8' }}>
+            {['Combination', 'Stock *', 'Price (TND)', 'SKU', 'Active'].map(h => (
+              <span key={h} style={{
+                fontSize: 9, fontWeight: 800, textTransform: 'uppercase',
+                letterSpacing: '0.08em', color: h === 'Stock *' ? '#dc2626' : '#94a3b8',
+              }}>
                 {h}
               </span>
             ))}
           </div>
 
           {rows.map((row, rowIdx) => {
-            // Build the label for this combination
             const label = axes.map((axis, ai) => {
               const opt = axis.options.find(o => o.id === row.option_ids[ai])
               return opt ? opt.value : '?'
             }).join(' / ')
 
-            const isLast = rowIdx === rows.length - 1
+            const isLast     = rowIdx === rows.length - 1
+            const stockError = mergedStockErrors[rowIdx]
 
             return (
               <div
                 key={row.option_ids.join('-')}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 90px 120px 120px 80px',
+                  gridTemplateColumns: '1fr 100px 120px 120px 80px',
                   gap: 8, padding: '8px 12px',
                   background: row.is_active ? '#fff' : '#fafafa',
                   border: '1px solid #e5e7eb',
                   borderTop: 'none',
                   borderRadius: isLast ? '0 0 8px 8px' : 0,
-                  alignItems: 'center',
+                  alignItems: 'start',
                 }}
               >
-                {/* Combination label with color swatches */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                {/* Combination label */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, paddingTop: 6 }}>
                   {axes.map((axis, ai) => {
                     if (axis.type !== 'color') return null
                     const opt = axis.options.find(o => o.id === row.option_ids[ai])
@@ -320,8 +370,7 @@ export default function VariantBuilder({
                     return (
                       <span key={ai} title={opt.value} style={{
                         display: 'inline-block', width: 14, height: 14, borderRadius: '50%',
-                        background: opt.color_hex, border: '1px solid rgba(0,0,0,0.12)',
-                        flexShrink: 0,
+                        background: opt.color_hex, border: '1px solid rgba(0,0,0,0.12)', flexShrink: 0,
                       }} />
                     )
                   })}
@@ -330,14 +379,34 @@ export default function VariantBuilder({
                   </span>
                 </div>
 
-                {/* Stock */}
-                <input
-                  type="number" min="0"
-                  value={row.stock ?? 0}
-                  onChange={e => updateRow(rowIdx, 'stock', parseInt(e.target.value) || 0)}
-                  disabled={disabled}
-                  style={inputStyle}
-                />
+                {/* Stock — required field */}
+                <div>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    required
+                    value={row.stock ?? ''}
+                    onChange={e => {
+                      const raw = e.target.value
+                      // Allow empty string transiently; treat as 0 for sum
+                      const parsed = raw === '' ? 0 : Math.max(0, Math.floor(Number(raw)))
+                      updateRow(rowIdx, 'stock', parsed)
+                    }}
+                    onBlur={e => {
+                      // On blur, coerce empty to 0
+                      if (e.target.value === '') updateRow(rowIdx, 'stock', 0)
+                    }}
+                    disabled={disabled}
+                    placeholder="0"
+                    style={inputStyle(!!stockError)}
+                  />
+                  {stockError && (
+                    <p style={{ fontSize: 10, color: '#ef4444', margin: '3px 0 0', fontWeight: 600 }}>
+                      {stockError}
+                    </p>
+                  )}
+                </div>
 
                 {/* Price override */}
                 <input
@@ -346,7 +415,7 @@ export default function VariantBuilder({
                   onChange={e => updateRow(rowIdx, 'price_override', e.target.value)}
                   placeholder={basePrice || 'base'}
                   disabled={disabled}
-                  style={inputStyle}
+                  style={inputStyle()}
                 />
 
                 {/* SKU */}
@@ -356,11 +425,11 @@ export default function VariantBuilder({
                   onChange={e => updateRow(rowIdx, 'sku', e.target.value)}
                   placeholder="optional"
                   disabled={disabled}
-                  style={inputStyle}
+                  style={inputStyle()}
                 />
 
                 {/* Active toggle */}
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 6 }}>
                   <input
                     type="checkbox"
                     checked={row.is_active}
@@ -382,7 +451,7 @@ export default function VariantBuilder({
               onClick={() => {
                 const stockStr = prompt('Set stock for ALL variants:')
                 if (stockStr === null) return
-                const stock = parseInt(stockStr) || 0
+                const stock = Math.max(0, Math.floor(Number(stockStr))) || 0
                 setRows(prev => prev.map(r => ({ ...r, stock })))
               }}
               style={{ fontSize: 11, fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}
@@ -392,9 +461,7 @@ export default function VariantBuilder({
             <button
               type="button"
               disabled={disabled}
-              onClick={() => {
-                setRows(prev => prev.map(r => ({ ...r, is_active: true })))
-              }}
+              onClick={() => setRows(prev => prev.map(r => ({ ...r, is_active: true })))}
               style={{ fontSize: 11, fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}
             >
               Enable all
@@ -402,9 +469,7 @@ export default function VariantBuilder({
             <button
               type="button"
               disabled={disabled}
-              onClick={() => {
-                setRows(prev => prev.map(r => ({ ...r, is_active: false })))
-              }}
+              onClick={() => setRows(prev => prev.map(r => ({ ...r, is_active: false })))}
               style={{ fontSize: 11, fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}
             >
               Disable all
