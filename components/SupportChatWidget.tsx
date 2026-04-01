@@ -5,11 +5,16 @@
  *
  * Help & Support Chat Widget — ChooseTounsi
  *
+ * CHANGES vs original:
+ *   - Added text input bar at the bottom so users can type free-form messages
+ *   - Added aiChatApi() function that calls POST /api/ai/chat
+ *   - Added ProductCard component to render real product suggestions inline
+ *   - All predefined question groups are 100% unchanged
+ *   - The AI tab and the FAQ tab are separate — user can switch between them
+ *
  * Architecture:
  *  - Opens via window event 'open-support-chat' (fired from Navbar util-link)
- *  - Fully client-side, no backend calls needed
  *  - Reusable: drop into layout.tsx next to CartDrawer
- *  - Extensible: swap static responses for API calls later
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react'
@@ -22,15 +27,70 @@ const RED   = '#db142e'
 const GREEN = '#198f41'
 
 /* ─────────────────────────────────────────────────────────────
+   API
+───────────────────────────────────────────────────────────── */
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api')
+  .replace(/\/api\/?$/, '') + '/api'
+
+/**
+ * Calls POST /api/ai/chat with the user's message.
+ * Returns { message: string, products: AiProduct[] }
+ */
+async function aiChatApi(userMessage: string): Promise<{
+  message: string
+  products: AiProduct[]
+}> {
+  // Get auth token if user is logged in (optional — endpoint is public)
+  const token =
+    typeof window !== 'undefined' ? localStorage.getItem('ct_auth_token') : null
+
+  const res = await fetch(`${API_URL}/ai/chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ message: userMessage }),
+  })
+
+  const json = await res.json()
+
+  if (!res.ok || !json.success) {
+    throw new Error(json.message ?? 'AI request failed')
+  }
+
+  return {
+    message:  json.message  ?? '',
+    products: json.products ?? [],
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
    TYPES
 ───────────────────────────────────────────────────────────── */
 type MsgRole = 'bot' | 'user'
+type ActiveTab = 'ai' | 'faq'
+
+interface AiProduct {
+  id: number
+  name: string
+  slug: string
+  price: number
+  stock: number
+  short_description: string
+  category: string
+  category_slug: string
+  primary_image_url: string | null
+}
 
 interface ChatMessage {
   id: string
   role: MsgRole
   text: string
-  /** If role=bot, optional action nodes rendered below text */
+  /** Optional product cards rendered below AI text */
+  products?: AiProduct[]
+  /** Optional action nodes rendered below text */
   actions?: Action[]
   /** Show typing animation before revealing text */
   typing?: boolean
@@ -38,8 +98,8 @@ interface ChatMessage {
 
 interface Action {
   label: string
-  href?: string           // navigate to a Next.js route
-  onClick?: () => void    // trigger another Q/A turn
+  href?: string
+  onClick?: () => void
 }
 
 interface Question {
@@ -55,7 +115,7 @@ interface QuestionGroup {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   QUESTION TREE
+   QUESTION TREE  (unchanged from original)
 ───────────────────────────────────────────────────────────── */
 const QUESTION_GROUPS: QuestionGroup[] = [
   {
@@ -66,18 +126,14 @@ const QUESTION_GROUPS: QuestionGroup[] = [
         label: 'Where is my order?',
         response:
           "You can track your order in real time from your orders page. If your order is still processing, it may take 24–48 hours before a tracking update appears. Need more details?",
-        actions: [
-          { label: '📦 View My Orders', href: '/orders' },
-        ],
+        actions: [{ label: '📦 View My Orders', href: '/orders' }],
       },
       {
         id: 'track-order',
         label: 'I want to track my order',
         response:
           "Head to your orders page — each order shows its current status and delivery progress. If you don't see an update within 48 hours of placing your order, please reach out to us.",
-        actions: [
-          { label: '🔍 Track Now', href: '/orders' },
-        ],
+        actions: [{ label: '🔍 Track Now', href: '/orders' }],
       },
       {
         id: 'delayed-order',
@@ -86,7 +142,7 @@ const QUESTION_GROUPS: QuestionGroup[] = [
           "We're sorry to hear that! Delays can happen due to high demand or logistics. Please check your order status first — if the estimated date has passed by more than 3 days, file a complaint so we can investigate.",
         actions: [
           { label: '📋 Check Order Status', href: '/orders' },
-          { label: '🚨 File a Complaint',    href: '/complaints/new' },
+          { label: '🚨 File a Complaint',   href: '/complaints/new' },
         ],
       },
     ],
@@ -99,9 +155,7 @@ const QUESTION_GROUPS: QuestionGroup[] = [
         label: 'Delivered to the wrong person',
         response:
           "That shouldn't happen! Please file a complaint immediately with your order number and a description of the situation. Our team reviews all delivery disputes within 24 hours.",
-        actions: [
-          { label: '🚨 File a Complaint', href: '/complaints/new' },
-        ],
+        actions: [{ label: '🚨 File a Complaint', href: '/complaints/new' }],
       },
       {
         id: 'missing-damaged',
@@ -110,7 +164,7 @@ const QUESTION_GROUPS: QuestionGroup[] = [
           "We sincerely apologise. Please file a complaint — attach a photo if possible so the seller can review it quickly. We aim to resolve all product issues within 3 business days.",
         actions: [
           { label: '📸 Report Issue', href: '/complaints/new' },
-          { label: '📦 My Orders',    href: '/orders' },
+          { label: '📦 My Orders',   href: '/orders' },
         ],
       },
     ],
@@ -123,27 +177,21 @@ const QUESTION_GROUPS: QuestionGroup[] = [
         label: 'How can I return my order?',
         response:
           "You can request a return within 14 days of delivery. Go to your orders, select the delivered order, and click 'Report Issue'. Our team will guide you through the return steps.",
-        actions: [
-          { label: '🔄 Start a Return', href: '/orders' },
-        ],
+        actions: [{ label: '🔄 Start a Return', href: '/orders' }],
       },
       {
         id: 'return-status',
         label: 'Check the status of my return',
         response:
           "Return status is visible under My Complaints. Once the seller approves your return, we'll update the status and initiate the refund process.",
-        actions: [
-          { label: '🚨 My Complaints', href: '/complaints' },
-        ],
+        actions: [{ label: '🚨 My Complaints', href: '/complaints' }],
       },
       {
         id: 'refund',
         label: 'When will I receive my refund?',
         response:
           "After your return is approved, refunds typically process within 5–7 business days depending on your payment method. COD refunds are issued as store credit or via bank transfer.",
-        actions: [
-          { label: '🚨 Check Complaint Status', href: '/complaints' },
-        ],
+        actions: [{ label: '🚨 Check Complaint Status', href: '/complaints' }],
       },
     ],
   },
@@ -155,18 +203,14 @@ const QUESTION_GROUPS: QuestionGroup[] = [
         label: 'Problem with my payment',
         response:
           "Payment issues can occur due to bank restrictions or incorrect card details. ChooseTounsi currently supports Cash on Delivery (COD). If you encountered an unexpected charge, please contact us directly.",
-        actions: [
-          { label: '✉️ Contact Support', href: 'mailto:support@choosetounsi.tn' },
-        ],
+        actions: [{ label: '✉️ Contact Support', href: 'mailto:support@choosetounsi.tn' }],
       },
       {
         id: 'update-account',
         label: 'Update my account information',
         response:
           "You can update your name, email, phone and password from your profile page at any time.",
-        actions: [
-          { label: '👤 My Profile', href: '/profile' },
-        ],
+        actions: [{ label: '👤 My Profile', href: '/profile' }],
       },
     ],
   },
@@ -178,30 +222,32 @@ const QUESTION_GROUPS: QuestionGroup[] = [
         label: 'Contact support',
         response:
           "Our support team is available Saturday–Thursday, 9 AM – 6 PM (Tunisia time). You can reach us at support@choosetounsi.tn or via the form below.",
-        actions: [
-          { label: '✉️ Email Support', href: 'mailto:support@choosetounsi.tn' },
-        ],
+        actions: [{ label: '✉️ Email Support', href: 'mailto:support@choosetounsi.tn' }],
       },
       {
         id: 'other',
         label: 'Something else',
         response:
           "No problem! Please email us at support@choosetounsi.tn and describe your issue in detail. We typically respond within 4 business hours.",
-        actions: [
-          { label: '✉️ Email Us', href: 'mailto:support@choosetounsi.tn' },
-        ],
+        actions: [{ label: '✉️ Email Us', href: 'mailto:support@choosetounsi.tn' }],
       },
     ],
   },
 ]
 
 /* ─────────────────────────────────────────────────────────────
-   WELCOME
+   WELCOME MESSAGES (one per tab)
 ───────────────────────────────────────────────────────────── */
-const WELCOME_MSG: ChatMessage = {
-  id: 'welcome',
+const FAQ_WELCOME: ChatMessage = {
+  id: 'faq-welcome',
   role: 'bot',
   text: 'Hello! 👋 Welcome to ChooseTounsi Support.\n\nHow can I assist you today? Please choose a topic below, or pick a specific question.',
+}
+
+const AI_WELCOME: ChatMessage = {
+  id: 'ai-welcome',
+  role: 'bot',
+  text: '🛍️ Hi! I\'m your AI shopping assistant.\n\nTell me what you\'re looking for and I\'ll find real products for you. For example:\n• "I need a laptop under 1500 TND"\n• "Show me popular shoes"\n• "أبحث عن هاتف رخيص"',
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -218,7 +264,8 @@ function TypingBubble() {
   return (
     <div style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
-      padding: '10px 14px', background: '#f4f4f5', borderRadius: '16px 16px 16px 4px',
+      padding: '10px 14px', background: '#f4f4f5',
+      borderRadius: '16px 16px 16px 4px',
     }}>
       {[0, 1, 2].map(i => (
         <span key={i} style={{
@@ -229,6 +276,86 @@ function TypingBubble() {
         }} />
       ))}
     </div>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PRODUCT CARD (renders real products returned by AI)
+───────────────────────────────────────────────────────────── */
+function ProductCard({ product }: { product: AiProduct }) {
+  const imgSrc = product.primary_image_url
+    ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(product.name)}&background=f4f4f5&color=374151&size=80`
+
+  return (
+    <Link
+      href={`/products/${product.slug}`}
+      style={{
+        display: 'flex', gap: 10, alignItems: 'center',
+        padding: '8px 10px',
+        background: '#fff',
+        border: '1.5px solid #e5e7eb',
+        borderRadius: 10,
+        textDecoration: 'none',
+        transition: 'all 0.15s',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = RED
+        e.currentTarget.style.boxShadow = `0 2px 12px ${RED}20`
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = '#e5e7eb'
+        e.currentTarget.style.boxShadow = 'none'
+      }}
+    >
+      {/* Product image */}
+      <div style={{
+        width: 52, height: 52, borderRadius: 8, overflow: 'hidden',
+        flexShrink: 0, background: '#f4f4f5',
+      }}>
+        <img
+          src={imgSrc}
+          alt={product.name}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={(e) => {
+            e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(product.name)}&background=f4f4f5&color=374151&size=80`
+          }}
+        />
+      </div>
+
+      {/* Product info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{
+          margin: 0, fontSize: 12, fontWeight: 700,
+          color: '#1a1a2e', lineHeight: 1.3,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {product.name}
+        </p>
+        <p style={{ margin: '2px 0 0', fontSize: 11, color: '#6b7280' }}>
+          {product.category}
+        </p>
+      </div>
+
+      {/* Price + stock badge */}
+      <div style={{ flexShrink: 0, textAlign: 'right' }}>
+        <p style={{
+          margin: 0, fontSize: 12, fontWeight: 900,
+          color: RED, letterSpacing: '-0.02em',
+        }}>
+          {product.price.toFixed(3)} TND
+        </p>
+        {product.stock <= 0 && (
+          <span style={{
+            fontSize: 9, fontWeight: 700, color: '#ef4444',
+            background: '#fef2f2', padding: '1px 5px',
+            borderRadius: 4, marginTop: 2, display: 'inline-block',
+          }}>
+            Out of stock
+          </span>
+        )}
+      </div>
+    </Link>
   )
 }
 
@@ -258,7 +385,10 @@ function Bubble({ msg }: { msg: ChatMessage }) {
         </div>
       )}
 
-      <div style={{ maxWidth: '80%', display: 'flex', flexDirection: 'column', gap: 6, alignItems: isBot ? 'flex-start' : 'flex-end' }}>
+      <div style={{
+        maxWidth: '80%', display: 'flex', flexDirection: 'column',
+        gap: 6, alignItems: isBot ? 'flex-start' : 'flex-end',
+      }}>
         {/* Text bubble */}
         {msg.typing ? (
           <TypingBubble />
@@ -276,32 +406,42 @@ function Bubble({ msg }: { msg: ChatMessage }) {
           </div>
         )}
 
-        {/* Action buttons */}
+        {/* Inline product cards (AI tab only) */}
+        {!msg.typing && msg.products && msg.products.length > 0 && (
+          <div style={{
+            width: '100%', display: 'flex', flexDirection: 'column', gap: 6,
+            animation: 'ct-fadein 0.3s ease 0.1s both', opacity: 0,
+          }}>
+            {msg.products.map(p => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        )}
+
+        {/* Action buttons (FAQ tab) */}
         {!msg.typing && msg.actions && msg.actions.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingLeft: 2 }}>
             {msg.actions.map((action, i) => (
               action.href ? (
-                <Link key={i} href={action.href}
-                  style={{
-                    fontSize: 12, fontWeight: 700, color: GREEN,
-                    border: `1.5px solid ${GREEN}`,
-                    borderRadius: 8, padding: '5px 12px',
-                    textDecoration: 'none', background: `${GREEN}0d`,
-                    transition: 'all 0.15s', display: 'inline-block',
-                    whiteSpace: 'nowrap',
-                  }}>
+                <Link key={i} href={action.href} style={{
+                  fontSize: 12, fontWeight: 700, color: GREEN,
+                  border: `1.5px solid ${GREEN}`,
+                  borderRadius: 8, padding: '5px 12px',
+                  textDecoration: 'none', background: `${GREEN}0d`,
+                  transition: 'all 0.15s', display: 'inline-block',
+                  whiteSpace: 'nowrap',
+                }}>
                   {action.label}
                 </Link>
               ) : (
-                <button key={i} onClick={action.onClick}
-                  style={{
-                    fontSize: 12, fontWeight: 700, color: GREEN,
-                    border: `1.5px solid ${GREEN}`,
-                    borderRadius: 8, padding: '5px 12px',
-                    background: `${GREEN}0d`,
-                    cursor: 'pointer', fontFamily: 'inherit',
-                    transition: 'all 0.15s', whiteSpace: 'nowrap',
-                  }}>
+                <button key={i} onClick={action.onClick} style={{
+                  fontSize: 12, fontWeight: 700, color: GREEN,
+                  border: `1.5px solid ${GREEN}`,
+                  borderRadius: 8, padding: '5px 12px',
+                  background: `${GREEN}0d`,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  transition: 'all 0.15s', whiteSpace: 'nowrap',
+                }}>
                   {action.label}
                 </button>
               )
@@ -314,7 +454,7 @@ function Bubble({ msg }: { msg: ChatMessage }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   QUESTION MENU
+   QUESTION MENU  (unchanged from original)
 ───────────────────────────────────────────────────────────── */
 function QuestionMenu({ onSelect }: { onSelect: (q: Question) => void }) {
   const [openGroup, setOpenGroup] = useState<string | null>(null)
@@ -322,21 +462,21 @@ function QuestionMenu({ onSelect }: { onSelect: (q: Question) => void }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {QUESTION_GROUPS.map(group => (
-        <div key={group.title}
-          style={{
-            border: `1px solid ${openGroup === group.title ? RED + '40' : '#e5e7eb'}`,
-            borderRadius: 12, overflow: 'hidden',
-            transition: 'border-color 0.2s',
-          }}>
-          {/* Group header */}
+        <div key={group.title} style={{
+          border: `1px solid ${openGroup === group.title ? RED + '40' : '#e5e7eb'}`,
+          borderRadius: 12, overflow: 'hidden',
+          transition: 'border-color 0.2s',
+        }}>
           <button
             onClick={() => setOpenGroup(o => o === group.title ? null : group.title)}
             style={{
               width: '100%', display: 'flex', alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '10px 14px', background: openGroup === group.title ? `${RED}06` : '#fafafa',
+              padding: '10px 14px',
+              background: openGroup === group.title ? `${RED}06` : '#fafafa',
               border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-              fontSize: 12, fontWeight: 800, color: openGroup === group.title ? RED : '#374151',
+              fontSize: 12, fontWeight: 800,
+              color: openGroup === group.title ? RED : '#374151',
               letterSpacing: '0.04em', textTransform: 'uppercase',
               transition: 'all 0.15s',
             }}>
@@ -348,18 +488,19 @@ function QuestionMenu({ onSelect }: { onSelect: (q: Question) => void }) {
             </svg>
           </button>
 
-          {/* Questions */}
           {openGroup === group.title && (
-            <div style={{ padding: '6px 10px 10px', display: 'flex', flexDirection: 'column', gap: 4, animation: 'ct-fadein 0.15s ease both' }}>
+            <div style={{
+              padding: '6px 10px 10px', display: 'flex', flexDirection: 'column',
+              gap: 4, animation: 'ct-fadein 0.15s ease both',
+            }}>
               {group.questions.map(q => (
                 <button key={q.id} onClick={() => onSelect(q)}
                   style={{
                     textAlign: 'left', padding: '8px 12px',
-                    background: '#fff', border: `1.5px solid #e5e7eb`,
+                    background: '#fff', border: '1.5px solid #e5e7eb',
                     borderRadius: 8, cursor: 'pointer',
                     fontSize: 13, fontWeight: 600, color: '#374151',
-                    fontFamily: 'inherit', transition: 'all 0.15s',
-                    lineHeight: 1.4,
+                    fontFamily: 'inherit', transition: 'all 0.15s', lineHeight: 1.4,
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.borderColor = RED
@@ -383,12 +524,91 @@ function QuestionMenu({ onSelect }: { onSelect: (q: Question) => void }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   AI TEXT INPUT BAR
+───────────────────────────────────────────────────────────── */
+function AiInputBar({
+  onSend,
+  disabled,
+}: {
+  onSend: (text: string) => void
+  disabled: boolean
+}) {
+  const [value, setValue] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const submit = () => {
+    const trimmed = value.trim()
+    if (!trimmed || disabled) return
+    onSend(trimmed)
+    setValue('')
+  }
+
+  const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') submit()
+  }
+
+  return (
+    <div style={{
+      display: 'flex', gap: 8, padding: '10px 14px 12px',
+      borderTop: '1px solid #f1f5f9', flexShrink: 0,
+      background: '#fff',
+    }}>
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        onKeyDown={handleKey}
+        disabled={disabled}
+        placeholder="Search for a product…"
+        style={{
+          flex: 1, padding: '9px 12px',
+          border: `1.5px solid ${disabled ? '#e5e7eb' : '#d1d5db'}`,
+          borderRadius: 10, fontSize: 13, fontFamily: 'inherit',
+          outline: 'none', background: disabled ? '#f9fafb' : '#fff',
+          color: '#1a1a2e', transition: 'border-color 0.15s',
+        }}
+        onFocus={e => { e.currentTarget.style.borderColor = RED }}
+        onBlur={e  => { e.currentTarget.style.borderColor = '#d1d5db' }}
+      />
+      <button
+        onClick={submit}
+        disabled={disabled || !value.trim()}
+        style={{
+          width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+          background: disabled || !value.trim()
+            ? '#f4f4f5'
+            : `linear-gradient(135deg, ${RED}, #9b0f1f)`,
+          border: 'none', cursor: disabled || !value.trim() ? 'not-allowed' : 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'all 0.15s', boxShadow: disabled || !value.trim()
+            ? 'none'
+            : `0 4px 12px ${RED}40`,
+        }}
+      >
+        <svg width="16" height="16" fill="none" stroke={disabled || !value.trim() ? '#94a3b8' : '#fff'}
+          strokeWidth="2.5" viewBox="0 0 24 24">
+          <path d="M22 2L11 13" />
+          <path d="M22 2L15 22 11 13 2 9l20-7z" />
+        </svg>
+      </button>
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────
    MAIN WIDGET
 ───────────────────────────────────────────────────────────── */
 export default function SupportChatWidget() {
-  const [open,     setOpen]     = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MSG])
-  const [showMenu, setShowMenu] = useState(true)
+  const [open,       setOpen]      = useState(false)
+  const [activeTab,  setActiveTab] = useState<ActiveTab>('ai')
+
+  // Separate message lists for each tab
+  const [faqMessages, setFaqMessages] = useState<ChatMessage[]>([FAQ_WELCOME])
+  const [aiMessages,  setAiMessages]  = useState<ChatMessage[]>([AI_WELCOME])
+
+  const [showMenu,  setShowMenu]  = useState(true)   // FAQ tab menu
+  const [aiLoading, setAiLoading] = useState(false)  // AI tab loading state
+
   const bottomRef = useRef<HTMLDivElement>(null)
 
   /* Listen for the global open event fired by the Navbar button */
@@ -405,7 +625,7 @@ export default function SupportChatWidget() {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
       }, 80)
     }
-  }, [messages, open])
+  }, [faqMessages, aiMessages, open])
 
   /* Close on Escape */
   useEffect(() => {
@@ -414,62 +634,99 @@ export default function SupportChatWidget() {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  /* Handle question selection */
-  const handleQuestion = useCallback((q: Question) => {
+  /* ── FAQ tab: handle predefined question ────────────────────────────── */
+  const handleFaqQuestion = useCallback((q: Question) => {
     setShowMenu(false)
 
-    // Add user bubble
-    const userMsg: ChatMessage = { id: uid(), role: 'user', text: q.label }
-    // Typing placeholder
-    const typingId = uid()
+    const userMsg: ChatMessage   = { id: uid(), role: 'user', text: q.label }
+    const typingId               = uid()
     const typingMsg: ChatMessage = { id: typingId, role: 'bot', text: '', typing: true }
 
-    setMessages(prev => [...prev, userMsg, typingMsg])
+    setFaqMessages(prev => [...prev, userMsg, typingMsg])
 
-    // After typing delay → replace with real response
     setTimeout(() => {
-      setMessages(prev =>
+      setFaqMessages(prev =>
         prev.map(m =>
           m.id === typingId
             ? { id: typingId, role: 'bot', text: q.response, actions: q.actions }
             : m
         )
       )
-
-      // After response → show "ask another?" prompt
       setTimeout(() => {
         const askMore: ChatMessage = {
           id: uid(),
           role: 'bot',
           text: 'Is there anything else I can help you with?',
-          actions: [
-            {
-              label: '← Back to topics',
-              onClick: () => setShowMenu(true),
-            },
-          ],
+          actions: [{ label: '← Back to topics', onClick: () => setShowMenu(true) }],
         }
-        setMessages(prev => [...prev, askMore])
+        setFaqMessages(prev => [...prev, askMore])
       }, 400)
     }, 900)
   }, [])
 
+  /* ── AI tab: send message to /api/ai/chat ───────────────────────────── */
+  const handleAiSend = useCallback(async (text: string) => {
+    if (aiLoading) return
+
+    const userMsg: ChatMessage   = { id: uid(), role: 'user', text }
+    const typingId               = uid()
+    const typingMsg: ChatMessage = { id: typingId, role: 'bot', text: '', typing: true }
+
+    setAiMessages(prev => [...prev, userMsg, typingMsg])
+    setAiLoading(true)
+
+    try {
+      const result = await aiChatApi(text)
+
+      setAiMessages(prev =>
+        prev.map(m =>
+          m.id === typingId
+            ? {
+                id:       typingId,
+                role:     'bot',
+                text:     result.message,
+                products: result.products,
+              }
+            : m
+        )
+      )
+    } catch (err: any) {
+      setAiMessages(prev =>
+        prev.map(m =>
+          m.id === typingId
+            ? {
+                id:   typingId,
+                role: 'bot',
+                text: '⚠️ Sorry, I couldn\'t connect to the AI service. Please try again in a moment.',
+              }
+            : m
+        )
+      )
+    } finally {
+      setAiLoading(false)
+    }
+  }, [aiLoading])
+
+  /* ── Resets ─────────────────────────────────────────────────────────── */
   const handleReset = () => {
-    setMessages([WELCOME_MSG])
-    setShowMenu(true)
+    if (activeTab === 'faq') {
+      setFaqMessages([FAQ_WELCOME])
+      setShowMenu(true)
+    } else {
+      setAiMessages([AI_WELCOME])
+    }
   }
 
   if (!open) return null
 
+  const currentMessages = activeTab === 'faq' ? faqMessages : aiMessages
+
   return (
     <>
       <style>{`
-        @keyframes ct-fadein    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
-        @keyframes ct-slidein   { from{opacity:0;transform:translateY(20px) scale(0.96)} to{opacity:1;transform:none scale(1)} }
-        @keyframes ct-bounce    { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
-        .ct-action-btn:hover    { background:${GREEN}20!important; }
-        .ct-q-btn:hover         { border-color:${RED}!important; color:${RED}!important; background:${RED}06!important; }
-        .ct-group-hdr:hover     { color:${RED}!important; }
+        @keyframes ct-fadein  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+        @keyframes ct-slidein { from{opacity:0;transform:translateY(20px) scale(0.96)} to{opacity:1;transform:none scale(1)} }
+        @keyframes ct-bounce  { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
       `}</style>
 
       {/* Backdrop */}
@@ -477,8 +734,7 @@ export default function SupportChatWidget() {
         onClick={() => setOpen(false)}
         style={{
           position: 'fixed', inset: 0, zIndex: 10000,
-          background: 'rgba(0,0,0,0.25)',
-          backdropFilter: 'blur(2px)',
+          background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(2px)',
           animation: 'ct-fadein 0.2s ease both',
         }}
       />
@@ -493,13 +749,12 @@ export default function SupportChatWidget() {
         borderRadius: 20,
         boxShadow: '0 24px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06)',
         zIndex: 10001,
-        display: 'flex',
-        flexDirection: 'column',
+        display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
         animation: 'ct-slidein 0.28s cubic-bezier(0.34,1.56,0.64,1) both',
       }}>
 
-        {/* Header */}
+        {/* ── Header ────────────────────────────────────────────────────── */}
         <div style={{
           background: `linear-gradient(135deg, ${RED} 0%, #9b0f1f 100%)`,
           padding: '16px 18px 14px',
@@ -514,22 +769,20 @@ export default function SupportChatWidget() {
           }}>🤝</div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 14, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.01em' }}>
-              ChooseTounsi Support
+            <p style={{ fontSize: 14, fontWeight: 900, color: '#fff', margin: 0 }}>
+              ChooseTounsi Assistant
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
               <span style={{
-                width: 7, height: 7, borderRadius: '50%',
-                background: '#4ade80',
+                width: 7, height: 7, borderRadius: '50%', background: '#4ade80',
                 boxShadow: '0 0 0 2px rgba(74,222,128,0.3)',
               }} />
               <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 600 }}>
-                Online · Replies instantly
+                {activeTab === 'ai' ? 'AI Shopping Assistant' : 'Support · Replies instantly'}
               </span>
             </div>
           </div>
 
-          {/* Reset + Close */}
           <div style={{ display: 'flex', gap: 6 }}>
             <button onClick={handleReset} title="Restart"
               style={{
@@ -537,46 +790,62 @@ export default function SupportChatWidget() {
                 background: 'rgba(255,255,255,0.12)',
                 border: 'none', cursor: 'pointer', color: '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'background 0.15s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.22)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}>
+              }}>
               <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                 <path d="M3 3v5h5" />
               </svg>
             </button>
-
             <button onClick={() => setOpen(false)} title="Close"
               style={{
                 width: 30, height: 30, borderRadius: '50%',
                 background: 'rgba(255,255,255,0.12)',
                 border: 'none', cursor: 'pointer', color: '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 16, transition: 'background 0.15s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.22)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}>
+                fontSize: 16,
+              }}>
               ✕
             </button>
           </div>
         </div>
 
-        {/* Green accent strip */}
-        <div style={{ height: 3, background: `linear-gradient(90deg, ${GREEN}, ${GREEN}80, transparent)`, flexShrink: 0 }} />
+        {/* ── Tab switcher ──────────────────────────────────────────────── */}
+        <div style={{
+          display: 'flex', flexShrink: 0,
+          borderBottom: '1px solid #f1f5f9',
+          background: '#fafafa',
+        }}>
+          {(['ai', 'faq'] as ActiveTab[]).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                flex: 1, padding: '10px 0',
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontFamily: 'inherit', fontSize: 12, fontWeight: 800,
+                letterSpacing: '0.03em', textTransform: 'uppercase',
+                color: activeTab === tab ? RED : '#94a3b8',
+                borderBottom: activeTab === tab ? `2.5px solid ${RED}` : '2.5px solid transparent',
+                transition: 'all 0.15s',
+              }}
+            >
+              {tab === 'ai' ? '🛍️ Shop with AI' : '❓ Support FAQ'}
+            </button>
+          ))}
+        </div>
 
-        {/* Messages */}
+        {/* ── Messages ──────────────────────────────────────────────────── */}
         <div style={{
           flex: 1, overflowY: 'auto', padding: '16px 16px 8px',
           display: 'flex', flexDirection: 'column', gap: 12,
           scrollbarWidth: 'thin', scrollbarColor: '#f1f5f9 transparent',
         }}>
-          {messages.map(msg => (
+          {currentMessages.map(msg => (
             <Bubble key={msg.id} msg={msg} />
           ))}
 
-          {/* Question menu — shown after welcome or "back to topics" */}
-          {showMenu && (
+          {/* FAQ question menu */}
+          {activeTab === 'faq' && showMenu && (
             <div style={{ animation: 'ct-fadein 0.2s ease 0.1s both', opacity: 0 }}>
               <p style={{
                 fontSize: 11, fontWeight: 800, color: '#94a3b8',
@@ -585,36 +854,37 @@ export default function SupportChatWidget() {
               }}>
                 Choose a topic
               </p>
-              <QuestionMenu onSelect={handleQuestion} />
+              <QuestionMenu onSelect={handleFaqQuestion} />
             </div>
           )}
 
           <div ref={bottomRef} />
         </div>
 
-        {/* Footer */}
-        <div style={{
-          padding: '10px 16px 12px',
-          borderTop: '1px solid #f1f5f9',
-          flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: 8,
-        }}>
-          <p style={{ fontSize: 11, color: '#cbd5e1', fontWeight: 600, margin: 0 }}>
-            Powered by ChooseTounsi
-          </p>
-          <Link href="/complaints/new"
-            style={{
-              fontSize: 11, fontWeight: 700,
-              color: RED, textDecoration: 'none',
-              padding: '4px 10px', borderRadius: 6,
-              border: `1px solid ${RED}30`,
-              background: `${RED}06`,
-              whiteSpace: 'nowrap',
+        {/* ── Bottom area ────────────────────────────────────────────────── */}
+        {activeTab === 'ai' ? (
+          // AI tab: text input
+          <AiInputBar onSend={handleAiSend} disabled={aiLoading} />
+        ) : (
+          // FAQ tab: footer with complaint link (original)
+          <div style={{
+            padding: '10px 16px 12px',
+            borderTop: '1px solid #f1f5f9', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+          }}>
+            <p style={{ fontSize: 11, color: '#cbd5e1', fontWeight: 600, margin: 0 }}>
+              Powered by ChooseTounsi
+            </p>
+            <Link href="/complaints/new" style={{
+              fontSize: 11, fontWeight: 700, color: RED,
+              textDecoration: 'none', padding: '4px 10px',
+              borderRadius: 6, border: `1px solid ${RED}30`,
+              background: `${RED}06`, whiteSpace: 'nowrap',
             }}>
-            🚨 File a Complaint
-          </Link>
-        </div>
+              🚨 File a Complaint
+            </Link>
+          </div>
+        )}
       </div>
     </>
   )
