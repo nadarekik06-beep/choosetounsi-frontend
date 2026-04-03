@@ -11,8 +11,7 @@ import VariantBuilder, {
   calculateTotalStock,
   validateVariantStocks,
 } from '../components/VariantBuilder'
-// ── CHANGED: import VariantImageUploader instead of ColorImageUploader ────────
-import VariantImageUploader from '../components/VariantImageUploader'
+import ColorGroupImageUploader from '../components/ColorGroupImageUploader'
 import type { AttributeValues, Attribute } from '@/types/Attributes'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -390,7 +389,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   // ── CHANGED: variantImages replaces colorImages ────────────────────────────
   // Key = variant row INDEX (0-based), Value = File[]
   // Serialized to FormData as: color_images[{index}][j] = File
-  const [variantImages, setVariantImages] = useState<Record<number, File[]>>({})
+const [colorGroupImages, setColorGroupImages] = useState<Record<string, File[]>>({})
 
   // ── Stock management state ─────────────────────────────────────────────────
   const [stockMode, setStockMode] = useState<'auto' | 'manual'>('auto')
@@ -495,20 +494,23 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
 
   // ── CHANGED: existingByVariant replaces existingByColor ───────────────────
   // Record<variantId, url[]> — passed to VariantImageUploader to show saved images
-  const existingByVariant = useMemo(() => {
-    const map: Record<number, string[]> = {}
-    if (p?.images) {
-      for (const img of p.images as any[]) {
-        if (img.variant_id) {
-          const url = storageUrl(img.url ?? img.image_path)
-          if (url) {
-            map[img.variant_id] = [...(map[img.variant_id] ?? []), url]
-          }
+  const existingByColorGroup = useMemo(() => {
+  const map: Record<string, string[]> = {}
+  if (p?.images) {
+    for (const img of p.images as any[]) {
+      if (img.color_option_id != null) {
+        const url = storageUrl(img.url ?? img.image_path)
+        if (url) {
+          // The key stored for a group is the sorted color IDs joined by "|".
+          // For backward compat, single-color images use their one option ID as the key.
+          const key = String(img.color_option_id)
+          map[key] = [...(map[key] ?? []), url]
         }
       }
     }
-    return map
-  }, [p?.images])
+  }
+  return map
+}, [p?.images])
 
   const totalImages = existingImages.length + previews.length
 
@@ -628,7 +630,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         // unchanged — it already does:
         //   fd.append(`color_images[${key}][${j}]`, file)
         // where key is now the variant index instead of color option ID.
-        if (Object.keys(variantImages).length > 0) payload.color_images = variantImages
+if (Object.keys(colorGroupImages).length > 0) payload.color_images = colorGroupImages
       }
 
       if (isEdit) {
@@ -1074,17 +1076,17 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                       externalStockErrors={variantStockErrors}
                     />
 
-                    {/* ── CHANGED: VariantImageUploader replaces ColorImageUploader ── */}
-                    {variantRows.length > 0 && (
-                      <div style={{ marginTop: 16 }}>
-                        <VariantImageUploader
-                          variantRows={variantRows}
-                          axes={variantAxes}
-                          onChange={setVariantImages}
-                          existingByVariant={existingByVariant}
-                          disabled={saving}
-                        />
-                      </div>
+                    {/* ── ImageUploader ── */}
+                  {variantRows.length > 0 && (
+  <div style={{ marginTop: 16 }}>
+    <ColorGroupImageUploader
+      variantRows={variantRows}
+      colorAxis={variantAxes.find(a => a.type === 'color') ?? null}
+      onChange={setColorGroupImages}
+      existingByColorGroup={existingByColorGroup}
+      disabled={saving}
+    />
+  </div>
                     )}
                   </>
                 )}
