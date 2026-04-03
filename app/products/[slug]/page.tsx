@@ -63,7 +63,11 @@ interface Product {
     primary_image_url?: string | null
   })[]
   selectable_axes: (SelectableAxis & {
-    options: (SelectableAxis['options'][0] & { primary_image?: string | null })[]
+    options: (SelectableAxis['options'][0] & {
+      primary_image?: string | null
+      ids?: number[]
+      swatches?: { id: number; value: string; color_hex?: string | null }[]
+    })[]
   })[]
   /** color_option_id (as string key from JSON) → [url, url, …] — for instant color switching */
   color_images: Record<string, string[]>
@@ -129,39 +133,85 @@ function VariantSelector({
           </p>
 
           {axis.type === 'color' ? (
+            // ── FIX 4: multi-dot group swatches ──────────────────────────
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {axis.options.map(opt => {
                 const chosen    = selectedOptions[axis.slug] === opt.id
                 const available = isOptionAvailable(axis.slug, opt.id)
+                // swatches array is present for multi-color groups (from backend)
+                // fall back to a single swatch for legacy single-color options
+                // ── FIX 1: cast opt to access extended swatches property ──
+                const swatches  = (opt as any).swatches ?? [{ id: opt.id, value: opt.value, color_hex: opt.color_hex }]
+                const isGroup   = swatches.length > 1
+
                 return (
                   <button
-                    key={opt.id} type="button"
+                    key={opt.id}
+                    type="button"
                     onClick={() => available && onSelect(axis.slug, opt.id)}
                     title={opt.value}
                     style={{
-                      position: 'relative', width: 34, height: 34, borderRadius: '50%',
-                      cursor: available ? 'pointer' : 'not-allowed',
-                      background: opt.color_hex ?? '#e5e7eb',
-                      border: chosen ? '3px solid #dc2626' : '2px solid #e5e7eb',
-                      outline: chosen ? '2px solid #fff' : 'none',
+                      position:     'relative',
+                      display:      'flex',
+                      alignItems:   'center',
+                      justifyContent: 'center',
+                      // groups become pill-shaped; single colors stay circular
+                      width:        isGroup ? 'auto' : 34,
+                      height:       34,
+                      padding:      isGroup ? '0 8px' : 0,
+                      gap:          4,
+                      borderRadius: isGroup ? 999 : '50%',
+                      cursor:       available ? 'pointer' : 'not-allowed',
+                      background:   isGroup ? '#f8fafc' : (opt.color_hex ?? '#e5e7eb'),
+                      border:       chosen ? '3px solid #dc2626' : '2px solid #e5e7eb',
+                      outline:      chosen ? '2px solid #fff' : 'none',
                       outlineOffset: '-4px',
-                      opacity: available ? 1 : 0.35,
-                      transition: 'all 0.15s', flexShrink: 0,
+                      opacity:      available ? 1 : 0.35,
+                      transition:   'all 0.15s',
+                      flexShrink:   0,
                     }}
                   >
-                    {opt.primary_image && (
+                    {/* Single color: show primary_image overlay if present */}
+                    {!isGroup && opt.primary_image && (
                       <img
                         src={opt.primary_image}
                         alt={opt.value}
                         style={{
-                          position: 'absolute', inset: 2, borderRadius: '50%',
-                          width: 'calc(100% - 4px)', height: 'calc(100% - 4px)',
-                          objectFit: 'cover', pointerEvents: 'none',
+                          position:     'absolute',
+                          inset:        2,
+                          borderRadius: '50%',
+                          width:        'calc(100% - 4px)',
+                          height:       'calc(100% - 4px)',
+                          objectFit:    'cover',
+                          pointerEvents: 'none',
                         }}
                       />
                     )}
+
+                    {/* Multi-color group: row of small colored dots */}
+                    {/* ── FIX 2: explicit type on s ── */}
+                    {isGroup && swatches.map((s: { id: number; value: string; color_hex?: string | null }) => (
+                      <span
+                        key={s.id}
+                        title={s.value}
+                        style={{
+                          display:     'inline-block',
+                          width:       16,
+                          height:      16,
+                          borderRadius: '50%',
+                          flexShrink:  0,
+                          background:  s.color_hex ?? '#e5e7eb',
+                          border:      '1.5px solid rgba(0,0,0,0.10)',
+                        }}
+                      />
+                    ))}
+
+                    {/* Strikethrough diagonal for unavailable options */}
                     {!available && (
-                      <svg viewBox="0 0 34 34" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+                      <svg
+                        viewBox="0 0 34 34"
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+                      >
                         <line x1="5" y1="29" x2="29" y2="5" stroke="#fff" strokeWidth="2" opacity="0.8" />
                       </svg>
                     )}
@@ -170,6 +220,7 @@ function VariantSelector({
               })}
             </div>
           ) : (
+            // ── non-color axis — unchanged ────────────────────────────────
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {axis.options.map(opt => {
                 const chosen    = selectedOptions[axis.slug] === opt.id
@@ -310,14 +361,10 @@ export default function ProductDetailPage() {
       setProduct(prod)
 
       // ── Auto-select axes that have only one available option ──────────
-      // This covers: single color, single size, single variant combination.
-      // We do this here (not in a separate effect) so state is set in the
-      // same render cycle as the product, avoiding a flash of "no selection".
       if (prod.has_variants && prod.selectable_axes?.length > 0) {
         const autoSelections: Record<string, number> = {}
         for (const axis of prod.selectable_axes) {
           if (axis.options.length === 1) {
-            // Only one choice on this axis → select it automatically
             autoSelections[axis.slug] = axis.options[0].id
           }
         }
@@ -335,22 +382,34 @@ export default function ProductDetailPage() {
   const variants = product?.variants ?? []
   const hasVariants = product?.has_variants ?? false
 
-  const selectedVariant = (() => {
-    if (!hasVariants || axes.length === 0) return undefined
-    if (Object.keys(selectedOptions).length < axes.length) return undefined
-    return variants.find(v =>
-      axes.every(axis => v.option_map[axis.slug]?.id === selectedOptions[axis.slug])
-    )
-  })()
-
-  const isOptionAvailable = useCallback((axisSlug: string, optionId: number): boolean => {
-    return variants.some(v => {
-      if (v.option_map[axisSlug]?.id !== optionId) return false
-      return Object.entries(selectedOptions).every(([slug, selId]) =>
-        slug === axisSlug || v.option_map[slug]?.id === selId
-      )
+ const selectedVariant = (() => {
+  if (!hasVariants || axes.length === 0) return undefined
+  if (Object.keys(selectedOptions).length < axes.length) return undefined
+  return variants.find(v =>
+    axes.every(axis => {
+      const sel      = selectedOptions[axis.slug]
+      const mapEntry = v.option_map[axis.slug]
+      if (!mapEntry) return false
+      if (axis.type === 'color') {
+        return mapEntry.id === sel
+      }
+      return mapEntry.id === sel
     })
-  }, [variants, selectedOptions])
+  )
+})()
+
+const isOptionAvailable = useCallback((axisSlug: string, optionId: number): boolean => {
+  return variants.some(v => {
+    const entry = v.option_map[axisSlug]
+    if (!entry) return false
+    if (entry.id !== optionId) return false
+    return Object.entries(selectedOptions).every(([slug, selId]) => {
+      if (slug === axisSlug) return true
+      const otherEntry = v.option_map[slug]
+      return otherEntry?.id === selId
+    })
+  })
+}, [variants, selectedOptions])
 
   // ── GALLERY: switch images instantly when color changes ───────────────────
   const galleryImages = (() => {
@@ -361,8 +420,15 @@ export default function ProductDetailPage() {
       return selectedVariant.image_urls
     }
 
-    if (selectedColorId !== undefined && product?.color_images?.[String(selectedColorId) as any]?.length) {
-      return product.color_images[String(selectedColorId) as any]
+    if (selectedColorId !== undefined) {
+      const selectedOpt = colorAxis?.options.find((o: any) => o.id === selectedColorId)
+      const groupKey    = (selectedOpt as any)?.ids?.join('|') ?? String(selectedColorId)
+
+      const imgs =
+        product?.color_images?.[groupKey] ??
+        product?.color_images?.[String(selectedColorId)]
+
+      if (imgs?.length) return imgs
     }
 
     if (product) {
@@ -391,7 +457,7 @@ export default function ProductDetailPage() {
   const lowStock       = effectiveStock > 0 && effectiveStock <= 10
   const favorited      = product ? isFavorited(product.id, selectedVariant?.id ?? null) : false
 
-  // ── Add to Cart (unchanged) ────────────────────────────────────────────────
+  // ── Add to Cart ────────────────────────────────────────────────────────────
   const handleAddToCart = async () => {
     if (!product || outOfStock) return
     if (!isAuthenticated()) { router.push('/auth/login?redirect=' + window.location.pathname); return }
@@ -406,33 +472,26 @@ export default function ProductDetailPage() {
   const handleBuyNow = async () => {
     if (!product || outOfStock || buyNowLoading || buyNowRef.current) return
 
-    // Auth check — redirect to login, come back after
     if (!isAuthenticated()) {
       router.push('/auth/login?redirect=' + window.location.pathname)
       return
     }
 
-    // Variant validation: if product has variants, a full match must be selected
     if (hasVariants && !selectedVariant) {
       setSelectorError(true)
       return
     }
 
-    // Variant stock check (belt-and-suspenders — effectiveStock already reflects this,
-    // but we guard explicitly so the error message is clear)
     if (selectedVariant && selectedVariant.stock <= 0) {
       setSelectorError(true)
       return
     }
 
-    // Prevent double-click / rapid tap
     buyNowRef.current = true
     setBuyNowLoading(true)
     setSelectorError(false)
 
     try {
-      // Build query params — checkout page reads these to render a "direct purchase" summary.
-      // We pass the SLUG (not the numeric id) because the API route is /api/products/{slug}.
       const params = new URLSearchParams({
         buy_now:      '1',
         product_slug: product.slug,
@@ -443,7 +502,6 @@ export default function ProductDetailPage() {
         params.set('variant_id', String(selectedVariant.id))
       }
 
-      // Small UX delay so loading spinner flashes (feels intentional, not broken)
       await new Promise(resolve => setTimeout(resolve, 180))
 
       router.push(`/checkout?${params.toString()}`)
@@ -607,10 +665,8 @@ export default function ProductDetailPage() {
             </div>
 
             {/* ── CTA Buttons ── */}
-            {/* ── CTA Buttons: Buy Now (ghost) | Add to Cart (solid) | Heart ── */}
             <div style={{ display: 'flex', gap: 10, marginBottom: 24, alignItems: 'center' }}>
 
-              {/* Buy Now — ghost/outline, white bg, red border + red text */}
               <button
                 className="buy-now-btn"
                 onClick={handleBuyNow}
@@ -635,7 +691,6 @@ export default function ProductDetailPage() {
                 }
               </button>
 
-              {/* Add to Cart — solid red fill */}
               <button
                 onClick={handleAddToCart}
                 disabled={outOfStock || cartLoading}
@@ -663,7 +718,6 @@ export default function ProductDetailPage() {
                 }
               </button>
 
-              {/* Favorite — circle icon button */}
               <button
                 onClick={handleToggleFavorite}
                 style={{
