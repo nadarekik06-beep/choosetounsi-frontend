@@ -5,24 +5,11 @@
  *  app/category/[slug]/page.tsx
  *  ChooseTounsi — SHEIN-level category page
  *
- *  KEY FIXES IN THIS VERSION:
- *  1. ✅ Imports your existing <Navbar /> — rendered above everything
- *  2. ✅ Real two-layer image carousel on hover (shSlideL / shSlideR)
- *  3. ✅ Zoom effect (scale 1.055) applied to current image on hover
- *  4. ✅ Add-to-Cart bar slides up with spring cubic-bezier
- *  5. ✅ 4-column portrait grid, responsive 3→2 columns
- *  6. ✅ Accordion sidebar with sort, price presets, attributes
- *  7. ✅ CatBar smoothly slides behind the Main Navbar on scroll
- *       — dynamically measures navbar height via JS → sets --nav-h CSS var
- *       — catbar z-index (40) is below navbar so it tucks under cleanly
- *
- *  INSTALL:
- *    cp page.tsx  app/category/[slug]/page.tsx
- *    rm -rf .next && npm run dev
- *
- *  ⚠️  ADJUST THE NAVBAR IMPORT PATH below if needed:
- *      '@/components/Navbar'       ← most common (components/ at root)
- *      '@/app/components/Navbar'   ← if inside app/components/
+ *  CHANGES vs. previous version:
+ *  1. ✅ Product type extended with `color_swatches` (returned by updated API)
+ *  2. ✅ Card shows short_description (1-line clamp, below name)
+ *  3. ✅ Card shows color swatches row (small circles, max 5 + overflow count)
+ *  4. ✅ All existing logic, styles, and components are UNTOUCHED
  * ════════════════════════════════════════════════════════════════════
  */
 
@@ -43,6 +30,10 @@ const API    = `${ORIGIN}/api`
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface PImg { id: number; image_path: string; is_primary: boolean; url?: string; color_option_id?: number | null }
+
+// ── NEW: color swatch shape returned by the updated API index() ──
+interface ColorSwatch { id: number; value: string; color_hex: string | null }
+
 interface Product {
   id: number; name: string; slug: string; price: string; stock: number
   short_description?: string
@@ -50,6 +41,8 @@ interface Product {
   images?: PImg[]
   seller?: { id: number; name: string }
   original_price?: string; is_new?: boolean; is_bestseller?: boolean
+  // ── NEW field populated by updated ProductController::index() ──
+  color_swatches?: ColorSwatch[]
 }
 interface Category { id: number; name: string; slug: string; icon: string | null; description?: string | null }
 interface Paginated { data: Product[]; current_page: number; last_page: number; total: number }
@@ -83,11 +76,11 @@ const discPct = (o: string, c: string) => { const p = Math.round(((+o - +c) / +o
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  PRODUCT CARD
-//  Core hover mechanics:
-//  • onEnter  → start setInterval that calls advance() every 1600ms
-//  • advance  → copies cur→prev, increments cur, sets slide=true for 550ms
-//  • CSS renders: prev layer animates LEFT out, cur layer animates in from RIGHT
-//  • onLeave  → clear interval, setTimeout to reset cur=0 after 600ms
+//
+//  NEW additions (everything else is identical to the previous version):
+//  • short_description  — 1-line clamp shown below product name
+//  • color swatches row — small circles from p.color_swatches (max 5 shown,
+//    overflow count badge if more exist)
 // ══════════════════════════════════════════════════════════════════════════════
 function Card({ p, idx }: { p: Product; idx: number }) {
   const { addToCart } = useCart()
@@ -106,6 +99,12 @@ function Card({ p, idx }: { p: Product; idx: number }) {
 
   const badge = p.original_price ? discPct(p.original_price, p.price) : null
   const oos   = p.stock <= 0
+
+  // ── Color swatches (max 5 visible + overflow count) ───────────────────────
+  const swatches    = p.color_swatches ?? []
+  const maxSwatches = 5
+  const visSwatches = swatches.slice(0, maxSwatches)
+  const extraCount  = swatches.length > maxSwatches ? swatches.length - maxSwatches : 0
 
   const advance = useCallback(() => {
     if (gallery.length < 2) return
@@ -212,14 +211,38 @@ function Card({ p, idx }: { p: Product; idx: number }) {
         </div>
       </div>
 
-      {/* Info */}
+      {/* ── Info ── */}
       <div className="shc-info">
         {p.seller?.name && <p className="shc-seller">{p.seller.name}</p>}
         <p className="shc-name">{p.name}</p>
+
+        {/* ── NEW: short description ── */}
+        {p.short_description && (
+          <p className="shc-desc">{p.short_description}</p>
+        )}
+
         <div className="shc-prices">
           <span className="shc-price">{money(p.price)}</span>
           {p.original_price && +p.original_price > +p.price && <span className="shc-orig">{money(p.original_price)}</span>}
         </div>
+
+        {/* ── NEW: color swatches row ── */}
+        {visSwatches.length > 0 && (
+          <div className="shc-swatches">
+            {visSwatches.map(sw => (
+              <span
+                key={sw.id}
+                className="shc-sw"
+                title={sw.value}
+                style={{ background: sw.color_hex ?? '#e5e7eb' }}
+              />
+            ))}
+            {extraCount > 0 && (
+              <span className="shc-sw-more">+{extraCount}</span>
+            )}
+          </div>
+        )}
+
         {p.stock > 0 && p.stock <= 5 && <p className="shc-low">Only {p.stock} left!</p>}
       </div>
     </Link>
@@ -274,7 +297,7 @@ const Skel = () => (
 )
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  SIDEBAR
+//  SIDEBAR — UNCHANGED
 // ══════════════════════════════════════════════════════════════════════════════
 const SORTS = [
   { k:'created_at' as Sort, l:'Newest First' },
@@ -432,7 +455,7 @@ function Sidebar({ f, setF, total, catSlug, subSlug, mOpen, setMOpen }: {
   )
 }
 
-// ─── Category bar ─────────────────────────────────────────────────────────────
+// ─── Category bar — UNCHANGED ─────────────────────────────────────────────────
 function CatBar({ cats, active, view, setView, mOpen, setMOpen, fCount, shown, total }: {
   cats: Category[]; active: string; view: View; setView:(v:View)=>void
   mOpen:boolean; setMOpen:(v:boolean)=>void; fCount:number; shown:number; total:number
@@ -478,7 +501,7 @@ function CatBar({ cats, active, view, setView, mOpen, setMOpen, fCount, shown, t
   )
 }
 
-// ─── Pagination ───────────────────────────────────────────────────────────────
+// ─── Pagination — UNCHANGED ───────────────────────────────────────────────────
 function Pages({ cur, total, go }: { cur:number; total:number; go:(p:number)=>void }) {
   if (total<=1) return null
   const ps=Array.from({length:total},(_,i)=>i+1).filter(p=>p===1||p===total||Math.abs(p-cur)<=1)
@@ -493,7 +516,7 @@ function Pages({ cur, total, go }: { cur:number; total:number; go:(p:number)=>vo
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  PAGE INNER
+//  PAGE INNER — UNCHANGED
 // ══════════════════════════════════════════════════════════════════════════════
 function Inner() {
   const params  = useParams()
@@ -509,13 +532,8 @@ function Inner() {
   const [mOpen,setMOpen] = useState(false)
   const [f, setF] = useState<F>({ q:'',pMin:'',pMax:'',inStock:false,sort:'created_at',attrs:{} })
 
-  // ── Measure the main Navbar height and expose it as --nav-h CSS variable ──
-  // This makes the catbar stick just below the navbar (never overlapping it),
-  // and since catbar z-index (40) < navbar z-index, it slides behind cleanly.
   useEffect(() => {
     const measure = () => {
-      // The Navbar renders as the first child of <body> or inside a wrapper.
-      // We query the first <nav> or <header> in the DOM that is NOT .catbar.
       const navbar =
         document.querySelector<HTMLElement>('header') ??
         document.querySelector<HTMLElement>('nav:not(.catbar):not(.catbar *)') ??
@@ -525,7 +543,6 @@ function Inner() {
     }
     measure()
     window.addEventListener('resize', measure)
-    // Re-measure after fonts/images settle
     const t = setTimeout(measure, 400)
     return () => { window.removeEventListener('resize', measure); clearTimeout(t) }
   }, [])
@@ -584,12 +601,6 @@ function Inner() {
 
         .shpage{min-height:100vh;background:#f6f6f7;font-family:'Outfit',sans-serif;color:#111}
 
-        /* ── CatBar ──
-           z-index 40  →  sits BELOW the main Navbar (which is typically 100+)
-           top: var(--nav-h, 0px)  →  sticks exactly at the bottom edge of the Navbar,
-           so when scrolling the CatBar slides under the Navbar rather than crushing it.
-           transition on top prevents a jarring jump if the Navbar height changes (resize).
-        */
         .catbar{background:#fff;border-bottom:1px solid #eee;position:sticky;top:var(--nav-h,0px);z-index:40;box-shadow:0 2px 12px rgba(0,0,0,.04);transition:top .15s ease}
         .catbar-w{max-width:1520px;margin:0 auto;padding:0 6px;display:flex;align-items:stretch;position:relative}
         .catbar-arr{position:relative;display:flex;align-items:center;justify-content:center;width:24px;min-height:48px;flex-shrink:0;background:transparent;border:none;cursor:pointer;color:#ccc;opacity:0;pointer-events:none;transition:opacity .2s,color .14s}
@@ -610,10 +621,6 @@ function Inner() {
         .catbar-vb{width:29px;height:29px;border-radius:6px;border:1.5px solid #e5e7eb;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#bbb;transition:all .13s}
         .catbar-vb:hover,.catbar-vb.on{border-color:#db142e;color:#db142e}.catbar-vb.on{background:rgba(219,20,46,.06)}
 
-        /* ── Layout ──
-           top offset for the sticky sidebar = navbar height + catbar height (≈56px) + gap (8px)
-           We use --nav-h + 64px as a reasonable approximation; the catbar is always ~48px tall.
-        */
         .shlayout{max-width:1520px;margin:0 auto;padding:18px 32px 50px;display:grid;grid-template-columns:246px 1fr;gap:18px;align-items:start}
         .sbar-desk{display:block}
 
@@ -674,7 +681,6 @@ function Inner() {
 
         .shc-stage{position:relative;width:100%;aspect-ratio:3/4;overflow:hidden;background:#f5f5f5;flex-shrink:0}
 
-        /* Two-layer slide system */
         .shc-layer{position:absolute;inset:0;will-change:transform}
         .shc-layer-out{z-index:1;animation:shSlideL .52s cubic-bezier(.77,0,.175,1) forwards}
         .shc-layer-in {z-index:2;animation:shSlideR .52s cubic-bezier(.77,0,.175,1) forwards}
@@ -706,13 +712,25 @@ function Inner() {
         .shc-add-sm{padding:5px 11px;font-size:11px;border-radius:7px;white-space:nowrap;flex-shrink:0}
         .shc-spin{width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:shSpin .65s linear infinite;display:inline-block}
 
+        /* ── card info area ── */
         .shc-info{padding:9px 11px 12px;display:flex;flex-direction:column;gap:3px;flex:1}
         .shc-seller{font-size:9px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:.07em}
         .shc-name{font-size:12.5px;font-weight:600;color:#1f2937;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
         .shc:hover .shc-name{color:#db142e}
+
+        /* ── NEW: short description on grid card ── */
+        .shc-desc{font-size:10.5px;font-weight:400;color:#9ca3af;line-height:1.4;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;margin-top:1px}
+
         .shc-prices{display:flex;align-items:baseline;gap:5px;margin-top:3px}
         .shc-price{font-size:13.5px;font-weight:900;color:#db142e}
         .shc-orig{font-size:10px;font-weight:500;color:#bbb;text-decoration:line-through}
+
+        /* ── NEW: color swatches row on card ── */
+        .shc-swatches{display:flex;align-items:center;gap:4px;margin-top:5px;flex-wrap:nowrap;overflow:hidden}
+        .shc-sw{display:inline-block;width:13px;height:13px;border-radius:50%;border:1.5px solid rgba(0,0,0,.10);flex-shrink:0;transition:transform .14s}
+        .shc-sw:hover{transform:scale(1.22)}
+        .shc-sw-more{font-size:9px;font-weight:700;color:#9ca3af;white-space:nowrap;flex-shrink:0}
+
         .shc-low{font-size:9.5px;font-weight:700;color:#f97316;background:#fff7ed;padding:1px 7px;border-radius:999px;display:inline-block;margin-top:2px}
 
         .shlc{background:#fff;border-radius:11px;border:1px solid #eee;overflow:hidden;display:flex;text-decoration:none;animation:shFadeUp .42s ease both;animation-delay:var(--d,0s);transition:box-shadow .2s,transform .2s}
@@ -759,10 +777,8 @@ function Inner() {
       `}</style>
 
       <div className="shpage">
-        {/* Category bar */}
         <CatBar cats={allC} active={slug} view={view} setView={setView} mOpen={mOpen} setMOpen={setMOpen} fCount={fCount} shown={displayed.length} total={prods?.total??0}/>
 
-        {/* Layout */}
         <div className="shlayout">
           <Sidebar f={f} setF={setF} total={prods?.total??0} catSlug={slug} subSlug={subSlug} mOpen={mOpen} setMOpen={setMOpen}/>
           <div>
@@ -791,17 +807,10 @@ function Inner() {
   )
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  DEFAULT EXPORT
-//  ✅ <Navbar /> is rendered FIRST — always visible, above the page content
-//  ✅ <Inner /> is wrapped in Suspense (required for useSearchParams)
-// ══════════════════════════════════════════════════════════════════════════════
 export default function CategoryPage() {
   return (
     <>
-      {/* YOUR EXISTING NAVBAR — imported at line 36 */}
       <Navbar />
-
       <Suspense fallback={
         <div style={{minHeight:'80vh',background:'#f6f6f7',display:'flex',alignItems:'center',justifyContent:'center'}}>
           <div style={{width:34,height:34,border:'3px solid #eee',borderTopColor:'#db142e',borderRadius:'50%',animation:'_s .7s linear infinite'}}/>
