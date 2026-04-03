@@ -299,16 +299,36 @@ export default function ProductDetailPage() {
   const buyNowRef = useRef(false) // guard against rapid clicks
 
   // Fetch product
-  useEffect(() => {
-    if (!slug) return
-    setLoading(true)
-    setSelectedOptions({})
-    fetch(`${API_URL}/products/${slug}`, { headers: { Accept: 'application/json' } })
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(json => setProduct(json.data))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false))
-  }, [slug])
+ useEffect(() => {
+  if (!slug) return
+  setLoading(true)
+  setSelectedOptions({})
+  fetch(`${API_URL}/products/${slug}`, { headers: { Accept: 'application/json' } })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(json => {
+      const prod: Product = json.data
+      setProduct(prod)
+
+      // ── Auto-select axes that have only one available option ──────────
+      // This covers: single color, single size, single variant combination.
+      // We do this here (not in a separate effect) so state is set in the
+      // same render cycle as the product, avoiding a flash of "no selection".
+      if (prod.has_variants && prod.selectable_axes?.length > 0) {
+        const autoSelections: Record<string, number> = {}
+        for (const axis of prod.selectable_axes) {
+          if (axis.options.length === 1) {
+            // Only one choice on this axis → select it automatically
+            autoSelections[axis.slug] = axis.options[0].id
+          }
+        }
+        if (Object.keys(autoSelections).length > 0) {
+          setSelectedOptions(autoSelections)
+        }
+      }
+    })
+    .catch(() => setError(true))
+    .finally(() => setLoading(false))
+}, [slug])
 
   // ── Variant derived values ─────────────────────────────────────────────────
   const axes     = product?.selectable_axes ?? []
