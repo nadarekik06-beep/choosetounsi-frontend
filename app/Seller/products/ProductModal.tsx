@@ -386,16 +386,13 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     (p?.variant_rows ?? []).map(normalizeVariantRow)
   )
 
-  // ── CHANGED: variantImages replaces colorImages ────────────────────────────
-  // Key = variant row INDEX (0-based), Value = File[]
-  // Serialized to FormData as: color_images[{index}][j] = File
-const [colorGroupImages, setColorGroupImages] = useState<Record<string, File[]>>({})
+  const [colorGroupImages, setColorGroupImages] = useState<Record<string, File[]>>({})
 
   // ── Stock management state ─────────────────────────────────────────────────
   const [stockMode, setStockMode] = useState<'auto' | 'manual'>('auto')
   const [variantStockErrors, setVariantStockErrors] = useState<Record<number, string>>({})
 
-  const hasVariantRows   = variantRows.length > 0
+  const hasVariantRows    = variantRows.length > 0
   const variantTotalStock = useMemo(() => calculateTotalStock(variantRows), [variantRows])
 
   useEffect(() => {
@@ -492,25 +489,21 @@ const [colorGroupImages, setColorGroupImages] = useState<Record<string, File[]>>
 
   useEffect(() => () => previews.forEach(prev => URL.revokeObjectURL(prev.preview)), [])
 
-  // ── CHANGED: existingByVariant replaces existingByColor ───────────────────
-  // Record<variantId, url[]> — passed to VariantImageUploader to show saved images
   const existingByColorGroup = useMemo(() => {
-  const map: Record<string, string[]> = {}
-  if (p?.images) {
-    for (const img of p.images as any[]) {
-      if (img.color_option_id != null) {
-        const url = storageUrl(img.url ?? img.image_path)
-        if (url) {
-          // The key stored for a group is the sorted color IDs joined by "|".
-          // For backward compat, single-color images use their one option ID as the key.
-          const key = String(img.color_option_id)
-          map[key] = [...(map[key] ?? []), url]
+    const map: Record<string, string[]> = {}
+    if (p?.images) {
+      for (const img of p.images as any[]) {
+        if (img.color_option_id != null) {
+          const url = storageUrl(img.url ?? img.image_path)
+          if (url) {
+            const key = String(img.color_option_id)
+            map[key] = [...(map[key] ?? []), url]
+          }
         }
       }
     }
-  }
-  return map
-}, [p?.images])
+    return map
+  }, [p?.images])
 
   const totalImages = existingImages.length + previews.length
 
@@ -554,21 +547,14 @@ const [colorGroupImages, setColorGroupImages] = useState<Record<string, File[]>>
     }
 
     if (hasVariantRows) {
+      // ── CHANGED: only validate per-variant stocks, no manual/auto check needed
+      // because the global stock field is now hidden when variants exist.
       const varStockErrs = validateVariantStocks(variantRows)
       if (Object.keys(varStockErrs).length > 0) {
         setVariantStockErrors(varStockErrs)
-        e.stock = 'Fix variant stock errors below.'
+        e.variants = 'Fix variant stock errors below.'
       } else {
         setVariantStockErrors({})
-      }
-
-      if (stockMode === 'manual') {
-        const manualVal = parseInt(form.stock, 10)
-        if (isNaN(manualVal) || manualVal < 0) {
-          e.stock = 'Enter a valid total stock.'
-        } else if (manualVal !== variantTotalStock) {
-          e.stock = `Total stock must equal sum of variant stocks (${variantTotalStock}).`
-        }
       }
     } else {
       if (form.stock === '' || isNaN(Number(form.stock)) || Number(form.stock) < 0) {
@@ -625,12 +611,7 @@ const [colorGroupImages, setColorGroupImages] = useState<Record<string, File[]>>
       if (!isLocked) {
         if (subId !== null) payload.subcategory_id = subId
         if (validVariants.length > 0) payload.variants = validVariants
-        // ── CHANGED: use variantImages (keyed by variant index) ─────────────
-        // FormData serialization in buildFormData (sellerApi.ts) remains
-        // unchanged — it already does:
-        //   fd.append(`color_images[${key}][${j}]`, file)
-        // where key is now the variant index instead of color option ID.
-if (Object.keys(colorGroupImages).length > 0) payload.color_images = colorGroupImages
+        if (Object.keys(colorGroupImages).length > 0) payload.color_images = colorGroupImages
       }
 
       if (isEdit) {
@@ -662,10 +643,6 @@ if (Object.keys(colorGroupImages).length > 0) payload.color_images = colorGroupI
       setSaving(false)
     }
   }
-
-  const stockMismatch = hasVariantRows && stockMode === 'manual'
-    && parseInt(form.stock, 10) !== variantTotalStock
-    && form.stock !== ''
 
   return (
     <>
@@ -816,13 +793,22 @@ if (Object.keys(colorGroupImages).length > 0) payload.color_images = colorGroupI
             </section>
 
             {/* ── Pricing & Inventory ── */}
+            {/*
+              CHANGED: Grid switches between 3 cols (with stock) and 2 cols (without stock).
+              Stock field is hidden when variants exist — total is shown in the variants section.
+            */}
             <section>
               <p style={{
                 fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
                 letterSpacing: '0.1em', color: '#94a3b8',
                 paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16,
               }}>Pricing & Inventory</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: hasVariantRows ? '1fr 1fr' : '1fr 1fr 1fr',
+                gap: 12,
+              }}>
+                {/* Price — always visible */}
                 <Field label="Base Price (TND)" required error={errors.price} locked={isLocked}>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -842,81 +828,31 @@ if (Object.keys(colorGroupImages).length > 0) payload.color_images = colorGroupI
                   </div>
                 </Field>
 
-                <Field
-                  label="Stock"
-                  required
-                  error={errors.stock}
-                  locked={isLocked}
-                  hint={
-                    !isLocked && hasVariantRows && stockMode === 'auto'
-                      ? 'Auto-calculated from variant stocks'
-                      : undefined
-                  }
-                >
-                  <div style={{ position: 'relative' }}>
+                {/* Stock — ONLY shown when no variants exist */}
+                {!hasVariantRows && (
+                  <Field
+                    label="Stock"
+                    required
+                    error={errors.stock}
+                    locked={isLocked}
+                  >
                     <input
                       type="number"
                       min="0"
                       value={form.stock}
                       onChange={e => {
                         if (isLocked) return
-                        const val = e.target.value
-                        if (hasVariantRows) {
-                          setStockMode('manual')
-                          set('stock', val)
-                        } else {
-                          set('stock', val)
-                        }
+                        set('stock', e.target.value)
                       }}
-                      readOnly={isLocked || (hasVariantRows && stockMode === 'auto')}
+                      readOnly={isLocked}
                       placeholder="0"
-                      className={inputCls(errors.stock || stockMismatch ? 'err' : undefined)}
-                      style={{
-                        cursor: (isLocked || (hasVariantRows && stockMode === 'auto'))
-                          ? 'not-allowed' : undefined,
-                        paddingRight: hasVariantRows && !isLocked ? 72 : undefined,
-                        borderColor: stockMismatch ? '#fca5a5' : undefined,
-                        background:  stockMismatch ? '#fef2f2' : undefined,
-                      }}
+                      className={inputCls(errors.stock ? 'err' : undefined)}
+                      style={{ cursor: isLocked ? 'not-allowed' : undefined }}
                     />
-                    {hasVariantRows && !isLocked && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (stockMode === 'manual') {
-                            setStockMode('auto')
-                            set('stock', String(variantTotalStock))
-                          } else {
-                            setStockMode('manual')
-                          }
-                        }}
-                        title={
-                          stockMode === 'auto'
-                            ? 'Click to manually override'
-                            : 'Click to use auto-calculated sum'
-                        }
-                        style={{
-                          position: 'absolute', right: 6, top: '50%',
-                          transform: 'translateY(-50%)',
-                          fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 5,
-                          border: `1px solid ${stockMode === 'auto' ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.4)'}`,
-                          background: stockMode === 'auto' ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.1)',
-                          color: stockMode === 'auto' ? '#10b981' : '#d97706',
-                          cursor: 'pointer', fontFamily: 'inherit',
-                          textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.4,
-                        }}
-                      >
-                        {stockMode === 'auto' ? 'AUTO' : 'MANUAL'}
-                      </button>
-                    )}
-                  </div>
-                  {stockMismatch && (
-                    <p style={{ fontSize: 11, color: '#d97706', marginTop: 4, fontWeight: 600 }}>
-                      ⚠ Entered value ({form.stock}) ≠ variant sum ({variantTotalStock}). Will be rejected on submit.
-                    </p>
-                  )}
-                </Field>
+                  </Field>
+                )}
 
+                {/* Status — always visible */}
                 <Field label="Status">
                   <select
                     value={form.is_active ? 'active' : 'inactive'}
@@ -1076,17 +1012,47 @@ if (Object.keys(colorGroupImages).length > 0) payload.color_images = colorGroupI
                       externalStockErrors={variantStockErrors}
                     />
 
-                    {/* ── ImageUploader ── */}
-                  {variantRows.length > 0 && (
-  <div style={{ marginTop: 16 }}>
-    <ColorGroupImageUploader
-      variantRows={variantRows}
-      colorAxis={variantAxes.find(a => a.type === 'color') ?? null}
-      onChange={setColorGroupImages}
-      existingByColorGroup={existingByColorGroup}
-      disabled={saving}
-    />
-  </div>
+                    {/* ── Color Group Image Uploader ── */}
+                    {variantRows.length > 0 && (
+                      <div style={{ marginTop: 16 }}>
+                        <ColorGroupImageUploader
+                          variantRows={variantRows}
+                          colorAxis={variantAxes.find(a => a.type === 'color') ?? null}
+                          onChange={setColorGroupImages}
+                          existingByColorGroup={existingByColorGroup}
+                          disabled={saving}
+                        />
+                      </div>
+                    )}
+
+                    {/* ── CHANGED: Total Stock summary badge ──────────────────────────────
+                        Replaces the hidden global stock field when variants exist.
+                        Updates in real-time as seller edits variant stocks.        */}
+                    {variantRows.length > 0 && (
+                      <div style={{ marginTop: 14 }}>
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 10,
+                          background: 'rgba(220,38,38,0.05)',
+                          border: '1.5px solid rgba(220,38,38,0.2)',
+                          borderRadius: 12, padding: '10px 16px',
+                        }}>
+                          <span style={{
+                            fontSize: 10, fontWeight: 800, color: '#94a3b8',
+                            textTransform: 'uppercase', letterSpacing: '0.08em',
+                          }}>
+                            Total Stock
+                          </span>
+                          <span style={{
+                            fontSize: 22, fontWeight: 900, color: '#db142e',
+                            lineHeight: 1,
+                          }}>
+                            {variantTotalStock}
+                          </span>
+                          <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
+                            units (auto-calculated)
+                          </span>
+                        </div>
+                      </div>
                     )}
                   </>
                 )}
@@ -1125,7 +1091,6 @@ if (Object.keys(colorGroupImages).length > 0) payload.color_images = colorGroupI
             )}
 
             {/* ── General Images (only when NO variant rows) ── */}
-            {/* CHANGED: was `!colorAxis`, now `!hasVariantRows` ──────────────── */}
             {!hasVariantRows && (
               <section>
                 <div style={{
