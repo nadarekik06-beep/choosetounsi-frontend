@@ -43,6 +43,7 @@ interface Product {
   original_price?: string; is_new?: boolean; is_bestseller?: boolean
   // ── NEW field populated by updated ProductController::index() ──
   color_swatches?: ColorSwatch[]
+  variants?: { id: number; stock: number }[]
 }
 interface Category { id: number; name: string; slug: string; icon: string | null; description?: string | null }
 interface Paginated { data: Product[]; current_page: number; last_page: number; total: number }
@@ -133,11 +134,21 @@ function Card({ p, idx }: { p: Product; idx: number }) {
   }, [])
 
   const addCart = async (e: React.MouseEvent) => {
-    e.preventDefault(); e.stopPropagation()
-    if (oos || cs !== 'idle') return
-    setCs('busy'); await addToCart(p.id); setCs('done')
-    setTimeout(() => setCs('idle'), 2200)
+  e.preventDefault(); e.stopPropagation()
+  if (oos || cs !== 'idle') return
+
+  const variants = p.variants ?? []
+  if (variants.length > 1) {
+    window.location.href = `/products/${p.slug}`
+    return
   }
+  const variantId = variants.length === 1 ? variants[0].id : null
+
+  setCs('busy')
+  await addToCart(p.id, 1, variantId)
+  setCs('done')
+  setTimeout(() => setCs('idle'), 2200)
+}
 
   return (
     <Link
@@ -257,10 +268,21 @@ function ListCard({ p, idx }: { p: Product; idx: number }) {
   const pri  = primaryImg(p)
   const badge = p.original_price ? discPct(p.original_price, p.price) : null
   const handle = async (e: React.MouseEvent) => {
-    e.preventDefault(); e.stopPropagation()
-    if (p.stock <= 0 || cs !== 'idle') return
-    setCs('busy'); await addToCart(p.id); setCs('done'); setTimeout(() => setCs('idle'), 2000)
+  e.preventDefault(); e.stopPropagation()
+  if (p.stock <= 0 || cs !== 'idle') return
+
+  const variants = p.variants ?? []
+  if (variants.length > 1) {
+    window.location.href = `/products/${p.slug}`
+    return
   }
+  const variantId = variants.length === 1 ? variants[0].id : null
+
+  setCs('busy')
+  await addToCart(p.id, 1, variantId)
+  setCs('done')
+  setTimeout(() => setCs('idle'), 2000)
+}
   return (
     <Link href={`/products/${p.slug}`} className="shlc" style={{ '--d': `${Math.min(idx * 0.04, 0.4)}s` } as React.CSSProperties}>
       <div className="shlc-img">
