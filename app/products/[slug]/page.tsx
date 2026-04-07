@@ -20,7 +20,7 @@ import {
   CheckCircle, Loader2, Tag, Zap,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
-import { isAuthenticated } from '@/lib/auth'
+import { isAuthenticated, getUser } from '@/lib/auth'
 import type { ProductVariant, SelectableAxis } from '@/lib/shopApi'
 
 // Normalize: strip trailing /api if present so STORAGE_BASE is always the bare origin.
@@ -445,7 +445,8 @@ const isOptionAvailable = useCallback((axisSlug: string, optionId: number): bool
 
     return []
   })()
-
+  const currentUser  = getUser()
+  const isOwnProduct = !!(currentUser && product && currentUser.id === product.seller?.id)
   const effectiveStock = selectedVariant
     ? selectedVariant.stock
     : hasVariants
@@ -664,75 +665,96 @@ const isOptionAvailable = useCallback((axisSlug: string, optionId: number): bool
               </p>
             </div>
 
-            {/* ── CTA Buttons ── */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 24, alignItems: 'center' }}>
+{/* ── CTA Buttons ── */}
+<div style={{ display: 'flex', gap: 10, marginBottom: 24, alignItems: 'center' }}>
 
-              <button
-                className="buy-now-btn"
-                onClick={handleBuyNow}
-                disabled={outOfStock || buyNowLoading}
-                style={{
-                  flex: 1, height: 52,
-                  background: '#fff',
-                  color: outOfStock ? '#9ca3af' : '#dc2626',
-                  border: `2px solid ${outOfStock ? '#e5e7eb' : '#dc2626'}`,
-                  borderRadius: 12,
-                  cursor: outOfStock || buyNowLoading ? 'not-allowed' : 'pointer',
-                  fontWeight: 800, fontSize: 14,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  transition: 'all 0.2s', fontFamily: 'inherit',
-                  letterSpacing: '0.01em',
-                  opacity: outOfStock ? 0.6 : 1,
-                }}
-              >
-                {buyNowLoading
-                  ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} />
-                  : <><Zap size={16} />{outOfStock ? 'Out of Stock' : 'Buy Now'}</>
-                }
-              </button>
+  {isOwnProduct ? (
+    /* ── Seller viewing their own product ── */
+    <div style={{
+      flex: 1, height: 52,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+      background: 'rgba(99,102,241,0.06)',
+      border: '2px dashed rgba(99,102,241,0.35)',
+      borderRadius: 12,
+      color: '#6366f1',
+      fontWeight: 800, fontSize: 13,
+      letterSpacing: '0.02em',
+    }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+      </svg>
+      This is your product
+    </div>
+  ) : (
+    <>
+      <button
+        className="buy-now-btn"
+        onClick={handleBuyNow}
+        disabled={outOfStock || buyNowLoading}
+        style={{
+          flex: 1, height: 52,
+          background: '#fff',
+          color: outOfStock ? '#9ca3af' : '#dc2626',
+          border: `2px solid ${outOfStock ? '#e5e7eb' : '#dc2626'}`,
+          borderRadius: 12,
+          cursor: outOfStock || buyNowLoading ? 'not-allowed' : 'pointer',
+          fontWeight: 800, fontSize: 14,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          transition: 'all 0.2s', fontFamily: 'inherit',
+          letterSpacing: '0.01em',
+          opacity: outOfStock ? 0.6 : 1,
+        }}
+      >
+        {buyNowLoading
+          ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} />
+          : <><Zap size={16} />{outOfStock ? 'Out of Stock' : 'Buy Now'}</>
+        }
+      </button>
 
-              <button
-                onClick={handleAddToCart}
-                disabled={outOfStock || cartLoading}
-                style={{
-                  flex: 1, height: 52,
-                  background: outOfStock
-                    ? '#e5e7eb'
-                    : addedToCart
-                      ? 'linear-gradient(135deg,#10b981,#059669)'
-                      : 'linear-gradient(135deg,#dc2626,#b91c1c)',
-                  color: outOfStock ? '#9ca3af' : '#fff',
-                  border: 'none',
-                  borderRadius: 12,
-                  cursor: outOfStock ? 'not-allowed' : 'pointer',
-                  fontWeight: 800, fontSize: 14,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  boxShadow: outOfStock ? 'none' : addedToCart ? '0 8px 24px rgba(16,185,129,0.3)' : '0 8px 24px rgba(220,38,38,0.3)',
-                  transition: 'all 0.2s', fontFamily: 'inherit',
-                }}>
-                {cartLoading
-                  ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} />
-                  : addedToCart
-                  ? <><CheckCircle size={18} />Added!</>
-                  : <><ShoppingCart size={18} />{outOfStock ? 'Out of Stock' : 'Add to Cart'}</>
-                }
-              </button>
+      <button
+        onClick={handleAddToCart}
+        disabled={outOfStock || cartLoading}
+        style={{
+          flex: 1, height: 52,
+          background: outOfStock
+            ? '#e5e7eb'
+            : addedToCart
+              ? 'linear-gradient(135deg,#10b981,#059669)'
+              : 'linear-gradient(135deg,#dc2626,#b91c1c)',
+          color: outOfStock ? '#9ca3af' : '#fff',
+          border: 'none', borderRadius: 12,
+          cursor: outOfStock ? 'not-allowed' : 'pointer',
+          fontWeight: 800, fontSize: 14,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          boxShadow: outOfStock ? 'none' : addedToCart ? '0 8px 24px rgba(16,185,129,0.3)' : '0 8px 24px rgba(220,38,38,0.3)',
+          transition: 'all 0.2s', fontFamily: 'inherit',
+        }}>
+        {cartLoading
+          ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} />
+          : addedToCart
+          ? <><CheckCircle size={18} />Added!</>
+          : <><ShoppingCart size={18} />{outOfStock ? 'Out of Stock' : 'Add to Cart'}</>
+        }
+      </button>
 
-              <button
-                onClick={handleToggleFavorite}
-                style={{
-                  width: 52, height: 52, flexShrink: 0,
-                  borderRadius: '50%',
-                  border: `2px solid ${favorited ? '#dc2626' : '#e5e7eb'}`,
-                  background: favorited ? 'rgba(220,38,38,0.06)' : '#fff',
-                  cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.2s',
-                }}>
-                <Heart size={20} fill={favorited ? '#dc2626' : 'none'} stroke={favorited ? '#dc2626' : '#94a3b8'} strokeWidth={2} />
-              </button>
+      <button
+        onClick={handleToggleFavorite}
+        style={{
+          width: 52, height: 52, flexShrink: 0,
+          borderRadius: '50%',
+          border: `2px solid ${favorited ? '#dc2626' : '#e5e7eb'}`,
+          background: favorited ? 'rgba(220,38,38,0.06)' : '#fff',
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'all 0.2s',
+        }}>
+        <Heart size={20} fill={favorited ? '#dc2626' : 'none'} stroke={favorited ? '#dc2626' : '#94a3b8'} strokeWidth={2} />
+      </button>
+    </>
+  )}
 
-            </div>
+</div>
 
             {/* Trust badges */}
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden', marginBottom: 20 }}>

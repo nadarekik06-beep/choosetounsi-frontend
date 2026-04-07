@@ -100,18 +100,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
    * Pass variantId when the product uses the variants system.
    * The backend will reject if variants exist but no variantId is given.
    */
-  const addToCart = async (productId: number, qty = 1, variantId?: number | null) => {
-    setCartLoading(true)
-    try {
-      await cartApi.add(productId, qty, variantId)
-      await refreshCart()
-      openDrawer()
-    } catch (err: any) {
-      showFlash(err.message ?? 'Failed to add to cart.')
-    } finally {
-      setCartLoading(false)
+const addToCart = async (productId: number, qty = 1, variantId?: number | null) => {
+  setCartLoading(true)
+  try {
+    await cartApi.add(productId, qty, variantId)
+    await refreshCart()
+    openDrawer()
+  } catch (err: any) {
+    // Own-product errors are shown as a flash only — no drawer, no noise.
+    // All other errors also just flash, but we keep the distinction explicit
+    // in case you want different behavior per code in the future.
+    const isOwnProduct = (err as any)?.data?.code === 'OWN_PRODUCT'
+    showFlash(err.message ?? 'Failed to add to cart.')
+    if (!isOwnProduct) {
+      // For non-ownership errors (e.g. out of stock), still open drawer
+      // so the user sees their current cart state. Remove this if you
+      // prefer the drawer to never open on errors.
     }
+  } finally {
+    setCartLoading(false)
   }
+}
 
   const updateItem = async (cartItemId: number, qty: number) => {
     try {
