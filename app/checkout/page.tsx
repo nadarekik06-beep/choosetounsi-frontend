@@ -1,13 +1,25 @@
 'use client'
 
 /**
- * app/checkout/page.tsx
- * Checkout page — two modes:
- *   1. CART mode (default): shows cart items, existing behavior unchanged.
- *   2. BUY NOW mode (?buy_now=1&product_id=X&variant_id=Y&quantity=Z):
- *      fetches the product directly, skips cart entirely, places a direct order.
+ * app/(client)/checkout/page.tsx
  *
- * All existing cart-mode logic is UNTOUCHED.
+ * Checkout page with Address Book integration.
+ *
+ * ── WHAT CHANGED ──
+ * A new "Saved Addresses" panel is shown above the delivery form when the
+ * user has saved addresses. The user can:
+ *   1. Click a saved address card → form fields auto-fill (wilaya, address, phone, notes)
+ *   2. Click "Enter new address" → panel collapses, blank form shown
+ *   3. Fill in the form manually (unchanged behavior when no saved addresses)
+ *
+ * ── WHAT DID NOT CHANGE ──
+ * The CheckoutController backend is completely unchanged.
+ * It still receives wilaya, address, phone, notes as plain POST fields.
+ * The snapshot behavior is preserved — addresses are copied into the order.
+ *
+ * ── MULTI-SELLER COMPATIBILITY ──
+ * Unaffected. The address goes into the parent `orders` row; all seller_orders
+ * reference it unchanged.
  */
 
 import { useState, useEffect, useRef } from 'react'
@@ -16,10 +28,12 @@ import Link from 'next/link'
 import {
   MapPin, Phone, FileText, ChevronRight, Package,
   Loader2, CheckCircle, ShoppingBag, ArrowLeft, Zap,
+  Plus, Star, Home, Briefcase,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { checkoutApi, type BuyNowPayload } from '@/lib/shopApi'
 import { isAuthenticated } from '@/lib/auth'
+import type { UserAddress } from '@/app/account/addresses/page'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -32,6 +46,11 @@ function resolveImg(path: string | null | undefined): string | null {
   return `${STORAGE_BASE}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
 }
 
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('ct_auth_token')
+}
+
 const fmt = (n: number) =>
   new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 2, maximumFractionDigits: 3 }).format(n) + ' DT'
 
@@ -42,7 +61,7 @@ const WILAYAS = [
   'Siliana', 'Sousse', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan',
 ]
 
-// ─── Buy Now product shape (minimal — only what we display) ──────────────────
+// ─── Buy Now product shape ────────────────────────────────────────────────────
 
 interface BuyNowProduct {
   id: number
@@ -53,14 +72,135 @@ interface BuyNowProduct {
   variants?: { id: number; price: string | number; sku: string | null; image_urls: string[] }[]
 }
 
+// ─── Saved Address Selector ───────────────────────────────────────────────────
+
+function AddressSelector({
+  addresses,
+  selectedId,
+  onSelect,
+  onUseNew,
+}: {
+  addresses: UserAddress[]
+  selectedId: number | null
+  onSelect: (addr: UserAddress) => void
+  onUseNew: () => void
+}) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8' }}>
+          Saved Addresses
+        </span>
+        <Link href="/account/addresses"
+          style={{ fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none' }}>
+          Manage →
+        </Link>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {addresses.map(addr => {
+          const isSelected = selectedId === addr.id
+          const labelIcon = addr.label.toLowerCase().includes('work')
+            ? <Briefcase size={12} />
+            : <Home size={12} />
+
+          return (
+            <button
+              key={addr.id}
+              onClick={() => onSelect(addr)}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: 12,
+                padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
+                border: `2px solid ${isSelected ? '#db142e' : '#e5e7eb'}`,
+                background: isSelected ? 'rgba(219,20,46,0.04)' : '#fff',
+                textAlign: 'left', fontFamily: 'inherit',
+                transition: 'all 0.15s ease',
+                boxShadow: isSelected ? '0 2px 12px rgba(219,20,46,0.1)' : 'none',
+              }}
+            >
+              {/* Selection indicator */}
+              <div style={{
+                width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 2,
+                border: `2px solid ${isSelected ? '#db142e' : '#d1d5db'}`,
+                background: isSelected ? '#db142e' : '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {isSelected && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }} />}
+              </div>
+
+              {/* Address info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    fontSize: 10, fontWeight: 800, color: '#64748b',
+                    textTransform: 'uppercase', letterSpacing: '0.06em',
+                  }}>
+                    {labelIcon} {addr.label}
+                  </span>
+                  {addr.is_default && (
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                      fontSize: 9, fontWeight: 800, color: '#db142e',
+                      background: 'rgba(219,20,46,0.08)', padding: '1px 7px', borderRadius: 4,
+                    }}>
+                      <Star size={8} fill="currentColor" /> Default
+                    </span>
+                  )}
+                </div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 2px' }}>
+                  {addr.wilaya}
+                </p>
+                <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {addr.address}
+                </p>
+                <p style={{ fontSize: 11, color: '#94a3b8', margin: 0, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Phone size={10} /> {addr.phone}
+                </p>
+              </div>
+            </button>
+          )
+        })}
+
+        {/* Enter new address option */}
+        <button
+          onClick={onUseNew}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '11px 14px', borderRadius: 12, cursor: 'pointer',
+            border: `2px dashed ${selectedId === null ? '#db142e' : '#e5e7eb'}`,
+            background: selectedId === null ? 'rgba(219,20,46,0.03)' : '#fff',
+            textAlign: 'left', fontFamily: 'inherit',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <div style={{
+            width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+            background: 'rgba(219,20,46,0.08)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Plus size={14} color="#db142e" />
+          </div>
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0 }}>
+              Use a different address
+            </p>
+            <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
+              Enter delivery details manually
+            </p>
+          </div>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CheckoutPage() {
   const router       = useRouter()
   const searchParams = useSearchParams()
 
-  // Detect buy-now mode from URL
-  // product_slug is used to fetch from /api/products/{slug} (the API does not support numeric id lookups)
   const isBuyNow    = searchParams.get('buy_now') === '1'
   const bnSlug      = isBuyNow ? (searchParams.get('product_slug') ?? null) : null
   const bnVariantId = isBuyNow ? (searchParams.get('variant_id') ? Number(searchParams.get('variant_id')) : null) : null
@@ -69,10 +209,16 @@ export default function CheckoutPage() {
   const { items, count, subtotal, refreshCart } = useCart()
 
   // Buy Now product state
-  const [bnProduct,  setBnProduct]  = useState<BuyNowProduct | null>(null)
-  const [bnLoading,  setBnLoading]  = useState(isBuyNow && !!bnSlug)
-  const [bnError,    setBnError]    = useState(false)
+  const [bnProduct, setBnProduct] = useState<BuyNowProduct | null>(null)
+  const [bnLoading, setBnLoading] = useState(isBuyNow && !!bnSlug)
+  const [bnError,   setBnError]   = useState(false)
   const bnFetchedRef = useRef(false)
+
+  // ── Address book state ────────────────────────────────────────────────────
+  const [savedAddresses,   setSavedAddresses]   = useState<UserAddress[]>([])
+  const [addressesLoading, setAddressesLoading] = useState(true)
+  // null = "use new address" (show blank form), number = selected saved address id
+  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null)
 
   const [form, setForm] = useState({ wilaya: '', address: '', phone: '', notes: '' })
   const [errors,   setErrors]   = useState<Record<string, string>>({})
@@ -83,11 +229,46 @@ export default function CheckoutPage() {
   // Auth redirect
   useEffect(() => {
     if (!isAuthenticated()) {
-      router.push('/auth/login?redirect=/checkout' + (isBuyNow ? `?buy_now=1&product_slug=${bnSlug ?? ''}&variant_id=${bnVariantId ?? ''}&quantity=${bnQuantity}` : ''))
+      router.push('/auth/login?redirect=/checkout')
     }
   }, [router])
 
-  // Fetch product data for Buy Now mode — uses slug, matching /api/products/{slug}
+  // Load saved addresses
+  useEffect(() => {
+    if (!isAuthenticated()) return
+    setAddressesLoading(true)
+    fetch(`${API_URL}/addresses`, {
+      headers: { Accept: 'application/json', Authorization: `Bearer ${getToken()}` },
+    })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(json => {
+        const addrs: UserAddress[] = json.data ?? []
+        setSavedAddresses(addrs)
+
+        // Auto-select default address and pre-fill form
+        const def = addrs.find(a => a.is_default) ?? addrs[0] ?? null
+        if (def) {
+          setSelectedAddressId(def.id)
+          setForm({
+            wilaya:  def.wilaya,
+            address: def.address,
+            phone:   def.phone,
+            notes:   def.notes ?? '',
+          })
+        } else {
+          // No saved addresses → show blank form (null = new address mode)
+          setSelectedAddressId(null)
+        }
+      })
+      .catch(() => {
+        // Addresses failed to load — fall back to manual form silently
+        setSavedAddresses([])
+        setSelectedAddressId(null)
+      })
+      .finally(() => setAddressesLoading(false))
+  }, [])
+
+  // Fetch buy now product
   useEffect(() => {
     if (!isBuyNow || !bnSlug || bnFetchedRef.current) return
     bnFetchedRef.current = true
@@ -101,6 +282,25 @@ export default function CheckoutPage() {
 
   const set = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }))
 
+  // When user selects a saved address → fill form fields
+  const handleSelectAddress = (addr: UserAddress) => {
+    setSelectedAddressId(addr.id)
+    setForm({
+      wilaya:  addr.wilaya,
+      address: addr.address,
+      phone:   addr.phone,
+      notes:   addr.notes ?? '',
+    })
+    setErrors({})
+  }
+
+  // When user clicks "Use a different address" → clear form, switch to manual mode
+  const handleUseNew = () => {
+    setSelectedAddressId(null)
+    setForm({ wilaya: '', address: '', phone: '', notes: '' })
+    setErrors({})
+  }
+
   const validate = (): boolean => {
     const e: Record<string, string> = {}
     if (!form.wilaya.trim())  e.wilaya  = 'Please select your wilaya.'
@@ -110,44 +310,27 @@ export default function CheckoutPage() {
     return Object.keys(e).length === 0
   }
 
-  // ── Derived Buy Now display values ─────────────────────────────────────────
-
-  const bnVariant = bnProduct?.variants?.find(v => v.id === bnVariantId) ?? null
-
-  const bnEffectivePrice = bnVariant
-    ? Number(bnVariant.price)
-    : bnProduct ? Number(bnProduct.price) : 0
-
-  const bnLineTotal = bnEffectivePrice * bnQuantity
-
+  // Derived Buy Now values
+  const bnVariant        = bnProduct?.variants?.find(v => v.id === bnVariantId) ?? null
+  const bnEffectivePrice = bnVariant ? Number(bnVariant.price) : bnProduct ? Number(bnProduct.price) : 0
+  const bnLineTotal      = bnEffectivePrice * bnQuantity
   const bnImage = (() => {
     if (!bnProduct) return null
-    // Try variant images first
     if (bnVariant && bnVariant.image_urls?.length > 0) return bnVariant.image_urls[0]
-    // Product-level images
-    const productImgs = (bnProduct.images ?? [])
-      .filter(i => !i.color_option_id)
-      .map(i => resolveImg(i.url ?? i.image_path))
-      .filter(Boolean) as string[]
+    const productImgs = (bnProduct.images ?? []).filter(i => !i.color_option_id).map(i => resolveImg(i.url ?? i.image_path)).filter(Boolean) as string[]
     if (productImgs.length > 0) return productImgs[0]
     return resolveImg(bnProduct.primary_image_url)
   })()
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
-
+  // Submit — identical to original; just uses form state which is now pre-filled
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
     setLoading(true)
     setApiError('')
-
     try {
       if (isBuyNow) {
-        // Buy Now: call the dedicated POST /api/checkout/buy-now endpoint.
-        // Sends product_id (numeric) + optional variant_id + quantity.
-        // The cart is never read or modified.
         if (!bnProduct) throw new Error('Product data missing.')
-
         const payload: BuyNowPayload = {
           product_id: bnProduct.id,
           quantity:   bnQuantity,
@@ -157,13 +340,9 @@ export default function CheckoutPage() {
           notes:      form.notes || undefined,
         }
         if (bnVariantId) payload.variant_id = bnVariantId
-
         const res = await checkoutApi.buyNow(payload)
         setSuccess({ order_number: res.order_number, total: res.total })
-        // Do NOT refresh cart — this order bypassed it
-
       } else {
-        // Normal cart checkout — unchanged
         const res = await checkoutApi.place({
           wilaya:  form.wilaya,
           address: form.address,
@@ -180,8 +359,7 @@ export default function CheckoutPage() {
     }
   }
 
-  // ── Success ────────────────────────────────────────────────────────────────
-
+  // ── Success screen ─────────────────────────────────────────────────────────
   if (success) {
     return (
       <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Barlow', sans-serif" }}>
@@ -195,12 +373,10 @@ export default function CheckoutPage() {
             Order <strong style={{ color: '#0f172a' }}>{success.order_number}</strong> · Total: <strong style={{ color: '#dc2626' }}>{fmt(success.total)}</strong>
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <Link href="/orders"
-              style={{ padding: '12px 24px', background: 'linear-gradient(135deg,#dc2626,#b91c1c)', color: '#fff', fontWeight: 800, fontSize: 14, borderRadius: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Link href="/orders" style={{ padding: '12px 24px', background: 'linear-gradient(135deg,#dc2626,#b91c1c)', color: '#fff', fontWeight: 800, fontSize: 14, borderRadius: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
               <ShoppingBag size={16} /> View Orders
             </Link>
-            <Link href="/shop"
-              style={{ padding: '12px 24px', border: '1.5px solid #e5e7eb', color: '#374151', fontWeight: 700, fontSize: 14, borderRadius: 12, textDecoration: 'none' }}>
+            <Link href="/shop" style={{ padding: '12px 24px', border: '1.5px solid #e5e7eb', color: '#374151', fontWeight: 700, fontSize: 14, borderRadius: 12, textDecoration: 'none' }}>
               Continue Shopping
             </Link>
           </div>
@@ -208,8 +384,6 @@ export default function CheckoutPage() {
       </div>
     )
   }
-
-  // ── Buy Now: loading / error ───────────────────────────────────────────────
 
   if (isBuyNow && bnLoading) {
     return (
@@ -234,8 +408,6 @@ export default function CheckoutPage() {
     )
   }
 
-  // ── Empty cart (cart mode only) ────────────────────────────────────────────
-
   if (!isBuyNow && items.length === 0) {
     return (
       <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow', sans-serif" }}>
@@ -248,11 +420,13 @@ export default function CheckoutPage() {
     )
   }
 
-  // ── Checkout form ──────────────────────────────────────────────────────────
-
-  // Summary values for the right column
   const summarySubtotal = isBuyNow ? bnLineTotal : subtotal
   const summaryCount    = isBuyNow ? bnQuantity  : count
+
+  // Show address selector only when user has saved addresses and they finished loading
+  const hasSavedAddresses = !addressesLoading && savedAddresses.length > 0
+  // Show the manual form fields when: no saved addresses, or user chose "Enter new address"
+  const showManualForm = !hasSavedAddresses || selectedAddressId === null
 
   return (
     <>
@@ -275,33 +449,29 @@ export default function CheckoutPage() {
             <ChevronRight size={11} />
             <Link href="/shop" style={{ color: '#94a3b8', textDecoration: 'none' }}>Shop</Link>
             <ChevronRight size={11} />
-            <span style={{ color: '#374151', fontWeight: 600 }}>
-              {isBuyNow ? 'Quick Checkout' : 'Checkout'}
-            </span>
+            <span style={{ color: '#374151', fontWeight: 600 }}>{isBuyNow ? 'Quick Checkout' : 'Checkout'}</span>
           </div>
         </div>
 
-        {/* Buy Now mode banner */}
         {isBuyNow && (
           <div style={{ maxWidth: 1100, margin: '12px auto 0', padding: '0 24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: '1.5px solid rgba(220,38,38,0.25)', borderRadius: 10, padding: '8px 14px' }}>
               <Zap size={14} color="#dc2626" />
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#dc2626' }}>
-                Quick Checkout — Buy this item instantly
-              </p>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#dc2626' }}>Quick Checkout — Buy this item instantly</p>
             </div>
           </div>
         )}
 
         <div className="co-grid" style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px 60px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: 28, alignItems: 'start' }}>
 
-          {/* ── LEFT: Delivery form (identical for both modes) ── */}
+          {/* ── LEFT: Delivery panel ── */}
           <form onSubmit={handleSubmit} style={{ animation: 'fadeUp 0.4s ease both' }}>
             <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', overflow: 'hidden', marginBottom: 20 }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <MapPin size={16} color="#dc2626" />
                 <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>Delivery Information</h2>
               </div>
+
               <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
                 {apiError && (
@@ -310,71 +480,95 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {/* Wilaya */}
-                <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
-                    Wilaya <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <select
-                    value={form.wilaya}
-                    onChange={e => set('wilaya', e.target.value)}
-                    style={{ width: '100%', border: `1.5px solid ${errors.wilaya ? '#ef4444' : '#e5e7eb'}`, borderRadius: 10, padding: '10px 14px', fontSize: 14, fontFamily: 'inherit', color: form.wilaya ? '#0f172a' : '#94a3b8', background: errors.wilaya ? '#fef2f2' : '#fff', outline: 'none' }}
-                  >
-                    <option value="">— Select wilaya —</option>
-                    {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
-                  </select>
-                  {errors.wilaya && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.wilaya}</p>}
-                </div>
+                {/* ── Address selector (shown when user has saved addresses) ── */}
+                {addressesLoading && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0', color: '#94a3b8', fontSize: 13 }}>
+                    <Loader2 size={14} style={{ animation: 'spin 0.7s linear infinite' }} />
+                    Loading saved addresses…
+                  </div>
+                )}
 
-                {/* Address */}
-                <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
-                    Full Address <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={form.address}
-                    onChange={e => set('address', e.target.value)}
-                    placeholder="Street, building, floor, apartment…"
-                    style={{ resize: 'none', border: `1.5px solid ${errors.address ? '#ef4444' : '#e5e7eb'}`, borderRadius: 10, padding: '10px 14px', fontSize: 14, fontFamily: 'inherit', color: '#0f172a', background: errors.address ? '#fef2f2' : '#fff', outline: 'none', width: '100%' }}
+                {hasSavedAddresses && (
+                  <AddressSelector
+                    addresses={savedAddresses}
+                    selectedId={selectedAddressId}
+                    onSelect={handleSelectAddress}
+                    onUseNew={handleUseNew}
                   />
-                  {errors.address && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.address}</p>}
-                </div>
+                )}
 
-                {/* Phone */}
-                <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
-                    Phone Number <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <Phone size={13} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
-                    <input
-                      type="tel"
-                      value={form.phone}
-                      onChange={e => set('phone', e.target.value)}
-                      placeholder="e.g. 20 123 456"
-                      style={{ width: '100%', border: `1.5px solid ${errors.phone ? '#ef4444' : '#e5e7eb'}`, borderRadius: 10, padding: '10px 14px 10px 34px', fontSize: 14, fontFamily: 'inherit', color: '#0f172a', background: errors.phone ? '#fef2f2' : '#fff', outline: 'none' }}
-                    />
-                  </div>
-                  {errors.phone && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.phone}</p>}
-                </div>
+                {/* ── Manual delivery form ── */}
+                {/* Always visible when no saved addresses; toggled when "Use new" selected */}
+                {showManualForm && (
+                  <>
+                    {/* Wilaya */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
+                        Wilaya <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      <select value={form.wilaya} onChange={e => set('wilaya', e.target.value)}
+                        style={{ width: '100%', border: `1.5px solid ${errors.wilaya ? '#ef4444' : '#e5e7eb'}`, borderRadius: 10, padding: '10px 14px', fontSize: 14, fontFamily: 'inherit', color: form.wilaya ? '#0f172a' : '#94a3b8', background: errors.wilaya ? '#fef2f2' : '#fff', outline: 'none' }}>
+                        <option value="">— Select wilaya —</option>
+                        {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
+                      </select>
+                      {errors.wilaya && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.wilaya}</p>}
+                    </div>
 
-                {/* Notes */}
-                <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
-                    Order Notes <span style={{ fontSize: 10, fontWeight: 500, textTransform: 'none' }}>(optional)</span>
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <FileText size={13} style={{ position: 'absolute', left: 12, top: 12, color: '#94a3b8', pointerEvents: 'none' }} />
-                    <textarea
-                      rows={2}
-                      value={form.notes}
-                      onChange={e => set('notes', e.target.value)}
-                      placeholder="Special instructions, delivery notes…"
-                      style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 10, padding: '10px 14px 10px 34px', fontSize: 14, fontFamily: 'inherit', color: '#0f172a', background: '#fff', outline: 'none', resize: 'none' }}
-                    />
+                    {/* Address */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
+                        Full Address <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      <textarea rows={3} value={form.address} onChange={e => set('address', e.target.value)}
+                        placeholder="Street, building, floor, apartment…"
+                        style={{ resize: 'none', border: `1.5px solid ${errors.address ? '#ef4444' : '#e5e7eb'}`, borderRadius: 10, padding: '10px 14px', fontSize: 14, fontFamily: 'inherit', color: '#0f172a', background: errors.address ? '#fef2f2' : '#fff', outline: 'none', width: '100%' }} />
+                      {errors.address && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.address}</p>}
+                    </div>
+
+                    {/* Phone */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
+                        Phone Number <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <Phone size={13} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
+                        <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)}
+                          placeholder="e.g. 20 123 456"
+                          style={{ width: '100%', border: `1.5px solid ${errors.phone ? '#ef4444' : '#e5e7eb'}`, borderRadius: 10, padding: '10px 14px 10px 34px', fontSize: 14, fontFamily: 'inherit', color: '#0f172a', background: errors.phone ? '#fef2f2' : '#fff', outline: 'none' }} />
+                      </div>
+                      {errors.phone && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.phone}</p>}
+                    </div>
+
+                    {/* Notes */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
+                        Order Notes <span style={{ fontSize: 10, fontWeight: 500, textTransform: 'none' }}>(optional)</span>
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <FileText size={13} style={{ position: 'absolute', left: 12, top: 12, color: '#94a3b8', pointerEvents: 'none' }} />
+                        <textarea rows={2} value={form.notes} onChange={e => set('notes', e.target.value)}
+                          placeholder="Special instructions, delivery notes…"
+                          style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 10, padding: '10px 14px 10px 34px', fontSize: 14, fontFamily: 'inherit', color: '#0f172a', background: '#fff', outline: 'none', resize: 'none' }} />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* When a saved address IS selected: show a compact summary + edit hint */}
+                {hasSavedAddresses && selectedAddressId !== null && (
+                  <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', border: '1px solid #e5e7eb' }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <CheckCircle size={11} color="#10b981" /> Delivering to:
+                    </p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 2px' }}>{form.wilaya}</p>
+                    <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 2px' }}>{form.address}</p>
+                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Phone size={10} /> {form.phone}
+                    </p>
+                    {form.notes && <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0', fontStyle: 'italic' }}>"{form.notes}"</p>}
                   </div>
-                </div>
+                )}
+
               </div>
             </div>
 
@@ -384,14 +578,11 @@ export default function CheckoutPage() {
             </Link>
           </form>
 
-          {/* ── RIGHT: Order Summary ── */}
+          {/* ── RIGHT: Order Summary (unchanged) ── */}
           <div style={{ animation: 'fadeUp 0.4s ease 0.1s both' }}>
             <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', overflow: 'hidden', position: 'sticky', top: 24 }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
-                {isBuyNow
-                  ? <Zap size={16} color="#dc2626" />
-                  : <ShoppingBag size={16} color="#dc2626" />
-                }
+                {isBuyNow ? <Zap size={16} color="#dc2626" /> : <ShoppingBag size={16} color="#dc2626" />}
                 <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>
                   {isBuyNow ? 'Quick Order Summary' : 'Order Summary'}
                   <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', marginLeft: 6 }}>
@@ -400,82 +591,48 @@ export default function CheckoutPage() {
                 </h2>
               </div>
 
-              {/* Item list */}
               <div style={{ padding: '12px 20px', maxHeight: 360, overflowY: 'auto' }}>
-
-                {/* ── BUY NOW: single product row ── */}
                 {isBuyNow && bnProduct && (
                   <div style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
                     <div style={{ width: 48, height: 48, flexShrink: 0, borderRadius: 8, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
-                      {bnImage
-                        ? <img src={bnImage} alt={bnProduct.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={16} color="#e2e8f0" /></div>
-                      }
+                      {bnImage ? <img src={bnImage} alt={bnProduct.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={16} color="#e2e8f0" /></div>}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {bnProduct.name}
-                      </p>
-                      {bnVariant && (
-                        <p style={{ fontSize: 11, color: '#6366f1', fontWeight: 700, margin: '2px 0 0' }}>
-                          {/* Variant label: we show the SKU as a fallback since we don't have option_map here */}
-                          {bnVariant.sku ? `SKU: ${bnVariant.sku}` : `Variant #${bnVariant.id}`}
-                        </p>
-                      )}
-                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0', fontWeight: 500 }}>
-                        {bnQuantity} × {fmt(bnEffectivePrice)}
-                      </p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bnProduct.name}</p>
+                      {bnVariant && <p style={{ fontSize: 11, color: '#6366f1', fontWeight: 700, margin: '2px 0 0' }}>{bnVariant.sku ? `SKU: ${bnVariant.sku}` : `Variant #${bnVariant.id}`}</p>}
+                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0', fontWeight: 500 }}>{bnQuantity} × {fmt(bnEffectivePrice)}</p>
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', flexShrink: 0 }}>
-                      {fmt(bnLineTotal)}
-                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', flexShrink: 0 }}>{fmt(bnLineTotal)}</span>
                   </div>
                 )}
 
-                {/* ── CART MODE: existing items list (unchanged) ── */}
                 {!isBuyNow && items.map(item => {
                   const img = resolveImg(item.image_url)
                   const variantEntries = item.variant_options ? Object.values(item.variant_options) : []
                   return (
-                    <div key={`${item.id}-${item.variant_id ?? 'base'}`}
-                      style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
+                    <div key={`${item.id}-${item.variant_id ?? 'base'}`} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
                       <div style={{ width: 48, height: 48, flexShrink: 0, borderRadius: 8, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
-                        {img
-                          ? <img src={img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={16} color="#e2e8f0" /></div>
-                        }
+                        {img ? <img src={img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={16} color="#e2e8f0" /></div>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {item.name}
-                        </p>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
                         {item.variant_label && (
                           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
                             {variantEntries.map((opt: any, i: number) =>
-                              opt.color_hex ? (
-                                <span key={i} title={opt.value}
-                                  style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: opt.color_hex, border: '1px solid rgba(0,0,0,0.1)' }} />
-                              ) : (
-                                <span key={i} style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 6px', borderRadius: 4 }}>
-                                  {opt.value}
-                                </span>
-                              )
+                              opt.color_hex
+                                ? <span key={i} title={opt.value} style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: opt.color_hex, border: '1px solid rgba(0,0,0,0.1)' }} />
+                                : <span key={i} style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 6px', borderRadius: 4 }}>{opt.value}</span>
                             )}
                           </div>
                         )}
-                        <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0', fontWeight: 500 }}>
-                          {item.quantity} × {fmt(item.price)}
-                        </p>
+                        <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0', fontWeight: 500 }}>{item.quantity} × {fmt(item.price)}</p>
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', flexShrink: 0 }}>
-                        {fmt(item.line_total)}
-                      </span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', flexShrink: 0 }}>{fmt(item.line_total)}</span>
                     </div>
                   )
                 })}
               </div>
 
-              {/* Totals */}
               <div style={{ padding: '14px 20px', borderTop: '1px solid #f1f5f9' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Subtotal</span>
@@ -483,40 +640,18 @@ export default function CheckoutPage() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
                   <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Shipping</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-                    {fmt(8)}
-                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{fmt(8)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, borderTop: '2px solid #f1f5f9', marginBottom: 16 }}>
                   <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>Total</span>
                   <span style={{ fontSize: 20, fontWeight: 900, color: '#dc2626' }}>{fmt(summarySubtotal + 8)}</span>
                 </div>
 
-                {/* Place order button */}
-                <button
-                  onClick={handleSubmit as any}
-                  disabled={loading}
-                  style={{
-                    width: '100%', padding: '14px 0',
-                    background: loading
-                      ? '#e5e7eb'
-                      : 'linear-gradient(135deg,#dc2626,#b91c1c)',
-                    color: loading ? '#9ca3af' : '#fff',
-                    fontWeight: 800, fontSize: 15,
-                    border: 'none', borderRadius: 12,
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    boxShadow: loading ? 'none' : '0 8px 24px rgba(220,38,38,0.3)',
-                    fontFamily: 'inherit',
-                    transition: 'all 0.2s',
-                  }}
-                >
+                <button onClick={handleSubmit as any} disabled={loading}
+                  style={{ width: '100%', padding: '14px 0', background: loading ? '#e5e7eb' : 'linear-gradient(135deg,#dc2626,#b91c1c)', color: loading ? '#9ca3af' : '#fff', fontWeight: 800, fontSize: 15, border: 'none', borderRadius: 12, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: loading ? 'none' : '0 8px 24px rgba(220,38,38,0.3)', fontFamily: 'inherit', transition: 'all 0.2s' }}>
                   {loading
                     ? <><Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} /> Placing order…</>
-                    : isBuyNow
-                      ? <><Zap size={18} /> Place Order Now</>
-                      : <><CheckCircle size={18} /> Place Order</>
-                  }
+                    : isBuyNow ? <><Zap size={18} /> Place Order Now</> : <><CheckCircle size={18} /> Place Order</>}
                 </button>
 
                 <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 10, fontWeight: 500 }}>

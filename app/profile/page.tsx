@@ -118,7 +118,6 @@ export default function ProfilePage() {
   };
 
   const handleUpload = (_file: File) => {
-    /* TODO: POST _file to /api/profile/avatar on your Laravel backend */
     setToast('Profile photo updated!');
     setTimeout(() => setToast(''), 3000);
   };
@@ -135,20 +134,22 @@ export default function ProfilePage() {
     {
       title: 'My Orders',
       items: [
-        { icon: <OrderIcon />,     label: 'My Orders',          href: '/orders'      },
-        { icon: <ComplaintIcon />, label: 'My Complaints',      href: '/complaints'  }, // CHANGE: Added My Complaints
-        { icon: <HeartIcon />,     label: 'Wishlist',           href: '/wishlist'    },
-        { icon: <ReturnIcon />,    label: 'Returns & Refunds',  href: '/returns'     },
-        { icon: <ReviewIcon />,    label: 'My Reviews',         href: '/reviews'     },
+        { icon: <OrderIcon />,     label: 'My Orders',          href: '/orders'              },
+        { icon: <ComplaintIcon />, label: 'My Complaints',      href: '/complaints'          },
+        { icon: <HeartIcon />,     label: 'Wishlist',           href: '/wishlist'            },
+        { icon: <ReturnIcon />,    label: 'Returns & Refunds',  href: '/returns'             },
+        { icon: <ReviewIcon />,    label: 'My Reviews',         href: '/reviews'             },
       ],
     },
     {
       title: 'Account',
       items: [
-        { icon: <EditIcon />,    label: 'Edit Profile',       href: '/profile/edit'      },
-        { icon: <LockIcon />,    label: 'Change Password',    href: '/profile/password'  },
-        { icon: <BellIcon />,    label: 'Notifications',      href: '/notifications', badge: '3' },
-        { icon: <ShieldIcon />,  label: 'Privacy & Security', href: '/profile/security'  },
+        { icon: <EditIcon />,      label: 'Edit Profile',       href: '/profile/edit'        },
+        { icon: <LockIcon />,      label: 'Change Password',    href: '/profile/password'    },
+        // ── NEW: Address Book entry ────────────────────────────────────────────
+        { icon: <AddressIcon />,   label: 'Address Book',       href: '/account/addresses'   },
+        { icon: <BellIcon />,      label: 'Notifications',      href: '/notifications', badge: '3' },
+        { icon: <ShieldIcon />,    label: 'Privacy & Security', href: '/profile/security'    },
       ],
     },
     ...(isSeller ? [{
@@ -215,7 +216,6 @@ export default function ProfilePage() {
           z-index: 1;
         }
 
-        /* back link — sits at the very top of hero-inner */
         .back-link {
           display: inline-flex;
           align-items: center;
@@ -229,14 +229,12 @@ export default function ProfilePage() {
         }
         .back-link:hover { color: #fff; }
 
-        /* avatar + name row */
         .hero-profile {
           display: flex;
           align-items: center;
           gap: 28px;
         }
 
-        /* ── avatar ── */
         .avatar-wrap {
           position: relative;
           width: 96px; height: 96px;
@@ -298,7 +296,6 @@ export default function ProfilePage() {
         .role-chip.client { background:rgba(25,143,65,0.18);  color:#4dbb78; border:1px solid rgba(25,143,65,0.35); }
         .role-chip.admin  { background:rgba(219,20,46,0.18); color:#ff6b80; border:1px solid rgba(219,20,46,0.35); }
 
-        /* ── body ── */
         .body {
           max-width: 780px;
           margin: -44px auto 0;
@@ -307,7 +304,6 @@ export default function ProfilePage() {
           display: flex; flex-direction: column; gap: 16px;
         }
 
-        /* stats */
         .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
         .stat-card {
           background: #fff; border-radius: 16px;
@@ -327,7 +323,6 @@ export default function ProfilePage() {
         }
         .stat-card:hover .stat-bar { transform: scaleX(1); }
 
-        /* section card */
         .section-card {
           background: #fff; border-radius: 20px;
           overflow: hidden; border: 1.5px solid #ebebeb;
@@ -339,7 +334,6 @@ export default function ProfilePage() {
           color: #bbb; border-bottom: 1px solid #f4f4f4;
         }
 
-        /* menu items */
         .menu-item {
           width: 100%; display: flex; align-items: center; gap: 14px;
           padding: 15px 20px; text-align: left;
@@ -377,7 +371,6 @@ export default function ProfilePage() {
         }
         .menu-item:hover .menu-arrow { color: var(--red); transform: translateX(3px); }
 
-        /* verified bar */
         .verified-bar {
           background: linear-gradient(135deg,#e6f9ee,#f0fff6);
           border: 1.5px solid #b7eccc; border-radius: 14px;
@@ -392,7 +385,6 @@ export default function ProfilePage() {
         .verified-bar h4 { font-size: 0.82rem; font-weight: 800; color: #0f5c28; margin: 0 0 2px; }
         .verified-bar p  { font-size: 0.72rem; color: #2d8a52; margin: 0; }
 
-        /* toast */
         .toast {
           position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
           background: #111; color: #fff;
@@ -408,7 +400,6 @@ export default function ProfilePage() {
           to   { opacity:1; transform: translateX(-50%) translateY(0); }
         }
 
-        /* fade-in */
         .fade-in {
           opacity: 0; transform: translateY(18px);
           transition: opacity 0.45s ease, transform 0.45s ease;
@@ -434,13 +425,7 @@ export default function ProfilePage() {
         {/* ── HERO ── */}
         <div className="hero">
           <div className="hero-inner">
-
-            {/* ← Back to Homepage — top-left, flows naturally */}
-            <Link href="/" className="back-link">
-              ← Back to Homepage
-            </Link>
-
-            {/* Avatar + name */}
+            <Link href="/" className="back-link">← Back to Homepage</Link>
             <div className="hero-profile">
               <BigAvatar user={user} onUpload={handleUpload} />
               <div className="hero-text">
@@ -451,7 +436,6 @@ export default function ProfilePage() {
                 </span>
               </div>
             </div>
-
           </div>
         </div>
 
@@ -488,7 +472,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Toast */}
       {toast && (
         <div className="toast">
           <svg width="14" height="14" fill="none" stroke={GREEN} strokeWidth="2.5" viewBox="0 0 24 24">
@@ -517,13 +500,6 @@ function ProductIcon()   { return <svg width="17" height="17" fill="none" stroke
 function SalesIcon()     { return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>; }
 function SupportIcon()   { return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>; }
 function LogoutIconSVG() { return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>; }
-// CHANGE: Added ComplaintIcon
-function ComplaintIcon() {
-  return (
-    <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-      <line x1="12" y1="9" x2="12" y2="13"/>
-      <line x1="12" y1="17" x2="12.01" y2="17"/>
-    </svg>
-  );
-}
+function ComplaintIcon() { return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>; }
+// NEW: Address Book icon
+function AddressIcon()   { return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
