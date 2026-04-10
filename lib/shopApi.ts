@@ -138,6 +138,35 @@ export interface CheckoutResponse {
   order_id: number
   total: number
 }
+export interface CheckoutPayload {
+  wilaya: string
+  address: string
+  phone: string
+  notes?: string
+  payment_method?: 'cod' | 'card' | 'd17' | 'wallet'  // ← ADD
+}
+
+// Add to BuyNowPayload interface
+export interface BuyNowPayload {
+  product_id: number
+  variant_id?: number | null
+  quantity: number
+  wilaya: string
+  address: string
+  phone: string
+  notes?: string
+  payment_method?: 'cod' | 'card' | 'd17' | 'wallet'  // ← ADD
+}
+
+// Update CheckoutResponse to include needs_payment
+export interface CheckoutResponse {
+  success: boolean
+  message: string
+  order_number: string
+  order_id: number
+  total: number
+  needs_payment?: boolean  // ← ADD — true when payment_method is 'card'
+}
 
 // ─── Cart API ─────────────────────────────────────────────────────────────────
 
@@ -202,4 +231,19 @@ export const checkoutApi = {
    */
   buyNow: (payload: BuyNowPayload) =>
     request<CheckoutResponse>('POST', '/checkout/buy-now', payload),
+}
+export const walletApi = {
+  getBalance: () =>
+    request<{ success: boolean; data: { balance: number } }>('GET', '/wallet/balance'),
+
+  getTransactions: () =>
+    request<{ success: boolean; data: any }>('GET', '/wallet/transactions'),
+}
+
+// Add Stripe payment API
+export const paymentApi = {
+  createStripeIntent: (orderId: number) =>
+    request<{ success: boolean; client_secret: string; intent_id: string }>(
+      'POST', '/payment/stripe/create-intent', { order_id: orderId }
+    ),
 }

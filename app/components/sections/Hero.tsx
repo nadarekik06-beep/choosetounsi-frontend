@@ -275,9 +275,13 @@ export default function Hero() {
 
   const slide = HERO_SLIDES[activeSlide]
 
+  // ── PATCHED: redirect to /become-a-vendor instead of opening modal ────────
   const handleBecomeVendor = () => {
-    if (!isAuthenticated()) { router.push('/auth/login?redirect=/?vendor=1'); return }
-    setShowModal(true)
+    if (!isAuthenticated()) {
+      router.push('/auth/login?redirect=/become-a-vendor')
+      return
+    }
+    router.push('/become-a-vendor')
   }
 
   return (

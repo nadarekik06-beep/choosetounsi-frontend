@@ -131,6 +131,8 @@ export type OrderStatus =
 
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
 
+export type PaymentMethod = 'cod' | 'card' | 'd17' | 'wallet';
+
 export interface Customer {
   id: number;
   name: string;
@@ -146,6 +148,7 @@ export interface Order {
   total_amount: number;
   status: OrderStatus;
   payment_status: PaymentStatus;
+  payment_method: PaymentMethod | null; // ← ADDED
   wilaya: string | null;
   created_at: string;
 }

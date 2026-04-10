@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { logout, isAuthenticated, getUser, AuthUser } from "@/lib/auth";
@@ -195,6 +195,13 @@ export default function Navbar() {
   const [scrolled,     setScrolled]     = useState(false);
   const [megaOpen,     setMegaOpen]     = useState(false);
   const [categories,   setCategories]   = useState<ApiCategory[]>([]);
+
+  // ── SEARCH STATE (new) ────────────────────────────────────────────────────
+  const [searchQuery,     setSearchQuery]     = useState("");
+  const [imageSearching,  setImageSearching]  = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  // ─────────────────────────────────────────────────────────────────────────
+
   const dropRef = useRef<HTMLDivElement>(null);
 
   const { count, favorites, openDrawer } = useCart();
@@ -223,9 +230,83 @@ export default function Navbar() {
   const handleCart=()=>{ closeAll(); openDrawer(); };
   const handleSupport=()=>{ closeAll(); window.dispatchEvent(new Event("open-support-chat")); };
 
+  // ── SEARCH HANDLERS (new) ─────────────────────────────────────────────────
+
+  /** Navigate to /search page with query param */
+  const handleTextSearch = useCallback(() => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    closeAll();
+    router.push(`/search?q=${encodeURIComponent(q)}`);
+  }, [searchQuery, router]);
+
+  /** Submit on Enter key */
+  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleTextSearch();
+  }, [handleTextSearch]);
+
+  /** Open hidden file input when camera icon is clicked */
+  const handleCameraClick = useCallback(() => {
+    imageInputRef.current?.click();
+  }, []);
+
+  /** Handle image file selected for visual search */
+  const handleImageSelected = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImageSearching(true);
+    closeAll();
+
+    try {
+      // Store image in sessionStorage as data URL for search page to use
+      const reader = new FileReader();
+      reader.onload = () => {
+        sessionStorage.setItem("searchImagePreview", reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Build FormData and POST to Laravel
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await fetch(`${API_URL}/api/search/image`, {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Image search failed");
+
+      const data = await res.json();
+
+      // Encode results in URL (compact: just IDs joined by comma)
+      const ids = (data.products ?? []).map((p: { id: number }) => p.id).join(",");
+      router.push(`/search?mode=image&ids=${ids}`);
+
+    } catch {
+      alert("Image search failed. Please try again.");
+    } finally {
+      setImageSearching(false);
+      // Reset input so same file can be re-selected
+      if (imageInputRef.current) imageInputRef.current.value = "";
+    }
+  }, [router]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   return (
     <>
       <MegaMenu categories={categories} visible={megaOpen} onClose={()=>setMegaOpen(false)}/>
+
+      {/* Hidden image file input */}
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        style={{ display: "none" }}
+        onChange={handleImageSelected}
+      />
 
       <header style={{
         position:"sticky", top:0, zIndex:50,
@@ -259,6 +340,8 @@ export default function Navbar() {
               .dd-item:hover{background:#fafafa;color:#dc2626}
               .dd-item.danger{color:#dc2626}
               .dd-item.danger:hover{background:#fff5f5}
+              .search-camera-btn:hover { background: rgba(220,38,38,0.08) !important; color: #dc2626 !important; }
+              .search-camera-btn:active { transform: scale(0.92); }
             `}</style>
             <Link href="/orders"         onClick={closeAll} className="nu"><ClipboardList size={13}/>My Orders</Link>
             <span className="nu-sep"/>
@@ -325,7 +408,7 @@ export default function Navbar() {
             display:"flex", alignItems:"center", gap:24,
           }}>
 
-            {/* Logo — left, fixed width */}
+            {/* Logo */}
             <Link href="/" style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,textDecoration:"none"}}>
               <div style={{
                 width:55,height:55,borderRadius:11,background:"#fff",
@@ -336,44 +419,91 @@ export default function Navbar() {
               }}>
                 <img src="/images/logo.png" alt="ChooseTounsi" style={{width:46,height:46,objectFit:"contain",display:"block"}}/>
               </div>
-              {/* ✅ "Tounsi" = #198f41 (green) */}
               <span style={{fontSize:20,fontWeight:900,letterSpacing:"-0.02em",color:"#0c0c0d",whiteSpace:"nowrap"}}>
                 Choose<span style={{color:"#198f41"}}>Tounsi</span>
               </span>
             </Link>
 
-            {/* Search — flex:1 fills center, constrained max-width */}
+            {/* ── SEARCH BAR (modified from original) ───────────────────── */}
             <div style={{flex:1,minWidth:0,display:"flex",justifyContent:"center"}}>
-              <div style={{
-                display:"flex",
-                width:"100%",
-                maxWidth:640,
-                height:42,
-                border:"2px solid #e5e7eb",
-                borderRadius:8,
-                overflow:"hidden",
-                transition:"border-color 0.18s, box-shadow 0.18s",
-              }}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor="#dc2626"; e.currentTarget.style.boxShadow="0 0 0 3px rgba(219,20,46,0.08)";}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor="#e5e7eb"; e.currentTarget.style.boxShadow="none";}}>
+              <div
+                style={{
+                  display:"flex",
+                  width:"100%",
+                  maxWidth:640,
+                  height:42,
+                  border:"2px solid #e5e7eb",
+                  borderRadius:8,
+                  overflow:"hidden",
+                  transition:"border-color 0.18s, box-shadow 0.18s",
+                }}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor="#dc2626"; e.currentTarget.style.boxShadow="0 0 0 3px rgba(219,20,46,0.08)";}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor="#e5e7eb"; e.currentTarget.style.boxShadow="none";}}
+              >
+                {/* Text input */}
                 <input
                   type="text"
                   placeholder="Search products, brands, vendors..."
-                  style={{flex:1,padding:"0 16px",fontSize:14,border:"none",outline:"none",background:"#fff",color:"#111",fontFamily:"inherit",minWidth:0}}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  style={{flex:1,padding:"0 12px",fontSize:14,border:"none",outline:"none",background:"#fff",color:"#111",fontFamily:"inherit",minWidth:0}}
                 />
-                <button style={{
-                  background:"#dc2626",border:"none",padding:"0 20px",cursor:"pointer",
-                  display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
-                  transition:"background 0.15s",
-                }}
-                onMouseEnter={e=>(e.currentTarget.style.background="#b91c1c")}
-                onMouseLeave={e=>(e.currentTarget.style.background="#dc2626")}>
+
+                {/* ── Camera / Image Search Icon (NEW) ──────────────────── */}
+                <button
+                  onClick={handleCameraClick}
+                  disabled={imageSearching}
+                  title="Search by image"
+                  className="search-camera-btn"
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    borderRight: "1px solid #e5e7eb",
+                    padding: "0 11px",
+                    cursor: imageSearching ? "wait" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    color: "#9ca3af",
+                    transition: "background 0.15s, color 0.15s, transform 0.1s",
+                  }}
+                >
+                  {imageSearching ? (
+                    /* Spinner while uploading */
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"
+                      style={{ animation: "spin 0.8s linear infinite" }}>
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                    </svg>
+                  ) : (
+                    /* Camera icon */
+                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                  )}
+                </button>
+                {/* ─────────────────────────────────────────────────────── */}
+
+                {/* Search button */}
+                <button
+                  onClick={handleTextSearch}
+                  style={{
+                    background:"#dc2626",border:"none",padding:"0 20px",cursor:"pointer",
+                    display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
+                    transition:"background 0.15s",
+                  }}
+                  onMouseEnter={e=>(e.currentTarget.style.background="#b91c1c")}
+                  onMouseLeave={e=>(e.currentTarget.style.background="#dc2626")}
+                >
                   <SearchIcon/>
                 </button>
               </div>
             </div>
+            {/* ─────────────────────────────────────────────────────────── */}
 
-            {/* Nav links — right, flex-shrink:0 */}
+            {/* Nav links */}
             <div style={{display:"flex",alignItems:"center",gap:2,flexShrink:0}}>
               <button onClick={()=>{setMegaOpen(o=>!o);setDropOpen(false);}}
                 style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:14,fontWeight:500,background:megaOpen?"#fef2f2":"transparent",color:megaOpen?"#dc2626":"#52525b",transition:"all 0.14s",whiteSpace:"nowrap"}}>
@@ -412,6 +542,7 @@ export default function Navbar() {
           </div>
 
           <style>{`
+            @keyframes spin { to { transform: rotate(360deg); } }
             @media(max-width:960px){
               .nb-burger{display:flex!important}
             }
@@ -431,9 +562,26 @@ export default function Navbar() {
                 </div>
               </div>
             )}
+            {/* Mobile search with camera */}
             <div style={{display:"flex",border:"1.5px solid #e5e7eb",borderRadius:8,overflow:"hidden",height:42}}>
-              <input type="text" placeholder="Search..." style={{flex:1,padding:"0 14px",fontSize:14,border:"none",outline:"none",background:"#fff",color:"#111"}}/>
-              <button style={{background:"#dc2626",border:"none",padding:"0 16px",cursor:"pointer",color:"#fff"}}><SearchIcon/></button>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                style={{flex:1,padding:"0 14px",fontSize:14,border:"none",outline:"none",background:"#fff",color:"#111"}}
+              />
+              <button
+                onClick={handleCameraClick}
+                style={{background:"transparent",border:"none",borderRight:"1px solid #e5e7eb",padding:"0 10px",cursor:"pointer",color:"#9ca3af"}}
+              >
+                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              </button>
+              <button onClick={handleTextSearch} style={{background:"#dc2626",border:"none",padding:"0 16px",cursor:"pointer",color:"#fff"}}><SearchIcon/></button>
             </div>
             {[{label:"Shop",href:"/shop"},{label:"Vendors",href:"/vendors"},{label:"Deals",href:"/deals"},{label:"My Orders",href:"/orders"},{label:"My Complaints",href:"/complaints"},{label:"Favorites",href:"/favorites"}].map(l=>(
               <Link key={l.href} href={l.href} onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>{l.label}</Link>

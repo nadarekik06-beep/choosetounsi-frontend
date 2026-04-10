@@ -52,23 +52,38 @@ function PaymentBadge({ status }: { status: string }) {
   );
 }
 
+/* ── Payment Method Badge ── */
+function MethodBadge({ method }: { method: string | null }) {
+  if (!method) return <span style={{ color: '#94a3b8', fontSize: 11 }}>—</span>;
+  return (
+    <span style={{
+      display: 'inline-flex', fontSize: 10, fontWeight: 800,
+      padding: '3px 9px', borderRadius: 999, textTransform: 'uppercase',
+      background: 'rgba(99,102,241,0.1)', color: '#6366f1',
+      border: '1px solid rgba(99,102,241,0.25)',
+    }}>
+      {method}
+    </span>
+  );
+}
+
 /* ── Order Detail Modal ── */
 function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
   orderId: number; onClose: () => void; onUpdated: () => void; dark: boolean;
 }) {
-  const [detail,        setDetail]        = useState<OrderDetail | null>(null);
-  const [loading,       setLoading]       = useState(true);
-  const [newStatus,     setNewStatus]     = useState('');
-  const [newPayment,    setNewPayment]    = useState('');
+  const [detail,          setDetail]          = useState<OrderDetail | null>(null);
+  const [loading,         setLoading]         = useState(true);
+  const [newStatus,       setNewStatus]       = useState('');
+  const [newPayment,      setNewPayment]      = useState('');
   const [updatingStatus,  setUpdatingStatus]  = useState(false);
   const [updatingPayment, setUpdatingPayment] = useState(false);
-  const [error,         setError]         = useState('');
-  const [successMsg,    setSuccessMsg]    = useState('');
+  const [error,           setError]           = useState('');
+  const [successMsg,      setSuccessMsg]      = useState('');
 
-  const bg       = dark ? '#161b27' : '#ffffff';
-  const bgSub    = dark ? '#1e2535' : '#f8fafc';
-  const border   = dark ? 'rgba(255,255,255,0.08)' : '#e2e8f0';
-  const textMain  = dark ? '#fff'  : '#0f172a';
+  const bg        = dark ? '#161b27' : '#ffffff';
+  const bgSub     = dark ? '#1e2535' : '#f8fafc';
+  const border    = dark ? 'rgba(255,255,255,0.08)' : '#e2e8f0';
+  const textMain  = dark ? '#fff'   : '#0f172a';
   const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#64748b';
 
   const selectStyle: React.CSSProperties = {
@@ -98,7 +113,6 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
       await ordersApi.updateStatus(orderId, newStatus);
       setSuccessMsg('Order status updated successfully.');
       setNewStatus('');
-      // Refresh detail
       const res = await ordersApi.getOne(orderId);
       setDetail(res.data);
       onUpdated();
@@ -117,7 +131,6 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
       await ordersApi.updatePayment(orderId, newPayment);
       setSuccessMsg('Payment status updated successfully.');
       setNewPayment('');
-      // Refresh detail
       const res = await ordersApi.getOne(orderId);
       setDetail(res.data);
       onUpdated();
@@ -190,15 +203,19 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                 ))}
               </div>
 
-              {/* Status + Payment badges */}
+              {/* Status + Payment + Method badges */}
               <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                 <div>
                   <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted, marginBottom: 6 }}>Order Status</p>
                   <StatusBadge status={detail.order.status} dark={dark} />
                 </div>
                 <div>
-                  <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted, marginBottom: 6 }}>Payment</p>
+                  <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted, marginBottom: 6 }}>Payment Status</p>
                   <PaymentBadge status={detail.order.payment_status} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted, marginBottom: 6 }}>Payment Method</p>
+                  <MethodBadge method={detail.order.payment_method ?? null} />
                 </div>
               </div>
 
@@ -412,7 +429,7 @@ export default function OrdersPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr style={{ background: theadBg }}>
-                  {['Order', 'Customer', 'Wilaya', 'Status', 'Payment', 'Amount', 'Date', ''].map((h, i) => (
+                  {['Order', 'Customer', 'Wilaya', 'Status', 'Payment', 'Method', 'Amount', 'Date', ''].map((h, i) => (
                     <th key={h + i} style={{
                       padding: '10px 20px', fontSize: 9, fontWeight: 800,
                       textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted,
@@ -424,6 +441,8 @@ export default function OrdersPage() {
               <tbody>
                 {data?.data.map(order => (
                   <tr key={order.id} className="order-row" style={{ borderTop: `1px solid ${border}` }}>
+
+                    {/* Order number */}
                     <td style={{ padding: '13px 20px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{
@@ -438,15 +457,42 @@ export default function OrdersPage() {
                         </span>
                       </div>
                     </td>
+
+                    {/* Customer */}
                     <td style={{ padding: '13px 20px' }}>
                       <p style={{ fontWeight: 700, color: textMain, margin: '0 0 2px', fontSize: 12 }}>{order.user?.name ?? `User #${order.user_id}`}</p>
                       <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{order.user?.email}</p>
                     </td>
+
+                    {/* Wilaya */}
                     <td style={{ padding: '13px 20px', fontSize: 12, fontWeight: 500, color: textMuted }}>{order.wilaya ?? '—'}</td>
-                    <td style={{ padding: '13px 20px' }}><StatusBadge status={order.status} dark={dark} /></td>
-                    <td style={{ padding: '13px 20px' }}><PaymentBadge status={order.payment_status} /></td>
-                    <td style={{ padding: '13px 20px', textAlign: 'right', fontWeight: 900, color: textMain, fontSize: 12 }}>{Number(order.total_amount).toFixed(3)} TND</td>
-                    <td style={{ padding: '13px 20px', fontSize: 11, color: textMuted, fontWeight: 500 }}>{new Date(order.created_at).toLocaleDateString('fr-TN')}</td>
+
+                    {/* Order status */}
+                    <td style={{ padding: '13px 20px' }}>
+                      <StatusBadge status={order.status} dark={dark} />
+                    </td>
+
+                    {/* Payment status (paid / unpaid / refunded) */}
+                    <td style={{ padding: '13px 20px' }}>
+                      <PaymentBadge status={order.payment_status} />
+                    </td>
+
+                    {/* Payment method (cod / card / d17 / wallet) */}
+                    <td style={{ padding: '13px 20px' }}>
+                      <MethodBadge method={order.payment_method} />
+                    </td>
+
+                    {/* Amount */}
+                    <td style={{ padding: '13px 20px', textAlign: 'right', fontWeight: 900, color: textMain, fontSize: 12 }}>
+                      {Number(order.total_amount).toFixed(3)} TND
+                    </td>
+
+                    {/* Date */}
+                    <td style={{ padding: '13px 20px', fontSize: 11, color: textMuted, fontWeight: 500 }}>
+                      {new Date(order.created_at).toLocaleDateString('fr-TN')}
+                    </td>
+
+                    {/* View button */}
                     <td style={{ padding: '13px 20px', textAlign: 'center' }}>
                       <button onClick={() => setSelectedId(order.id)}
                         style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: textMuted }}
@@ -454,14 +500,17 @@ export default function OrdersPage() {
                         <Eye size={14} />
                       </button>
                     </td>
+
                   </tr>
                 ))}
                 {data?.data.length === 0 && (
-                  <tr><td colSpan={8} style={{ padding: '56px 20px', textAlign: 'center' }}>
-                    <ShoppingBag size={28} style={{ margin: '0 auto 10px', display: 'block', color: textMuted, opacity: 0.4 }} />
-                    <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>No orders found</p>
-                    <p style={{ fontSize: 11, color: textMuted, opacity: 0.6, margin: 0 }}>Try adjusting your filters</p>
-                  </td></tr>
+                  <tr>
+                    <td colSpan={9} style={{ padding: '56px 20px', textAlign: 'center' }}>
+                      <ShoppingBag size={28} style={{ margin: '0 auto 10px', display: 'block', color: textMuted, opacity: 0.4 }} />
+                      <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>No orders found</p>
+                      <p style={{ fontSize: 11, color: textMuted, opacity: 0.6, margin: 0 }}>Try adjusting your filters</p>
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
