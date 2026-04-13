@@ -1,195 +1,305 @@
 'use client';
-import { useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Eye, Layers } from 'lucide-react';
+/**
+ * app/seller/dashboard/red/products/page.tsx
+ *
+ * Red Pepper — Products
+ * ──────────────────────
+ * Same API logic as Green's /seller/products page (productsApi from sellerApi.ts).
+ * Red design language. ProductModal is imported from the shared Green location
+ * so create/edit logic is identical — no duplication.
+ *
+ * NOTE: ProductModal lives at app/seller/products/ProductModal.tsx
+ *       We import it with a relative path adjusted for this directory depth.
+ */
 
-const PRODUCTS = [
-  { id: 1, name: 'Casque Bluetooth XL3',  category: 'Electronics', price: 26,  stock: 42, sales: 134, revenue: 3484, aiScore: 94, status: 'Active',       approved: true  },
-  { id: 2, name: 'T-shirt Medina Print',  category: 'Clothing',    price: 18,  stock: 89, sales: 98,  revenue: 1764, aiScore: 78, status: 'Active',       approved: true  },
-  { id: 3, name: 'Harissa Artisanale',    category: 'Food',        price: 14,  stock: 156,sales: 73,  revenue: 1022, aiScore: 71, status: 'Active',       approved: true  },
-  { id: 4, name: 'Lampe LED Solaire',     category: 'Electronics', price: 17,  stock: 12, sales: 41,  revenue: 697,  aiScore: 55, status: 'Low Stock',    approved: true  },
-  { id: 5, name: 'Jebba Homme Classique', category: 'Clothing',    price: 45,  stock: 0,  sales: 22,  revenue: 990,  aiScore: 43, status: 'Out of Stock', approved: false },
-];
+import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { productsApi } from '@/lib/sellerApi';
+import type { Product, PaginatedResponse } from '@/types/seller';
+import {
+  Plus, Search, Edit2, Trash2, Package,
+  CheckCircle, XCircle, ChevronLeft, ChevronRight,
+  Loader2, Clock, Eye, Layers, Filter,
+} from 'lucide-react';
+// ── Reuse the EXACT same modal as the Green dashboard ──
+import ProductModal from '@/app/seller/products/ProductModal';
+
+interface ModalState { open: boolean; product: Product | null; }
+const MODAL_CLOSED: ModalState = { open: false, product: null };
 
 export default function RedProductsPage() {
-  const [search, setSearch] = useState('');
+  const router = useRouter();
 
-  const filtered = PRODUCTS.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.category.toLowerCase().includes(search.toLowerCase())
-  );
+  const [data,       setData]       = useState<PaginatedResponse<Product> | null>(null);
+  const [loading,    setLoading]    = useState(true);
+  const [search,     setSearch]     = useState('');
+  const [isActive,   setIsActive]   = useState('');
+  const [isApproved, setIsApproved] = useState('');
+  const [page,       setPage]       = useState(1);
+  const [modal,      setModal]      = useState<ModalState>(MODAL_CLOSED);
+  const [deleting,   setDeleting]   = useState<number | null>(null);
 
-  const scoreColor = (s: number) => s >= 80 ? '#2ecc71' : s >= 60 ? '#f39c12' : '#888';
-  const statusStyle = (status: string): React.CSSProperties => ({
-    display: 'inline-flex',
-    padding: '2px 8px',
-    borderRadius: 20,
-    fontSize: 10,
-    fontWeight: 700,
-    background:
-      status === 'Active' ? 'rgba(46,204,113,0.12)' :
-      status === 'Low Stock' ? 'rgba(243,156,18,0.12)' :
-      'rgba(231,76,60,0.12)',
-    color:
-      status === 'Active' ? '#2ecc71' :
-      status === 'Low Stock' ? '#f39c12' :
-      '#e74c3c',
-  });
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && modal.open) setModal(MODAL_CLOSED);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [modal.open]);
+
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await productsApi.getAll({
+        page, per_page: 12,
+        ...(search     && { search }),
+        ...(isActive   && { is_active: isActive }),
+        ...(isApproved && { is_approved: isApproved }),
+      });
+      setData(res.data as unknown as PaginatedResponse<Product>);
+    } catch {
+      // keep previous data on error
+    } finally {
+      setLoading(false);
+    }
+  }, [page, search, isActive, isApproved]);
+
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Delete this product? This cannot be undone.')) return;
+    setDeleting(id);
+    try {
+      await productsApi.delete(id);
+      fetchProducts();
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleEdit = async (product: Product) => {
+    try {
+      const res = await productsApi.getOne(product.id);
+      setModal({ open: true, product: res.data as unknown as Product });
+    } catch {
+      setModal({ open: true, product });
+    }
+  };
 
   return (
-    <div className="fade-up">
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px', margin: 0 }}>
-          Products
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4 }}>Enhanced product management with AI Score</p>
-      </div>
+    <>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:.8} }
+        .rp-row:hover td { background: var(--surface3) !important; }
+      `}</style>
 
-      {/* Summary bar */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-        {[
-          { label: 'Total Products', value: '5',    color: '#c0392b' },
-          { label: 'Active',         value: '3',    color: '#27ae60' },
-          { label: 'Low / Out',      value: '2',    color: '#f39c12' },
-          { label: 'Avg AI Score',   value: '68.2', color: '#3498db' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="red-card" style={{ padding: '14px 16px', textAlign: 'center' }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
-            <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 2 }}>{label}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* ── Header ── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div>
+            <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text)', margin: '0 0 2px', letterSpacing: '-0.02em' }}>Products</h1>
+            <p style={{ fontSize: 11, color: 'var(--text2)', margin: 0 }}>Manage your store listings</p>
           </div>
-        ))}
-      </div>
-
-      {/* Toolbar */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 10,
-          marginBottom: 14,
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ position: 'relative', flex: 1 }}>
-          <Search size={13} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)', pointerEvents: 'none' }} />
-          <input
-            className="red-input"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search products..."
-            style={{ paddingLeft: 32 }}
-          />
+          <button
+            onClick={() => setModal({ open: true, product: null })}
+            className="red-btn"
+          >
+            <Plus size={14} /> Add Product
+          </button>
         </div>
-        <select className="red-select" style={{ width: 160 }}>
-          <option>All categories</option>
-          <option>Electronics</option>
-          <option>Clothing</option>
-          <option>Food</option>
-        </select>
-        <a href="/seller/products/new">
-          <button className="red-btn"><Plus size={14} /> Add Product</button>
-        </a>
-      </div>
 
-      {/* Table */}
-      <div className="red-card" style={{ overflow: 'hidden' }}>
-        <table>
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Category</th>
-              <th style={{ textAlign: 'right' }}>Price</th>
-              <th style={{ textAlign: 'right' }}>Stock</th>
-              <th style={{ textAlign: 'right' }}>Sales</th>
-              <th style={{ textAlign: 'right' }}>Revenue</th>
-              <th style={{ textAlign: 'center' }}>AI Score</th>
-              <th style={{ textAlign: 'center' }}>Status</th>
-              <th style={{ textAlign: 'center' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(p => (
-              <tr key={p.id}>
-                <td>
-                  <div style={{ fontWeight: 500, color: 'var(--text)', fontSize: 13 }}>{p.name}</div>
-                  {!p.approved && (
-                    <div style={{ fontSize: 10, color: '#f39c12', display: 'flex', alignItems: 'center', gap: 3, marginTop: 2 }}>
-                      <Layers size={9} /> Pending approval
-                    </div>
-                  )}
-                </td>
-                <td style={{ fontSize: 12 }}>{p.category}</td>
-                <td style={{ textAlign: 'right', fontFamily: 'monospace', fontSize: 12 }}>{p.price} DT</td>
-                <td
-                  style={{
-                    textAlign: 'right',
-                    fontWeight: 600,
-                    fontSize: 12,
-                    color: p.stock === 0 ? '#e74c3c' : p.stock <= 15 ? '#f39c12' : 'var(--text)',
-                  }}
-                >
-                  {p.stock}{p.stock === 0 && ' ⚠'}
-                </td>
-                <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{p.sales}</td>
-                <td style={{ textAlign: 'right', fontWeight: 700, color: '#2ecc71', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
-                  {p.revenue} DT
-                </td>
-                <td style={{ textAlign: 'center' }}>
-                  <span
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 800,
-                      color: scoreColor(p.aiScore),
-                      fontVariantNumeric: 'tabular-nums',
-                    }}
-                  >
-                    {p.aiScore}
-                  </span>
-                </td>
-                <td style={{ textAlign: 'center' }}>
-                  <span style={statusStyle(p.status)}>{p.status}</span>
-                </td>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    {[Eye, Edit2, Trash2].map((Icon, i) => (
-                      <button
-                        key={i}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          color: 'var(--text2)',
-                          padding: 5,
-                          borderRadius: 7,
-                          display: 'flex',
-                          transition: 'color 0.15s, background 0.15s',
-                        }}
-                        onMouseEnter={e => {
-                          (e.currentTarget as HTMLButtonElement).style.color = i === 2 ? '#e74c3c' : 'var(--red-light)';
-                          (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface4)';
-                        }}
-                        onMouseLeave={e => {
-                          (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)';
-                          (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-                        }}
-                      >
-                        <Icon size={13} />
-                      </button>
-                    ))}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {filtered.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text2)', fontSize: 13 }}>
-            No products match your search.
+        {/* ── Filters ── */}
+        <div style={{ background: 'var(--surface2)', borderRadius: 14, padding: 14, border: '1px solid var(--border)', display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
+            <Search size={12} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text2)', pointerEvents: 'none' }} />
+            <input
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              placeholder="Search by name or SKU…"
+              className="red-input"
+              style={{ paddingLeft: 32, margin: 0 }}
+            />
           </div>
-        )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Filter size={12} style={{ color: 'var(--text2)', flexShrink: 0 }} />
+            <select value={isActive} onChange={e => { setIsActive(e.target.value); setPage(1); }} className="red-select" style={{ width: 'auto' }}>
+              <option value="">All Status</option>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+            <select value={isApproved} onChange={e => { setIsApproved(e.target.value); setPage(1); }} className="red-select" style={{ width: 'auto' }}>
+              <option value="">All Approvals</option>
+              <option value="true">Approved</option>
+              <option value="false">Pending</option>
+            </select>
+          </div>
+          {data && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', marginLeft: 'auto' }}>
+              {data.total} product{data.total !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+
+        {/* ── Table ── */}
+        <div style={{ background: 'var(--surface2)', borderRadius: 14, border: '1px solid var(--border)', overflow: 'hidden' }}>
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}>
+              <Loader2 size={24} style={{ animation: 'spin 0.8s linear infinite', color: 'var(--red)' }} />
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table>
+                <thead>
+                  <tr>
+                    {['Product', 'Category', 'Price', 'Stock', 'Status', 'Approval', 'Actions'].map(h => (
+                      <th key={h} style={{ textAlign: ['Price', 'Stock'].includes(h) ? 'right' : ['Status', 'Approval', 'Actions'].includes(h) ? 'center' : 'left' }}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data?.data.map(product => {
+                    const hasVariants   = (product as any).has_variants;
+                    const displayStock  = hasVariants ? (product as any).variant_stock : product.stock;
+                    const thumbUrl      = (product as any).primary_image_url as string | null | undefined;
+
+                    return (
+                      <tr key={product.id} className="rp-row" style={{ transition: 'background 0.15s' }}>
+
+                        {/* Product */}
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 38, height: 38, borderRadius: 9, background: 'var(--surface3)', border: '1px solid var(--border)', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {thumbUrl
+                                ? <img src={thumbUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                                : <Package size={13} style={{ color: 'var(--text3)' }} />
+                              }
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <p style={{ fontWeight: 700, color: 'var(--text)', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180, fontSize: 13 }}>
+                                {product.name}
+                              </p>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                <p style={{ fontSize: 10, color: 'var(--text2)', margin: 0 }}>
+                                  {(product as any).sku ? `SKU: ${(product as any).sku}` : `#${product.id}`}
+                                </p>
+                                {hasVariants && (
+                                  <span style={{ fontSize: 9, fontWeight: 700, color: '#8b5cf6', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', padding: '1px 5px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                                    <Layers size={8} /> variants
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Category */}
+                        <td style={{ color: 'var(--text2)', fontSize: 12 }}>{(product as any).category?.name ?? '—'}</td>
+
+                        {/* Price */}
+                        <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--text)', fontSize: 13 }}>
+                          {Number(product.price).toFixed(3)} DT
+                        </td>
+
+                        {/* Stock */}
+                        <td style={{ textAlign: 'right', fontWeight: 700, color: displayStock === 0 ? '#e74c3c' : displayStock <= 10 ? '#f39c12' : 'var(--text)' }}>
+                          {displayStock}
+                          {displayStock === 0 && <span style={{ fontSize: 10, marginLeft: 4, color: '#e74c3c' }}>(Out)</span>}
+                          {displayStock > 0 && displayStock <= 10 && <span style={{ fontSize: 10, marginLeft: 4, color: '#f39c12' }}>(Low)</span>}
+                        </td>
+
+                        {/* Status */}
+                        <td style={{ textAlign: 'center' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: product.is_active ? 'rgba(39,174,96,0.12)' : 'rgba(231,76,60,0.12)', color: product.is_active ? '#27ae60' : '#e74c3c', border: `1px solid ${product.is_active ? 'rgba(39,174,96,0.25)' : 'rgba(231,76,60,0.25)'}` }}>
+                            {product.is_active ? <><CheckCircle size={8} />Active</> : <><XCircle size={8} />Inactive</>}
+                          </span>
+                        </td>
+
+                        {/* Approval */}
+                        <td style={{ textAlign: 'center' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: product.is_approved ? 'rgba(52,152,219,0.12)' : 'rgba(243,156,18,0.12)', color: product.is_approved ? '#3498db' : '#f39c12', border: `1px solid ${product.is_approved ? 'rgba(52,152,219,0.25)' : 'rgba(243,156,18,0.25)'}` }}>
+                            {product.is_approved ? <><CheckCircle size={8} />Approved</> : <><Clock size={8} />Pending</>}
+                          </span>
+                        </td>
+
+                        {/* Actions */}
+                        <td style={{ textAlign: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                            <button onClick={() => router.push(`/seller/products/${product.id}`)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 7, color: 'var(--text2)', transition: 'color 0.15s' }}
+                              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#3498db'}
+                              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)'}
+                              title="View">
+                              <Eye size={13} />
+                            </button>
+                            <button onClick={() => handleEdit(product)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 7, color: 'var(--text2)', transition: 'color 0.15s' }}
+                              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#f39c12'}
+                              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)'}
+                              title="Edit">
+                              <Edit2 size={13} />
+                            </button>
+                            <button onClick={() => handleDelete(product.id)} disabled={deleting === product.id} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 7, color: 'var(--text2)', opacity: deleting === product.id ? 0.4 : 1, transition: 'color 0.15s' }}
+                              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#e74c3c'}
+                              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)'}
+                              title="Delete">
+                              {deleting === product.id
+                                ? <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />
+                                : <Trash2 size={13} />
+                              }
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {data?.data.length === 0 && (
+                    <tr>
+                      <td colSpan={7} style={{ padding: '56px 20px', textAlign: 'center' }}>
+                        <Package size={28} style={{ margin: '0 auto 10px', display: 'block', color: 'var(--text3)' }} />
+                        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', margin: '0 0 4px' }}>No products found</p>
+                        <p style={{ fontSize: 11, color: 'var(--text3)', margin: 0 }}>Adjust your filters or add a new product</p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {data && data.last_page > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: '1px solid var(--border)' }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)' }}>
+                Showing {data.from}–{data.to} of {data.total}
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                  className="ghost-btn" style={{ padding: '5px 8px', opacity: page === 1 ? 0.4 : 1 }}>
+                  <ChevronLeft size={14} />
+                </button>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', padding: '0 6px' }}>
+                  {data.current_page}/{data.last_page}
+                </span>
+                <button onClick={() => setPage(p => Math.min(data.last_page, p + 1))} disabled={page === data.last_page}
+                  className="ghost-btn" style={{ padding: '5px 8px', opacity: page === data.last_page ? 0.4 : 1 }}>
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div style={{ marginTop: 10, fontSize: 11, color: 'var(--text3)', textAlign: 'center' }}>
-        AI Score = composite of sales velocity, review rating, price competitiveness, and search visibility
-      </div>
-    </div>
+      {modal.open && (
+        <ProductModal
+          product={modal.product}
+          onClose={() => setModal(MODAL_CLOSED)}
+          onSaved={() => { setModal(MODAL_CLOSED); fetchProducts(); }}
+        />
+      )}
+    </>
   );
 }

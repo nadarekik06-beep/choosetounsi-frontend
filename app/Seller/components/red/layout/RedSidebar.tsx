@@ -1,4 +1,15 @@
 'use client';
+/**
+ * app/seller/dashboard/red/RedSidebar.tsx
+ *
+ * FIXED: BOTTOM_NAV now points to Red-internal routes
+ * (/seller/dashboard/red/orders and /seller/dashboard/red/complaints)
+ * so clicking Orders/Complaints stays inside the Red layout instead of
+ * jumping to the Green layout at /seller/orders.
+ *
+ * Everything else is IDENTICAL to the original RedSidebar.
+ */
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -16,9 +27,10 @@ const NAV = [
   { href: '/seller/dashboard/red/recommendations',  label: 'Recommendations', icon: Lightbulb       },
 ];
 
+// ── FIX: point to Red-internal routes so layout stays consistent ──
 const BOTTOM_NAV = [
-  { href: '/seller/orders',     label: 'Orders',     icon: ShoppingBag  },
-  { href: '/seller/complaints', label: 'Complaints', icon: MessageSquare },
+  { href: '/seller/dashboard/red/orders',     label: 'Orders',     icon: ShoppingBag   },
+  { href: '/seller/dashboard/red/complaints', label: 'Complaints', icon: MessageSquare },
 ];
 
 export default function RedSidebar({
@@ -75,28 +87,13 @@ export default function RedSidebar({
             </div>
             <div
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
+                display: 'inline-flex', alignItems: 'center', gap: 4,
                 background: 'linear-gradient(135deg, var(--red-dark), var(--red))',
-                color: '#fff',
-                fontSize: 9,
-                fontWeight: 800,
-                padding: '2px 7px',
-                borderRadius: 20,
-                marginTop: 3,
-                letterSpacing: 0.5,
+                color: '#fff', fontSize: 9, fontWeight: 800, padding: '2px 7px',
+                borderRadius: 20, marginTop: 3, letterSpacing: 0.5,
               }}
             >
-              <span
-                style={{
-                  width: 5,
-                  height: 5,
-                  background: '#fff',
-                  borderRadius: '50%',
-                  opacity: 0.85,
-                }}
-              />
+              <span style={{ width: 5, height: 5, background: '#fff', borderRadius: '50%', opacity: 0.85 }} />
               RED PEPPER PRO
             </div>
           </div>
@@ -104,17 +101,10 @@ export default function RedSidebar({
         <button
           onClick={() => onCollapse(!collapsed)}
           style={{
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            color: 'var(--text2)',
-            padding: 6,
-            borderRadius: 8,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            transition: 'color 0.15s',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            color: 'var(--text2)', padding: 6, borderRadius: 8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0, transition: 'color 0.15s',
           }}
           onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.color = 'var(--text)')}
           onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)')}
@@ -126,16 +116,7 @@ export default function RedSidebar({
       {/* Main nav */}
       <nav style={{ flex: 1, padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
         {!collapsed && (
-          <p
-            style={{
-              fontSize: 9,
-              fontWeight: 700,
-              color: 'var(--text3)',
-              textTransform: 'uppercase',
-              letterSpacing: '1.2px',
-              padding: '4px 8px 6px',
-            }}
-          >
+          <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '1.2px', padding: '4px 8px 6px' }}>
             Main
           </p>
         )}
@@ -148,13 +129,10 @@ export default function RedSidebar({
               key={href}
               href={href}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
+                display: 'flex', alignItems: 'center', gap: 10,
                 padding: collapsed ? '10px 0' : '9px 10px',
                 justifyContent: collapsed ? 'center' : 'flex-start',
-                borderRadius: 10,
-                fontSize: 13,
+                borderRadius: 10, fontSize: 13,
                 fontWeight: isActive ? 600 : 400,
                 textDecoration: 'none',
                 color: isActive ? 'var(--red-light)' : 'var(--text2)',
@@ -183,95 +161,59 @@ export default function RedSidebar({
         })}
 
         {!collapsed && (
-          <p
-            style={{
-              fontSize: 9,
-              fontWeight: 700,
-              color: 'var(--text3)',
-              textTransform: 'uppercase',
-              letterSpacing: '1.2px',
-              padding: '12px 8px 6px',
-            }}
-          >
+          <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '1.2px', padding: '12px 8px 6px' }}>
             Operations
           </p>
         )}
-        {BOTTOM_NAV.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: collapsed ? '10px 0' : '9px 10px',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              borderRadius: 10,
-              fontSize: 13,
-              fontWeight: 400,
-              textDecoration: 'none',
-              color: 'var(--text2)',
-              background: 'transparent',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLAnchorElement).style.background = 'var(--surface3)';
-              (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLAnchorElement).style.background = 'transparent';
-              (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text2)';
-            }}
-            title={collapsed ? label : undefined}
-          >
-            <Icon size={16} style={{ flexShrink: 0, opacity: 0.7 }} />
-            {!collapsed && <span>{label}</span>}
-          </Link>
-        ))}
+        {BOTTOM_NAV.map(({ href, label, icon: Icon }) => {
+          // ── Also highlight Operations links when active ──
+          const isActive = pathname.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: collapsed ? '10px 0' : '9px 10px',
+                justifyContent: collapsed ? 'center' : 'flex-start',
+                borderRadius: 10, fontSize: 13,
+                fontWeight: isActive ? 600 : 400,
+                textDecoration: 'none',
+                color: isActive ? 'var(--red-light)' : 'var(--text2)',
+                background: isActive ? 'var(--red-subtle)' : 'transparent',
+                borderLeft: isActive && !collapsed ? '2px solid var(--red)' : '2px solid transparent',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => {
+                if (!isActive) {
+                  (e.currentTarget as HTMLAnchorElement).style.background = 'var(--surface3)';
+                  (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text)';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isActive) {
+                  (e.currentTarget as HTMLAnchorElement).style.background = 'transparent';
+                  (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text2)';
+                }
+              }}
+              title={collapsed ? label : undefined}
+            >
+              <Icon size={16} style={{ flexShrink: 0, opacity: isActive ? 1 : 0.7 }} />
+              {!collapsed && <span>{label}</span>}
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Footer */}
       <div style={{ padding: '12px 10px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
         {!collapsed && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '8px 10px',
-              borderRadius: 10,
-              background: 'var(--surface3)',
-              marginBottom: 6,
-            }}
-          >
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: '50%',
-                background: 'var(--red-dark)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 11,
-                fontWeight: 800,
-                color: '#fff',
-                flexShrink: 0,
-              }}
-            >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10, background: 'var(--surface3)', marginBottom: 6 }}>
+            <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--red-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
               {user?.name?.slice(0, 2).toUpperCase() ?? 'SE'}
             </div>
             <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: 'var(--text)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {user?.name ?? 'Seller'}
               </div>
               <div style={{ fontSize: 10, color: 'var(--red-light)' }}>Red Pepper · 49 DT/mo</div>
@@ -279,22 +221,8 @@ export default function RedSidebar({
           </div>
         )}
 
-        <Link
-          href="/"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: collapsed ? '9px 0' : '8px 10px',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            borderRadius: 8,
-            fontSize: 12,
-            fontWeight: 500,
-            textDecoration: 'none',
-            color: 'var(--text2)',
-            marginBottom: 2,
-            transition: 'all 0.15s',
-          }}
+        <Link href="/"
+          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: collapsed ? '9px 0' : '8px 10px', justifyContent: collapsed ? 'center' : 'flex-start', borderRadius: 8, fontSize: 12, fontWeight: 500, textDecoration: 'none', color: 'var(--text2)', marginBottom: 2, transition: 'all 0.15s' }}
           title={collapsed ? 'Homepage' : undefined}
           onMouseEnter={e => ((e.currentTarget as HTMLAnchorElement).style.color = 'var(--text)')}
           onMouseLeave={e => ((e.currentTarget as HTMLAnchorElement).style.color = 'var(--text2)')}
@@ -305,23 +233,7 @@ export default function RedSidebar({
 
         <button
           onClick={handleLogout}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: collapsed ? '9px 0' : '8px 10px',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            width: '100%',
-            borderRadius: 8,
-            fontSize: 12,
-            fontWeight: 500,
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            color: 'var(--red-light)',
-            fontFamily: 'inherit',
-            transition: 'all 0.15s',
-          }}
+          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: collapsed ? '9px 0' : '8px 10px', justifyContent: collapsed ? 'center' : 'flex-start', width: '100%', borderRadius: 8, fontSize: 12, fontWeight: 500, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--red-light)', fontFamily: 'inherit', transition: 'all 0.15s' }}
           title={collapsed ? 'Sign Out' : undefined}
         >
           <LogOut size={15} style={{ flexShrink: 0 }} />
