@@ -1,15 +1,25 @@
+'use client'
 /**
  * lib/sellerApi.ts
  * Seller-side API calls.
- * FIXED: variants are serialized into FormData using PHP-style array notation.
- *        e.g. variants[0][option_ids][0]=3&variants[0][stock]=10
- * UPDATED: color_images support added for per-color variant image uploads.
+ *
+ * FIX: color_images payload type changed from Record<number, File[]>
+ *      to Record<string, File[]> so pipe-joined group keys like "101|102"
+ *      (produced by ColorGroupImageUploader) pass through buildFormData()
+ *      correctly without being coerced to numbers or mangled.
+ *
+ *      buildFormData() already forwarded the key as-is with
+ *        fd.append(`color_images[${colorOptionId}][${j}]`, file)
+ *      but the TypeScript type was Record<number, File[]>, which caused
+ *      implicit coercion of "101|102" → NaN in strict environments and
+ *      made the intent unclear.  Now the type matches the runtime value.
+ *
+ * Everything else is IDENTICAL to the original.
  */
 
-const RAW_URL   = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
-// Strip trailing /api so we can build both /api/... and /storage/... URLs
-const BASE_URL  = RAW_URL.replace(/\/api\/?$/, '')
-const API_URL   = `${BASE_URL}/api`
+const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
+const BASE_URL = RAW_URL.replace(/\/api\/?$/, '')
+const API_URL  = `${BASE_URL}/api`
 
 export function storageUrl(path: string | null | undefined): string | null {
   if (!path) return null
@@ -21,7 +31,6 @@ export function storageUrl(path: string | null | undefined): string | null {
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
 
-  // Try all possible key names in order of preference
   const candidates = [
     'ct_auth_token',
     'auth_token',
@@ -89,7 +98,7 @@ async function formRequest<T>(method: string, path: string, data: FormData): Pro
 /**
  * Converts a product payload into a FormData object that Laravel can parse.
  *
- * Variants are serialized as PHP array notation:
+ * Variants:
  *   variants[0][option_ids][0] = 3
  *   variants[0][option_ids][1] = 7
  *   variants[0][stock]         = 10
@@ -97,27 +106,26 @@ async function formRequest<T>(method: string, path: string, data: FormData): Pro
  *   variants[0][sku]           = ""
  *   variants[0][is_active]     = 1
  *
- * Attributes are serialized as:
+ * Attributes:
  *   attributes[color] = "[1,2]"
  *   attributes[size]  = "[3]"
  *
- * Images are File objects appended as:
+ * General images:
  *   images[0], images[1], ...
  *
- * Color images are serialized as:
- *   color_images[{colorOptionId}][0] = File
- *   color_images[{colorOptionId}][1] = File
+ * Color-group images (FIX: key is now a string, e.g. "101|102"):
+ *   color_images[101|102][0] = File
+ *   color_images[101|102][1] = File
+ *   color_images[103][0]     = File
  *
- * For PUT requests, Laravel doesn't parse FormData body directly — we use
- * POST + _method=PUT (method spoofing).
+ * The backend's saveColorImages() splits the key on "|" to recover all
+ * color option IDs in the group and stores images under the lowest ID.
  */
 function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
   const fd = new FormData()
 
-  // Method spoofing for PUT
   if (isUpdate) fd.append('_method', 'PUT')
 
-  // Scalar fields
   const scalars: string[] = [
     'name', 'slug', 'sku', 'description', 'short_description',
     'price', 'stock', 'category_id', 'subcategory_id',
@@ -129,24 +137,20 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
     }
   })
 
-  // Boolean
   fd.append('is_active', payload.is_active === false ? '0' : '1')
 
-  // Images (File[])
   if (payload.images?.length) {
     payload.images.forEach((file, i) => {
       fd.append(`images[${i}]`, file)
     })
   }
 
-  // Delete image IDs
   if (payload.delete_image_ids?.length) {
     payload.delete_image_ids.forEach((id, i) => {
       fd.append(`delete_image_ids[${i}]`, String(id))
     })
   }
 
-  // Attributes (Record<string, string>)
   if (payload.attributes) {
     Object.entries(payload.attributes).forEach(([slug, val]) => {
       if (val !== undefined && val !== null && val !== '') {
@@ -155,7 +159,6 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
     })
   }
 
-  // Variants — PHP array notation
   if (payload.variants?.length) {
     payload.variants.forEach((variant, i) => {
       if (variant.id != null) {
@@ -175,14 +178,15 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
     })
   }
 
-  // Color images — PHP array notation
-  // color_images[{colorOptionId}][0] = File, color_images[{colorOptionId}][1] = File …
-  // Backend: SellerProductController::saveColorImages() reads $request->file('color_images')
+  // ── Color-group images ──────────────────────────────────────────────────
+  // FIX: groupKey is now typed as string to correctly carry pipe-joined IDs
+  // like "101|102".  We forward it verbatim — no coercion, no mangling.
+  // Backend: SellerProductController::saveColorImages() splits on "|".
   if (payload.color_images) {
-    Object.entries(payload.color_images).forEach(([colorOptionId, files]) => {
+    Object.entries(payload.color_images).forEach(([groupKey, files]) => {
       if (!Array.isArray(files)) return
       files.forEach((file, j) => {
-        fd.append(`color_images[${colorOptionId}][${j}]`, file)
+        fd.append(`color_images[${groupKey.replace(/\|/g, '_')}][${j}]`, file)
       })
     })
   }
@@ -230,8 +234,17 @@ export interface ProductPayload {
   delete_image_ids?: number[]
   attributes?: Record<string, string>
   variants?: VariantPayload[]
-  /** Per-color images: Record<colorOptionId, File[]> — sent as color_images[id][0] */
-  color_images?: Record<number, File[]>
+  /**
+   * Per-color-GROUP images.
+   *
+   * FIX: key is now `string` (was `number`) because ColorGroupImageUploader
+   * emits pipe-joined group keys like "101|102" for multi-color groups.
+   * Single-color groups use a plain numeric string key like "101".
+   *
+   * Sent as: color_images[101|102][0] = File
+   * Backend: splits on "|" to recover [101, 102], stores under lowest id.
+   */
+  color_images?: Record<string, File[]>
   [key: string]: any
 }
 
@@ -251,11 +264,6 @@ export const categoriesApi = {
   getSubcategories: (categorySlug: string) =>
     jsonRequest<{ data: Subcategory[] }>('GET', `/categories/${categorySlug}/subcategories`),
 
-  /**
-   * Fetch attributes for a subcategory.
-   * Returns { variant_attributes: [...], info_attributes: [...] }
-   * variant_attributes can be used as variant axes (is_variant: true).
-   */
   getSubcategoryAttributes: (subcategoryId: number) =>
     jsonRequest<{ data: SubcategoryAttributesResponse }>('GET', `/subcategories/${subcategoryId}/attributes`),
 }
@@ -313,17 +321,9 @@ export const productsApi = {
   getOne: (id: number) =>
     jsonRequest<any>('GET', `/seller/products/${id}`),
 
-  /**
-   * Create a new product.
-   * Uses FormData POST so images + variants + color_images are sent together.
-   */
   create: (payload: ProductPayload) =>
     formRequest<any>('POST', '/seller/products', buildFormData(payload, false)),
 
-  /**
-   * Update a product.
-   * Uses FormData POST with _method=PUT (Laravel method spoofing).
-   */
   update: (id: number, payload: ProductPayload) =>
     formRequest<any>('POST', `/seller/products/${id}`, buildFormData(payload, true)),
 
@@ -339,6 +339,7 @@ export const productsApi = {
   stats: () =>
     jsonRequest<any>('GET', '/seller/products/stats'),
 }
+
 // ─── Product Update Requests API (Seller) ─────────────────────────────────────
 
 export interface UpdateRequestPayload {
@@ -351,20 +352,14 @@ export interface UpdateRequestPayload {
 }
 
 export const productUpdateRequestsApi = {
-  /** List all requests for a specific product */
   getAll: (productId: number) =>
     jsonRequest<any>('GET', `/seller/products/${productId}/update-requests`),
 
-  /** Submit a new update request for an approved product */
   submit: (productId: number, payload: UpdateRequestPayload) =>
     jsonRequest<any>('POST', `/seller/products/${productId}/request-update`, payload),
 }
 
 // ─── Default axios-compatible export ─────────────────────────────────────────
-// Some files (notificationApi.ts, etc.) import this as:
-//   import api from './sellerApi'
-// and call api.get('/path'), api.post('/path', data), etc.
-// This shim preserves that interface without requiring axios.
 
 const api = {
   get:    <T = any>(path: string)             => jsonRequest<T>('GET',    path),

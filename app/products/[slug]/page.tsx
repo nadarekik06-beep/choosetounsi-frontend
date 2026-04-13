@@ -4,11 +4,24 @@
  * app/products/[slug]/page.tsx
  * ChooseTounsi — Product detail page with variant image switching.
  *
- * KEY BEHAVIOR:
- *  - When color is selected → gallery updates INSTANTLY to that color's images
- *  - When full variant is matched → correct variant_id sent to cart
- *  - Fallback to product-level images if variant has none
- *  - Buy Now: bypasses cart, goes directly to checkout with query params
+ * FIXES applied in this version
+ * ──────────────────────────────
+ * FIX A  (duplicate React key `104`)
+ *   Both the color-axis map and the non-color-axis map now use a
+ *   compound key  `${axis.slug}-${opt.id}`  instead of bare `opt.id`.
+ *
+ * FIX B  (isOptionAvailable broken for multi-color groups)
+ *   selectedOptions['color'] stores the primary color option ID.
+ *   Variant matching uses mapEntry.id === sel (primary id match).
+ *
+ * FIX C  (multi-color swatch shows color circles instead of uploaded image)
+ *   BEFORE: `isGroup` (swatches.length > 1) caused color circles to always
+ *           render, and `primary_image` was only shown when `!isGroup`.
+ *           So multi-color variants NEVER showed their uploaded image even
+ *           when opt.primary_image was correctly populated by the backend.
+ *   AFTER:  If opt.primary_image exists → always show the image (single or
+ *           multi-color). Only fall back to color circles when there is no
+ *           image. The button shape stays pill for groups, circle for singles.
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react'
@@ -23,7 +36,6 @@ import { useCart } from '@/context/CartContext'
 import { isAuthenticated, getUser } from '@/lib/auth'
 import type { ProductVariant, SelectableAxis } from '@/lib/shopApi'
 
-// Normalize: strip trailing /api if present so STORAGE_BASE is always the bare origin.
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL      = `${STORAGE_BASE}/api`
 
@@ -69,7 +81,6 @@ interface Product {
       swatches?: { id: number; value: string; color_hex?: string | null }[]
     })[]
   })[]
-  /** color_option_id (as string key from JSON) → [url, url, …] — for instant color switching */
   color_images: Record<string, string[]>
 }
 
@@ -133,80 +144,88 @@ function VariantSelector({
           </p>
 
           {axis.type === 'color' ? (
-            // ── FIX 4: multi-dot group swatches ──────────────────────────
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {axis.options.map(opt => {
                 const chosen    = selectedOptions[axis.slug] === opt.id
                 const available = isOptionAvailable(axis.slug, opt.id)
-                // swatches array is present for multi-color groups (from backend)
-                // fall back to a single swatch for legacy single-color options
-                // ── FIX 1: cast opt to access extended swatches property ──
                 const swatches  = (opt as any).swatches ?? [{ id: opt.id, value: opt.value, color_hex: opt.color_hex }]
                 const isGroup   = swatches.length > 1
 
+                // ── FIX C ────────────────────────────────────────────────────
+                // hasImage is true for both single-color and multi-color options
+                // as long as the backend populated primary_image.
+                // Priority: show image > show color circles > show plain circle.
+                const hasImage = !!opt.primary_image
+
                 return (
                   <button
-                    key={opt.id}
+                    key={`${axis.slug}-${opt.id}`}
                     type="button"
                     onClick={() => available && onSelect(axis.slug, opt.id)}
                     title={opt.value}
                     style={{
-                      position:     'relative',
-                      display:      'flex',
-                      alignItems:   'center',
+                      position:       'relative',
+                      display:        'flex',
+                      alignItems:     'center',
                       justifyContent: 'center',
-                      // groups become pill-shaped; single colors stay circular
-                      width:        isGroup ? 'auto' : 34,
-                      height:       34,
-                      padding:      isGroup ? '0 8px' : 0,
-                      gap:          4,
-                      borderRadius: isGroup ? 999 : '50%',
-                      cursor:       available ? 'pointer' : 'not-allowed',
-                      background:   isGroup ? '#f8fafc' : (opt.color_hex ?? '#e5e7eb'),
-                      border:       chosen ? '3px solid #dc2626' : '2px solid #e5e7eb',
-                      outline:      chosen ? '2px solid #fff' : 'none',
-                      outlineOffset: '-4px',
-                      opacity:      available ? 1 : 0.35,
-                      transition:   'all 0.15s',
-                      flexShrink:   0,
+                      // Shape: pill for groups without image, circle otherwise
+                      width:          (isGroup && !hasImage) ? 'auto' : 34,
+                      height:         34,
+                      padding:        (isGroup && !hasImage) ? '0 8px' : 0,
+                      gap:            4,
+                      borderRadius:   (isGroup && !hasImage) ? 999 : '50%',
+                      cursor:         available ? 'pointer' : 'not-allowed',
+                      // Background: transparent when image will cover it, else color
+                      background:     hasImage
+                                        ? '#f0f0f0'
+                                        : isGroup
+                                          ? '#f8fafc'
+                                          : (opt.color_hex ?? '#e5e7eb'),
+                      border:         chosen ? '3px solid #dc2626' : '2px solid #e5e7eb',
+                      outline:        chosen ? '2px solid #fff' : 'none',
+                      outlineOffset:  '-4px',
+                      opacity:        available ? 1 : 0.35,
+                      transition:     'all 0.15s',
+                      flexShrink:     0,
+                      overflow:       'hidden',
                     }}
                   >
-                    {/* Single color: show primary_image overlay if present */}
-                    {!isGroup && opt.primary_image && (
+                    {/* ── FIX C: image takes priority, works for both single and multi-color ── */}
+                    {hasImage ? (
                       <img
-                        src={opt.primary_image}
+                        src={opt.primary_image!}
                         alt={opt.value}
                         style={{
-                          position:     'absolute',
-                          inset:        2,
-                          borderRadius: '50%',
-                          width:        'calc(100% - 4px)',
-                          height:       'calc(100% - 4px)',
-                          objectFit:    'cover',
+                          position:      'absolute',
+                          inset:         chosen ? 3 : 2,   // shrinks slightly when border is thicker
+                          borderRadius:  '50%',
+                          width:         chosen ? 'calc(100% - 6px)' : 'calc(100% - 4px)',
+                          height:        chosen ? 'calc(100% - 6px)' : 'calc(100% - 4px)',
+                          objectFit:     'cover',
                           pointerEvents: 'none',
                         }}
                       />
-                    )}
+                    ) : isGroup ? (
+                      // No image uploaded + multi-color → show color circles (original behaviour)
+                      swatches.map((s: { id: number; value: string; color_hex?: string | null }) => (
+                        <span
+                          key={s.id}
+                          title={s.value}
+                          style={{
+                            display:      'inline-block',
+                            width:        16,
+                            height:       16,
+                            borderRadius: '50%',
+                            flexShrink:   0,
+                            background:   s.color_hex ?? '#e5e7eb',
+                            border:       '1.5px solid rgba(0,0,0,0.10)',
+                          }}
+                        />
+                      ))
+                    ) : null
+                    // Single-color with no image → background colour of the button itself is enough
+                    }
 
-                    {/* Multi-color group: row of small colored dots */}
-                    {/* ── FIX 2: explicit type on s ── */}
-                    {isGroup && swatches.map((s: { id: number; value: string; color_hex?: string | null }) => (
-                      <span
-                        key={s.id}
-                        title={s.value}
-                        style={{
-                          display:     'inline-block',
-                          width:       16,
-                          height:      16,
-                          borderRadius: '50%',
-                          flexShrink:  0,
-                          background:  s.color_hex ?? '#e5e7eb',
-                          border:      '1.5px solid rgba(0,0,0,0.10)',
-                        }}
-                      />
-                    ))}
-
-                    {/* Strikethrough diagonal for unavailable options */}
                     {!available && (
                       <svg
                         viewBox="0 0 34 34"
@@ -220,25 +239,28 @@ function VariantSelector({
               })}
             </div>
           ) : (
-            // ── non-color axis — unchanged ────────────────────────────────
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {axis.options.map(opt => {
                 const chosen    = selectedOptions[axis.slug] === opt.id
                 const available = isOptionAvailable(axis.slug, opt.id)
                 return (
                   <button
-                    key={opt.id} type="button"
+                    key={`${axis.slug}-${opt.id}`}
+                    type="button"
                     onClick={() => available && onSelect(axis.slug, opt.id)}
                     style={{
-                      padding: '6px 14px', borderRadius: 8,
-                      cursor: available ? 'pointer' : 'not-allowed',
-                      border: chosen ? '2px solid #dc2626' : '1.5px solid #e5e7eb',
-                      background: chosen ? 'rgba(220,38,38,0.06)' : '#f8fafc',
-                      color: chosen ? '#dc2626' : available ? '#374151' : '#d1d5db',
-                      fontSize: 13, fontWeight: chosen ? 700 : 500,
-                      opacity: available ? 1 : 0.5,
+                      padding:        '6px 14px',
+                      borderRadius:   8,
+                      cursor:         available ? 'pointer' : 'not-allowed',
+                      border:         chosen ? '2px solid #dc2626' : '1.5px solid #e5e7eb',
+                      background:     chosen ? 'rgba(220,38,38,0.06)' : '#f8fafc',
+                      color:          chosen ? '#dc2626' : available ? '#374151' : '#d1d5db',
+                      fontSize:       13,
+                      fontWeight:     chosen ? 700 : 500,
+                      opacity:        available ? 1 : 0.5,
                       textDecoration: available ? 'none' : 'line-through',
-                      transition: 'all 0.15s', fontFamily: 'inherit',
+                      transition:     'all 0.15s',
+                      fontFamily:     'inherit',
                     }}
                   >
                     {opt.value}
@@ -345,75 +367,68 @@ export default function ProductDetailPage() {
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({})
   const [selectorError,   setSelectorError]   = useState(false)
 
-  // Buy Now state — isolated from Add to Cart state
   const [buyNowLoading,   setBuyNowLoading]   = useState(false)
-  const buyNowRef = useRef(false) // guard against rapid clicks
+  const buyNowRef = useRef(false)
 
-  // Fetch product
- useEffect(() => {
-  if (!slug) return
-  setLoading(true)
-  setSelectedOptions({})
-  fetch(`${API_URL}/products/${slug}`, { headers: { Accept: 'application/json' } })
-    .then(r => r.ok ? r.json() : Promise.reject())
-    .then(json => {
-      const prod: Product = json.data
-      setProduct(prod)
+  useEffect(() => {
+    if (!slug) return
+    setLoading(true)
+    setSelectedOptions({})
+    fetch(`${API_URL}/products/${slug}`, { headers: { Accept: 'application/json' } })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(json => {
+        const prod: Product = json.data
+        setProduct(prod)
 
-      // ── Auto-select axes that have only one available option ──────────
-      if (prod.has_variants && prod.selectable_axes?.length > 0) {
-        const autoSelections: Record<string, number> = {}
-        for (const axis of prod.selectable_axes) {
-          if (axis.options.length === 1) {
-            autoSelections[axis.slug] = axis.options[0].id
+        if (prod.has_variants && prod.selectable_axes?.length > 0) {
+          const autoSelections: Record<string, number> = {}
+          for (const axis of prod.selectable_axes) {
+            if (axis.options.length === 1) {
+              autoSelections[axis.slug] = axis.options[0].id
+            }
+          }
+          if (Object.keys(autoSelections).length > 0) {
+            setSelectedOptions(autoSelections)
           }
         }
-        if (Object.keys(autoSelections).length > 0) {
-          setSelectedOptions(autoSelections)
-        }
-      }
-    })
-    .catch(() => setError(true))
-    .finally(() => setLoading(false))
-}, [slug])
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false))
+  }, [slug])
 
   // ── Variant derived values ─────────────────────────────────────────────────
-  const axes     = product?.selectable_axes ?? []
-  const variants = product?.variants ?? []
+  const axes        = product?.selectable_axes ?? []
+  const variants    = product?.variants ?? []
   const hasVariants = product?.has_variants ?? false
 
- const selectedVariant = (() => {
-  if (!hasVariants || axes.length === 0) return undefined
-  if (Object.keys(selectedOptions).length < axes.length) return undefined
-  return variants.find(v =>
-    axes.every(axis => {
-      const sel      = selectedOptions[axis.slug]
-      const mapEntry = v.option_map[axis.slug]
-      if (!mapEntry) return false
-      if (axis.type === 'color') {
+  const selectedVariant = (() => {
+    if (!hasVariants || axes.length === 0) return undefined
+    if (Object.keys(selectedOptions).length < axes.length) return undefined
+    return variants.find(v =>
+      axes.every(axis => {
+        const sel      = selectedOptions[axis.slug]
+        const mapEntry = v.option_map[axis.slug]
+        if (!mapEntry) return false
         return mapEntry.id === sel
-      }
-      return mapEntry.id === sel
-    })
-  )
-})()
+      })
+    )
+  })()
 
-const isOptionAvailable = useCallback((axisSlug: string, optionId: number): boolean => {
-  return variants.some(v => {
-    const entry = v.option_map[axisSlug]
-    if (!entry) return false
-    if (entry.id !== optionId) return false
-    return Object.entries(selectedOptions).every(([slug, selId]) => {
-      if (slug === axisSlug) return true
-      const otherEntry = v.option_map[slug]
-      return otherEntry?.id === selId
+  const isOptionAvailable = useCallback((axisSlug: string, optionId: number): boolean => {
+    return variants.some(v => {
+      const entry = v.option_map[axisSlug]
+      if (!entry) return false
+      if (entry.id !== optionId) return false
+      return Object.entries(selectedOptions).every(([slug, selId]) => {
+        if (slug === axisSlug) return true
+        const otherEntry = v.option_map[slug]
+        return otherEntry?.id === selId
+      })
     })
-  })
-}, [variants, selectedOptions])
+  }, [variants, selectedOptions])
 
-  // ── GALLERY: switch images instantly when color changes ───────────────────
   const galleryImages = (() => {
-    const colorAxis = axes.find(a => a.type === 'color')
+    const colorAxis       = axes.find(a => a.type === 'color')
     const selectedColorId = colorAxis ? selectedOptions[colorAxis.slug] : undefined
 
     if (selectedVariant && selectedVariant.image_urls.length > 0) {
@@ -422,7 +437,11 @@ const isOptionAvailable = useCallback((axisSlug: string, optionId: number): bool
 
     if (selectedColorId !== undefined) {
       const selectedOpt = colorAxis?.options.find((o: any) => o.id === selectedColorId)
-      const groupKey    = (selectedOpt as any)?.ids?.join('|') ?? String(selectedColorId)
+
+      const groupKey =
+        (selectedOpt as any)?.group_key ??
+        (selectedOpt as any)?.ids?.join('|') ??
+        String(selectedColorId)
 
       const imgs =
         product?.color_images?.[groupKey] ??
@@ -445,6 +464,7 @@ const isOptionAvailable = useCallback((axisSlug: string, optionId: number): bool
 
     return []
   })()
+
   const currentUser  = getUser()
   const isOwnProduct = !!(currentUser && product && currentUser.id === product.seller?.id)
   const effectiveStock = selectedVariant
@@ -458,7 +478,6 @@ const isOptionAvailable = useCallback((axisSlug: string, optionId: number): bool
   const lowStock       = effectiveStock > 0 && effectiveStock <= 10
   const favorited      = product ? isFavorited(product.id, selectedVariant?.id ?? null) : false
 
-  // ── Add to Cart ────────────────────────────────────────────────────────────
   const handleAddToCart = async () => {
     if (!product || outOfStock) return
     if (!isAuthenticated()) { router.push('/auth/login?redirect=' + window.location.pathname); return }
@@ -469,7 +488,6 @@ const isOptionAvailable = useCallback((axisSlug: string, optionId: number): bool
     setTimeout(() => setAddedToCart(false), 2500)
   }
 
-  // ── Buy Now ────────────────────────────────────────────────────────────────
   const handleBuyNow = async () => {
     if (!product || outOfStock || buyNowLoading || buyNowRef.current) return
 
@@ -493,19 +511,18 @@ const isOptionAvailable = useCallback((axisSlug: string, optionId: number): bool
     setSelectorError(false)
 
     try {
-      const params = new URLSearchParams({
+      const qp = new URLSearchParams({
         buy_now:      '1',
         product_slug: product.slug,
         quantity:     String(quantity),
       })
 
       if (selectedVariant?.id) {
-        params.set('variant_id', String(selectedVariant.id))
+        qp.set('variant_id', String(selectedVariant.id))
       }
 
       await new Promise(resolve => setTimeout(resolve, 180))
-
-      router.push(`/checkout?${params.toString()}`)
+      router.push(`/checkout?${qp.toString()}`)
     } finally {
       setBuyNowLoading(false)
       buyNowRef.current = false
@@ -570,10 +587,8 @@ const isOptionAvailable = useCallback((axisSlug: string, optionId: number): bool
 
         <div className="pd-grid" style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 24px 48px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
 
-          {/* Gallery — updates when color changes */}
           <Gallery images={galleryImages} productName={product.name} />
 
-          {/* Info */}
           <div style={{ animation: 'fadeUp 0.4s ease 0.1s both' }}>
 
             {/* Tags */}
@@ -665,96 +680,89 @@ const isOptionAvailable = useCallback((axisSlug: string, optionId: number): bool
               </p>
             </div>
 
-{/* ── CTA Buttons ── */}
-<div style={{ display: 'flex', gap: 10, marginBottom: 24, alignItems: 'center' }}>
+            {/* CTA Buttons */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 24, alignItems: 'center' }}>
+              {isOwnProduct ? (
+                <div style={{
+                  flex: 1, height: 52,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  background: 'rgba(99,102,241,0.06)',
+                  border: '2px dashed rgba(99,102,241,0.35)',
+                  borderRadius: 12, color: '#6366f1',
+                  fontWeight: 800, fontSize: 13, letterSpacing: '0.02em',
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  </svg>
+                  This is your product
+                </div>
+              ) : (
+                <>
+                  <button
+                    className="buy-now-btn"
+                    onClick={handleBuyNow}
+                    disabled={outOfStock || buyNowLoading}
+                    style={{
+                      flex: 1, height: 52, background: '#fff',
+                      color: outOfStock ? '#9ca3af' : '#dc2626',
+                      border: `2px solid ${outOfStock ? '#e5e7eb' : '#dc2626'}`,
+                      borderRadius: 12,
+                      cursor: outOfStock || buyNowLoading ? 'not-allowed' : 'pointer',
+                      fontWeight: 800, fontSize: 14,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      transition: 'all 0.2s', fontFamily: 'inherit',
+                      letterSpacing: '0.01em', opacity: outOfStock ? 0.6 : 1,
+                    }}
+                  >
+                    {buyNowLoading
+                      ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} />
+                      : <><Zap size={16} />{outOfStock ? 'Out of Stock' : 'Buy Now'}</>
+                    }
+                  </button>
 
-  {isOwnProduct ? (
-    /* ── Seller viewing their own product ── */
-    <div style={{
-      flex: 1, height: 52,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-      background: 'rgba(99,102,241,0.06)',
-      border: '2px dashed rgba(99,102,241,0.35)',
-      borderRadius: 12,
-      color: '#6366f1',
-      fontWeight: 800, fontSize: 13,
-      letterSpacing: '0.02em',
-    }}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
-        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-      </svg>
-      This is your product
-    </div>
-  ) : (
-    <>
-      <button
-        className="buy-now-btn"
-        onClick={handleBuyNow}
-        disabled={outOfStock || buyNowLoading}
-        style={{
-          flex: 1, height: 52,
-          background: '#fff',
-          color: outOfStock ? '#9ca3af' : '#dc2626',
-          border: `2px solid ${outOfStock ? '#e5e7eb' : '#dc2626'}`,
-          borderRadius: 12,
-          cursor: outOfStock || buyNowLoading ? 'not-allowed' : 'pointer',
-          fontWeight: 800, fontSize: 14,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          transition: 'all 0.2s', fontFamily: 'inherit',
-          letterSpacing: '0.01em',
-          opacity: outOfStock ? 0.6 : 1,
-        }}
-      >
-        {buyNowLoading
-          ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} />
-          : <><Zap size={16} />{outOfStock ? 'Out of Stock' : 'Buy Now'}</>
-        }
-      </button>
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={outOfStock || cartLoading}
+                    style={{
+                      flex: 1, height: 52,
+                      background: outOfStock
+                        ? '#e5e7eb'
+                        : addedToCart
+                          ? 'linear-gradient(135deg,#10b981,#059669)'
+                          : 'linear-gradient(135deg,#dc2626,#b91c1c)',
+                      color: outOfStock ? '#9ca3af' : '#fff',
+                      border: 'none', borderRadius: 12,
+                      cursor: outOfStock ? 'not-allowed' : 'pointer',
+                      fontWeight: 800, fontSize: 14,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      boxShadow: outOfStock ? 'none' : addedToCart ? '0 8px 24px rgba(16,185,129,0.3)' : '0 8px 24px rgba(220,38,38,0.3)',
+                      transition: 'all 0.2s', fontFamily: 'inherit',
+                    }}>
+                    {cartLoading
+                      ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} />
+                      : addedToCart
+                      ? <><CheckCircle size={18} />Added!</>
+                      : <><ShoppingCart size={18} />{outOfStock ? 'Out of Stock' : 'Add to Cart'}</>
+                    }
+                  </button>
 
-      <button
-        onClick={handleAddToCart}
-        disabled={outOfStock || cartLoading}
-        style={{
-          flex: 1, height: 52,
-          background: outOfStock
-            ? '#e5e7eb'
-            : addedToCart
-              ? 'linear-gradient(135deg,#10b981,#059669)'
-              : 'linear-gradient(135deg,#dc2626,#b91c1c)',
-          color: outOfStock ? '#9ca3af' : '#fff',
-          border: 'none', borderRadius: 12,
-          cursor: outOfStock ? 'not-allowed' : 'pointer',
-          fontWeight: 800, fontSize: 14,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          boxShadow: outOfStock ? 'none' : addedToCart ? '0 8px 24px rgba(16,185,129,0.3)' : '0 8px 24px rgba(220,38,38,0.3)',
-          transition: 'all 0.2s', fontFamily: 'inherit',
-        }}>
-        {cartLoading
-          ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} />
-          : addedToCart
-          ? <><CheckCircle size={18} />Added!</>
-          : <><ShoppingCart size={18} />{outOfStock ? 'Out of Stock' : 'Add to Cart'}</>
-        }
-      </button>
-
-      <button
-        onClick={handleToggleFavorite}
-        style={{
-          width: 52, height: 52, flexShrink: 0,
-          borderRadius: '50%',
-          border: `2px solid ${favorited ? '#dc2626' : '#e5e7eb'}`,
-          background: favorited ? 'rgba(220,38,38,0.06)' : '#fff',
-          cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transition: 'all 0.2s',
-        }}>
-        <Heart size={20} fill={favorited ? '#dc2626' : 'none'} stroke={favorited ? '#dc2626' : '#94a3b8'} strokeWidth={2} />
-      </button>
-    </>
-  )}
-
-</div>
+                  <button
+                    onClick={handleToggleFavorite}
+                    style={{
+                      width: 52, height: 52, flexShrink: 0,
+                      borderRadius: '50%',
+                      border: `2px solid ${favorited ? '#dc2626' : '#e5e7eb'}`,
+                      background: favorited ? 'rgba(220,38,38,0.06)' : '#fff',
+                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.2s',
+                    }}>
+                    <Heart size={20} fill={favorited ? '#dc2626' : 'none'} stroke={favorited ? '#dc2626' : '#94a3b8'} strokeWidth={2} />
+                  </button>
+                </>
+              )}
+            </div>
 
             {/* Trust badges */}
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden', marginBottom: 20 }}>

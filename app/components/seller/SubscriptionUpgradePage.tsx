@@ -8,7 +8,7 @@ import {
   BarChart2, Package, AlertCircle, ChevronRight, Shield,
 } from 'lucide-react'
 import { subscriptionApi, PLAN_META, ActivePlan } from '@/lib/subscriptionApi'
-
+import { refreshUser } from '@/lib/auth'
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -167,19 +167,25 @@ function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
   }
 
   const handlePay = async () => {
-    if (!validate()) return
-    setLoading(true)
-    setError(null)
-    try {
-      await subscriptionApi.upgrade({
-        plan:            selectedPlan.key,
-        card_number:     cardNumber.replace(/\s/g, ''),
-        expiry_date:     expiryDate,
-        cvv,
-        cardholder_name: cardholderName.trim(),
-      })
-      onSuccess(selectedPlan.key)
-    } catch (err: unknown) {
+  if (!validate()) return
+  setLoading(true)
+  setError(null)
+  try {
+    await subscriptionApi.upgrade({
+      plan:            selectedPlan.key,
+      card_number:     cardNumber.replace(/\s/g, ''),
+      expiry_date:     expiryDate,
+      cvv,
+      cardholder_name: cardholderName.trim(),
+    })
+    // ── CRITICAL FIX ──────────────────────────────────────────────────────
+    // Refresh user session so localStorage gets the new active_plan value.
+    // Without this, the seller layout still reads the stale 'free' plan
+    // from localStorage and never redirects to the red dashboard.
+    await refreshUser()
+    // ─────────────────────────────────────────────────────────────────────
+    onSuccess(selectedPlan.key)
+  } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string; errors?: Record<string, unknown> } } }
       const msg = e?.response?.data?.message ?? 'Payment failed. Please check your details and try again.'
       setError(msg)
@@ -474,7 +480,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
             Your plan is now active. Head to your seller dashboard to use your new features.
           </p>
           <a
-            href="/seller/dashboard"
+            href="/seller/dashboard/red"
             style={{
               display: 'inline-flex',
               alignItems: 'center',

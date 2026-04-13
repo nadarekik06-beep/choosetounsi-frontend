@@ -8,6 +8,7 @@ export interface AuthUser {
   is_approved: boolean;
   is_active: boolean;
   avatar: string | null;   // Google profile photo URL (or null for email users)
+active_plan: 'free' | 'red' | 'black';  // ← required, not optional
 }
 
 export interface LoginCredentials {

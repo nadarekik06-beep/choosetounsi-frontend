@@ -21,8 +21,14 @@ function GoogleCallbackHandler() {
     try {
       const user: AuthUser = JSON.parse(atob(userRaw));
       saveSession(token, user);
-      // Always go home — navbar shows avatar + role immediately
-      router.replace('/');
+
+      /* ── Redirect based on active plan ── */
+      const redirectPath =
+        user.active_plan === 'red' || user.active_plan === 'black'
+          ? '/seller/dashboard/red'
+          : '/';
+
+      router.replace(redirectPath);
     } catch {
       router.replace('/auth/login?error=google_failed');
     }
