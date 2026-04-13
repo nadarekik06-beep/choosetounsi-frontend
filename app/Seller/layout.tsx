@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Sidebar   from './components/Sidebar';
 import Topbar    from './components/Topbar';
 import AuthGuard from './components/AuthGuard';
-import { getUser, refreshUser } from '@/lib/auth';
+import { getUser } from '@/lib/auth';
 
 /* ── Theme context ── */
 export const ThemeContext = createContext<{
@@ -25,9 +25,6 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
   const [dark, setDark] = useState<boolean>(true);
   const [mounted, setMounted] = useState(false);
 
-  const router   = useRouter();
-  const pathname = usePathname();
-
   useEffect(() => {
     // Read persisted preference on first mount
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -37,22 +34,6 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
     setMounted(true);
   }, []);
 
-  /* ── Redirect Red/Black Pepper sellers to their dashboard ── */
-useEffect(() => {
-  // Refresh user from API on layout mount so active_plan is always current
-  // This handles the case where admin confirmed an upgrade while seller was logged in
-  refreshUser().then((freshUser) => {
-    const user = freshUser ?? getUser();
-    if (!user) return;
-
-    if (
-      (user.active_plan === 'red' || user.active_plan === 'black') &&
-      pathname === '/seller'
-    ) {
-      router.replace('/seller/dashboard/red');
-    }
-  });
-}, []);
   const toggle = () => {
     setDark(prev => {
       const next = !prev;
@@ -64,22 +45,6 @@ useEffect(() => {
 
   // Prevent flash of wrong theme before localStorage is read
   if (!mounted) return null;
-  
-// AFTER
-  // Red/Black dashboard has its own full layout (RedLayout with RedSidebar + RedTopBar).
-  // When inside those routes, render ONLY the AuthGuard + children — no green shell.
-  const isRedRoute = pathname.startsWith('/seller/dashboard/red') ||
-                     pathname.startsWith('/seller/dashboard/black');
-
-  if (isRedRoute) {
-    return (
-      <ThemeContext.Provider value={{ dark, toggle }}>
-        <AuthGuard>
-          {children}
-        </AuthGuard>
-      </ThemeContext.Provider>
-    );
-  }
 
   return (
     <ThemeContext.Provider value={{ dark, toggle }}>
@@ -107,5 +72,4 @@ useEffect(() => {
       </AuthGuard>
     </ThemeContext.Provider>
   );
-  
 }

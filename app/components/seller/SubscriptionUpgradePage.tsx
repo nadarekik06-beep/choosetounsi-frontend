@@ -480,7 +480,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
             Your plan is now active. Head to your seller dashboard to use your new features.
           </p>
           <a
-            href="/seller/dashboard/red"
+            href="/seller/dashboard"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
