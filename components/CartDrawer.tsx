@@ -2,15 +2,20 @@
 
 /**
  * components/CartDrawer.tsx
- * Slide-in cart drawer.
- * Updated to display variant labels and per-variant pricing.
+ * Slide-in cart drawer with per-item selection for checkout.
+ * Selected item IDs are written to sessionStorage (ct_selected_items)
+ * before navigating to /checkout — identical handoff as cart/page.tsx.
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { X, ShoppingCart, Trash2, Plus, Minus, ArrowRight, Package } from 'lucide-react'
+import { X, ShoppingCart, Trash2, Plus, Minus, ArrowRight, Package, CheckSquare, Square } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import type { CartItem } from '@/lib/shopApi'
+
+// ─── Shared sessionStorage key (must match cart/page.tsx & checkout/page.tsx) ─
+const SELECTED_ITEMS_KEY = 'ct_selected_items'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -30,7 +35,15 @@ const fmt = (n: number) =>
 
 // ─── Single cart row ──────────────────────────────────────────────────────────
 
-function CartRow({ item }: { item: CartItem }) {
+function CartRow({
+  item,
+  isSelected,
+  onToggle,
+}: {
+  item: CartItem
+  isSelected: boolean
+  onToggle: (id: number) => void
+}) {
   const { updateItem, removeItem, cartLoading } = useCart()
   const imgSrc = resolveImg(item.image_url)
 
@@ -40,12 +53,30 @@ function CartRow({ item }: { item: CartItem }) {
 
   return (
     <div style={{
-      display: 'flex', gap: 12, padding: '14px 0',
+      display: 'flex', gap: 10, padding: '14px 0',
       borderBottom: '1px solid #f1f5f9',
+      opacity: isSelected ? 1 : 0.45,
+      transition: 'opacity 0.15s',
     }}>
+
+      {/* ── Checkbox ── */}
+      <button
+        onClick={() => onToggle(item.id)}
+        title={isSelected ? 'Deselect item' : 'Select item'}
+        style={{
+          background: 'none', border: 'none', padding: '0 2px',
+          cursor: 'pointer', flexShrink: 0, alignSelf: 'flex-start',
+          marginTop: 2,
+          color: isSelected ? '#dc2626' : '#cbd5e1',
+          transition: 'color 0.15s',
+        }}
+      >
+        {isSelected ? <CheckSquare size={17} /> : <Square size={17} />}
+      </button>
+
       {/* Thumbnail */}
       <div style={{
-        width: 72, height: 72, flexShrink: 0,
+        width: 68, height: 68, flexShrink: 0,
         borderRadius: 10, overflow: 'hidden',
         background: '#f8fafc', border: '1px solid #f1f5f9',
       }}>
@@ -71,7 +102,7 @@ function CartRow({ item }: { item: CartItem }) {
           </p>
         )}
 
-        {/* Color swatches inline when color axis present */}
+        {/* Color swatches */}
         {variantEntries.length > 0 && (
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
             {variantEntries.map((opt, i) =>
@@ -138,8 +169,54 @@ function CartRow({ item }: { item: CartItem }) {
 // ─── Drawer ───────────────────────────────────────────────────────────────────
 
 export default function CartDrawer() {
+  const router = useRouter()
   const { items, count, subtotal, drawerOpen, closeDrawer, clearCart, cartLoading } = useCart()
   const overlayRef = useRef<HTMLDivElement>(null)
+
+  // ── Selection state ────────────────────────────────────────────────────────
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set())
+
+  // Sync selection when items change: new items auto-selected, removed ones cleaned up
+  useEffect(() => {
+    if (cartLoading) return
+    setSelectedIds(prev => {
+      const next = new Set<number>()
+      items.forEach(item => {
+        if (!prev.size || prev.has(item.id)) next.add(item.id)
+      })
+      return next
+    })
+  }, [items, cartLoading])
+
+  const allSelected  = items.length > 0 && selectedIds.size === items.length
+  const noneSelected = selectedIds.size === 0
+
+  const toggleAll = useCallback(() => {
+    if (allSelected) setSelectedIds(new Set())
+    else setSelectedIds(new Set(items.map(i => i.id)))
+  }, [allSelected, items])
+
+  const toggleItem = useCallback((id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  // Derived totals for selected items only
+  const selectedItems    = items.filter(i => selectedIds.has(i.id))
+  const selectedSubtotal = selectedItems.reduce((sum, i) => sum + i.line_total, 0)
+  const selectedCount    = selectedItems.reduce((sum, i) => sum + i.quantity, 0)
+
+  // ── Checkout navigation ────────────────────────────────────────────────────
+  const handleCheckout = useCallback(() => {
+    if (noneSelected) return
+    sessionStorage.setItem(SELECTED_ITEMS_KEY, JSON.stringify([...selectedIds]))
+    closeDrawer()
+    router.push('/checkout')
+  }, [selectedIds, noneSelected, closeDrawer, router])
 
   // Close on Escape
   useEffect(() => {
@@ -159,7 +236,7 @@ export default function CartDrawer() {
       <style>{`
         @keyframes slideIn  { from { transform: translateX(100%) } to { transform: translateX(0) } }
         @keyframes fadeIn   { from { opacity: 0 } to { opacity: 1 } }
-        .cart-row-btn:hover { background: #f1f5f9 !important; }
+        .cb-btn:hover { color: #dc2626 !important; }
       `}</style>
 
       {/* Backdrop */}
@@ -187,7 +264,7 @@ export default function CartDrawer() {
         fontFamily: "'Barlow', sans-serif",
       }}>
 
-        {/* Header */}
+        {/* ── Header ── */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '16px 20px', borderBottom: '1px solid #f1f5f9',
@@ -214,7 +291,42 @@ export default function CartDrawer() {
           </button>
         </div>
 
-        {/* Items */}
+        {/* ── Select-all bar (only when items exist) ── */}
+        {items.length > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '9px 20px', borderBottom: '1px solid #f1f5f9',
+            background: '#f8fafc', flexShrink: 0,
+          }}>
+            <button
+              onClick={toggleAll}
+              className="cb-btn"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 7,
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: 0, fontFamily: 'inherit',
+                color: allSelected ? '#dc2626' : '#64748b',
+                fontSize: 12, fontWeight: 700,
+                transition: 'color 0.15s',
+              }}
+            >
+              {allSelected ? <CheckSquare size={16} /> : <Square size={16} />}
+              {allSelected ? 'Deselect all' : 'Select all'}
+            </button>
+
+            {/* Selection count hint */}
+            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>
+              {noneSelected
+                ? 'None selected'
+                : selectedIds.size === items.length
+                  ? 'All selected'
+                  : `${selectedIds.size} of ${items.length} selected`
+              }
+            </span>
+          </div>
+        )}
+
+        {/* ── Items ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px' }}>
           {items.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
@@ -228,7 +340,14 @@ export default function CartDrawer() {
             </div>
           ) : (
             <>
-              {items.map(item => <CartRow key={`${item.id}-${item.variant_id ?? 'base'}`} item={item} />)}
+              {items.map(item => (
+                <CartRow
+                  key={`${item.id}-${item.variant_id ?? 'base'}`}
+                  item={item}
+                  isSelected={selectedIds.has(item.id)}
+                  onToggle={toggleItem}
+                />
+              ))}
 
               {/* Clear all */}
               {items.length > 1 && (
@@ -241,31 +360,64 @@ export default function CartDrawer() {
           )}
         </div>
 
-        {/* Footer */}
+        {/* ── Footer ── */}
         {items.length > 0 && (
           <div style={{ borderTop: '1px solid #f1f5f9', padding: '16px 20px', flexShrink: 0, background: '#fff' }}>
 
-            {/* Subtotal */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Subtotal ({count} items)</span>
-              <span style={{ fontSize: 18, fontWeight: 900, color: '#dc2626' }}>{fmt(subtotal)}</span>
+            {/* Subtotal — reflects selection */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>
+                {selectedIds.size > 0 && selectedIds.size < items.length
+                  ? `Selected (${selectedCount} of ${count} items)`
+                  : `Subtotal (${count} items)`
+                }
+              </span>
+              <span style={{ fontSize: 18, fontWeight: 900, color: '#dc2626' }}>
+                {fmt(selectedIds.size > 0 ? selectedSubtotal : subtotal)}
+              </span>
             </div>
-            <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 14px', fontWeight: 500 }}>
+            <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 10px', fontWeight: 500 }}>
               Shipping calculated at checkout
             </p>
 
+            {/* Partial-selection hint */}
+            {selectedIds.size > 0 && selectedIds.size < items.length && (
+              <div style={{
+                marginBottom: 12, padding: '8px 12px',
+                background: 'rgba(220,38,38,0.05)',
+                border: '1px solid rgba(220,38,38,0.15)',
+                borderRadius: 8, fontSize: 11,
+                color: '#b91c1c', fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <CheckSquare size={12} />
+                Only {selectedIds.size} selected item{selectedIds.size > 1 ? 's' : ''} will be checked out.
+              </div>
+            )}
+
             {/* Checkout CTA */}
-            <Link href="/checkout" onClick={closeDrawer}
+            <button
+              onClick={handleCheckout}
+              disabled={noneSelected}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 width: '100%', padding: '14px 0',
-                background: 'linear-gradient(135deg,#dc2626,#b91c1c)',
-                color: '#fff', fontWeight: 800, fontSize: 14,
-                borderRadius: 12, textDecoration: 'none',
-                boxShadow: '0 6px 20px rgba(220,38,38,0.3)',
-              }}>
-              Proceed to Checkout <ArrowRight size={16} />
-            </Link>
+                background: noneSelected
+                  ? '#e5e7eb'
+                  : 'linear-gradient(135deg,#dc2626,#b91c1c)',
+                color: noneSelected ? '#9ca3af' : '#fff',
+                fontWeight: 800, fontSize: 14, border: 'none',
+                borderRadius: 12, cursor: noneSelected ? 'not-allowed' : 'pointer',
+                fontFamily: 'inherit',
+                boxShadow: noneSelected ? 'none' : '0 6px 20px rgba(220,38,38,0.3)',
+                transition: 'all 0.2s',
+              }}
+            >
+              {noneSelected
+                ? 'Select items to checkout'
+                : <>Proceed to Checkout <ArrowRight size={16} /></>
+              }
+            </button>
 
             {/* Continue shopping */}
             <button onClick={closeDrawer}

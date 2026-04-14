@@ -3,21 +3,29 @@
 /**
  * app/(client)/checkout/page.tsx
  * Full payment system: COD · Card (Stripe) · D17 · Wallet
+ *
+ * Fix: selectedIds is read from sessionStorage into a REF synchronously on
+ * the very first render (not inside a useEffect), so the value is available
+ * the moment useMemo computes `items` — even before CartContext has loaded.
+ * This eliminates the race condition where filter() ran on an empty array.
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   MapPin, Phone, FileText, ChevronRight, Package,
   Loader2, CheckCircle, ShoppingBag, ArrowLeft, Zap,
   Plus, Star, Home, Briefcase, CreditCard, Wallet,
-  Smartphone, Truck, AlertCircle, ExternalLink,
+  Smartphone, Truck, AlertCircle,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { checkoutApi, walletApi, paymentApi, type BuyNowPayload } from '@/lib/shopApi'
 import { isAuthenticated } from '@/lib/auth'
 import type { UserAddress } from '@/app/account/addresses/page'
+
+// ─── Shared sessionStorage key ────────────────────────────────────────────────
+const SELECTED_ITEMS_KEY = 'ct_selected_items'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -59,16 +67,8 @@ interface BuyNowProduct {
 // ─── Payment Method Card ──────────────────────────────────────────────────────
 
 function PaymentMethodCard({
-  method,
-  selected,
-  onSelect,
-  disabled,
-  disabledReason,
-  icon: Icon,
-  label,
-  description,
-  badge,
-  badgeColor,
+  method, selected, onSelect, disabled, disabledReason,
+  icon: Icon, label, description, badge, badgeColor,
 }: {
   method: PaymentMethod
   selected: boolean
@@ -95,7 +95,6 @@ function PaymentMethodCard({
         boxShadow: selected ? '0 2px 12px rgba(219,20,46,0.1)' : 'none',
       }}
     >
-      {/* Radio dot */}
       <div style={{
         width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 2,
         border: `2px solid ${selected ? '#db142e' : '#d1d5db'}`,
@@ -104,8 +103,6 @@ function PaymentMethodCard({
       }}>
         {selected && <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#fff' }} />}
       </div>
-
-      {/* Icon */}
       <div style={{
         width: 38, height: 38, borderRadius: 10, flexShrink: 0,
         background: selected ? 'rgba(219,20,46,0.1)' : '#f8fafc',
@@ -114,22 +111,15 @@ function PaymentMethodCard({
       }}>
         <Icon size={17} color={selected ? '#db142e' : '#64748b'} />
       </div>
-
-      {/* Text */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: disabled ? '#94a3b8' : '#0f172a' }}>
-            {label}
-          </span>
+          <span style={{ fontSize: 14, fontWeight: 800, color: disabled ? '#94a3b8' : '#0f172a' }}>{label}</span>
           {badge && (
             <span style={{
               fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 4,
-              background: `${badgeColor ?? '#198f41'}18`,
-              color: badgeColor ?? '#198f41',
+              background: `${badgeColor ?? '#198f41'}18`, color: badgeColor ?? '#198f41',
               border: `1px solid ${badgeColor ?? '#198f41'}30`,
-            }}>
-              {badge}
-            </span>
+            }}>{badge}</span>
           )}
         </div>
         <p style={{ fontSize: 12, color: '#64748b', margin: 0, lineHeight: 1.4 }}>
@@ -146,32 +136,24 @@ function D17Instructions({ total }: { total: number }) {
   return (
     <div style={{
       background: 'linear-gradient(135deg, #fef9ec, #fffbf0)',
-      border: '1.5px solid #f59e0b40',
-      borderRadius: 12, padding: '14px 16px', marginTop: 4,
+      border: '1.5px solid #f59e0b40', borderRadius: 12, padding: '14px 16px', marginTop: 4,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
         <Smartphone size={14} color="#d97706" />
-        <span style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>
-          How to pay with D17
-        </span>
+        <span style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>How to pay with D17</span>
       </div>
       <ol style={{ margin: 0, padding: '0 0 0 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
         {[
           `Open your D17 app and send ${fmt(total)} to our account`,
-          'Account number: 71 234 567 (CHOOSE\'Tounsi)',
+          "Account number: 71 234 567 (CHOOSE'Tounsi)",
           'Add your order number as the transfer note',
           'Screenshot your transfer confirmation',
           'Admin will confirm your order within 2 hours',
         ].map((step, i) => (
-          <li key={i} style={{ fontSize: 12, color: '#78350f', lineHeight: 1.5 }}>
-            {step}
-          </li>
+          <li key={i} style={{ fontSize: 12, color: '#78350f', lineHeight: 1.5 }}>{step}</li>
         ))}
       </ol>
-      <div style={{
-        marginTop: 10, padding: '8px 12px', background: '#fef3c7',
-        borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6,
-      }}>
+      <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef3c7', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
         <AlertCircle size={12} color="#d97706" />
         <span style={{ fontSize: 11, color: '#92400e', fontWeight: 700 }}>
           Your order will be pending until admin confirms the transfer.
@@ -181,20 +163,17 @@ function D17Instructions({ total }: { total: number }) {
   )
 }
 
-// ─── Stripe Card Form ─────────────────────────────────────────────────────────
+// ─── Stripe Notice ────────────────────────────────────────────────────────────
 
 function StripeNotice() {
   return (
     <div style={{
       background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
-      border: '1.5px solid #0ea5e940',
-      borderRadius: 12, padding: '14px 16px', marginTop: 4,
+      border: '1.5px solid #0ea5e940', borderRadius: 12, padding: '14px 16px', marginTop: 4,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <CreditCard size={14} color="#0284c7" />
-        <span style={{ fontSize: 12, fontWeight: 800, color: '#0c4a6e' }}>
-          Secure card payment via Stripe
-        </span>
+        <span style={{ fontSize: 12, fontWeight: 800, color: '#0c4a6e' }}>Secure card payment via Stripe</span>
       </div>
       <p style={{ fontSize: 12, color: '#075985', margin: '0 0 8px', lineHeight: 1.4 }}>
         You'll be redirected to enter your card details after placing your order.
@@ -202,15 +181,13 @@ function StripeNotice() {
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
         <CheckCircle size={11} color="#0284c7" />
-        <span style={{ fontSize: 11, color: '#0369a1', fontWeight: 600 }}>
-          Secured by Stripe · 256-bit SSL encryption
-        </span>
+        <span style={{ fontSize: 11, color: '#0369a1', fontWeight: 600 }}>Secured by Stripe · 256-bit SSL encryption</span>
       </div>
     </div>
   )
 }
 
-// ─── Saved Address Selector (unchanged from original) ────────────────────────
+// ─── Address Selector ─────────────────────────────────────────────────────────
 
 function AddressSelector({
   addresses, selectedId, onSelect, onUseNew,
@@ -226,35 +203,29 @@ function AddressSelector({
         <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8' }}>
           Saved Addresses
         </span>
-        <Link href="/account/addresses" style={{ fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none' }}>
-          Manage →
-        </Link>
+        <Link href="/account/addresses" style={{ fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none' }}>Manage →</Link>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {addresses.map(addr => {
-          const isSelected = selectedId === addr.id
+          const isSel = selectedId === addr.id
           return (
             <button key={addr.id} onClick={() => onSelect(addr)} style={{
-              display: 'flex', alignItems: 'flex-start', gap: 12,
-              padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
-              border: `2px solid ${isSelected ? '#db142e' : '#e5e7eb'}`,
-              background: isSelected ? 'rgba(219,20,46,0.04)' : '#fff',
+              display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
+              border: `2px solid ${isSel ? '#db142e' : '#e5e7eb'}`, background: isSel ? 'rgba(219,20,46,0.04)' : '#fff',
               textAlign: 'left', fontFamily: 'inherit', transition: 'all 0.15s ease',
-              boxShadow: isSelected ? '0 2px 12px rgba(219,20,46,0.1)' : 'none',
+              boxShadow: isSel ? '0 2px 12px rgba(219,20,46,0.1)' : 'none',
             }}>
               <div style={{
                 width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 2,
-                border: `2px solid ${isSelected ? '#db142e' : '#d1d5db'}`,
-                background: isSelected ? '#db142e' : '#fff',
+                border: `2px solid ${isSel ? '#db142e' : '#d1d5db'}`, background: isSel ? '#db142e' : '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                {isSelected && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }} />}
+                {isSel && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }} />}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                   <span style={{ fontSize: 10, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {addr.label.toLowerCase().includes('work') ? <Briefcase size={12} /> : <Home size={12} />}
-                    {' '}{addr.label}
+                    {addr.label.toLowerCase().includes('work') ? <Briefcase size={12} /> : <Home size={12} />}{' '}{addr.label}
                   </span>
                   {addr.is_default && (
                     <span style={{ fontSize: 9, fontWeight: 800, color: '#db142e', background: 'rgba(219,20,46,0.08)', padding: '1px 7px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
@@ -270,8 +241,7 @@ function AddressSelector({
           )
         })}
         <button onClick={onUseNew} style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '11px 14px', borderRadius: 12, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 12, cursor: 'pointer',
           border: `2px dashed ${selectedId === null ? '#db142e' : '#e5e7eb'}`,
           background: selectedId === null ? 'rgba(219,20,46,0.03)' : '#fff',
           textAlign: 'left', fontFamily: 'inherit', transition: 'all 0.15s ease',
@@ -300,41 +270,106 @@ export default function CheckoutPage() {
   const bnVariantId = isBuyNow ? (searchParams.get('variant_id') ? Number(searchParams.get('variant_id')) : null) : null
   const bnQuantity  = isBuyNow ? Math.max(1, Number(searchParams.get('quantity') ?? '1')) : 1
 
-  const { items, count, subtotal, refreshCart } = useCart()
+  const { items: allCartItems, refreshCart, cartLoading } = useCart()
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // THE FIX:
+  // Read sessionStorage synchronously into a ref during the very first render,
+  // before any useEffect or state update runs. This means selectedIdsRef.current
+  // is populated immediately and stays stable — useMemo below can always rely
+  // on it being correct regardless of when CartContext finishes loading.
+  //
+  // Why a ref and not state?
+  //   - We only need to read this value once (on mount); it never changes.
+  //   - Using state would cause an extra render cycle AFTER CartContext loads,
+  //     creating the same race condition we're trying to fix.
+  //   - A ref is read synchronously — no re-render needed, no timing issue.
+  // ─────────────────────────────────────────────────────────────────────────────
+  const selectedIdsRef = useRef<Set<number> | null>(null)
+
+  // Guard: only run once (ref starts null, we set it on first render)
+  if (selectedIdsRef.current === null && !isBuyNow) {
+    try {
+      const raw = typeof window !== 'undefined'
+        ? sessionStorage.getItem(SELECTED_ITEMS_KEY)
+        : null
+
+      if (raw) {
+        const ids: number[] = JSON.parse(raw)
+        selectedIdsRef.current = new Set(ids)
+      } else {
+        // No selection stored → fall back to all items
+        selectedIdsRef.current = new Set()
+      }
+    } catch {
+      // Corrupted JSON → fall back to all items
+      selectedIdsRef.current = new Set()
+    }
+
+    // Clear immediately so it never persists to the next checkout visit
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem(SELECTED_ITEMS_KEY)
+    }
+  }
+
+  // Track when CartContext has finished its initial fetch
+  const [cartReady, setCartReady] = useState(false)
+  useEffect(() => {
+    if (!cartLoading) setCartReady(true)
+  }, [cartLoading])
+
+  // ── Derive the exact items this checkout operates on ──────────────────────
+  // useMemo recomputes whenever allCartItems changes (i.e. when CartContext
+  // finishes loading), so the filter always runs on the fully-populated array.
+  const items = useMemo(() => {
+    if (isBuyNow) return allCartItems // buy-now doesn't use cart selection
+
+    const sel = selectedIdsRef.current
+    // No IDs stored (empty Set) means "all items" — direct navigation fallback
+    if (!sel || sel.size === 0) return allCartItems
+    // Filter to only the IDs the user selected in the drawer
+    return allCartItems.filter(i => sel.has(i.id))
+  }, [allCartItems, isBuyNow])
+
+  // For the partial-selection info banner
+  const hasPartialSelection =
+    !isBuyNow &&
+    selectedIdsRef.current !== null &&
+    selectedIdsRef.current.size > 0 &&
+    selectedIdsRef.current.size < allCartItems.length
+
+  // Recalculate count and subtotal from the filtered items only
+  const count    = isBuyNow ? bnQuantity : items.reduce((s, i) => s + i.quantity, 0)
+  const subtotal = isBuyNow ? 0          : items.reduce((s, i) => s + i.line_total, 0)
 
   // Buy Now product state
-  const [bnProduct, setBnProduct] = useState<BuyNowProduct | null>(null)
-  const [bnLoading, setBnLoading] = useState(isBuyNow && !!bnSlug)
-  const [bnError,   setBnError]   = useState(false)
+  const [bnProduct,  setBnProduct]  = useState<BuyNowProduct | null>(null)
+  const [bnLoading,  setBnLoading]  = useState(isBuyNow && !!bnSlug)
+  const [bnError,    setBnError]    = useState(false)
   const bnFetchedRef = useRef(false)
 
   // Address book state
-  const [savedAddresses,   setSavedAddresses]   = useState<UserAddress[]>([])
-  const [addressesLoading, setAddressesLoading] = useState(true)
+  const [savedAddresses,    setSavedAddresses]    = useState<UserAddress[]>([])
+  const [addressesLoading,  setAddressesLoading]  = useState(true)
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null)
 
-  // ── Payment method state ──────────────────────────────────────────────────
-  const [paymentMethod,   setPaymentMethod]   = useState<PaymentMethod>('cod')
-  const [walletBalance,   setWalletBalance]   = useState<number | null>(null)
-  const [walletLoading,   setWalletLoading]   = useState(true)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod')
+  const [walletBalance, setWalletBalance] = useState<number | null>(null)
+  const [walletLoading, setWalletLoading] = useState(true)
 
-  // ── Stripe post-order state ───────────────────────────────────────────────
-  // After order created with method='card', we get order_id and redirect to Stripe
   const [pendingCardOrderId, setPendingCardOrderId] = useState<number | null>(null)
   const [stripeLoading,      setStripeLoading]      = useState(false)
 
-  const [form, setForm]       = useState({ wilaya: '', address: '', phone: '', notes: '' })
-  const [errors, setErrors]   = useState<Record<string, string>>({})
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState<{ order_number: string; total: number; payment_method: PaymentMethod } | null>(null)
+  const [form,     setForm]     = useState({ wilaya: '', address: '', phone: '', notes: '' })
+  const [errors,   setErrors]   = useState<Record<string, string>>({})
+  const [loading,  setLoading]  = useState(false)
+  const [success,  setSuccess]  = useState<{ order_number: string; total: number; payment_method: PaymentMethod } | null>(null)
   const [apiError, setApiError] = useState('')
 
-  // Auth redirect
   useEffect(() => {
     if (!isAuthenticated()) router.push('/auth/login?redirect=/checkout')
   }, [router])
 
-  // Load wallet balance
   useEffect(() => {
     if (!isAuthenticated()) return
     setWalletLoading(true)
@@ -344,7 +379,6 @@ export default function CheckoutPage() {
       .finally(() => setWalletLoading(false))
   }, [])
 
-  // Load saved addresses
   useEffect(() => {
     if (!isAuthenticated()) return
     setAddressesLoading(true)
@@ -367,7 +401,6 @@ export default function CheckoutPage() {
       .finally(() => setAddressesLoading(false))
   }, [])
 
-  // Fetch buy now product
   useEffect(() => {
     if (!isBuyNow || !bnSlug || bnFetchedRef.current) return
     bnFetchedRef.current = true
@@ -402,21 +435,22 @@ export default function CheckoutPage() {
     return Object.keys(e).length === 0
   }
 
-  // Derived values
   const bnVariant        = bnProduct?.variants?.find(v => v.id === bnVariantId) ?? null
   const bnEffectivePrice = bnVariant ? Number(bnVariant.price) : bnProduct ? Number(bnProduct.price) : 0
   const bnLineTotal      = bnEffectivePrice * bnQuantity
   const bnImage = (() => {
     if (!bnProduct) return null
     if (bnVariant && bnVariant.image_urls?.length > 0) return bnVariant.image_urls[0]
-    const productImgs = (bnProduct.images ?? []).filter(i => !i.color_option_id).map(i => resolveImg(i.url ?? i.image_path)).filter(Boolean) as string[]
+    const productImgs = (bnProduct.images ?? [])
+      .filter(i => !i.color_option_id)
+      .map(i => resolveImg(i.url ?? i.image_path))
+      .filter(Boolean) as string[]
     if (productImgs.length > 0) return productImgs[0]
     return resolveImg(bnProduct.primary_image_url)
   })()
 
-  const summarySubtotal = isBuyNow ? bnLineTotal : subtotal
-  const summaryTotal    = summarySubtotal + 8
-
+  const summarySubtotal    = isBuyNow ? bnLineTotal : subtotal
+  const summaryTotal       = summarySubtotal + 8
   const walletInsufficient = walletBalance !== null && walletBalance < summaryTotal
 
   // ── Submit ────────────────────────────────────────────────────────────────
@@ -444,39 +478,34 @@ export default function CheckoutPage() {
         if (bnVariantId) payload.variant_id = bnVariantId
         res = await checkoutApi.buyNow(payload)
       } else {
+        const sel = selectedIdsRef.current
+        const selectedItemIds = sel && sel.size > 0 ? [...sel] : undefined
+
         res = await checkoutApi.place({
           wilaya:         form.wilaya,
           address:        form.address,
           phone:          form.phone,
           notes:          form.notes || undefined,
           payment_method: paymentMethod,
+          ...(selectedItemIds ? { item_ids: selectedItemIds } : {}),
         })
         await refreshCart()
       }
 
-      // ── Card: create Stripe intent and redirect ───────────────────────
       if (paymentMethod === 'card' && res.needs_payment) {
         setPendingCardOrderId(res.order_id)
         setLoading(false)
         setStripeLoading(true)
-
         const intentRes = await paymentApi.createStripeIntent(res.order_id)
-
-        // In production: use @stripe/stripe-js to confirm card payment
-        // For now: redirect to Stripe Payment Link with the client_secret
-        // Replace this URL with your actual Stripe Payment Link
-        const stripeUrl = `https://checkout.stripe.com/c/pay/${intentRes.client_secret}`
-        window.location.href = stripeUrl
+        window.location.href = `https://checkout.stripe.com/c/pay/${intentRes.client_secret}`
         return
       }
 
-      // ── COD / D17 / Wallet: show success screen ───────────────────────
       setSuccess({
         order_number:   res.order_number,
         total:          res.total,
         payment_method: paymentMethod,
       })
-
     } catch (err: any) {
       setApiError(err.message ?? 'Failed to place order. Please try again.')
     } finally {
@@ -484,58 +513,36 @@ export default function CheckoutPage() {
     }
   }
 
-  // ── Success screen ─────────────────────────────────────────────────────────
+  // ── Success screen ────────────────────────────────────────────────────────
 
   if (success) {
-    const isPendingPayment = success.payment_method === 'd17'
+    const isPending = success.payment_method === 'd17'
     return (
       <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Barlow', sans-serif" }}>
         <div style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: '50%',
-            background: isPendingPayment ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px',
-          }}>
-            {isPendingPayment
-              ? <Smartphone size={36} color="#f59e0b" />
-              : <CheckCircle size={36} color="#10b981" />}
+          <div style={{ width: 72, height: 72, borderRadius: '50%', background: isPending ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            {isPending ? <Smartphone size={36} color="#f59e0b" /> : <CheckCircle size={36} color="#10b981" />}
           </div>
-
           <h1 style={{ fontSize: 24, fontWeight: 900, color: '#0f172a', margin: '0 0 8px' }}>
-            {isPendingPayment ? 'Order Placed — Awaiting Payment' : 'Order Confirmed!'}
+            {isPending ? 'Order Placed — Awaiting Payment' : 'Order Confirmed!'}
           </h1>
           <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 6px' }}>
-            {isPendingPayment
-              ? 'Please complete your D17 transfer to confirm your order.'
-              : success.payment_method === 'wallet'
-                ? 'Payment deducted from your wallet successfully.'
-                : 'Thank you! Your order has been received.'}
+            {isPending ? 'Please complete your D17 transfer to confirm your order.'
+              : success.payment_method === 'wallet' ? 'Payment deducted from your wallet successfully.'
+              : 'Thank you! Your order has been received.'}
           </p>
           <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 24px' }}>
             Order <strong style={{ color: '#0f172a' }}>{success.order_number}</strong>
             {' '}· Total: <strong style={{ color: '#dc2626' }}>{fmt(success.total)}</strong>
           </p>
-
-          {isPendingPayment && (
-            <div style={{
-              background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12,
-              padding: '14px 16px', marginBottom: 20, textAlign: 'left',
-            }}>
-              <p style={{ fontSize: 12, fontWeight: 800, color: '#92400e', margin: '0 0 8px' }}>
-                Complete your D17 transfer:
-              </p>
-              <p style={{ fontSize: 12, color: '#78350f', margin: '0 0 4px' }}>
-                Amount: <strong>{fmt(success.total)}</strong>
-              </p>
-              <p style={{ fontSize: 12, color: '#78350f', margin: '0 0 4px' }}>
-                Account: <strong>71 234 567 (CHOOSE'Tounsi)</strong>
-              </p>
-              <p style={{ fontSize: 12, color: '#78350f', margin: 0 }}>
-                Reference: <strong>{success.order_number}</strong>
-              </p>
+          {isPending && (
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '14px 16px', marginBottom: 20, textAlign: 'left' }}>
+              <p style={{ fontSize: 12, fontWeight: 800, color: '#92400e', margin: '0 0 8px' }}>Complete your D17 transfer:</p>
+              <p style={{ fontSize: 12, color: '#78350f', margin: '0 0 4px' }}>Amount: <strong>{fmt(success.total)}</strong></p>
+              <p style={{ fontSize: 12, color: '#78350f', margin: '0 0 4px' }}>Account: <strong>71 234 567 (CHOOSE'Tounsi)</strong></p>
+              <p style={{ fontSize: 12, color: '#78350f', margin: 0 }}>Reference: <strong>{success.order_number}</strong></p>
             </div>
           )}
-
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
             <Link href="/orders" style={{ padding: '12px 24px', background: 'linear-gradient(135deg,#dc2626,#b91c1c)', color: '#fff', fontWeight: 800, fontSize: 14, borderRadius: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
               <ShoppingBag size={16} /> View Orders
@@ -549,7 +556,7 @@ export default function CheckoutPage() {
     )
   }
 
-  // ── Loading / error guards (unchanged) ────────────────────────────────────
+  // ── Guards ────────────────────────────────────────────────────────────────
 
   if (isBuyNow && bnLoading) {
     return (
@@ -572,6 +579,18 @@ export default function CheckoutPage() {
       </div>
     )
   }
+
+  // Show spinner while CartContext is still fetching — prevents the false
+  // "empty cart" screen from flashing before items arrive
+  if (!isBuyNow && !cartReady) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
+        <div style={{ width: 40, height: 40, border: '3px solid #eee', borderTopColor: '#dc2626', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    )
+  }
+
   if (!isBuyNow && items.length === 0) {
     return (
       <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow', sans-serif" }}>
@@ -622,40 +641,43 @@ export default function CheckoutPage() {
           </div>
         )}
 
+        {/* Partial-selection notice */}
+        {hasPartialSelection && (
+          <div style={{ maxWidth: 1100, margin: '12px auto 0', padding: '0 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(220,38,38,0.05)', border: '1.5px solid rgba(220,38,38,0.2)', borderRadius: 10, padding: '9px 14px' }}>
+              <CheckCircle size={14} color="#dc2626" />
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#b91c1c' }}>
+                Checking out {items.length} selected item{items.length > 1 ? 's' : ''} out of {allCartItems.length} in your cart.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="co-grid" style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px 60px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: 28, alignItems: 'start' }}>
 
           {/* ── LEFT COLUMN ── */}
           <form onSubmit={handleSubmit} style={{ animation: 'fadeUp 0.4s ease both', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-            {/* ── Delivery Information ── */}
+            {/* Delivery Information */}
             <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <MapPin size={16} color="#dc2626" />
                 <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>Delivery Information</h2>
               </div>
-
               <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {apiError && (
                   <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 14px', fontSize: 13, color: '#dc2626', fontWeight: 600 }}>
                     {apiError}
                   </div>
                 )}
-
                 {addressesLoading && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0', color: '#94a3b8', fontSize: 13 }}>
                     <Loader2 size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> Loading saved addresses…
                   </div>
                 )}
-
                 {hasSavedAddresses && (
-                  <AddressSelector
-                    addresses={savedAddresses}
-                    selectedId={selectedAddressId}
-                    onSelect={handleSelectAddress}
-                    onUseNew={handleUseNew}
-                  />
+                  <AddressSelector addresses={savedAddresses} selectedId={selectedAddressId} onSelect={handleSelectAddress} onUseNew={handleUseNew} />
                 )}
-
                 {showManualForm && (
                   <>
                     <div>
@@ -703,7 +725,6 @@ export default function CheckoutPage() {
                     </div>
                   </>
                 )}
-
                 {hasSavedAddresses && selectedAddressId !== null && (
                   <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', border: '1px solid #e5e7eb' }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -717,69 +738,19 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* ── Payment Method ── */}
+            {/* Payment Method */}
             <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <CreditCard size={16} color="#dc2626" />
                 <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>Payment Method</h2>
               </div>
-
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-                {/* COD — always first, most trusted in Tunisia */}
-                <PaymentMethodCard
-                  method="cod"
-                  selected={paymentMethod === 'cod'}
-                  onSelect={() => setPaymentMethod('cod')}
-                  icon={Truck}
-                  label="Cash on Delivery"
-                  description="Pay cash when your order arrives at your door."
-                  badge="Most Popular"
-                  badgeColor="#198f41"
-                />
-
-                {/* Wallet */}
-                <PaymentMethodCard
-                  method="wallet"
-                  selected={paymentMethod === 'wallet'}
-                  onSelect={() => !walletInsufficient && setPaymentMethod('wallet')}
-                  disabled={walletLoading || walletInsufficient}
-                  disabledReason={walletLoading ? 'Loading balance…' : `Insufficient balance (${fmt(walletBalance ?? 0)} available)`}
-                  icon={Wallet}
-                  label="Wallet"
-                  description={walletLoading ? 'Checking balance…' : `Available balance: ${fmt(walletBalance ?? 0)}`}
-                  badge={!walletLoading && !walletInsufficient ? 'Instant' : undefined}
-                  badgeColor="#6366f1"
-                />
-
-                {/* D17 */}
-                <PaymentMethodCard
-                  method="d17"
-                  selected={paymentMethod === 'd17'}
-                  onSelect={() => setPaymentMethod('d17')}
-                  icon={Smartphone}
-                  label="D17"
-                  description="Pay via D17 mobile app — confirmed by admin within 2 hours."
-                  badge="Tunisian"
-                  badgeColor="#0284c7"
-                />
-
-                {/* Card — Stripe */}
-                <PaymentMethodCard
-                  method="card"
-                  selected={paymentMethod === 'card'}
-                  onSelect={() => setPaymentMethod('card')}
-                  icon={CreditCard}
-                  label="Bank Card"
-                  description="Pay securely with Visa or Mastercard via Stripe."
-                  badge="Secure"
-                  badgeColor="#7c3aed"
-                />
-
-                {/* Contextual panels — shown below the selector */}
+                <PaymentMethodCard method="cod" selected={paymentMethod === 'cod'} onSelect={() => setPaymentMethod('cod')} icon={Truck} label="Cash on Delivery" description="Pay cash when your order arrives at your door." badge="Most Popular" badgeColor="#198f41" />
+                <PaymentMethodCard method="wallet" selected={paymentMethod === 'wallet'} onSelect={() => !walletInsufficient && setPaymentMethod('wallet')} disabled={walletLoading || walletInsufficient} disabledReason={walletLoading ? 'Loading balance…' : `Insufficient balance (${fmt(walletBalance ?? 0)} available)`} icon={Wallet} label="Wallet" description={walletLoading ? 'Checking balance…' : `Available balance: ${fmt(walletBalance ?? 0)}`} badge={!walletLoading && !walletInsufficient ? 'Instant' : undefined} badgeColor="#6366f1" />
+                <PaymentMethodCard method="d17" selected={paymentMethod === 'd17'} onSelect={() => setPaymentMethod('d17')} icon={Smartphone} label="D17" description="Pay via D17 mobile app — confirmed by admin within 2 hours." badge="Tunisian" badgeColor="#0284c7" />
+                <PaymentMethodCard method="card" selected={paymentMethod === 'card'} onSelect={() => setPaymentMethod('card')} icon={CreditCard} label="Bank Card" description="Pay securely with Visa or Mastercard via Stripe." badge="Secure" badgeColor="#7c3aed" />
                 {paymentMethod === 'd17' && <D17Instructions total={summaryTotal} />}
                 {paymentMethod === 'card' && <StripeNotice />}
-
               </div>
             </div>
 
@@ -817,6 +788,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
+                {/* Only the selected/filtered items */}
                 {!isBuyNow && items.map(item => {
                   const img = resolveImg(item.image_url)
                   const variantEntries = item.variant_options ? Object.values(item.variant_options) : []
@@ -853,25 +825,16 @@ export default function CheckoutPage() {
                   <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Shipping</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{fmt(8)}</span>
                 </div>
-
-                {/* Payment method summary row */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14, padding: '8px 10px', background: '#f8fafc', borderRadius: 8 }}>
                   <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>Payment</span>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: '#374151', textTransform: 'capitalize' }}>
-                    {{
-                      cod:    '🚚 Cash on Delivery',
-                      card:   '💳 Bank Card',
-                      d17:    '📱 D17',
-                      wallet: '💰 Wallet',
-                    }[paymentMethod]}
+                  <span style={{ fontSize: 12, fontWeight: 800, color: '#374151' }}>
+                    {{ cod: '🚚 Cash on Delivery', card: '💳 Bank Card', d17: '📱 D17', wallet: '💰 Wallet' }[paymentMethod]}
                   </span>
                 </div>
-
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, borderTop: '2px solid #f1f5f9', marginBottom: 16 }}>
                   <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>Total</span>
                   <span style={{ fontSize: 20, fontWeight: 900, color: '#dc2626' }}>{fmt(summaryTotal)}</span>
                 </div>
-
                 <button
                   onClick={handleSubmit as any}
                   disabled={loading || stripeLoading || (paymentMethod === 'wallet' && walletInsufficient)}
@@ -887,22 +850,13 @@ export default function CheckoutPage() {
                   }}
                 >
                   {loading || stripeLoading
-                    ? <><Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} />
-                        {stripeLoading ? 'Redirecting to Stripe…' : 'Placing order…'}</>
-                    : paymentMethod === 'card'
-                      ? <><CreditCard size={18} /> Pay with Card</>
-                      : isBuyNow
-                        ? <><Zap size={18} /> Place Order Now</>
-                        : <><CheckCircle size={18} /> Place Order</>}
+                    ? <><Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} />{stripeLoading ? 'Redirecting to Stripe…' : 'Placing order…'}</>
+                    : paymentMethod === 'card' ? <><CreditCard size={18} /> Pay with Card</>
+                    : isBuyNow ? <><Zap size={18} /> Place Order Now</>
+                    : <><CheckCircle size={18} /> Place Order</>}
                 </button>
-
                 <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 10 }}>
-                  {{
-                    cod:    '🔒 Pay cash on delivery · Safe & easy',
-                    card:   '🔒 Secured by Stripe · No card data stored',
-                    d17:    '🔒 Confirmed by admin within 2 hours',
-                    wallet: `🔒 Instant deduction from your wallet`,
-                  }[paymentMethod]}
+                  {{ cod: '🔒 Pay cash on delivery · Safe & easy', card: '🔒 Secured by Stripe · No card data stored', d17: '🔒 Confirmed by admin within 2 hours', wallet: '🔒 Instant deduction from your wallet' }[paymentMethod]}
                 </p>
               </div>
             </div>
