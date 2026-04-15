@@ -1,40 +1,30 @@
 'use client'
 
-/**
- * context/CartContext.tsx
- * Global cart state. Wrap your layout with <CartProvider>.
- * Updated to support product variants.
- */
-
 import {
-  createContext, useContext, useEffect, useState, useCallback, ReactNode
+  createContext, useContext, useEffect, useState,
+  useCallback, useRef, ReactNode
 } from 'react'
 import { cartApi, favoritesApi, type CartItem, type FavoriteItem } from '@/lib/shopApi'
 import { isAuthenticated } from '@/lib/auth'
 
 interface CartContextValue {
-  // Cart
   items: CartItem[]
   count: number
   subtotal: number
   cartLoading: boolean
+  // loadingItemId: which specific cart item is being updated right now
+  loadingItemId: number | null
   addToCart: (productId: number, qty?: number, variantId?: number | null) => Promise<void>
   updateItem: (cartItemId: number, qty: number) => Promise<void>
   removeItem: (cartItemId: number) => Promise<void>
   clearCart: () => Promise<void>
   refreshCart: () => Promise<void>
-
-  // Favorites
   favorites: FavoriteItem[]
   isFavorited: (productId: number, variantId?: number | null) => boolean
   toggleFavorite: (productId: number, variantId?: number | null) => Promise<void>
   favLoading: boolean
-
-  // Flash message
   flash: string | null
   clearFlash: () => void
-
-  // Drawer
   drawerOpen: boolean
   openDrawer: () => void
   closeDrawer: () => void
@@ -43,27 +33,31 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | null>(null)
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items,       setItems]       = useState<CartItem[]>([])
-  const [count,       setCount]       = useState(0)
-  const [subtotal,    setSubtotal]    = useState(0)
-  const [cartLoading, setCartLoading] = useState(false)
+  const [items,         setItems]         = useState<CartItem[]>([])
+  const [count,         setCount]         = useState(0)
+  const [subtotal,      setSubtotal]      = useState(0)
+  const [cartLoading,   setCartLoading]   = useState(false)
+  const [loadingItemId, setLoadingItemId] = useState<number | null>(null)
+  const [favorites,     setFavorites]     = useState<FavoriteItem[]>([])
+  const [favLoading,    setFavLoading]    = useState(false)
+  const [flash,         setFlash]         = useState<string | null>(null)
+  const [drawerOpen,    setDrawerOpen]    = useState(false)
 
-  const [favorites,   setFavorites]   = useState<FavoriteItem[]>([])
-  const [favLoading,  setFavLoading]  = useState(false)
+  // ── Per-item request lock — prevents duplicate concurrent requests ─────────
+  // Key: `product-{productId}-{variantId}` for add, `item-{cartItemId}` for update
+  const pendingRef = useRef<Set<string>>(new Set())
 
-  const [flash,       setFlash]       = useState<string | null>(null)
-
-  const [drawerOpen,  setDrawerOpen]  = useState(false)
+  const isLocked  = (key: string) => pendingRef.current.has(key)
+  const lock      = (key: string) => pendingRef.current.add(key)
+  const unlock    = (key: string) => pendingRef.current.delete(key)
 
   const openDrawer  = useCallback(() => setDrawerOpen(true),  [])
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
 
-  const showFlash = (msg: string) => {
+  const showFlash = useCallback((msg: string) => {
     setFlash(msg)
-    setTimeout(() => setFlash(null), 3000)
-  }
-
-  // ── Load cart & favorites on mount (if authenticated) ─────────────────────
+    setTimeout(() => setFlash(null), 3500)
+  }, [])
 
   const refreshCart = useCallback(async () => {
     if (!isAuthenticated()) return
@@ -74,7 +68,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setCount(res.data.count)
       setSubtotal(res.data.subtotal)
     } catch {
-      // silent — user might be logged out
+      // silent
     } finally {
       setCartLoading(false)
     }
@@ -93,96 +87,95 @@ export function CartProvider({ children }: { children: ReactNode }) {
     refreshFavorites()
   }, [refreshCart, refreshFavorites])
 
-  // ── Cart actions ───────────────────────────────────────────────────────────
+  // ── addToCart — locked per (productId + variantId) ────────────────────────
+  const addToCart = useCallback(async (
+    productId: number,
+    qty = 1,
+    variantId?: number | null,
+  ) => {
+    const lockKey = `product-${productId}-${variantId ?? 'base'}`
 
-  /**
-   * Add a product to cart.
-   * Pass variantId when the product uses the variants system.
-   * The backend will reject if variants exist but no variantId is given.
-   */
-const addToCart = async (productId: number, qty = 1, variantId?: number | null) => {
-  setCartLoading(true)
-  try {
-    await cartApi.add(productId, qty, variantId)
-    await refreshCart()
-    openDrawer()
-  } catch (err: any) {
-    // Own-product errors are shown as a flash only — no drawer, no noise.
-    // All other errors also just flash, but we keep the distinction explicit
-    // in case you want different behavior per code in the future.
-    const isOwnProduct = (err as any)?.data?.code === 'OWN_PRODUCT'
-    showFlash(err.message ?? 'Failed to add to cart.')
-    if (!isOwnProduct) {
-      // For non-ownership errors (e.g. out of stock), still open drawer
-      // so the user sees their current cart state. Remove this if you
-      // prefer the drawer to never open on errors.
+    // Drop the request if one is already in flight for this exact item
+    if (isLocked(lockKey)) return
+    lock(lockKey)
+    setCartLoading(true)
+
+    try {
+      await cartApi.add(productId, qty, variantId)
+      await refreshCart()
+      openDrawer()
+    } catch (err: any) {
+      showFlash(err.message ?? 'Failed to add to cart.')
+    } finally {
+      unlock(lockKey)
+      setCartLoading(false)
     }
-  } finally {
-    setCartLoading(false)
-  }
-}
+  }, [refreshCart, openDrawer, showFlash])
 
-  const updateItem = async (cartItemId: number, qty: number) => {
+  // ── updateItem — locked per cartItemId ───────────────────────────────────
+  const updateItem = useCallback(async (cartItemId: number, qty: number) => {
+    const lockKey = `item-${cartItemId}`
+
+    // Drop if already updating this item
+    if (isLocked(lockKey)) return
+    lock(lockKey)
+    setLoadingItemId(cartItemId)
+
     try {
       await cartApi.update(cartItemId, qty)
       await refreshCart()
     } catch (err: any) {
       showFlash(err.message ?? 'Failed to update.')
+      // Refresh to resync with server state in case of stock error
+      await refreshCart()
+    } finally {
+      unlock(lockKey)
+      setLoadingItemId(null)
     }
-  }
+  }, [refreshCart, showFlash])
 
-  const removeItem = async (cartItemId: number) => {
+  // ── removeItem ────────────────────────────────────────────────────────────
+  const removeItem = useCallback(async (cartItemId: number) => {
+    const lockKey = `item-${cartItemId}`
+    if (isLocked(lockKey)) return
+    lock(lockKey)
+    setLoadingItemId(cartItemId)
     try {
       await cartApi.remove(cartItemId)
       await refreshCart()
-    } catch {}
-  }
+    } catch {
+    } finally {
+      unlock(lockKey)
+      setLoadingItemId(null)
+    }
+  }, [refreshCart])
 
-  const clearCart = async () => {
+  const clearCart = useCallback(async () => {
     try {
       await cartApi.clear()
       setItems([])
       setCount(0)
       setSubtotal(0)
     } catch {}
-  }
+  }, [])
 
-  // ── Favorites actions ──────────────────────────────────────────────────────
-
-  /**
-   * Check if a product (or a specific variant) is in favorites.
-   * When variantId is passed, matches both product AND variant.
-   * When variantId is null/undefined, matches any favorite for this product.
-   */
-  const isFavorited = (productId: number, variantId?: number | null): boolean => {
+  const isFavorited = useCallback((productId: number, variantId?: number | null): boolean => {
     if (variantId != null) {
-      return favorites.some(
-        f => f.product_id === productId && f.variant_id === variantId
-      )
+      return favorites.some(f => f.product_id === productId && f.variant_id === variantId)
     }
     return favorites.some(f => f.product_id === productId)
-  }
+  }, [favorites])
 
-  /**
-   * Toggle favorite for a product or a specific variant.
-   */
-  const toggleFavorite = async (productId: number, variantId?: number | null) => {
-    if (!isAuthenticated()) {
-      showFlash('Please log in to save favorites.')
-      return
-    }
+  const toggleFavorite = useCallback(async (productId: number, variantId?: number | null) => {
+    if (!isAuthenticated()) { showFlash('Please log in to save favorites.'); return }
     setFavLoading(true)
     try {
       if (isFavorited(productId, variantId ?? undefined)) {
         await favoritesApi.remove(productId, variantId)
-        setFavorites(prev => {
-          if (variantId != null) {
-            return prev.filter(
-              f => !(f.product_id === productId && f.variant_id === variantId)
-            )
-          }
-          return prev.filter(f => f.product_id !== productId)
-        })
+        setFavorites(prev => variantId != null
+          ? prev.filter(f => !(f.product_id === productId && f.variant_id === variantId))
+          : prev.filter(f => f.product_id !== productId)
+        )
       } else {
         const res = await favoritesApi.add(productId, variantId)
         setFavorites(prev => [...prev, res.data])
@@ -193,11 +186,11 @@ const addToCart = async (productId: number, qty = 1, variantId?: number | null) 
     } finally {
       setFavLoading(false)
     }
-  }
+  }, [isFavorited, showFlash])
 
   return (
     <CartContext.Provider value={{
-      items, count, subtotal, cartLoading,
+      items, count, subtotal, cartLoading, loadingItemId,
       addToCart, updateItem, removeItem, clearCart, refreshCart,
       favorites, isFavorited, toggleFavorite, favLoading,
       flash, clearFlash: () => setFlash(null),

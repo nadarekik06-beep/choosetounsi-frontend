@@ -1,19 +1,20 @@
 'use client';
 // components/NotificationBell.tsx
-// Drop-in bell component for BOTH seller dashboard and admin panel.
-// Usage (seller):  <NotificationBell api={sellerNotificationApi} dark={dark} onNavigate={router.push} />
-// Usage (admin):   <NotificationBell api={adminNotificationApi} dark={true} onNavigate={router.push} />
+// CHANGES from original:
+//   1. accent() — added 'low_stock' (amber) and 'out_of_stock' (red) cases
+//   2. NotifIcon — added 'alert-triangle' for low-stock icon mapping
+//   3. No structural changes — fully backward compatible
 
 import { useRef, useEffect, useCallback } from 'react';
 import {
   Bell, CheckCheck, RefreshCw,
   PackagePlus, PackageCheck, PackageX,
-  CheckCircle, XCircle, Store, Package,
+  CheckCircle, XCircle, Store, Package, AlertTriangle,
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/Usenotifications';
 import type { AppNotification } from '@/lib/notificationApi';
 
-// ─── sound (Web Audio API — no file needed) ───────────────────────
+// ─── sound ────────────────────────────────────────────────────────
 function playSound() {
   try {
     const ctx  = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -31,28 +32,33 @@ function playSound() {
   } catch {}
 }
 
-// ─── icon map ─────────────────────────────────────────────────────
+// ─── icon map — ADDED alert-triangle for low-stock ───────────────
 function NotifIcon({ icon }: { icon: string }) {
   const cls = 'w-4 h-4 flex-shrink-0';
   const map: Record<string, React.ReactNode> = {
-    'package-plus':  <PackagePlus  className={cls} />,
-    'package-check': <PackageCheck className={cls} />,
-    'package-x':     <PackageX     className={cls} />,
-    'check-circle':  <CheckCircle  className={cls} />,
-    'x-circle':      <XCircle      className={cls} />,
-    'store':         <Store        className={cls} />,
+    'package-plus':    <PackagePlus    className={cls} />,
+    'package-check':   <PackageCheck   className={cls} />,
+    'package-x':       <PackageX       className={cls} />,
+    'check-circle':    <CheckCircle    className={cls} />,
+    'x-circle':        <XCircle        className={cls} />,
+    'store':           <Store          className={cls} />,
+    'alert-triangle':  <AlertTriangle  className={cls} />,  // ← NEW for low-stock
   };
   return <>{map[icon] ?? <Package className={cls} />}</>;
 }
 
-// ─── accent colour per action ─────────────────────────────────────
+// ─── accent colour per action — ADDED stock actions ───────────────
+// low_stock   → amber  (same as 'submitted' — caution tone)
+// out_of_stock → red   (same as 'rejected' — urgent tone)
 function accent(action: string): string {
-  if (action === 'approved')  return '#10b981';
-  if (action === 'rejected')  return '#ef4444';
-  if (action === 'deleted')   return '#ef4444';
-  if (action === 'submitted') return '#f59e0b';
-  if (action === 'created')   return '#3b82f6';
-  if (action === 'updated')   return '#a855f7';
+  if (action === 'approved')      return '#10b981';
+  if (action === 'rejected')      return '#ef4444';
+  if (action === 'deleted')       return '#ef4444';
+  if (action === 'out_of_stock')  return '#ef4444';  // ← NEW
+  if (action === 'low_stock')     return '#f59e0b';  // ← NEW
+  if (action === 'submitted')     return '#f59e0b';
+  if (action === 'created')       return '#3b82f6';
+  if (action === 'updated')       return '#a855f7';
   return '#db142e';
 }
 
@@ -146,7 +152,7 @@ function NotifRow({
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
+// MAIN COMPONENT — unchanged from original
 // ═══════════════════════════════════════════════════════════════════
 
 interface NotificationBellProps {
@@ -157,9 +163,7 @@ interface NotificationBellProps {
     markAllRead(): Promise<void>;
   };
   dark?: boolean;
-  /** router.push — to navigate when a notification is clicked */
   onNavigate?: (path: string) => void;
-  /** polling interval ms — default 30 000 */
   pollInterval?: number;
 }
 
@@ -178,7 +182,6 @@ export default function NotificationBell({
     fetchAll, markRead, markAllRead,
   } = useNotifications({ api, pollInterval, onNewNotifications: onNew });
 
-  // close on outside click
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -188,7 +191,6 @@ export default function NotificationBell({
     return () => document.removeEventListener('mousedown', handler);
   }, [setOpen]);
 
-  // colours
   const bg        = dark ? '#161b27' : '#ffffff';
   const border    = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
   const textMain  = dark ? '#ffffff' : '#111827';
@@ -218,7 +220,7 @@ export default function NotificationBell({
 
       <div ref={ref} style={{ position: 'relative' }}>
 
-        {/* ── Bell button ── */}
+        {/* Bell button */}
         <button
           onClick={() => setOpen(o => !o)}
           style={{
@@ -233,8 +235,6 @@ export default function NotificationBell({
           title="Notifications"
         >
           <Bell size={16} />
-
-          {/* badge */}
           {unreadCount > 0 && (
             <span style={{
               position: 'absolute', top: -5, right: -5,
@@ -251,7 +251,7 @@ export default function NotificationBell({
           )}
         </button>
 
-        {/* ── Dropdown ── */}
+        {/* Dropdown */}
         {open && (
           <div style={{
             position: 'absolute', top: 'calc(100% + 10px)', right: 0,

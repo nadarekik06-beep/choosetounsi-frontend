@@ -5,16 +5,27 @@
  * Slide-in cart drawer with per-item selection for checkout.
  * Selected item IDs are written to sessionStorage (ct_selected_items)
  * before navigating to /checkout — identical handoff as cart/page.tsx.
+ *
+ * CHANGES vs previous version:
+ *   - CartRow now uses loadingItemId (from CartContext) instead of the
+ *     global cartLoading flag — so only the specific item being updated
+ *     is disabled, not the entire cart.
+ *   - Plus button is disabled when item.quantity >= item.stock (unchanged)
+ *     AND when this specific item is loading (was: any item loading).
+ *   - Loader spinner shown on the quantity number when item is busy.
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { X, ShoppingCart, Trash2, Plus, Minus, ArrowRight, Package, CheckSquare, Square } from 'lucide-react'
+import {
+  X, ShoppingCart, Trash2, Plus, Minus,
+  ArrowRight, Package, CheckSquare, Square, Loader2,
+} from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import type { CartItem } from '@/lib/shopApi'
 
-// ─── Shared sessionStorage key (must match cart/page.tsx & checkout/page.tsx) ─
+// ─── Shared sessionStorage key ────────────────────────────────────────────────
 const SELECTED_ITEMS_KEY = 'ct_selected_items'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -44,12 +55,19 @@ function CartRow({
   isSelected: boolean
   onToggle: (id: number) => void
 }) {
-  const { updateItem, removeItem, cartLoading } = useCart()
+  // ── KEY CHANGE: use loadingItemId instead of global cartLoading ──────────
+  const { updateItem, removeItem, cartLoading, loadingItemId } = useCart()
   const imgSrc = resolveImg(item.image_url)
+
+  // This item is "busy" only if IT specifically is being updated/removed.
+  // Other items in the cart remain fully interactive.
+  const itemBusy = loadingItemId === item.id
 
   const variantEntries = item.variant_options
     ? Object.values(item.variant_options)
     : []
+
+  const atStockLimit = item.quantity >= item.stock
 
   return (
     <div style={{
@@ -90,8 +108,14 @@ function CartRow({
 
       {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <Link href={`/products/${item.slug}`}
-          style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', textDecoration: 'none', lineHeight: 1.3, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <Link
+          href={`/products/${item.slug}`}
+          style={{
+            fontSize: 13, fontWeight: 700, color: '#0f172a',
+            textDecoration: 'none', lineHeight: 1.3, display: 'block',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}
+        >
           {item.name}
         </Link>
 
@@ -107,7 +131,8 @@ function CartRow({
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
             {variantEntries.map((opt, i) =>
               opt.color_hex ? (
-                <span key={i}
+                <span
+                  key={i}
                   title={opt.value}
                   style={{
                     display: 'inline-block', width: 12, height: 12,
@@ -116,7 +141,10 @@ function CartRow({
                   }}
                 />
               ) : (
-                <span key={i} style={{ fontSize: 10, color: '#94a3b8', background: '#f1f5f9', padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>
+                <span key={i} style={{
+                  fontSize: 10, color: '#94a3b8', background: '#f1f5f9',
+                  padding: '1px 6px', borderRadius: 4, fontWeight: 600,
+                }}>
                   {opt.value}
                 </span>
               )
@@ -124,27 +152,73 @@ function CartRow({
           </div>
         )}
 
+        {/* Stock limit warning */}
+        {atStockLimit && (
+          <p style={{
+            fontSize: 10, color: '#d97706', fontWeight: 700,
+            margin: '4px 0 0', display: 'flex', alignItems: 'center', gap: 3,
+          }}>
+            Max quantity reached ({item.stock} available)
+          </p>
+        )}
+
         {/* Price + qty controls */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', marginTop: 8,
+        }}>
           <span style={{ fontSize: 14, fontWeight: 800, color: '#dc2626' }}>
             {fmt(item.price)}
           </span>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 0, border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 0,
+            border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden',
+          }}>
+            {/* Minus / remove */}
             <button
-              onClick={() => item.quantity > 1 ? updateItem(item.id, item.quantity - 1) : removeItem(item.id)}
-              disabled={cartLoading}
-              style={{ width: 28, height: 28, border: 'none', background: '#f8fafc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#374151', transition: 'background 0.15s' }}
+              onClick={() => item.quantity > 1
+                ? updateItem(item.id, item.quantity - 1)
+                : removeItem(item.id)
+              }
+              disabled={itemBusy}
+              style={{
+                width: 28, height: 28, border: 'none', background: '#f8fafc',
+                cursor: itemBusy ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: itemBusy ? '#cbd5e1' : '#374151',
+                transition: 'background 0.15s',
+              }}
             >
               <Minus size={11} />
             </button>
-            <span style={{ width: 32, textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#111', borderLeft: '1px solid #e5e7eb', borderRight: '1px solid #e5e7eb', lineHeight: '28px' }}>
-              {item.quantity}
+
+            {/* Quantity display — shows spinner when this item is busy */}
+            <span style={{
+              width: 32, textAlign: 'center', fontSize: 13, fontWeight: 700,
+              color: '#111', borderLeft: '1px solid #e5e7eb',
+              borderRight: '1px solid #e5e7eb', lineHeight: '28px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              height: 28,
+            }}>
+              {itemBusy
+                ? <Loader2 size={12} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} />
+                : item.quantity
+              }
             </span>
+
+            {/* Plus */}
             <button
               onClick={() => updateItem(item.id, item.quantity + 1)}
-              disabled={cartLoading || item.quantity >= item.stock}
-              style={{ width: 28, height: 28, border: 'none', background: '#f8fafc', cursor: item.quantity >= item.stock ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: item.quantity >= item.stock ? '#e5e7eb' : '#374151', transition: 'background 0.15s' }}
+              disabled={itemBusy || atStockLimit}
+              title={atStockLimit ? `Only ${item.stock} in stock` : 'Increase quantity'}
+              style={{
+                width: 28, height: 28, border: 'none', background: '#f8fafc',
+                cursor: (itemBusy || atStockLimit) ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: (itemBusy || atStockLimit) ? '#e5e7eb' : '#374151',
+                transition: 'background 0.15s',
+              }}
             >
               <Plus size={11} />
             </button>
@@ -152,12 +226,22 @@ function CartRow({
         </div>
 
         {/* Line total + remove */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', marginTop: 6,
+        }}>
           <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
             {item.quantity} × {fmt(item.price)} = <strong style={{ color: '#374151' }}>{fmt(item.line_total)}</strong>
           </span>
-          <button onClick={() => removeItem(item.id)} disabled={cartLoading}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px 4px', borderRadius: 4, opacity: cartLoading ? 0.4 : 0.7, transition: 'opacity 0.15s' }}>
+          <button
+            onClick={() => removeItem(item.id)}
+            disabled={itemBusy}
+            style={{
+              background: 'none', border: 'none', cursor: itemBusy ? 'not-allowed' : 'pointer',
+              color: '#ef4444', padding: '2px 4px', borderRadius: 4,
+              opacity: itemBusy ? 0.3 : 0.7, transition: 'opacity 0.15s',
+            }}
+          >
             <Trash2 size={12} />
           </button>
         </div>
@@ -234,8 +318,9 @@ export default function CartDrawer() {
   return (
     <>
       <style>{`
-        @keyframes slideIn  { from { transform: translateX(100%) } to { transform: translateX(0) } }
-        @keyframes fadeIn   { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes slideIn { from { transform: translateX(100%) } to { transform: translateX(0) } }
+        @keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes spin    { to   { transform: rotate(360deg) } }
         .cb-btn:hover { color: #dc2626 !important; }
       `}</style>
 
@@ -273,8 +358,8 @@ export default function CartDrawer() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 36, height: 36, borderRadius: '50%',
-              background: 'rgba(220,38,38,0.08)', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(220,38,38,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <ShoppingCart size={16} color="#dc2626" />
             </div>
@@ -285,13 +370,20 @@ export default function CartDrawer() {
               </p>
             </div>
           </div>
-          <button onClick={closeDrawer}
-            style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid #f1f5f9', background: '#f8fafc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+          <button
+            onClick={closeDrawer}
+            style={{
+              width: 32, height: 32, borderRadius: 8,
+              border: '1px solid #f1f5f9', background: '#f8fafc',
+              cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', color: '#64748b',
+            }}
+          >
             <X size={15} />
           </button>
         </div>
 
-        {/* ── Select-all bar (only when items exist) ── */}
+        {/* ── Select-all bar ── */}
         {items.length > 0 && (
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -313,8 +405,6 @@ export default function CartDrawer() {
               {allSelected ? <CheckSquare size={16} /> : <Square size={16} />}
               {allSelected ? 'Deselect all' : 'Select all'}
             </button>
-
-            {/* Selection count hint */}
             <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>
               {noneSelected
                 ? 'None selected'
@@ -333,8 +423,16 @@ export default function CartDrawer() {
               <ShoppingCart size={40} color="#e2e8f0" style={{ margin: '0 auto 16px' }} />
               <p style={{ fontSize: 14, fontWeight: 700, color: '#94a3b8', margin: '0 0 6px' }}>Your cart is empty</p>
               <p style={{ fontSize: 12, color: '#cbd5e1', margin: '0 0 20px' }}>Add some products to get started</p>
-              <button onClick={closeDrawer}
-                style={{ fontSize: 13, fontWeight: 700, color: '#dc2626', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontFamily: 'inherit' }}>
+              <button
+                onClick={closeDrawer}
+                style={{
+                  fontSize: 13, fontWeight: 700, color: '#dc2626',
+                  background: 'rgba(220,38,38,0.08)',
+                  border: '1px solid rgba(220,38,38,0.2)',
+                  borderRadius: 8, padding: '8px 18px',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
                 Continue Shopping
               </button>
             </div>
@@ -349,10 +447,18 @@ export default function CartDrawer() {
                 />
               ))}
 
-              {/* Clear all */}
               {items.length > 1 && (
-                <button onClick={clearCart} disabled={cartLoading}
-                  style={{ width: '100%', marginTop: 8, marginBottom: 4, padding: '8px', border: '1px solid #fee2e2', background: '#fff', color: '#ef4444', fontSize: 12, fontWeight: 700, borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', opacity: cartLoading ? 0.5 : 1 }}>
+                <button
+                  onClick={clearCart}
+                  disabled={cartLoading}
+                  style={{
+                    width: '100%', marginTop: 8, marginBottom: 4, padding: '8px',
+                    border: '1px solid #fee2e2', background: '#fff',
+                    color: '#ef4444', fontSize: 12, fontWeight: 700,
+                    borderRadius: 8, cursor: 'pointer',
+                    fontFamily: 'inherit', opacity: cartLoading ? 0.5 : 1,
+                  }}
+                >
                   Clear all items
                 </button>
               )}
@@ -362,10 +468,14 @@ export default function CartDrawer() {
 
         {/* ── Footer ── */}
         {items.length > 0 && (
-          <div style={{ borderTop: '1px solid #f1f5f9', padding: '16px 20px', flexShrink: 0, background: '#fff' }}>
-
-            {/* Subtotal — reflects selection */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <div style={{
+            borderTop: '1px solid #f1f5f9', padding: '16px 20px',
+            flexShrink: 0, background: '#fff',
+          }}>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between',
+              alignItems: 'center', marginBottom: 4,
+            }}>
               <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>
                 {selectedIds.size > 0 && selectedIds.size < items.length
                   ? `Selected (${selectedCount} of ${count} items)`
@@ -380,7 +490,6 @@ export default function CartDrawer() {
               Shipping calculated at checkout
             </p>
 
-            {/* Partial-selection hint */}
             {selectedIds.size > 0 && selectedIds.size < items.length && (
               <div style={{
                 marginBottom: 12, padding: '8px 12px',
@@ -395,7 +504,6 @@ export default function CartDrawer() {
               </div>
             )}
 
-            {/* Checkout CTA */}
             <button
               onClick={handleCheckout}
               disabled={noneSelected}
@@ -419,9 +527,15 @@ export default function CartDrawer() {
               }
             </button>
 
-            {/* Continue shopping */}
-            <button onClick={closeDrawer}
-              style={{ width: '100%', marginTop: 10, padding: '10px 0', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', fontSize: 13, fontWeight: 700, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+            <button
+              onClick={closeDrawer}
+              style={{
+                width: '100%', marginTop: 10, padding: '10px 0',
+                border: '1px solid #e5e7eb', background: '#fff',
+                color: '#374151', fontSize: 13, fontWeight: 700,
+                borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
               Continue Shopping
             </button>
           </div>
