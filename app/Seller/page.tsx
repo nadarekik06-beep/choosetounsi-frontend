@@ -26,7 +26,6 @@ import {
 // ── New imports ──────────────────────────────────────────────────────────────
 import { SubscriptionBadge } from '@/app/components/seller/SubscriptionBadge';
 import { useSubscription } from '@/app/hooks/useSubscription';
-import BlackPepperHub from '@/app/components/seller/BlackPepperHub';
 
 /* ─────────────────────────────────────────────────────────────────
    HELPERS  (identical to original)
@@ -196,7 +195,6 @@ function ErrorState({ onRetry, dark }: { onRetry: () => void; dark: boolean }) {
 ═════════════════════════════════════════════════════════════════*/
 export default function SellerDashboardPage() {
   const { dark } = useTheme();
-  const { isBlack } = useSubscription(); // ← ADDED: needed to gate BlackPepperHub
   const [data,    setData]    = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
@@ -489,10 +487,7 @@ export default function SellerDashboardPage() {
             </div>
           </div>
 
-          {/* ─── BLACK PEPPER HUB (Black plan sellers only) ─── */}
-          {isBlack && (
-            <BlackPepperHub dark={dark} />
-          )}
+       
 
         </div>
       </>

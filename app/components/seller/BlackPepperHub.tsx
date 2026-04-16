@@ -137,7 +137,7 @@ function LoadingSpinner({ color = GOLD }: { color?: string }) {
 
 // ─── 1. Elite Banner ──────────────────────────────────────────────────────────
 
-function EliteBanner({ dark }: { dark: boolean }) {
+export function EliteBanner({ dark }: { dark: boolean }) {
   const textMain  = dark ? '#fff' : '#111';
   const textMuted = dark ? 'rgba(255,255,255,0.5)' : '#666';
 
@@ -190,7 +190,7 @@ function EliteBanner({ dark }: { dark: boolean }) {
 
 // ─── 2. AI Hub ────────────────────────────────────────────────────────────────
 
-function AiHubSection({ dark }: { dark: boolean }) {
+export function AiHubSection({ dark }: { dark: boolean }) {
   const [data,    setData]    = useState<AiHubData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
@@ -393,7 +393,7 @@ function AiHubSection({ dark }: { dark: boolean }) {
 
 // ─── 3. Profit Command Center ─────────────────────────────────────────────────
 
-function ProfitCenterSection({ dark }: { dark: boolean }) {
+export function ProfitCenterSection({ dark }: { dark: boolean }) {
   const [data,    setData]    = useState<ProfitCenterData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
@@ -589,7 +589,7 @@ function ProfitCenterSection({ dark }: { dark: boolean }) {
 
 // ─── 4. Visibility Control ────────────────────────────────────────────────────
 
-function VisibilitySection({ dark }: { dark: boolean }) {
+export function VisibilitySection({ dark }: { dark: boolean }) {
   const [products, setProducts] = useState<SponsoredProduct[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [toggling, setToggling] = useState<number | null>(null);
@@ -718,7 +718,7 @@ function VisibilitySection({ dark }: { dark: boolean }) {
 
 // ─── 5. VIP Lounge ───────────────────────────────────────────────────────────
 
-function VipLoungeSection({ dark }: { dark: boolean }) {
+export function VipLoungeSection({ dark }: { dark: boolean }) {
   const [requests,   setRequests]   = useState<VipRequest[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [submitting, setSubmitting] = useState(false);

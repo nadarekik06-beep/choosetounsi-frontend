@@ -55,18 +55,47 @@ function Field({ label, value, dark }: { label: string; value: string | number; 
   );
 }
 
+// ─── FIX: solid background colors so <option> elements are visible in dark mode ─
 function ProdSelect({ products, value, onChange, dark }: { products: Array<{ id:number; name:string }>; value: number|null; onChange:(id:number)=>void; dark:boolean }) {
+  const selectBg  = dark ? '#1e2330' : '#f8fafc';
+  const selectClr = dark ? '#ffffff' : '#111111';
+  const optionBg  = dark ? '#1e2330' : '#ffffff';
+
   return (
     <div style={{ position:'relative' }}>
       <select
         value={value ?? ''}
         onChange={e => onChange(Number(e.target.value))}
-        style={{ width:'100%', padding:'10px 36px 10px 12px', borderRadius:10, border:`1px solid ${dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`, background: dark ? 'rgba(255,255,255,0.06)' : '#f8fafc', color: dark ? '#fff' : '#111', fontSize:13, fontWeight:600, cursor:'pointer', appearance:'none', outline:'none' }}
+        style={{
+          width: '100%',
+          padding: '10px 36px 10px 12px',
+          borderRadius: 10,
+          border: `1px solid ${dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`,
+          background: selectBg,
+          color: selectClr,
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: 'pointer',
+          appearance: 'none',
+          outline: 'none',
+          // Force browsers to use our background on the dropdown itself
+          colorScheme: dark ? 'dark' : 'light',
+        }}
       >
-        <option value="">— Select a product —</option>
-        {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        <option value="" style={{ background: optionBg, color: selectClr }}>
+          — Select a product —
+        </option>
+        {products.map(p => (
+          <option
+            key={p.id}
+            value={p.id}
+            style={{ background: optionBg, color: selectClr }}
+          >
+            {p.name}
+          </option>
+        ))}
       </select>
-      <ChevronDown size={14} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', color: dark ? '#fff' : '#111', pointerEvents:'none' }} />
+      <ChevronDown size={14} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', color: selectClr, pointerEvents:'none' }} />
     </div>
   );
 }
