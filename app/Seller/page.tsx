@@ -8,6 +8,7 @@
  *   - SubscriptionBadge shown in the header bar
  *   - Advanced Analytics + AI Tools moved to /seller/analytics and /seller/ai-tools
  *   - All KPI cards, charts, top products, clients, orders — unchanged
+ *   - BlackPepperHub injected at the bottom, visible only for Black plan sellers
  */
 
 import { useEffect, useState, useRef } from 'react';
@@ -24,6 +25,8 @@ import {
 
 // ── New imports ──────────────────────────────────────────────────────────────
 import { SubscriptionBadge } from '@/app/components/seller/SubscriptionBadge';
+import { useSubscription } from '@/app/hooks/useSubscription';
+import BlackPepperHub from '@/app/components/seller/BlackPepperHub';
 
 /* ─────────────────────────────────────────────────────────────────
    HELPERS  (identical to original)
@@ -193,6 +196,7 @@ function ErrorState({ onRetry, dark }: { onRetry: () => void; dark: boolean }) {
 ═════════════════════════════════════════════════════════════════*/
 export default function SellerDashboardPage() {
   const { dark } = useTheme();
+  const { isBlack } = useSubscription(); // ← ADDED: needed to gate BlackPepperHub
   const [data,    setData]    = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
@@ -268,7 +272,6 @@ export default function SellerDashboardPage() {
               <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>Overview of your store performance</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {/* ← NEW: subscription badge */}
               <SubscriptionBadge dark={dark} />
               <span style={{ fontSize: 11, fontWeight: 800, background: 'rgba(219,20,46,0.12)', color: '#db142e', border: '1px solid rgba(219,20,46,0.25)', padding: '5px 14px', borderRadius: 999 }}>
                 🟢 Live
@@ -485,6 +488,11 @@ export default function SellerDashboardPage() {
               </table>
             </div>
           </div>
+
+          {/* ─── BLACK PEPPER HUB (Black plan sellers only) ─── */}
+          {isBlack && (
+            <BlackPepperHub dark={dark} />
+          )}
 
         </div>
       </>

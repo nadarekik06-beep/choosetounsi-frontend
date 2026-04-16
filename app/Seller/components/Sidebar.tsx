@@ -1,14 +1,14 @@
 ﻿'use client';
 
 /**
- * app/seller/components/Sidebar.tsx  ← REPLACE
+ * app/seller/components/Sidebar.tsx  ← REPLACE EXISTING
  *
- * FIX applied:
- *   - Light mode hover: nav-link and footer-link no longer force `color: #fff`
- *     which was invisible on white background.
- *   - In dark mode: keeps original white hover text.
- *   - In light mode: hover text becomes #111 (dark text on light bg).
- *   - All other logic is identical to the original.
+ * Changes from previous version:
+ *   1. Added BLACK_NAV array with Black-only routes
+ *   2. Added Black section divider below Red Premium divider
+ *   3. Black routes locked for non-Black sellers → redirect to /seller/subscription
+ *   4. Black sidebar section uses gold theme
+ *   All other logic unchanged.
  */
 
 import Link from 'next/link';
@@ -16,7 +16,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Package, ShoppingBag,
   ChevronLeft, ChevronRight, LogOut, Home, Sun, Moon,
-  AlertTriangle, BarChart2, Brain, Lock,
+  AlertTriangle, BarChart2, Brain, Lock, Crown, Zap,
 } from 'lucide-react';
 import { useTheme } from '../layout';
 import { useSubscription } from '@/app/hooks/useSubscription';
@@ -33,6 +33,12 @@ const PREMIUM_NAV = [
   { href: '/seller/ai-tools',  label: 'AI Tools',   icon: Brain,     accent: '#8b5cf6' },
 ];
 
+// ── Black Pepper exclusive nav ────────────────────────────────────────────────
+const BLACK_NAV = [
+  { href: '/seller/black',         label: 'Black Hub',    icon: Crown, accent: '#f59e0b' },
+  { href: '/seller/black/profit',  label: 'Profit Center',icon: Zap,   accent: '#f59e0b' },
+];
+
 interface SidebarProps {
   collapsed: boolean;
   onCollapse: (v: boolean) => void;
@@ -43,15 +49,14 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const { dark, toggle } = useTheme();
-  const { isPaid, plan, loading } = useSubscription();
+  const { isPaid, isBlack, plan, loading } = useSubscription();
 
   const bg        = dark ? '#0D1117' : '#ffffff';
   const border    = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
   const textMuted = dark ? 'rgba(255,255,255,0.35)' : '#888';
 
-  // FIX: hover text color must be readable in both modes
-  const hoverTextColor  = dark ? '#ffffff' : '#111111';
-  const hoverBgColor    = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const hoverTextColor = dark ? '#ffffff' : '#111111';
+  const hoverBgColor   = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
 
   const handleLogout = () => {
     localStorage.clear();
@@ -62,6 +67,88 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
     });
     window.location.href = '/auth/login';
   };
+
+  // ── Shared nav link renderer ───────────────────────────────────────────────
+  const renderNavLink = (
+    href: string, label: string, Icon: React.ElementType,
+    isActive: boolean, accent?: string
+  ) => (
+    <Link
+      href={href}
+      onClick={onMobileClose}
+      className="nav-link"
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: collapsed ? '10px 0' : '10px 12px',
+        justifyContent: collapsed ? 'center' : 'flex-start',
+        borderRadius: 12, fontSize: 13, fontWeight: 700,
+        textDecoration: 'none', position: 'relative',
+        transition: 'all 0.15s ease',
+        background: isActive
+          ? accent
+            ? `${accent}22`
+            : 'linear-gradient(135deg,#db142e,#a00f22)'
+          : 'transparent',
+        color: isActive ? (accent ?? '#fff') : textMuted,
+        boxShadow: isActive && !accent ? '0 4px 14px rgba(219,20,46,0.35)' : 'none',
+        outline: isActive && accent ? `1px solid ${accent}44` : '1px solid transparent',
+      }}
+    >
+      <Icon size={17} style={{ flexShrink: 0, color: isActive && accent ? accent : undefined }} />
+      {!collapsed && <span>{label}</span>}
+      {collapsed && (
+        <span className="tooltip" style={{
+          position: 'absolute', left: '100%', marginLeft: 12,
+          padding: '6px 10px',
+          background: dark ? '#1e2330' : '#fff',
+          color: dark ? '#fff' : '#111',
+          fontSize: 11, fontWeight: 700, borderRadius: 8,
+          whiteSpace: 'nowrap', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+          opacity: 0, pointerEvents: 'none', transition: 'opacity 0.15s ease', zIndex: 50,
+        }}>
+          {label}
+        </span>
+      )}
+    </Link>
+  );
+
+  const renderLockedLink = (href: string, label: string, Icon: React.ElementType) => (
+    <Link
+      key={href}
+      href="/seller/subscription"
+      onClick={onMobileClose}
+      className="nav-link-locked"
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: collapsed ? '10px 0' : '10px 12px',
+        justifyContent: collapsed ? 'center' : 'flex-start',
+        borderRadius: 12, fontSize: 13, fontWeight: 700,
+        textDecoration: 'none', position: 'relative',
+        transition: 'all 0.15s ease', opacity: 0.5, color: textMuted,
+      }}
+    >
+      <Icon size={17} style={{ flexShrink: 0 }} />
+      {!collapsed && (
+        <>
+          <span style={{ flex: 1 }}>{label}</span>
+          <Lock size={11} style={{ color: textMuted, flexShrink: 0 }} />
+        </>
+      )}
+      {collapsed && (
+        <span className="tooltip" style={{
+          position: 'absolute', left: '100%', marginLeft: 12,
+          padding: '6px 10px',
+          background: dark ? '#1e2330' : '#fff',
+          color: dark ? '#fff' : '#111',
+          fontSize: 11, fontWeight: 700, borderRadius: 8,
+          whiteSpace: 'nowrap', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+          opacity: 0, pointerEvents: 'none', transition: 'opacity 0.15s ease', zIndex: 50,
+        }}>
+          {label} 🔒
+        </span>
+      )}
+    </Link>
+  );
 
   return (
     <>
@@ -90,7 +177,9 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
             width: 48, height: 48, borderRadius: 13, flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: '#ffffff', overflow: 'hidden', padding: 3,
-            boxShadow: '0 0 0 2px #198f41, 0 0 0 4px #db142e, 0 0 10px 3px rgba(25,143,65,0.4), 0 0 18px 5px rgba(219,20,46,0.22)',
+            boxShadow: isBlack
+              ? '0 0 0 2px #f59e0b, 0 0 0 4px #a16207, 0 0 10px 3px rgba(245,158,11,0.4), 0 0 18px 5px rgba(161,98,7,0.22)'
+              : '0 0 0 2px #198f41, 0 0 0 4px #db142e, 0 0 10px 3px rgba(25,143,65,0.4), 0 0 18px 5px rgba(219,20,46,0.22)',
           }}>
             <img
               src="/images/logo-chili.png"
@@ -103,8 +192,8 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
               <p style={{ fontWeight: 900, fontSize: 13, color: dark ? '#fff' : '#111', margin: 0, textTransform: 'uppercase' }}>
                 Choose<span style={{ color: '#db142e' }}>Tounsi</span>
               </p>
-              <p style={{ fontSize: 9, fontWeight: 700, color: '#198f41', textTransform: 'uppercase', letterSpacing: '0.12em', margin: 0 }}>
-                Seller Portal
+              <p style={{ fontSize: 9, fontWeight: 700, color: isBlack ? '#f59e0b' : '#198f41', textTransform: 'uppercase', letterSpacing: '0.12em', margin: 0 }}>
+                {isBlack ? '⬛ Elite Portal' : 'Seller Portal'}
               </p>
             </div>
           )}
@@ -113,71 +202,51 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
         {/* ── Nav ── */}
         <nav style={{ flex: 1, padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
 
-          {/* Base nav items (always visible) */}
+          {/* Base nav */}
           {BASE_NAV.map(({ href, label, icon: Icon }) => {
-            const isActive     = href === '/seller' ? pathname === '/seller' : pathname.startsWith(href);
-            const isComplaints = href === '/seller/complaints';
+            const isActive = href === '/seller' ? pathname === '/seller' : pathname.startsWith(href);
             return (
-              <Link
-                key={href}
-                href={href}
-                onClick={onMobileClose}
-                className="nav-link"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: collapsed ? '10px 0' : '10px 12px',
-                  justifyContent: collapsed ? 'center' : 'flex-start',
-                  borderRadius: 12, fontSize: 13, fontWeight: 700,
-                  textDecoration: 'none', position: 'relative',
-                  transition: 'all 0.15s ease',
-                  background: isActive ? 'linear-gradient(135deg,#db142e,#a00f22)' : 'transparent',
-                  color: isActive ? '#fff' : isComplaints ? '#f97316' : textMuted,
-                  boxShadow: isActive ? '0 4px 14px rgba(219,20,46,0.35)' : 'none',
-                }}
-              >
-                <Icon size={17} style={{ flexShrink: 0 }} />
-                {!collapsed && <span>{label}</span>}
-                {collapsed && (
-                  <span className="tooltip" style={{
-                    position: 'absolute', left: '100%', marginLeft: 12,
-                    padding: '6px 10px',
-                    background: dark ? '#1e2330' : '#fff',
-                    color: dark ? '#fff' : '#111',
-                    fontSize: 11, fontWeight: 700, borderRadius: 8,
-                    whiteSpace: 'nowrap', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                    opacity: 0, pointerEvents: 'none', transition: 'opacity 0.15s ease', zIndex: 50,
-                  }}>
-                    {label}
-                  </span>
-                )}
-              </Link>
+              <div key={href}>
+                {renderNavLink(href, label, Icon, isActive)}
+              </div>
             );
           })}
 
-          {/* ── Premium divider ── */}
+          {/* Red Premium divider */}
           {!collapsed && !loading && (
-            <div style={{
-              margin: '8px 4px 4px',
-              display: 'flex', alignItems: 'center', gap: 8,
-            }}>
+            <div style={{ margin: '8px 4px 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ flex: 1, height: 1, background: dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
-              <span style={{
-                fontSize: 9, fontWeight: 800, letterSpacing: '0.1em',
-                color: isPaid ? '#f87171' : textMuted,
-                textTransform: 'uppercase',
-              }}>
+              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: isPaid ? '#f87171' : textMuted, textTransform: 'uppercase' }}>
                 {isPaid ? '🔴 Red Pepper' : 'Premium'}
               </span>
               <div style={{ flex: 1, height: 1, background: dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
             </div>
           )}
 
-          {/* Premium nav items */}
+          {/* Red nav items */}
           {PREMIUM_NAV.map(({ href, label, icon: Icon, accent }) => {
             const isActive = pathname.startsWith(href);
+            return isPaid
+              ? <div key={href}>{renderNavLink(href, label, Icon, isActive, accent)}</div>
+              : <div key={href}>{renderLockedLink(href, label, Icon)}</div>;
+          })}
 
-            if (isPaid) {
-              return (
+          {/* ── Black Pepper divider ── */}
+          {!collapsed && !loading && (
+            <div style={{ margin: '8px 4px 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ flex: 1, height: 1, background: isBlack ? 'rgba(245,158,11,0.25)' : (dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)') }} />
+              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: isBlack ? '#f59e0b' : textMuted, textTransform: 'uppercase' }}>
+                {isBlack ? '⬛ Black Elite' : 'Black Pepper'}
+              </span>
+              <div style={{ flex: 1, height: 1, background: isBlack ? 'rgba(245,158,11,0.25)' : (dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)') }} />
+            </div>
+          )}
+
+          {/* Black nav items */}
+          {BLACK_NAV.map(({ href, label, icon: Icon, accent }) => {
+            const isActive = pathname.startsWith(href);
+            return isBlack
+              ? (
                 <Link
                   key={href}
                   href={href}
@@ -190,23 +259,25 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
                     borderRadius: 12, fontSize: 13, fontWeight: 700,
                     textDecoration: 'none', position: 'relative',
                     transition: 'all 0.15s ease',
-                    background: isActive ? `${accent}22` : 'transparent',
-                    color: isActive ? accent : textMuted,
-                    outline: isActive ? `1px solid ${accent}44` : '1px solid transparent',
+                    background: isActive
+                      ? 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(251,191,36,0.12))'
+                      : 'transparent',
+                    color: isActive ? '#f59e0b' : textMuted,
+                    outline: isActive ? '1px solid rgba(245,158,11,0.35)' : '1px solid transparent',
+                    boxShadow: isActive ? '0 2px 12px rgba(245,158,11,0.15)' : 'none',
                   }}
                 >
-                  <Icon size={17} style={{ flexShrink: 0, color: isActive ? accent : textMuted }} />
+                  <Icon size={17} style={{ flexShrink: 0, color: isActive ? '#f59e0b' : textMuted }} />
                   {!collapsed && <span>{label}</span>}
                   {!collapsed && (
                     <span style={{
-                      marginLeft: 'auto',
-                      fontSize: 8, fontWeight: 800,
+                      marginLeft: 'auto', fontSize: 8, fontWeight: 800,
                       padding: '2px 6px', borderRadius: 999,
-                      background: `${accent}18`,
-                      color: accent,
-                      border: `1px solid ${accent}33`,
+                      background: 'rgba(245,158,11,0.15)',
+                      color: '#f59e0b',
+                      border: '1px solid rgba(245,158,11,0.3)',
                     }}>
-                      RED
+                      ⬛
                     </span>
                   )}
                   {collapsed && (
@@ -223,49 +294,8 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
                     </span>
                   )}
                 </Link>
-              );
-            }
-
-            return (
-              <Link
-                key={href}
-                href="/seller/subscription"
-                onClick={onMobileClose}
-                className="nav-link-locked"
-                title={collapsed ? `${label} — Upgrade to Red Pepper` : undefined}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: collapsed ? '10px 0' : '10px 12px',
-                  justifyContent: collapsed ? 'center' : 'flex-start',
-                  borderRadius: 12, fontSize: 13, fontWeight: 700,
-                  textDecoration: 'none', position: 'relative',
-                  transition: 'all 0.15s ease',
-                  opacity: 0.5,
-                  color: textMuted,
-                }}
-              >
-                <Icon size={17} style={{ flexShrink: 0 }} />
-                {!collapsed && (
-                  <>
-                    <span style={{ flex: 1 }}>{label}</span>
-                    <Lock size={11} style={{ color: textMuted, flexShrink: 0 }} />
-                  </>
-                )}
-                {collapsed && (
-                  <span className="tooltip" style={{
-                    position: 'absolute', left: '100%', marginLeft: 12,
-                    padding: '6px 10px',
-                    background: dark ? '#1e2330' : '#fff',
-                    color: dark ? '#fff' : '#111',
-                    fontSize: 11, fontWeight: 700, borderRadius: 8,
-                    whiteSpace: 'nowrap', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                    opacity: 0, pointerEvents: 'none', transition: 'opacity 0.15s ease', zIndex: 50,
-                  }}>
-                    {label} 🔒
-                  </span>
-                )}
-              </Link>
-            );
+              )
+              : <div key={href}>{renderLockedLink(href, label, Icon)}</div>;
           })}
         </nav>
 
@@ -319,15 +349,6 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
         </div>
       </aside>
 
-      {/*
-        FIX: hover styles now use CSS variables injected by the dark prop
-        instead of hardcoded `color: #fff` which was invisible in light mode.
-
-        Dark mode  → hover bg: rgba(255,255,255,0.06), text: #ffffff  (original behavior)
-        Light mode → hover bg: rgba(0,0,0,0.06),       text: #111111  (NEW — visible on white)
-
-        The logout button is excluded from the generic hover so it keeps its red color.
-      */}
       <style>{`
         .nav-link:hover {
           background: ${hoverBgColor} !important;

@@ -2,13 +2,15 @@
 // app/seller/components/Topbar.tsx  ← MODIFIED
 //
 // Changes from previous version:
-//   1. Imports useSubscription to read isRed / plan
+//   1. Imports useSubscription to read isRed / isBlack / plan
 //   2. Red Plan: top bar gets a premium soft-red gradient background
 //   3. Red Plan: seller name shows a 🌶 Red Pepper badge with tooltip
-//   4. All existing logic (notifications, avatar, theme toggle) unchanged
+//   4. Black Plan: seller name shows a ⬛ Black Elite badge with tooltip
+//   5. Black Plan: gold accent colors on indicator, role label, avatar ring
+//   6. All existing logic (notifications, avatar, theme toggle) unchanged
 
 import { useState, useEffect, useRef } from 'react';
-import { Menu, Sun, Moon, Flame } from 'lucide-react';
+import { Menu, Sun, Moon, Flame, Crown } from 'lucide-react'; // ← Crown added
 import { useRouter } from 'next/navigation';
 import { getUser, AuthUser } from '@/lib/auth';
 import { useTheme } from '../layout';
@@ -35,10 +37,10 @@ function fixGoogle(url: string) {
   return url.replace(/=s\d+-?c?$/, '=s200-c');
 }
 
-/* ── Red Pepper badge ── */
+/* ── Red Pepper badge (unchanged) ── */
 function RedPepperBadge({ dark }: { dark: boolean }) {
   const [showTip, setShowTip] = useState(false);
-const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   return (
     <span
       style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
@@ -60,7 +62,6 @@ const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
         cursor:         'default',
         flexShrink:     0,
       }}>
-        {/* Flame icon — cleaner than emoji */}
         <Flame
           size={11}
           style={{
@@ -102,7 +103,84 @@ const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
           animation:     'fadeUp 0.15s ease forwards',
         }}>
           🌶️ Red Pepper — Premium Seller
-          {/* Arrow */}
+          <span style={{
+            position:    'absolute',
+            top:         '100%',
+            left:        '50%',
+            transform:   'translateX(-50%)',
+            width:       0,
+            height:      0,
+            borderLeft:  '5px solid transparent',
+            borderRight: '5px solid transparent',
+            borderTop:   `5px solid ${dark ? '#1e2330' : '#ffffff'}`,
+          }} />
+        </span>
+      )}
+    </span>
+  );
+}
+
+/* ── Black Pepper badge (NEW) ── */
+function BlackPepperBadge({ dark }: { dark: boolean }) {
+  const [showTip, setShowTip] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  return (
+    <span
+      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
+      onMouseEnter={() => { clearTimeout(timerRef.current); setShowTip(true); }}
+      onMouseLeave={() => { timerRef.current = setTimeout(() => setShowTip(false), 120); }}
+    >
+      <span style={{
+        display:      'inline-flex',
+        alignItems:   'center',
+        gap:          4,
+        padding:      '2px 8px 2px 5px',
+        borderRadius: 999,
+        background:   dark
+          ? 'linear-gradient(135deg, rgba(245,158,11,0.3), rgba(161,98,7,0.2))'
+          : 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.08))',
+        border:       `1px solid ${dark ? 'rgba(245,158,11,0.55)' : 'rgba(245,158,11,0.4)'}`,
+        animation:    'gold-badge-glow 2.4s ease-in-out infinite',
+        cursor:       'default',
+        flexShrink:   0,
+      }}>
+        <Crown
+          size={11}
+          style={{ color: '#f59e0b', fill: 'rgba(245,158,11,0.4)', flexShrink: 0 }}
+        />
+        <span style={{
+          fontSize:      9,
+          fontWeight:    800,
+          color:         '#f59e0b',
+          letterSpacing: '0.07em',
+          textTransform: 'uppercase',
+          lineHeight:    1,
+        }}>
+          Elite
+        </span>
+      </span>
+
+      {showTip && (
+        <span style={{
+          position:      'absolute',
+          bottom:        'calc(100% + 7px)',
+          left:          '50%',
+          transform:     'translateX(-50%)',
+          whiteSpace:    'nowrap',
+          background:    dark ? '#1e2330' : '#ffffff',
+          color:         dark ? '#ffffff' : '#111111',
+          fontSize:      11,
+          fontWeight:    600,
+          padding:       '5px 10px',
+          borderRadius:  8,
+          boxShadow:     '0 4px 16px rgba(0,0,0,0.18)',
+          border:        `1px solid ${dark ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.15)'}`,
+          pointerEvents: 'none',
+          zIndex:        100,
+          animation:     'fadeUp 0.15s ease forwards',
+        }}>
+          ⬛ Black Seller Elite — All Premium Features Unlocked
           <span style={{
             position:    'absolute',
             top:         '100%',
@@ -125,7 +203,7 @@ const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 ══════════════════════════════════════════════════════════════════ */
 export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => void }) {
   const { dark, toggle }    = useTheme();
-  const { isRed, isBlack }  = useSubscription();   // ← NEW
+  const { isRed, isBlack }  = useSubscription();
   const router               = useRouter();
   const [user,   setUser]   = useState<AuthUser | null>(null);
   const [imgErr, setImgErr] = useState(false);
@@ -139,7 +217,6 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
   const textMuted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
 
   /* ── Red Plan overrides ── */
-  // We keep the bar light and elegant — a soft rose wash, not aggressive red.
   const redBg = dark
     ? 'linear-gradient(135deg, #1f0d10 0%, #2a0f14 40%, #1a0c10 100%)'
     : 'linear-gradient(135deg, #fff5f5 0%, #fef0f1 50%, #fff8f8 100%)';
@@ -148,7 +225,7 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
     ? 'rgba(219, 20, 46, 0.22)'
     : 'rgba(219, 20, 46, 0.15)';
 
-  // Subtle red accent line along the bottom of the bar for Red plan
+  // Subtle accent line along the bottom of the bar for Red/Black plan
   const redAccentLine = isRed || isBlack
     ? `linear-gradient(90deg, transparent, #db142e 20%, #db142e 80%, transparent)`
     : undefined;
@@ -169,33 +246,39 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
   return (
     <>
       <header style={{
-        height:     64,
-        background: bg,
+        height:       64,
+        background:   bg,
         borderBottom: `1px solid ${border}`,
-        display:    'flex',
-        alignItems: 'center',
-        padding:    '0 20px',
-        gap:        12,
-        position:   'sticky',
-        top:        0,
-        zIndex:     20,
-        transition: 'background 0.35s ease, border-color 0.35s ease',
-        // Subtle red glow on the bar itself for Red plan in dark mode
+        display:      'flex',
+        alignItems:   'center',
+        padding:      '0 20px',
+        gap:          12,
+        position:     'sticky',
+        top:          0,
+        zIndex:       20,
+        transition:   'background 0.35s ease, border-color 0.35s ease',
+        // Subtle glow on the bar for Red plan in dark mode
         ...(isRed && dark ? {
           boxShadow: '0 1px 0 rgba(219,20,46,0.18), 0 4px 24px rgba(219,20,46,0.06)',
         } : {}),
+        // Subtle gold glow on the bar for Black plan in dark mode
+        ...(isBlack && dark ? {
+          boxShadow: '0 1px 0 rgba(245,158,11,0.18), 0 4px 24px rgba(245,158,11,0.06)',
+        } : {}),
       }}>
 
-        {/* ── Red plan accent line (bottom border) ── */}
+        {/* ── Red/Black plan accent line (bottom border) ── */}
         {(isRed || isBlack) && (
           <div style={{
-            position:   'absolute',
-            bottom:     0,
-            left:       0,
-            right:      0,
-            height:     2,
-            background: redAccentLine,
-            opacity:    dark ? 0.7 : 0.5,
+            position:      'absolute',
+            bottom:        0,
+            left:          0,
+            right:         0,
+            height:        2,
+            background:    isBlack
+              ? 'linear-gradient(90deg, transparent, #f59e0b 20%, #f59e0b 80%, transparent)'
+              : redAccentLine,
+            opacity:       dark ? 0.7 : 0.5,
             pointerEvents: 'none',
           }} />
         )}
@@ -266,22 +349,28 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
 
           {/* user pill */}
           <div style={{
-            display:    'flex',
-            alignItems: 'center',
-            gap:        10,
-            padding:    '6px 12px 6px 6px',
+            display:      'flex',
+            alignItems:   'center',
+            gap:          10,
+            padding:      '6px 12px 6px 6px',
             borderRadius: 12,
             background: dark
-              ? isRed
-                ? 'rgba(219,20,46,0.12)'
-                : 'rgba(255,255,255,0.05)'
-              : isRed
-                ? 'rgba(219,20,46,0.06)'
-                : '#f0f2f5',
-            border:   `1px solid ${
-              isRed
-                ? dark ? 'rgba(219,20,46,0.3)' : 'rgba(219,20,46,0.18)'
-                : border
+              ? isBlack
+                ? 'rgba(245,158,11,0.1)'
+                : isRed
+                  ? 'rgba(219,20,46,0.12)'
+                  : 'rgba(255,255,255,0.05)'
+              : isBlack
+                ? 'rgba(245,158,11,0.06)'
+                : isRed
+                  ? 'rgba(219,20,46,0.06)'
+                  : '#f0f2f5',
+            border: `1px solid ${
+              isBlack
+                ? dark ? 'rgba(245,158,11,0.35)' : 'rgba(245,158,11,0.22)'
+                : isRed
+                  ? dark ? 'rgba(219,20,46,0.3)' : 'rgba(219,20,46,0.18)'
+                  : border
             }`,
             cursor:     'pointer',
             transition: 'all 0.25s ease',
@@ -300,8 +389,10 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
                   borderRadius: '50%',
                   objectFit:    'cover',
                   flexShrink:   0,
-                  // Red plan: subtle ring on avatar
-                  ...(isRed ? { boxShadow: '0 0 0 2px rgba(219,20,46,0.5)' } : {}),
+                  // Black plan: gold ring; Red plan: red ring
+                  ...(isBlack ? { boxShadow: '0 0 0 2px rgba(245,158,11,0.6)' }
+                    : isRed   ? { boxShadow: '0 0 0 2px rgba(219,20,46,0.5)' }
+                    : {}),
                 }}
               />
             ) : (
@@ -317,8 +408,10 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
                 fontSize:       11,
                 fontWeight:     800,
                 flexShrink:     0,
-                // Red plan: subtle ring on initials avatar
-                ...(isRed ? { boxShadow: '0 0 0 2px rgba(219,20,46,0.5)' } : {}),
+                // Black plan: gold ring; Red plan: red ring
+                ...(isBlack ? { boxShadow: '0 0 0 2px rgba(245,158,11,0.6)' }
+                  : isRed   ? { boxShadow: '0 0 0 2px rgba(219,20,46,0.5)' }
+                  : {}),
               }}>
                 {initials}
               </span>
@@ -326,7 +419,7 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
 
             {/* Name + role */}
             <div style={{ lineHeight: 1.3 }}>
-              {/* Name row — with Red Pepper badge inline */}
+              {/* Name row — with plan badge inline */}
               <div style={{
                 display:    'flex',
                 alignItems: 'center',
@@ -342,32 +435,40 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
                 }}>
                   {user?.name?.split(' ')[0] ?? 'Seller'}
                 </p>
-                {/* ← Red plan badge next to name */}
-                {isRed && <RedPepperBadge dark={dark} />}
+                {/* Black badge takes priority over Red badge */}
+                {isBlack ? <BlackPepperBadge dark={dark} /> : isRed ? <RedPepperBadge dark={dark} /> : null}
               </div>
 
               <p style={{
                 fontSize:      10,
                 fontWeight:    600,
-                color:         isRed ? '#db142e' : '#198f41',
+                // Black → gold, Red → red, Green → green
+                color:         isBlack ? '#f59e0b' : isRed ? '#db142e' : '#198f41',
                 margin:        0,
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
               }}>
-                {isRed ? 'Premium Seller' : (user?.role ?? 'seller')}
+                {isBlack ? 'Black Elite' : isRed ? 'Premium Seller' : (user?.role ?? 'seller')}
               </p>
             </div>
 
             {/* Online indicator */}
             <span style={{
-              width:      8,
-              height:     8,
+              width:        8,
+              height:       8,
               borderRadius: '50%',
-              background: isRed ? '#db142e' : '#198f41',
-              boxShadow:  isRed
-                ? '0 0 0 2px rgba(219,20,46,0.3)'
-                : '0 0 0 2px rgba(25,143,65,0.3)',
-              animation:  isRed ? 'pepper-badge-glow 2s infinite' : 'pulse-green 2s infinite',
+              // Black → gold, Red → red, Green → green
+              background:   isBlack ? '#f59e0b' : isRed ? '#db142e' : '#198f41',
+              boxShadow:    isBlack
+                ? '0 0 0 2px rgba(245,158,11,0.4)'
+                : isRed
+                  ? '0 0 0 2px rgba(219,20,46,0.3)'
+                  : '0 0 0 2px rgba(25,143,65,0.3)',
+              animation:    isBlack
+                ? 'gold-badge-glow 2s infinite'
+                : isRed
+                  ? 'pepper-badge-glow 2s infinite'
+                  : 'pulse-green 2s infinite',
             }} />
           </div>
         </div>
@@ -377,6 +478,10 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(4px); }
           to   { opacity: 1; transform: translateY(0);   }
+        }
+        @keyframes gold-badge-glow {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+          50%       { box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
         }
       `}</style>
     </>

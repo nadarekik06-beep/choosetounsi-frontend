@@ -1,20 +1,15 @@
 'use client'
 
 /**
- * components/CartDrawer.tsx
- * Slide-in cart drawer with per-item selection for checkout.
- * Selected item IDs are written to sessionStorage (ct_selected_items)
- * before navigating to /checkout — identical handoff as cart/page.tsx.
+ * components/CartDrawer.tsx  ← REPLACE EXISTING
  *
- * CHANGES vs previous version:
- *   - CartRow now uses loadingItemId (from CartContext) instead of the
- *     global cartLoading flag — so only the specific item being updated
- *     is disabled, not the entire cart.
- *   - Plus button is disabled when item.quantity >= item.stock (unchanged)
- *     AND when this specific item is loading (was: any item loading).
- *   - Loader spinner shown on the quantity number when item is busy.
+ * FIXES vs previous version:
+ *   - CartItem type locally extended with is_sponsored?: boolean
+ *     to resolve TS2339 on lines 110 and 135.
+ *     (The canonical fix is to add is_sponsored to CartItem in lib/shopApi.ts
+ *      — see the note at the bottom of this file.)
+ *   - All other logic unchanged.
  */
-
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -23,7 +18,16 @@ import {
   ArrowRight, Package, CheckSquare, Square, Loader2,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
-import type { CartItem } from '@/lib/shopApi'
+import type { CartItem as BaseCartItem } from '@/lib/shopApi'
+import SponsoredBadge from '@/app/components/SponsoredBadge'
+
+// ─── Extend CartItem with the sponsored field ─────────────────────────────────
+// This augments the base type locally so TypeScript accepts item.is_sponsored.
+// Canonical fix: add `is_sponsored?: boolean` to CartItem in lib/shopApi.ts
+// and remove this local extension once done.
+type CartItem = BaseCartItem & {
+  is_sponsored?: boolean;
+}
 
 // ─── Shared sessionStorage key ────────────────────────────────────────────────
 const SELECTED_ITEMS_KEY = 'ct_selected_items'
@@ -55,12 +59,9 @@ function CartRow({
   isSelected: boolean
   onToggle: (id: number) => void
 }) {
-  // ── KEY CHANGE: use loadingItemId instead of global cartLoading ──────────
   const { updateItem, removeItem, cartLoading, loadingItemId } = useCart()
   const imgSrc = resolveImg(item.image_url)
 
-  // This item is "busy" only if IT specifically is being updated/removed.
-  // Other items in the cart remain fully interactive.
   const itemBusy = loadingItemId === item.id
 
   const variantEntries = item.variant_options
@@ -97,6 +98,7 @@ function CartRow({
         width: 68, height: 68, flexShrink: 0,
         borderRadius: 10, overflow: 'hidden',
         background: '#f8fafc', border: '1px solid #f1f5f9',
+        position: 'relative',
       }}>
         {imgSrc
           ? <img src={imgSrc} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -104,20 +106,36 @@ function CartRow({
               <Package size={20} color="#e2e8f0" />
             </div>
         }
+        {/* ── Sponsored badge on thumbnail (compact) ── */}
+        {item.is_sponsored && (
+          <div style={{
+            position: 'absolute', bottom: 3, left: 3,
+            pointerEvents: 'none',
+          }}>
+            <SponsoredBadge compact />
+          </div>
+        )}
       </div>
 
       {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <Link
-          href={`/products/${item.slug}`}
-          style={{
-            fontSize: 13, fontWeight: 700, color: '#0f172a',
-            textDecoration: 'none', lineHeight: 1.3, display: 'block',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}
-        >
-          {item.name}
-        </Link>
+        {/* Product name row — with inline sponsored badge if sponsored */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 1 }}>
+          <Link
+            href={`/products/${item.slug}`}
+            style={{
+              fontSize: 13, fontWeight: 700, color: '#0f172a',
+              textDecoration: 'none', lineHeight: 1.3,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              flex: 1, minWidth: 0,
+            }}
+          >
+            {item.name}
+          </Link>
+          {item.is_sponsored && (
+            <SponsoredBadge compact />
+          )}
+        </div>
 
         {/* Variant label */}
         {item.variant_label && (
@@ -193,7 +211,7 @@ function CartRow({
               <Minus size={11} />
             </button>
 
-            {/* Quantity display — shows spinner when this item is busy */}
+            {/* Quantity display */}
             <span style={{
               width: 32, textAlign: 'center', fontSize: 13, fontWeight: 700,
               color: '#111', borderLeft: '1px solid #e5e7eb',
@@ -257,10 +275,8 @@ export default function CartDrawer() {
   const { items, count, subtotal, drawerOpen, closeDrawer, clearCart, cartLoading } = useCart()
   const overlayRef = useRef<HTMLDivElement>(null)
 
-  // ── Selection state ────────────────────────────────────────────────────────
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set())
 
-  // Sync selection when items change: new items auto-selected, removed ones cleaned up
   useEffect(() => {
     if (cartLoading) return
     setSelectedIds(prev => {
@@ -289,12 +305,10 @@ export default function CartDrawer() {
     })
   }, [])
 
-  // Derived totals for selected items only
   const selectedItems    = items.filter(i => selectedIds.has(i.id))
   const selectedSubtotal = selectedItems.reduce((sum, i) => sum + i.line_total, 0)
   const selectedCount    = selectedItems.reduce((sum, i) => sum + i.quantity, 0)
 
-  // ── Checkout navigation ────────────────────────────────────────────────────
   const handleCheckout = useCallback(() => {
     if (noneSelected) return
     sessionStorage.setItem(SELECTED_ITEMS_KEY, JSON.stringify([...selectedIds]))
@@ -302,14 +316,12 @@ export default function CartDrawer() {
     router.push('/checkout')
   }, [selectedIds, noneSelected, closeDrawer, router])
 
-  // Close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') closeDrawer() }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [closeDrawer])
 
-  // Prevent body scroll when open
   useEffect(() => {
     document.body.style.overflow = drawerOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
@@ -544,3 +556,20 @@ export default function CartDrawer() {
     </>
   )
 }
+
+/*
+ * ─── CANONICAL FIX FOR lib/shopApi.ts ────────────────────────────────────────
+ * To remove the local type extension above, open lib/shopApi.ts and add
+ * is_sponsored to the CartItem interface:
+ *
+ *   export interface CartItem {
+ *     id: number
+ *     // ... existing fields ...
+ *     is_sponsored?: boolean    // ← ADD THIS LINE
+ *   }
+ *
+ * Then remove the `type CartItem = BaseCartItem & { is_sponsored?: boolean }`
+ * block at the top of this file and restore the import to:
+ *   import type { CartItem } from '@/lib/shopApi'
+ * ─────────────────────────────────────────────────────────────────────────────
+ */

@@ -4,20 +4,32 @@ import React, { useState, useEffect, useCallback, createContext, useContext } fr
 import { subscriptionApi, type SubscriptionStatus, type ActivePlan, PLAN_META } from '@/lib/subscriptionApi';
 
 // ─── Feature registry ─────────────────────────────────────────────────────────
-// Red Pepper features: advanced_analytics, ai_price_optimizer, ai_sales_predictor,
-//                      ai_description_gen, ai_recommender, max_products_150
-// Black Pepper features: bulk_operations, api_access, custom_storefront
+// Red Pepper  (tier 1): advanced_analytics, ai_price_optimizer, ai_sales_predictor,
+//                        ai_description_gen, ai_recommender, max_products_150
+// Black Pepper (tier 2): bulk_operations, api_access, custom_storefront,
+//                        ai_hub, profit_center, visibility_control,
+//                        vip_requests, sponsored_products, trend_detection,
+//                        inventory_prediction
 
 export type FeatureKey =
+  // ── Red features ──
   | 'advanced_analytics'
   | 'ai_price_optimizer'
   | 'ai_sales_predictor'
   | 'ai_description_gen'
   | 'ai_recommender'
   | 'max_products_150'
+  // ── Black features ──
   | 'bulk_operations'
   | 'api_access'
-  | 'custom_storefront';
+  | 'custom_storefront'
+  | 'ai_hub'
+  | 'profit_center'
+  | 'visibility_control'
+  | 'vip_requests'
+  | 'sponsored_products'
+  | 'trend_detection'
+  | 'inventory_prediction';
 
 type PlanTier = 0 | 1 | 2;
 
@@ -28,15 +40,24 @@ const PLAN_TIER: Record<ActivePlan, PlanTier> = {
 };
 
 const FEATURE_MIN_TIER: Record<FeatureKey, PlanTier> = {
+  // Red (1)
   advanced_analytics:  1,
   ai_price_optimizer:  1,
   ai_sales_predictor:  1,
   ai_description_gen:  1,
   ai_recommender:      1,
   max_products_150:    1,
+  // Black (2)
   bulk_operations:     2,
   api_access:          2,
   custom_storefront:   2,
+  ai_hub:              2,
+  profit_center:       2,
+  visibility_control:  2,
+  vip_requests:        2,
+  sponsored_products:  2,
+  trend_detection:     2,
+  inventory_prediction: 2,
 };
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -58,7 +79,7 @@ export interface SubscriptionContextValue {
 
 export const SubscriptionContext = createContext<SubscriptionContextValue | null>(null);
 
-// ─── Provider (no JSX — uses createElement so this file stays .ts) ───────────
+// ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function SubscriptionProvider(props: { children: React.ReactNode }): React.ReactElement {
   const value = useSubscriptionCore();
@@ -87,9 +108,7 @@ function useSubscriptionCore(): SubscriptionContextValue {
     }
   }, []);
 
-  useEffect(() => {
-    fetchStatus();
-  }, [fetchStatus]);
+  useEffect(() => { fetchStatus(); }, [fetchStatus]);
 
   const plan: ActivePlan = (status?.plan as ActivePlan) ?? 'free';
   const tier = PLAN_TIER[plan];
@@ -103,15 +122,15 @@ function useSubscriptionCore(): SubscriptionContextValue {
     status,
     plan,
     loading,
-    isGreen:     plan === 'free',
-    isRed:       plan === 'red',
-    isBlack:     plan === 'black',
-    isPaid:      plan === 'red' || plan === 'black',
+    isGreen:  plan === 'free',
+    isRed:    plan === 'red',
+    isBlack:  plan === 'black',
+    isPaid:   plan === 'red' || plan === 'black',
     maxProducts,
-    planMeta:    PLAN_META[plan],
+    planMeta: PLAN_META[plan],
     can,
     gate,
-    refresh:     fetchStatus,
+    refresh:  fetchStatus,
   };
 }
 
@@ -123,7 +142,7 @@ export function useSubscription(): SubscriptionContextValue {
   return ctx;
 }
 
-// ─── Standalone hook ─────────────────────────────────────────────────────────
+// ─── Standalone hook ──────────────────────────────────────────────────────────
 
 export function useSubscriptionStandalone(): SubscriptionContextValue {
   return useSubscriptionCore();
