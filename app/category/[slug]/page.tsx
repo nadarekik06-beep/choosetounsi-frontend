@@ -9,7 +9,8 @@
  *  1. ✅ Product type extended with `color_swatches` (returned by updated API)
  *  2. ✅ Card shows short_description (1-line clamp, below name)
  *  3. ✅ Card shows color swatches row (small circles, max 5 + overflow count)
- *  4. ✅ All existing logic, styles, and components are UNTOUCHED
+ *  4. ✅ SponsoredProductsSection injected above product grid (Step 5)
+ *  5. ✅ All existing logic, styles, and components are UNTOUCHED
  * ════════════════════════════════════════════════════════════════════
  */
 
@@ -21,9 +22,8 @@ import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
 
-// ─── ⚠️ ADJUST THIS PATH IF NEEDED ───────────────────────────────────────────
 import Navbar from '@/app/components/layout/Navbar'
-// ─────────────────────────────────────────────────────────────────────────────
+import SponsoredProductsSection from '@/app/components/SponsoredProductsSection'
 
 const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API    = `${ORIGIN}/api`
@@ -31,7 +31,6 @@ const API    = `${ORIGIN}/api`
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface PImg { id: number; image_path: string; is_primary: boolean; url?: string; color_option_id?: number | null }
 
-// ── NEW: color swatch shape returned by the updated API index() ──
 interface ColorSwatch { id: number; value: string; color_hex: string | null }
 
 interface Product {
@@ -41,9 +40,10 @@ interface Product {
   images?: PImg[]
   seller?: { id: number; name: string }
   original_price?: string; is_new?: boolean; is_bestseller?: boolean
-  // ── NEW field populated by updated ProductController::index() ──
   color_swatches?: ColorSwatch[]
   variants?: { id: number; stock: number }[]
+  is_sponsored?: boolean
+  sponsored_priority?: number
 }
 interface Category { id: number; name: string; slug: string; icon: string | null; description?: string | null }
 interface Paginated { data: Product[]; current_page: number; last_page: number; total: number }
@@ -76,12 +76,7 @@ const money = (v: string | number) => `${Number(v).toFixed(2)} DT`
 const discPct = (o: string, c: string) => { const p = Math.round(((+o - +c) / +o) * 100); return p > 0 ? p : null }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  PRODUCT CARD
-//
-//  NEW additions (everything else is identical to the previous version):
-//  • short_description  — 1-line clamp shown below product name
-//  • color swatches row — small circles from p.color_swatches (max 5 shown,
-//    overflow count badge if more exist)
+//  PRODUCT CARD — unchanged except is_sponsored + sponsored_priority on Product type
 // ══════════════════════════════════════════════════════════════════════════════
 function Card({ p, idx }: { p: Product; idx: number }) {
   const { addToCart } = useCart()
@@ -101,7 +96,6 @@ function Card({ p, idx }: { p: Product; idx: number }) {
   const badge = p.original_price ? discPct(p.original_price, p.price) : null
   const oos   = p.stock <= 0
 
-  // ── Color swatches (max 5 visible + overflow count) ───────────────────────
   const swatches    = p.color_swatches ?? []
   const maxSwatches = 5
   const visSwatches = swatches.slice(0, maxSwatches)
@@ -134,21 +128,19 @@ function Card({ p, idx }: { p: Product; idx: number }) {
   }, [])
 
   const addCart = async (e: React.MouseEvent) => {
-  e.preventDefault(); e.stopPropagation()
-  if (oos || cs !== 'idle') return
-
-  const variants = p.variants ?? []
-  if (variants.length > 1) {
-    window.location.href = `/products/${p.slug}`
-    return
+    e.preventDefault(); e.stopPropagation()
+    if (oos || cs !== 'idle') return
+    const variants = p.variants ?? []
+    if (variants.length > 1) {
+      window.location.href = `/products/${p.slug}`
+      return
+    }
+    const variantId = variants.length === 1 ? variants[0].id : null
+    setCs('busy')
+    await addToCart(p.id, 1, variantId)
+    setCs('done')
+    setTimeout(() => setCs('idle'), 2200)
   }
-  const variantId = variants.length === 1 ? variants[0].id : null
-
-  setCs('busy')
-  await addToCart(p.id, 1, variantId)
-  setCs('done')
-  setTimeout(() => setCs('idle'), 2200)
-}
 
   return (
     <Link
@@ -161,14 +153,12 @@ function Card({ p, idx }: { p: Product; idx: number }) {
       {/* ── Image stage ── */}
       <div className="shc-stage">
 
-        {/* OUTGOING layer — animates LEFT out */}
         {sliding && prev !== null && gallery[prev] && (
           <div className="shc-layer shc-layer-out">
             <img src={gallery[prev]} alt="" className="shc-img" draggable={false} />
           </div>
         )}
 
-        {/* CURRENT layer — animates in from RIGHT (+ zoom when hovered) */}
         <div className={`shc-layer${sliding ? ' shc-layer-in' : ''}${hov && !sliding ? ' shc-layer-zoom' : ''}`}>
           {gallery[cur] && !imgErr
             ? <img src={gallery[cur]} alt={p.name} className="shc-img" onError={() => setErr(true)} draggable={false} />
@@ -180,17 +170,24 @@ function Card({ p, idx }: { p: Product; idx: number }) {
           }
         </div>
 
-        {/* Badges */}
+        {/* Badges — sponsored badge added here, stacks with existing badges */}
         <div className="shc-badges">
+          {p.is_sponsored && (
+            <span className="shc-badge" style={{
+              background: 'linear-gradient(135deg,rgba(245,158,11,0.18),rgba(251,191,36,0.12))',
+              border: '1px solid rgba(245,158,11,0.4)',
+              color: '#f59e0b',
+            }}>
+              ⭐ Sponsored
+            </span>
+          )}
           {badge && <span className="shc-badge shc-disc">-{badge}%</span>}
           {p.is_new        && <span className="shc-badge shc-new">NEW</span>}
           {p.is_bestseller && <span className="shc-badge shc-hot">TOP</span>}
         </div>
 
-        {/* Sold out */}
         {oos && <div className="shc-oos"><span>Sold Out</span></div>}
 
-        {/* Wishlist */}
         <button className={`shc-wish${wish ? ' on' : ''}`}
           onClick={e => { e.preventDefault(); e.stopPropagation(); setWish(v => !v) }}
           aria-label="Wishlist">
@@ -199,14 +196,12 @@ function Card({ p, idx }: { p: Product; idx: number }) {
           </svg>
         </button>
 
-        {/* Image dots */}
         {gallery.length > 1 && (
           <div className="shc-dots">
             {gallery.slice(0, 5).map((_, i) => <span key={i} className={`shc-dot${i === cur ? ' on' : ''}`} />)}
           </div>
         )}
 
-        {/* Add-to-cart — slides up on hover */}
         <div className={`shc-cta${hov ? ' show' : ''}`}>
           <button className={`shc-add${cs === 'done' ? ' done' : ''}${oos ? ' oos' : ''}`}
             onClick={addCart} disabled={oos || cs === 'busy'}>
@@ -227,7 +222,6 @@ function Card({ p, idx }: { p: Product; idx: number }) {
         {p.seller?.name && <p className="shc-seller">{p.seller.name}</p>}
         <p className="shc-name">{p.name}</p>
 
-        {/* ── NEW: short description ── */}
         {p.short_description && (
           <p className="shc-desc">{p.short_description}</p>
         )}
@@ -237,7 +231,6 @@ function Card({ p, idx }: { p: Product; idx: number }) {
           {p.original_price && +p.original_price > +p.price && <span className="shc-orig">{money(p.original_price)}</span>}
         </div>
 
-        {/* ── NEW: color swatches row ── */}
         {visSwatches.length > 0 && (
           <div className="shc-swatches">
             {visSwatches.map(sw => (
@@ -260,7 +253,7 @@ function Card({ p, idx }: { p: Product; idx: number }) {
   )
 }
 
-// ─── List card ────────────────────────────────────────────────────────────────
+// ─── List card — UNCHANGED ────────────────────────────────────────────────────
 function ListCard({ p, idx }: { p: Product; idx: number }) {
   const { addToCart } = useCart()
   const [cs, setCs] = useState<'idle' | 'busy' | 'done'>('idle')
@@ -268,21 +261,19 @@ function ListCard({ p, idx }: { p: Product; idx: number }) {
   const pri  = primaryImg(p)
   const badge = p.original_price ? discPct(p.original_price, p.price) : null
   const handle = async (e: React.MouseEvent) => {
-  e.preventDefault(); e.stopPropagation()
-  if (p.stock <= 0 || cs !== 'idle') return
-
-  const variants = p.variants ?? []
-  if (variants.length > 1) {
-    window.location.href = `/products/${p.slug}`
-    return
+    e.preventDefault(); e.stopPropagation()
+    if (p.stock <= 0 || cs !== 'idle') return
+    const variants = p.variants ?? []
+    if (variants.length > 1) {
+      window.location.href = `/products/${p.slug}`
+      return
+    }
+    const variantId = variants.length === 1 ? variants[0].id : null
+    setCs('busy')
+    await addToCart(p.id, 1, variantId)
+    setCs('done')
+    setTimeout(() => setCs('idle'), 2000)
   }
-  const variantId = variants.length === 1 ? variants[0].id : null
-
-  setCs('busy')
-  await addToCart(p.id, 1, variantId)
-  setCs('done')
-  setTimeout(() => setCs('idle'), 2000)
-}
   return (
     <Link href={`/products/${p.slug}`} className="shlc" style={{ '--d': `${Math.min(idx * 0.04, 0.4)}s` } as React.CSSProperties}>
       <div className="shlc-img">
@@ -538,7 +529,7 @@ function Pages({ cur, total, go }: { cur:number; total:number; go:(p:number)=>vo
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  PAGE INNER — UNCHANGED
+//  PAGE INNER
 // ══════════════════════════════════════════════════════════════════════════════
 function Inner() {
   const params  = useParams()
@@ -700,61 +691,43 @@ function Inner() {
         /* ════ PRODUCT CARD ════ */
         .shc{background:#fff;border-radius:11px;border:1px solid #eee;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;cursor:pointer;animation:shFadeUp .42s ease both;animation-delay:var(--d,0s);transition:box-shadow .22s,transform .22s,border-color .2s;will-change:transform}
         .shc:hover{box-shadow:0 12px 38px rgba(0,0,0,.11);border-color:#e0e0e0;transform:translateY(-4px)}
-
         .shc-stage{position:relative;width:100%;aspect-ratio:3/4;overflow:hidden;background:#f5f5f5;flex-shrink:0}
-
         .shc-layer{position:absolute;inset:0;will-change:transform}
         .shc-layer-out{z-index:1;animation:shSlideL .52s cubic-bezier(.77,0,.175,1) forwards}
         .shc-layer-in {z-index:2;animation:shSlideR .52s cubic-bezier(.77,0,.175,1) forwards}
         .shc-layer-zoom{transform:scale(1.055);transition:transform .55s cubic-bezier(.25,.46,.45,.94)}
-
         .shc-img{width:100%;height:100%;object-fit:cover;display:block}
         .shc-noimg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f4f4f6}
-
         .shc-badges{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;z-index:5}
         .shc-badge{font-size:8px;font-weight:900;padding:2px 6px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
         .shc-disc{background:#db142e;color:#fff}.shc-new{background:#198f41;color:#fff}.shc-hot{background:#111;color:#fbbf24}
-
         .shc-oos{position:absolute;inset:0;z-index:6;background:rgba(255,255,255,.62);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center}
         .shc-oos span{background:#111;color:#fff;font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;padding:5px 13px;border-radius:999px}
-
         .shc-wish{position:absolute;top:8px;right:8px;z-index:7;width:28px;height:28px;background:rgba(255,255,255,.88);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.09);backdrop-filter:blur(4px);transition:transform .16s,background .16s}
         .shc-wish:hover{transform:scale(1.14);background:#fff}.shc-wish.on{animation:shPop .3s ease}
-
         .shc-dots{position:absolute;bottom:48px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:5}
         .shc-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.6);transition:all .22s}
         .shc-dot.on{background:#fff;width:15px;border-radius:3px}
-
         .shc-cta{position:absolute;bottom:0;left:0;right:0;padding:0 9px 9px;z-index:6;transform:translateY(110%);opacity:0;transition:transform .3s cubic-bezier(.34,1.48,.64,1),opacity .22s}
         .shc-cta.show{transform:translateY(0);opacity:1}
-
         .shc-add{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px 10px;background:#db142e;color:#fff;font-size:12px;font-weight:800;border:none;border-radius:8px;cursor:pointer;font-family:'Outfit',sans-serif;box-shadow:0 4px 14px rgba(219,20,46,.38);transition:background .13s,transform .11s;letter-spacing:.01em}
         .shc-add:hover:not(:disabled){background:#b91c1c;transform:scale(1.01)}.shc-add:disabled{cursor:not-allowed}
         .shc-add.oos{background:#e5e7eb;color:#aaa;box-shadow:none}.shc-add.done{background:#198f41;box-shadow:0 4px 14px rgba(25,143,65,.35)}
         .shc-add-sm{padding:5px 11px;font-size:11px;border-radius:7px;white-space:nowrap;flex-shrink:0}
         .shc-spin{width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:shSpin .65s linear infinite;display:inline-block}
-
-        /* ── card info area ── */
         .shc-info{padding:9px 11px 12px;display:flex;flex-direction:column;gap:3px;flex:1}
         .shc-seller{font-size:9px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:.07em}
         .shc-name{font-size:12.5px;font-weight:600;color:#1f2937;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
         .shc:hover .shc-name{color:#db142e}
-
-        /* ── NEW: short description on grid card ── */
         .shc-desc{font-size:10.5px;font-weight:400;color:#9ca3af;line-height:1.4;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;margin-top:1px}
-
         .shc-prices{display:flex;align-items:baseline;gap:5px;margin-top:3px}
         .shc-price{font-size:13.5px;font-weight:900;color:#db142e}
         .shc-orig{font-size:10px;font-weight:500;color:#bbb;text-decoration:line-through}
-
-        /* ── NEW: color swatches row on card ── */
         .shc-swatches{display:flex;align-items:center;gap:4px;margin-top:5px;flex-wrap:nowrap;overflow:hidden}
         .shc-sw{display:inline-block;width:13px;height:13px;border-radius:50%;border:1.5px solid rgba(0,0,0,.10);flex-shrink:0;transition:transform .14s}
         .shc-sw:hover{transform:scale(1.22)}
         .shc-sw-more{font-size:9px;font-weight:700;color:#9ca3af;white-space:nowrap;flex-shrink:0}
-
         .shc-low{font-size:9.5px;font-weight:700;color:#f97316;background:#fff7ed;padding:1px 7px;border-radius:999px;display:inline-block;margin-top:2px}
-
         .shlc{background:#fff;border-radius:11px;border:1px solid #eee;overflow:hidden;display:flex;text-decoration:none;animation:shFadeUp .42s ease both;animation-delay:var(--d,0s);transition:box-shadow .2s,transform .2s}
         .shlc:hover{box-shadow:0 6px 22px rgba(0,0,0,.08);transform:translateX(3px)}
         .shlc-img{position:relative;width:138px;flex-shrink:0}
@@ -764,27 +737,22 @@ function Inner() {
         .shlc-desc{font-size:12px;color:#6b7280;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
         .shlc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:7px;gap:9px;flex-wrap:wrap}
         .shlist{display:flex;flex-direction:column;gap:10px}
-
         .shsk{background:#fff;border-radius:11px;border:1px solid #eee;overflow:hidden}
         .shsk-img{aspect-ratio:3/4;background:linear-gradient(90deg,#f2f2f2 25%,#fafafa 50%,#f2f2f2 75%);background-size:700px 100%;animation:shShimmer 1.3s infinite linear}
         .shsk-body{padding:9px 11px 12px;display:flex;flex-direction:column;gap:7px}
         .shsk-ln{border-radius:4px;background:linear-gradient(90deg,#f2f2f2 25%,#fafafa 50%,#f2f2f2 75%);background-size:700px 100%;animation:shShimmer 1.3s infinite linear}
-
         .shgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
-
         .pages{display:flex;align-items:center;justify-content:center;gap:5px;padding:24px 0 0;flex-wrap:wrap}
         .pgb{width:34px;height:34px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;color:#555;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .13s}
         .pgb:hover:not(:disabled){border-color:#db142e;color:#db142e}.pgb:disabled{opacity:.35;cursor:not-allowed}
         .pgb.on{background:#db142e;border-color:#db142e;color:#fff}
         .pg-sep{color:#bbb;font-size:13px;padding:0 3px}
-
         .shempty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:62px 24px;background:#fff;border-radius:12px;border:1px solid #eee;text-align:center;gap:9px}
         .shempty-ico{font-size:3rem}
         .shempty-ttl{font-size:16px;font-weight:800;color:#374151}
         .shempty-sub{font-size:12px;color:#bbb;max-width:270px;line-height:1.6}
         .shempty-cta{margin-top:5px;display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:#db142e;color:#fff;font-weight:800;font-size:12px;border-radius:8px;text-decoration:none;transition:background .13s}
         .shempty-cta:hover{background:#b91c1c}
-
         @media(max-width:1260px){.shgrid{grid-template-columns:repeat(3,1fr)}.shlayout{grid-template-columns:220px 1fr}}
         @media(max-width:920px){
           .shlayout{grid-template-columns:1fr;padding:13px 15px 38px}
@@ -803,7 +771,19 @@ function Inner() {
 
         <div className="shlayout">
           <Sidebar f={f} setF={setF} total={prods?.total??0} catSlug={slug} subSlug={subSlug} mOpen={mOpen} setMOpen={setMOpen}/>
+
           <div>
+            {/* ── Sponsored products row — top of category, hidden when no results ── */}
+            {!load && (
+              <SponsoredProductsSection
+                title="Featured in this category"
+                categorySlug={slug}
+                limit={4}
+                layout="row"
+                showBadge={true}
+              />
+            )}
+
             {load && <div className="shgrid">{Array.from({length:12}).map((_,i)=><Skel key={i}/>)}</div>}
             {!load&&displayed.length===0&&(
               <div className="shempty">

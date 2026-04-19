@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import SellerApplicationModal from "../sections/SellerApplicationModal"
 import { isAuthenticated } from '@/lib/auth'
+import SponsoredProductsSection from '@/app/components/SponsoredProductsSection';
 
 interface Category {
   id: number
@@ -624,6 +625,17 @@ export default function Hero() {
               <Link href="/shop" className="cat-view-all">View All →</Link>
             </div>
             <CategoryCarousel categories={categories} loading={catsLoading} />
+          </div>
+        </div>
+        {/* ── SPONSORED PRODUCTS ── */}
+        <div style={{ background: '#f7f7f9' }}>
+          <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+            <SponsoredProductsSection
+              title="Sponsored Products"
+              limit={8}
+              layout="row"
+              showBadge={true}
+            />
           </div>
         </div>
 

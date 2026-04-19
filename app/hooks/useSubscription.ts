@@ -27,9 +27,12 @@ export type FeatureKey =
   | 'profit_center'
   | 'visibility_control'
   | 'vip_requests'
-  | 'sponsored_products'
+  | 'sponsored_products'   // ✅ already present — gates the Promote page
   | 'trend_detection'
-  | 'inventory_prediction';
+  | 'inventory_prediction'
+  // ── Sponsoring system features ──
+  | 'sponsor_product'      // ← NEW: ability to activate a sponsorship (all plans)
+  | 'sponsor_discount';    // ← NEW: discounted sponsorship rate (red+)
 
 type PlanTier = 0 | 1 | 2;
 
@@ -41,23 +44,26 @@ const PLAN_TIER: Record<ActivePlan, PlanTier> = {
 
 const FEATURE_MIN_TIER: Record<FeatureKey, PlanTier> = {
   // Red (1)
-  advanced_analytics:  1,
-  ai_price_optimizer:  1,
-  ai_sales_predictor:  1,
-  ai_description_gen:  1,
-  ai_recommender:      1,
-  max_products_150:    1,
+  advanced_analytics:   1,
+  ai_price_optimizer:   1,
+  ai_sales_predictor:   1,
+  ai_description_gen:   1,
+  ai_recommender:       1,
+  max_products_150:     1,
   // Black (2)
-  bulk_operations:     2,
-  api_access:          2,
-  custom_storefront:   2,
-  ai_hub:              2,
-  profit_center:       2,
-  visibility_control:  2,
-  vip_requests:        2,
-  sponsored_products:  2,
-  trend_detection:     2,
+  bulk_operations:      2,
+  api_access:           2,
+  custom_storefront:    2,
+  ai_hub:               2,
+  profit_center:        2,
+  visibility_control:   2,
+  vip_requests:         2,
+  sponsored_products:   2,
+  trend_detection:      2,
   inventory_prediction: 2,
+  // Sponsoring system (0 = all plans can sponsor, pay-per-use for free/red)
+  sponsor_product:      0,  // all plans can activate sponsorships
+  sponsor_discount:     1,  // red+ gets discounted rate
 };
 
 // ─── Context ──────────────────────────────────────────────────────────────────

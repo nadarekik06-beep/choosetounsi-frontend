@@ -1,13 +1,10 @@
 ﻿'use client';
 
 /**
- * app/seller/components/Sidebar.tsx  ← REPLACE EXISTING
+ * app/seller/components/Sidebar.tsx
  *
  * Changes from previous version:
- *   1. Added BLACK_NAV array with Black-only routes
- *   2. Added Black section divider below Red Premium divider
- *   3. Black routes locked for non-Black sellers → redirect to /seller/subscription
- *   4. Black sidebar section uses gold theme
+ *   1. Added "Promote" entry to BASE_NAV (visible to all plan levels)
  *   All other logic unchanged.
  */
 
@@ -26,6 +23,7 @@ const BASE_NAV = [
   { href: '/seller/products',   label: 'Products',   icon: Package,         premium: false },
   { href: '/seller/orders',     label: 'Orders',     icon: ShoppingBag,     premium: false },
   { href: '/seller/complaints', label: 'Complaints', icon: AlertTriangle,   premium: false },
+  { href: '/seller/promote',    label: 'Promote',    icon: Zap,             premium: false },
 ];
 
 const PREMIUM_NAV = [
@@ -33,10 +31,9 @@ const PREMIUM_NAV = [
   { href: '/seller/ai-tools',  label: 'AI Tools',   icon: Brain,     accent: '#8b5cf6' },
 ];
 
-// ── Black Pepper exclusive nav ────────────────────────────────────────────────
 const BLACK_NAV = [
-  { href: '/seller/black',         label: 'Black Hub',    icon: Crown, accent: '#f59e0b' },
-  { href: '/seller/black/profit',  label: 'Profit Center',icon: Zap,   accent: '#f59e0b' },
+  { href: '/seller/black',         label: 'Black Hub',     icon: Crown, accent: '#f59e0b' },
+  { href: '/seller/black/profit',  label: 'Profit Center', icon: Zap,   accent: '#f59e0b' },
 ];
 
 interface SidebarProps {
@@ -68,7 +65,6 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
     window.location.href = '/auth/login';
   };
 
-  // ── Shared nav link renderer ───────────────────────────────────────────────
   const renderNavLink = (
     href: string, label: string, Icon: React.ElementType,
     isActive: boolean, accent?: string
@@ -202,7 +198,7 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
         {/* ── Nav ── */}
         <nav style={{ flex: 1, padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
 
-          {/* Base nav */}
+          {/* Base nav — Dashboard, Products, Orders, Complaints, Promote */}
           {BASE_NAV.map(({ href, label, icon: Icon }) => {
             const isActive = href === '/seller' ? pathname === '/seller' : pathname.startsWith(href);
             return (
