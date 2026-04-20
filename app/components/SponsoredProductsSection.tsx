@@ -9,18 +9,26 @@
  *   - Search results page (pinned top row)
  *
  * Props:
- *   title          — section heading (default: "Sponsored Products")
+ *   title          — section heading (default: "🔥 Trending Now")
  *   categorySlug   — optional filter by category
  *   limit          — max products to fetch (default 8)
  *   layout         — 'grid' | 'row' (horizontal scroll)
- *   showBadge      — whether to show the "Sponsored" badge (default true)
+ *   showBadge      — whether to show the product badge (default true)
  *
  * Tracks impressions + clicks via sponsorshipApi (fire-and-forget).
+ *
+ * ─── REBRANDING CHANGES (labels only, zero logic changes) ────────────────────
+ *   BEFORE → AFTER
+ *   "Sponsored Products"  → "🔥 Trending Now"   (default title prop)
+ *   "Promoted"            → "Popular Choice"     (subtitle pill)
+ *   "Sponsored" (badge)   → "🔥 Hot"             (card image badge)
+ *   Zap icon              → 🔥 emoji             (section header icon)
+ *   Purple accent         → warm red/orange      (badge & icon colours)
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Zap } from 'lucide-react';
 import { sponsorshipApi, SponsoredProduct } from '@/lib/sponsorshipApi';
 
 interface Props {
@@ -67,13 +75,15 @@ function SponsoredCard({
           background: '#fff',
           borderRadius: 12,
           overflow: 'hidden',
-          border: '1.5px solid #f0e9ff',
+          /* ── CHANGE: border colour shifted from purple to warm neutral ── */
+          border: '1.5px solid #f0f0f0',
           cursor: 'pointer',
           transition: 'box-shadow 0.2s, transform 0.2s',
           position: 'relative',
         }}
         onMouseEnter={e => {
-          (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 28px rgba(99,102,241,0.15)';
+          /* ── CHANGE: hover shadow shifted from purple to red brand colour ── */
+          (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 28px rgba(219,20,46,0.13)';
           (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)';
         }}
         onMouseLeave={e => {
@@ -91,26 +101,28 @@ function SponsoredCard({
               onError={() => setImgErr(true)}
             />
           ) : (
-            <div style={{ width: '100%', height: '100%', background: '#ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Zap size={28} color="#7c3aed" />
+            /* ── CHANGE: fallback bg colour shifted from purple to warm red ── */
+            <div style={{ width: '100%', height: '100%', background: '#fff1f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontSize: 28 }}>🔥</span>
             </div>
           )}
 
-          {/* Sponsored badge */}
+          {/* ── CHANGE: badge text "Sponsored" → "🔥 Hot" ─────────────────
+               Colour: purple rgba(99,102,241) → warm red rgba(219,20,46)   */}
           {showBadge && (
             <span style={{
               position: 'absolute', top: 8, left: 8,
-              background: 'rgba(99,102,241,0.92)',
+              background: 'rgba(219,20,46,0.88)',
               color: '#fff', fontSize: 9, fontWeight: 800,
               padding: '2px 7px', borderRadius: 999,
               letterSpacing: '0.06em', textTransform: 'uppercase',
               backdropFilter: 'blur(4px)',
             }}>
-              Sponsored
+              🔥 Hot
             </span>
           )}
 
-          {/* Out of stock */}
+          {/* Out of stock — unchanged */}
           {product.stock <= 0 && (
             <div style={{
               position: 'absolute', inset: 0,
@@ -129,7 +141,8 @@ function SponsoredCard({
         {/* Info */}
         <div style={{ padding: '10px 12px 13px' }}>
           {product.category?.name && (
-            <p style={{ fontSize: 9, color: '#7c3aed', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 3px' }}>
+            /* ── CHANGE: category label colour purple → brand red ── */
+            <p style={{ fontSize: 9, color: '#db142e', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 3px' }}>
               {product.category.name}
             </p>
           )}
@@ -141,7 +154,7 @@ function SponsoredCard({
             {product.name}
           </p>
 
-          {/* AI ad copy */}
+          {/* AI ad copy — unchanged */}
           {product.sponsor_data?.ai_ad_copy && (
             <p style={{
               fontSize: 10.5, color: '#6b7280', fontStyle: 'italic',
@@ -163,7 +176,8 @@ function SponsoredCard({
 
 // ── Main section ──────────────────────────────────────────────────────────────
 export default function SponsoredProductsSection({
-  title        = 'Sponsored Products',
+  /* ── CHANGE: default title "Sponsored Products" → "🔥 Trending Now" ── */
+  title        = '\uD83D\uDD25 Trending Now',
   categorySlug,
   limit        = 8,
   layout       = 'row',
@@ -171,7 +185,6 @@ export default function SponsoredProductsSection({
 }: Props) {
   const [products, setProducts] = useState<SponsoredProduct[]>([]);
   const [loading,  setLoading]  = useState(true);
-  const trackRef = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -194,12 +207,14 @@ export default function SponsoredProductsSection({
         marginBottom: 18, padding: '0 24px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* ── CHANGE: icon box purple → warm red gradient ── */}
           <div style={{
             width: 28, height: 28, borderRadius: 8,
-            background: 'linear-gradient(135deg, #7c3aed, #6366f1)',
+            background: 'linear-gradient(135deg, #db142e, #f97316)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 14,
           }}>
-            <Zap size={14} color="#fff" />
+            🔥
           </div>
           <h2 style={{
             fontSize: 18, fontWeight: 900, color: '#111',
@@ -207,16 +222,18 @@ export default function SponsoredProductsSection({
           }}>
             {title}
           </h2>
+          {/* ── CHANGE: pill label "Promoted" → "Popular Choice"
+               Colour: purple → warm red/orange ── */}
           <span style={{
             fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
-            background: 'rgba(99,102,241,0.1)', color: '#7c3aed',
-            border: '1px solid rgba(99,102,241,0.2)',
+            background: 'rgba(219,20,46,0.08)', color: '#db142e',
+            border: '1px solid rgba(219,20,46,0.18)',
             textTransform: 'uppercase', letterSpacing: '0.08em',
-          }}>Promoted</span>
+          }}>Popular Choice</span>
         </div>
       </div>
 
-      {/* Grid or horizontal row */}
+      {/* Grid or horizontal row — layout logic UNCHANGED */}
       {loading ? (
         <div style={{
           display: 'grid',
@@ -239,7 +256,7 @@ export default function SponsoredProductsSection({
               <div style={{ padding: 12 }}>
                 <div style={{ height: 10, background: '#eee', borderRadius: 4, marginBottom: 6, width: '60%' }} />
                 <div style={{ height: 13, background: '#eee', borderRadius: 4, marginBottom: 6 }} />
-                <div style={{ height: 15, background: '#ede9fe', borderRadius: 4, width: '40%' }} />
+                <div style={{ height: 15, background: '#fde8ea', borderRadius: 4, width: '40%' }} />
               </div>
             </div>
           ))}

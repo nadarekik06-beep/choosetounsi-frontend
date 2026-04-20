@@ -775,8 +775,8 @@ function Inner() {
           <div>
             {/* ── Sponsored products row — top of category, hidden when no results ── */}
             {!load && (
-              <SponsoredProductsSection
-                title="Featured in this category"
+               <SponsoredProductsSection
+                title="🔥 Trending in this Category"
                 categorySlug={slug}
                 limit={4}
                 layout="row"

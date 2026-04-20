@@ -631,11 +631,11 @@ export default function Hero() {
         <div style={{ background: '#f7f7f9' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             <SponsoredProductsSection
-              title="Sponsored Products"
-              limit={8}
-              layout="row"
-              showBadge={true}
-            />
+          title="🔥 Trending Now"
+          limit={8}
+          layout="row"
+          showBadge={true}
+        />
           </div>
         </div>
 

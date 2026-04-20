@@ -78,7 +78,6 @@ function ProdSelect({ products, value, onChange, dark }: { products: Array<{ id:
           cursor: 'pointer',
           appearance: 'none',
           outline: 'none',
-          // Force browsers to use our background on the dropdown itself
           colorScheme: dark ? 'dark' : 'light',
         }}
       >
@@ -426,7 +425,70 @@ function DescriptionGeneratorTool({ products, dark }: { products: Array<{ id:num
 
 // ═════════════════════════════════════════════════════════════════════════════
 // TOOL 4 — BUNDLE RECOMMENDER
+// ─────────────────────────────────────────────────────────────────────────────
+// NEW: BundleProductChip
+// Renders a single product pill inside a bundle card.
+// Shows a 24 px circular thumbnail resolved from the backend image map,
+// or a Package icon if no image exists / image fails to load.
 // ═════════════════════════════════════════════════════════════════════════════
+
+function BundleProductChip({
+  name,
+  imageUrl,
+  dark,
+}: {
+  name: string;
+  imageUrl: string | null | undefined;
+  dark: boolean;
+}) {
+  const [imgErr, setImgErr] = useState(false);
+  const showImage = !!imageUrl && !imgErr;
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '4px 10px 4px 4px',
+        borderRadius: 999,
+        background: 'rgba(245,158,11,0.12)',
+        border: '1px solid rgba(245,158,11,0.25)',
+        fontSize: 12,
+        fontWeight: 700,
+        color: '#fbbf24',
+      }}
+    >
+      {/* 24 px circular thumbnail or icon fallback */}
+      <span
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          overflow: 'hidden',
+          background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        {showImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageUrl as string}
+            alt={name}
+            onError={() => setImgErr(true)}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+        ) : (
+          <Package size={12} style={{ color: '#fbbf24', opacity: 0.7 }} />
+        )}
+      </span>
+      {name}
+    </span>
+  );
+}
 
 function BundleRecommenderTool({ products, dark }: { products: Array<{ id:number; name:string }>; dark:boolean }) {
   const [selectedId,  setSelectedId]  = useState<number|null>(null);
@@ -455,10 +517,14 @@ function BundleRecommenderTool({ products, dark }: { products: Array<{ id:number
 
   const coPurchased: any[] = ctx?.co_purchased ?? [];
 
+  // NEW: image map keyed by product name, injected by the backend.
+  // Falls back to empty object so lookups safely return undefined.
+  const productImages: Record<string, string | null> = ctx?.product_images ?? {};
+
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
 
-      {/* Input card */}
+      {/* Input card — unchanged */}
       <div style={{ background:cardBg, borderRadius:18, border:`1px solid ${border}`, padding:'18px 20px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
           <p style={{ fontWeight:900, fontSize:14, color:text, margin:0 }}>Bundle & Recommendations</p>
@@ -487,7 +553,7 @@ function BundleRecommenderTool({ products, dark }: { products: Array<{ id:number
         {error && <p style={{ color:'#ef4444', fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
       </div>
 
-      {/* Co-purchase context */}
+      {/* Co-purchase context — unchanged */}
       {coPurchased.length > 0 && (
         <div style={{ background:subBg, borderRadius:14, border:`1px solid ${border}`, padding:'14px 16px' }}>
           <p style={{ fontSize:10, fontWeight:800, color:muted, margin:'0 0 8px', textTransform:'uppercase' }}>Real co-purchase data used</p>
@@ -511,19 +577,29 @@ function BundleRecommenderTool({ products, dark }: { products: Array<{ id:number
               <span style={{ padding:'3px 8px', borderRadius:999, background:'rgba(219,20,46,0.1)', border:'1px solid rgba(219,20,46,0.25)', fontSize:11, fontWeight:800, color:'#f87171' }}>{bundle.display_label}</span>
             </div>
           </div>
+
+          {/*
+            CHANGED: replaced plain <span> emoji chips with BundleProductChip.
+            Each chip now shows a 24px circular product thumbnail (or Package
+            icon fallback) looked up by product name from the backend image map.
+          */}
           <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
             {(bundle.products ?? []).map((name, j) => (
-              <span key={j} style={{ padding:'5px 12px', borderRadius:999, background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.25)', fontSize:12, fontWeight:700, color:'#fbbf24' }}>
-                📦 {name}
-              </span>
+              <BundleProductChip
+                key={j}
+                name={name}
+                imageUrl={productImages[name]}
+                dark={dark}
+              />
             ))}
           </div>
+
           <Field dark={dark} label="Why it works"      value={bundle.reason} />
           <Field dark={dark} label="Discount Strategy" value={bundle.suggested_price_reduction} />
         </div>
       ))}
 
-      {/* Related products results */}
+      {/* Related products results — unchanged */}
       {r !== null && r.recommendations != null && (
         <div style={{ background:cardBg, borderRadius:18, border:'1px solid rgba(59,130,246,0.2)', padding:'18px 20px', display:'flex', flexDirection:'column', gap:10 }}>
           {r.placement_strategy != null && <Field dark={dark} label="Placement Strategy" value={r.placement_strategy} />}

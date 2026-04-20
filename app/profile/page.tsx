@@ -155,7 +155,7 @@ export default function ProfilePage() {
     ...(isSeller ? [{
       title: 'Seller Hub',
       items: [
-        { icon: <StoreIcon />,   label: 'My Dashboard',       href: '/seller'            },
+        { icon: <StoreIcon />,   label: 'My Store',       href: '/seller'            },
         { icon: <ProductIcon />, label: 'My Products',        href: '/seller/products'   },
         { icon: <SalesIcon />,   label: 'Sales & Orders',     href: '/seller/orders'     },
       ],

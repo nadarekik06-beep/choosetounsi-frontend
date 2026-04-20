@@ -390,7 +390,7 @@ export default function Navbar() {
                     <Link href="/orders"     onClick={()=>setDropOpen(false)} className="dd-item"><OrdersIcon/>My Orders</Link>
                     <Link href="/complaints" onClick={()=>setDropOpen(false)} className="dd-item"><AlertCircle size={15}/>My Complaints</Link>
                     <Link href="/favorites"  onClick={()=>setDropOpen(false)} className="dd-item"><HeartIcon/>Favorites</Link>
-                    {isSeller&&<Link href="/seller" onClick={()=>setDropOpen(false)} className="dd-item"><DashboardIcon/>Dashboard</Link>}
+                    {isSeller&&<Link href="/seller" onClick={()=>setDropOpen(false)} className="dd-item"><DashboardIcon/>My Store</Link>}
                     <div style={{height:1,background:"#f1f5f9",margin:"4px 0"}}/>
                     <button onClick={handleLogout} className="dd-item danger"><LogoutIcon/>Log Out</button>
                   </div>
@@ -527,7 +527,7 @@ export default function Navbar() {
                   style={{padding:"8px 12px",borderRadius:8,fontSize:14,fontWeight:500,color:"#52525b",textDecoration:"none",transition:"all 0.14s",whiteSpace:"nowrap"}}
                   onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.color="#111";(e.currentTarget as HTMLElement).style.background="#f4f4f5";}}
                   onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.color="#52525b";(e.currentTarget as HTMLElement).style.background="transparent";}}>
-                  Dashboard
+                  My Store
                 </Link>
               )}
             </div>
@@ -589,7 +589,7 @@ export default function Navbar() {
             <button onClick={handleCart} style={{fontSize:14,fontWeight:600,color:"#374151",background:"none",border:"none",cursor:"pointer",textAlign:"left",padding:"8px 0",borderBottom:"1px solid #f5f5f5",display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}>
               <ShoppingBag size={16}/>Cart{count>0&&<span style={{background:"#dc2626",color:"#fff",fontSize:10,fontWeight:900,borderRadius:999,padding:"1px 6px"}}>{count}</span>}
             </button>
-            {loggedIn&&isSeller&&<Link href="/seller" onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>Dashboard</Link>}
+            {loggedIn&&isSeller&&<Link href="/seller" onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>My Store</Link>}
             {!loggedIn?(
               <>
                 <Link href="/auth/login"    onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>Log In</Link>
