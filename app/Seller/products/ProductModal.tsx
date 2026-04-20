@@ -12,6 +12,7 @@ import VariantBuilder, {
   validateVariantStocks,
 } from '../components/VariantBuilder'
 import ColorGroupImageUploader from '../components/ColorGroupImageUploader'
+import VariantImageManager, { type VariantForImageManager } from '../components/VariantImageManager'
 import type { AttributeValues, Attribute } from '@/types/Attributes'
 import UpdateRequestModal from 'app/seller/components/UpdateRequestModal'
 
@@ -122,6 +123,147 @@ function ImageThumb({ src, isPrimary, onRemove, onSetPrimary }: {
   )
 }
 
+// ─── Locked Variant Row ───────────────────────────────────────────────────────
+// Displays a single existing variant in read-only mode with its label,
+// stock, price, and images.  Used in the isLocked branch of the modal.
+
+interface LockedVariantRowData extends VariantRow {
+  label?: string
+  option_map?: Record<string, {
+    id: number; ids?: number[]; value: string; color_hex?: string | null
+  }>
+  image_urls?: string[]
+  existing_images?: Array<{ id: number; url: string; is_primary?: boolean }>
+}
+
+function LockedVariantCard({ variant }: { variant: LockedVariantRowData }) {
+  const colorEntry = variant.option_map?.['color']
+  const otherEntries = Object.entries(variant.option_map ?? {}).filter(([s]) => s !== 'color')
+
+  return (
+    <div style={{
+      border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden',
+    }}>
+      {/* Header — label + badges */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '8px 12px', background: '#f8fafc',
+        borderBottom: '1px solid #f0f0f0', flexWrap: 'wrap',
+      }}>
+        {/* Color swatches */}
+        {colorEntry && (
+          <span style={{ display: 'inline-flex', gap: 3 }}>
+            {(colorEntry.ids ?? [colorEntry.id]).map(id => (
+              <span key={id} title={colorEntry.value} style={{
+                display: 'inline-block', width: 14, height: 14, borderRadius: '50%',
+                background: colorEntry.color_hex ?? '#e5e7eb',
+                border: '1.5px solid rgba(0,0,0,0.12)', flexShrink: 0,
+              }} />
+            ))}
+          </span>
+        )}
+
+        {/* Human-readable label */}
+        <span style={{
+          fontSize: 12, fontWeight: 700, color: '#1e293b', flex: 1,
+        }}>
+          {variant.label || [
+            colorEntry?.value,
+            ...otherEntries.map(([, v]) => (v as any).value),
+          ].filter(Boolean).join(' / ')}
+        </span>
+
+        {/* Active badge */}
+        <span style={{
+          fontSize: 9, fontWeight: 800,
+          color: variant.is_active ? '#10b981' : '#94a3b8',
+          background: variant.is_active ? 'rgba(16,185,129,0.1)' : 'rgba(148,163,184,0.1)',
+          border: `1px solid ${variant.is_active ? 'rgba(16,185,129,0.25)' : 'rgba(148,163,184,0.2)'}`,
+          padding: '1px 6px', borderRadius: 4,
+        }}>
+          {variant.is_active ? 'Active' : 'Inactive'}
+        </span>
+      </div>
+
+      {/* Body — stock, price, images */}
+      <div style={{
+        padding: '10px 12px',
+        display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
+        gap: 12, alignItems: 'start',
+      }}>
+        {/* Stock — read-only */}
+        <div>
+          <p style={{
+            fontSize: 9, fontWeight: 800, color: '#94a3b8',
+            textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px',
+          }}>Stock</p>
+          <div style={{
+            background: '#f8fafc', border: '1px solid #e5e7eb',
+            borderRadius: 8, padding: '6px 10px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            opacity: 0.7,
+          }}>
+            <span style={{ fontSize: 14, fontWeight: 900, color: variant.stock === 0 ? '#ef4444' : '#0f172a' }}>
+              {variant.stock}
+            </span>
+            <Lock size={11} color="#94a3b8" />
+          </div>
+        </div>
+
+        {/* Price override — read-only */}
+        <div>
+          <p style={{
+            fontSize: 9, fontWeight: 800, color: '#94a3b8',
+            textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px',
+          }}>Price Override</p>
+          <div style={{
+            background: '#f8fafc', border: '1px solid #e5e7eb',
+            borderRadius: 8, padding: '6px 10px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            opacity: 0.7,
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+              {variant.price_override ? `${Number(variant.price_override).toFixed(3)} TND` : '—'}
+            </span>
+            <Lock size={11} color="#94a3b8" />
+          </div>
+        </div>
+
+        {/* SKU — read-only */}
+        <div>
+          <p style={{
+            fontSize: 9, fontWeight: 800, color: '#94a3b8',
+            textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px',
+          }}>SKU</p>
+          <div style={{
+            background: '#f8fafc', border: '1px solid #e5e7eb',
+            borderRadius: 8, padding: '6px 10px',
+            opacity: 0.7,
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color: '#64748b', fontFamily: 'monospace' }}>
+              {variant.sku || '—'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Image thumbnails — read-only display */}
+      {(variant.image_urls ?? []).length > 0 && (
+        <div style={{ padding: '0 12px 10px', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {(variant.image_urls ?? []).map((url, i) => (
+            <div key={i} style={{
+              width: 48, height: 48, borderRadius: 6, overflow: 'hidden',
+              border: '1px solid #e5e7eb', flexShrink: 0,
+            }}>
+              <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Field wrapper ────────────────────────────────────────────────────────────
 
 const inputCls = (err?: string) =>
@@ -194,6 +336,50 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
 
   const [colorGroupImages, setColorGroupImages] = useState<Record<string, File[]>>({})
 
+  // ── VARIANT IMAGE MANAGEMENT (edit mode) ──────────────────────────────────
+  // Tracks new uploads + deletion requests for existing variant images.
+  // Only used when isEdit=true and the product has variant_rows.
+  const [variantImageChanges, setVariantImageChanges] = useState<{
+    newImagesByVariantId: Record<number, File[]>
+    deleteImageIds: number[]
+  }>({ newImagesByVariantId: {}, deleteImageIds: [] })
+
+  // Build the VariantForImageManager[] from server data (memoized, never changes
+  // after mount since locked variants can't be structurally modified)
+  const variantsForImageManager = useMemo((): VariantForImageManager[] => {
+    if (!isEdit) return []
+
+    const serverVariants = (p?.variant_rows ?? []) as LockedVariantRowData[]
+    if (serverVariants.length === 0) return []
+
+    // Build a map of variant_id → image rows (need DB id for deletion)
+    const imagesByVariantId: Record<number, Array<{ id: number; url: string; is_primary?: boolean }>> = {}
+    if (p?.images) {
+      for (const img of p.images) {
+        if (img.variant_id != null) {
+          const url = storageUrl(img.url ?? img.image_path)
+          if (!url) continue
+          if (!imagesByVariantId[img.variant_id]) imagesByVariantId[img.variant_id] = []
+          imagesByVariantId[img.variant_id].push({
+            id:         img.id,
+            url,
+            is_primary: img.is_primary,
+          })
+        }
+      }
+    }
+
+    return serverVariants
+      .filter(v => v.id != null)
+      .map(v => ({
+        id:              v.id!,
+        label:           (v as any).label ?? '',
+        option_map:      (v as any).option_map,
+        image_urls:      (v as any).image_urls ?? [],
+        existing_images: imagesByVariantId[v.id!] ?? [],
+      }))
+  }, [isEdit, p?.variant_rows, p?.images])
+
   // ── Stock management state ─────────────────────────────────────────────────
   const [stockMode, setStockMode] = useState<'auto' | 'manual'>('auto')
   const [variantStockErrors, setVariantStockErrors] = useState<Record<number, string>>({})
@@ -228,13 +414,21 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const [errors,   setErrors]   = useState<Record<string, string>>({})
   const [apiError, setApiError] = useState('')
 
-  // ── Images ─────────────────────────────────────────────────────────────────
-  const [existingImages,  setExistingImages]  = useState<ExistingImage[]>(
-    p?.images?.map(img => ({
-      id: img.id, image_path: img.image_path, is_primary: img.is_primary, order: img.order,
-      url: storageUrl(img.url ?? img.image_path) ?? img.image_path,
-    })) ?? []
-  )
+  // ── Product-level Images ───────────────────────────────────────────────────
+  // These are images NOT attached to any variant (variant_id = null, color_option_id = null).
+  // In edit mode we separate them from variant images.
+  const [existingImages,  setExistingImages]  = useState<ExistingImage[]>(() => {
+    if (!p?.images) return []
+    return p.images
+      .filter(img => img.variant_id == null && img.color_option_id == null)
+      .map(img => ({
+        id:         img.id,
+        image_path: img.image_path,
+        is_primary: img.is_primary,
+        order:      img.order,
+        url:        storageUrl(img.url ?? img.image_path) ?? img.image_path,
+      }))
+  })
   const [deletedImageIds, setDeletedImageIds] = useState<number[]>([])
   const [primaryImageId,  setPrimaryImageId]  = useState<number | null>(
     existingImages.find(i => i.is_primary)?.id ?? null
@@ -353,8 +547,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     }
 
     if (hasVariantRows) {
-      // ── CHANGED: only validate per-variant stocks, no manual/auto check needed
-      // because the global stock field is now hidden when variants exist.
       const varStockErrs = validateVariantStocks(variantRows)
       if (Object.keys(varStockErrs).length > 0) {
         setVariantStockErrors(varStockErrs)
@@ -399,6 +591,12 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         ? variantTotalStock
         : parseInt(form.stock, 10)
 
+      // Merge product-level deleted IDs with variant image deleted IDs
+      const allDeletedImageIds = [
+        ...deletedImageIds,
+        ...variantImageChanges.deleteImageIds,
+      ]
+
       const payload: Record<string, any> = {
         name:              form.name.trim(),
         slug:              form.slug.trim()              || undefined,
@@ -406,12 +604,19 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         description:       form.description.trim()       || undefined,
         short_description: form.short_description.trim() || undefined,
         is_active:         form.is_active,
+        // Product-level new images
         images:            previews.map(prev => prev.file),
-        delete_image_ids:  deletedImageIds.length ? deletedImageIds : undefined,
+        delete_image_ids:  allDeletedImageIds.length ? allDeletedImageIds : undefined,
         attributes:        serializeAttributes(attrValues),
         price:       isLocked ? parseFloat(String(p?.price ?? 0)) : parseFloat(form.price),
         stock:       isLocked ? (p?.stock ?? 0) : finalStock,
         category_id: isLocked ? (p?.category_id ?? 0) : parseInt(form.category_id, 10),
+      }
+
+      // Variant-level new images: sent as variant_images[{variantId}][j]
+      // The backend's saveVariantImages() method reads this key.
+      if (Object.keys(variantImageChanges.newImagesByVariantId).length > 0) {
+        payload.variant_images = variantImageChanges.newImagesByVariantId
       }
 
       if (!isLocked) {
@@ -449,6 +654,11 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
       setSaving(false)
     }
   }
+
+  // Whether we should show the VariantImageManager section:
+  // - Only in edit mode
+  // - Only when the product already has server-side variants with IDs
+  const showVariantImageManager = isEdit && variantsForImageManager.length > 0
 
   return (
     <>
@@ -526,7 +736,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
               <span>
                 <strong>Product is approved and live.</strong> Price, stock, category, and variants are locked.
                 {' '}Use <strong>"Request Update"</strong> to propose changes — an admin will review them.
-                Other fields (name, description, images) can still be edited directly.
+                Other fields (name, description) can still be edited directly.
+                {' '}<strong>Images can be added/removed for any variant instantly.</strong>
               </span>
             </div>
           )}
@@ -599,10 +810,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
             </section>
 
             {/* ── Pricing & Inventory ── */}
-            {/*
-              CHANGED: Grid switches between 3 cols (with stock) and 2 cols (without stock).
-              Stock field is hidden when variants exist — total is shown in the variants section.
-            */}
             <section>
               <p style={{
                 fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
@@ -614,7 +821,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                 gridTemplateColumns: hasVariantRows ? '1fr 1fr' : '1fr 1fr 1fr',
                 gap: 12,
               }}>
-                {/* Price — always visible */}
+                {/* Price */}
                 <Field label="Base Price (TND)" required error={errors.price} locked={isLocked}>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -658,7 +865,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                   </Field>
                 )}
 
-                {/* Status — always visible */}
+                {/* Status */}
                 <Field label="Status">
                   <select
                     value={form.is_active ? 'active' : 'inactive'}
@@ -818,7 +1025,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                       externalStockErrors={variantStockErrors}
                     />
 
-                    {/* ── Color Group Image Uploader ── */}
                     {variantRows.length > 0 && (
                       <div style={{ marginTop: 16 }}>
                         <ColorGroupImageUploader
@@ -831,9 +1037,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                       </div>
                     )}
 
-                    {/* ── CHANGED: Total Stock summary badge ──────────────────────────────
-                        Replaces the hidden global stock field when variants exist.
-                        Updates in real-time as seller edits variant stocks.        */}
                     {variantRows.length > 0 && (
                       <div style={{ marginTop: 14 }}>
                         <div style={{
@@ -865,39 +1068,79 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
               </section>
             )}
 
-            {/* ── Locked variants display ── */}
+            {/* ══════════════════════════════════════════════════════════════
+                LOCKED VARIANTS DISPLAY — full read-only table
+                Shows every variant with its human-readable label,
+                stock, price, SKU, active status, and thumbnail images.
+                REPLACES the old "9 variant(s) — use Request Update" message.
+            ════════════════════════════════════════════════════════════════*/}
             {isLocked && (p?.variant_rows ?? []).length > 0 && (
               <section>
                 <div style={{
                   paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16,
-                  display: 'flex', alignItems: 'center', gap: 8,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 }}>
-                  <p style={{
-                    fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-                    letterSpacing: '0.1em', color: '#94a3b8', margin: 0,
-                  }}>Variants</p>
-                  <span style={{
-                    fontSize: 9, fontWeight: 700, color: '#6366f1',
-                    background: 'rgba(99,102,241,0.08)',
-                    border: '1px solid rgba(99,102,241,0.2)',
-                    padding: '1px 6px', borderRadius: 4,
-                    display: 'inline-flex', alignItems: 'center', gap: 3,
-                  }}>
-                    <Lock size={8} /> Locked — use Request Update
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <p style={{
+                      fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
+                      letterSpacing: '0.1em', color: '#94a3b8', margin: 0,
+                    }}>Variants</p>
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, color: '#6366f1',
+                      background: 'rgba(99,102,241,0.08)',
+                      border: '1px solid rgba(99,102,241,0.2)',
+                      padding: '1px 6px', borderRadius: 4,
+                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                    }}>
+                      <Lock size={8} /> Locked — use Request Update
+                    </span>
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, color: '#94a3b8',
+                      background: '#f1f5f9',
+                      border: '1px solid #e5e7eb',
+                      padding: '1px 6px', borderRadius: 4,
+                    }}>
+                      {(p?.variant_rows ?? []).length} variant{(p?.variant_rows ?? []).length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
                 </div>
-                <div style={{
-                  background: '#f8fafc', border: '1px solid #e5e7eb',
-                  borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#64748b',
-                }}>
-                  {(p?.variant_rows ?? []).length} variant(s) — to modify variants, use the{' '}
-                  <strong>"Request Update"</strong> button.
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {((p?.variant_rows ?? []) as LockedVariantRowData[]).map((variant, idx) => (
+                    <LockedVariantCard
+                      key={variant.id ?? idx}
+                      variant={variant}
+                    />
+                  ))}
                 </div>
               </section>
             )}
 
-            {/* ── General Images (only when NO variant rows) ── */}
-            {!hasVariantRows && (
+            {/* ══════════════════════════════════════════════════════════════
+                VARIANT IMAGE MANAGEMENT
+                Shown in edit mode for ALL products that have variants,
+                whether locked or not. Allows instant upload/deletion of
+                per-variant images with NO admin approval required.
+            ════════════════════════════════════════════════════════════════*/}
+            {showVariantImageManager && (
+              <section>
+                <VariantImageManager
+                  variants={variantsForImageManager}
+                  onChange={setVariantImageChanges}
+                  disabled={saving}
+                />
+              </section>
+            )}
+
+            {/* ── General Images ──
+                Shown when:
+                  (a) Add mode (no variants yet), OR
+                  (b) Edit mode with no server-side variants
+                When a product has variants, images are managed per-variant above.
+                We still show product-level images (no variant_id) for edit mode
+                so sellers can manage cover / gallery images.
+            ── */}
+            {(!hasVariantRows || (isEdit && existingImages.length > 0)) && !showVariantImageManager && (
               <section>
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -1029,7 +1272,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
       {updateRequestModalOpen && p && (
         <UpdateRequestModal
           product={p}
-          variantRows={variantRows}
+          variantRows={(p?.variant_rows ?? []) as any}
           onClose={() => setUpdateRequestModalOpen(false)}
           onSubmitted={() => { setUpdateRequestModalOpen(false); onSaved() }}
         />
