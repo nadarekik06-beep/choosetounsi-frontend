@@ -26,8 +26,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={syne.variable}>
-      <body className="antialiased bg-white text-zinc-900">
-        <CartProvider>
+<body className="antialiased text-zinc-900">        <CartProvider>
           {children}
           <FlashToast />
           <CartDrawer />

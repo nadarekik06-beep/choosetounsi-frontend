@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation'
 import SellerApplicationModal from "../sections/SellerApplicationModal"
 import { isAuthenticated } from '@/lib/auth'
 import SponsoredProductsSection from '@/app/components/SponsoredProductsSection';
-
+import AboveFoldProducts from './AboveFoldProducts'
+import BecomeSellerBanner from './HomeCtaSection'
 interface Category {
   id: number
   name: string
@@ -536,8 +537,7 @@ export default function Hero() {
 
         {/* ── HERO BANNER ── */}
         <div className="relative w-full overflow-hidden" style={{ background: 'linear-gradient(135deg,#f0f0f0 0%,#e8e8e8 50%,#dcdcdc 100%)' }}>
-          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-stretch min-h-[340px] lg:min-h-[420px]">
-            {/* LEFT */}
+          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-stretch min-h-[300px] lg:min-h-[360px]">            {/* LEFT */}
             <div className="flex-1 z-10 px-6 lg:px-12 py-10 lg:py-14 flex flex-col justify-center">
               <p className={`text-zinc-500 text-sm font-semibold tracking-widest uppercase mb-2 ${mounted ? 'hero-text-1' : 'opacity-0'}`} style={{ fontFamily:"'Barlow',sans-serif" }}>{slide.tag}</p>
               <p className={`text-zinc-900 text-3xl lg:text-4xl font-bold leading-tight mb-1 ${mounted ? 'hero-text-2' : 'opacity-0'}`} style={{ fontFamily:"'Barlow',sans-serif" }}>{slide.title}</p>
@@ -614,6 +614,8 @@ export default function Hero() {
             </div>
           </div>
         </div>
+        {/* ── NEW: ABOVE THE FOLD PRODUCTS ── */}
+        <AboveFoldProducts />
 
         {/* ══════════════════════════════════════════════════════
             CATEGORY CAROUSEL — one row with arrow navigation
@@ -638,7 +640,8 @@ export default function Hero() {
         />
           </div>
         </div>
-
+          {/* ── NEW: BECOME A SELLER CTA ── */}
+        <BecomeSellerBanner />
         {/* ── SALE BANNER ── */}
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="relative overflow-hidden rounded-md flex flex-col md:flex-row items-center justify-between px-8 py-6 gap-6" style={{ background:'linear-gradient(135deg,#dc2626 0%,#991b1b 100%)' }}>
