@@ -35,7 +35,7 @@ import {
 import { useCart } from '@/context/CartContext'
 import { isAuthenticated, getUser } from '@/lib/auth'
 import type { ProductVariant, SelectableAxis } from '@/lib/shopApi'
-
+import ProductRecommendations from 'app/components/ProductRecommendations'
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL      = `${STORAGE_BASE}/api`
 
@@ -823,6 +823,7 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+      <ProductRecommendations slug={slug} sellerId={product.seller?.id} />
     </>
   )
 }

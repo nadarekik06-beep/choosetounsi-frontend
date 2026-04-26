@@ -22,6 +22,12 @@ function GoogleCallbackHandler() {
       const user: AuthUser = JSON.parse(atob(userRaw));
       saveSession(token, user);
 
+      // ── Onboarding redirect for new clients ────────────────────────────
+      if (user.role === 'client' && !user.onboarding_completed) {
+        router.replace('/onboarding?redirect=/');
+        return;
+      }
+
       /* ── Redirect based on active plan ── */
       const redirectPath =
         user.active_plan === 'red' || user.active_plan === 'black'
@@ -40,6 +46,8 @@ function GoogleCallbackHandler() {
       <p className="text-sm text-slate-500 font-medium">Completing sign-in…</p>
     </div>
   );
+
+
 }
 
 export default function GoogleCallbackPage() {

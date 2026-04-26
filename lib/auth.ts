@@ -8,7 +8,8 @@ export interface AuthUser {
   is_approved: boolean;
   is_active: boolean;
   avatar: string | null;   // Google profile photo URL (or null for email users)
-active_plan: 'free' | 'red' | 'black';  // ← required, not optional
+  active_plan: 'free' | 'red' | 'black';  // ← required, not optional
+  onboarding_completed: boolean;
 }
 
 export interface LoginCredentials {
@@ -104,7 +105,20 @@ export async function login(credentials: LoginCredentials): Promise<{ user: Auth
   try {
     const { data } = await api.post<LoginResponse>('/auth/login', credentials);
     saveSession(data.token, data.user);
-    return { user: data.user, redirectTo: '/' };
+ 
+    // Determine redirect destination
+    let redirectTo = '/';
+ 
+    if (data.user.role === 'client' && !data.user.onboarding_completed) {
+      // New client — send to onboarding
+      redirectTo = '/onboarding';
+    } else if (data.user.role === 'seller') {
+      redirectTo = '/seller';
+    } else if (data.user.role === 'admin') {
+      redirectTo = '/admin';
+    }
+ 
+    return { user: data.user, redirectTo };
   } catch (err: any) {
     throw {
       message: err?.response?.data?.message ?? 'Unable to connect.',
@@ -112,7 +126,6 @@ export async function login(credentials: LoginCredentials): Promise<{ user: Auth
     } as AuthError;
   }
 }
-
 export async function register(credentials: RegisterCredentials): Promise<{ user: AuthUser; redirectTo: string }> {
   try {
     const { data } = await api.post<LoginResponse>('/auth/register', credentials);
@@ -149,4 +162,8 @@ export async function loginWithGoogle(): Promise<void> {
   const res = await fetch(`${baseUrl}/auth/google/redirect`);
   const data = await res.json();
   window.location.href = data.url;
+}
+export function needsOnboarding(): boolean {
+  const user = getUser();
+  return !!(user && user.role === 'client' && !user.onboarding_completed);
 }
