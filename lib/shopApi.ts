@@ -72,7 +72,7 @@ export interface ProductVariant {
 
 export interface CartItem {
   id: number
-  product_id: number
+  product_id: number | null
   variant_id: number | null
   variant_label: string | null
   variant_options: Record<string, VariantOptionEntry>
@@ -85,6 +85,12 @@ export interface CartItem {
   stock: number
   image_url: string | null
   category: string | null
+  is_sponsored?: boolean
+  // ── Pack fields ─────────────────────────────────────────────────────────────
+  is_pack?: boolean
+  pack_id?: number | null
+  pack_slug?: string | null
+  pack_selections?: { pack_item_id: number; variant_id: number | null }[]
 }
 
 export interface CartResponse {
@@ -100,7 +106,7 @@ export interface CartResponse {
 
 export interface FavoriteItem {
   id: number
-  product_id: number
+  product_id: number | null
   variant_id: number | null
   variant_label: string | null
   variant_options: Record<string, VariantOptionEntry>
@@ -119,6 +125,7 @@ export interface CheckoutPayload {
   address: string
   phone: string
   notes?: string
+  payment_method?: 'cod' | 'card' | 'd17' | 'wallet'
 }
 
 export interface BuyNowPayload {
@@ -129,6 +136,7 @@ export interface BuyNowPayload {
   address: string
   phone: string
   notes?: string
+  payment_method?: 'cod' | 'card' | 'd17' | 'wallet'
 }
 
 export interface CheckoutResponse {
@@ -137,35 +145,7 @@ export interface CheckoutResponse {
   order_number: string
   order_id: number
   total: number
-}
-export interface CheckoutPayload {
-  wilaya: string
-  address: string
-  phone: string
-  notes?: string
-  payment_method?: 'cod' | 'card' | 'd17' | 'wallet'  // ← ADD
-}
-
-// Add to BuyNowPayload interface
-export interface BuyNowPayload {
-  product_id: number
-  variant_id?: number | null
-  quantity: number
-  wilaya: string
-  address: string
-  phone: string
-  notes?: string
-  payment_method?: 'cod' | 'card' | 'd17' | 'wallet'  // ← ADD
-}
-
-// Update CheckoutResponse to include needs_payment
-export interface CheckoutResponse {
-  success: boolean
-  message: string
-  order_number: string
-  order_id: number
-  total: number
-  needs_payment?: boolean  // ← ADD — true when payment_method is 'card'
+  needs_payment?: boolean
 }
 
 // ─── Cart API ─────────────────────────────────────────────────────────────────
@@ -179,6 +159,15 @@ export const cartApi = {
       product_id: productId,
       quantity,
       ...(variantId != null ? { variant_id: variantId } : {}),
+    }),
+
+  addPack: (
+    packId: number,
+    selections: { pack_item_id: number; variant_id: number | null }[]
+  ) =>
+    request<{ success: boolean; message: string; data: CartItem }>('POST', '/cart', {
+      pack_id: packId,
+      pack_selections: selections,
     }),
 
   update: (cartItemId: number, quantity: number) =>
@@ -232,6 +221,7 @@ export const checkoutApi = {
   buyNow: (payload: BuyNowPayload) =>
     request<CheckoutResponse>('POST', '/checkout/buy-now', payload),
 }
+
 export const walletApi = {
   getBalance: () =>
     request<{ success: boolean; data: { balance: number } }>('GET', '/wallet/balance'),

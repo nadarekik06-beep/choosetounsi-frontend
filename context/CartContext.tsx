@@ -7,14 +7,21 @@ import {
 import { cartApi, favoritesApi, type CartItem, type FavoriteItem } from '@/lib/shopApi'
 import { isAuthenticated } from '@/lib/auth'
 
+// ─── Pack selection type ──────────────────────────────────────────────────────
+export interface PackSelection {
+  pack_item_id: number
+  variant_id: number | null
+}
+
 interface CartContextValue {
   items: CartItem[]
   count: number
   subtotal: number
   cartLoading: boolean
-  // loadingItemId: which specific cart item is being updated right now
   loadingItemId: number | null
   addToCart: (productId: number, qty?: number, variantId?: number | null) => Promise<void>
+  // NEW: add a pack bundle as a single cart entry
+  addPackToCart: (packId: number, selections: PackSelection[]) => Promise<void>
   updateItem: (cartItemId: number, qty: number) => Promise<void>
   removeItem: (cartItemId: number) => Promise<void>
   clearCart: () => Promise<void>
@@ -43,10 +50,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [flash,         setFlash]         = useState<string | null>(null)
   const [drawerOpen,    setDrawerOpen]    = useState(false)
 
-  // ── Per-item request lock — prevents duplicate concurrent requests ─────────
-  // Key: `product-{productId}-{variantId}` for add, `item-{cartItemId}` for update
   const pendingRef = useRef<Set<string>>(new Set())
-
   const isLocked  = (key: string) => pendingRef.current.has(key)
   const lock      = (key: string) => pendingRef.current.add(key)
   const unlock    = (key: string) => pendingRef.current.delete(key)
@@ -87,19 +91,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     refreshFavorites()
   }, [refreshCart, refreshFavorites])
 
-  // ── addToCart — locked per (productId + variantId) ────────────────────────
+  // ── addToCart — original, completely unchanged ────────────────────────────
   const addToCart = useCallback(async (
     productId: number,
     qty = 1,
     variantId?: number | null,
   ) => {
     const lockKey = `product-${productId}-${variantId ?? 'base'}`
-
-    // Drop the request if one is already in flight for this exact item
     if (isLocked(lockKey)) return
     lock(lockKey)
     setCartLoading(true)
-
     try {
       await cartApi.add(productId, qty, variantId)
       await refreshCart()
@@ -112,21 +113,38 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [refreshCart, openDrawer, showFlash])
 
-  // ── updateItem — locked per cartItemId ───────────────────────────────────
+  // ── addPackToCart — NEW: single cart entry at pack_price ─────────────────
+  const addPackToCart = useCallback(async (
+    packId: number,
+    selections: PackSelection[],
+  ) => {
+    const lockKey = `pack-${packId}`
+    if (isLocked(lockKey)) return
+    lock(lockKey)
+    setCartLoading(true)
+    try {
+      await cartApi.addPack(packId, selections)
+      await refreshCart()
+      openDrawer()
+    } catch (err: any) {
+      showFlash(err.message ?? 'Failed to add bundle to cart.')
+    } finally {
+      unlock(lockKey)
+      setCartLoading(false)
+    }
+  }, [refreshCart, openDrawer, showFlash])
+
+  // ── updateItem ────────────────────────────────────────────────────────────
   const updateItem = useCallback(async (cartItemId: number, qty: number) => {
     const lockKey = `item-${cartItemId}`
-
-    // Drop if already updating this item
     if (isLocked(lockKey)) return
     lock(lockKey)
     setLoadingItemId(cartItemId)
-
     try {
       await cartApi.update(cartItemId, qty)
       await refreshCart()
     } catch (err: any) {
       showFlash(err.message ?? 'Failed to update.')
-      // Refresh to resync with server state in case of stock error
       await refreshCart()
     } finally {
       unlock(lockKey)
@@ -191,7 +209,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   return (
     <CartContext.Provider value={{
       items, count, subtotal, cartLoading, loadingItemId,
-      addToCart, updateItem, removeItem, clearCart, refreshCart,
+      addToCart, addPackToCart,
+      updateItem, removeItem, clearCart, refreshCart,
       favorites, isFavorited, toggleFavorite, favLoading,
       flash, clearFlash: () => setFlash(null),
       drawerOpen, openDrawer, closeDrawer,
