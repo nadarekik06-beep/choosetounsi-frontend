@@ -17,6 +17,8 @@ import Navbar from '@/app/components/layout/Navbar'
 import {
   TrendingDown, Tag, Package2, ArrowRight,
 } from 'lucide-react'
+import FlashSalesSection from '@/app/components/promotions/FlashSalesSection'
+
 
 const ORIGIN  = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL = `${ORIGIN}/api`
@@ -637,7 +639,7 @@ export default function DealsPage() {
             )}
           </div>
         </div>
-
+            <FlashSalesSection />
         {/* ── Main Grid ── */}
         <div className="dp-main">
           {loading ? (

@@ -13,7 +13,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Package, ShoppingBag,
   ChevronLeft, ChevronRight, LogOut, Home, Sun, Moon,
-  AlertTriangle, BarChart2, Brain, Lock, Crown, Zap,
+  AlertTriangle, BarChart2, Brain, Lock, Crown, Zap, Tag,
 } from 'lucide-react';
 import { useTheme } from '../layout';
 import { useSubscription } from '@/app/hooks/useSubscription';
@@ -25,6 +25,7 @@ const BASE_NAV = [
   { href: '/seller/packs',      label: 'Packs',      icon: Package2,        premium: false }, // ← ADD
   { href: '/seller/orders',     label: 'Orders',     icon: ShoppingBag,     premium: false },
   { href: '/seller/complaints', label: 'Complaints', icon: AlertTriangle,   premium: false },
+  { href: '/seller/promotions',   label: 'Promotions', icon: Tag,             premium: false }, 
   { href: '/seller/promote',    label: 'Promote',    icon: Zap,             premium: false },
 ];
 

@@ -12,9 +12,14 @@ import { useCart } from '@/context/CartContext'
 import { isAuthenticated, getUser } from '@/lib/auth'
 import type { ProductVariant, SelectableAxis } from '@/lib/shopApi'
 import ProductRecommendations from 'app/components/ProductRecommendations'
+import CountdownTimer from '@/app/components/promotions/CountdownTimer'
+import PromotionBadge from '@/app/components/promotions/PromotionBadge'
 
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL      = `${STORAGE_BASE}/api`
+
+// ← REMOVED: const [activePromotion, setActivePromotion] = useState<any>(null)
+//   was incorrectly placed here at module level — hooks only work inside components
 
 function resolveImg(path: string | null | undefined): string | null {
   if (!path) return null
@@ -46,6 +51,19 @@ interface ColorOption {
   swatches?: { id: number; value: string; color_hex?: string | null }[]
 }
 
+// ── NEW: Active promotion shape returned by ProductResource ───────────────────
+interface ActivePromotion {
+  id: number
+  type: 'flash_sale' | 'discount'
+  name: string
+  discount_type: 'percentage' | 'fixed'
+  discount_value: number
+  discount_label: string
+  ends_at: string
+  flash_stock_remaining: number | null
+  is_flash_sale: boolean
+}
+
 interface Product {
   id: number; name: string; slug: string; description: string | null
   short_description: string | null; price: string | number; stock: number
@@ -56,6 +74,10 @@ interface Product {
   seller: { id: number; name: string; email: string } | null
   attribute_data?: Record<string, AttributeData>
   has_variants: boolean
+  // ── NEW: promotion fields appended by ProductResource ─────────────────────
+  effective_price?: number    // computed price (= price when no promo active)
+  discount_amount?: number
+  promotion?: ActivePromotion | null
   variants: (ProductVariant & {
     color_option_id?: number | null
     color_group_key?: string | null
@@ -324,26 +346,33 @@ export default function ProductDetailPage() {
 
   const { addToCart, isFavorited, toggleFavorite, cartLoading } = useCart()
 
-  const [product,      setProduct]     = useState<Product | null>(null)
-  const [loading,      setLoading]     = useState(true)
-  const [error,        setError]       = useState(false)
-  const [quantity,     setQuantity]    = useState(1)
-  const [addedToCart,  setAddedToCart] = useState(false)
-  const [tab,          setTab]         = useState<'description' | 'details' | 'attributes'>('description')
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
-  const [selectorError,   setSelectorError]   = useState(false)
-  const [buyNowLoading,   setBuyNowLoading]   = useState(false)
+  const [product,         setProduct]        = useState<Product | null>(null)
+  const [loading,         setLoading]        = useState(true)
+  const [error,           setError]          = useState(false)
+  const [quantity,        setQuantity]       = useState(1)
+  const [addedToCart,     setAddedToCart]    = useState(false)
+  const [tab,             setTab]            = useState<'description' | 'details' | 'attributes'>('description')
+  const [selectedOptions, setSelectedOptions]= useState<Record<string, string>>({})
+  const [selectorError,   setSelectorError]  = useState(false)
+  const [buyNowLoading,   setBuyNowLoading]  = useState(false)
+  // ── NEW: promotion state — correctly placed inside the component ──────────
+  const [activePromotion, setActivePromotion]= useState<ActivePromotion | null>(null)
   const buyNowRef = useRef(false)
 
   useEffect(() => {
     if (!slug) return
     setLoading(true)
     setSelectedOptions({})
+    setActivePromotion(null) // ← reset on slug change
     fetch(`${API_URL}/products/${slug}`, { headers: { Accept: 'application/json' } })
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(json => {
         const prod: Product = json.data
         setProduct(prod)
+        // ── NEW: read promotion appended by ProductResource ───────────────
+        if (prod.promotion) {
+          setActivePromotion(prod.promotion)
+        }
         if (prod.has_variants && prod.selectable_axes?.length > 0) {
           const auto: Record<string, string> = {}
           for (const axis of prod.selectable_axes) {
@@ -403,45 +432,25 @@ export default function ProductDetailPage() {
     })
   }, [variants, selectedOptions, axes])
 
-  // ── Gallery images ──────────────────────────────────────────────────────────
-  //
-  // Priority order:
-  // 1. Selected variant has its own image_urls → use those
-  // 2. Color selected but no full variant yet → find ANY variant with this
-  //    color_group_key and use its image_urls (all variants in a color group
-  //    share the same images from the backend)
-  // 3. Fallback to product-level images (no color_option_id)
-  // 4. Fallback to primary_image_url
-  //
-  // We deliberately avoid color_images string lookup because the key format
-  // can differ between frontend and backend. Using variant.image_urls is
-  // reliable — the backend populates them directly from color_images[groupKey].
   const galleryImages = (() => {
-    // 1. Selected variant with images
     if (selectedVariant && selectedVariant.image_urls.length > 0) {
       return selectedVariant.image_urls
     }
-
-    // 2. Any variant matching the selected color group
     if (selectedColorKey) {
       const colorVariant = variants.find(v =>
         v.color_group_key === selectedColorKey && v.image_urls.length > 0
       )
       if (colorVariant) return colorVariant.image_urls
     }
-
-    // 3. Product-level images (no variant, no color)
     if (product) {
       const productImgs = product.images
         .filter(i => !i.color_option_id && !i.variant_id)
         .map(i => resolveImg(i.url ?? i.image_path))
         .filter(Boolean) as string[]
       if (productImgs.length > 0) return productImgs
-
       const primary = resolveImg(product.primary_image_url)
       if (primary) return [primary]
     }
-
     return []
   })()
 
@@ -452,10 +461,18 @@ export default function ProductDetailPage() {
     : hasVariants
       ? variants.reduce((s, v) => s + v.stock, 0)
       : (product?.stock ?? 0)
-  const effectivePrice = selectedVariant ? selectedVariant.price : (product?.price ?? 0)
-  const outOfStock     = effectiveStock <= 0
-  const lowStock       = effectiveStock > 0 && effectiveStock <= 10
-  const favorited      = product ? isFavorited(product.id, selectedVariant?.id ?? null) : false
+
+  // ── NEW: use effective_price from API when promotion is active ────────────
+  // Priority: variant price_override → promotion effective_price → base price
+  const effectivePrice = selectedVariant
+    ? selectedVariant.price
+    : (activePromotion && product?.effective_price != null)
+      ? product.effective_price
+      : (product?.price ?? 0)
+
+  const outOfStock = effectiveStock <= 0
+  const lowStock   = effectiveStock > 0 && effectiveStock <= 10
+  const favorited  = product ? isFavorited(product.id, selectedVariant?.id ?? null) : false
 
   const handleAddToCart = async () => {
     if (!product || outOfStock) return
@@ -577,10 +594,61 @@ export default function ProductDetailPage() {
 
             <div style={{ height: 1, background: '#f1f5f9', margin: '16px 0' }} />
 
+            {/* ── NEW: Promotion banner — renders only when a promotion is active ── */}
+            {activePromotion && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+                marginBottom: 14, padding: '10px 14px',
+                background: activePromotion.is_flash_sale
+                  ? 'linear-gradient(135deg,rgba(220,38,38,0.08),rgba(220,38,38,0.03))'
+                  : 'rgba(5,150,105,0.07)',
+                border: `1px solid ${activePromotion.is_flash_sale
+                  ? 'rgba(220,38,38,0.2)'
+                  : 'rgba(5,150,105,0.2)'}`,
+                borderRadius: 10,
+              }}>
+                <PromotionBadge promotion={activePromotion} size="md" />
+                {activePromotion.is_flash_sale && (
+                  <>
+                    <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>Ends in</span>
+                    <CountdownTimer
+                      endsAt={activePromotion.ends_at}
+                      compact
+                      onExpire={() => setActivePromotion(null)}
+                    />
+                  </>
+                )}
+                {activePromotion.flash_stock_remaining !== null && (
+                  <span style={{
+                    fontSize: 11, color: '#dc2626', fontWeight: 700, marginLeft: 'auto',
+                  }}>
+                    Only {activePromotion.flash_stock_remaining} left at this price!
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* ── Price block ── */}
             <div style={{ marginBottom: 20 }}>
-              <span style={{ fontSize: 32, fontWeight: 900, color: '#dc2626', letterSpacing: '-0.02em', lineHeight: 1 }}>{fmt(effectivePrice)}</span>
-              {selectedVariant?.price_override && <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 8 }}>variant price</span>}
-              {product.sku && <p style={{ fontSize: 11, color: '#94a3b8', margin: '6px 0 0', fontFamily: 'monospace' }}>SKU: {selectedVariant?.sku ?? product.sku}</p>}
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                <span style={{ fontSize: 32, fontWeight: 900, color: '#dc2626', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                  {fmt(effectivePrice)}
+                </span>
+                {/* Show struck-through original price when promotion is active */}
+                {activePromotion && !selectedVariant && (
+                  <span style={{ fontSize: 18, fontWeight: 600, color: '#94a3b8', textDecoration: 'line-through' }}>
+                    {fmt(product.price)}
+                  </span>
+                )}
+                {selectedVariant?.price_override && (
+                  <span style={{ fontSize: 12, color: '#94a3b8' }}>variant price</span>
+                )}
+              </div>
+              {product.sku && (
+                <p style={{ fontSize: 11, color: '#94a3b8', margin: '6px 0 0', fontFamily: 'monospace' }}>
+                  SKU: {selectedVariant?.sku ?? product.sku}
+                </p>
+              )}
             </div>
 
             {product.short_description && (
