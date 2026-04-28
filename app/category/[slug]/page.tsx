@@ -51,8 +51,7 @@ interface AOpt { id: number; value: string; color_hex?: string | null }
 interface Attr { id: number; slug: string; name: string; type: string; options: AOpt[] }
 type Sort = 'created_at' | 'views' | 'price_asc' | 'price_desc'
 type View = 'grid' | 'list'
-interface F { q: string; pMin: string; pMax: string; inStock: boolean; sort: Sort; attrs: Record<string, number[]> }
-
+interface F { q: string; pMin: string; pMax: string; inStock: boolean; isPack: boolean; sort: Sort; attrs: Record<string, number[]> }
 // ─── Image helpers ────────────────────────────────────────────────────────────
 function primaryImg(p: Product): string | null {
   if (p.primary_image_url) return p.primary_image_url.startsWith('http') ? p.primary_image_url : `${ORIGIN}${p.primary_image_url}`
@@ -377,7 +376,7 @@ function Sidebar({ f, setF, total, catSlug, subSlug, mOpen, setMOpen }: {
     <aside className="sbar">
       <div className="sbar-hd">
         <div><p className="sbar-title">Filters</p><p className="sbar-count">{total.toLocaleString()} products</p></div>
-        {hasAny && <button className="sbar-clear" onClick={() => setF({ q:'',pMin:'',pMax:'',inStock:false,sort:f.sort,attrs:{} })}>✕ Clear</button>}
+        {hasAny && <button className="sbar-clear" onClick={() => setF({ q:'',pMin:'',pMax:'',inStock:false,isPack:false,sort:f.sort,attrs:{} })}>✕ Clear</button>}
       </div>
       <div className="sbar-blk">
         <div className="sbar-search">
@@ -407,15 +406,22 @@ function Sidebar({ f, setF, total, catSlug, subSlug, mOpen, setMOpen }: {
         </div>}
       </div>
       <div className="sb-acc"><Acc k="avail" label="Availability" />
-        {open.has('avail') && <div className="sb-body" style={{padding:'6px 16px 12px'}}>
-          <label className="sbar-trow">
-            <span>In stock only</span>
-            <div className={`sbar-tgl${f.inStock?' on':''}`} onClick={()=>upd({inStock:!f.inStock})}>
-              <div className="sbar-tgl-k"/>
-            </div>
-          </label>
-        </div>}
+  {open.has('avail') && <div className="sb-body" style={{padding:'6px 16px 12px',display:'flex',flexDirection:'column',gap:8}}>
+    <label className="sbar-trow">
+      <span>In stock only</span>
+      <div className={`sbar-tgl${f.inStock?' on':''}`} onClick={()=>upd({inStock:!f.inStock})}>
+        <div className="sbar-tgl-k"/>
       </div>
+    </label>
+    {/* ── Pack filter ── */}
+    <label className="sbar-trow">
+      <span>Packs only</span>
+      <div className={`sbar-tgl${f.isPack?' on':''}`} onClick={()=>upd({isPack:!f.isPack})}>
+        <div className="sbar-tgl-k"/>
+      </div>
+    </label>
+  </div>}
+</div>
       {aLoad && [1,2].map(k=>(
         <div key={k} className="sb-acc" style={{padding:'11px 16px'}}>
           <div className="shsk-ln" style={{width:'54%',height:9,marginBottom:7}}/>
@@ -543,8 +549,7 @@ function Inner() {
   const [page, setPage]  = useState(1)
   const [view, setView]  = useState<View>('grid')
   const [mOpen,setMOpen] = useState(false)
-  const [f, setF] = useState<F>({ q:'',pMin:'',pMax:'',inStock:false,sort:'created_at',attrs:{} })
-
+const [f, setF] = useState<F>({ q:'',pMin:'',pMax:'',inStock:false,isPack:false,sort:'created_at',attrs:{} })
   useEffect(() => {
     const measure = () => {
       const navbar =
@@ -578,6 +583,7 @@ function Inner() {
       if(f.pMin)  qp.set('price_min',f.pMin)
       if(f.pMax)  qp.set('price_max',f.pMax)
       if(f.inStock) qp.set('in_stock','1')
+      if(f.isPack) qp.set('is_pack','1')
       Object.entries(f.attrs).forEach(([s,ids])=>ids.forEach(id=>qp.append(`attrs[${s}][]`,String(id))))
       const r=await fetch(`${API}/products?${qp}`,{headers:{Accept:'application/json'}})
       if(!r.ok) throw new Error()
@@ -595,8 +601,7 @@ function Inner() {
   },[prods,f.q])
 
   const subLabel=subSlug.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
-  const fCount=[f.q!=='',f.inStock,f.pMin!==''||f.pMax!=='',subSlug!=='',Object.values(f.attrs).some(v=>v.length)].filter(Boolean).length
-
+const fCount=[f.q!=='',f.inStock,f.isPack,f.pMin!==''||f.pMax!=='',subSlug!=='',Object.values(f.attrs).some(v=>v.length)].filter(Boolean).length
   return (
     <>
       <style>{`

@@ -140,7 +140,7 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
     Object.entries(payload.color_images).forEach(([groupKey, files]) => {
       if (!Array.isArray(files)) return
       files.forEach((file, j) => {
-        fd.append(`color_images[${groupKey.replace(/\|/g, '_')}][${j}]`, file)
+          fd.append(`color_images[${groupKey.replace(/\|/g, '_')}][${j}]`, file)
       })
     })
   }
@@ -348,5 +348,72 @@ const api = {
   patch:  <T = any>(path: string, body?: any) => jsonRequest<T>('PATCH',  path, body),
   delete: <T = any>(path: string)             => jsonRequest<T>('DELETE', path),
 }
+// ─── Packs API ────────────────────────────────────────────────────────────────
 
+export interface PackItemPayload {
+  product_id: number
+  allowed_variant_ids?: number[] | null  // null = all variants
+  quantity: number
+}
+
+export interface PackPayload {
+  name: string
+  description?: string
+  short_description?: string
+  pack_price: number | string
+  is_active?: boolean
+  items: PackItemPayload[]
+  image?: File | null
+}
+
+function buildPackFormData(payload: PackPayload, isUpdate = false): FormData {
+  const fd = new FormData()
+  if (isUpdate) fd.append('_method', 'PUT')
+
+  fd.append('name',       payload.name)
+  fd.append('pack_price', String(payload.pack_price))
+  fd.append('is_active',  payload.is_active === false ? '0' : '1')
+
+  if (payload.description)       fd.append('description',       payload.description)
+  if (payload.short_description) fd.append('short_description', payload.short_description)
+  if (payload.image)             fd.append('image',             payload.image)
+
+  payload.items.forEach((item, i) => {
+  fd.append(`items[${i}][product_id]`, String(item.product_id))
+  fd.append(`items[${i}][quantity]`,   String(item.quantity))
+  if (item.allowed_variant_ids != null) {
+    item.allowed_variant_ids.forEach((vid, j) => {
+      fd.append(`items[${i}][allowed_variant_ids][${j}]`, String(vid))
+    })
+  }
+})
+
+  return fd
+}
+
+export const packsApi = {
+  getAll: (params: Record<string, any> = {}) => {
+    const qs = new URLSearchParams(
+      Object.entries(params)
+        .filter(([, v]) => v !== undefined && v !== '')
+        .map(([k, v]) => [k, String(v)])
+    ).toString()
+    return jsonRequest<any>('GET', `/seller/packs${qs ? `?${qs}` : ''}`)
+  },
+
+  getOne:  (id: number) => jsonRequest<any>('GET', `/seller/packs/${id}`),
+  stats:   ()           => jsonRequest<any>('GET', '/seller/packs/stats'),
+
+  /** Products picker — seller's own approved products with variants */
+  getSellerProducts: (search = '') =>
+    jsonRequest<any>('GET', `/seller/packs/products${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+
+  create: (payload: PackPayload) =>
+    formRequest<any>('POST', '/seller/packs', buildPackFormData(payload, false)),
+
+  update: (id: number, payload: PackPayload) =>
+    formRequest<any>('POST', `/seller/packs/${id}`, buildPackFormData(payload, true)),
+
+  delete: (id: number) => jsonRequest<any>('DELETE', `/seller/packs/${id}`),
+}
 export default api

@@ -286,7 +286,7 @@ export default function CheckoutPage() {
   //   - A ref is read synchronously — no re-render needed, no timing issue.
   // ─────────────────────────────────────────────────────────────────────────────
   const selectedIdsRef = useRef<Set<number> | null>(null)
-
+ 
   // Guard: only run once (ref starts null, we set it on first render)
   if (selectedIdsRef.current === null && !isBuyNow) {
     try {

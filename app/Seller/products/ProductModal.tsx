@@ -327,6 +327,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     category_id:       p?.category_id?.toString()   ?? '',
     subcategory_id:    p?.subcategory_id != null ? String(p.subcategory_id) : '',
     is_active:         p?.is_active ?? true,
+    is_pack:           !!(p as any)?.is_pack,   // ← ADD
+
   })
 
   const [attrValues,  setAttrValues]  = useState<AttributeValues>(p?.existing_attributes ?? {})
@@ -604,6 +606,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         description:       form.description.trim()       || undefined,
         short_description: form.short_description.trim() || undefined,
         is_active:         form.is_active,
+        is_pack:           form.is_pack ? 1 : 0,   // ← ADD
+
         // Product-level new images
         images:            previews.map(prev => prev.file),
         delete_image_ids:  allDeletedImageIds.length ? allDeletedImageIds : undefined,
@@ -876,6 +880,39 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                     <option value="inactive">Inactive</option>
                   </select>
                 </Field>
+              </div>
+              {/* ── Is Pack ── */}
+              <div style={{ marginTop: 12 }}>
+                <label style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  cursor: 'pointer', userSelect: 'none',
+                  width: 'fit-content',
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={form.is_pack}
+                    onChange={e => set('is_pack', e.target.checked)}
+                    style={{
+                      width: 16, height: 16, accentColor: '#dc2626',
+                      cursor: 'pointer', flexShrink: 0,
+                    }}
+                  />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
+                    This is a pack
+                  </span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700,
+                    color: '#dc2626',
+                    background: 'rgba(220,38,38,0.07)',
+                    border: '1px solid rgba(220,38,38,0.2)',
+                    padding: '1px 7px', borderRadius: 4,
+                  }}>
+                    Pack
+                  </span>
+                </label>
+                <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0 26px' }}>
+                  Check this if the product contains multiple items bundled together.
+                </p>
               </div>
             </section>
 

@@ -151,7 +151,7 @@ export default function VariantImageManager({
   }, [])
 
   // ── Undo a pending deletion ───────────────────────────────────────────────
-  const undoDelete = useCallback((variantId: number, imageId: number, img: { id: number; url: string }) => {
+const undoDelete = useCallback((variantId: number, imageId: number, img: { id: number; url: string; is_primary?: boolean }) => {
     setSlots(prev => {
       const slot = prev[variantId]
       if (!slot) return prev

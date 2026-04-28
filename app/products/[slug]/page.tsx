@@ -1,41 +1,18 @@
 'use client'
 
-/**
- * app/products/[slug]/page.tsx
- * ChooseTounsi — Product detail page with variant image switching.
- *
- * FIXES applied in this version
- * ──────────────────────────────
- * FIX A  (duplicate React key `104`)
- *   Both the color-axis map and the non-color-axis map now use a
- *   compound key  `${axis.slug}-${opt.id}`  instead of bare `opt.id`.
- *
- * FIX B  (isOptionAvailable broken for multi-color groups)
- *   selectedOptions['color'] stores the primary color option ID.
- *   Variant matching uses mapEntry.id === sel (primary id match).
- *
- * FIX C  (multi-color swatch shows color circles instead of uploaded image)
- *   BEFORE: `isGroup` (swatches.length > 1) caused color circles to always
- *           render, and `primary_image` was only shown when `!isGroup`.
- *           So multi-color variants NEVER showed their uploaded image even
- *           when opt.primary_image was correctly populated by the backend.
- *   AFTER:  If opt.primary_image exists → always show the image (single or
- *           multi-color). Only fall back to color circles when there is no
- *           image. The button shape stays pill for groups, circle for singles.
- */
-
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Heart, ShoppingCart, ChevronRight, Star, Shield, Truck,
   RotateCcw, Share2, Minus, Plus, ZoomIn, ChevronLeft,
-  CheckCircle, Loader2, Tag, Zap,
+  CheckCircle, Loader2, Zap,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { isAuthenticated, getUser } from '@/lib/auth'
 import type { ProductVariant, SelectableAxis } from '@/lib/shopApi'
 import ProductRecommendations from 'app/components/ProductRecommendations'
+
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL      = `${STORAGE_BASE}/api`
 
@@ -59,6 +36,16 @@ interface AttributeData {
   slug: string; name: string; type: string; value: any; label: string
 }
 
+interface ColorOption {
+  id: number
+  group_key: string
+  ids: number[]
+  value: string
+  color_hex?: string | null
+  primary_image?: string | null
+  swatches?: { id: number; value: string; color_hex?: string | null }[]
+}
+
 interface Product {
   id: number; name: string; slug: string; description: string | null
   short_description: string | null; price: string | number; stock: number
@@ -71,13 +58,15 @@ interface Product {
   has_variants: boolean
   variants: (ProductVariant & {
     color_option_id?: number | null
+    color_group_key?: string | null
     image_urls: string[]
     primary_image_url?: string | null
   })[]
   selectable_axes: (SelectableAxis & {
-    options: (SelectableAxis['options'][0] & {
+    options: (ColorOption | SelectableAxis['options'][0] & {
       primary_image?: string | null
       ids?: number[]
+      group_key?: string
       swatches?: { id: number; value: string; color_hex?: string | null }[]
     })[]
   })[]
@@ -123,9 +112,9 @@ function VariantSelector({
   axes, selectedOptions, onSelect, isOptionAvailable, selectorError,
 }: {
   axes: Product['selectable_axes']
-  selectedOptions: Record<string, number>
-  onSelect: (axisSlug: string, optionId: number) => void
-  isOptionAvailable: (axisSlug: string, optionId: number) => boolean
+  selectedOptions: Record<string, string>
+  onSelect: (axisSlug: string, value: string) => void
+  isOptionAvailable: (axisSlug: string, value: string) => boolean
   selectorError: boolean
 }) {
   if (axes.length === 0) return null
@@ -138,49 +127,42 @@ function VariantSelector({
             {axis.name}
             {selectedOptions[axis.slug] !== undefined && (
               <span style={{ color: '#374151', marginLeft: 6, textTransform: 'none', fontWeight: 600 }}>
-                — {axis.options.find(o => o.id === selectedOptions[axis.slug])?.value}
+                {axis.type === 'color'
+                  ? `— ${(axis.options as ColorOption[]).find(o => (o.group_key ?? String(o.id)) === selectedOptions[axis.slug])?.value ?? ''}`
+                  : `— ${axis.options.find(o => String(o.id) === selectedOptions[axis.slug])?.value ?? ''}`
+                }
               </span>
             )}
           </p>
 
           {axis.type === 'color' ? (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {axis.options.map(opt => {
-                const chosen    = selectedOptions[axis.slug] === opt.id
-                const available = isOptionAvailable(axis.slug, opt.id)
-                const swatches  = (opt as any).swatches ?? [{ id: opt.id, value: opt.value, color_hex: opt.color_hex }]
-                const isGroup   = swatches.length > 1
-
-                // ── FIX C ────────────────────────────────────────────────────
-                // hasImage is true for both single-color and multi-color options
-                // as long as the backend populated primary_image.
-                // Priority: show image > show color circles > show plain circle.
-                const hasImage = !!opt.primary_image
+              {(axis.options as ColorOption[]).map(opt => {
+                const selectionKey = opt.group_key ?? String(opt.id)
+                const chosen       = selectedOptions[axis.slug] === selectionKey
+                const available    = isOptionAvailable(axis.slug, selectionKey)
+                const hasImage     = !!opt.primary_image
+                const swatches     = opt.swatches ?? [{ id: opt.id, value: opt.value, color_hex: opt.color_hex }]
+                const isGroup      = swatches.length > 1
 
                 return (
                   <button
-                    key={`${axis.slug}-${opt.id}`}
+                    key={`${axis.slug}-${selectionKey}`}
                     type="button"
-                    onClick={() => available && onSelect(axis.slug, opt.id)}
+                    onClick={() => available && onSelect(axis.slug, selectionKey)}
                     title={opt.value}
                     style={{
                       position:       'relative',
                       display:        'flex',
                       alignItems:     'center',
                       justifyContent: 'center',
-                      // Shape: pill for groups without image, circle otherwise
                       width:          (isGroup && !hasImage) ? 'auto' : 34,
                       height:         34,
                       padding:        (isGroup && !hasImage) ? '0 8px' : 0,
                       gap:            4,
                       borderRadius:   (isGroup && !hasImage) ? 999 : '50%',
                       cursor:         available ? 'pointer' : 'not-allowed',
-                      // Background: transparent when image will cover it, else color
-                      background:     hasImage
-                                        ? '#f0f0f0'
-                                        : isGroup
-                                          ? '#f8fafc'
-                                          : (opt.color_hex ?? '#e5e7eb'),
+                      background:     hasImage ? '#f0f0f0' : isGroup ? '#f8fafc' : (opt.color_hex ?? '#e5e7eb'),
                       border:         chosen ? '3px solid #dc2626' : '2px solid #e5e7eb',
                       outline:        chosen ? '2px solid #fff' : 'none',
                       outlineOffset:  '-4px',
@@ -190,14 +172,13 @@ function VariantSelector({
                       overflow:       'hidden',
                     }}
                   >
-                    {/* ── FIX C: image takes priority, works for both single and multi-color ── */}
                     {hasImage ? (
                       <img
                         src={opt.primary_image!}
                         alt={opt.value}
                         style={{
                           position:      'absolute',
-                          inset:         chosen ? 3 : 2,   // shrinks slightly when border is thicker
+                          inset:         chosen ? 3 : 2,
                           borderRadius:  '50%',
                           width:         chosen ? 'calc(100% - 6px)' : 'calc(100% - 4px)',
                           height:        chosen ? 'calc(100% - 6px)' : 'calc(100% - 4px)',
@@ -206,31 +187,18 @@ function VariantSelector({
                         }}
                       />
                     ) : isGroup ? (
-                      // No image uploaded + multi-color → show color circles (original behaviour)
-                      swatches.map((s: { id: number; value: string; color_hex?: string | null }) => (
-                        <span
-                          key={s.id}
-                          title={s.value}
-                          style={{
-                            display:      'inline-block',
-                            width:        16,
-                            height:       16,
-                            borderRadius: '50%',
-                            flexShrink:   0,
-                            background:   s.color_hex ?? '#e5e7eb',
-                            border:       '1.5px solid rgba(0,0,0,0.10)',
-                          }}
-                        />
+                      swatches.map(s => (
+                        <span key={s.id} title={s.value} style={{
+                          display: 'inline-block', width: 16, height: 16,
+                          borderRadius: '50%', flexShrink: 0,
+                          background: s.color_hex ?? '#e5e7eb',
+                          border: '1.5px solid rgba(0,0,0,0.10)',
+                        }} />
                       ))
-                    ) : null
-                    // Single-color with no image → background colour of the button itself is enough
-                    }
+                    ) : null}
 
                     {!available && (
-                      <svg
-                        viewBox="0 0 34 34"
-                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
-                      >
+                      <svg viewBox="0 0 34 34" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
                         <line x1="5" y1="29" x2="29" y2="5" stroke="#fff" strokeWidth="2" opacity="0.8" />
                       </svg>
                     )}
@@ -241,26 +209,24 @@ function VariantSelector({
           ) : (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {axis.options.map(opt => {
-                const chosen    = selectedOptions[axis.slug] === opt.id
-                const available = isOptionAvailable(axis.slug, opt.id)
+                const selectionKey = String(opt.id)
+                const chosen       = selectedOptions[axis.slug] === selectionKey
+                const available    = isOptionAvailable(axis.slug, selectionKey)
                 return (
                   <button
                     key={`${axis.slug}-${opt.id}`}
                     type="button"
-                    onClick={() => available && onSelect(axis.slug, opt.id)}
+                    onClick={() => available && onSelect(axis.slug, selectionKey)}
                     style={{
-                      padding:        '6px 14px',
-                      borderRadius:   8,
-                      cursor:         available ? 'pointer' : 'not-allowed',
-                      border:         chosen ? '2px solid #dc2626' : '1.5px solid #e5e7eb',
-                      background:     chosen ? 'rgba(220,38,38,0.06)' : '#f8fafc',
-                      color:          chosen ? '#dc2626' : available ? '#374151' : '#d1d5db',
-                      fontSize:       13,
-                      fontWeight:     chosen ? 700 : 500,
-                      opacity:        available ? 1 : 0.5,
+                      padding: '6px 14px', borderRadius: 8,
+                      cursor: available ? 'pointer' : 'not-allowed',
+                      border: chosen ? '2px solid #dc2626' : '1.5px solid #e5e7eb',
+                      background: chosen ? 'rgba(220,38,38,0.06)' : '#f8fafc',
+                      color: chosen ? '#dc2626' : available ? '#374151' : '#d1d5db',
+                      fontSize: 13, fontWeight: chosen ? 700 : 500,
+                      opacity: available ? 1 : 0.5,
                       textDecoration: available ? 'none' : 'line-through',
-                      transition:     'all 0.15s',
-                      fontFamily:     'inherit',
+                      transition: 'all 0.15s', fontFamily: 'inherit',
                     }}
                   >
                     {opt.value}
@@ -364,9 +330,8 @@ export default function ProductDetailPage() {
   const [quantity,     setQuantity]    = useState(1)
   const [addedToCart,  setAddedToCart] = useState(false)
   const [tab,          setTab]         = useState<'description' | 'details' | 'attributes'>('description')
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({})
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
   const [selectorError,   setSelectorError]   = useState(false)
-
   const [buyNowLoading,   setBuyNowLoading]   = useState(false)
   const buyNowRef = useRef(false)
 
@@ -379,83 +344,98 @@ export default function ProductDetailPage() {
       .then(json => {
         const prod: Product = json.data
         setProduct(prod)
-
         if (prod.has_variants && prod.selectable_axes?.length > 0) {
-          const autoSelections: Record<string, number> = {}
+          const auto: Record<string, string> = {}
           for (const axis of prod.selectable_axes) {
             if (axis.options.length === 1) {
-              autoSelections[axis.slug] = axis.options[0].id
+              if (axis.type === 'color') {
+                const o = axis.options[0] as ColorOption
+                auto[axis.slug] = o.group_key ?? String(o.id)
+              } else {
+                auto[axis.slug] = String(axis.options[0].id)
+              }
             }
           }
-          if (Object.keys(autoSelections).length > 0) {
-            setSelectedOptions(autoSelections)
-          }
+          if (Object.keys(auto).length > 0) setSelectedOptions(auto)
         }
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [slug])
 
-  // ── Variant derived values ─────────────────────────────────────────────────
   const axes        = product?.selectable_axes ?? []
   const variants    = product?.variants ?? []
   const hasVariants = product?.has_variants ?? false
+  const colorAxis   = axes.find(a => a.type === 'color')
+
+  const selectedColorKey = colorAxis ? selectedOptions[colorAxis.slug] : undefined
 
   const selectedVariant = (() => {
     if (!hasVariants || axes.length === 0) return undefined
     if (Object.keys(selectedOptions).length < axes.length) return undefined
     return variants.find(v =>
       axes.every(axis => {
-        const sel      = selectedOptions[axis.slug]
+        const selVal = selectedOptions[axis.slug]
+        if (selVal === undefined) return false
+        if (axis.type === 'color') return v.color_group_key === selVal
         const mapEntry = v.option_map[axis.slug]
-        if (!mapEntry) return false
-        return mapEntry.id === sel
+        return mapEntry && String(mapEntry.id) === selVal
       })
     )
   })()
 
-  const isOptionAvailable = useCallback((axisSlug: string, optionId: number): boolean => {
+  const isOptionAvailable = useCallback((axisSlug: string, selectionValue: string): boolean => {
+    const axis = axes.find(a => a.slug === axisSlug)
     return variants.some(v => {
-      const entry = v.option_map[axisSlug]
-      if (!entry) return false
-      if (entry.id !== optionId) return false
-      return Object.entries(selectedOptions).every(([slug, selId]) => {
+      if (axis?.type === 'color') {
+        if (v.color_group_key !== selectionValue) return false
+      } else {
+        const entry = v.option_map[axisSlug]
+        if (!entry || String(entry.id) !== selectionValue) return false
+      }
+      return Object.entries(selectedOptions).every(([slug, selVal]) => {
         if (slug === axisSlug) return true
+        const otherAxis = axes.find(a => a.slug === slug)
+        if (otherAxis?.type === 'color') return v.color_group_key === selVal
         const otherEntry = v.option_map[slug]
-        return otherEntry?.id === selId
+        return otherEntry && String(otherEntry.id) === selVal
       })
     })
-  }, [variants, selectedOptions])
+  }, [variants, selectedOptions, axes])
 
+  // ── Gallery images ──────────────────────────────────────────────────────────
+  //
+  // Priority order:
+  // 1. Selected variant has its own image_urls → use those
+  // 2. Color selected but no full variant yet → find ANY variant with this
+  //    color_group_key and use its image_urls (all variants in a color group
+  //    share the same images from the backend)
+  // 3. Fallback to product-level images (no color_option_id)
+  // 4. Fallback to primary_image_url
+  //
+  // We deliberately avoid color_images string lookup because the key format
+  // can differ between frontend and backend. Using variant.image_urls is
+  // reliable — the backend populates them directly from color_images[groupKey].
   const galleryImages = (() => {
-    const colorAxis       = axes.find(a => a.type === 'color')
-    const selectedColorId = colorAxis ? selectedOptions[colorAxis.slug] : undefined
-
+    // 1. Selected variant with images
     if (selectedVariant && selectedVariant.image_urls.length > 0) {
       return selectedVariant.image_urls
     }
 
-    if (selectedColorId !== undefined) {
-      const selectedOpt = colorAxis?.options.find((o: any) => o.id === selectedColorId)
-
-      const groupKey =
-        (selectedOpt as any)?.group_key ??
-        (selectedOpt as any)?.ids?.join('|') ??
-        String(selectedColorId)
-
-      const imgs =
-        product?.color_images?.[groupKey] ??
-        product?.color_images?.[String(selectedColorId)]
-
-      if (imgs?.length) return imgs
+    // 2. Any variant matching the selected color group
+    if (selectedColorKey) {
+      const colorVariant = variants.find(v =>
+        v.color_group_key === selectedColorKey && v.image_urls.length > 0
+      )
+      if (colorVariant) return colorVariant.image_urls
     }
 
+    // 3. Product-level images (no variant, no color)
     if (product) {
       const productImgs = product.images
-        .filter(i => !i.color_option_id)
+        .filter(i => !i.color_option_id && !i.variant_id)
         .map(i => resolveImg(i.url ?? i.image_path))
         .filter(Boolean) as string[]
-
       if (productImgs.length > 0) return productImgs
 
       const primary = resolveImg(product.primary_image_url)
@@ -465,14 +445,13 @@ export default function ProductDetailPage() {
     return []
   })()
 
-  const currentUser  = getUser()
-  const isOwnProduct = !!(currentUser && product && currentUser.id === product.seller?.id)
+  const currentUser    = getUser()
+  const isOwnProduct   = !!(currentUser && product && currentUser.id === product.seller?.id)
   const effectiveStock = selectedVariant
     ? selectedVariant.stock
     : hasVariants
       ? variants.reduce((s, v) => s + v.stock, 0)
       : (product?.stock ?? 0)
-
   const effectivePrice = selectedVariant ? selectedVariant.price : (product?.price ?? 0)
   const outOfStock     = effectiveStock <= 0
   const lowStock       = effectiveStock > 0 && effectiveStock <= 10
@@ -490,49 +469,19 @@ export default function ProductDetailPage() {
 
   const handleBuyNow = async () => {
     if (!product || outOfStock || buyNowLoading || buyNowRef.current) return
-
-    if (!isAuthenticated()) {
-      router.push('/auth/login?redirect=' + window.location.pathname)
-      return
-    }
-
-    if (hasVariants && !selectedVariant) {
-      setSelectorError(true)
-      return
-    }
-
-    if (selectedVariant && selectedVariant.stock <= 0) {
-      setSelectorError(true)
-      return
-    }
-
-    buyNowRef.current = true
-    setBuyNowLoading(true)
-    setSelectorError(false)
-
+    if (!isAuthenticated()) { router.push('/auth/login?redirect=' + window.location.pathname); return }
+    if (hasVariants && !selectedVariant) { setSelectorError(true); return }
+    if (selectedVariant && selectedVariant.stock <= 0) { setSelectorError(true); return }
+    buyNowRef.current = true; setBuyNowLoading(true); setSelectorError(false)
     try {
-      const qp = new URLSearchParams({
-        buy_now:      '1',
-        product_slug: product.slug,
-        quantity:     String(quantity),
-      })
-
-      if (selectedVariant?.id) {
-        qp.set('variant_id', String(selectedVariant.id))
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 180))
+      const qp = new URLSearchParams({ buy_now: '1', product_slug: product.slug, quantity: String(quantity) })
+      if (selectedVariant?.id) qp.set('variant_id', String(selectedVariant.id))
+      await new Promise(r => setTimeout(r, 180))
       router.push(`/checkout?${qp.toString()}`)
-    } finally {
-      setBuyNowLoading(false)
-      buyNowRef.current = false
-    }
+    } finally { setBuyNowLoading(false); buyNowRef.current = false }
   }
 
-  const handleToggleFavorite = () => {
-    if (!product) return
-    toggleFavorite(product.id, selectedVariant?.id ?? null)
-  }
+  const handleToggleFavorite = () => { if (product) toggleFavorite(product.id, selectedVariant?.id ?? null) }
 
   const attrEntries   = product?.attribute_data ? Object.values(product.attribute_data) : []
   const hasAttributes = attrEntries.length > 0
@@ -572,8 +521,6 @@ export default function ProductDetailPage() {
       `}</style>
 
       <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Barlow', sans-serif" }}>
-
-        {/* Breadcrumb */}
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8', flexWrap: 'wrap' }}>
             <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Home</Link>
@@ -586,12 +533,9 @@ export default function ProductDetailPage() {
         </div>
 
         <div className="pd-grid" style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 24px 48px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
-
           <Gallery images={galleryImages} productName={product.name} />
 
           <div style={{ animation: 'fadeUp 0.4s ease 0.1s both' }}>
-
-            {/* Tags */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
               {product.category && (
                 <Link href={`/category/${product.category.slug}`}
@@ -601,7 +545,6 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Title + share/fav */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
               <h1 style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', margin: 0, lineHeight: 1.25, flex: 1 }}>{product.name}</h1>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
@@ -616,13 +559,11 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Rating */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 14 }}>
-              {[1, 2, 3, 4, 5].map(i => <Star key={i} size={13} fill={i <= 4 ? '#f59e0b' : 'none'} stroke="#f59e0b" strokeWidth={1.5} />)}
+              {[1,2,3,4,5].map(i => <Star key={i} size={13} fill={i <= 4 ? '#f59e0b' : 'none'} stroke="#f59e0b" strokeWidth={1.5} />)}
               <span style={{ fontSize: 12, color: '#64748b', marginLeft: 4 }}>4.0 ({product.views} views)</span>
             </div>
 
-            {/* Seller */}
             {product.seller && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#dc2626,#7f1d1d)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 800 }}>
@@ -636,7 +577,6 @@ export default function ProductDetailPage() {
 
             <div style={{ height: 1, background: '#f1f5f9', margin: '16px 0' }} />
 
-            {/* Price */}
             <div style={{ marginBottom: 20 }}>
               <span style={{ fontSize: 32, fontWeight: 900, color: '#dc2626', letterSpacing: '-0.02em', lineHeight: 1 }}>{fmt(effectivePrice)}</span>
               {selectedVariant?.price_override && <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 8 }}>variant price</span>}
@@ -647,21 +587,19 @@ export default function ProductDetailPage() {
               <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6, margin: '0 0 20px', fontWeight: 500 }}>{product.short_description}</p>
             )}
 
-            {/* Variant selector */}
             {hasVariants && (
               <VariantSelector
                 axes={axes}
                 selectedOptions={selectedOptions}
-                onSelect={(slug, optId) => {
+                onSelect={(axisSlug, value) => {
                   setSelectorError(false)
-                  setSelectedOptions(prev => ({ ...prev, [slug]: optId }))
+                  setSelectedOptions(prev => ({ ...prev, [axisSlug]: value }))
                 }}
                 isOptionAvailable={isOptionAvailable}
                 selectorError={selectorError}
               />
             )}
 
-            {/* Quantity */}
             <div style={{ marginBottom: 20 }}>
               <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 10 }}>Quantity</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 0, width: 'fit-content', border: '1.5px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
@@ -680,91 +618,30 @@ export default function ProductDetailPage() {
               </p>
             </div>
 
-            {/* CTA Buttons */}
             <div style={{ display: 'flex', gap: 10, marginBottom: 24, alignItems: 'center' }}>
               {isOwnProduct ? (
-                <div style={{
-                  flex: 1, height: 52,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  background: 'rgba(99,102,241,0.06)',
-                  border: '2px dashed rgba(99,102,241,0.35)',
-                  borderRadius: 12, color: '#6366f1',
-                  fontWeight: 800, fontSize: 13, letterSpacing: '0.02em',
-                }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
-                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                  </svg>
+                <div style={{ flex: 1, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'rgba(99,102,241,0.06)', border: '2px dashed rgba(99,102,241,0.35)', borderRadius: 12, color: '#6366f1', fontWeight: 800, fontSize: 13 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
                   This is your product
                 </div>
               ) : (
                 <>
-                  <button
-                    className="buy-now-btn"
-                    onClick={handleBuyNow}
-                    disabled={outOfStock || buyNowLoading}
-                    style={{
-                      flex: 1, height: 52, background: '#fff',
-                      color: outOfStock ? '#9ca3af' : '#dc2626',
-                      border: `2px solid ${outOfStock ? '#e5e7eb' : '#dc2626'}`,
-                      borderRadius: 12,
-                      cursor: outOfStock || buyNowLoading ? 'not-allowed' : 'pointer',
-                      fontWeight: 800, fontSize: 14,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                      transition: 'all 0.2s', fontFamily: 'inherit',
-                      letterSpacing: '0.01em', opacity: outOfStock ? 0.6 : 1,
-                    }}
-                  >
-                    {buyNowLoading
-                      ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} />
-                      : <><Zap size={16} />{outOfStock ? 'Out of Stock' : 'Buy Now'}</>
-                    }
+                  <button className="buy-now-btn" onClick={handleBuyNow} disabled={outOfStock || buyNowLoading}
+                    style={{ flex: 1, height: 52, background: '#fff', color: outOfStock ? '#9ca3af' : '#dc2626', border: `2px solid ${outOfStock ? '#e5e7eb' : '#dc2626'}`, borderRadius: 12, cursor: outOfStock || buyNowLoading ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.2s', fontFamily: 'inherit', opacity: outOfStock ? 0.6 : 1 }}>
+                    {buyNowLoading ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} /> : <><Zap size={16} />{outOfStock ? 'Out of Stock' : 'Buy Now'}</>}
                   </button>
-
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={outOfStock || cartLoading}
-                    style={{
-                      flex: 1, height: 52,
-                      background: outOfStock
-                        ? '#e5e7eb'
-                        : addedToCart
-                          ? 'linear-gradient(135deg,#10b981,#059669)'
-                          : 'linear-gradient(135deg,#dc2626,#b91c1c)',
-                      color: outOfStock ? '#9ca3af' : '#fff',
-                      border: 'none', borderRadius: 12,
-                      cursor: outOfStock ? 'not-allowed' : 'pointer',
-                      fontWeight: 800, fontSize: 14,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                      boxShadow: outOfStock ? 'none' : addedToCart ? '0 8px 24px rgba(16,185,129,0.3)' : '0 8px 24px rgba(220,38,38,0.3)',
-                      transition: 'all 0.2s', fontFamily: 'inherit',
-                    }}>
-                    {cartLoading
-                      ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} />
-                      : addedToCart
-                      ? <><CheckCircle size={18} />Added!</>
-                      : <><ShoppingCart size={18} />{outOfStock ? 'Out of Stock' : 'Add to Cart'}</>
-                    }
+                  <button onClick={handleAddToCart} disabled={outOfStock || cartLoading}
+                    style={{ flex: 1, height: 52, background: outOfStock ? '#e5e7eb' : addedToCart ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#dc2626,#b91c1c)', color: outOfStock ? '#9ca3af' : '#fff', border: 'none', borderRadius: 12, cursor: outOfStock ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: outOfStock ? 'none' : addedToCart ? '0 8px 24px rgba(16,185,129,0.3)' : '0 8px 24px rgba(220,38,38,0.3)', transition: 'all 0.2s', fontFamily: 'inherit' }}>
+                    {cartLoading ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} /> : addedToCart ? <><CheckCircle size={18} />Added!</> : <><ShoppingCart size={18} />{outOfStock ? 'Out of Stock' : 'Add to Cart'}</>}
                   </button>
-
-                  <button
-                    onClick={handleToggleFavorite}
-                    style={{
-                      width: 52, height: 52, flexShrink: 0,
-                      borderRadius: '50%',
-                      border: `2px solid ${favorited ? '#dc2626' : '#e5e7eb'}`,
-                      background: favorited ? 'rgba(220,38,38,0.06)' : '#fff',
-                      cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.2s',
-                    }}>
+                  <button onClick={handleToggleFavorite}
+                    style={{ width: 52, height: 52, flexShrink: 0, borderRadius: '50%', border: `2px solid ${favorited ? '#dc2626' : '#e5e7eb'}`, background: favorited ? 'rgba(220,38,38,0.06)' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                     <Heart size={20} fill={favorited ? '#dc2626' : 'none'} stroke={favorited ? '#dc2626' : '#94a3b8'} strokeWidth={2} />
                   </button>
                 </>
               )}
             </div>
 
-            {/* Trust badges */}
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden', marginBottom: 20 }}>
               {[
                 { icon: <Truck size={18} color="#10b981" />,       title: 'Free Delivery',   desc: 'On orders over 50 DT across Tunisia' },
@@ -782,7 +659,6 @@ export default function ProductDetailPage() {
               ))}
             </div>
 
-            {/* Tabs */}
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
               <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9' }}>
                 {([

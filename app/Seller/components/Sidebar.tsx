@@ -17,10 +17,12 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../layout';
 import { useSubscription } from '@/app/hooks/useSubscription';
+import { Package2 } from 'lucide-react'; // add to existing lucide import line
 
 const BASE_NAV = [
   { href: '/seller',            label: 'Dashboard',  icon: LayoutDashboard, premium: false },
   { href: '/seller/products',   label: 'Products',   icon: Package,         premium: false },
+  { href: '/seller/packs',      label: 'Packs',      icon: Package2,        premium: false }, // ← ADD
   { href: '/seller/orders',     label: 'Orders',     icon: ShoppingBag,     premium: false },
   { href: '/seller/complaints', label: 'Complaints', icon: AlertTriangle,   premium: false },
   { href: '/seller/promote',    label: 'Promote',    icon: Zap,             premium: false },

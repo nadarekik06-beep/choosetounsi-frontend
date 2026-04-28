@@ -9,6 +9,9 @@ import { isAuthenticated } from '@/lib/auth'
 import SponsoredProductsSection from '@/app/components/SponsoredProductsSection';
 import AboveFoldProducts from './AboveFoldProducts'
 import BecomeSellerBanner from './HomeCtaSection'
+import PacksSection from '@/app/components/sections/PacksSection'
+
+
 interface Category {
   id: number
   name: string
@@ -629,6 +632,8 @@ export default function Hero() {
             <CategoryCarousel categories={categories} loading={catsLoading} />
           </div>
         </div>
+        {/* ══ BUNDLE DEALS — shown right after categories ══ */}
+<PacksSection />   {/* ← ADD THIS LINE */}
         {/* ── SPONSORED PRODUCTS ── */}
         <div style={{ background: '#f7f7f9' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
