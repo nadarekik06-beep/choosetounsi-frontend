@@ -1,154 +1,251 @@
-// app/components/promotions/FlashSalesSection.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+/**
+ * FlashSalesSection.tsx — ChooseTounsi
+ * Redesigned: Trendyol-style flash cards in a 4-col grid.
+ * Cards match bundle card size (aspect-ratio 3/4 image stage).
+ * Each card: discount badge, pulsing FLASH badge, stock progress bar,
+ *            full-width countdown bar at bottom (Trendyol style).
+ */
+
+import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { publicPromotionsApi } from '@/lib/promotionsApi'
 import CountdownTimer from './CountdownTimer'
-import PromotionBadge from './PromotionBadge'
 
 const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 
-const money = (n: number) => `${Number(n).toFixed(2)} DT`
+function resolveImg(url: string | null | undefined): string | null {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  return `${ORIGIN}/storage/${url.replace(/^\/storage\//, '').replace(/^\//, '')}`
+}
 
-export default function FlashSalesSection() {
-  const [flashSales, setFlashSales] = useState<any[]>([])
-  const [loading,    setLoading]    = useState(true)
+const money = (n: number | string) => `${Number(n).toFixed(2)} DT`
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface FlashProduct {
+  id: number
+  name: string
+  slug: string
+  effective_price: number
+  original_price: number
+  primary_image_url?: string | null
+  seller?: { name: string } | null
+  stock?: number
+}
+
+interface FlashSale {
+  id: number
+  name: string
+  discount_label: string
+  ends_at: string
+  flash_stock?: number | null
+  flash_stock_remaining?: number | null
+  products: FlashProduct[]
+}
+
+// ─── Flash Card — Trendyol-style ──────────────────────────────────────────────
+function FlashCard({ product, sale, idx }: { product: FlashProduct; sale: FlashSale; idx: number }) {
+  const [hov, setHov] = useState(false)
+  const [imgErr, setErr] = useState(false)
+
+  const img = resolveImg(product.primary_image_url)
+  const discPct = product.original_price > 0
+    ? Math.round(((product.original_price - product.effective_price) / product.original_price) * 100)
+    : 0
+
+  // Stock progress
+  const hasStock = sale.flash_stock != null && sale.flash_stock > 0
+  const stockUsed = hasStock
+    ? Math.max(0, sale.flash_stock! - (sale.flash_stock_remaining ?? sale.flash_stock!))
+    : 0
+  const stockPct = hasStock ? Math.min(100, (stockUsed / sale.flash_stock!) * 100) : 0
+  const remaining = sale.flash_stock_remaining ?? product.stock ?? null
+
+  // Urgency level for styling
+  const isUrgent = remaining != null && remaining <= 3
+
+  return (
+    <Link
+      href={`/products/${product.slug}`}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      className="fsc"
+      style={{ '--d': `${Math.min(idx * 0.055, 0.5)}s` } as React.CSSProperties}
+    >
+      {/* ── Image stage — same 3/4 as bundle cards ── */}
+      <div className="fsc-stage">
+        {img && !imgErr ? (
+          <img
+            src={img}
+            alt={product.name}
+            className={`fsc-img${hov ? ' fsc-img-zoom' : ''}`}
+            onError={() => setErr(true)}
+            draggable={false}
+          />
+        ) : (
+          <div className="fsc-noimg">
+            <svg width="36" height="36" fill="none" stroke="#ccc" strokeWidth="1.2" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="m21 15-5-5L5 21"/>
+            </svg>
+          </div>
+        )}
+
+        {/* Badges top-left */}
+        <div className="fsc-badges">
+          {discPct > 0 && (
+            <span className="fsc-badge fsc-disc">-{discPct}%</span>
+          )}
+          <span className="fsc-badge fsc-flash">
+            <span className="fsc-pulse" />
+            ⚡ FLASH
+          </span>
+        </div>
+
+        {/* Urgency overlay when very low stock */}
+        {isUrgent && (
+          <div className="fsc-urgent">
+            🔥 Only {remaining} left!
+          </div>
+        )}
+
+        {/* CTA bar */}
+        <div className={`fsc-cta${hov ? ' show' : ''}`}>
+          <button className="fsc-add" onClick={e => e.preventDefault()}>
+            <svg width="12" height="12" fill="none" stroke="#fff" strokeWidth="2.2" viewBox="0 0 24 24">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            <span>View Deal</span>
+          </button>
+        </div>
+
+        {/* ── Countdown bar — full width at bottom (Trendyol style) ── */}
+        <div className="fsc-countdown-bar">
+          <CountdownTimer endsAt={sale.ends_at} compact={false} />
+        </div>
+      </div>
+
+      {/* ── Stock progress bar ── */}
+      {hasStock && (
+        <div className="fsc-stock-wrap">
+          <div className="fsc-stock-bar">
+            <div
+              className={`fsc-stock-fill${stockPct > 75 ? ' hot' : ''}`}
+              style={{ width: `${stockPct}%` }}
+            />
+          </div>
+          <span className="fsc-stock-label">
+            {remaining != null ? `${remaining} left` : 'Limited stock'}
+          </span>
+        </div>
+      )}
+
+      {/* ── Info ── */}
+      <div className="fsc-info">
+        {product.seller?.name && (
+          <p className="fsc-seller">{product.seller.name}</p>
+        )}
+        <p className="fsc-name">{product.name}</p>
+        <div className="fsc-prices">
+          <span className="fsc-price">{money(product.effective_price)}</span>
+          {product.original_price > product.effective_price && (
+            <span className="fsc-orig">{money(product.original_price)}</span>
+          )}
+        </div>
+      </div>
+    </Link>
+  )
+}
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+const FlashSkel = () => (
+  <div className="fsk">
+    <div className="fsk-img" />
+    <div className="fsk-bar" />
+    <div className="fsk-body">
+      <div className="fsk-ln" style={{ width: '40%', height: 9 }} />
+      <div className="fsk-ln" style={{ width: '75%', height: 13, marginTop: 5 }} />
+      <div className="fsk-ln" style={{ width: '45%', height: 15, marginTop: 6 }} />
+    </div>
+  </div>
+)
+
+// ─── Section ──────────────────────────────────────────────────────────────────
+interface Props {
+  // Optionally pre-pass data from parent to avoid double fetch
+  preloadedSales?: FlashSale[]
+  loading?: boolean
+}
+
+export default function FlashSalesSection({ preloadedSales, loading: extLoading }: Props) {
+  const [flashSales, setFlashSales] = useState<FlashSale[]>(preloadedSales ?? [])
+  const [loading, setLoading] = useState(extLoading ?? !preloadedSales)
 
   useEffect(() => {
+    if (preloadedSales) return
     publicPromotionsApi.flashSales()
       .then(res => setFlashSales(res.data ?? []))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }, [preloadedSales])
 
-  // Don't render the section at all when there are no flash sales
-  if (!loading && flashSales.length === 0) return null
+  // All products flattened across all sales (for unified grid)
+  const allProducts: Array<{ product: FlashProduct; sale: FlashSale }> = flashSales.flatMap(sale =>
+    (sale.products ?? []).map(p => ({ product: p, sale }))
+  )
+
+  if (!loading && allProducts.length === 0) return null
+
+  // Nearest ending sale for section-level countdown
+  const nearestSale = flashSales.length > 0
+    ? flashSales.reduce((a, b) => new Date(a.ends_at) < new Date(b.ends_at) ? a : b)
+    : null
 
   return (
-    <section style={{
-      background: 'linear-gradient(135deg,#7f1d1d,#dc2626)',
-      margin: '0 0 0',
-      padding: '24px 32px',
-    }}>
-      <div style={{ maxWidth: 1520, margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 22 }}>⚡</span>
-            <div>
-              <h2 style={{ fontSize: 18, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.01em' }}>
-                Flash Sales
-              </h2>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', margin: 0, fontWeight: 500 }}>
-                Limited time · Limited stock
-              </p>
-            </div>
+    <section className="fss" id="flash-sales">
+      {/* Section header */}
+      <div className="fss-header">
+        <div className="fss-header-left">
+          <div className="fss-icon">⚡</div>
+          <div>
+            <h2 className="fss-title">Flash Sales</h2>
+            <p className="fss-sub">Limited time · Limited stock</p>
           </div>
         </div>
-
-        {/* Flash sale groups */}
-        {loading ? (
-          // Skeleton
-          <div style={{ display: 'flex', gap: 12 }}>
-            {[1,2,3,4].map(i => (
-              <div key={i} style={{
-                width: 160, background: 'rgba(255,255,255,0.1)',
-                borderRadius: 10, height: 220,
-                animation: 'pulse 1.5s ease-in-out infinite',
-              }} />
-            ))}
+        {nearestSale && !loading && (
+          <div className="fss-global-timer">
+            <span className="fss-timer-label">Ends in</span>
+            <CountdownTimer endsAt={nearestSale.ends_at} />
           </div>
-        ) : (
-          flashSales.map(sale => (
-            <div key={sale.id} style={{ marginBottom: 24 }}>
-              {/* Sale header with countdown */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                <span style={{ fontSize: 13, fontWeight: 800, color: 'rgba(255,255,255,0.9)' }}>
-                  {sale.name}
-                </span>
-                <span style={{
-                  fontSize: 11, background: 'rgba(255,255,255,0.15)',
-                  color: '#fff', padding: '2px 8px', borderRadius: 999, fontWeight: 700,
-                }}>
-                  {sale.discount_label}
-                </span>
-                <div style={{ marginLeft: 'auto' }}>
-                  <CountdownTimer endsAt={sale.ends_at} />
-                </div>
-              </div>
-
-              {/* Product strip */}
-              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
-                {sale.products.map((p: any) => (
-                  <Link
-                    key={p.id}
-                    href={`/products/${p.slug}`}
-                    style={{
-                      width: 150, flexShrink: 0, borderRadius: 10,
-                      background: '#fff', overflow: 'hidden',
-                      textDecoration: 'none', display: 'flex', flexDirection: 'column',
-                      border: '2px solid rgba(255,255,255,0.2)',
-                      transition: 'transform 0.15s',
-                    }}
-                  >
-                    {/* Image */}
-                    <div style={{ width: '100%', aspectRatio: '1', background: '#f5f5f5', position: 'relative' }}>
-                      {p.primary_image_url && (
-                        <img
-                          src={p.primary_image_url.startsWith('http')
-                            ? p.primary_image_url
-                            : `${ORIGIN}${p.primary_image_url}`}
-                          alt={p.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                        />
-                      )}
-                      {/* Stock remaining badge */}
-                      {sale.flash_stock_remaining !== null && (
-                        <div style={{
-                          position: 'absolute', bottom: 4, left: 4, right: 4,
-                          background: 'rgba(0,0,0,0.55)', borderRadius: 4,
-                          padding: '2px 5px',
-                        }}>
-                          <div style={{
-                            height: 3, background: 'rgba(255,255,255,0.3)', borderRadius: 999, overflow: 'hidden',
-                          }}>
-                            <div style={{
-                              height: '100%', borderRadius: 999, background: '#fbbf24',
-                              width: `${Math.min(100, (sale.flash_stock_remaining / (sale.flash_stock ?? 100)) * 100)}%`,
-                            }} />
-                          </div>
-                          <p style={{ fontSize: 8, color: '#fff', margin: '2px 0 0', fontWeight: 700, textAlign: 'center' }}>
-                            {sale.flash_stock_remaining} left
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div style={{ padding: '7px 9px 9px' }}>
-                      <p style={{
-                        fontSize: 11, fontWeight: 600, color: '#1f2937',
-                        lineHeight: 1.35, margin: '0 0 4px',
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>{p.name}</p>
-                      <p style={{ fontSize: 13, fontWeight: 900, color: '#dc2626', margin: 0 }}>
-                        {money(p.effective_price)}
-                      </p>
-                      {p.original_price !== p.effective_price && (
-                        <p style={{ fontSize: 9, color: '#bbb', textDecoration: 'line-through', margin: '1px 0 0' }}>
-                          {money(p.original_price)}
-                        </p>
-                      )}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))
         )}
       </div>
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
+
+      {/* Sale name labels if multiple sales */}
+      {!loading && flashSales.length > 1 && (
+        <div className="fss-sale-tabs">
+          {flashSales.map(sale => (
+            <div key={sale.id} className="fss-sale-tab">
+              <span className="fss-sale-name">{sale.name}</span>
+              <span className="fss-sale-badge">{sale.discount_label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Grid */}
+      <div className="fss-grid">
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => <FlashSkel key={i} />)
+          : allProducts.map(({ product, sale }, i) => (
+              <FlashCard key={`${sale.id}-${product.id}`} product={product} sale={sale} idx={i} />
+            ))
+        }
+      </div>
     </section>
   )
 }
