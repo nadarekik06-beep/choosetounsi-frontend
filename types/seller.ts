@@ -33,7 +33,6 @@ export interface TopWilaya {
   orders: number;
 }
 
-/* ── NEW: Top Products ── */
 export interface TopProduct {
   id: number;
   name: string;
@@ -45,10 +44,10 @@ export interface TopProduct {
   is_approved: boolean;
   primary_image_url: string | null;
   category_name: string | null;
-  total_sales: number;       // units sold across all orders
-  total_revenue: number;     // revenue generated
-  total_orders: number;      // number of distinct orders containing this product
-  views: number;             // product view count (if tracked)
+  total_sales: number;
+  total_revenue: number;
+  total_orders: number;
+  views: number;
 }
 
 export type OrderStatusDistribution = Record<string, number>;
@@ -61,7 +60,7 @@ export interface RecentOrder {
   status: OrderStatus;
   payment_status: PaymentStatus;
   created_at: string;
-  user?: { id: number; name: string; email: string };
+  user?: { id: number; name: string };
 }
 
 export interface DashboardData {
@@ -70,7 +69,7 @@ export interface DashboardData {
   order_status_distribution: OrderStatusDistribution;
   top_clients: TopClient[];
   top_wilayas: TopWilaya[];
-  top_products: TopProduct[];   // ← NEW
+  top_products: TopProduct[];
   recent_orders: RecentOrder[];
 }
 
@@ -133,11 +132,16 @@ export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
 
 export type PaymentMethod = 'cod' | 'card' | 'd17' | 'wallet';
 
+/**
+ * PRIVACY UPDATE: email intentionally removed.
+ * Sellers only see customer name — email is private customer data
+ * and is stripped server-side in SellerOrderController.
+ */
 export interface Customer {
-  id: number;
+  id?: number;
   name: string;
-  email: string;
-  state: string | null;
+  // email: INTENTIONALLY OMITTED
+  state?: string | null;
 }
 
 export interface Order {
@@ -148,11 +152,26 @@ export interface Order {
   total_amount: number;
   status: OrderStatus;
   payment_status: PaymentStatus;
-  payment_method: PaymentMethod | null; // ← ADDED
+  payment_method: PaymentMethod | null;
   wilaya: string | null;
   created_at: string;
 }
 
+/**
+ * A single attribute on a variant, e.g. { slug: 'color', label: 'Color', value: 'Red', color_hex: '#ff0000' }
+ */
+export interface VariantAttribute {
+  slug: string;
+  label: string;
+  value: string;
+  color_hex: string | null;
+}
+
+/**
+ * UPDATED: OrderItem now includes variant details for the seller.
+ * All variant fields are nullable for backward compat with
+ * items that have no variant (simple products).
+ */
 export interface OrderItem {
   id: number;
   product_id: number;
@@ -161,6 +180,12 @@ export interface OrderItem {
   quantity: number;
   price: number;
   total: number;
+
+  // Variant fields (null for simple products)
+  variant_id: number | null;
+  variant_label: string | null;
+  variant_attributes: VariantAttribute[];   // [{ slug, label, value, color_hex }]
+  variant_image_url: string | null;
 }
 
 export interface OrderDetail {

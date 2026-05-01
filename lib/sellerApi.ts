@@ -416,4 +416,12 @@ export const packsApi = {
 
   delete: (id: number) => jsonRequest<any>('DELETE', `/seller/packs/${id}`),
 }
+export const invoiceApi = {
+  /**
+   * GET /api/seller/orders/{id}/invoice
+   * Returns enriched invoice data: seller info, customer, items, totals.
+   */
+  get: (sellerOrderId: number) =>
+    jsonRequest<any>('GET', `/seller/orders/${sellerOrderId}/invoice`),
+}
 export default api
