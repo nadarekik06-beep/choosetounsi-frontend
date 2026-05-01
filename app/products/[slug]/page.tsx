@@ -18,9 +18,6 @@ import PromotionBadge from '@/app/components/promotions/PromotionBadge'
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL      = `${STORAGE_BASE}/api`
 
-// ← REMOVED: const [activePromotion, setActivePromotion] = useState<any>(null)
-//   was incorrectly placed here at module level — hooks only work inside components
-
 function resolveImg(path: string | null | undefined): string | null {
   if (!path) return null
   if (path.startsWith('http')) return path
@@ -51,7 +48,6 @@ interface ColorOption {
   swatches?: { id: number; value: string; color_hex?: string | null }[]
 }
 
-// ── NEW: Active promotion shape returned by ProductResource ───────────────────
 interface ActivePromotion {
   id: number
   type: 'flash_sale' | 'discount'
@@ -74,13 +70,13 @@ interface Product {
   seller: { id: number; name: string; email: string } | null
   attribute_data?: Record<string, AttributeData>
   has_variants: boolean
-  // ── NEW: promotion fields appended by ProductResource ─────────────────────
-  effective_price?: number    // computed price (= price when no promo active)
+  effective_price?: number
   discount_amount?: number
   promotion?: ActivePromotion | null
   variants: (ProductVariant & {
     color_option_id?: number | null
     color_group_key?: string | null
+    original_price?: number          // ← FIXED: base price before promotion (for strikethrough)
     image_urls: string[]
     primary_image_url?: string | null
   })[]
@@ -355,7 +351,6 @@ export default function ProductDetailPage() {
   const [selectedOptions, setSelectedOptions]= useState<Record<string, string>>({})
   const [selectorError,   setSelectorError]  = useState(false)
   const [buyNowLoading,   setBuyNowLoading]  = useState(false)
-  // ── NEW: promotion state — correctly placed inside the component ──────────
   const [activePromotion, setActivePromotion]= useState<ActivePromotion | null>(null)
   const buyNowRef = useRef(false)
 
@@ -363,13 +358,12 @@ export default function ProductDetailPage() {
     if (!slug) return
     setLoading(true)
     setSelectedOptions({})
-    setActivePromotion(null) // ← reset on slug change
+    setActivePromotion(null)
     fetch(`${API_URL}/products/${slug}`, { headers: { Accept: 'application/json' } })
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(json => {
         const prod: Product = json.data
         setProduct(prod)
-        // ── NEW: read promotion appended by ProductResource ───────────────
         if (prod.promotion) {
           setActivePromotion(prod.promotion)
         }
@@ -462,13 +456,17 @@ export default function ProductDetailPage() {
       ? variants.reduce((s, v) => s + v.stock, 0)
       : (product?.stock ?? 0)
 
-  // ── NEW: use effective_price from API when promotion is active ────────────
-  // Priority: variant price_override → promotion effective_price → base price
   const effectivePrice = selectedVariant
     ? selectedVariant.price
     : (activePromotion && product?.effective_price != null)
       ? product.effective_price
       : (product?.price ?? 0)
+
+  const originalPrice = selectedVariant
+    ? (selectedVariant.original_price ?? (selectedVariant.price_override ?? Number(product?.price ?? 0)))
+    : Number(product?.price ?? 0)
+
+const hasPromoDiscount = activePromotion && Number(effectivePrice) < originalPrice
 
   const outOfStock = effectiveStock <= 0
   const lowStock   = effectiveStock > 0 && effectiveStock <= 10
@@ -594,7 +592,7 @@ export default function ProductDetailPage() {
 
             <div style={{ height: 1, background: '#f1f5f9', margin: '16px 0' }} />
 
-            {/* ── NEW: Promotion banner — renders only when a promotion is active ── */}
+            {/* Promotion banner */}
             {activePromotion && (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
@@ -602,45 +600,36 @@ export default function ProductDetailPage() {
                 background: activePromotion.is_flash_sale
                   ? 'linear-gradient(135deg,rgba(220,38,38,0.08),rgba(220,38,38,0.03))'
                   : 'rgba(5,150,105,0.07)',
-                border: `1px solid ${activePromotion.is_flash_sale
-                  ? 'rgba(220,38,38,0.2)'
-                  : 'rgba(5,150,105,0.2)'}`,
+                border: `1px solid ${activePromotion.is_flash_sale ? 'rgba(220,38,38,0.2)' : 'rgba(5,150,105,0.2)'}`,
                 borderRadius: 10,
               }}>
                 <PromotionBadge promotion={activePromotion} size="md" />
                 {activePromotion.is_flash_sale && (
                   <>
                     <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>Ends in</span>
-                    <CountdownTimer
-                      endsAt={activePromotion.ends_at}
-                      compact
-                      onExpire={() => setActivePromotion(null)}
-                    />
+                    <CountdownTimer endsAt={activePromotion.ends_at} compact onExpire={() => setActivePromotion(null)} />
                   </>
                 )}
                 {activePromotion.flash_stock_remaining !== null && (
-                  <span style={{
-                    fontSize: 11, color: '#dc2626', fontWeight: 700, marginLeft: 'auto',
-                  }}>
+                  <span style={{ fontSize: 11, color: '#dc2626', fontWeight: 700, marginLeft: 'auto' }}>
                     Only {activePromotion.flash_stock_remaining} left at this price!
                   </span>
                 )}
               </div>
             )}
 
-            {/* ── Price block ── */}
+            {/* Price block */}
             <div style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
                 <span style={{ fontSize: 32, fontWeight: 900, color: '#dc2626', letterSpacing: '-0.02em', lineHeight: 1 }}>
                   {fmt(effectivePrice)}
                 </span>
-                {/* Show struck-through original price when promotion is active */}
-                {activePromotion && !selectedVariant && (
+                {hasPromoDiscount && (
                   <span style={{ fontSize: 18, fontWeight: 600, color: '#94a3b8', textDecoration: 'line-through' }}>
-                    {fmt(product.price)}
+                    {fmt(originalPrice)}
                   </span>
                 )}
-                {selectedVariant?.price_override && (
+                {selectedVariant?.price_override && !activePromotion && (
                   <span style={{ fontSize: 12, color: '#94a3b8' }}>variant price</span>
                 )}
               </div>

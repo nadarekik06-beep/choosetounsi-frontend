@@ -376,7 +376,8 @@ export default function PackDetailPage() {
   const router = useRouter()
   const slug   = params?.slug as string
 
-  const { addToCart, cartLoading, isFavorited, toggleFavorite } = useCart()
+  // ← FIX: destructure addPackToCart instead of addToCart
+  const { addPackToCart, cartLoading, isFavorited, toggleFavorite } = useCart()
 
   const [pack,          setPack]          = useState<PackDetail | null>(null)
   const [loading,       setLoading]       = useState(true)
@@ -420,7 +421,18 @@ export default function PackDetailPage() {
     })
   }, [pack, selections])
 
-  // Add all items to cart via existing CartContext
+  // ── FIX: build selections array for addPackToCart ─────────────────────────
+  // selections state: { [pack_item_id]: variant_id | null }
+  // CartContext expects: { pack_item_id, variant_id }[]
+  const buildPackSelections = useCallback(() => {
+    if (!pack) return []
+    return pack.items.map(item => ({
+      pack_item_id: item.id,
+      variant_id:   selections[item.id] ?? null,
+    }))
+  }, [pack, selections])
+
+  // ── FIXED: Add pack as ONE cart entry at pack price ───────────────────────
   const handleAddToCart = useCallback(async () => {
     if (!pack) return
     if (!isAuthenticated()) {
@@ -434,20 +446,18 @@ export default function PackDetailPage() {
     }
     setSelectorError(false); setCartError(''); setAddingToCart(true)
     try {
-      for (const item of pack.items) {
-        if (!item.product) continue
-        await addToCart(item.product.id, item.quantity, selections[item.id] ?? null)
-      }
+      // ← FIXED: single call with pack_id + selections → 1 cart row at pack_price
+      await addPackToCart(pack.id, buildPackSelections())
       setAddedToCart(true)
       setTimeout(() => setAddedToCart(false), 3000)
     } catch (err: any) {
-      setCartError(err?.message ?? 'Failed to add some items.')
+      setCartError(err?.message ?? 'Failed to add bundle to cart.')
     } finally {
       setAddingToCart(false)
     }
-  }, [pack, selections, allVariantsSelected, addToCart, router, slug])
+  }, [pack, allVariantsSelected, addPackToCart, buildPackSelections, router, slug])
 
-  // Buy now: add to cart then go to checkout
+  // ── FIXED: Buy Now — add pack as ONE entry then go to checkout ────────────
   const handleBuyNow = useCallback(async () => {
     if (!pack) return
     if (!isAuthenticated()) {
@@ -461,17 +471,15 @@ export default function PackDetailPage() {
     }
     setSelectorError(false); setCartError(''); setAddingToCart(true)
     try {
-      for (const item of pack.items) {
-        if (!item.product) continue
-        await addToCart(item.product.id, item.quantity, selections[item.id] ?? null)
-      }
+      // ← FIXED: single call with pack_id + selections → 1 cart row at pack_price
+      await addPackToCart(pack.id, buildPackSelections())
       router.push('/checkout')
     } catch (err: any) {
       setCartError(err?.message ?? 'Failed to proceed.')
     } finally {
       setAddingToCart(false)
     }
-  }, [pack, selections, allVariantsSelected, addToCart, router, slug])
+  }, [pack, allVariantsSelected, addPackToCart, buildPackSelections, router, slug])
 
   // Gallery: pack image + product thumbnails
   const galleryImages = pack
@@ -691,7 +699,7 @@ export default function PackDetailPage() {
               </div>
             )}
 
-            {/* CTA Buttons — same style as product page */}
+            {/* CTA Buttons */}
             <div style={{ display: 'flex', gap: 10, marginBottom: 20, alignItems: 'center' }}>
               {/* Buy Now */}
               <button
@@ -760,7 +768,7 @@ export default function PackDetailPage() {
               </button>
             </div>
 
-            {/* Trust badges — same as product page */}
+            {/* Trust badges */}
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden', marginBottom: 20 }}>
               {[
                 { icon: <Truck size={17} color="#10b981" />,       title: 'Free Delivery',   desc: 'On orders over 50 DT across Tunisia' },
