@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * app/seller/orders/[id]/invoice/page.tsx
+ * app/invoice/[id]/page.tsx
  *
  * Professional A4 invoice page.
  * Opens in a new tab. Supports:
@@ -96,6 +96,12 @@ export default function InvoicePage() {
   const [data,    setData]    = useState<InvoiceData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(false)
+  // ✅ FIX: resolve origin only after mount so SSR never returns empty string
+  const [origin,  setOrigin]  = useState('')
+
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
 
   useEffect(() => {
     if (!id) return
@@ -226,7 +232,7 @@ export default function InvoicePage() {
         <div className="action-bar">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <img
-              src={`${typeof window !== 'undefined' ? window.location.origin : ''}/images/logo-chili.png`}
+              src={`${origin}/images/logo-chili.png`}
               alt="ChooseTounsi"
               style={{ height: 32, width: 'auto' }}
             />
@@ -271,12 +277,10 @@ export default function InvoicePage() {
             {/* Logo + brand */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <img
-                src={`${typeof window !== 'undefined' ? window.location.origin : ''}/images/logo-chili.png`}
+                src={`${origin}/images/logo-chili.png`}
                 alt="ChooseTounsi"
                 style={{
                   height: 56, width: 'auto',
-                  filter: 'brightness(0) invert(1)',
-                  opacity: 0.95,
                 }}
               />
               <div>
@@ -571,7 +575,7 @@ export default function InvoicePage() {
                   Merci pour votre commande sur ChooseTounsi !
                 </p>
                 <p style={{ fontSize: 10, color: '#94a3b8' }}>
-                  Pour toute question, contactez choosetounsi.tn
+                  Pour toute question, contactez le vendeur ou visitez choosetounsi.tn
                 </p>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>

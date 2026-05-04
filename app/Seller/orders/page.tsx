@@ -351,7 +351,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
      <h2 style={{ fontSize: 15, fontWeight: 800, color: textMain, margin: 0 }}>Order Details</h2>
      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
        <button
-        onClick={() => window.open(`/seller/orders/${orderId}/invoice`, '_blank')}
+        onClick={() => window.open(`/invoice/${orderId}`, '_blank')}
          style={{
            display: 'inline-flex', alignItems: 'center', gap: 6,
            padding: '6px 14px',
