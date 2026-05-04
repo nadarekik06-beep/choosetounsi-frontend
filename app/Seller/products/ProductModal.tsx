@@ -15,7 +15,8 @@ import ColorGroupImageUploader from '../components/ColorGroupImageUploader'
 import VariantImageManager, { type VariantForImageManager } from '../components/VariantImageManager'
 import type { AttributeValues, Attribute } from '@/types/Attributes'
 import UpdateRequestModal from 'app/seller/components/UpdateRequestModal'
-
+import { useSubscriptionStandalone } from '@/app/hooks/useSubscription';
+import AiDescriptionPanel from '../components/AiDescriptionPanel';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FullProduct {
@@ -271,9 +272,9 @@ const inputCls = (err?: string) =>
    outline-none focus:ring-2 focus:ring-red-400/30 focus:border-red-400 transition bg-white
    ${err ? 'border-red-300 bg-red-50' : 'border-slate-200'}`
 
-function Field({ label, required, error, hint, children, locked }: {
+function Field({ label, required, error, hint, children, locked, labelAction }: {
   label: string; required?: boolean; error?: string; hint?: string
-  children: React.ReactNode; locked?: boolean
+  children: React.ReactNode; locked?: boolean; labelAction?: React.ReactNode
 }) {
   return (
     <div>
@@ -290,6 +291,11 @@ function Field({ label, required, error, hint, children, locked }: {
             borderRadius: 4, textTransform: 'none', letterSpacing: 0,
           }}>
             <Lock size={8} /> Requires admin approval
+          </span>
+        )}
+        {labelAction && (
+          <span style={{ marginLeft: 'auto', textTransform: 'none', letterSpacing: 0, fontWeight: 400 }}>
+            {labelAction}
           </span>
         )}
       </label>
@@ -312,7 +318,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const isEdit   = !!product
   const p        = product as FullProduct | null
   const isLocked = !!(p?.is_approved)
-
+  const { can } = useSubscriptionStandalone();
+  const canUseAi = can('ai_description_gen');
   const [updateRequestModalOpen, setUpdateRequestModalOpen] = useState(false)
 
   // ── Form state ─────────────────────────────────────────────────────────────
@@ -802,14 +809,34 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                   />
                 </Field>
                 <Field label="Full Description">
-                  <textarea
-                    rows={4}
-                    value={form.description}
-                    onChange={e => set('description', e.target.value)}
-                    placeholder="Describe your product in detail…"
-                    className={`${inputCls()} resize-none`}
-                  />
-                </Field>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <textarea
+      rows={4}
+      value={form.description}
+      onChange={e => set('description', e.target.value)}
+      placeholder="Describe your product in detail…"
+      className={`${inputCls()} resize-none`}
+    />
+    <AiDescriptionPanel
+  productName={form.name}
+  categoryId={form.category_id}
+  categoryName={categories.find(c => c.id === Number(form.category_id))?.name}
+  price={form.price}
+  shortDescription={form.short_description}
+  imageCount={previews.length + existingImages.length}
+  attrValues={attrValues}
+  variantRows={variantRows}
+  variantAxes={variantAxes}
+  infoAxes={infoAxes}
+  hasVariantAxes={variantAxes.length > 0}
+  canUseAi={canUseAi}
+  onInsert={({ short_description, description }) => {
+    if (short_description !== undefined) set('short_description', short_description);
+    if (description       !== undefined) set('description', description);
+  }}
+/>
+            </div>
+          </Field>
               </div>
             </section>
 

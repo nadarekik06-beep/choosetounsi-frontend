@@ -191,4 +191,20 @@ export const sellerAiApi = {
 
   recommender: (productId: number, mode: 'bundle' | 'related' = 'bundle', discountPct = 10) =>
     jsonRequest<AIResponse<RecommenderResult>>('POST', '/seller/ai/recommender', { product_id: productId, mode, discount_pct: discountPct }),
+  quickDescription: (params: {
+  name:               string;
+  category?:          string;
+  price?:             string | number;
+  short_description?: string;
+  attributes?:        Record<string, string>;
+  variants?:          string[];
+  image_count?:       number;
+  tone?:              string;
+  language?:          string;
+}) =>
+  jsonRequest<AIResponse<DescriptionResult>>(
+    'POST',
+    '/seller/ai/quick-description',
+    params,
+  ),
 };
