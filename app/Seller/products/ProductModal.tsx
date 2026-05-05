@@ -17,6 +17,8 @@ import type { AttributeValues, Attribute } from '@/types/Attributes'
 import UpdateRequestModal from 'app/seller/components/UpdateRequestModal'
 import { useSubscriptionStandalone } from '@/app/hooks/useSubscription';
 import AiDescriptionPanel from '../components/AiDescriptionPanel';
+import CommissionPreview from '@/app/seller/components/CommissionPreview'
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FullProduct {
@@ -871,6 +873,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                     }}>TND</span>
                   </div>
                 </Field>
+                <CommissionPreview price={form.price} />
 
                 {/* Stock — ONLY shown when no variants exist */}
                 {!hasVariantRows && (

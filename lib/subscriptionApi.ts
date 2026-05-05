@@ -87,7 +87,7 @@ export const PLAN_META = {
     accentColor: '#dc2626',
     emoji:       '🔴',
     maxProducts: 150,
-    commission:  '6–10%',
+    commission:  '3–12%',
   },
   black: {
     name:        'Black Pepper',
@@ -97,7 +97,7 @@ export const PLAN_META = {
     accentColor: '#f59e0b',
     emoji:       '⚫',
     maxProducts: null,
-    commission:  '3–5%',
+    commission:  '3–9%',
   },
 } as const
 

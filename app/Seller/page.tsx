@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { SubscriptionBadge } from '@/app/components/seller/SubscriptionBadge';
 import OnboardingChecklist from './components/OnboardingChecklist';
+import CommissionUpgradeNudge from './components/CommissionUpgradeNudge';
 import { getUser } from '@/lib/auth';
 
 /* ─────────────────────────────────────────────────────────────────
@@ -228,6 +229,9 @@ export default function SellerDashboardPage() {
   const maxWilaya   = Math.max(...top_wilayas.map(w => w.revenue), 1);
   const totalOrders = Object.values(order_status_distribution).reduce((a, b) => a + b, 0);
 
+  // seller_plan is added by the SellerDashboardController patch — fallback to 'free' if not yet deployed
+  const sellerPlan = (summary as any).seller_plan ?? 'free';
+
   return (
     <>
       <style>{`
@@ -245,6 +249,7 @@ export default function SellerDashboardPage() {
           .fade-up:nth-child(8){animation-delay:0.46s}
           .fade-up:nth-child(9){animation-delay:0.52s}
           .fade-up:nth-child(10){animation-delay:0.58s}
+          .fade-up:nth-child(11){animation-delay:0.64s}
           tr.order-row:hover td{background:${dark?'rgba(255,255,255,0.03)':'#f9fafb'}!important}
           .client-row:hover{background:${dark?'rgba(255,255,255,0.03)':'#fafafa'}!important}
         `}</style>
@@ -265,7 +270,7 @@ export default function SellerDashboardPage() {
           </div>
         </div>
 
-        {/* ─── ONBOARDING CHECKLIST (disappears once all steps done) ─── */}
+        {/* ─── ONBOARDING CHECKLIST ─── */}
         <div className={`fade-up ${visible?'show':''}`}>
           <OnboardingChecklist
             totalProducts={summary.total_products}
@@ -299,6 +304,15 @@ export default function SellerDashboardPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* ─── UPGRADE NUDGE (only shown for free/red plan sellers) ─── */}
+        <div className={`fade-up ${visible?'show':''}`}>
+          <CommissionUpgradeNudge
+            currentPlan={sellerPlan}
+            monthlyRevenue={summary.revenue_this_month ?? 0}
+            dark={dark}
+          />
         </div>
 
         {/* ─── REVENUE CHART + WILAYAS ─── */}
