@@ -1,18 +1,7 @@
 'use client';
 
-/**
- * app/seller/dashboard/page.tsx  ← REPLACE EXISTING FILE
- *
- * Current version:
- *   - SubscriptionProvider lives in layout.tsx (not here)
- *   - SubscriptionBadge shown in the header bar
- *   - Advanced Analytics + AI Tools moved to /seller/analytics and /seller/ai-tools
- *   - All KPI cards, charts, top products, clients, orders — unchanged
- *   - BlackPepperHub injected at the bottom, visible only for Black plan sellers
- */
-
 import { useEffect, useState, useRef } from 'react';
-import { dashboardApi, storageUrl } from '../../lib/sellerApi';
+import { dashboardApi } from '../../lib/sellerApi';
 import type { DashboardData, TopProduct } from '../../types/seller';
 import RevenueChart from './components/RevenueChart';
 import { useTheme } from './layout';
@@ -22,13 +11,12 @@ import {
   TrendingUp, TrendingDown, ArrowUpRight,
   Star, Eye, BarChart2,
 } from 'lucide-react';
-
-// ── New imports ──────────────────────────────────────────────────────────────
 import { SubscriptionBadge } from '@/app/components/seller/SubscriptionBadge';
-import { useSubscription } from '@/app/hooks/useSubscription';
+import OnboardingChecklist from './components/OnboardingChecklist';
+import { getUser } from '@/lib/auth';
 
 /* ─────────────────────────────────────────────────────────────────
-   HELPERS  (identical to original)
+   HELPERS
 ───────────────────────────────────────────────────────────────── */
 const fmt = (n: number) =>
   new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(n) + ' TND';
@@ -62,7 +50,7 @@ function useCount(target: number): string {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   KPI CARD  (identical to original)
+   KPI CARD
 ───────────────────────────────────────────────────────────────── */
 function KpiCard({ title, value, subtitle, change, icon: Icon, accent, dark }: {
   title: string; value: string | number; subtitle?: string;
@@ -104,7 +92,7 @@ function KpiCard({ title, value, subtitle, change, icon: Icon, accent, dark }: {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   TOP PRODUCT CARD  (identical to original)
+   TOP PRODUCT CARD
 ───────────────────────────────────────────────────────────────── */
 function TopProductCard({ product, rank, dark }: { product: TopProduct; rank: number; dark: boolean }) {
   const [imgErr, setImgErr] = useState(false);
@@ -165,7 +153,7 @@ function TopProductCard({ product, rank, dark }: { product: TopProduct; rank: nu
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   SKELETON + ERROR  (identical to original)
+   SKELETON + ERROR
 ───────────────────────────────────────────────────────────────── */
 function Skeleton({ dark, style = {} }: { dark: boolean; style?: React.CSSProperties }) {
   return <div style={{ borderRadius: 18, background: dark ? 'rgba(255,255,255,0.05)' : '#e5e7eb', animation: 'shimmer 1.4s infinite linear', ...style }} />;
@@ -261,235 +249,242 @@ export default function SellerDashboardPage() {
           .client-row:hover{background:${dark?'rgba(255,255,255,0.03)':'#fafafa'}!important}
         `}</style>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-          {/* ─── HEADER (with subscription badge) ─── */}
-          <div className={`fade-up ${visible?'show':''}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.02em' }}>Dashboard</h1>
-              <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>Overview of your store performance</p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <SubscriptionBadge dark={dark} />
-              <span style={{ fontSize: 11, fontWeight: 800, background: 'rgba(219,20,46,0.12)', color: '#db142e', border: '1px solid rgba(219,20,46,0.25)', padding: '5px 14px', borderRadius: 999 }}>
-                🟢 Live
-              </span>
-            </div>
+        {/* ─── HEADER ─── */}
+        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.02em' }}>Dashboard</h1>
+            <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>Overview of your store performance</p>
           </div>
-
-          {/* ─── KPI CARDS (unchanged) ─── */}
-          <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
-            <KpiCard dark={dark} title="Total Revenue" icon={DollarSign} accent="#db142e" value={fmt(summary.total_revenue)} subtitle="Completed & paid" change={summary.revenue_growth} />
-            <KpiCard dark={dark} title="Total Orders"  icon={ShoppingBag} accent="#3b82f6" value={animTotalOrders} subtitle={`${summary.pending_orders} pending`} />
-            <KpiCard dark={dark} title="Products"      icon={Package} accent="#198f41" value={animTotalProducts} subtitle={`${summary.active_products} active`} />
-            <KpiCard dark={dark} title="This Month"    icon={TrendingUp} accent="#f59e0b" value={fmt(summary.revenue_this_month)} subtitle={`Last: ${fmt(summary.revenue_last_month)}`} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <SubscriptionBadge dark={dark} />
+            <span style={{ fontSize: 11, fontWeight: 800, background: 'rgba(219,20,46,0.12)', color: '#db142e', border: '1px solid rgba(219,20,46,0.25)', padding: '5px 14px', borderRadius: 999 }}>
+              🟢 Live
+            </span>
           </div>
+        </div>
 
-          {/* ─── SECONDARY KPIs (unchanged) ─── */}
-          <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
-            {[
-              { label: 'Pending Orders',    val: animPendingOrders,    accent: '#f59e0b', icon: Clock       },
-              { label: 'Active Products',   val: animActiveProducts,   accent: '#198f41', icon: Package     },
-              { label: 'Pending Approvals', val: animPendingApprovals, accent: '#db142e', icon: AlertCircle },
-            ].map(({ label, val, accent, icon: Icon }) => (
-              <div key={label} style={{ background: cardBg, borderRadius: 16, border: `1px solid ${border}`, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: `${accent}1a`, border: `1px solid ${accent}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, flexShrink: 0 }}>
-                  <Icon size={18} />
-                </div>
-                <div>
-                  <p style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', lineHeight: 1 }}>{val}</p>
-                  <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 600 }}>{label}</p>
-                </div>
+        {/* ─── ONBOARDING CHECKLIST (disappears once all steps done) ─── */}
+        <div className={`fade-up ${visible?'show':''}`}>
+          <OnboardingChecklist
+            totalProducts={summary.total_products}
+            hasProfilePicture={!!(getUser()?.avatar)}
+            dark={dark}
+          />
+        </div>
+
+        {/* ─── KPI CARDS ─── */}
+        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+          <KpiCard dark={dark} title="Total Revenue" icon={DollarSign} accent="#db142e" value={fmt(summary.total_revenue)} subtitle="Completed & paid" change={summary.revenue_growth} />
+          <KpiCard dark={dark} title="Total Orders"  icon={ShoppingBag} accent="#3b82f6" value={animTotalOrders} subtitle={`${summary.pending_orders} pending`} />
+          <KpiCard dark={dark} title="Products"      icon={Package} accent="#198f41" value={animTotalProducts} subtitle={`${summary.active_products} active`} />
+          <KpiCard dark={dark} title="This Month"    icon={TrendingUp} accent="#f59e0b" value={fmt(summary.revenue_this_month)} subtitle={`Last: ${fmt(summary.revenue_last_month)}`} />
+        </div>
+
+        {/* ─── SECONDARY KPIs ─── */}
+        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+          {[
+            { label: 'Pending Orders',    val: animPendingOrders,    accent: '#f59e0b', icon: Clock       },
+            { label: 'Active Products',   val: animActiveProducts,   accent: '#198f41', icon: Package     },
+            { label: 'Pending Approvals', val: animPendingApprovals, accent: '#db142e', icon: AlertCircle },
+          ].map(({ label, val, accent, icon: Icon }) => (
+            <div key={label} style={{ background: cardBg, borderRadius: 16, border: `1px solid ${border}`, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: `${accent}1a`, border: `1px solid ${accent}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, flexShrink: 0 }}>
+                <Icon size={18} />
               </div>
-            ))}
-          </div>
-
-          {/* ─── REVENUE CHART + WILAYAS (unchanged) ─── */}
-          <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
-            <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
-              <RevenueChart data={charts.monthly_revenue} />
+              <div>
+                <p style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', lineHeight: 1 }}>{val}</p>
+                <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 600 }}>{label}</p>
+              </div>
             </div>
-            <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(219,20,46,0.12)', border: '1px solid rgba(219,20,46,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#db142e' }}>
-                  <MapPin size={16} />
-                </div>
-                <div>
-                  <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Top Wilayas</p>
-                  <p style={{ fontSize: 10, color: textMuted, margin: 0, fontWeight: 500 }}>By revenue</p>
-                </div>
-              </div>
-              {top_wilayas.length === 0
-                ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '24px 0' }}>No data yet</p>
-                : top_wilayas.map((w, i) => (
-                  <div key={w.wilaya} style={{ marginBottom: 14 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: textMain, display: 'flex', gap: 6, alignItems: 'center' }}>
-                        <span style={{ color: textMuted, fontSize: 10 }}>{i+1}.</span>{w.wilaya}
-                      </span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>{fmt(w.revenue)}</span>
-                    </div>
-                    <div style={{ height: 5, background: dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#db142e,#ff4d6a)', width: `${(w.revenue/maxWilaya)*100}%`, transition: 'width 0.8s ease' }} />
-                    </div>
-                  </div>
-                ))
-              }
-            </div>
-          </div>
+          ))}
+        </div>
 
-          {/* ─── TOP PRODUCTS (unchanged) ─── */}
-          <div className={`fade-up ${visible?'show':''}`}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
-                  <BarChart2 size={16} />
-                </div>
-                <div>
-                  <p style={{ fontWeight: 900, fontSize: 15, color: textMain, margin: 0, letterSpacing: '-0.01em' }}>Top Products</p>
-                  <p style={{ fontSize: 10, color: textMuted, margin: 0, fontWeight: 500 }}>Ranked by total units sold</p>
-                </div>
-              </div>
-              <a href="/seller/products" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none' }}>
-                View all <ArrowUpRight size={12} />
-              </a>
-            </div>
-            {top_products.length === 0 ? (
-              <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: '48px 20px', textAlign: 'center' }}>
-                <Package size={32} style={{ color: textMuted, opacity: 0.3, margin: '0 auto 12px', display: 'block' }} />
-                <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>No product data yet</p>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
-                {top_products.map((product, i) => (
-                  <TopProductCard key={product.id} product={product} rank={i + 1} dark={dark} />
-                ))}
-              </div>
-            )}
+        {/* ─── REVENUE CHART + WILAYAS ─── */}
+        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+            <RevenueChart data={charts.monthly_revenue} />
           </div>
-
-          {/* ─── TOP CLIENTS + ORDER STATUS (unchanged) ─── */}
-          <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
-                  <Award size={16} />
-                </div>
-                <div>
-                  <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Top Clients</p>
-                  <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>By lifetime revenue</p>
-                </div>
+          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(219,20,46,0.12)', border: '1px solid rgba(219,20,46,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#db142e' }}>
+                <MapPin size={16} />
               </div>
-              {top_clients.length === 0
-                ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '28px 0' }}>No data yet</p>
-                : top_clients.map((c, i) => (
-                  <div key={c.id} className="client-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: `1px solid ${border}`, transition: 'background 0.15s ease' }}>
-                    <span style={{ width: 24, height: 24, borderRadius: '50%', background: i===0?'rgba(245,158,11,0.2)':i===1?'rgba(148,163,184,0.2)':'rgba(249,115,22,0.2)', color: i===0?'#f59e0b':i===1?'#94a3b8':'#f97316', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>
-                      {i+1}
+              <div>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Top Wilayas</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0, fontWeight: 500 }}>By revenue</p>
+              </div>
+            </div>
+            {top_wilayas.length === 0
+              ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '24px 0' }}>No data yet</p>
+              : top_wilayas.map((w, i) => (
+                <div key={w.wilaya} style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: textMain, display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <span style={{ color: textMuted, fontSize: 10 }}>{i+1}.</span>{w.wilaya}
                     </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 12, fontWeight: 800, color: textMain, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</p>
-                      <p style={{ fontSize: 10, color: textMuted, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.email}</p>
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <p style={{ fontSize: 12, fontWeight: 900, color: '#db142e', margin: 0 }}>{fmt(c.total_revenue)}</p>
-                      <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{c.total_orders} orders</p>
-                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>{fmt(w.revenue)}</span>
                   </div>
-                ))
+                  <div style={{ height: 5, background: dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#db142e,#ff4d6a)', width: `${(w.revenue/maxWilaya)*100}%`, transition: 'width 0.8s ease' }} />
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+
+        {/* ─── TOP PRODUCTS ─── */}
+        <div className={`fade-up ${visible?'show':''}`}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                <BarChart2 size={16} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 900, fontSize: 15, color: textMain, margin: 0, letterSpacing: '-0.01em' }}>Top Products</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0, fontWeight: 500 }}>Ranked by total units sold</p>
+              </div>
+            </div>
+            <a href="/seller/products" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none' }}>
+              View all <ArrowUpRight size={12} />
+            </a>
+          </div>
+          {top_products.length === 0 ? (
+            <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: '48px 20px', textAlign: 'center' }}>
+              <Package size={32} style={{ color: textMuted, opacity: 0.3, margin: '0 auto 12px', display: 'block' }} />
+              <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>No product data yet</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
+              {top_products.map((product, i) => (
+                <TopProductCard key={product.id} product={product} rank={i + 1} dark={dark} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ─── TOP CLIENTS + ORDER STATUS ─── */}
+        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                <Award size={16} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Top Clients</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>By lifetime revenue</p>
+              </div>
+            </div>
+            {top_clients.length === 0
+              ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '28px 0' }}>No data yet</p>
+              : top_clients.map((c, i) => (
+                <div key={c.id} className="client-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: `1px solid ${border}`, transition: 'background 0.15s ease' }}>
+                  <span style={{ width: 24, height: 24, borderRadius: '50%', background: i===0?'rgba(245,158,11,0.2)':i===1?'rgba(148,163,184,0.2)':'rgba(249,115,22,0.2)', color: i===0?'#f59e0b':i===1?'#94a3b8':'#f97316', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>
+                    {i+1}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 12, fontWeight: 800, color: textMain, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</p>
+                    <p style={{ fontSize: 10, color: textMuted, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.email}</p>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <p style={{ fontSize: 12, fontWeight: 900, color: '#db142e', margin: 0 }}>{fmt(c.total_revenue)}</p>
+                    <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{c.total_orders} orders</p>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+
+          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(25,143,65,0.12)', border: '1px solid rgba(25,143,65,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#198f41' }}>
+                <ShoppingBag size={16} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Order Status</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>Distribution</p>
+              </div>
+            </div>
+            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {Object.entries(order_status_distribution).length === 0
+                ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '24px 0' }}>No orders yet</p>
+                : Object.entries(order_status_distribution).map(([status, count]) => {
+                  const pct   = totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0;
+                  const color = STATUS_COLORS[status] ?? '#94a3b8';
+                  return (
+                    <div key={status}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: textMain, textTransform: 'capitalize' }}>
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }} />{status}
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>{count} ({pct}%)</span>
+                      </div>
+                      <div style={{ height: 5, background: dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', borderRadius: 999, background: color, width: `${pct}%`, transition: 'width 0.8s ease' }} />
+                      </div>
+                    </div>
+                  );
+                })
               }
             </div>
+          </div>
+        </div>
 
-            <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(25,143,65,0.12)', border: '1px solid rgba(25,143,65,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#198f41' }}>
-                  <ShoppingBag size={16} />
-                </div>
-                <div>
-                  <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Order Status</p>
-                  <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>Distribution</p>
-                </div>
+        {/* ─── RECENT ORDERS ─── */}
+        <div className={`fade-up ${visible?'show':''}`} style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: textMuted }}>
+                <Clock size={16} />
               </div>
-              <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {Object.entries(order_status_distribution).length === 0
-                  ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '24px 0' }}>No orders yet</p>
-                  : Object.entries(order_status_distribution).map(([status, count]) => {
-                    const pct   = totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0;
-                    const color = STATUS_COLORS[status] ?? '#94a3b8';
+              <div>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Recent Orders</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>Latest 5 orders</p>
+              </div>
+            </div>
+            <a href="/seller/orders" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none' }}>
+              View all <ArrowUpRight size={12} />
+            </a>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: dark ? 'rgba(255,255,255,0.03)' : '#f9fafb' }}>
+                  {['Order','Customer','Status','Amount','Date'].map((h, i) => (
+                    <th key={h} style={{ padding: '10px 20px', textAlign: i===2?'center':i===3?'right':'left', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: textMuted }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {recent_orders.length === 0
+                  ? <tr><td colSpan={5} style={{ padding: '32px 20px', textAlign: 'center', color: textMuted, fontSize: 13 }}>No recent orders</td></tr>
+                  : recent_orders.map(order => {
+                    const sc = STATUS_COLORS[order.status] ?? '#94a3b8';
                     return (
-                      <div key={status}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: textMain, textTransform: 'capitalize' }}>
-                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }} />{status}
+                      <tr key={order.id} className="order-row" style={{ borderBottom: `1px solid ${border}`, transition: 'background 0.15s' }}>
+                        <td style={{ padding: '12px 20px' }}>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 11, background: dark?'rgba(255,255,255,0.07)':'#f1f5f9', color: textMain, padding: '3px 8px', borderRadius: 6 }}>{order.order_number}</span>
+                        </td>
+                        <td style={{ padding: '12px 20px', color: textMain, fontWeight: 600 }}>{order.user?.name ?? `User #${order.user_id}`}</td>
+                        <td style={{ padding: '12px 20px', textAlign: 'center' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 999, background: `${sc}18`, color: sc, border: `1px solid ${sc}33`, textTransform: 'capitalize' }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc }} />{order.status}
                           </span>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>{count} ({pct}%)</span>
-                        </div>
-                        <div style={{ height: 5, background: dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', borderRadius: 999, background: color, width: `${pct}%`, transition: 'width 0.8s ease' }} />
-                        </div>
-                      </div>
+                        </td>
+                        <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 900, color: textMain }}>{fmt(order.total_amount)}</td>
+                        <td style={{ padding: '12px 20px', color: textMuted, fontWeight: 500 }}>{new Date(order.created_at).toLocaleDateString('fr-TN')}</td>
+                      </tr>
                     );
                   })
                 }
-              </div>
-            </div>
+              </tbody>
+            </table>
           </div>
-
-          {/* ─── RECENT ORDERS (unchanged) ─── */}
-          <div className={`fade-up ${visible?'show':''}`} style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: textMuted }}>
-                  <Clock size={16} />
-                </div>
-                <div>
-                  <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Recent Orders</p>
-                  <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>Latest 5 orders</p>
-                </div>
-              </div>
-              <a href="/seller/orders" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none' }}>
-                View all <ArrowUpRight size={12} />
-              </a>
-            </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                <thead>
-                  <tr style={{ background: dark ? 'rgba(255,255,255,0.03)' : '#f9fafb' }}>
-                    {['Order','Customer','Status','Amount','Date'].map((h, i) => (
-                      <th key={h} style={{ padding: '10px 20px', textAlign: i===2?'center':i===3?'right':'left', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: textMuted }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {recent_orders.length === 0
-                    ? <tr><td colSpan={5} style={{ padding: '32px 20px', textAlign: 'center', color: textMuted, fontSize: 13 }}>No recent orders</td></tr>
-                    : recent_orders.map(order => {
-                      const sc = STATUS_COLORS[order.status] ?? '#94a3b8';
-                      return (
-                        <tr key={order.id} className="order-row" style={{ borderBottom: `1px solid ${border}`, transition: 'background 0.15s' }}>
-                          <td style={{ padding: '12px 20px' }}>
-                            <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 11, background: dark?'rgba(255,255,255,0.07)':'#f1f5f9', color: textMain, padding: '3px 8px', borderRadius: 6 }}>{order.order_number}</span>
-                          </td>
-                          <td style={{ padding: '12px 20px', color: textMain, fontWeight: 600 }}>{order.user?.name ?? `User #${order.user_id}`}</td>
-                          <td style={{ padding: '12px 20px', textAlign: 'center' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 999, background: `${sc}18`, color: sc, border: `1px solid ${sc}33`, textTransform: 'capitalize' }}>
-                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc }} />{order.status}
-                            </span>
-                          </td>
-                          <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 900, color: textMain }}>{fmt(order.total_amount)}</td>
-                          <td style={{ padding: '12px 20px', color: textMuted, fontWeight: 500 }}>{new Date(order.created_at).toLocaleDateString('fr-TN')}</td>
-                        </tr>
-                      );
-                    })
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-       
-
         </div>
-      </>
+
+      </div>
+    </>
   );
 }

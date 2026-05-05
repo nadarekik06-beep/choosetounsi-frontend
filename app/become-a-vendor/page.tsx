@@ -217,14 +217,25 @@ interface FormState {
   facebook_url: string
   instagram_url: string
   website_url: string
+  pricing_range: '' | 'budget' | 'mid' | 'premium'
+}
+
+interface ApiCategory {
+  id: number
+  name: string
+  slug: string
+}
+
+interface SampleItem {
+  file: File
+  preview: string
+  caption: string
 }
 
 // ── Locked Plan Modal ────────────────────────────────────────────────────────
 
 function LockedPlanModal({
-  planKey,
-  onClose,
-  onScrollToForm,
+  planKey, onClose, onScrollToForm,
 }: {
   planKey: 'red' | 'black'
   onClose: () => void
@@ -238,7 +249,6 @@ function LockedPlanModal({
   const darkBg = !isRed
 
   return (
-    // Backdrop
     <div
       onClick={onClose}
       style={{
@@ -249,7 +259,6 @@ function LockedPlanModal({
         animation: 'modalBackdropIn 0.22s ease both',
       }}
     >
-      {/* Modal card */}
       <div
         onClick={e => e.stopPropagation()}
         style={{
@@ -257,182 +266,71 @@ function LockedPlanModal({
           boxShadow: `0 40px 80px rgba(0,0,0,0.4), 0 8px 24px ${accentColor}30`,
           animation: 'modalCardIn 0.28s cubic-bezier(.34,1.56,.64,1) both',
           border: `2px solid ${accentColor}40`,
-          background: darkBg
-            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
-            : 'white',
+          background: darkBg ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' : 'white',
         }}
       >
-        {/* Top accent bar */}
-        <div style={{
-          height: 4,
-          background: isRed
-            ? 'linear-gradient(90deg, #db142e, #ff4060)'
-            : 'linear-gradient(90deg, #f59e0b, #fbbf24)',
-        }} />
-
-        {/* Header */}
-        <div style={{
-          padding: '28px 28px 0',
-          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-        }}>
-          {/* Plan icon + name */}
+        <div style={{ height: 4, background: isRed ? 'linear-gradient(90deg, #db142e, #ff4060)' : 'linear-gradient(90deg, #f59e0b, #fbbf24)' }} />
+        <div style={{ padding: '28px 28px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{
-              width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-              background: darkBg ? `${accentColor}20` : `${accentColor}12`,
-              border: `1.5px solid ${accentColor}30`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
+            <div style={{ width: 52, height: 52, borderRadius: 14, flexShrink: 0, background: darkBg ? `${accentColor}20` : `${accentColor}12`, border: `1.5px solid ${accentColor}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <PlanIcon size={26} color={accentColor} />
             </div>
             <div>
-              <div style={{
-                fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.14em',
-                textTransform: 'uppercase', color: accentColor, marginBottom: 3,
-              }}>
-                {planName}
-              </div>
-              <div style={{
-                fontFamily: "'Barlow Condensed', sans-serif",
-                fontWeight: 900, fontSize: '1.5rem', lineHeight: 1,
-                color: darkBg ? 'white' : '#111',
-              }}>
-                {planPrice}
-              </div>
+              <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: accentColor, marginBottom: 3 }}>{planName}</div>
+              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: '1.5rem', lineHeight: 1, color: darkBg ? 'white' : '#111' }}>{planPrice}</div>
             </div>
           </div>
-
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            style={{
-              width: 32, height: 32, borderRadius: 8, border: 'none',
-              background: darkBg ? 'rgba(255,255,255,0.08)' : '#f3f4f6',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', flexShrink: 0,
-              transition: 'background 0.15s ease',
-            }}
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: darkBg ? 'rgba(255,255,255,0.08)' : '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s ease' }}
             onMouseEnter={e => (e.currentTarget.style.background = darkBg ? 'rgba(255,255,255,0.15)' : '#e5e7eb')}
-            onMouseLeave={e => (e.currentTarget.style.background = darkBg ? 'rgba(255,255,255,0.08)' : '#f3f4f6')}
-          >
+            onMouseLeave={e => (e.currentTarget.style.background = darkBg ? 'rgba(255,255,255,0.08)' : '#f3f4f6')}>
             <X size={15} color={darkBg ? 'rgba(255,255,255,0.6)' : '#6b7280'} />
           </button>
         </div>
-
-        {/* Body */}
         <div style={{ padding: '20px 28px 28px' }}>
-          {/* Lock icon + message */}
-          <div style={{
-            display: 'flex', gap: 14, padding: '16px',
-            borderRadius: 14, marginBottom: 20,
-            background: darkBg ? 'rgba(255,255,255,0.05)' : '#f8f8f6',
-            border: `1px solid ${darkBg ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`,
-          }}>
-            <div style={{
-              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-              background: 'rgba(219,20,46,0.1)', border: '1px solid rgba(219,20,46,0.2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
+          <div style={{ display: 'flex', gap: 14, padding: '16px', borderRadius: 14, marginBottom: 20, background: darkBg ? 'rgba(255,255,255,0.05)' : '#f8f8f6', border: `1px solid ${darkBg ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}` }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: 'rgba(219,20,46,0.1)', border: '1px solid rgba(219,20,46,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Lock size={17} color="#db142e" />
             </div>
             <div>
-              <p style={{
-                margin: '0 0 5px', fontWeight: 800, fontSize: '0.88rem',
-                color: darkBg ? 'white' : '#111',
-              }}>
-                Approval required first
-              </p>
-              <p style={{
-                margin: 0, fontSize: '0.78rem', lineHeight: 1.55,
-                color: darkBg ? 'rgba(255,255,255,0.5)' : '#6b7280',
-              }}>
+              <p style={{ margin: '0 0 5px', fontWeight: 800, fontSize: '0.88rem', color: darkBg ? 'white' : '#111' }}>Approval required first</p>
+              <p style={{ margin: 0, fontSize: '0.78rem', lineHeight: 1.55, color: darkBg ? 'rgba(255,255,255,0.5)' : '#6b7280' }}>
                 You need to be approved as a <strong style={{ color: '#198f41' }}>Green Pepper</strong> seller before you can upgrade to{' '}
                 <strong style={{ color: accentColor }}>{planName}</strong>.
               </p>
             </div>
           </div>
-
-          {/* Steps */}
           <div style={{ marginBottom: 24 }}>
             {[
-              { num: 1, label: 'Apply with the free Green Pepper plan', done: false },
-              { num: 2, label: 'Get approved by our team (2–3 business days)', done: false },
-              { num: 3, label: `Upgrade to ${planName} instantly`, done: false },
+              { num: 1, label: 'Apply with the free Green Pepper plan' },
+              { num: 2, label: 'Get approved by our team (2–3 business days)' },
+              { num: 3, label: `Upgrade to ${planName} instantly` },
             ].map(({ num, label }) => (
-              <div key={num} style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '9px 0',
-                borderBottom: num < 3 ? `1px solid ${darkBg ? 'rgba(255,255,255,0.06)' : '#f0f0f0'}` : 'none',
-              }}>
-                <div style={{
-                  width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-                  background: num === 3 ? `${accentColor}15` : 'rgba(25,143,65,0.12)',
-                  border: `1.5px solid ${num === 3 ? `${accentColor}40` : 'rgba(25,143,65,0.3)'}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontWeight: 900, fontSize: '0.8rem',
-                  color: num === 3 ? accentColor : '#198f41',
-                }}>
+              <div key={num} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderBottom: num < 3 ? `1px solid ${darkBg ? 'rgba(255,255,255,0.06)' : '#f0f0f0'}` : 'none' }}>
+                <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: num === 3 ? `${accentColor}15` : 'rgba(25,143,65,0.12)', border: `1.5px solid ${num === 3 ? `${accentColor}40` : 'rgba(25,143,65,0.3)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: '0.8rem', color: num === 3 ? accentColor : '#198f41' }}>
                   {num}
                 </div>
-                <span style={{
-                  fontSize: '0.8rem', fontWeight: 600,
-                  color: darkBg ? 'rgba(255,255,255,0.7)' : '#374151',
-                }}>
-                  {label}
-                </span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: darkBg ? 'rgba(255,255,255,0.7)' : '#374151' }}>{label}</span>
               </div>
             ))}
           </div>
-
-          {/* CTAs */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button
-              onClick={() => { onClose(); onScrollToForm() }}
-              style={{
-                width: '100%', padding: '13px 20px', borderRadius: 13, border: 'none',
-                background: 'linear-gradient(135deg, #198f41, #15803d)',
-                color: 'white', fontSize: '0.88rem', fontWeight: 800,
-                cursor: 'pointer', fontFamily: 'Barlow, sans-serif',
-                letterSpacing: '0.04em', textTransform: 'uppercase',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: '0 6px 20px rgba(25,143,65,0.4)',
-                transition: 'filter 0.15s ease',
-              }}
+            <button onClick={() => { onClose(); onScrollToForm() }}
+              style={{ width: '100%', padding: '13px 20px', borderRadius: 13, border: 'none', background: 'linear-gradient(135deg, #198f41, #15803d)', color: 'white', fontSize: '0.88rem', fontWeight: 800, cursor: 'pointer', fontFamily: 'Barlow, sans-serif', letterSpacing: '0.04em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(25,143,65,0.4)', transition: 'filter 0.15s ease' }}
               onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(1.07)')}
-              onMouseLeave={e => (e.currentTarget.style.filter = 'none')}
-            >
-              <Leaf size={15} />
-              Apply with Green Pepper — Free
-              <ArrowRight size={14} />
+              onMouseLeave={e => (e.currentTarget.style.filter = 'none')}>
+              <Leaf size={15} />Apply with Green Pepper — Free<ArrowRight size={14} />
             </button>
-            <button
-              onClick={onClose}
-              style={{
-                width: '100%', padding: '11px 20px', borderRadius: 13,
-                background: 'transparent',
-                border: `1.5px solid ${darkBg ? 'rgba(255,255,255,0.12)' : '#e5e7eb'}`,
-                color: darkBg ? 'rgba(255,255,255,0.45)' : '#9ca3af',
-                fontSize: '0.82rem', fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'Barlow, sans-serif',
-                transition: 'border-color 0.15s ease, color 0.15s ease',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = darkBg ? 'rgba(255,255,255,0.25)' : '#d1d5db'
-                e.currentTarget.style.color = darkBg ? 'rgba(255,255,255,0.7)' : '#6b7280'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = darkBg ? 'rgba(255,255,255,0.12)' : '#e5e7eb'
-                e.currentTarget.style.color = darkBg ? 'rgba(255,255,255,0.45)' : '#9ca3af'
-              }}
-            >
+            <button onClick={onClose}
+              style={{ width: '100%', padding: '11px 20px', borderRadius: 13, background: 'transparent', border: `1.5px solid ${darkBg ? 'rgba(255,255,255,0.12)' : '#e5e7eb'}`, color: darkBg ? 'rgba(255,255,255,0.45)' : '#9ca3af', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'Barlow, sans-serif', transition: 'border-color 0.15s ease, color 0.15s ease' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = darkBg ? 'rgba(255,255,255,0.25)' : '#d1d5db'; e.currentTarget.style.color = darkBg ? 'rgba(255,255,255,0.7)' : '#6b7280' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = darkBg ? 'rgba(255,255,255,0.12)' : '#e5e7eb'; e.currentTarget.style.color = darkBg ? 'rgba(255,255,255,0.45)' : '#9ca3af' }}>
               Maybe later
             </button>
           </div>
         </div>
-        </div>
       </div>
-    )
+    </div>
+  )
 }
 
 // ── Main Page ────────────────────────────────────────────────────────────────
@@ -441,7 +339,6 @@ export default function BecomeVendorPage() {
   const router  = useRouter()
   const formRef = useRef<HTMLDivElement>(null)
 
-  // ── Seller state detection ─────────────────────────────────────────────────
   const [sellerState, setSellerState] = useState<{
     checked: boolean
     isApprovedSeller: boolean
@@ -454,8 +351,6 @@ export default function BecomeVendorPage() {
   const [error,   setError]   = useState<string | null>(null)
   const [errors,  setErrors]  = useState<Record<string, string>>({})
   const [mounted, setMounted] = useState(false)
-
-  // ── Modal state ────────────────────────────────────────────────────────────
   const [lockedModal, setLockedModal] = useState<'red' | 'black' | null>(null)
 
   const [form, setForm] = useState<FormState>(() => {
@@ -471,18 +366,21 @@ export default function BecomeVendorPage() {
       facebook_url:         '',
       instagram_url:        '',
       website_url:          '',
+      pricing_range:        '',
     }
   })
 
-  const [namePrefilled]                            = useState<boolean>(() => !!(typeof window !== 'undefined' ? getUser()?.name : null))
-  const [profilePic,        setProfilePic]         = useState<File | null>(null)
-  const [profilePicPreview, setProfilePicPreview]  = useState<string | null>(null)
-  const [sampleImages,      setSampleImages]       = useState<File[]>([])
-  const [samplePreviews,    setSamplePreviews]     = useState<string[]>([])
+  const [namePrefilled] = useState<boolean>(() => !!(typeof window !== 'undefined' ? getUser()?.name : null))
+  const [profilePic,        setProfilePic]        = useState<File | null>(null)
+  const [profilePicPreview, setProfilePicPreview] = useState<string | null>(null)
   const profileRef = useRef<HTMLInputElement>(null)
   const samplesRef = useRef<HTMLInputElement>(null)
 
-  // ── Mount + auth + seller state check ─────────────────────────────────────
+  const [samples, setSamples] = useState<SampleItem[]>([])
+  const [apiCategories,      setApiCategories]      = useState<ApiCategory[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [categoriesLoading,  setCategoriesLoading]  = useState(false)
+
   useEffect(() => {
     setMounted(true)
     if (!isAuthenticated()) {
@@ -492,35 +390,55 @@ export default function BecomeVendorPage() {
     subscriptionApi.getStatus()
       .then(status => {
         if (status?.status === 'approved') {
-          setSellerState({
-            checked:          true,
-            isApprovedSeller: true,
-            currentPlan:      (status.plan as ActivePlan) ?? 'free',
-          })
+          setSellerState({ checked: true, isApprovedSeller: true, currentPlan: (status.plan as ActivePlan) ?? 'free' })
         } else {
           setSellerState({ checked: true, isApprovedSeller: false, currentPlan: 'free' })
         }
       })
-      .catch(() => {
-        setSellerState({ checked: true, isApprovedSeller: false, currentPlan: 'free' })
-      })
+      .catch(() => { setSellerState({ checked: true, isApprovedSeller: false, currentPlan: 'free' }) })
   }, [router])
 
-  // Close modal on Escape key
+  useEffect(() => {
+    setCategoriesLoading(true)
+    const base = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/api\/?$/, '')
+    fetch(`${base}/api/categories`)
+      .then(r => r.json())
+      .then(json => { setApiCategories(json?.data ?? []) })
+      .catch(() => {})
+      .finally(() => setCategoriesLoading(false))
+  }, [])
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setLockedModal(null) }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  // ── Green Pepper CTA — scroll to form ─────────────────────────────────────
   const handleGreenClick = () => {
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
+    setTimeout(() => { formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, 100)
   }
 
-  // ── Form handlers ──────────────────────────────────────────────────────────
+  // ── FIX 1: Completeness score computed at component level (not inside step 1) ──
+  const completenessScore = (() => {
+    let score = 0
+    if (profilePic)                                       score += 25
+    if (samples.length >= 2)                              score += 25
+    if (form.business_description.trim().length >= 100)   score += 25
+    if (form.facebook_url || form.instagram_url || form.website_url) score += 25
+    return score
+  })()
+
+  const completenessColor =
+    completenessScore >= 75 ? '#198f41' :
+    completenessScore >= 50 ? '#f59e0b' : '#db142e'
+
+  const completenessHint =
+    completenessScore < 25 ? 'Add a profile picture to boost your chances' :
+    completenessScore < 50 ? 'Add 2+ product sample images' :
+    completenessScore < 75 ? 'Write a description (100+ characters)' :
+    completenessScore < 100 ? 'Add a social link to reach 100%' :
+    "Great profile! You're ready to submit."
+
   const handleChange = (key: keyof FormState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setForm(prev => ({ ...prev, [key]: e.target.value }))
@@ -532,35 +450,47 @@ export default function BecomeVendorPage() {
     if (!file) return
     setProfilePic(file)
     setProfilePicPreview(URL.createObjectURL(file))
+    // Clear error as soon as they upload
+    setErrors(prev => { const n = { ...prev }; delete n.profile_picture; return n })
   }
 
   const handleSamples = (e: React.ChangeEvent<HTMLInputElement>) => {
     const incoming = Array.from(e.target.files ?? [])
-    if (sampleImages.length + incoming.length > 5) { setError('Maximum 5 sample images allowed.'); return }
-    const combined = [...sampleImages, ...incoming]
-    setSampleImages(combined)
-    setSamplePreviews(combined.map(f => URL.createObjectURL(f)))
+    if (samples.length + incoming.length > 5) { setError('Maximum 5 sample images allowed.'); return }
+    const newItems: SampleItem[] = incoming.map(file => ({ file, preview: URL.createObjectURL(file), caption: '' }))
+    setSamples(prev => [...prev, ...newItems])
     setError(null)
+    // Clear error as soon as they upload a sample
+    setErrors(prev => { const n = { ...prev }; delete n.sample_images; return n })
   }
 
-  const removeSample = (idx: number) => {
-    setSampleImages(prev => prev.filter((_, i) => i !== idx))
-    setSamplePreviews(prev => prev.filter((_, i) => i !== idx))
+  const removeSample = (idx: number) => { setSamples(prev => prev.filter((_, i) => i !== idx)) }
+  const updateCaption = (idx: number, caption: string) => {
+    setSamples(prev => prev.map((s, i) => i === idx ? { ...s, caption } : s))
   }
 
+  // ── FIX 2: Step 3 validation now requires profile pic and at least 1 sample ──
   const validateStep = (s: number): boolean => {
     const errs: Record<string, string> = {}
     if (s === 1) {
-      if (!form.full_name.trim())     errs.full_name = 'Full name is required.'
-      if (!form.phone_number.trim())  errs.phone_number = 'Phone number is required.'
+      if (!form.full_name.trim())     errs.full_name     = 'Full name is required.'
+      if (!form.phone_number.trim())  errs.phone_number  = 'Phone number is required.'
       if (!form.business_name.trim()) errs.business_name = 'Business name is required.'
-      if (!form.business_category)    errs.business_category = 'Please select a category.'
+      if (selectedCategories.length === 0)
+        errs.business_category = 'Please select at least one category.'
       if (form.business_description.trim().length < 30)
         errs.business_description = 'Please describe your business (at least 30 characters).'
     }
     if (s === 2) {
       if (!form.wilaya)      errs.wilaya = 'Please select your wilaya.'
       if (!form.city.trim()) errs.city   = 'City is required.'
+    }
+    // ── NEW: step 3 required fields ──
+    if (s === 3) {
+      if (!profilePic)
+        errs.profile_picture = 'A profile picture is required.'
+      if (samples.length === 0)
+        errs.sample_images = 'Please upload at least 1 product sample image.'
     }
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -574,10 +504,15 @@ export default function BecomeVendorPage() {
     setLoading(true); setError(null)
     try {
       const fd = new FormData()
-      Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v) })
-      fd.append('preferred_plan', 'green') // non-sellers always submit as green
+      Object.entries(form).forEach(([k, v]) => { if (v && k !== 'business_category') fd.append(k, v) })
+      fd.append('business_category', selectedCategories[0] ?? '')
+      selectedCategories.forEach((cat, i) => fd.append(`business_categories[${i}]`, cat))
+      fd.append('preferred_plan', 'green')
       if (profilePic) fd.append('profile_picture', profilePic)
-      sampleImages.forEach(f => fd.append('sample_images[]', f))
+      samples.forEach((s, i) => {
+        fd.append('sample_images[]', s.file)
+        if (s.caption.trim()) fd.append(`sample_captions[${i}]`, s.caption.trim())
+      })
       await api.post('/seller-applications', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       setSuccess(true)
     } catch (err: unknown) {
@@ -591,11 +526,8 @@ export default function BecomeVendorPage() {
     } finally { setLoading(false) }
   }
 
-  // ── Guards ─────────────────────────────────────────────────────────────────
-
   if (!mounted || !sellerState.checked) return null
 
-  // CASE 2: Approved seller → show upgrade page with Red / Black options
   if (sellerState.isApprovedSeller) {
     return (
       <SubscriptionUpgradePage
@@ -607,7 +539,6 @@ export default function BecomeVendorPage() {
     )
   }
 
-  // ── Success Screen ─────────────────────────────────────────────────────────
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-white p-6">
@@ -618,9 +549,7 @@ export default function BecomeVendorPage() {
           <h1 className="text-3xl font-black text-gray-900 mb-3" style={{ fontFamily:"'Barlow Condensed',sans-serif" }}>
             APPLICATION SUBMITTED!
           </h1>
-          <p className="text-gray-500 leading-relaxed mb-2">
-            Your application has been received and is under review.
-          </p>
+          <p className="text-gray-500 leading-relaxed mb-2">Your application has been received and is under review.</p>
           <p className="text-gray-500 leading-relaxed mb-2">
             You&#39;ll start on the <span className="font-bold text-green-600">Free (Green Pepper) plan</span> while our team reviews your store (2–3 business days).
           </p>
@@ -635,8 +564,6 @@ export default function BecomeVendorPage() {
     )
   }
 
-  // ── CASE 1: Non-seller → Full page with all 3 plans visible ───────────────
-
   return (
     <>
       <style>{`
@@ -648,82 +575,29 @@ export default function BecomeVendorPage() {
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes modalBackdropIn { from{opacity:0} to{opacity:1} }
         @keyframes modalCardIn { from{opacity:0;transform:scale(0.88) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
-
         .bv-hero    { font-family:'Barlow',sans-serif; }
         .bv-display { font-family:'Barlow Condensed',sans-serif; }
         .fade-up-1  { animation:fadeUp 0.6s ease 0.05s both; }
         .fade-up-2  { animation:fadeUp 0.6s ease 0.15s both; }
         .fade-up-3  { animation:fadeUp 0.6s ease 0.25s both; }
         .fade-up-4  { animation:fadeUp 0.6s ease 0.35s both; }
-
-        /* All plan cards — same interactive style */
-        .plan-card {
-          position: relative; border-radius: 24px; overflow: hidden; will-change: transform;
-          cursor: pointer;
-          transition: transform 0.28s cubic-bezier(.34,1.56,.64,1), box-shadow 0.28s ease, border-color 0.2s ease;
-        }
-        .plan-card-green:hover {
-          transform: translateY(-8px) scale(1.02);
-          box-shadow: 0 32px 64px rgba(25,143,65,0.25), 0 8px 24px rgba(25,143,65,0.15);
-          border-color: #16a34a !important;
-        }
-        .plan-card-red:hover {
-          transform: translateY(-8px) scale(1.02);
-          box-shadow: 0 32px 64px rgba(219,20,46,0.22), 0 8px 24px rgba(219,20,46,0.13);
-          border-color: #dc2626 !important;
-        }
-        .plan-card-black:hover {
-          transform: translateY(-8px) scale(1.02);
-          box-shadow: 0 32px 64px rgba(245,158,11,0.2), 0 8px 20px rgba(0,0,0,0.3);
-          border-color: #f59e0b !important;
-        }
-
-        .badge-popular {
-          background: linear-gradient(90deg, #dc2626, #ff4060); color: white;
-          font-size: 0.6rem; font-weight: 800; letter-spacing: 0.12em;
-          padding: 4px 10px; border-radius: 99px;
-          animation: pulse-ring 2s ease-in-out infinite;
-        }
-        .badge-value {
-          background: linear-gradient(90deg, #f59e0b, #fbbf24); color: #0f172a;
-          font-size: 0.6rem; font-weight: 800; letter-spacing: 0.12em;
-          padding: 4px 10px; border-radius: 99px;
-        }
-        .rule-card {
-          background: white; border-radius: 16px; padding: 24px; border: 1.5px solid #e5e7eb;
-          transition: transform 0.22s ease, box-shadow 0.22s ease;
-        }
+        .plan-card { position: relative; border-radius: 24px; overflow: hidden; will-change: transform; cursor: pointer; transition: transform 0.28s cubic-bezier(.34,1.56,.64,1), box-shadow 0.28s ease, border-color 0.2s ease; }
+        .plan-card-green:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 32px 64px rgba(25,143,65,0.25), 0 8px 24px rgba(25,143,65,0.15); border-color: #16a34a !important; }
+        .plan-card-red:hover   { transform: translateY(-8px) scale(1.02); box-shadow: 0 32px 64px rgba(219,20,46,0.22), 0 8px 24px rgba(219,20,46,0.13); border-color: #dc2626 !important; }
+        .plan-card-black:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 32px 64px rgba(245,158,11,0.2), 0 8px 20px rgba(0,0,0,0.3); border-color: #f59e0b !important; }
+        .badge-popular { background: linear-gradient(90deg, #dc2626, #ff4060); color: white; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.12em; padding: 4px 10px; border-radius: 99px; animation: pulse-ring 2s ease-in-out infinite; }
+        .badge-value   { background: linear-gradient(90deg, #f59e0b, #fbbf24); color: #0f172a; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.12em; padding: 4px 10px; border-radius: 99px; }
+        .rule-card { background: white; border-radius: 16px; padding: 24px; border: 1.5px solid #e5e7eb; transition: transform 0.22s ease, box-shadow 0.22s ease; }
         .rule-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.08); }
-        .benefit-item {
-          display: flex; align-items: flex-start; gap: 16px; padding: 20px;
-          background: rgba(255,255,255,0.08); border-radius: 16px;
-          border: 1px solid rgba(255,255,255,0.12); transition: background 0.2s ease;
-        }
+        .benefit-item { display: flex; align-items: flex-start; gap: 16px; padding: 20px; background: rgba(255,255,255,0.08); border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); transition: background 0.2s ease; }
         .benefit-item:hover { background: rgba(255,255,255,0.14); }
-        .form-section {
-          background: white; border-radius: 28px;
-          box-shadow: 0 32px 80px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06);
-          overflow: hidden;
-        }
-        .step-dot {
-          width: 32px; height: 32px; border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 0.8rem; font-weight: 800; transition: all 0.25s ease;
-        }
-        .grain {
-          position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.025;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-          background-repeat: repeat; background-size: 200px 200px;
-        }
+        .form-section { background: white; border-radius: 28px; box-shadow: 0 32px 80px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06); overflow: hidden; }
+        .step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; transition: all 0.25s ease; }
+        .grain { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.025; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 200px 200px; }
       `}</style>
 
-      {/* ── Modal (portal-like, fixed overlay) ── */}
       {lockedModal && (
-        <LockedPlanModal
-          planKey={lockedModal}
-          onClose={() => setLockedModal(null)}
-          onScrollToForm={handleGreenClick}
-        />
+        <LockedPlanModal planKey={lockedModal} onClose={() => setLockedModal(null)} onScrollToForm={handleGreenClick} />
       )}
 
       <div className="bv-hero min-h-screen" style={{ background: '#f8f8f6' }}>
@@ -749,9 +623,7 @@ export default function BecomeVendorPage() {
             </p>
             <div className="fade-up-4 flex flex-wrap justify-center gap-3 mb-12">
               {['12,000+ Active Buyers', '24h Setup', 'AI-Powered Tools', 'Free Plan Available'].map(t => (
-                <span key={t} className="px-4 py-2 rounded-full text-sm font-semibold" style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', color:'rgba(255,255,255,0.8)' }}>
-                  ✓ {t}
-                </span>
+                <span key={t} className="px-4 py-2 rounded-full text-sm font-semibold" style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', color:'rgba(255,255,255,0.8)' }}>✓ {t}</span>
               ))}
             </div>
             <div className="fade-up-4 flex flex-wrap justify-center gap-12">
@@ -799,8 +671,7 @@ export default function BecomeVendorPage() {
                 <ul style={{ listStyle:'none', padding:0, margin:0, display:'flex', flexDirection:'column', gap:7 }}>
                   {points.map(p => (
                     <li key={p} style={{ display:'flex', alignItems:'flex-start', gap:7, fontSize:'0.75rem', color:'#555', lineHeight:1.5 }}>
-                      <span style={{ width:5, height:5, borderRadius:'50%', background:color, marginTop:5, flexShrink:0 }} />
-                      {p}
+                      <span style={{ width:5, height:5, borderRadius:'50%', background:color, marginTop:5, flexShrink:0 }} />{p}
                     </li>
                   ))}
                 </ul>
@@ -809,19 +680,16 @@ export default function BecomeVendorPage() {
           </div>
         </div>
 
-        {/* ══ PRICING — all 3 plans fully styled ══ */}
+        {/* ══ PRICING ══ */}
         <div style={{ background:'linear-gradient(180deg, #f8f8f6 0%, #f0f0ee 100%)', padding:'60px 0 80px' }}>
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-14">
               <span style={{ color:'#db142e', fontSize:'0.72rem', fontWeight:800, letterSpacing:'0.16em', textTransform:'uppercase' }}>Choose Your Plan</span>
               <h2 className="bv-display font-black text-gray-900 mt-2" style={{ fontSize:'clamp(2rem,4vw,3.2rem)', letterSpacing:'-0.02em' }}>🌶️ THREE PLANS, ONE MARKET</h2>
               <p className="text-gray-500 mt-3">Start free and upgrade anytime after approval.</p>
-              <div className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 rounded-full"
-                style={{ background: 'rgba(25,143,65,0.08)', border: '1px solid rgba(25,143,65,0.22)' }}>
+              <div className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 rounded-full" style={{ background: 'rgba(25,143,65,0.08)', border: '1px solid rgba(25,143,65,0.22)' }}>
                 <Info size={14} color="#198f41" />
-                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#198f41' }}>
-                  All sellers start with the free plan — upgrade after approval
-                </span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#198f41' }}>All sellers start with the free plan — upgrade after approval</span>
               </div>
             </div>
 
@@ -829,32 +697,15 @@ export default function BecomeVendorPage() {
               {PLANS.map((plan) => {
                 const { Icon } = plan
                 const isLocked = plan.key !== 'green'
-
                 return (
-                  <div
-                    key={plan.key}
-                    className={`plan-card plan-card-${plan.key}`}
-                    style={{
-                      background: plan.bgGradient,
-                      border: `2px solid ${plan.borderColor}`,
-                    }}
-                    onClick={
-                      isLocked
-                        ? () => setLockedModal(plan.key as 'red' | 'black')
-                        : handleGreenClick
-                    }
-                  >
-                    {/* Badge */}
+                  <div key={plan.key} className={`plan-card plan-card-${plan.key}`} style={{ background: plan.bgGradient, border: `2px solid ${plan.borderColor}` }}
+                    onClick={isLocked ? () => setLockedModal(plan.key as 'red' | 'black') : handleGreenClick}>
                     {plan.badge && (
                       <div style={{ position:'absolute', top:16, right:16, zIndex:2 }}>
-                        <span className={plan.badge === 'MOST POPULAR' ? 'badge-popular' : 'badge-value'}>
-                          {plan.badge}
-                        </span>
+                        <span className={plan.badge === 'MOST POPULAR' ? 'badge-popular' : 'badge-value'}>{plan.badge}</span>
                       </div>
                     )}
-
                     <div style={{ padding:'28px 24px' }}>
-                      {/* Icon + name */}
                       <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
                         <div style={{ width:44, height:44, borderRadius:12, background: plan.dark ? 'rgba(245,158,11,0.15)' : `${plan.accentColor}18`, display:'flex', alignItems:'center', justifyContent:'center' }}>
                           <Icon size={22} color={plan.dark ? '#f59e0b' : plan.accentColor} />
@@ -864,67 +715,30 @@ export default function BecomeVendorPage() {
                           <div style={{ fontSize:'0.68rem', color: plan.dark ? 'rgba(255,255,255,0.45)' : '#888', marginTop:2 }}>{plan.target}</div>
                         </div>
                       </div>
-
-                      {/* Price */}
                       <div style={{ marginBottom:16 }}>
                         <span className="bv-display" style={{ fontSize:'2.8rem', fontWeight:900, color: plan.dark ? 'white' : '#111', lineHeight:1 }}>{plan.priceLabel}</span>
                         <span style={{ fontSize:'0.78rem', color: plan.dark ? 'rgba(255,255,255,0.45)' : '#888', marginLeft:6 }}>/{plan.priceSub}</span>
                       </div>
-
-                      {/* Commission */}
                       <div style={{ display:'inline-flex', alignItems:'center', gap:6, background: plan.dark ? 'rgba(245,158,11,0.12)' : `${plan.accentColor}12`, borderRadius:8, padding:'6px 10px', marginBottom:18 }}>
                         <BarChart2 size={13} color={plan.dark ? '#f59e0b' : plan.accentColor} />
                         <span style={{ fontSize:'0.75rem', fontWeight:700, color: plan.dark ? '#f59e0b' : plan.accentColor }}>{plan.commission} commission</span>
                       </div>
-
-                      {/* Max products */}
                       <div style={{ fontSize:'0.75rem', color: plan.dark ? 'rgba(255,255,255,0.5)' : '#888', marginBottom:18, display:'flex', alignItems:'center', gap:5 }}>
                         <Package size={13} color={plan.dark ? 'rgba(255,255,255,0.35)' : '#aaa'} />
                         {plan.maxProducts ? `Up to ${plan.maxProducts} products` : 'Unlimited products'}
                       </div>
-
-                      {/* Features */}
                       <ul style={{ listStyle:'none', padding:0, margin:'0 0 22px', display:'flex', flexDirection:'column', gap:8 }}>
                         {plan.features.map(f => (
                           <li key={f.text} style={{ display:'flex', alignItems:'center', gap:8, fontSize:'0.78rem', color: f.ok ? (plan.dark ? 'rgba(255,255,255,0.85)' : '#333') : (plan.dark ? 'rgba(255,255,255,0.2)' : '#ccc') }}>
-                            {f.ok
-                              ? <Check size={14} color={plan.dark ? '#f59e0b' : plan.accentColor} style={{ flexShrink:0 }} />
-                              : <X size={14} style={{ flexShrink:0 }} />}
+                            {f.ok ? <Check size={14} color={plan.dark ? '#f59e0b' : plan.accentColor} style={{ flexShrink:0 }} /> : <X size={14} style={{ flexShrink:0 }} />}
                             <span style={{ textDecoration: f.ok ? 'none' : 'line-through' }}>{f.text}</span>
                           </li>
                         ))}
                       </ul>
-
-                      {/* CTA button — all plans have a real styled button */}
-                      <button
-                        onClick={e => {
-                          e.stopPropagation()
-                          if (isLocked) {
-                            setLockedModal(plan.key as 'red' | 'black')
-                          } else {
-                            handleGreenClick()
-                          }
-                        }}
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                          width: '100%', padding: '14px 24px', borderRadius: 14,
-                          background: plan.dark
-                            ? 'linear-gradient(135deg, #f59e0b, #fbbf24)'
-                            : `linear-gradient(135deg, ${plan.accentColor}, ${plan.accentColor}dd)`,
-                          color: plan.dark ? '#0f172a' : 'white',
-                          fontSize: '0.85rem', fontWeight: 800,
-                          border: 'none', cursor: 'pointer',
-                          fontFamily: 'Barlow, sans-serif', letterSpacing: '0.04em', textTransform: 'uppercase',
-                          boxShadow: plan.key === 'green'
-                            ? '0 8px 24px rgba(25,143,65,0.35)'
-                            : plan.key === 'red'
-                            ? '0 8px 24px rgba(219,20,46,0.3)'
-                            : '0 8px 24px rgba(245,158,11,0.3)',
-                          transition: 'transform 0.18s ease, filter 0.18s ease',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.07)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                        onMouseLeave={e => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'none' }}
-                      >
+                      <button onClick={e => { e.stopPropagation(); if (isLocked) setLockedModal(plan.key as 'red' | 'black'); else handleGreenClick() }}
+                        style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', padding:'14px 24px', borderRadius:14, background: plan.dark ? 'linear-gradient(135deg, #f59e0b, #fbbf24)' : `linear-gradient(135deg, ${plan.accentColor}, ${plan.accentColor}dd)`, color: plan.dark ? '#0f172a' : 'white', fontSize:'0.85rem', fontWeight:800, border:'none', cursor:'pointer', fontFamily:'Barlow, sans-serif', letterSpacing:'0.04em', textTransform:'uppercase', boxShadow: plan.key==='green' ? '0 8px 24px rgba(25,143,65,0.35)' : plan.key==='red' ? '0 8px 24px rgba(219,20,46,0.3)' : '0 8px 24px rgba(245,158,11,0.3)', transition:'transform 0.18s ease, filter 0.18s ease' }}
+                        onMouseEnter={e => { e.currentTarget.style.filter='brightness(1.07)'; e.currentTarget.style.transform='translateY(-2px)' }}
+                        onMouseLeave={e => { e.currentTarget.style.filter='none'; e.currentTarget.style.transform='none' }}>
                         {plan.ctaLabel} <ArrowRight size={15} />
                       </button>
                     </div>
@@ -947,7 +761,7 @@ export default function BecomeVendorPage() {
           </div>
 
           <div className="form-section">
-            {/* Progress */}
+            {/* Step indicator */}
             <div style={{ padding:'24px 28px', borderBottom:'1px solid #f0f0f0' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                 {([1,2,3] as const).map(s => (
@@ -966,6 +780,22 @@ export default function BecomeVendorPage() {
 
             {/* Body */}
             <div style={{ padding:'28px', display:'flex', flexDirection:'column', gap:18 }}>
+
+              {/* ── FIX 1: Completeness bar rendered on ALL steps ── */}
+              <div style={{ background:'#f8f8f6', borderRadius:12, padding:'14px 16px', border:'1px solid #e5e7eb' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+                  <span style={{ fontSize:'0.78rem', fontWeight:700, color:'#374151' }}>Profile Completeness</span>
+                  <span style={{ fontSize:'0.78rem', fontWeight:800, color:completenessColor }}>{completenessScore}%</span>
+                </div>
+                <div style={{ height:6, background:'#e5e7eb', borderRadius:999, overflow:'hidden' }}>
+                  <div style={{ height:'100%', borderRadius:999, width:`${completenessScore}%`, background:completenessColor, transition:'width 0.4s ease, background 0.3s' }} />
+                </div>
+                <p style={{ fontSize:'0.72rem', color:'#9ca3af', marginTop:6, marginBottom:0 }}>
+                  💡 {completenessHint}
+                </p>
+              </div>
+
+              {/* ══ STEP 1 ══ */}
               {step === 1 && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -986,25 +816,98 @@ export default function BecomeVendorPage() {
                       <input id="phone_number" type="tel" placeholder="+216 XX XXX XXX" value={form.phone_number} onChange={handleChange('phone_number')} className={inputCls(errors.phone_number)} />
                     </Field>
                   </div>
+
                   <Field label="Business Name" id="business_name" error={errors.business_name}>
                     <input id="business_name" type="text" placeholder="Your shop or brand name" value={form.business_name} onChange={handleChange('business_name')} className={inputCls(errors.business_name)} />
                   </Field>
-                  <Field label="Business Category" id="business_category" error={errors.business_category}>
-                    <div style={{ position:'relative' }}>
-                      <select id="business_category" value={form.business_category} onChange={handleChange('business_category')} className={inputCls(errors.business_category) + ' appearance-none pr-10'}>
-                        <option value="">Select a category…</option>
-                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                      <ChevronDown size={15} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', color:'#aaa', pointerEvents:'none' }} />
+
+                  {/* Multi-category selector */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-semibold text-gray-700">
+                      Business Categories
+                      <span style={{ fontSize:'0.72rem', fontWeight:400, color:'#9ca3af', marginLeft:6 }}>(select up to 5)</span>
+                    </label>
+                    {categoriesLoading ? (
+                      <div style={{ padding:'12px', textAlign:'center', color:'#9ca3af', fontSize:'0.78rem' }}>Loading categories…</div>
+                    ) : (
+                      <div style={{ display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:8, maxHeight:240, overflowY:'auto', padding:4 }}>
+                        {(apiCategories.length > 0 ? apiCategories.map(c => c.name) : CATEGORIES).map(catName => {
+                          const isSelected = selectedCategories.includes(catName)
+                          return (
+                            <button key={catName} type="button"
+                              onClick={() => {
+                                setSelectedCategories(prev => {
+                                  if (isSelected) return prev.filter(c => c !== catName)
+                                  if (prev.length >= 5) return prev
+                                  return [...prev, catName]
+                                })
+                                setErrors(prev => { const n = { ...prev }; delete n.business_category; return n })
+                              }}
+                              style={{ padding:'8px 12px', borderRadius:10, textAlign:'left', fontSize:'0.78rem', fontWeight: isSelected ? 700 : 500, cursor:'pointer', border: isSelected ? '2px solid #db142e' : '1.5px solid #e5e7eb', background: isSelected ? '#fef2f2' : 'white', color: isSelected ? '#db142e' : '#374151', transition:'all 0.15s ease', display:'flex', alignItems:'center', gap:6 }}>
+                              {isSelected && (
+                                <span style={{ width:14, height:14, borderRadius:'50%', background:'#db142e', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                  <Check size={9} color="white" />
+                                </span>
+                              )}
+                              {catName}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                    {selectedCategories.length > 0 && (
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:4 }}>
+                        {selectedCategories.map(c => (
+                          <span key={c} style={{ display:'inline-flex', alignItems:'center', gap:4, background:'#fef2f2', color:'#db142e', border:'1px solid #fecaca', borderRadius:999, padding:'2px 10px', fontSize:'0.72rem', fontWeight:700 }}>
+                            {c}
+                            <button type="button" onClick={() => setSelectedCategories(prev => prev.filter(x => x !== c))} style={{ background:'none', border:'none', cursor:'pointer', color:'#db142e', padding:0, lineHeight:1, display:'flex' }}>
+                              <X size={10} />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {errors.business_category && (
+                      <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={11} />{errors.business_category}</p>
+                    )}
+                  </div>
+
+                  {/* Pricing range */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-semibold text-gray-700">
+                      Pricing Range
+                      <span style={{ fontSize:'0.72rem', fontWeight:400, color:'#9ca3af', marginLeft:6 }}>(optional)</span>
+                    </label>
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:8 }}>
+                      {([
+                        { value: 'budget',  label: 'Budget',    desc: 'Affordable prices', emoji: '💚' },
+                        { value: 'mid',     label: 'Mid-range', desc: 'Quality & value',   emoji: '💛' },
+                        { value: 'premium', label: 'Premium',   desc: 'High-end products', emoji: '🖤' },
+                      ] as const).map(opt => {
+                        const isSelected = form.pricing_range === opt.value
+                        return (
+                          <button key={opt.value} type="button"
+                            onClick={() => setForm(prev => ({ ...prev, pricing_range: prev.pricing_range === opt.value ? '' : opt.value }))}
+                            style={{ padding:'12px 10px', borderRadius:12, textAlign:'center', border: isSelected ? '2px solid #db142e' : '1.5px solid #e5e7eb', background: isSelected ? '#fef2f2' : 'white', cursor:'pointer', transition:'all 0.15s ease' }}>
+                            <div style={{ fontSize:'1.2rem', marginBottom:4 }}>{opt.emoji}</div>
+                            <div style={{ fontSize:'0.78rem', fontWeight:700, color: isSelected ? '#db142e' : '#374151' }}>{opt.label}</div>
+                            <div style={{ fontSize:'0.68rem', color:'#9ca3af', marginTop:2 }}>{opt.desc}</div>
+                          </button>
+                        )
+                      })}
                     </div>
-                  </Field>
+                  </div>
+
                   <Field label="Business Description" id="business_description" error={errors.business_description}>
                     <textarea id="business_description" rows={4} placeholder="Tell us about your business, what you sell, and your story…" value={form.business_description} onChange={handleChange('business_description')} className={inputCls(errors.business_description) + ' resize-none'} />
-                    <span style={{ fontSize:'0.72rem', color:'#bbb', textAlign:'right' }}>{form.business_description.length} / 2000</span>
+                    <span style={{ fontSize:'0.72rem', color: form.business_description.length >= 100 ? '#198f41' : '#bbb', textAlign:'right' }}>
+                      {form.business_description.length} / 2000{form.business_description.length >= 100 && ' ✓'}
+                    </span>
                   </Field>
                 </>
               )}
 
+              {/* ══ STEP 2 ══ */}
               {step === 2 && (
                 <>
                   <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:12, padding:'12px 16px' }}>
@@ -1025,13 +928,23 @@ export default function BecomeVendorPage() {
                 </>
               )}
 
+              {/* ══ STEP 3 ══ */}
               {step === 3 && (
                 <>
+                  {/* Profile picture — now REQUIRED */}
                   <div>
-                    <label style={{ fontSize:'0.85rem', fontWeight:700, color:'#374151', display:'block', marginBottom:8 }}>Profile Picture <span style={{ color:'#9ca3af', fontWeight:400 }}>(optional)</span></label>
+                    <label style={{ fontSize:'0.85rem', fontWeight:700, color:'#374151', display:'block', marginBottom:8 }}>
+                      Profile Picture{' '}
+                      <span style={{ color:'#db142e', fontWeight:700 }}>*</span>
+                      <span style={{ color:'#9ca3af', fontWeight:400, fontSize:'0.78rem', marginLeft:4 }}>(required)</span>
+                    </label>
                     <div style={{ display:'flex', alignItems:'center', gap:16 }}>
-                      <div onClick={() => profileRef.current?.click()} style={{ width:72, height:72, borderRadius:16, border:'2px dashed #e5e7eb', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', overflow:'hidden', background:'#fafafa' }}>
-                        {profilePicPreview ? <img src={profilePicPreview} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <Upload size={20} color="#d1d5db" />}
+                      <div
+                        onClick={() => profileRef.current?.click()}
+                        style={{ width:72, height:72, borderRadius:16, border: errors.profile_picture ? '2px dashed #f87171' : '2px dashed #e5e7eb', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', overflow:'hidden', background: errors.profile_picture ? '#fef2f2' : '#fafafa' }}>
+                        {profilePicPreview
+                          ? <img src={profilePicPreview} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                          : <Upload size={20} color={errors.profile_picture ? '#f87171' : '#d1d5db'} />}
                       </div>
                       <div>
                         <button type="button" onClick={() => profileRef.current?.click()} style={{ color:'#db142e', fontWeight:700, fontSize:'0.85rem', background:'none', border:'none', cursor:'pointer' }}>
@@ -1040,34 +953,80 @@ export default function BecomeVendorPage() {
                         <p style={{ fontSize:'0.72rem', color:'#9ca3af', margin:'2px 0 0' }}>JPG, PNG or WebP · max 4MB</p>
                       </div>
                     </div>
+                    {/* ── FIX 2: profile picture error ── */}
+                    {errors.profile_picture && (
+                      <p className="text-xs text-red-500 flex items-center gap-1 mt-2">
+                        <AlertCircle size={11} />{errors.profile_picture}
+                      </p>
+                    )}
                     <input ref={profileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleProfilePic} />
                   </div>
 
+                  {/* Product samples — now REQUIRED (min 1) */}
                   <div>
-                    <label style={{ fontSize:'0.85rem', fontWeight:700, color:'#374151', display:'block', marginBottom:4 }}>Product Samples <span style={{ color:'#9ca3af', fontWeight:400 }}>(up to 5, optional)</span></label>
-                    <p style={{ fontSize:'0.72rem', color:'#9ca3af', marginBottom:12, marginTop:0 }}>Show buyers what kind of products you&#39;ll sell</p>
-                    <div style={{ display:'flex', flexWrap:'wrap', gap:10 }}>
-                      {samplePreviews.map((src, i) => (
-                        <div key={i} style={{ position:'relative', width:68, height:68, borderRadius:12, overflow:'hidden', border:'1.5px solid #e5e7eb' }}>
-                          <img src={src} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                          <button type="button" onClick={() => removeSample(i)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', opacity:0, border:'none', cursor:'pointer', transition:'opacity 0.2s' }}
-                            onMouseEnter={e => (e.currentTarget.style.opacity='1')} onMouseLeave={e => (e.currentTarget.style.opacity='0')}>
-                            <X size={14} color="white" />
-                          </button>
-                        </div>
-                      ))}
-                      {sampleImages.length < 5 && (
-                        <div onClick={() => samplesRef.current?.click()} style={{ width:68, height:68, borderRadius:12, border:'2px dashed #e5e7eb', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', cursor:'pointer', background:'#fafafa' }}>
-                          <Upload size={14} color="#d1d5db" />
-                          <span style={{ fontSize:'0.65rem', color:'#d1d5db', marginTop:3 }}>Add</span>
-                        </div>
-                      )}
-                    </div>
+                    <label style={{ fontSize:'0.85rem', fontWeight:700, color:'#374151', display:'block', marginBottom:4 }}>
+                      Product Samples{' '}
+                      <span style={{ color:'#db142e', fontWeight:700 }}>*</span>
+                      <span style={{ color:'#9ca3af', fontWeight:400, fontSize:'0.78rem', marginLeft:4 }}>(at least 1, up to 5)</span>
+                    </label>
+                    <p style={{ fontSize:'0.72rem', color:'#9ca3af', marginBottom:12, marginTop:0 }}>
+                      Show buyers what you sell. Add a caption to each image to boost your approval chances.
+                    </p>
+
+                    {samples.length > 0 && (
+                      <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:12 }}>
+                        {samples.map((s, i) => (
+                          <div key={i} style={{ display:'flex', alignItems:'center', gap:10, background:'#fafafa', border:'1.5px solid #e5e7eb', borderRadius:12, padding:10 }}>
+                            <div style={{ width:60, height:60, flexShrink:0, borderRadius:8, overflow:'hidden', border:'1px solid #e5e7eb' }}>
+                              <img src={s.preview} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                            </div>
+                            <input type="text" placeholder={`Caption for image ${i + 1} (e.g. "Handmade leather bag")`} value={s.caption} onChange={e => updateCaption(i, e.target.value)} maxLength={200}
+                              style={{ flex:1, fontSize:'0.78rem', padding:'8px 12px', borderRadius:8, border:'1px solid #e5e7eb', outline:'none', background:'white', color:'#374151' }} />
+                            <button type="button" onClick={() => removeSample(i)}
+                              style={{ width:28, height:28, borderRadius:8, border:'1px solid #fecaca', background:'#fef2f2', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
+                              <X size={12} color="#dc2626" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {samples.length < 5 && (
+                      <div onClick={() => samplesRef.current?.click()}
+                        style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', border: errors.sample_images ? '2px dashed #f87171' : '2px dashed #e5e7eb', borderRadius:12, cursor:'pointer', background: errors.sample_images ? '#fef2f2' : '#fafafa' }}>
+                        <Upload size={16} color={errors.sample_images ? '#f87171' : '#d1d5db'} />
+                        <span style={{ fontSize:'0.78rem', color: errors.sample_images ? '#f87171' : '#9ca3af' }}>
+                          {samples.length === 0 ? 'Upload product images (at least 1 required)' : `Add more (${5 - samples.length} remaining)`}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* ── FIX 2: sample images error ── */}
+                    {errors.sample_images && (
+                      <p className="text-xs text-red-500 flex items-center gap-1 mt-2">
+                        <AlertCircle size={11} />{errors.sample_images}
+                      </p>
+                    )}
+
+                    {samples.length >= 2 && (
+                      <p style={{ fontSize:'0.72rem', color:'#198f41', marginTop:6, fontWeight:600 }}>
+                        ✓ 2+ images uploaded — this increases your approval chances!
+                      </p>
+                    )}
+                    {samples.length === 1 && (
+                      <p style={{ fontSize:'0.72rem', color:'#f59e0b', marginTop:6 }}>
+                        💡 Add one more image to further increase approval chances
+                      </p>
+                    )}
+
                     <input ref={samplesRef} type="file" accept="image/*" multiple style={{ display:'none' }} onChange={handleSamples} />
                   </div>
 
+                  {/* Social media */}
                   <div>
-                    <p style={{ fontSize:'0.85rem', fontWeight:700, color:'#374151', marginBottom:12 }}>Social Media <span style={{ color:'#9ca3af', fontWeight:400 }}>(optional)</span></p>
+                    <p style={{ fontSize:'0.85rem', fontWeight:700, color:'#374151', marginBottom:12 }}>
+                      Social Media <span style={{ color:'#9ca3af', fontWeight:400 }}>(optional)</span>
+                    </p>
                     <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
                       <Field label="Facebook URL" id="facebook_url">
                         <input id="facebook_url" type="url" placeholder="https://facebook.com/yourbusiness" value={form.facebook_url} onChange={handleChange('facebook_url')} className={inputCls()} />
@@ -1107,10 +1066,7 @@ export default function BecomeVendorPage() {
                 ) : (
                   <button type="button" onClick={handleSubmit} disabled={loading}
                     style={{ padding:'10px 24px', borderRadius:12, background: loading ? '#d1d5db' : '#198f41', color:'white', fontSize:'0.82rem', fontWeight:800, border:'none', cursor: loading ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', gap:6, boxShadow: loading ? 'none' : '0 4px 14px rgba(25,143,65,0.35)', fontFamily:'Barlow,sans-serif', transition:'all 0.2s' }}>
-                    {loading
-                      ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }} />Submitting…</>
-                      : '✓ Submit Application'
-                    }
+                    {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }} />Submitting…</> : '✓ Submit Application'}
                   </button>
                 )}
               </div>
@@ -1124,8 +1080,7 @@ export default function BecomeVendorPage() {
           <p style={{ color:'rgba(255,255,255,0.5)', maxWidth:400, margin:'0 auto 28px', lineHeight:1.7 }}>
             Join hundreds of Tunisian entrepreneurs already building their online business with Choosetounsi.
           </p>
-          <button
-            onClick={() => formRef.current?.scrollIntoView({ behavior:'smooth' })}
+          <button onClick={() => formRef.current?.scrollIntoView({ behavior:'smooth' })}
             style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'14px 32px', background:'#db142e', color:'white', borderRadius:14, fontWeight:800, fontSize:'0.88rem', letterSpacing:'0.06em', textTransform:'uppercase', border:'none', cursor:'pointer', boxShadow:'0 8px 24px rgba(219,20,46,0.4)', fontFamily:'Barlow,sans-serif' }}>
             Apply Now <ArrowRight size={16} />
           </button>
