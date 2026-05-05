@@ -9,7 +9,6 @@ import {
   Loader2, ShoppingBag, Store, TrendingUp, Shield,
 } from 'lucide-react';
 
-// Google SVG icon
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 48 48">
@@ -26,13 +25,13 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl  = useRef(searchParams.get('callbackUrl')).current;
 
-  const [email,       setEmail]       = useState('');
-  const [password,    setPassword]    = useState('');
-  const [showPass,    setShowPass]    = useState(false);
-  const [loading,     setLoading]     = useState(false);
+  const [email,         setEmail]         = useState('');
+  const [password,      setPassword]      = useState('');
+  const [showPass,      setShowPass]      = useState(false);
+  const [loading,       setLoading]       = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [error,       setError]       = useState('');
-  const [checked,     setChecked]     = useState(false);
+  const [error,         setError]         = useState('');
+  const [checked,       setChecked]       = useState(false);
 
   useEffect(() => {
     const token = getToken();
@@ -44,9 +43,8 @@ function LoginForm() {
     clearLocalSession();
     setChecked(true);
 
-    // Show error from Google callback if any
     const urlError = searchParams.get('error');
-    if (urlError === 'google_failed')      setError('Google sign-in failed. Please try again.');
+    if (urlError === 'google_failed')       setError('Google sign-in failed. Please try again.');
     if (urlError === 'account_deactivated') setError('Your account is deactivated.');
   }, []);
 
@@ -59,6 +57,11 @@ function LoginForm() {
       const { redirectTo } = await login({ email: email.trim(), password });
       router.push((callbackUrl?.startsWith('/seller') ? callbackUrl : redirectTo) ?? '/');
     } catch (err: any) {
+      // Unverified account — send to verify page with email pre-filled
+      if (err?.needs_verification && err?.email) {
+        router.push(`/auth/verify-email?email=${encodeURIComponent(err.email)}`);
+        return;
+      }
       setError(err?.message ?? 'Something went wrong. Please try again.');
       setLoading(false);
     }
@@ -68,7 +71,7 @@ function LoginForm() {
     setGoogleLoading(true);
     setError('');
     try {
-      await loginWithGoogle(); // redirects browser to Google
+      await loginWithGoogle();
     } catch {
       setError('Could not connect to Google. Please try again.');
       setGoogleLoading(false);
@@ -90,7 +93,6 @@ function LoginForm() {
         {/* ══ LEFT — form ══ */}
         <div className="flex-1 flex flex-col justify-center px-10 py-12 lg:px-14">
 
-          {/* Logo */}
           <div className="flex items-center gap-2.5 mb-10">
             <div className="w-9 h-9 rounded-xl bg-[#E63946] flex items-center justify-center shadow-lg shadow-red-500/30">
               <ShoppingBag size={18} className="text-white" />
@@ -100,7 +102,6 @@ function LoginForm() {
             </span>
           </div>
 
-          {/* Heading */}
           <div className="mb-8">
             <h1 className="text-3xl font-black text-slate-900 leading-tight">
               Sign in to your<br />
@@ -109,7 +110,6 @@ function LoginForm() {
             <div className="w-10 h-1 bg-[#E63946] rounded-full mt-3" />
           </div>
 
-          {/* Error */}
           {error && (
             <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 mb-5 text-sm text-red-600">
               <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
@@ -117,26 +117,21 @@ function LoginForm() {
             </div>
           )}
 
-          {/* Google button */}
           <button
             onClick={handleGoogle}
             disabled={googleLoading || loading}
             className="w-full flex items-center justify-center gap-3 py-3 rounded-2xl border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all duration-150 text-sm font-semibold text-slate-700 mb-5 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {googleLoading
-              ? <Loader2 size={18} className="animate-spin" />
-              : <GoogleIcon />}
+            {googleLoading ? <Loader2 size={18} className="animate-spin" /> : <GoogleIcon />}
             Continue with Google
           </button>
 
-          {/* Divider */}
           <div className="flex items-center gap-3 mb-5">
             <div className="flex-1 h-px bg-slate-200" />
             <span className="text-xs text-slate-400 font-medium">or sign in with email</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative group">
               <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />

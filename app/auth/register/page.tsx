@@ -37,10 +37,7 @@ function RegisterForm() {
   useEffect(() => {
     const token = getToken();
     const user  = getUser();
-    if (token && user) {
-      router.replace('/');
-      return;
-    }
+    if (token && user) { router.replace('/'); return; }
     setChecked(true);
   }, []);
 
@@ -55,9 +52,14 @@ function RegisterForm() {
 
     setLoading(true);
     try {
-      await register({ name: name.trim(), email: email.trim(), password, password_confirmation: confirm });
-      // Always redirect to home after registration
-      router.push('/');
+      const result = await register({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        password_confirmation: confirm,
+      });
+      // Server no longer returns a token — redirect to verification page
+      router.push(`/auth/verify-email?email=${encodeURIComponent(result.email)}`);
     } catch (err: any) {
       setError(err?.message ?? 'Something went wrong. Please try again.');
       setLoading(false);
@@ -87,6 +89,7 @@ function RegisterForm() {
     <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center p-4">
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl shadow-black/10 overflow-hidden flex min-h-[620px]">
 
+        {/* ══ LEFT — form ══ */}
         <div className="flex-1 flex flex-col justify-center px-10 py-12 lg:px-14">
           <div className="flex items-center gap-2.5 mb-8">
             <div className="w-9 h-9 rounded-xl bg-[#E63946] flex items-center justify-center shadow-lg shadow-red-500/30">
@@ -178,6 +181,7 @@ function RegisterForm() {
           </p>
         </div>
 
+        {/* ══ RIGHT — brand ══ */}
         <div className="hidden lg:flex w-[42%] bg-[#E63946] flex-col items-center justify-center px-10 py-12 relative overflow-hidden">
           <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/[0.06]" />
           <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-white/[0.06]" />
