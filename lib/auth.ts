@@ -1,5 +1,4 @@
 import axios from 'axios';
-
 export interface AuthUser {
   id: number;
   name: string;
