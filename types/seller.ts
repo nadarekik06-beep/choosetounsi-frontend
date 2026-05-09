@@ -186,12 +186,26 @@ export interface OrderItem {
   variant_label: string | null;
   variant_attributes: VariantAttribute[];   // [{ slug, label, value, color_hex }]
   variant_image_url: string | null;
+  // ── Commission snapshot fields (null for legacy orders) ──────────────
+  has_commission: boolean;
+  commission_percentage: number | null;  // e.g. 12 (stored as %)
+  commission_amount: number | null;      // platform fee in TND
+  seller_amount: number | null;          // what seller receives in TND
+  plan_used: 'free' | 'red' | 'black' | null;
+}
+// ── Commission summary for the order detail modal ────────────────────────────
+export interface OrderCommissionSummary {
+  has_commission: boolean;
+  total_gross: number;
+  total_commission_amount: number | null;  // null for legacy orders
+  total_seller_net: number | null;         // null for legacy orders
 }
 
 export interface OrderDetail {
   order: Order & { customer: Customer };
   items: OrderItem[];
   seller_subtotal: number;
+  commission: OrderCommissionSummary;
 }
 
 export interface OrderStats {

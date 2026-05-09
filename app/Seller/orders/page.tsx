@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { ordersApi } from '@/lib/sellerApi';
-import type { Order, OrderDetail, OrderItem, VariantAttribute, PaginatedResponse } from '@/types/seller';
 import {
   Search, Eye, ChevronLeft, ChevronRight, X, Loader2,
   ShoppingBag, AlertCircle, User, MapPin, Package,
   Hash, Calendar, Tag, Palette, Ruler,
 } from 'lucide-react';
 import { useTheme } from '../layout';
+import type { Order, OrderDetail, OrderItem, VariantAttribute, PaginatedResponse, OrderCommissionSummary } from '@/types/seller';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    STATUS / PAYMENT BADGES  (unchanged)
@@ -95,6 +95,154 @@ function VariantPill({ attr }: { attr: VariantAttribute }) {
     }}>
       {attr.value}
     </span>
+  );
+}
+/* ─────────────────────────────────────────────────────────────────────────────
+   COMMISSION SUMMARY CARD
+   3-column breakdown: Gross / Platform Fee / You Receive
+   Shown only when has_commission = true (new orders post-migration).
+───────────────────────────────────────────────────────────────────────────── */
+
+const PLAN_LABELS: Record<string, string> = {
+  free:  'Green',
+  red:   'Red',
+  black: 'Black',
+};
+
+const PLAN_COLORS: Record<string, string> = {
+  free:  '#198f41',
+  red:   '#db142e',
+  black: '#f59e0b',
+};
+
+function CommissionItemBadge({ item, dark }: { item: OrderItem; dark: boolean }) {
+  if (!item.has_commission || item.commission_percentage === null) return null;
+
+  const planColor = PLAN_COLORS[item.plan_used ?? 'free'] ?? '#198f41';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 6 }}>
+      {/* Fee line */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <span style={{
+          fontSize: 9, fontWeight: 800, textTransform: 'uppercase',
+          letterSpacing: '0.07em',
+          color: '#ef4444',
+          background: 'rgba(239,68,68,0.08)',
+          border: '1px solid rgba(239,68,68,0.18)',
+          padding: '1px 6px', borderRadius: 4,
+        }}>
+          Fee {item.commission_percentage}%
+        </span>
+        <span style={{ fontSize: 10, color: '#ef4444', fontWeight: 700 }}>
+          −{Number(item.commission_amount).toFixed(3)} TND
+        </span>
+        <span style={{
+          fontSize: 9, fontWeight: 700,
+          color: planColor,
+          background: `${planColor}10`,
+          border: `1px solid ${planColor}25`,
+          padding: '1px 6px', borderRadius: 4,
+        }}>
+          {PLAN_LABELS[item.plan_used ?? 'free']} plan
+        </span>
+      </div>
+      {/* Net line */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#10b981' }}>
+          You receive
+        </span>
+        <span style={{ fontSize: 11, fontWeight: 900, color: '#10b981' }}>
+          {Number(item.seller_amount).toFixed(3)} TND
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function CommissionSummaryCard({
+  commission, dark, border, bgSub,
+}: {
+  commission: OrderCommissionSummary;
+  dark: boolean;
+  border: string;
+  bgSub: string;
+}) {
+  if (!commission.has_commission) return null;
+
+  const columns = [
+    {
+      label: 'Gross Total',
+      value: Number(commission.total_gross).toFixed(3),
+      color: dark ? '#93c5fd' : '#1e40af',
+      bg:    dark ? 'rgba(59,130,246,0.08)' : '#eff6ff',
+      bd:    dark ? 'rgba(59,130,246,0.15)' : '#bfdbfe',
+      note:  'Customer paid',
+    },
+    {
+      label: 'Platform Fee',
+      value: Number(commission.total_commission_amount).toFixed(3),
+      color: '#ef4444',
+      bg:    'rgba(239,68,68,0.06)',
+      bd:    'rgba(239,68,68,0.18)',
+      note:  'ChooseTounsi commission',
+    },
+    {
+      label: 'You Receive',
+      value: Number(commission.total_seller_net).toFixed(3),
+      color: '#10b981',
+      bg:    'rgba(16,185,129,0.06)',
+      bd:    'rgba(16,185,129,0.18)',
+      note:  'Net after fees',
+    },
+  ];
+
+  return (
+    <div style={{ marginTop: 2 }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8,
+      }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: dark ? 'rgba(255,255,255,0.7)' : '#374151' }}>
+          Commission Breakdown
+        </span>
+        <span style={{
+          fontSize: 9, fontWeight: 700,
+          background: 'rgba(219,20,46,0.1)', color: '#db142e',
+          border: '1px solid rgba(219,20,46,0.2)',
+          padding: '1px 6px', borderRadius: 4,
+          textTransform: 'uppercase', letterSpacing: '0.06em',
+        }}>
+          Order Summary
+        </span>
+      </div>
+
+      {/* 3-column grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+        {columns.map(col => (
+          <div key={col.label} style={{
+            background: col.bg,
+            border: `1px solid ${col.bd}`,
+            borderRadius: 12, padding: '10px 12px',
+            textAlign: 'center',
+          }}>
+            <p style={{
+              fontSize: 9, fontWeight: 800, textTransform: 'uppercase',
+              letterSpacing: '0.08em', color: col.color,
+              margin: '0 0 5px', opacity: 0.8,
+            }}>
+              {col.label}
+            </p>
+            <p style={{ fontSize: 15, fontWeight: 900, color: col.color, margin: '0 0 3px' }}>
+              {col.value}
+            </p>
+            <p style={{ fontSize: 9, color: col.color, margin: 0, fontWeight: 500, opacity: 0.65 }}>
+              TND · {col.note}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -237,6 +385,7 @@ function OrderItemCard({
             {Number(item.unit_price).toFixed(3)} TND / unit
           </span>
         </div>
+        <CommissionItemBadge item={item} dark={dark} />
       </div>
 
       {/* ── Total ── */}
@@ -493,6 +642,23 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                     </span>
                   </div>
                 </div>
+                {/* ── NEW: Commission summary card (hidden for legacy orders) ── */}
+                {detail.commission?.has_commission && (
+                  <div style={{
+                    background: bgSub,
+                    border: `1px solid ${border}`,
+                    borderRadius: 14,
+                    padding: 16,
+                    marginTop: 2,
+                  }}>
+                    <CommissionSummaryCard
+                      commission={detail.commission}
+                      dark={dark}
+                      border={border}
+                      bgSub={bgSub}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* ── Update Order Status ── */}
