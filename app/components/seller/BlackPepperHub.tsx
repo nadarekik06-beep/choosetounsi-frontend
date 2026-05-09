@@ -295,13 +295,23 @@ export function AiHubSection({ dark }: { dark: boolean }) {
                       padding: '12px 14px',
                       display: 'flex', alignItems: 'flex-start', gap: 12,
                     }}>
-                      <div style={{
-                        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                        background: `${sigColor}15`, border: `1px solid ${sigColor}30`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <Flame size={16} color={sigColor} />
-                      </div>
+                      {product.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={product.image_url}
+                          alt={product.product_name}
+                          style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'cover', flexShrink: 0,
+                                  border: `1px solid ${sigColor}30` }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                          background: `${sigColor}15`, border: `1px solid ${sigColor}30`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <Flame size={16} color={sigColor} />
+                        </div>
+                      )}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                           <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -351,14 +361,23 @@ export function AiHubSection({ dark }: { dark: boolean }) {
                       border: `1px solid ${urgColor}28`,
                       padding: '12px 14px',
                       display: 'flex', alignItems: 'flex-start', gap: 12,
+                    }}>{alert.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={alert.image_url}
+                      alt={alert.product_name}
+                      style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'cover', flexShrink: 0,
+                              border: `1px solid ${urgColor}28` }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                      background: `${urgColor}12`, border: `1px solid ${urgColor}28`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
-                      <div style={{
-                        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                        background: `${urgColor}12`, border: `1px solid ${urgColor}28`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <Package size={16} color={urgColor} />
-                      </div>
+                      <Package size={16} color={urgColor} />
+                    </div>
+                  )}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                           <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>{alert.product_name}</p>

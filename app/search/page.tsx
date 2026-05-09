@@ -1,21 +1,8 @@
 'use client';
-/**
- * app/search/page.tsx  — COMPLETE REPLACEMENT
- *
- * Changes from original:
- *   1. Sponsored products pinned to top row when query is present
- *   2. SponsoredProductsSection rendered above organic results
- *   3. Impression/click tracking wired into sponsored results
- *   4. All original search logic (text + image) preserved exactly
- *   5. "Sponsored" badge on promoted results
- *
- * The original SearchResultCard is preserved. SponsoredSearchCard is new.
- */
 
-import { useEffect, useState, Suspense, useRef } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { sponsorshipApi, SponsoredProduct } from "@/lib/sponsorshipApi";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -35,151 +22,79 @@ interface SearchProduct {
   primary_image:    string | null;
 }
 
-// ─── Original organic result card (unchanged) ─────────────────────────────────
-function SearchResultCard({ product }: { product: SearchProduct }) {
-  const imageUrl = product.primary_image ?? "/images/placeholder.png";
+// ─── Placeholder SVG inline (no file needed) ──────────────────────────────────
+function PlaceholderImg({ size = 80 }: { size?: number }) {
   return (
-    <Link href={`/products/${product.slug}`} style={{ textDecoration: "none", color: "inherit" }}>
-      <div
-        style={{
-          background: "#fff", borderRadius: 12, overflow: "hidden",
-          border: "1px solid #f1f5f9", cursor: "pointer",
-          transition: "box-shadow 0.2s, transform 0.2s",
-        }}
-        onMouseEnter={e => {
-          (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 32px rgba(0,0,0,0.12)";
-          (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
-        }}
-        onMouseLeave={e => {
-          (e.currentTarget as HTMLElement).style.boxShadow = "none";
-          (e.currentTarget as HTMLElement).style.transform = "none";
-        }}
-      >
-        <div style={{ aspectRatio: "1/1", background: "#f8fafc", overflow: "hidden", position: "relative" }}>
-          <img
-            src={imageUrl} alt={product.name}
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-            onError={e => { (e.currentTarget as HTMLImageElement).src = "/images/placeholder.png"; }}
-          />
-          {product.featured && (
-            <span style={{
-              position: "absolute", top: 8, left: 8, background: "#dc2626", color: "#fff",
-              fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 999,
-              letterSpacing: "0.05em", textTransform: "uppercase",
-            }}>Featured</span>
-          )}
-        </div>
-        <div style={{ padding: "12px 14px" }}>
-          {(product.subcategory_name ?? product.category_name) && (
-            <p style={{ fontSize: 11, color: "#dc2626", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
-              {product.subcategory_name ?? product.category_name}
-            </p>
-          )}
-          <h3 style={{
-            fontSize: 14, fontWeight: 600, color: "#111", margin: "0 0 8px", lineHeight: 1.4,
-            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-          }}>
-            {product.name}
-          </h3>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 16, fontWeight: 800, color: "#dc2626" }}>
-              {product.price.toFixed(2)} DT
-            </span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: product.stock === 0 ? "#94a3b8" : "#16a34a" }}>
-              {product.stock === 0 ? "Out of stock" : "In stock"}
-            </span>
-          </div>
-        </div>
-      </div>
-    </Link>
+    <svg width={size} height={size} viewBox="0 0 80 80" fill="none">
+      <rect width="80" height="80" fill="#f1f5f9"/>
+      <rect x="20" y="18" width="40" height="32" rx="4" fill="#e2e8f0"/>
+      <circle cx="30" cy="28" r="4" fill="#cbd5e1"/>
+      <path d="M20 42l14-12 10 10 8-6 8 8v8H20V42z" fill="#cbd5e1"/>
+    </svg>
   );
 }
 
-// ─── Sponsored result card (new) ──────────────────────────────────────────────
-function SponsoredSearchCard({ product }: { product: SponsoredProduct }) {
+// ─── Product Card ─────────────────────────────────────────────────────────────
+function ProductCard({ product, rank }: { product: SearchProduct; rank?: number }) {
   const [imgErr, setImgErr] = useState(false);
-  const tracked = useRef(false);
-
-  useEffect(() => {
-    if (!tracked.current && product.sponsor_data?.id) {
-      tracked.current = true;
-      sponsorshipApi.recordImpression(product.sponsor_data.id);
-    }
-  }, [product.sponsor_data?.id]);
-
-  const handleClick = () => {
-    if (product.sponsor_data?.id) {
-      sponsorshipApi.recordClick(product.sponsor_data.id);
-    }
-  };
+  const imageUrl = product.primary_image && !imgErr ? product.primary_image : null;
+  const label = product.subcategory_name ?? product.category_name;
 
   return (
-    <Link href={`/products/${product.slug}`} onClick={handleClick} style={{ textDecoration: "none", color: "inherit" }}>
-      <div
-        style={{
-          background: "#fff", borderRadius: 12, overflow: "hidden",
-          border: "1.5px solid #e0d9ff", cursor: "pointer",
-          transition: "box-shadow 0.2s, transform 0.2s",
-          position: "relative",
-        }}
-        onMouseEnter={e => {
-          (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 28px rgba(99,102,241,0.18)";
-          (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
-        }}
-        onMouseLeave={e => {
-          (e.currentTarget as HTMLElement).style.boxShadow = "none";
-          (e.currentTarget as HTMLElement).style.transform = "none";
-        }}
-      >
-        <div style={{ aspectRatio: "1/1", background: "#f5f0ff", overflow: "hidden", position: "relative" }}>
-          {product.primary_image_url && !imgErr ? (
+    <Link href={`/products/${product.slug}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+      <div className="pcard">
+        {/* Image */}
+        <div style={{ position: "relative", aspectRatio: "3/4", background: "#f8fafc", overflow: "hidden" }}>
+          {imageUrl ? (
             <img
-              src={product.primary_image_url} alt={product.name}
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+              src={imageUrl} alt={product.name}
+              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.4s ease" }}
+              className="pcard-img"
               onError={() => setImgErr(true)}
             />
           ) : (
-            <div style={{ width: "100%", height: "100%", background: "#ede9fe", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#7c3aed" /></svg>
+            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <PlaceholderImg size={64}/>
             </div>
           )}
-          {/* Sponsored badge */}
-          <span style={{
-            position: "absolute", top: 8, left: 8,
-            background: "rgba(99,102,241,0.9)", color: "#fff",
-            fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 999,
-            letterSpacing: "0.06em", textTransform: "uppercase",
-          }}>
-            Sponsored
-          </span>
-          {product.stock <= 0 && (
-            <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.65)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ background: "#111", color: "#fff", fontSize: 9, fontWeight: 900, padding: "4px 12px", borderRadius: 999, textTransform: "uppercase" }}>Sold Out</span>
+
+          {/* Badges */}
+          <div style={{ position: "absolute", top: 10, left: 10, display: "flex", flexDirection: "column", gap: 5 }}>
+            {product.featured && (
+              <span style={{ background: "#dc2626", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: 999, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                Featured
+              </span>
+            )}
+            {rank && rank <= 3 && (
+              <span style={{ background: "#0f172a", color: "#fbbf24", fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: 999, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                Top {rank}
+              </span>
+            )}
+          </div>
+
+          {/* Stock badge */}
+          {product.stock === 0 && (
+            <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ background: "#0f172a", color: "#fff", fontSize: 11, fontWeight: 800, padding: "5px 14px", borderRadius: 999 }}>Sold Out</span>
             </div>
           )}
         </div>
-        <div style={{ padding: "12px 14px" }}>
-          {product.category?.name && (
-            <p style={{ fontSize: 11, color: "#7c3aed", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
-              {product.category.name}
+
+        {/* Info */}
+        <div style={{ padding: "12px 14px 14px" }}>
+          {label && (
+            <p style={{ fontSize: 10, fontWeight: 800, color: "#dc2626", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 5px" }}>
+              {label}
             </p>
           )}
-          <h3 style={{
-            fontSize: 14, fontWeight: 600, color: "#111", margin: "0 0 4px", lineHeight: 1.4,
-            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-          }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: "#111", margin: "0 0 10px", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
             {product.name}
           </h3>
-          {product.sponsor_data?.ai_ad_copy && (
-            <p style={{ fontSize: 10.5, color: "#6b7280", fontStyle: "italic", margin: "0 0 6px", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-              {product.sponsor_data.ai_ad_copy}
-            </p>
-          )}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 16, fontWeight: 800, color: "#dc2626" }}>
-              {Number(product.price).toFixed(2)} DT
+            <span style={{ fontSize: 16, fontWeight: 900, color: "#dc2626", letterSpacing: "-0.02em" }}>
+              {Number(product.price).toFixed(2)} <span style={{ fontSize: 11, fontWeight: 700 }}>DT</span>
             </span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: product.stock === 0 ? "#94a3b8" : "#16a34a" }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: product.stock === 0 ? "#94a3b8" : "#16a34a", background: product.stock === 0 ? "#f1f5f9" : "rgba(22,163,74,0.08)", padding: "2px 8px", borderRadius: 999 }}>
               {product.stock === 0 ? "Out of stock" : "In stock"}
             </span>
           </div>
@@ -192,33 +107,73 @@ function SponsoredSearchCard({ product }: { product: SponsoredProduct }) {
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", border: "1px solid #f1f5f9" }}>
-      <div style={{ aspectRatio: "1/1", background: "#f1f5f9", animation: "pulse 1.5s ease-in-out infinite" }} />
-      <div style={{ padding: "12px 14px" }}>
-        {[["60%", 12], ["100%", 14], ["40%", 16]].map(([w, h], i) => (
-          <div key={i} style={{ height: h as number, background: "#f1f5f9", borderRadius: 6, marginBottom: 8, width: w as string, animation: "pulse 1.5s ease-in-out infinite" }} />
-        ))}
+    <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", border: "1px solid #f1f5f9" }}>
+      <div style={{ aspectRatio: "3/4", background: "linear-gradient(90deg,#f1f5f9 25%,#e8edf5 50%,#f1f5f9 75%)", backgroundSize: "200% 100%", animation: "shimmer 1.4s infinite" }}/>
+      <div style={{ padding: "12px 14px 14px" }}>
+        <div style={{ height: 10, width: "40%", background: "#f1f5f9", borderRadius: 6, marginBottom: 8, animation: "shimmer 1.4s infinite" }}/>
+        <div style={{ height: 13, width: "90%", background: "#f1f5f9", borderRadius: 6, marginBottom: 5, animation: "shimmer 1.4s infinite" }}/>
+        <div style={{ height: 13, width: "60%", background: "#f1f5f9", borderRadius: 6, marginBottom: 12, animation: "shimmer 1.4s infinite" }}/>
+        <div style={{ height: 16, width: "45%", background: "#f1f5f9", borderRadius: 6, animation: "shimmer 1.4s infinite" }}/>
       </div>
     </div>
   );
 }
 
-// ─── Main search content ──────────────────────────────────────────────────────
+// ─── Empty State ──────────────────────────────────────────────────────────────
+function EmptyState({ isImage, query }: { isImage: boolean; query: string }) {
+  return (
+    <div style={{ textAlign: "center", padding: "80px 24px" }}>
+      <div style={{ width: 80, height: 80, borderRadius: "50%", background: "#f8fafc", border: "2px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+        <svg width="32" height="32" fill="none" stroke="#cbd5e1" strokeWidth="1.5" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+      </div>
+      <h2 style={{ fontSize: 18, fontWeight: 800, color: "#374151", margin: "0 0 8px" }}>No results found</h2>
+      <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 28px", lineHeight: 1.6 }}>
+        {isImage
+          ? "No visually similar products found. Try uploading a clearer photo."
+          : `No products matched "${query}". Try different keywords.`
+        }
+      </p>
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+        <Link href="/shop" style={{ padding: "10px 22px", background: "#dc2626", color: "#fff", borderRadius: 10, fontWeight: 700, fontSize: 13, textDecoration: "none" }}>
+          Browse Shop
+        </Link>
+        <Link href="/" style={{ padding: "10px 22px", background: "#f8fafc", color: "#374151", border: "1px solid #e5e7eb", borderRadius: 10, fontWeight: 700, fontSize: 13, textDecoration: "none" }}>
+          Back to Home
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ─── Sort control ─────────────────────────────────────────────────────────────
+type SortKey = "relevance" | "price_asc" | "price_desc" | "popular";
+
+function sortProducts(products: SearchProduct[], sort: SortKey): SearchProduct[] {
+  const copy = [...products];
+  if (sort === "price_asc")  return copy.sort((a, b) => a.price - b.price);
+  if (sort === "price_desc") return copy.sort((a, b) => b.price - a.price);
+  if (sort === "popular")    return copy.sort((a, b) => b.views - a.views);
+  return copy; // relevance = AI order preserved
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 function SearchPageContent() {
   const searchParams = useSearchParams();
+  const queryParam   = searchParams.get("q")    ?? "";
+  const modeParam    = searchParams.get("mode") ?? "";
+  const idsParam     = searchParams.get("ids")  ?? "";
 
-  const queryParam = searchParams.get("q")    ?? "";
-  const modeParam  = searchParams.get("mode") ?? "";
-  const idsParam   = searchParams.get("ids")  ?? "";
-
-  const [products,      setProducts]      = useState<SearchProduct[]>([]);
-  const [sponsored,     setSponsored]     = useState<SponsoredProduct[]>([]);
-  const [loading,       setLoading]       = useState(false);
-  const [loadingSponsored, setLoadingSponsored] = useState(false);
-  const [error,         setError]         = useState<string | null>(null);
-  const [source,        setSource]        = useState<string | null>(null);
-  const [searched,      setSearched]      = useState(false);
-  const [imagePreview,  setImagePreview]  = useState<string | null>(null);
+  const [products,     setProducts]     = useState<SearchProduct[]>([]);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState<string | null>(null);
+  const [source,       setSource]       = useState<string | null>(null);
+  const [searched,     setSearched]     = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [sort,         setSort]         = useState<SortKey>("relevance");
+  const [trendingNow,  setTrendingNow]  = useState<SearchProduct[]>([]);
+  const [trendingLoading, setTrendingLoading] = useState(false);
 
   // Restore image preview from sessionStorage
   useEffect(() => {
@@ -229,18 +184,36 @@ function SearchPageContent() {
     }
   }, [modeParam]);
 
-  // Fetch sponsored products when a text query is present
+  // Fetch "Trending Now" — uses sponsored feed but shown without any mention of sponsoring
   useEffect(() => {
-    if (!queryParam.trim() || modeParam === "image") {
-      setSponsored([]);
-      return;
-    }
-    setLoadingSponsored(true);
-    sponsorshipApi.publicFeed({ limit: 4 })
-      .then(res => setSponsored(res.data ?? []))
-      .catch(() => setSponsored([]))
-      .finally(() => setLoadingSponsored(false));
-  }, [queryParam, modeParam]);
+    if (searched && products.length === 0) return; // only show when we have context
+    setTrendingLoading(true);
+    fetch(`${API_URL}/api/sponsorships/public?limit=4`, {
+      headers: { Accept: "application/json" },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        const items = (data.data ?? []).map((p: any) => ({
+          id:               p.id,
+          name:             p.name,
+          slug:             p.slug,
+          description:      p.description ?? null,
+          price:            Number(p.price),
+          stock:            p.stock ?? 0,
+          views:            p.views ?? 0,
+          featured:         p.featured ?? false,
+          category_name:    p.category?.name ?? null,
+          category_slug:    p.category?.slug ?? null,
+          subcategory_name: null,
+          subcategory_slug: null,
+          primary_image:    p.primary_image_url ?? null,
+        }));
+        setTrendingNow(items);
+      })
+      .catch(() => {})
+      .finally(() => setTrendingLoading(false));
+  }, [searched]);
 
   // Main search trigger
   useEffect(() => {
@@ -257,178 +230,220 @@ function SearchPageContent() {
   }, [queryParam, modeParam, idsParam]);
 
   async function doTextSearch(q: string) {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const res = await fetch(`${API_URL}/api/search/text`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ query: q, limit: 20 }),
+        body: JSON.stringify({ query: q, limit: 24 }),
       });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      if (!res.ok) throw new Error(`${res.status}`);
       const data = await res.json();
       setProducts(data.products ?? []);
       setSource(data.source ?? "ai");
     } catch {
       setError("Search failed. Please try again.");
     } finally {
-      setLoading(false);
-      setSearched(true);
+      setLoading(false); setSearched(true);
     }
   }
 
   async function fetchProductsByIds(ids: number[]) {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const res = await fetch(`${API_URL}/api/products/by-ids`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ ids }),
       });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      if (!res.ok) throw new Error(`${res.status}`);
       const data = await res.json();
       setProducts(data.products ?? []);
       setSource("ai");
     } catch {
       setError("Failed to load image search results. Please try again.");
     } finally {
-      setLoading(false);
-      setSearched(true);
+      setLoading(false); setSearched(true);
     }
   }
 
-  const isImageSearch = modeParam === "image";
+  const isImageSearch  = modeParam === "image";
+  const sorted         = sortProducts(products, sort);
+  const hasResults     = products.length > 0;
+
   const title = isImageSearch
     ? "Visual Search Results"
-    : queryParam ? `Results for "${queryParam}"` : "Search Results";
-
-  // Deduplicate: remove organic results that appear in sponsored
-  const sponsoredIds = new Set(sponsored.map(s => s.id));
-  const organicProducts = products.filter(p => !sponsoredIds.has(p.id));
+    : queryParam ? `"${queryParam}"` : "Search Results";
 
   return (
-    <div style={{ maxWidth: 1400, margin: "0 auto", padding: "32px 24px", minHeight: "60vh" }}>
+    <>
       <style>{`
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+        @keyframes fadeUp  { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+        .pcard {
+          background: #fff;
+          border-radius: 14px;
+          overflow: hidden;
+          border: 1px solid #f1f5f9;
+          transition: box-shadow 0.22s, transform 0.22s;
+          cursor: pointer;
+        }
+        .pcard:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.10); transform: translateY(-3px); }
+        .pcard:hover .pcard-img { transform: scale(1.04); }
+        .sort-btn { background: transparent; border: 1.5px solid #e5e7eb; borderRadius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 700; color: #64748b; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+        .sort-btn:hover, .sort-btn.active { background: #0f172a; border-color: #0f172a; color: #fff; }
+        .filter-chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; border: 1.5px solid #e5e7eb; background: #fff; color: #64748b; cursor: pointer; transition: all 0.15s; font-family: inherit; white-space: nowrap; }
+        .filter-chip:hover, .filter-chip.active { background: #fef2f2; border-color: #dc2626; color: #dc2626; }
       `}</style>
 
-      {/* ── Header ── */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          {imagePreview && (
-            <img src={imagePreview} alt="Search image" style={{
-              width: 64, height: 64, objectFit: "cover",
-              borderRadius: 10, border: "2px solid #e5e7eb", flexShrink: 0,
-            }} />
-          )}
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: "#111", margin: "0 0 4px" }}>{title}</h1>
-            {searched && !loading && (
-              <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>
-                {products.length} product{products.length !== 1 ? "s" : ""} found
-                {isImageSearch && <span style={{ marginLeft: 8, fontSize: 11, color: "#198f41", fontWeight: 700 }}>• AI visual match</span>}
-                {!isImageSearch && source === "ai" && <span style={{ marginLeft: 8, fontSize: 11, color: "#198f41", fontWeight: 700 }}>• AI semantic match</span>}
-                {!isImageSearch && source === "fallback" && <span style={{ marginLeft: 8, fontSize: 11, color: "#94a3b8", fontStyle: "italic" }}>(keyword search)</span>}
-              </p>
+      <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
+
+        {/* ── Header band ── */}
+        <div style={{ background: "#fff", borderBottom: "1px solid #f1f5f9", padding: "24px 0 0" }}>
+          <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px" }}>
+
+            {/* Breadcrumb */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#94a3b8", marginBottom: 14 }}>
+              <Link href="/" style={{ color: "#94a3b8", textDecoration: "none" }}>Home</Link>
+              <span>/</span>
+              <span style={{ color: "#374151", fontWeight: 600 }}>
+                {isImageSearch ? "Visual Search" : "Search"}
+              </span>
+            </div>
+
+            {/* Title row */}
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 20, flexWrap: "wrap", paddingBottom: 20 }}>
+              {imagePreview && (
+                <div style={{ position: "relative", flexShrink: 0 }}>
+                  <img src={imagePreview} alt="Query" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 12, border: "2.5px solid #dc2626", display: "block" }}/>
+                  <div style={{ position: "absolute", bottom: -6, right: -6, width: 22, height: 22, background: "#dc2626", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid #fff" }}>
+                    <svg width="10" height="10" fill="none" stroke="#fff" strokeWidth="2.2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  </div>
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h1 style={{ fontSize: 26, fontWeight: 900, color: "#0f172a", margin: "0 0 4px", letterSpacing: "-0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {title}
+                </h1>
+                {searched && !loading && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 13, color: "#64748b" }}>
+                      <strong style={{ color: "#0f172a" }}>{products.length}</strong> product{products.length !== 1 ? "s" : ""} found
+                    </span>
+                    {source === "ai" && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#198f41", background: "rgba(25,143,65,0.08)", padding: "2px 10px", borderRadius: 999, border: "1px solid rgba(25,143,65,0.2)" }}>
+                        <svg width="9" height="9" viewBox="0 0 10 10" fill="#198f41"><circle cx="5" cy="5" r="5"/></svg>
+                        {isImageSearch ? "AI visual match" : "AI semantic match"}
+                      </span>
+                    )}
+                    {source === "fallback" && (
+                      <span style={{ fontSize: 11, color: "#94a3b8", fontStyle: "italic" }}>keyword search</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sort bar */}
+            {hasResults && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, paddingBottom: 16, overflowX: "auto" }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", flexShrink: 0 }}>Sort</span>
+                {([
+                  { key: "relevance",  label: "Best Match" },
+                  { key: "popular",    label: "Most Popular" },
+                  { key: "price_asc",  label: "Price ↑" },
+                  { key: "price_desc", label: "Price ↓" },
+                ] as { key: SortKey; label: string }[]).map(s => (
+                  <button key={s.key} onClick={() => setSort(s.key)}
+                    className={`sort-btn ${sort === s.key ? "active" : ""}`}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </div>
-      </div>
 
-      {/* ── Sponsored results row (text search only) ── */}
-      {!isImageSearch && queryParam && (loadingSponsored || sponsored.length > 0) && (
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-            <div style={{ width: 24, height: 24, borderRadius: 6, background: "linear-gradient(135deg,#7c3aed,#6366f1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#fff" }}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
-            </div>
-            <span style={{ fontSize: 13, fontWeight: 800, color: "#111" }}>Sponsored Results</span>
-            <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 6px", borderRadius: 999, background: "rgba(99,102,241,0.1)", color: "#7c3aed", border: "1px solid rgba(99,102,241,0.2)", textTransform: "uppercase", letterSpacing: "0.07em" }}>
-              Promoted
-            </span>
-          </div>
+        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "32px 24px 64px" }}>
 
-          {loadingSponsored ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
-              {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
-            </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
-              {sponsored.map(p => <SponsoredSearchCard key={`sp-${p.id}`} product={p} />)}
+          {/* ── Loading ── */}
+          {loading && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 18 }}>
+              {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i}/>)}
             </div>
           )}
 
-          {/* Divider */}
-          <div style={{ marginTop: 28, marginBottom: 4, display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ flex: 1, height: 1, background: "#f1f5f9" }} />
-            <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>Organic Results</span>
-            <div style={{ flex: 1, height: 1, background: "#f1f5f9" }} />
-          </div>
-        </div>
-      )}
+          {/* ── Error ── */}
+          {!loading && error && (
+            <div style={{ textAlign: "center", padding: "80px 24px" }}>
+              <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
+              <p style={{ fontSize: 16, fontWeight: 700, color: "#ef4444", marginBottom: 16 }}>{error}</p>
+              <button
+                onClick={() => queryParam ? doTextSearch(queryParam) : window.history.back()}
+                style={{ padding: "10px 24px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, cursor: "pointer", fontSize: 14, fontFamily: "inherit" }}>
+                Try again
+              </button>
+            </div>
+          )}
 
-      {/* ── Loading skeletons ── */}
-      {loading && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 20 }}>
-          {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
-        </div>
-      )}
+          {/* ── No results ── */}
+          {!loading && !error && searched && products.length === 0 && (
+            <EmptyState isImage={isImageSearch} query={queryParam}/>
+          )}
 
-      {/* ── Error ── */}
-      {!loading && error && (
-        <div style={{ textAlign: "center", padding: "60px 0" }}>
-          <p style={{ fontSize: 16, fontWeight: 600, color: "#ef4444" }}>{error}</p>
-          <button
-            onClick={() => queryParam ? doTextSearch(queryParam) : window.history.back()}
-            style={{ marginTop: 16, padding: "10px 24px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 }}
-          >
-            Try again
-          </button>
-        </div>
-      )}
+          {/* ── Results grid ── */}
+          {!loading && sorted.length > 0 && (
+            <div style={{ animation: "fadeUp 0.35s ease both" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 18 }}>
+                {sorted.map((product, i) => (
+                  <ProductCard key={product.id} product={product} rank={sort === "relevance" ? i + 1 : undefined}/>
+                ))}
+              </div>
+            </div>
+          )}
 
-      {/* ── No results ── */}
-      {!loading && !error && searched && products.length === 0 && (
-        <div style={{ textAlign: "center", padding: "60px 0" }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: "#374151", marginBottom: 8 }}>No products found</h2>
-          <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 24 }}>
-            {isImageSearch ? "No visually similar products found. Try a clearer photo." : "Try different keywords or browse our categories."}
-          </p>
-          <Link href="/" style={{ display: "inline-block", padding: "10px 24px", background: "#dc2626", color: "#fff", borderRadius: 8, fontWeight: 700, textDecoration: "none", fontSize: 14 }}>
-            Browse Categories
-          </Link>
-        </div>
-      )}
+          {/* ── Trending Now section (sponsored shown discreetly as trending) ── */}
+          {searched && !loading && trendingNow.length > 0 && (
+            <div style={{ marginTop: 64, animation: "fadeUp 0.4s ease 0.2s both" }}>
+              {/* Divider */}
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
+                <div style={{ flex: 1, height: 1, background: "#f1f5f9" }}/>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#dc2626" }}/>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                    Trending Now
+                  </span>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#dc2626" }}/>
+                </div>
+                <div style={{ flex: 1, height: 1, background: "#f1f5f9" }}/>
+              </div>
 
-      {/* ── Organic results grid ── */}
-      {!loading && organicProducts.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 20 }}>
-          {organicProducts.map(product => (
-            <SearchResultCard key={product.id} product={product} />
-          ))}
+              {trendingLoading ? (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 18 }}>
+                  {[1,2,3,4].map(i => <SkeletonCard key={i}/>)}
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 18 }}>
+                  {trendingNow.map(p => <ProductCard key={`t-${p.id}`} product={p}/>)}
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Edge case: all organic results were deduplicated (all were already sponsored) */}
-      {!loading && !error && searched && products.length > 0 && organicProducts.length === 0 && sponsored.length > 0 && (
-        <p style={{ textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
-          All matching products are shown above as sponsored results.
-        </p>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
 
 export default function SearchPage() {
   return (
     <Suspense fallback={
-      <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
-        Loading search...
+      <div style={{ padding: 60, textAlign: "center" }}>
+        <div style={{ width: 36, height: 36, border: "3px solid #f1f5f9", borderTopColor: "#dc2626", borderRadius: "50%", animation: "spin 0.7s linear infinite", margin: "0 auto" }}/>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     }>
-      <SearchPageContent />
+      <SearchPageContent/>
     </Suspense>
   );
 }

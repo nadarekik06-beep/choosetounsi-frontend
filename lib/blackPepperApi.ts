@@ -55,6 +55,8 @@ export interface TrendingProduct {
   velocity_multiplier: number;
   trend_signal:        'hot' | 'rising' | 'warm';
   insight:             string;
+  image_url: string | null;  // ← add this
+
 }
 
 export interface InventoryAlert {
@@ -68,6 +70,8 @@ export interface InventoryAlert {
   revenue_at_risk: number;
   restock_units:   number;
   insight:         string;
+  image_url:       string | null;
+
 }
 
 export interface MarketInsights {
