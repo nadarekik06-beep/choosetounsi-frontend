@@ -334,17 +334,13 @@ export default function InvoicePage() {
               <div style={partyCardStyle}>
                 <p style={partyLabelStyle}>DE (Vendeur)</p>
                 <p style={partyNameStyle}>{data.seller.business_name}</p>
-                {data.seller.full_name !== data.seller.business_name && (
-                  <p style={partyLineStyle}>{data.seller.full_name}</p>
-                )}
+                
                 {(data.seller.city || data.seller.wilaya) && (
                   <p style={partyLineStyle}>
                     {[data.seller.city, data.seller.wilaya].filter(Boolean).join(', ')}
                   </p>
                 )}
-                {data.seller.phone && (
-                  <p style={partyLineStyle}>📞 {data.seller.phone}</p>
-                )}
+               
                 <p style={{
                   ...partyLineStyle,
                   marginTop: 6,
@@ -707,3 +703,73 @@ function totalRowStyle(isTotal: boolean): React.CSSProperties {
     borderTop: isTotal ? '2px solid #db142e' : '1px solid #e2e8f0',
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
