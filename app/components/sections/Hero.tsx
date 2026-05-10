@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
@@ -10,6 +10,7 @@ import SponsoredProductsSection from '@/app/components/SponsoredProductsSection'
 import AboveFoldProducts from './AboveFoldProducts'
 import BecomeSellerBanner from './HomeCtaSection'
 import PacksSection from '@/app/components/sections/PacksSection'
+import FlashDealsSection from '@/app/components/sections/FlashDealsSection'
 
 
 interface Category {
@@ -618,8 +619,8 @@ export default function Hero() {
           </div>
         </div>
         {/* ── NEW: ABOVE THE FOLD PRODUCTS ── */}
-        <AboveFoldProducts />
-
+        {/* <AboveFoldProducts /> */}
+   
         {/* ══════════════════════════════════════════════════════
             CATEGORY CAROUSEL — one row with arrow navigation
         ══════════════════════════════════════════════════════ */}
@@ -632,8 +633,11 @@ export default function Hero() {
             <CategoryCarousel categories={categories} loading={catsLoading} />
           </div>
         </div>
+
         {/* ══ BUNDLE DEALS — shown right after categories ══ */}
-<PacksSection />   {/* ← ADD THIS LINE */}
+            <PacksSection />   {/* ← ADD THIS LINE */}
+        <FlashDealsSection />
+
         {/* ── SPONSORED PRODUCTS ── */}
         <div style={{ background: '#f7f7f9' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
@@ -645,6 +649,7 @@ export default function Hero() {
         />
           </div>
         </div>
+                
           {/* ── NEW: BECOME A SELLER CTA ── */}
         <BecomeSellerBanner />
         {/* ── SALE BANNER ── */}
