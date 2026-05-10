@@ -3,13 +3,12 @@
 /**
  * app/components/seller/AIToolsPanel.tsx
  *
- * CHANGED: PriceOptimizerTool fully rewritten with:
- *   - Multi-step premium loader experience
- *   - Extended result UI (5 price cards, market intelligence panel,
- *     competitor comparison, positioning badge, psychological tip)
+ * CHANGED: SalesPredictorTool — added "Product DNA" strip that
+ * surfaces subcategory, variant axes, top-selling combos, and
+ * info-attributes so the seller sees exactly what data the AI used.
  *
- * All other tools (SalesPredictor, DescriptionGenerator, BundleRecommender)
- * are COMPLETELY UNCHANGED from the original file.
+ * All other tools (PriceOptimizer, DescriptionGenerator,
+ * BundleRecommender) are COMPLETELY UNCHANGED.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -18,7 +17,7 @@ import {
   Copy, Check, ChevronDown, Sparkles, Brain,
   TrendingDown, Minus, Globe, Shield, AlertTriangle,
   Zap, BarChart3, Target, Info, Star, Rocket,
-  ArrowRight, ShoppingBag, Search, CheckCircle2,
+  ArrowRight, ShoppingBag, Search, CheckCircle2, Layers, Tag,
 } from 'lucide-react';
 import {
   sellerAiApi,
@@ -107,7 +106,7 @@ function RunBtn({ onClick, loading, label = 'Analyze', icon: Icon = Sparkles }: 
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// MULTI-STEP LOADER COMPONENT
+// MULTI-STEP LOADER COMPONENT — UNCHANGED
 // ═════════════════════════════════════════════════════════════════════════════
 
 interface LoaderProps { dark: boolean; onComplete?: () => void }
@@ -128,9 +127,7 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
       setActiveStep(stepIndex);
       const duration = ANALYSIS_STEPS[stepIndex].duration;
 
-      // Animate progress within this step
       const start    = elapsed;
-      const stepFraction = duration / totalTime;
       let localPct   = 0;
       const tick     = 60;
       const steps    = duration / tick;
@@ -149,7 +146,7 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
         setCompleted(prev => new Set([...prev, stepIndex]));
         stepIndex++;
         if (stepIndex < ANALYSIS_STEPS.length) advance();
-        else setProgressPct(99); // hold at 99 until real response
+        else setProgressPct(99);
       }, duration);
     };
 
@@ -166,7 +163,6 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
 
   return (
     <div style={{ background:cardBg, borderRadius:18, border:'1px solid rgba(219,20,46,0.2)', padding:'24px 22px', display:'flex', flexDirection:'column', gap:20 }}>
-      {/* Header */}
       <div style={{ display:'flex', alignItems:'center', gap:12 }}>
         <div style={{ width:40, height:40, borderRadius:12, background:'rgba(219,20,46,0.12)', border:'1px solid rgba(219,20,46,0.3)', display:'flex', alignItems:'center', justifyContent:'center' }}>
           <Brain size={18} style={{ color:'#db142e', animation:'pulse 1.5s ease-in-out infinite' }} />
@@ -180,12 +176,10 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
         </div>
       </div>
 
-      {/* Global progress bar */}
       <div style={{ height:6, borderRadius:999, background: dark ? 'rgba(255,255,255,0.07)' : '#f1f5f9', overflow:'hidden' }}>
         <div style={{ height:'100%', borderRadius:999, background:'linear-gradient(90deg,#db142e,#f59e0b)', width:`${progressPct}%`, transition:'width 0.1s linear' }} />
       </div>
 
-      {/* Steps */}
       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
         {ANALYSIS_STEPS.map((step, idx) => {
           const Icon       = step.icon;
@@ -195,7 +189,6 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
 
           return (
             <div key={step.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', borderRadius:12, background: isActive ? `${step.color}10` : isDone ? (dark?'rgba(16,185,129,0.06)':'rgba(16,185,129,0.04)') : 'transparent', border: isActive ? `1px solid ${step.color}30` : '1px solid transparent', transition:'all 0.3s ease' }}>
-              {/* Icon / spinner / check */}
               <div style={{ width:32, height:32, borderRadius:10, background: isDone ? 'rgba(16,185,129,0.15)' : isActive ? `${step.color}18` : (dark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)'), border: `1px solid ${isDone?'rgba(16,185,129,0.3)':isActive?`${step.color}30`:'transparent'}`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'all 0.3s ease' }}>
                 {isDone
                   ? <Check size={14} style={{ color:'#10b981' }} />
@@ -205,7 +198,6 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
                 }
               </div>
 
-              {/* Label + step bar */}
               <div style={{ flex:1 }}>
                 <p style={{ fontSize:12, fontWeight:700, color: isDone ? '#10b981' : isActive ? text : muted, margin:'0 0 4px', transition:'color 0.3s' }}>
                   {step.label}
@@ -217,7 +209,6 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
                 )}
               </div>
 
-              {/* Status badge */}
               {isDone && <span style={{ fontSize:9, fontWeight:800, color:'#10b981', background:'rgba(16,185,129,0.1)', padding:'2px 6px', borderRadius:999 }}>DONE</span>}
               {isActive && <span style={{ fontSize:9, fontWeight:800, color:step.color, background:`${step.color}15`, padding:'2px 6px', borderRadius:999, animation:'pulse 1s ease-in-out infinite' }}>ACTIVE</span>}
             </div>
@@ -225,7 +216,6 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
         })}
       </div>
 
-      {/* Tunisian market note */}
       <div style={{ background: dark?'rgba(59,130,246,0.06)':'rgba(59,130,246,0.04)', border:'1px solid rgba(59,130,246,0.15)', borderRadius:10, padding:'10px 14px', display:'flex', gap:10, alignItems:'flex-start' }}>
         <Globe size={14} style={{ color:'#3b82f6', marginTop:1, flexShrink:0 }} />
         <p style={{ fontSize:11, color:muted, margin:0, lineHeight:1.5 }}>
@@ -243,7 +233,7 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// PRICE CARD — one of the 4 price columns
+// PRICE CARD — UNCHANGED
 // ═════════════════════════════════════════════════════════════════════════════
 
 function PriceCard({ label, price, accent, highlight = false, dark }: {
@@ -262,7 +252,7 @@ function PriceCard({ label, price, accent, highlight = false, dark }: {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// MARKET INTELLIGENCE PANEL
+// MARKET INTELLIGENCE PANEL — UNCHANGED
 // ═════════════════════════════════════════════════════════════════════════════
 
 function MarketIntelPanel({ report, dataSource, r, dark }: {
@@ -275,7 +265,6 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
   const subBg  = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
   const isAI   = dataSource === 'groq_knowledge';
 
-  // Platform logos/icons mapping
   const PLATFORM_META: Record<string, { color: string; emoji: string }> = {
     'Mytek':                    { color:'#e84393', emoji:'🖥️' },
     'Tunisianet':               { color:'#f97316', emoji:'🛒' },
@@ -288,14 +277,11 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
   const getPlatformMeta = (name: string) =>
     PLATFORM_META[name] ?? { color:'#6b7280', emoji:'🏪' };
 
-  // All sources to show (scrapers + AI knowledge + ChooseTounsi platform)
   const scrapedSources = report.by_source ?? [];
   const aiPlatforms    = (r as any).platforms_compared as string[] | undefined;
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-
-      {/* ── SOURCES header ──────────────────────────────────────────────── */}
       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
         <Search size={13} style={{ color:'#db142e' }} />
         <p style={{ fontSize:10, fontWeight:900, color:muted, margin:0, textTransform:'uppercase', letterSpacing:'0.08em' }}>
@@ -309,9 +295,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
         </span>
       </div>
 
-      {/* ── Platform chips ── */}
       <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-        {/* ChooseTounsi platform always shown first */}
         {(() => { const m = getPlatformMeta('ChooseTounsi'); return (
           <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', borderRadius:12,
             background: dark ? 'rgba(219,20,46,0.08)' : 'rgba(219,20,46,0.04)',
@@ -325,7 +309,6 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
           </div>
         ); })()}
 
-        {/* Scraped or AI-estimated sources */}
         {scrapedSources.length > 0 && scrapedSources.map((src, i) => {
           const m = getPlatformMeta(src.source);
           return (
@@ -343,7 +326,6 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
           );
         })}
 
-        {/* AI-named platforms from Groq output */}
         {scrapedSources.length === 0 && aiPlatforms && aiPlatforms.map((name, i) => {
           const m = getPlatformMeta(name);
           return (
@@ -361,7 +343,6 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
           );
         })}
 
-        {/* Fallback if nothing */}
         {scrapedSources.length === 0 && (!aiPlatforms || aiPlatforms.length === 0) && (
           ['Mytek', 'Tunisianet', 'Tayara.tn'].map((name, i) => {
             const m = getPlatformMeta(name);
@@ -382,7 +363,6 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
         )}
       </div>
 
-      {/* ── Market stats — only when we have data ── */}
       {report.has_data && (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
           {[
@@ -401,7 +381,6 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
         </div>
       )}
 
-      {/* ── Analysis checklist — icon-only, horizontal ── */}
       <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
         {[
           { emoji:'💰', label:'Price benchmarked' },
@@ -419,7 +398,6 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
         ))}
       </div>
 
-      {/* ── Trust seal ── */}
       <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 14px', borderRadius:12,
         background: dark ? 'rgba(16,185,129,0.06)' : 'rgba(16,185,129,0.04)',
         border:'1px solid rgba(16,185,129,0.18)' }}>
@@ -430,13 +408,12 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
         </div>
         <Star size={14} style={{ color:'#f59e0b', marginLeft:'auto', flexShrink:0 }} />
       </div>
-
     </div>
   );
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// POSITIONING BADGE
+// POSITIONING BADGE — UNCHANGED
 // ═════════════════════════════════════════════════════════════════════════════
 
 function PositioningBadge({ positioning, pct, dark }: { positioning: string; pct: number; dark: boolean }) {
@@ -457,7 +434,7 @@ function PositioningBadge({ positioning, pct, dark }: { positioning: string; pct
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TOOL 1 — PRICE OPTIMIZER (FULLY REWRITTEN)
+// TOOL 1 — PRICE OPTIMIZER — UNCHANGED
 // ═════════════════════════════════════════════════════════════════════════════
 
 function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; name:string }>; dark:boolean }) {
@@ -497,7 +474,6 @@ function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; n
         @keyframes stepProgress{from{opacity:0.4}to{opacity:1}}
       `}</style>
 
-      {/* ── Input card ── */}
       <div style={{ background:cardBg, borderRadius:18, border:`1px solid ${border}`, padding:'18px 20px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
           <p style={{ fontWeight:900, fontSize:14, color:text, margin:0 }}>Select Product</p>
@@ -510,10 +486,8 @@ function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; n
         {error && <p style={{ color:'#ef4444', fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
       </div>
 
-      {/* ── Multi-step loader ── */}
       {loading && <PriceAnalysisLoader dark={dark} />}
 
-      {/* ── Context bar ── */}
       {!loading && ctx !== null && (
         <div style={{ background:subBg, borderRadius:14, border:`1px solid ${border}`, padding:'14px 16px', animation:'fadeIn 0.4s ease' }}>
           <p style={{ fontSize:10, fontWeight:800, color:muted, margin:'0 0 10px', textTransform:'uppercase', letterSpacing:'0.06em' }}>Based on your real data</p>
@@ -533,16 +507,12 @@ function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; n
         </div>
       )}
 
-      {/* ── Result ── */}
       {!loading && r !== null && ctx !== null && (
         <div style={{ display:'flex', flexDirection:'column', gap:12, animation:'fadeIn 0.5s ease' }}>
 
-          {/* ── HERO price card ── */}
           <div style={{ background:'linear-gradient(145deg,rgba(219,20,46,0.13) 0%,rgba(219,20,46,0.03) 100%)', borderRadius:22, border:'1px solid rgba(219,20,46,0.22)', padding:'22px 20px', position:'relative', overflow:'hidden' }}>
-            {/* Decorative glow */}
             <div style={{ position:'absolute', top:-40, right:-40, width:120, height:120, borderRadius:'50%', background:'rgba(219,20,46,0.08)', pointerEvents:'none' }} />
 
-            {/* Header */}
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18 }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <div style={{ width:34, height:34, borderRadius:11, background:'rgba(219,20,46,0.15)', border:'1px solid rgba(219,20,46,0.3)', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -553,7 +523,6 @@ function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; n
                   <p style={{ fontSize:10, color:muted, margin:0 }}>Tunisian market · right now</p>
                 </div>
               </div>
-              {/* Confidence pill */}
               <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10, fontWeight:800,
                 padding:'4px 11px', borderRadius:999,
                 background: CONFIDENCE_COLORS[r.confidence] ? `${CONFIDENCE_COLORS[r.confidence]}18` : 'rgba(148,163,184,0.12)',
@@ -565,7 +534,6 @@ function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; n
               </span>
             </div>
 
-            {/* Price hero */}
             <div style={{ textAlign:'center', padding:'10px 0 18px' }}>
               <p style={{ fontSize:10, fontWeight:700, color:muted, margin:'0 0 5px', textTransform:'uppercase', letterSpacing:'0.12em' }}>Recommended selling price</p>
               <div style={{ display:'inline-flex', alignItems:'baseline', gap:6 }}>
@@ -574,7 +542,6 @@ function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; n
                 </p>
                 <p style={{ fontSize:20, fontWeight:800, color:'rgba(219,20,46,0.7)', margin:0 }}>TND</p>
               </div>
-              {/* Positioning line */}
               {r.market_avg_price > 0 && (
                 <div style={{ display:'inline-flex', alignItems:'center', gap:8, marginTop:8, padding:'4px 12px', borderRadius:999,
                   background: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }}>
@@ -594,7 +561,6 @@ function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; n
               )}
             </div>
 
-            {/* 3 alt prices */}
             <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, borderTop:'1px solid rgba(219,20,46,0.12)', paddingTop:16 }}>
               {([
                 { label:'Competitive', price:r.competitive_price,    color:'#3b82f6', icon:'⚖️', desc:'Market match' },
@@ -613,7 +579,6 @@ function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; n
             </div>
           </div>
 
-          {/* ── Quick stats row ── */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
             {([
               { icon:'🎯', label:'Strategy',   val:r.strategy },
@@ -628,7 +593,6 @@ function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; n
             ))}
           </div>
 
-          {/* ── AI reasoning — clean, no label clutter ── */}
           <div style={{ background:cardBg, borderRadius:16, border:`1px solid ${border}`, padding:'16px 18px', display:'flex', gap:12, alignItems:'flex-start' }}>
             <div style={{ width:32, height:32, borderRadius:10, background:'rgba(219,20,46,0.1)', border:'1px solid rgba(219,20,46,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:2 }}>
               <Brain size={15} style={{ color:'#db142e' }} />
@@ -639,14 +603,12 @@ function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; n
             </div>
           </div>
 
-          {/* ── Platforms / Market intel ── */}
           {ctx.market_report && (
             <div style={{ background:cardBg, borderRadius:18, border:`1px solid ${border}`, padding:'18px 20px' }}>
               <MarketIntelPanel report={ctx.market_report} dataSource={(ctx.market_report as any).data_source} r={r} dark={dark} />
             </div>
           )}
 
-          {/* ── Alerts ── */}
           {(r.overpriced_warning || r.opportunity_note) && (
             <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
               {r.overpriced_warning && (
@@ -664,7 +626,6 @@ function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; n
             </div>
           )}
 
-          {/* ── Tip + Competitor — 2 cols ── */}
           <div style={{ display:'grid', gridTemplateColumns: r.psychological_tip && r.competitor_summary ? '1fr 1fr' : '1fr', gap:8 }}>
             {r.psychological_tip && (
               <div style={{ background:'rgba(245,158,11,0.05)', border:'1px solid rgba(245,158,11,0.15)', borderRadius:14, padding:'13px 15px', display:'flex', gap:10, alignItems:'flex-start' }}>
@@ -693,7 +654,7 @@ function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; n
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TOOL 2 — SALES PREDICTOR (UPGRADED)
+// TOOL 2 — SALES PREDICTOR — UPGRADED WITH PRODUCT DNA STRIP
 // ═════════════════════════════════════════════════════════════════════════════
 
 const SEASON_META: Record<string, { emoji: string; color: string; desc: string }> = {
@@ -723,16 +684,13 @@ function MiniBarChart({ weeks, trend, dark }: {
         return (
           <div key={w.week} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
             <div style={{ width:'100%', display:'flex', flexDirection:'column', alignItems:'center', gap:2, justifyContent:'flex-end', height:72, position:'relative' }}>
-              {/* Baseline bar (ghost) */}
               <div style={{ position:'absolute', bottom:0, width:'60%', height:baseH, background: dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)', borderRadius:'4px 4px 0 0', transition:'height 0.6s ease' }} />
-              {/* Predicted bar */}
               <div style={{ position:'absolute', bottom:0, width:'60%', height:predH,
                 background: isBest ? trendColor : `${trendColor}80`,
                 borderRadius:'4px 4px 0 0',
                 boxShadow: isBest ? `0 0 8px ${trendColor}50` : 'none',
                 transition:'height 0.8s ease',
                 animation:`fadeIn ${0.3 + i * 0.1}s ease` }} />
-              {/* Value label */}
               {w.predicted > 0 && (
                 <span style={{ position:'absolute', top:-18, fontSize:10, fontWeight:900, color: isBest ? trendColor : dark?'rgba(255,255,255,0.5)':'#888' }}>
                   {w.predicted}
@@ -745,6 +703,138 @@ function MiniBarChart({ weeks, trend, dark }: {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ─── NEW: Product DNA strip ────────────────────────────────────────────────
+// Shows the enriched product context the AI received:
+// subcategory, variant axes, top combos, info attributes
+function ProductDNAStrip({ ctx, dark }: {
+  ctx: {
+    subcategory?: string | null;
+    has_variants?: boolean;
+    variant_axes?: string[];
+    active_variants?: number;
+    total_variants?: number;
+    variant_price_min?: number | null;
+    variant_price_max?: number | null;
+    top_variant_sales?: Array<{ combo: string; units_sold: number; price: number }>;
+    info_attributes?: Record<string, string>;
+    stock_by_axis?: Record<string, Array<{ value: string; stock: number }>>;
+  };
+  dark: boolean;
+}) {
+  const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const text   = dark ? '#fff' : '#111';
+  const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const subBg  = dark ? 'rgba(255,255,255,0.03)' : '#fafafa';
+
+  const hasInfo      = ctx.info_attributes && Object.keys(ctx.info_attributes).length > 0;
+  const hasVariants  = ctx.has_variants;
+  const topVariants  = ctx.top_variant_sales ?? [];
+  const infoAttrs    = ctx.info_attributes   ?? {};
+  const axes         = ctx.variant_axes      ?? [];
+
+  // Stockout detection: any option with 0 stock
+  const stockByAxis  = ctx.stock_by_axis     ?? {};
+  const stockoutList: string[] = [];
+  Object.entries(stockByAxis).forEach(([axisName, options]) => {
+    options.forEach(opt => {
+      if (opt.stock === 0) stockoutList.push(`${opt.value} (${axisName})`);
+    });
+  });
+
+  return (
+    <div style={{ background:subBg, borderRadius:14, border:`1px solid rgba(139,92,246,0.2)`, padding:'14px 16px', display:'flex', flexDirection:'column', gap:12, animation:'fadeIn 0.45s ease' }}>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+        <div style={{ width:26, height:26, borderRadius:8, background:'rgba(139,92,246,0.12)', border:'1px solid rgba(139,92,246,0.25)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+          <Layers size={12} style={{ color:'#8b5cf6' }} />
+        </div>
+        <p style={{ fontSize:10, fontWeight:900, color:'#8b5cf6', margin:0, textTransform:'uppercase', letterSpacing:'0.07em' }}>
+          Product DNA — used by AI
+        </p>
+        <span style={{ marginLeft:'auto', fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:999, background:'rgba(139,92,246,0.1)', border:'1px solid rgba(139,92,246,0.2)', color:'#8b5cf6' }}>
+          🧬 Context
+        </span>
+      </div>
+
+      {/* Row 1: Subcategory + variant axes */}
+      <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+        {ctx.subcategory && (
+          <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999, background: dark?'rgba(139,92,246,0.1)':'rgba(139,92,246,0.07)', border:'1px solid rgba(139,92,246,0.22)', fontSize:10, fontWeight:700, color:'#8b5cf6' }}>
+            📂 {ctx.subcategory}
+          </span>
+        )}
+        {hasVariants && axes.length > 0 && (
+          <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999, background: dark?'rgba(59,130,246,0.1)':'rgba(59,130,246,0.07)', border:'1px solid rgba(59,130,246,0.22)', fontSize:10, fontWeight:700, color:'#3b82f6' }}>
+            🎨 {axes.join(' × ')}
+          </span>
+        )}
+        {hasVariants && (
+          <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999, background: dark?'rgba(16,185,129,0.08)':'rgba(16,185,129,0.05)', border:'1px solid rgba(16,185,129,0.2)', fontSize:10, fontWeight:700, color:'#10b981' }}>
+            🔀 {ctx.active_variants}/{ctx.total_variants} variants active
+          </span>
+        )}
+        {!hasVariants && (
+          <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999, background: dark?'rgba(107,114,128,0.1)':'rgba(107,114,128,0.07)', border:'1px solid rgba(107,114,128,0.2)', fontSize:10, fontWeight:700, color:'#6b7280' }}>
+            📦 Simple product
+          </span>
+        )}
+        {/* Price range */}
+        {hasVariants && ctx.variant_price_min != null && ctx.variant_price_max != null && ctx.variant_price_min !== ctx.variant_price_max && (
+          <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999, background: dark?'rgba(245,158,11,0.08)':'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)', fontSize:10, fontWeight:700, color:'#f59e0b' }}>
+            💰 {new Intl.NumberFormat('fr-TN',{maximumFractionDigits:0}).format(ctx.variant_price_min)}–{new Intl.NumberFormat('fr-TN',{maximumFractionDigits:0}).format(ctx.variant_price_max)} TND range
+          </span>
+        )}
+      </div>
+
+      {/* Row 2: Info attributes (brand, material, gender…) */}
+      {hasInfo && (
+        <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+          {Object.values(infoAttrs).map((val, i) => (
+            <span key={i} style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 9px', borderRadius:999, background: dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)', border:`1px solid ${border}`, fontSize:10, fontWeight:600, color: dark?'rgba(255,255,255,0.7)':'#444' }}>
+              <Tag size={9} style={{ opacity:0.6 }} />
+              {val}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Row 3: Top-selling variant combos */}
+      {topVariants.length > 0 && (
+        <div>
+          <p style={{ fontSize:9, fontWeight:800, color:muted, margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+            🔥 Top-selling combos
+          </p>
+          <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+            {topVariants.slice(0, 3).map((v, i) => (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', borderRadius:8, background: i === 0 ? (dark?'rgba(16,185,129,0.08)':'rgba(16,185,129,0.05)') : 'transparent', border: i === 0 ? '1px solid rgba(16,185,129,0.2)' : `1px solid ${border}` }}>
+                <span style={{ fontSize:11, minWidth:16, textAlign:'center' }}>
+                  {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
+                </span>
+                <p style={{ fontSize:10, fontWeight:700, color: i === 0 ? '#10b981' : (dark?'rgba(255,255,255,0.7)':'#444'), margin:0, flex:1 }}>
+                  {v.combo}
+                </p>
+                <span style={{ fontSize:10, fontWeight:900, color: i === 0 ? '#10b981' : muted }}>
+                  {v.units_sold} units
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Row 4: Stockout warning */}
+      {stockoutList.length > 0 && (
+        <div style={{ display:'flex', alignItems:'flex-start', gap:8, padding:'8px 12px', borderRadius:10, background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.2)' }}>
+          <AlertTriangle size={12} style={{ color:'#ef4444', flexShrink:0, marginTop:1 }} />
+          <p style={{ fontSize:10, fontWeight:700, color:'#ef4444', margin:0, lineHeight:1.4 }}>
+            Stockout detected: {stockoutList.slice(0, 4).join(', ')}{stockoutList.length > 4 ? ` +${stockoutList.length - 4} more` : ''}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -794,7 +884,7 @@ function SalesPredictorTool({ products, dark }: { products: Array<{ id:number; n
             </div>
             <div>
               <p style={{ fontWeight:900, fontSize:13, color:text, margin:0 }}>Sales Forecast</p>
-              <p style={{ fontSize:10, color:muted, margin:0 }}>AI-powered · Tunisian seasons</p>
+              <p style={{ fontSize:10, color:muted, margin:0 }}>AI-powered · Subcategory & variant aware</p>
             </div>
           </div>
           <AiTag />
@@ -803,7 +893,6 @@ function SalesPredictorTool({ products, dark }: { products: Array<{ id:number; n
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <ProdSelect products={products} value={selectedId} onChange={setSelectedId} dark={dark} />
 
-          {/* Season picker — visual cards */}
           <div>
             <p style={{ fontSize:10, fontWeight:800, color:muted, margin:'0 0 8px', textTransform:'uppercase', letterSpacing:'0.06em' }}>Select Season</p>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:6 }}>
@@ -831,7 +920,7 @@ function SalesPredictorTool({ products, dark }: { products: Array<{ id:number; n
         {error && <p style={{ color:'#ef4444', fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
       </div>
 
-      {/* ── Context strip ── */}
+      {/* ── Standard context strip (sales history) ── */}
       {ctx !== null && !loading && (
         <div style={{ background:subBg, borderRadius:14, border:`1px solid ${border}`, padding:'14px 16px', animation:'fadeIn 0.4s ease' }}>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:8 }}>
@@ -861,6 +950,11 @@ function SalesPredictorTool({ products, dark }: { products: Array<{ id:number; n
         </div>
       )}
 
+      {/* ── NEW: Product DNA strip — what the AI actually knew ── */}
+      {ctx !== null && !loading && (
+        <ProductDNAStrip ctx={ctx} dark={dark} />
+      )}
+
       {/* ── Result ── */}
       {!loading && r !== null && (
         <div style={{ display:'flex', flexDirection:'column', gap:12, animation:'slideUp 0.5s ease' }}>
@@ -869,7 +963,6 @@ function SalesPredictorTool({ products, dark }: { products: Array<{ id:number; n
           <div style={{ background:`linear-gradient(145deg, ${trendColor}14 0%, ${trendColor}04 100%)`, borderRadius:20, border:`1px solid ${trendColor}30`, padding:'22px 20px', position:'relative', overflow:'hidden' }}>
             <div style={{ position:'absolute', top:-30, right:-30, width:100, height:100, borderRadius:'50%', background:`${trendColor}08` }} />
 
-            {/* Season badge + confidence */}
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ fontSize:22 }}>{sm.emoji}</span>
@@ -886,7 +979,6 @@ function SalesPredictorTool({ products, dark }: { products: Array<{ id:number; n
               </div>
             </div>
 
-            {/* Giant number */}
             <div style={{ textAlign:'center', padding:'8px 0 16px' }}>
               <p style={{ fontSize:10, fontWeight:700, color:muted, margin:'0 0 5px', textTransform:'uppercase', letterSpacing:'0.12em' }}>
                 Predicted units next month
@@ -909,7 +1001,6 @@ function SalesPredictorTool({ products, dark }: { products: Array<{ id:number; n
               </div>
             </div>
 
-            {/* Mini bar chart */}
             {r.weekly_breakdown?.length === 4 && (
               <div style={{ borderTop:`1px solid ${trendColor}20`, paddingTop:14 }}>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
@@ -922,7 +1013,6 @@ function SalesPredictorTool({ products, dark }: { products: Array<{ id:number; n
                   )}
                 </div>
                 <MiniBarChart weeks={r.weekly_breakdown} trend={r.trend} dark={dark} />
-                {/* Week labels with values */}
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:6, marginTop:8 }}>
                   {r.weekly_breakdown.map((w, i) => {
                     const isBest = w.week === r.best_selling_week;
@@ -953,7 +1043,6 @@ function SalesPredictorTool({ products, dark }: { products: Array<{ id:number; n
 
           {/* ── Action plan row ── */}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-            {/* Stock recommendation */}
             <div style={{ background: dark?'rgba(16,185,129,0.07)':'rgba(16,185,129,0.04)', border:'1px solid rgba(16,185,129,0.2)', borderRadius:16, padding:'14px 16px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
                 <span style={{ fontSize:20 }}>📦</span>
@@ -965,7 +1054,6 @@ function SalesPredictorTool({ products, dark }: { products: Array<{ id:number; n
               <p style={{ fontSize:10, color:muted, margin:0, lineHeight:1.5 }}>{r.advice}</p>
             </div>
 
-            {/* Opportunity */}
             {r.opportunity && (
               <div style={{ background: dark?'rgba(245,158,11,0.07)':'rgba(245,158,11,0.04)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:16, padding:'14px 16px' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
@@ -1024,7 +1112,7 @@ function SalesPredictorTool({ products, dark }: { products: Array<{ id:number; n
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TOOL 3 — DESCRIPTION GENERATOR (UNCHANGED)
+// TOOL 3 — DESCRIPTION GENERATOR — UNCHANGED
 // ═════════════════════════════════════════════════════════════════════════════
 
 function DescriptionGeneratorTool({ products, dark }: { products: Array<{ id:number; name:string }>; dark:boolean }) {
@@ -1106,7 +1194,7 @@ function DescriptionGeneratorTool({ products, dark }: { products: Array<{ id:num
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TOOL 4 — BUNDLE RECOMMENDER (UNCHANGED)
+// TOOL 4 — BUNDLE RECOMMENDER — UNCHANGED
 // ═════════════════════════════════════════════════════════════════════════════
 
 function BundleProductChip({ name, imageUrl, dark }: { name: string; imageUrl: string | null | undefined; dark: boolean }) {
