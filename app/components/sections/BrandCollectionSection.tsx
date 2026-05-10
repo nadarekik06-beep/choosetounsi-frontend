@@ -161,7 +161,8 @@ export default function BrandCollectionSection() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    fetch(`${API_URL}/api/products?is_platform_product=1&per_page=8&sort=latest`, {
+    fetch(`${API_URL}/api/brand-products?per_page=8&sort=created_at`, {
+
       headers: { Accept: 'application/json' },
     })
       .then(r => r.json())

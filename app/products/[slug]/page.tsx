@@ -67,6 +67,7 @@ interface Product {
   featured: boolean; primary_image_url: string | null; images: ProductImage[]
   category: { id: number; name: string; slug: string } | null
   subcategory: { id: number; name: string; slug: string } | null
+  is_platform_product?: boolean 
   seller: { id: number; name: string; email: string } | null
   attribute_data?: Record<string, AttributeData>
   has_variants: boolean
@@ -579,16 +580,28 @@ const hasPromoDiscount = activePromotion && Number(effectivePrice) < originalPri
               <span style={{ fontSize: 12, color: '#64748b', marginLeft: 4 }}>4.0 ({product.views} views)</span>
             </div>
 
-            {product.seller && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#dc2626,#7f1d1d)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 800 }}>
-                  {product.seller.name.charAt(0).toUpperCase()}
-                </div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>Sold by </span>
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>{product.seller.name}</span>
-                <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>Verified</span>
-              </div>
-            )}
+            {product.is_platform_product ? (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+    <img
+      src="/logo.png"
+      alt="ChooseTounsi"
+      style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(219,20,46,0.3)' }}
+      onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+    />
+    <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>Sold by</span>
+    <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>CHOOSE'Tounsi</span>
+    <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>Official</span>
+  </div>
+) : product.seller && (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+    <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#dc2626,#7f1d1d)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 800 }}>
+      {product.seller.name.charAt(0).toUpperCase()}
+    </div>
+    <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>Sold by</span>
+    <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>{product.seller.name}</span>
+    <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>Verified</span>
+  </div>
+)}
 
             <div style={{ height: 1, background: '#f1f5f9', margin: '16px 0' }} />
 
@@ -741,7 +754,7 @@ const hasPromoDiscount = activePromotion && Number(effectivePrice) < originalPri
                       { label: 'Subcategory', value: product.subcategory?.name ?? '—' },
                       { label: 'SKU',         value: selectedVariant?.sku ?? product.sku ?? 'N/A' },
                       { label: 'Stock',       value: `${effectiveStock} units` },
-                      { label: 'Seller',      value: product.seller?.name ?? '—' },
+                      { label: 'Seller', value: product.is_platform_product ? "CHOOSE'Tounsi Official" : (product.seller?.name ?? '—') },
                       { label: 'Views',       value: String(product.views ?? 0) },
                     ].map(({ label, value }) => (
                       <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
