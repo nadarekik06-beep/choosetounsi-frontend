@@ -5,6 +5,7 @@ import AboveFoldProducts from "@/app/components/sections/AboveFoldProducts";
 import HomeCtaSection from "@/app/components/sections/HomeCtaSection";
 import FlashDealsSection from "@/app/components/sections/FlashDealsSection";
 import BrandCollectionSection from "./components/sections/BrandCollectionSection";
+import PacksSection from "./components/sections/PacksSection";
 
 export default function HomePage() {
   return (
@@ -19,6 +20,7 @@ export default function HomePage() {
       <HomeCategoryCarousel />
       <AboveFoldProducts />
       <FlashDealsSection/>
+      <PacksSection/>
       <BrandCollectionSection />
       
       <HomeCtaSection />

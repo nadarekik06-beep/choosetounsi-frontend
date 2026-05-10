@@ -366,7 +366,7 @@ export default function BrandCollectionSection() {
         .bpc-img-wrap {
           position: relative;
           width: 100%;
-          aspect-ratio: 3 / 4;
+          aspect-ratio: 4 / 5;
           background: #1a1a1a;
           overflow: hidden;
           flex-shrink: 0;
@@ -481,15 +481,15 @@ export default function BrandCollectionSection() {
 
         /* ── Info ── */
         .bpc-info {
-          padding: 12px 14px 16px;
+          padding: 9px 11px 12px;
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 3px;
           flex: 1;
         }
         .bpc-cat {
           font-family: 'Barlow', sans-serif;
-          font-size: 9px;
+          font-size: 8px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: .08em;
@@ -497,7 +497,7 @@ export default function BrandCollectionSection() {
         }
         .bpc-name {
           font-family: 'Barlow', sans-serif;
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 700;
           color: rgba(255,255,255,0.88);
           margin: 0;
@@ -513,11 +513,11 @@ export default function BrandCollectionSection() {
           display: flex;
           align-items: center;
           gap: 8px;
-          margin-top: 6px;
+          margin-top: 4px;
         }
         .bpc-price {
           font-family: 'Barlow Condensed', sans-serif;
-          font-size: 17px;
+          font-size: 15px;
           font-weight: 900;
           color: #db142e;
           line-height: 1;
@@ -632,7 +632,7 @@ export default function BrandCollectionSection() {
               </h2>
               <p className="bpc-subtitle">Curated. Verified. Exclusively ours.</p>
             </div>
-            <Link href="/shop?platform=1" className="bpc-view-all">
+            <Link href="/brand" className="bpc-view-all">
               Explore All
               <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -650,22 +650,7 @@ export default function BrandCollectionSection() {
             }
           </div>
 
-          {/* CTA strip */}
-          {!loading && products.length > 0 && (
-            <div className="bpc-cta-strip">
-              <p className="bpc-cta-text">
-                <strong>ChooseTounsi Originals</strong> — handpicked platform products, verified quality, trusted delivery.
-              </p>
-              <Link href="/brand" className="bpc-cta-btn">
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                  <polyline points="9 22 9 12 15 12 15 22"/>
-                </svg>
-                Shop the Collection
-              </Link>
-            </div>
-          )}
-        </div>
+         </div>
       </section>
     </>
   )
