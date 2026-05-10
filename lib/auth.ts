@@ -142,6 +142,7 @@ export async function login(credentials: LoginCredentials): Promise<{ user: Auth
  * The session is saved only after verifyEmail() succeeds.
  */
 export async function register(credentials: RegisterCredentials): Promise<VerificationRequiredResponse> {
+  clearLocalSession();
   try {
     const { data } = await api.post<VerificationRequiredResponse>('/auth/register', credentials);
     return data;

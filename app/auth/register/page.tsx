@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { register, loginWithGoogle, getToken, getUser } from '@/lib/auth';
+import { register, loginWithGoogle, getToken, getUser, clearLocalSession } from '@/lib/auth';
 import {
   Eye, EyeOff, Mail, Lock, User, AlertCircle,
   Loader2, ShoppingBag, Store, TrendingUp, Shield, CheckCircle2,
@@ -34,12 +34,13 @@ function RegisterForm() {
   const [error,         setError]         = useState('');
   const [checked,       setChecked]       = useState(false);
 
-  useEffect(() => {
-    const token = getToken();
-    const user  = getUser();
-    if (token && user) { router.replace('/'); return; }
-    setChecked(true);
-  }, []);
+useEffect(() => {
+  // Always clear any stale session when landing on register page.
+  // A user arriving here wants a NEW account — their old session
+  // (Google or otherwise) must not interfere.
+  clearLocalSession();
+  setChecked(true);
+}, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
