@@ -219,8 +219,8 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
       <div style={{ background: dark?'rgba(59,130,246,0.06)':'rgba(59,130,246,0.04)', border:'1px solid rgba(59,130,246,0.15)', borderRadius:10, padding:'10px 14px', display:'flex', gap:10, alignItems:'flex-start' }}>
         <Globe size={14} style={{ color:'#3b82f6', marginTop:1, flexShrink:0 }} />
         <p style={{ fontSize:11, color:muted, margin:0, lineHeight:1.5 }}>
-          Scanning <strong style={{ color:'#3b82f6' }}>Mytek</strong>, <strong style={{ color:'#3b82f6' }}>Tunisianet</strong> & <strong style={{ color:'#3b82f6' }}>Tayara.tn</strong> for real competitor pricing…
-        </p>
+  Scanning <strong style={{ color:'#3b82f6' }}>Tayara.tn</strong>, <strong style={{ color:'#3b82f6' }}>Mytek</strong> & <strong style={{ color:'#3b82f6' }}>Tunisianet</strong> via Google Search API…
+</p>
       </div>
 
       <style>{`
@@ -263,7 +263,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
   const text   = dark ? '#fff' : '#111';
   const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
   const subBg  = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
-  const isAI   = dataSource === 'groq_knowledge';
+  const hasRealData = report.has_data && (dataSource === 'serper' || dataSource === 'cache');
 
   const PLATFORM_META: Record<string, { color: string; emoji: string }> = {
     'Mytek':                    { color:'#e84393', emoji:'🖥️' },
@@ -272,6 +272,10 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
     'ChooseTounsi':             { color:'#db142e', emoji:'🇹🇳' },
     'Tunisian Market Knowledge':{ color:'#8b5cf6', emoji:'🧠' },
     'Tunisian Market Knowledge (AI)': { color:'#8b5cf6', emoji:'🧠' },
+    'Google Tunisie':   { color:'#4285f4', emoji:'🔍' },  // ← ADD
+    'Tunisian Market':  { color:'#10b981', emoji:'🏪' },  // ← ADD
+    'Facebook Market':  { color:'#1877f2', emoji:'📘' },  // ← ADD
+    'Scoop.tn':         { color:'#8b5cf6', emoji:'🛍️' },  // ← ADD
   };
 
   const getPlatformMeta = (name: string) =>
@@ -287,12 +291,16 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
         <p style={{ fontSize:10, fontWeight:900, color:muted, margin:0, textTransform:'uppercase', letterSpacing:'0.08em' }}>
           Platforms analysed
         </p>
-        <span style={{ marginLeft:'auto', fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:999,
-          background: isAI ? 'rgba(139,92,246,0.12)' : 'rgba(16,185,129,0.1)',
-          color: isAI ? '#8b5cf6' : '#10b981',
-          border: isAI ? '1px solid rgba(139,92,246,0.25)' : '1px solid rgba(16,185,129,0.25)' }}>
-          {isAI ? '🧠 AI Knowledge' : '🌐 Live Scan'}
-        </span>
+      <span style={{ marginLeft:'auto', fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:999,
+  background: hasRealData ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
+  color: hasRealData ? '#10b981' : '#f59e0b',
+  border: hasRealData ? '1px solid rgba(16,185,129,0.25)' : '1px solid rgba(245,158,11,0.25)' }}>
+  {report.has_data
+    ? `✓ ${report.data_points} results found`
+    : dataSource === 'none'
+    ? '⚠ No data — internal only'
+    : '⚠ Search unavailable'}
+</span>
       </div>
 
       <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
@@ -327,48 +335,39 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
         })}
 
         {scrapedSources.length === 0 && aiPlatforms && aiPlatforms.map((name, i) => {
-          const m = getPlatformMeta(name);
-          return (
-            <div key={name} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', borderRadius:12,
-              background: dark ? `${m.color}10` : `${m.color}08`,
-              border:`1px solid ${m.color}30`,
-              animation:`fadeIn ${0.3 + i * 0.1}s ease` }}>
-              <span style={{ fontSize:16 }}>{m.emoji}</span>
-              <div>
-                <p style={{ fontSize:11, fontWeight:800, color:m.color, margin:0 }}>{name}</p>
-                <p style={{ fontSize:9, color:muted, margin:0 }}>AI knowledge base</p>
-              </div>
-              <Brain size={11} style={{ color:'#8b5cf6', marginLeft:2 }} />
-            </div>
-          );
-        })}
-
+  const m = getPlatformMeta(name);
+  return (
+    <div key={name} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', borderRadius:12,
+      background: dark ? `${m.color}10` : `${m.color}08`,
+      border:`1px solid ${m.color}30`,
+      animation:`fadeIn ${0.3 + i * 0.1}s ease` }}>
+      <span style={{ fontSize:16 }}>{m.emoji}</span>
+      <div>
+        <p style={{ fontSize:11, fontWeight:800, color:m.color, margin:0 }}>{name}</p>
+        <p style={{ fontSize:9, color:muted, margin:0 }}>Google indexed</p>  {/* ← FIXED */}
+      </div>
+      <CheckCircle2 size={12} style={{ color:'#10b981', marginLeft:2 }} />   {/* ← FIXED */}
+    </div>
+  );
+})}
         {scrapedSources.length === 0 && (!aiPlatforms || aiPlatforms.length === 0) && (
-          ['Mytek', 'Tunisianet', 'Tayara.tn'].map((name, i) => {
-            const m = getPlatformMeta(name);
-            return (
-              <div key={name} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', borderRadius:12,
-                background: dark ? `${m.color}10` : `${m.color}08`,
-                border:`1px solid ${m.color}30`,
-                animation:`fadeIn ${0.3 + i * 0.1}s ease` }}>
-                <span style={{ fontSize:16 }}>{m.emoji}</span>
-                <div>
-                  <p style={{ fontSize:11, fontWeight:800, color:m.color, margin:0 }}>{name}</p>
-                  <p style={{ fontSize:9, color:muted, margin:0 }}>AI knowledge base</p>
-                </div>
-                <Brain size={11} style={{ color:'#8b5cf6', marginLeft:2 }} />
-              </div>
-            );
-          })
-        )}
+  <div style={{ padding:'12px 14px', borderRadius:12,
+    background: dark ? 'rgba(245,158,11,0.06)' : 'rgba(245,158,11,0.04)',
+    border:'1px solid rgba(245,158,11,0.18)' }}>
+    <p style={{ fontSize:11, color:'#f59e0b', margin:0, fontWeight:700 }}>
+      ⚠ No external market data found for this product.
+      Recommendation is based on your platform data only.
+    </p>
+  </div>
+)}
       </div>
 
       {report.has_data && (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
           {[
-            { label:'Market Avg', val:report.market_avg,  color: isAI ? '#8b5cf6':'#3b82f6', icon:'📊' },
-            { label:'Lowest',     val:report.market_min,  color:'#10b981',                   icon:'⬇️' },
-            { label:'Highest',    val:report.market_max,  color:'#f59e0b',                   icon:'⬆️' },
+            { label:'Market Avg', val:report.market_avg,  color: hasRealData ? '#10b981' : '#f59e0b', icon:'📊' },
+            { label:'Lowest',     val:report.market_min,  color: hasRealData ? '#10b981' : '#f59e0b', icon:'⬇️' },
+            { label:'Highest',    val:report.market_max,  color: hasRealData ? '#10b981' : '#f59e0b', icon:'⬆️' },
           ].map(({ label, val, color, icon }) => (
             <div key={label} style={{ background:subBg, borderRadius:12, padding:'12px', textAlign:'center', border:`1px solid ${border}` }}>
               <p style={{ fontSize:14, margin:'0 0 2px' }}>{icon}</p>
@@ -437,11 +436,23 @@ function PositioningBadge({ positioning, pct, dark }: { positioning: string; pct
 // TOOL 1 — PRICE OPTIMIZER — UNCHANGED
 // ═════════════════════════════════════════════════════════════════════════════
 
-function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; name:string }>; dark:boolean }) {
-  const [selectedId, setSelectedId] = useState<number|null>(null);
+function PriceOptimizerTool({ products, dark, initialProductId, autorun }: { products: Array<{ id:number; name:string }>; dark:boolean; initialProductId?: number; autorun?: boolean }) {
+  const autoranRef = useRef(false);
+  const [selectedId, setSelectedId] = useState<number|null>(initialProductId ?? null);
   const [result,     setResult]     = useState<{ ai_result: PriceOptimizerResult; data_context: PriceOptimizerDataContext }|null>(null);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string|null>(null);
+  // ADD THIS after the useState lines:
+useEffect(() => {
+  if (!initialProductId || products.length === 0) return;
+  const found = products.find(p => p.id === initialProductId);
+  if (!found) return;
+  setSelectedId(initialProductId);
+  if (autorun && !autoranRef.current) {
+    autoranRef.current = true;
+    setTimeout(() => run(initialProductId), 50);
+  }
+}, [initialProductId, products]);
 
   const cardBg = dark ? '#161b27' : '#ffffff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
@@ -449,11 +460,12 @@ function PriceOptimizerTool({ products, dark }: { products: Array<{ id:number; n
   const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
   const subBg  = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
 
-  const run = async () => {
-    if (!selectedId) return;
-    setLoading(true); setError(null); setResult(null);
-    try {
-      const res = await sellerAiApi.priceOptimizer(selectedId);
+  const run = async (idOverride?: number) => {
+  const targetId = idOverride ?? selectedId;
+  if (!targetId) return;
+  setLoading(true); setError(null); setResult(null);
+  try {
+    const res = await sellerAiApi.priceOptimizer(targetId);
       setResult(res.data);
     } catch (e: any) {
       setError(e.message ?? 'Analysis failed');
@@ -839,13 +851,17 @@ function ProductDNAStrip({ ctx, dark }: {
   );
 }
 
-function SalesPredictorTool({ products, dark }: { products: Array<{ id:number; name:string }>; dark:boolean }) {
-  const [selectedId, setSelectedId] = useState<number|null>(null);
+function SalesPredictorTool({ products, dark, initialProductId }: { products: Array<{ id:number; name:string }>; dark:boolean; initialProductId?: number }) {
+  const [selectedId, setSelectedId] = useState<number|null>(initialProductId ?? null)
   const [season,     setSeason]     = useState('Normal');
   const [result,     setResult]     = useState<{ ai_result: SalesPredictorResult; data_context: any }|null>(null);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string|null>(null);
-
+  useEffect(() => {
+  if (!initialProductId || products.length === 0) return;
+  const found = products.find(p => p.id === initialProductId);
+  if (found) setSelectedId(initialProductId);
+}, [initialProductId, products]);
   const cardBg = dark ? '#161b27' : '#ffffff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const text   = dark ? '#fff' : '#111';
@@ -1115,14 +1131,18 @@ function SalesPredictorTool({ products, dark }: { products: Array<{ id:number; n
 // TOOL 3 — DESCRIPTION GENERATOR — UNCHANGED
 // ═════════════════════════════════════════════════════════════════════════════
 
-function DescriptionGeneratorTool({ products, dark }: { products: Array<{ id:number; name:string }>; dark:boolean }) {
-  const [selectedId, setSelectedId] = useState<number|null>(null);
+function DescriptionGeneratorTool({ products, dark, initialProductId }: { products: Array<{ id:number; name:string }>; dark:boolean; initialProductId?: number }) {
+  const [selectedId, setSelectedId] = useState<number|null>(initialProductId ?? null);
   const [tone,       setTone]       = useState('professional');
   const [lang,       setLang]       = useState('fr');
   const [result,     setResult]     = useState<{ ai_result: DescriptionResult; data_context: any }|null>(null);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string|null>(null);
-
+  useEffect(() => {
+  if (!initialProductId || products.length === 0) return;
+  const found = products.find(p => p.id === initialProductId);
+  if (found) setSelectedId(initialProductId);
+}, [initialProductId, products]);
   const cardBg = dark ? '#161b27' : '#ffffff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const text   = dark ? '#fff' : '#111';
@@ -1210,14 +1230,19 @@ function BundleProductChip({ name, imageUrl, dark }: { name: string; imageUrl: s
   );
 }
 
-function BundleRecommenderTool({ products, dark }: { products: Array<{ id:number; name:string }>; dark:boolean }) {
-  const [selectedId,  setSelectedId]  = useState<number|null>(null);
+function BundleRecommenderTool({ products, dark, initialProductId }: { products: Array<{ id:number; name:string }>; dark:boolean; initialProductId?: number }) {
+  const [selectedId, setSelectedId] = useState<number|null>(initialProductId ?? null);
   const [mode,        setMode]        = useState<'bundle'|'related'>('bundle');
   const [discountPct, setDiscountPct] = useState(10);
   const [result,      setResult]      = useState<{ ai_result: RecommenderResult; data_context: any }|null>(null);
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState<string|null>(null);
 
+  useEffect(() => {
+  if (!initialProductId || products.length === 0) return;
+  const found = products.find(p => p.id === initialProductId);
+  if (found) setSelectedId(initialProductId);
+}, [initialProductId, products]);
   const cardBg = dark ? '#161b27' : '#ffffff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const text   = dark ? '#fff' : '#111';
@@ -1323,9 +1348,20 @@ const TOOLS = [
   { key:'bundles',     label:'Bundles',     icon:Package,    accent:'#f59e0b' },
 ];
 
-export default function AIToolsPanel({ dark }: { dark: boolean }) {
-  const [activeTool, setActiveTool] = useState('price');
-  const [products,   setProducts]   = useState<Array<{ id:number; name:string }>>([]);
+export default function AIToolsPanel({  dark,
+  initialTab,
+  initialProductId,
+  autorun = false,}: { dark: boolean;
+  initialTab?: string;
+  initialProductId?: number;
+  autorun?: boolean; }) {
+  
+  
+  
+  
+  
+const validTab = ['price','sales','description','bundles'].includes(initialTab ?? '') ? initialTab! : 'price';
+const [activeTool, setActiveTool] = useState(validTab);  const [products,   setProducts]   = useState<Array<{ id:number; name:string }>>([]);
 
   const text  = dark ? '#fff' : '#111';
   const muted = dark ? 'rgba(255,255,255,0.4)' : '#888';
@@ -1368,10 +1404,10 @@ export default function AIToolsPanel({ dark }: { dark: boolean }) {
       </div>
 
       <div>
-        {activeTool === 'price'       && <PriceOptimizerTool      products={products} dark={dark} />}
-        {activeTool === 'sales'       && <SalesPredictorTool       products={products} dark={dark} />}
-        {activeTool === 'description' && <DescriptionGeneratorTool products={products} dark={dark} />}
-        {activeTool === 'bundles'     && <BundleRecommenderTool    products={products} dark={dark} />}
+        {activeTool === 'price'       && <PriceOptimizerTool      products={products} dark={dark} initialProductId={initialProductId} autorun={autorun} />}
+{activeTool === 'sales'       && <SalesPredictorTool       products={products} dark={dark} initialProductId={initialProductId} />}
+{activeTool === 'description' && <DescriptionGeneratorTool products={products} dark={dark} initialProductId={initialProductId} />}
+{activeTool === 'bundles'     && <BundleRecommenderTool    products={products} dark={dark} initialProductId={initialProductId} />}
       </div>
     </div>
   );

@@ -25,7 +25,6 @@ export type FeatureKey =
   | 'custom_storefront'
   | 'ai_hub'
   | 'profit_center'
-  | 'visibility_control'
   | 'vip_requests'
   | 'sponsored_products'   // ✅ already present — gates the Promote page
   | 'trend_detection'
@@ -56,7 +55,6 @@ const FEATURE_MIN_TIER: Record<FeatureKey, PlanTier> = {
   custom_storefront:    2,
   ai_hub:               2,
   profit_center:        2,
-  visibility_control:   2,
   vip_requests:         2,
   sponsored_products:   2,
   trend_detection:      2,

@@ -1,27 +1,25 @@
 'use client';
 
-/**
- * app/seller/ai-tools/page.tsx  ← NEW FILE
- *
- * Standalone page for AI Business Tools.
- * Accessible via sidebar nav for Red+ sellers.
- * Free sellers are redirected to /seller/subscription via the sidebar lock.
- */
-
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTheme } from '../layout';
 import { PlanGate } from '@/app/components/seller/SubscriptionBadge';
 import AIToolsPanel from '@/app/components/seller/AIToolsPanel';
 import { Brain } from 'lucide-react';
 
-export default function AIToolsPage() {
+function AIToolsInner() {
   const { dark } = useTheme();
+  const searchParams = useSearchParams();
+
+  const tabParam       = searchParams.get('tab');
+  const productIdParam = searchParams.get('product_id');
+  const autorun        = searchParams.get('autorun');
 
   const textMain  = dark ? '#fff' : '#111';
   const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Page header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{
           width: 42, height: 42, borderRadius: 12,
@@ -42,10 +40,22 @@ export default function AIToolsPage() {
         </div>
       </div>
 
-      {/* Gated content */}
       <PlanGate feature="ai_price_optimizer" dark={dark}>
-        <AIToolsPanel dark={dark} />
+        <AIToolsPanel
+          dark={dark}
+          initialTab={tabParam ?? undefined}
+          initialProductId={productIdParam ? Number(productIdParam) : undefined}
+          autorun={autorun === '1'}
+        />
       </PlanGate>
     </div>
+  );
+}
+
+export default function AIToolsPage() {
+  return (
+    <Suspense fallback={null}>
+      <AIToolsInner />
+    </Suspense>
   );
 }

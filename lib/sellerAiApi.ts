@@ -213,4 +213,10 @@ export const sellerAiApi = {
     short_description?: string; attributes?: Record<string, string>;
     variants?: string[]; image_count?: number; tone?: string; language?: string;
   }) => jsonRequest<AIResponse<DescriptionResult>>('POST', '/seller/ai/quick-description', params),
+  // Already navigate via URL — but expose typed helper for programmatic use
+navigateToPriceOptimizer: (productId: number) => {
+  if (typeof window !== 'undefined') {
+    window.location.href = `/seller/ai-tools?tab=price&product_id=${productId}&autorun=1`;
+  }
+},
 };

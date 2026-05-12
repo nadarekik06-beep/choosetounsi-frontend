@@ -8,11 +8,13 @@
  *   2. RestockModal mounted + wired up
  *   3. After restock, list refreshes and product goes "back in stock"
  *   4. Restock button uses a green color to differentiate from Edit (grey)
+ *   5. ProductAlertPanel + AlertIndicator wired up per row
+ *   6. Critical/warning row highlight via borderLeft + background tint
  *
  * Everything else is IDENTICAL to the original.
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { productsApi, storageUrl } from '@/lib/sellerApi';
 import type { Product, PaginatedResponse } from '@/types/seller';
@@ -25,6 +27,10 @@ import {
 import ProductModal from './ProductModal';
 import RestockModal, { type RestockProduct } from '../components/RestockModal';
 import { useTheme } from '../layout';
+import ProductAlertPanel, {
+  AlertIndicator,
+  type ProductAlertData,
+} from '@/app/components/seller/ProductAlertPanel';
 
 interface ModalState {
   open: boolean;
@@ -119,7 +125,6 @@ export default function ProductsPage() {
       const variantStock = full.variant_stock ?? 0;
 
       const variants = (full.variant_rows ?? full.variants ?? []).map((v: any) => ({
-
         id:         v.id,
         label:      v.label ?? '',
         stock:      v.stock ?? 0,
@@ -179,6 +184,8 @@ export default function ProductsPage() {
         .act-btn:hover { opacity: 1 !important; }
         .restock-btn:hover { opacity: 1 !important; background: rgba(16,185,129,0.15) !important; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes alertSlideIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes alertPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
       `}</style>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -264,150 +271,186 @@ export default function ProductsPage() {
                     // ── Is out of stock? (triggers restock button) ──────────
                     const isOutOfStock = displayStock === 0;
 
-                    return (
-                      <tr key={product.id} className="product-row" style={{ borderTop: `1px solid ${border}` }}>
+                    // ── Alert data from backend ─────────────────────────────
+                    const alertData = ((product as any).alert_data ?? { has_alert: false }) as ProductAlertData;
+                    const isCritical = alertData.alert_level === 'critical';
+                    const isWarning  = alertData.alert_level === 'warning';
 
-                        {/* Product */}
-                        <td style={{ padding: '12px 20px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <div style={{ width: 40, height: 40, borderRadius: 10, background: dark ? 'rgba(255,255,255,0.06)' : '#f1f5f9', border: `1px solid ${border}`, flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              {thumbUrl ? (
-                                <img
-                                  src={thumbUrl}
-                                  alt={product.name}
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                  onError={e => {
-                                    const img = e.currentTarget;
-                                    img.style.display = 'none';
-                                    const parent = img.parentElement;
-                                    if (parent && !parent.querySelector('svg')) {
-                                      const wrap = document.createElement('div');
-                                      wrap.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%';
-                                      wrap.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${textMuted}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
-                                      parent.appendChild(wrap);
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <ImageIcon size={14} style={{ color: textMuted, opacity: 0.5 }} />
-                              )}
-                            </div>
-                            <div style={{ minWidth: 0 }}>
-                              <p style={{ fontWeight: 800, color: textMain, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
-                                {product.name}
-                              </p>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>
-                                  {(product as any).sku ? `SKU: ${(product as any).sku}` : `ID #${product.id}`}
-                                </p>
-                                {hasVariants && (
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 800, color: '#6366f1', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 5px', borderRadius: 4 }}>
-                                    <Layers size={8} /> variants
-                                  </span>
+                    return (
+                      <React.Fragment key={product.id}>
+                        <tr
+                          className="product-row"
+                          style={{
+                            borderTop: `1px solid ${border}`,
+                            background: isCritical
+                              ? (dark ? 'rgba(239,68,68,0.04)' : 'rgba(239,68,68,0.02)')
+                              : isWarning
+                              ? (dark ? 'rgba(245,158,11,0.03)' : 'rgba(245,158,11,0.015)')
+                              : 'transparent',
+                            borderLeft: isCritical
+                              ? '3px solid rgba(239,68,68,0.5)'
+                              : isWarning
+                              ? '3px solid rgba(245,158,11,0.5)'
+                              : '3px solid transparent',
+                            transition: 'background 0.2s ease',
+                          }}
+                        >
+
+                          {/* Product */}
+                          <td style={{ padding: '12px 20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <div style={{ width: 40, height: 40, borderRadius: 10, background: dark ? 'rgba(255,255,255,0.06)' : '#f1f5f9', border: `1px solid ${border}`, flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {thumbUrl ? (
+                                  <img
+                                    src={thumbUrl}
+                                    alt={product.name}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    onError={e => {
+                                      const img = e.currentTarget;
+                                      img.style.display = 'none';
+                                      const parent = img.parentElement;
+                                      if (parent && !parent.querySelector('svg')) {
+                                        const wrap = document.createElement('div');
+                                        wrap.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%';
+                                        wrap.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${textMuted}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
+                                        parent.appendChild(wrap);
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <ImageIcon size={14} style={{ color: textMuted, opacity: 0.5 }} />
                                 )}
                               </div>
+                              <div style={{ minWidth: 0 }}>
+                                <p style={{ fontWeight: 800, color: textMain, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
+                                  {product.name}
+                                </p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>
+                                    {(product as any).sku ? `SKU: ${(product as any).sku}` : `ID #${product.id}`}
+                                  </p>
+                                  {hasVariants && (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 800, color: '#6366f1', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 5px', borderRadius: 4 }}>
+                                      <Layers size={8} /> variants
+                                    </span>
+                                  )}
+                                  {/* ── Alert indicator badge ── */}
+                                  <AlertIndicator alertData={alertData} dark={dark} />
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* Category */}
-                        <td style={{ padding: '12px 20px', fontSize: 12, fontWeight: 500, color: textMuted }}>
-                          {(product as any).category?.name ?? '—'}
-                        </td>
+                          {/* Category */}
+                          <td style={{ padding: '12px 20px', fontSize: 12, fontWeight: 500, color: textMuted }}>
+                            {(product as any).category?.name ?? '—'}
+                          </td>
 
-                        {/* Price */}
-                        <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 900, color: textMain }}>
-                          {Number(product.price).toFixed(3)} TND
-                        </td>
+                          {/* Price */}
+                          <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 900, color: textMain }}>
+                            {Number(product.price).toFixed(3)} TND
+                          </td>
 
-                        {/* Stock */}
-                        <td style={{ padding: '12px 20px', textAlign: 'right' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
-                            <span style={{ fontWeight: 800, color: displayStock === 0 ? '#ef4444' : displayStock <= 10 ? '#f59e0b' : textMain }}>
-                              {displayStock}
-                              {displayStock === 0 && <span style={{ fontSize: 10, marginLeft: 4, color: '#ef4444' }}>(Out)</span>}
-                              {displayStock > 0 && displayStock <= 10 && <span style={{ fontSize: 10, marginLeft: 4, color: '#f59e0b' }}>(Low)</span>}
+                          {/* Stock */}
+                          <td style={{ padding: '12px 20px', textAlign: 'right' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
+                              <span style={{ fontWeight: 800, color: displayStock === 0 ? '#ef4444' : displayStock <= 10 ? '#f59e0b' : textMain }}>
+                                {displayStock}
+                                {displayStock === 0 && <span style={{ fontSize: 10, marginLeft: 4, color: '#ef4444' }}>(Out)</span>}
+                                {displayStock > 0 && displayStock <= 10 && <span style={{ fontSize: 10, marginLeft: 4, color: '#f59e0b' }}>(Low)</span>}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Status */}
+                          <td style={{ padding: '12px 20px', textAlign: 'center' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999, background: product.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: product.is_active ? '#10b981' : '#ef4444', border: `1px solid ${product.is_active ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
+                              {product.is_active ? <><CheckCircle size={9} />Active</> : <><XCircle size={9} />Inactive</>}
                             </span>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* Status */}
-                        <td style={{ padding: '12px 20px', textAlign: 'center' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999, background: product.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: product.is_active ? '#10b981' : '#ef4444', border: `1px solid ${product.is_active ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
-                            {product.is_active ? <><CheckCircle size={9} />Active</> : <><XCircle size={9} />Inactive</>}
-                          </span>
-                        </td>
+                          {/* Approval */}
+                          <td style={{ padding: '12px 20px', textAlign: 'center' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999, background: product.is_approved ? 'rgba(59,130,246,0.12)' : 'rgba(245,158,11,0.12)', color: product.is_approved ? '#3b82f6' : '#f59e0b', border: `1px solid ${product.is_approved ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)'}` }}>
+                              {product.is_approved ? <><CheckCircle size={9} />Approved</> : <><Clock size={9} />Pending</>}
+                            </span>
+                          </td>
 
-                        {/* Approval */}
-                        <td style={{ padding: '12px 20px', textAlign: 'center' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999, background: product.is_approved ? 'rgba(59,130,246,0.12)' : 'rgba(245,158,11,0.12)', color: product.is_approved ? '#3b82f6' : '#f59e0b', border: `1px solid ${product.is_approved ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)'}` }}>
-                            {product.is_approved ? <><CheckCircle size={9} />Approved</> : <><Clock size={9} />Pending</>}
-                          </span>
-                        </td>
+                          {/* Actions */}
+                          <td style={{ padding: '12px 20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
 
-                        {/* Actions */}
-                        <td style={{ padding: '12px 20px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-
-                            {/* View */}
-                            <button
-                              onClick={() => router.push(`/seller/products/${product.id}`)}
-                              className="act-btn"
-                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#94a3b8', opacity: 0.7 }}
-                              title="View"
-                            >
-                              <Eye size={13} />
-                            </button>
-
-                            {/* Edit */}
-                            <button
-                              onClick={() => handleEdit(product)}
-                              className="act-btn"
-                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#94a3b8', opacity: 0.7 }}
-                              title="Edit"
-                            >
-                              <Edit2 size={13} />
-                            </button>
-
-                            {/* ── RESTOCK BUTTON (only when out of stock) ─── */}
-                            {isOutOfStock && (
+                              {/* View */}
                               <button
-                                onClick={() => handleRestock(product)}
-                                className="restock-btn"
-                                title="Restock — update stock directly"
-                                style={{
-                                  display: 'inline-flex', alignItems: 'center', gap: 4,
-                                  padding: '5px 10px',
-                                  background: 'rgba(16,185,129,0.1)',
-                                  border: '1px solid rgba(16,185,129,0.3)',
-                                  borderRadius: 8, cursor: 'pointer',
-                                  color: '#10b981',
-                                  fontSize: 10, fontWeight: 800,
-                                  opacity: 0.9, transition: 'all 0.15s',
-                                  fontFamily: 'inherit',
-                                }}
+                                onClick={() => router.push(`/seller/products/${product.id}`)}
+                                className="act-btn"
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#94a3b8', opacity: 0.7 }}
+                                title="View"
                               >
-                                <RefreshCw size={11} />
-                                Restock
+                                <Eye size={13} />
                               </button>
-                            )}
 
-                            {/* Delete */}
-                            <button
-                              onClick={() => handleDelete(product.id)}
-                              disabled={deleting === product.id}
-                              className="act-btn"
-                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#94a3b8', opacity: deleting === product.id ? 0.4 : 0.7 }}
-                              title="Delete"
-                            >
-                              {deleting === product.id
-                                ? <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />
-                                : <Trash2 size={13} />
-                              }
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                              {/* Edit */}
+                              <button
+                                onClick={() => handleEdit(product)}
+                                className="act-btn"
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#94a3b8', opacity: 0.7 }}
+                                title="Edit"
+                              >
+                                <Edit2 size={13} />
+                              </button>
+
+                              {/* ── Restock button (only when out of stock) ── */}
+                              {isOutOfStock && (
+                                <button
+                                  onClick={() => handleRestock(product)}
+                                  className="restock-btn"
+                                  title="Restock — update stock directly"
+                                  style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                                    padding: '5px 10px',
+                                    background: 'rgba(16,185,129,0.1)',
+                                    border: '1px solid rgba(16,185,129,0.3)',
+                                    borderRadius: 8, cursor: 'pointer',
+                                    color: '#10b981',
+                                    fontSize: 10, fontWeight: 800,
+                                    opacity: 0.9, transition: 'all 0.15s',
+                                    fontFamily: 'inherit',
+                                  }}
+                                >
+                                  <RefreshCw size={11} />
+                                  Restock
+                                </button>
+                              )}
+
+                              {/* Delete */}
+                              <button
+                                onClick={() => handleDelete(product.id)}
+                                disabled={deleting === product.id}
+                                className="act-btn"
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#94a3b8', opacity: deleting === product.id ? 0.4 : 0.7 }}
+                                title="Delete"
+                              >
+                                {deleting === product.id
+                                  ? <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />
+                                  : <Trash2 size={13} />
+                                }
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* ── Alert panel (expands as a full-width row below the product row) ── */}
+                        {alertData.has_alert && (
+                          <ProductAlertPanel
+                            key={`alert-${product.id}`}
+                            productId={product.id}
+                            productName={product.name}
+                            alertData={alertData}
+                            dark={dark}
+                          />
+                        )}
+                      </React.Fragment>
                     );
                   })}
 

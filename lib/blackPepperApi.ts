@@ -1,8 +1,6 @@
 /**
  * lib/blackPepperApi.ts
- *
- * Frontend API layer for Black Pepper (tier 2) features.
- * Same fetch + token pattern as sellerApi.ts and sellerAiApi.ts.
+ * FIXED: Added FunnelInsight and QualityAuditProduct interfaces (were missing, causing TS2304 errors)
  */
 
 const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
@@ -40,7 +38,33 @@ async function jsonRequest<T>(method: string, path: string, body?: unknown): Pro
   return json;
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Daily Brief ──────────────────────────────────────────────────────────────
+
+export interface DailyBriefAction {
+  label: string;
+  href:  string;
+  type:  'restock' | 'promote' | 'flash_sale' | 'default';
+}
+
+export interface DailyBriefData {
+  greeting:         string;
+  revenue_delta:    string;
+  revenue_positive: boolean;
+  trending_count:   number;
+  risk_count:       number;
+  ai_message:       string;
+  top_action:       DailyBriefAction | null;
+}
+
+// ─── SmartAction ─────────────────────────────────────────────────────────────
+
+export interface SmartAction {
+  label: string;
+  href:  string;
+  type:  'restock' | 'promote' | 'flash_sale' | 'edit' | 'default';
+}
+
+// ─── AI Hub ───────────────────────────────────────────────────────────────────
 
 export interface TrendingProduct {
   product_id:          number;
@@ -55,8 +79,9 @@ export interface TrendingProduct {
   velocity_multiplier: number;
   trend_signal:        'hot' | 'rising' | 'warm';
   insight:             string;
-  image_url: string | null;  // ← add this
-
+  velocity_label:      string;
+  image_url:           string | null;
+  smart_actions:       SmartAction[];
 }
 
 export interface InventoryAlert {
@@ -71,14 +96,14 @@ export interface InventoryAlert {
   restock_units:   number;
   insight:         string;
   image_url:       string | null;
-
+  smart_actions:   SmartAction[];
 }
 
 export interface MarketInsights {
-  headline:            string;
-  insights:            string[];
-  priority_action:     string;
-  market_temperature:  'hot' | 'warm' | 'cooling' | 'cold';
+  headline:           string;
+  insights:           string[];
+  priority_action:    string;
+  market_temperature: 'hot' | 'warm' | 'cooling' | 'cold';
 }
 
 export interface AiHubData {
@@ -86,20 +111,22 @@ export interface AiHubData {
   inventory_alerts:  InventoryAlert[];
   market_insights:   MarketInsights;
   meta: {
-    trending_count:  number;
-    alert_count:     number;
-    critical_count:  number;
-    generated_at:    string;
+    trending_count: number;
+    alert_count:    number;
+    critical_count: number;
+    generated_at:   string;
   };
 }
 
+// ─── Profit Center ────────────────────────────────────────────────────────────
+
 export interface ProfitPeriod {
-  month:             string;
-  revenue:           number;
-  estimated_profit:  number;
-  units:             number;
-  orders:            number;
-  avg_order_value:   number;
+  month:            string;
+  revenue:          number;
+  estimated_profit: number;
+  units:            number;
+  orders:           number;
+  avg_order_value:  number;
 }
 
 export interface ProductMargin {
@@ -112,15 +139,17 @@ export interface ProductMargin {
   estimated_profit: number;
   margin_pct:       number;
   margin_label:     'excellent' | 'good' | 'fair' | 'low';
+  margin_human:     string;
 }
 
 export interface ForecastData {
-  next_30_days:   number;
-  last_30_actual: number;
-  growth_pct:     number;
-  trend:          'up' | 'down' | 'stable';
-  daily_points:   Array<{ day: string; predicted: number }>;
-  confidence:     'high' | 'medium' | 'low';
+  next_30_days:     number;
+  last_30_actual:   number;
+  growth_pct:       number;
+  trend:            'up' | 'down' | 'stable';
+  daily_points:     Array<{ day: string; predicted: number }>;
+  confidence:       'high' | 'medium' | 'low';
+  confidence_human: string;
 }
 
 export interface ProfitCenterData {
@@ -137,19 +166,7 @@ export interface ProfitCenterData {
   daily_revenue:    Array<{ day: string; revenue: number; orders: number }>;
 }
 
-export interface SponsoredProduct {
-  id:                  number;
-  name:                string;
-  price:               number;
-  stock:               number;
-  is_active:           boolean;
-  is_approved:         boolean;
-  is_sponsored:        boolean;
-  sponsored_priority:  number;
-  sponsored_at:        string | null;
-  category_name:       string;
-  image_url:           string | null;
-}
+
 
 export type VipRequestType   = 'reel' | 'promotion' | 'support';
 export type VipRequestStatus = 'pending' | 'in_progress' | 'completed' | 'rejected';
@@ -166,34 +183,88 @@ export interface VipRequest {
   handled_at:   string | null;
 }
 
-// ─── API ──────────────────────────────────────────────────────────────────────
+// ─── FunnelInsight — FIX: was missing, caused TS2304 in ConversionFunnelCard ─
+
+export interface FunnelInsight {
+  product_id:       number;
+  product_name:     string;
+  category:         string;
+  image_url:        string | null;
+  views:            number;
+  units_sold:       number;
+  opportunity_tnd:  number;
+  diagnosis:        string;
+  fix_type:         'image' | 'price' | 'description' | 'promote' | 'default';
+  fix_suggestion:   string;
+  fix_action_label: string;
+  fix_action_href:  string;
+}
+
+// ─── QualityAuditProduct — FIX: was missing, caused TS2304 in ProductQualityAudit ─
+
+export interface QualityAuditTip {
+  type:         'images' | 'description' | 'title' | 'attributes' | 'stock' | 'default';
+  label:        string;
+  points:       number;
+  action_href:  string;
+}
+
+export interface QualityAuditProduct {
+  product_id:   number;
+  product_name: string;
+  image_url:    string | null;
+  score:        number;
+  tips:         QualityAuditTip[];
+}
+
+// ─── Auto-Promote ─────────────────────────────────────────────────────────────
+
+export interface AutoPromoteSuggestion {
+  product_id:           number;
+  product_name:         string;
+  category:             string;
+  image_url:            string | null;
+  trend_signal:         'hot' | 'rising' | 'warm';
+  velocity_label:       string;
+  seven_day_revenue:    string;
+  velocity_multiplier:  number;
+  rationale:            string;
+  boost_explanation:    string;
+  estimated_boost_tnd:  number;
+  already_sponsored:    boolean;
+}
+
+// ─── API client ───────────────────────────────────────────────────────────────
 
 export const blackPepperApi = {
-  // AI Hub
+
+  dailyBrief: () =>
+    jsonRequest<{ success: boolean; data: DailyBriefData }>('GET', '/seller/black/daily-brief'),
+
   aiHub: () =>
     jsonRequest<{ success: boolean; data: AiHubData }>('GET', '/seller/black/ai-hub'),
 
-  // Profit Center
   profitCenter: () =>
     jsonRequest<{ success: boolean; data: ProfitCenterData }>('GET', '/seller/black/profit-center'),
 
-  // Sponsored Products
-  getSponsoredProducts: () =>
-    jsonRequest<{ success: boolean; data: SponsoredProduct[] }>('GET', '/seller/black/sponsored'),
 
-  toggleSponsorship: (productId: number, action: 'activate' | 'deactivate', priority?: number) =>
-    jsonRequest<{ success: boolean; message: string; data: any }>('POST', `/seller/black/sponsor/${productId}`, {
-      action,
-      priority: priority ?? 5,
-    }),
 
-  // VIP Requests
   getVipRequests: () =>
     jsonRequest<{ success: boolean; data: VipRequest[] }>('GET', '/seller/black/vip-requests'),
 
+  // FIX: typed with the now-defined FunnelInsight interface
+  funnelInsights: () =>
+    jsonRequest<{ success: boolean; data: FunnelInsight[] }>('GET', '/seller/black/funnel-insights'),
+
+  // FIX: typed with the now-defined QualityAuditProduct interface
+  qualityAudit: () =>
+    jsonRequest<{ success: boolean; data: QualityAuditProduct[] }>('GET', '/seller/black/quality-audit'),
+
+  autoPromoteSuggestions: () =>
+    jsonRequest<{ success: boolean; data: AutoPromoteSuggestion[] }>('GET', '/seller/black/auto-promote-suggestions'),
+
   submitVipRequest: (type: VipRequestType, message: string) =>
     jsonRequest<{ success: boolean; message: string; data: VipRequest }>('POST', '/seller/black/vip-request', {
-      type,
-      message,
+      type, message,
     }),
 };
