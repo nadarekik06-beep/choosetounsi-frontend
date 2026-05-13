@@ -19,6 +19,23 @@ import { useSubscriptionStandalone } from '@/app/hooks/useSubscription';
 import AiDescriptionPanel from '../components/AiDescriptionPanel';
 import CommissionPreview from '@/app/seller/components/CommissionPreview'
 
+
+
+
+
+
+const SEASONS = [
+  { value: 'all_seasons',    label: 'All Seasons' },
+  { value: 'summer',         label: '☀️ Summer' },
+  { value: 'winter',         label: '❄️ Winter' },
+  { value: 'spring',         label: '🌸 Spring' },
+  { value: 'autumn',         label: '🍂 Autumn' },
+  { value: 'ramadan',        label: '🌙 Ramadan' },
+  { value: 'eid_al_fitr',    label: '🎉 Eid al-Fitr' },
+  { value: 'eid_al_adha',    label: '🐑 Eid al-Adha' },
+  { value: 'back_to_school', label: '📚 Back to School' },
+  { value: 'new_year',       label: '🎆 New Year' },
+]
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FullProduct {
@@ -337,6 +354,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     subcategory_id:    p?.subcategory_id != null ? String(p.subcategory_id) : '',
     is_active:         p?.is_active ?? true,
     is_pack:           !!(p as any)?.is_pack,   // ← ADD
+    season:            (p as any)?.season ?? 'all_seasons',
 
   })
 
@@ -616,7 +634,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         short_description: form.short_description.trim() || undefined,
         is_active:         form.is_active,
         is_pack:           form.is_pack ? 1 : 0,   // ← ADD
-
+        season:            form.season, 
         // Product-level new images
         images:            previews.map(prev => prev.file),
         delete_image_ids:  allDeletedImageIds.length ? allDeletedImageIds : undefined,
@@ -849,11 +867,24 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                 letterSpacing: '0.1em', color: '#94a3b8',
                 paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16,
               }}>Pricing & Inventory</p>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: hasVariantRows ? '1fr 1fr' : '1fr 1fr 1fr',
-                gap: 12,
-              }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+
+                {/* Season — seller declares once, AI uses always */}
+                      <Field
+                        label="Product Season"
+                        required
+                        hint="AI predictions use this. Choose the season when this product sells best."
+                      >
+                        <select
+                          value={form.season}
+                          onChange={e => set('season', e.target.value)}
+                          className={inputCls()}
+                        >
+                          {SEASONS.map(s => (
+                            <option key={s.value} value={s.value}>{s.label}</option>
+                          ))}
+                        </select>
+                      </Field>
                 {/* Price */}
                 <Field label="Base Price (TND)" required error={errors.price} locked={isLocked}>
                   <div style={{ position: 'relative' }}>
