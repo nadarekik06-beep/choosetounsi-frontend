@@ -100,6 +100,7 @@ async function aiChatApi(
   userMessage: string,
   history: ConversationTurn[],
   sessionId: string,
+  langHint: string = 'en',   // ← ADDED
 ): Promise<AiChatApiResult> {
   const token =
     typeof window !== 'undefined' ? localStorage.getItem('ct_auth_token') : null
@@ -115,6 +116,8 @@ async function aiChatApi(
       message:    userMessage,
       session_id: sessionId,
       history:    history.slice(-6),
+      locale:     typeof window !== 'undefined' ? document.documentElement.lang || 'en' : 'en',
+      lang_hint:  langHint,   // ← ADDED
     }),
   })
 
@@ -744,9 +747,19 @@ export default function SupportChatWidget() {
           content: m.text,
         }))
 
-      const result = await aiChatApi(text, history, sessionId.current)
-      console.log('INTENT:', result.intent) // ← add this
-console.log('ACTIONS:', resolveIntentActions(result.intent)) // ← and this
+      // Simple client-side language hint — backend uses this to override AI guessing
+      const langHint = /[\u0600-\u06FF]/.test(text)
+        ? 'ar'
+        : /\b(bahi|3andna|nheb|warini|barcha|mafamach|hedha|hedhy)\b/i.test(text)
+        ? 'tz'   // Tunisian Darija romanized
+        : /\b(je|tu|veux|cherche|bonjour|merci|besoin|nous|vous)\b/i.test(text)
+        ? 'fr'
+        : 'en'
+
+      const result = await aiChatApi(text, history, sessionId.current, langHint)
+      console.log('INTENT:', result.intent)
+      console.log('ACTIONS:', resolveIntentActions(result.intent))
+
       // ── ONE setAiMessages call. resolveIntentActions is the only
       //    source of action buttons — no duplicate logic anywhere.
       const actions = resolveIntentActions(result.intent)
