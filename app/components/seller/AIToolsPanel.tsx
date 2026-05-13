@@ -35,7 +35,6 @@ const TREND_COLORS: Record<string, string>      = { up: '#10b981', down: '#ef444
 const RISK_COLORS: Record<string, string>       = { low: '#10b981', medium: '#f59e0b', high: '#ef4444' };
 const POSITIONING_COLORS: Record<string, string>= { underpriced: '#10b981', competitive: '#3b82f6', overpriced: '#ef4444', unknown: '#6b7280' };
 
-const SEASONS = ['Normal','Ramadan','Eid al-Fitr','Eid al-Adha','Summer','Back to school','Winter','Spring'];
 const TONES   = ['professional','casual','exciting','trust-focused'];
 const LANGS   = [{ value: 'fr', label: 'French' },{ value: 'ar', label: 'Arabic' },{ value: 'en', label: 'English' }];
 
@@ -272,10 +271,10 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
     'ChooseTounsi':             { color:'#db142e', emoji:'🇹🇳' },
     'Tunisian Market Knowledge':{ color:'#8b5cf6', emoji:'🧠' },
     'Tunisian Market Knowledge (AI)': { color:'#8b5cf6', emoji:'🧠' },
-    'Google Tunisie':   { color:'#4285f4', emoji:'🔍' },  // ← ADD
-    'Tunisian Market':  { color:'#10b981', emoji:'🏪' },  // ← ADD
-    'Facebook Market':  { color:'#1877f2', emoji:'📘' },  // ← ADD
-    'Scoop.tn':         { color:'#8b5cf6', emoji:'🛍️' },  // ← ADD
+    'Google Tunisie':   { color:'#4285f4', emoji:'🔍' },
+    'Tunisian Market':  { color:'#10b981', emoji:'🏪' },
+    'Facebook Market':  { color:'#1877f2', emoji:'📘' },
+    'Scoop.tn':         { color:'#8b5cf6', emoji:'🛍️' },
   };
 
   const getPlatformMeta = (name: string) =>
@@ -344,9 +343,9 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
       <span style={{ fontSize:16 }}>{m.emoji}</span>
       <div>
         <p style={{ fontSize:11, fontWeight:800, color:m.color, margin:0 }}>{name}</p>
-        <p style={{ fontSize:9, color:muted, margin:0 }}>Google indexed</p>  {/* ← FIXED */}
+        <p style={{ fontSize:9, color:muted, margin:0 }}>Google indexed</p>
       </div>
-      <CheckCircle2 size={12} style={{ color:'#10b981', marginLeft:2 }} />   {/* ← FIXED */}
+      <CheckCircle2 size={12} style={{ color:'#10b981', marginLeft:2 }} />
     </div>
   );
 })}
@@ -461,7 +460,7 @@ useEffect(() => {
   const subBg  = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
 
   const run = async (idOverride?: number) => {
-  const targetId = idOverride ?? selectedId;
+  const targetId = typeof idOverride === 'number' ? idOverride : selectedId;
   if (!targetId) return;
   setLoading(true); setError(null); setResult(null);
   try {
@@ -669,15 +668,16 @@ useEffect(() => {
 // TOOL 2 — SALES PREDICTOR — UPGRADED WITH PRODUCT DNA STRIP
 // ═════════════════════════════════════════════════════════════════════════════
 
+// CHANGE 1: Only one SEASON_META — using DB slugs as keys
 const SEASON_META: Record<string, { emoji: string; color: string; desc: string }> = {
-  'Normal':       { emoji:'📅', color:'#6b7280', desc:'Regular period' },
-  'Ramadan':      { emoji:'🌙', color:'#8b5cf6', desc:'Peak demand' },
-  'Eid al-Fitr':  { emoji:'🎉', color:'#f59e0b', desc:'Shopping surge' },
-  'Eid al-Adha':  { emoji:'🐑', color:'#10b981', desc:'Gift buying' },
-  'Summer':       { emoji:'☀️', color:'#f97316', desc:'Holiday mood' },
-  'Back to school':{ emoji:'🎒', color:'#3b82f6', desc:'School rush' },
-  'Winter':       { emoji:'❄️', color:'#06b6d4', desc:'Cold season' },
-  'Spring':       { emoji:'🌸', color:'#ec4899', desc:'New arrivals' },
+  'all_seasons':   { emoji:'📅', color:'#6b7280', desc:'Regular period' },
+  'ramadan':       { emoji:'🌙', color:'#8b5cf6', desc:'Peak demand' },
+  'eid_al_fitr':   { emoji:'🎉', color:'#f59e0b', desc:'Shopping surge' },
+  'eid_al_adha':   { emoji:'🐑', color:'#10b981', desc:'Gift buying' },
+  'summer':        { emoji:'☀️', color:'#f97316', desc:'Holiday mood' },
+  'back_to_school':{ emoji:'🎒', color:'#3b82f6', desc:'School rush' },
+  'winter':        { emoji:'❄️', color:'#06b6d4', desc:'Cold season' },
+  'spring':        { emoji:'🌸', color:'#ec4899', desc:'New arrivals' },
 };
 
 function MiniBarChart({ weeks, trend, dark }: {
@@ -852,16 +852,17 @@ function ProductDNAStrip({ ctx, dark }: {
 }
 
 function SalesPredictorTool({ products, dark, initialProductId }: { products: Array<{ id:number; name:string }>; dark:boolean; initialProductId?: number }) {
-  const [selectedId, setSelectedId] = useState<number|null>(initialProductId ?? null)
-  const [season,     setSeason]     = useState('Normal');
+  const [selectedId, setSelectedId] = useState<number|null>(initialProductId ?? null);
   const [result,     setResult]     = useState<{ ai_result: SalesPredictorResult; data_context: any }|null>(null);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string|null>(null);
+
   useEffect(() => {
-  if (!initialProductId || products.length === 0) return;
-  const found = products.find(p => p.id === initialProductId);
-  if (found) setSelectedId(initialProductId);
-}, [initialProductId, products]);
+    if (!initialProductId || products.length === 0) return;
+    const found = products.find(p => p.id === initialProductId);
+    if (found) setSelectedId(initialProductId);
+  }, [initialProductId, products]);
+
   const cardBg = dark ? '#161b27' : '#ffffff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const text   = dark ? '#fff' : '#111';
@@ -871,14 +872,19 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
   const run = async () => {
     if (!selectedId) return;
     setLoading(true); setError(null); setResult(null);
-    try { const res = await sellerAiApi.salesPredictor(selectedId, season); setResult(res.data); }
+    try {
+      const res = await sellerAiApi.salesPredictor(selectedId);
+      setResult(res.data);
+    }
     catch (e: any) { setError(e.message ?? 'Prediction failed'); }
     finally { setLoading(false); }
   };
 
   const r   = result?.ai_result   ?? null;
   const ctx = result?.data_context ?? null;
-  const sm  = SEASON_META[season]  ?? SEASON_META['Normal'];
+
+  // CHANGE 6: sm computed after ctx, using DB slug keys
+  const sm = SEASON_META[ctx?.season ?? 'all_seasons'] ?? SEASON_META['all_seasons'];
   const trendColor = r ? (TREND_COLORS[r.trend] ?? '#3b82f6') : '#3b82f6';
   const confColor  = r ? (CONFIDENCE_COLORS[r.confidence] ?? '#94a3b8') : '#94a3b8';
 
@@ -906,32 +912,42 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
           <AiTag />
         </div>
 
+        {/* CHANGE 2 & 3 & 4: No season selector; season badge between ProdSelect and RunBtn; correct RunBtn label */}
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <ProdSelect products={products} value={selectedId} onChange={setSelectedId} dark={dark} />
 
-          <div>
-            <p style={{ fontSize:10, fontWeight:800, color:muted, margin:'0 0 8px', textTransform:'uppercase', letterSpacing:'0.06em' }}>Select Season</p>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:6 }}>
-              {SEASONS.map(s => {
-                const meta  = SEASON_META[s] ?? SEASON_META['Normal'];
-                const isAct = season === s;
-                return (
-                  <button key={s} onClick={() => setSeason(s)} style={{
-                    padding:'8px 6px', borderRadius:12, cursor:'pointer', border:'none',
-                    background: isAct ? `${meta.color}18` : subBg,
-                    outline: isAct ? `2px solid ${meta.color}50` : '1px solid transparent',
-                    display:'flex', flexDirection:'column', alignItems:'center', gap:3,
-                    transition:'all 0.15s ease',
-                  }}>
-                    <span style={{ fontSize:16 }}>{meta.emoji}</span>
-                    <span style={{ fontSize:9, fontWeight:800, color: isAct ? meta.color : muted, textAlign:'center', lineHeight:1.2 }}>{s}</span>
-                  </button>
-                );
-              })}
+          {/* CHANGE 3: Season badge shown here after result arrives */}
+          {result && ctx?.season_label && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 14px', borderRadius: 10,
+              background: dark ? 'rgba(139,92,246,0.08)' : 'rgba(139,92,246,0.05)',
+              border: '1px solid rgba(139,92,246,0.2)',
+            }}>
+              <span style={{ fontSize: 16 }}>
+                {(SEASON_META[ctx.season] ?? SEASON_META['all_seasons']).emoji}
+              </span>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 800, color: '#8b5cf6', margin: '0 0 1px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Product Season
+                </p>
+                <p style={{ fontSize: 12, fontWeight: 700, color: dark ? '#fff' : '#111', margin: 0 }}>
+                  {ctx.season_label}
+                </p>
+              </div>
+              <span style={{
+                marginLeft: 'auto', fontSize: 9, fontWeight: 800,
+                padding: '2px 8px', borderRadius: 999,
+                background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)',
+                color: '#8b5cf6',
+              }}>
+                Set on product
+              </span>
             </div>
-          </div>
+          )}
 
-          <RunBtn onClick={run} loading={loading} label={`Predict for ${season}`} icon={TrendingUp} />
+          {/* CHANGE 4: label="Predict Sales" */}
+          <RunBtn onClick={run} loading={loading} label="Predict Sales" icon={TrendingUp} />
         </div>
         {error && <p style={{ color:'#ef4444', fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
       </div>
@@ -983,7 +999,10 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ fontSize:22 }}>{sm.emoji}</span>
                 <div>
-                  <p style={{ fontSize:12, fontWeight:900, color:sm.color, margin:0 }}>{season} Forecast</p>
+                  {/* CHANGE 5: forecast header uses ctx?.season_label */}
+                  <p style={{ fontSize:12, fontWeight:900, color:sm.color, margin:0 }}>
+                    {ctx?.season_label ?? 'Sales'} Forecast
+                  </p>
                   <p style={{ fontSize:10, color:muted, margin:0 }}>{sm.desc}</p>
                 </div>
               </div>
@@ -1355,13 +1374,10 @@ export default function AIToolsPanel({  dark,
   initialTab?: string;
   initialProductId?: number;
   autorun?: boolean; }) {
-  
-  
-  
-  
-  
+
 const validTab = ['price','sales','description','bundles'].includes(initialTab ?? '') ? initialTab! : 'price';
-const [activeTool, setActiveTool] = useState(validTab);  const [products,   setProducts]   = useState<Array<{ id:number; name:string }>>([]);
+const [activeTool, setActiveTool] = useState(validTab);
+  const [products,   setProducts]   = useState<Array<{ id:number; name:string }>>([]);
 
   const text  = dark ? '#fff' : '#111';
   const muted = dark ? 'rgba(255,255,255,0.4)' : '#888';
@@ -1405,9 +1421,9 @@ const [activeTool, setActiveTool] = useState(validTab);  const [products,   setP
 
       <div>
         {activeTool === 'price'       && <PriceOptimizerTool      products={products} dark={dark} initialProductId={initialProductId} autorun={autorun} />}
-{activeTool === 'sales'       && <SalesPredictorTool       products={products} dark={dark} initialProductId={initialProductId} />}
-{activeTool === 'description' && <DescriptionGeneratorTool products={products} dark={dark} initialProductId={initialProductId} />}
-{activeTool === 'bundles'     && <BundleRecommenderTool    products={products} dark={dark} initialProductId={initialProductId} />}
+        {activeTool === 'sales'       && <SalesPredictorTool       products={products} dark={dark} initialProductId={initialProductId} />}
+        {activeTool === 'description' && <DescriptionGeneratorTool products={products} dark={dark} initialProductId={initialProductId} />}
+        {activeTool === 'bundles'     && <BundleRecommenderTool    products={products} dark={dark} initialProductId={initialProductId} />}
       </div>
     </div>
   );
