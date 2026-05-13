@@ -67,7 +67,7 @@ interface Product {
   featured: boolean; primary_image_url: string | null; images: ProductImage[]
   category: { id: number; name: string; slug: string } | null
   subcategory: { id: number; name: string; slug: string } | null
-  is_platform_product?: boolean 
+  is_platform_product?: boolean
   seller: { id: number; name: string; email: string } | null
   attribute_data?: Record<string, AttributeData>
   has_variants: boolean
@@ -77,7 +77,7 @@ interface Product {
   variants: (ProductVariant & {
     color_option_id?: number | null
     color_group_key?: string | null
-    original_price?: number          // ← FIXED: base price before promotion (for strikethrough)
+    original_price?: number
     image_urls: string[]
     primary_image_url?: string | null
   })[]
@@ -304,7 +304,11 @@ function Gallery({ images, productName }: { images: string[]; productName: strin
                   <svg width="48" height="48" fill="none" stroke="#e2e8f0" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
                 </div>
             }
-            {!zoom && cur && <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(0,0,0,0.45)', color: '#fff', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}><ZoomIn size={13} /> Hover to zoom</div>}
+            {!zoom && cur && (
+              <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(0,0,0,0.45)', color: '#fff', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
+                <ZoomIn size={13} /> Hover to zoom
+              </div>
+            )}
           </div>
 
           {images.length > 1 && (
@@ -343,16 +347,16 @@ export default function ProductDetailPage() {
 
   const { addToCart, isFavorited, toggleFavorite, cartLoading } = useCart()
 
-  const [product,         setProduct]        = useState<Product | null>(null)
-  const [loading,         setLoading]        = useState(true)
-  const [error,           setError]          = useState(false)
-  const [quantity,        setQuantity]       = useState(1)
-  const [addedToCart,     setAddedToCart]    = useState(false)
-  const [tab,             setTab]            = useState<'description' | 'details' | 'attributes'>('description')
-  const [selectedOptions, setSelectedOptions]= useState<Record<string, string>>({})
-  const [selectorError,   setSelectorError]  = useState(false)
-  const [buyNowLoading,   setBuyNowLoading]  = useState(false)
-  const [activePromotion, setActivePromotion]= useState<ActivePromotion | null>(null)
+  const [product,         setProduct]         = useState<Product | null>(null)
+  const [loading,         setLoading]         = useState(true)
+  const [error,           setError]           = useState(false)
+  const [quantity,        setQuantity]        = useState(1)
+  const [addedToCart,     setAddedToCart]     = useState(false)
+  const [tab,             setTab]             = useState<'description' | 'details' | 'attributes'>('description')
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
+  const [selectorError,   setSelectorError]   = useState(false)
+  const [buyNowLoading,   setBuyNowLoading]   = useState(false)
+  const [activePromotion, setActivePromotion] = useState<ActivePromotion | null>(null)
   const buyNowRef = useRef(false)
 
   useEffect(() => {
@@ -467,7 +471,7 @@ export default function ProductDetailPage() {
     ? (selectedVariant.original_price ?? (selectedVariant.price_override ?? Number(product?.price ?? 0)))
     : Number(product?.price ?? 0)
 
-const hasPromoDiscount = activePromotion && Number(effectivePrice) < originalPrice
+  const hasPromoDiscount = activePromotion && Number(effectivePrice) < originalPrice
 
   const outOfStock = effectiveStock <= 0
   const lowStock   = effectiveStock > 0 && effectiveStock <= 10
@@ -542,7 +546,12 @@ const hasPromoDiscount = activePromotion && Number(effectivePrice) < originalPri
             <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Home</Link>
             <ChevronRight size={11} />
             <Link href="/shop" style={{ color: '#94a3b8', textDecoration: 'none' }}>Shop</Link>
-            {product.category && (<><ChevronRight size={11} /><Link href={`/category/${product.category.slug}`} style={{ color: '#94a3b8', textDecoration: 'none' }}>{product.category.name}</Link></>)}
+            {product.category && (
+              <>
+                <ChevronRight size={11} />
+                <Link href={`/category/${product.category.slug}`} style={{ color: '#94a3b8', textDecoration: 'none' }}>{product.category.name}</Link>
+              </>
+            )}
             <ChevronRight size={11} />
             <span style={{ color: '#374151', fontWeight: 600 }}>{product.name}</span>
           </div>
@@ -581,27 +590,27 @@ const hasPromoDiscount = activePromotion && Number(effectivePrice) < originalPri
             </div>
 
             {product.is_platform_product ? (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-    <img
-      src="/logo.png"
-      alt="ChooseTounsi"
-      style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(219,20,46,0.3)' }}
-      onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-    />
-    <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>Sold by</span>
-    <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>CHOOSE'Tounsi</span>
-    <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>Official</span>
-  </div>
-) : product.seller && (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-    <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#dc2626,#7f1d1d)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 800 }}>
-      {product.seller.name.charAt(0).toUpperCase()}
-    </div>
-    <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>Sold by</span>
-    <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>{product.seller.name}</span>
-    <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>Verified</span>
-  </div>
-)}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <img
+                  src="/logo.png"
+                  alt="ChooseTounsi"
+                  style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(219,20,46,0.3)' }}
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                />
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>Sold by</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>CHOOSE'Tounsi</span>
+                <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>Official</span>
+              </div>
+            ) : product.seller && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#dc2626,#7f1d1d)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 800 }}>
+                  {product.seller.name.charAt(0).toUpperCase()}
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>Sold by</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>{product.seller.name}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>Verified</span>
+              </div>
+            )}
 
             <div style={{ height: 1, background: '#f1f5f9', margin: '16px 0' }} />
 
@@ -654,7 +663,9 @@ const hasPromoDiscount = activePromotion && Number(effectivePrice) < originalPri
             </div>
 
             {product.short_description && (
-              <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6, margin: '0 0 20px', fontWeight: 500 }}>{product.short_description}</p>
+              <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6, margin: '0 0 20px', fontWeight: 500 }}>
+                {product.short_description}
+              </p>
             )}
 
             {hasVariants && (
@@ -745,8 +756,14 @@ const hasPromoDiscount = activePromotion && Number(effectivePrice) < originalPri
                   ))}
               </div>
               <div style={{ padding: '16px 20px' }}>
-                {tab === 'description' && <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.7, margin: 0, fontWeight: 500, whiteSpace: 'pre-line' }}>{product.description ?? product.short_description ?? 'No description available.'}</p>}
-                {tab === 'attributes' && hasAttributes && <div>{attrEntries.map(attr => <AttributeRow key={attr.slug} attr={attr} />)}</div>}
+                {tab === 'description' && (
+                  <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.7, margin: 0, fontWeight: 500, whiteSpace: 'pre-line' }}>
+                    {product.description ?? product.short_description ?? 'No description available.'}
+                  </p>
+                )}
+                {tab === 'attributes' && hasAttributes && (
+                  <div>{attrEntries.map(attr => <AttributeRow key={attr.slug} attr={attr} />)}</div>
+                )}
                 {tab === 'details' && (
                   <div>
                     {[
@@ -754,7 +771,7 @@ const hasPromoDiscount = activePromotion && Number(effectivePrice) < originalPri
                       { label: 'Subcategory', value: product.subcategory?.name ?? '—' },
                       { label: 'SKU',         value: selectedVariant?.sku ?? product.sku ?? 'N/A' },
                       { label: 'Stock',       value: `${effectiveStock} units` },
-                      { label: 'Seller', value: product.is_platform_product ? "CHOOSE'Tounsi Official" : (product.seller?.name ?? '—') },
+                      { label: 'Seller',      value: product.is_platform_product ? "CHOOSE'Tounsi Official" : (product.seller?.name ?? '—') },
                       { label: 'Views',       value: String(product.views ?? 0) },
                     ].map(({ label, value }) => (
                       <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>

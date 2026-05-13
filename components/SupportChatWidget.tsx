@@ -1,76 +1,30 @@
 'use client'
 
-/**
- * components/SupportChatWidget.tsx
- *
- * Help & Support Chat Widget — ChooseTounsi
- *
- * CHANGES vs original:
- *   - Added text input bar at the bottom so users can type free-form messages
- *   - Added aiChatApi() function that calls POST /api/ai/chat
- *   - Added ProductCard component to render real product suggestions inline
- *   - All predefined question groups are 100% unchanged
- *   - The AI tab and the FAQ tab are separate — user can switch between them
- *
- * Architecture:
- *  - Opens via window event 'open-support-chat' (fired from Navbar util-link)
- *  - Reusable: drop into layout.tsx next to CartDrawer
- */
-
 import { useEffect, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 
-/* ─────────────────────────────────────────────────────────────
-   THEME
-───────────────────────────────────────────────────────────── */
 const RED   = '#db142e'
 const GREEN = '#198f41'
 
-/* ─────────────────────────────────────────────────────────────
-   API
-───────────────────────────────────────────────────────────── */
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api')
   .replace(/\/api\/?$/, '') + '/api'
-
-/**
- * Calls POST /api/ai/chat with the user's message.
- * Returns { message: string, products: AiProduct[] }
- */
-async function aiChatApi(userMessage: string): Promise<{
-  message: string
-  products: AiProduct[]
-}> {
-  // Get auth token if user is logged in (optional — endpoint is public)
-  const token =
-    typeof window !== 'undefined' ? localStorage.getItem('ct_auth_token') : null
-
-  const res = await fetch(`${API_URL}/ai/chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify({ message: userMessage }),
-  })
-
-  const json = await res.json()
-
-  if (!res.ok || !json.success) {
-    throw new Error(json.message ?? 'AI request failed')
-  }
-
-  return {
-    message:  json.message  ?? '',
-    products: json.products ?? [],
-  }
-}
 
 /* ─────────────────────────────────────────────────────────────
    TYPES
 ───────────────────────────────────────────────────────────── */
-type MsgRole = 'bot' | 'user'
+type MsgRole   = 'bot' | 'user'
 type ActiveTab = 'ai' | 'faq'
+
+interface ConversationTurn {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+interface AiChatApiResult {
+  message: string
+  products: AiProduct[]
+  intent: string
+}
 
 interface AiProduct {
   id: number
@@ -82,17 +36,17 @@ interface AiProduct {
   category: string
   category_slug: string
   primary_image_url: string | null
+  is_pack?: boolean
+  original_price?: number
+  savings?: number
 }
 
 interface ChatMessage {
   id: string
   role: MsgRole
   text: string
-  /** Optional product cards rendered below AI text */
   products?: AiProduct[]
-  /** Optional action nodes rendered below text */
   actions?: Action[]
-  /** Show typing animation before revealing text */
   typing?: boolean
 }
 
@@ -115,7 +69,88 @@ interface QuestionGroup {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   QUESTION TREE  (unchanged from original)
+   SESSION ID
+───────────────────────────────────────────────────────────── */
+const SESSION_STORAGE_KEY = 'ct_chat_session_v1'
+
+function getOrCreateSessionId(): string {
+  if (typeof window === 'undefined') {
+    return `ct_ssr_${Math.random().toString(36).slice(2, 9)}`
+  }
+  let id = localStorage.getItem(SESSION_STORAGE_KEY)
+  if (!id) {
+    id = `ct_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+    localStorage.setItem(SESSION_STORAGE_KEY, id)
+  }
+  return id
+}
+
+function createFreshSessionId(): string {
+  const id = `ct_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(SESSION_STORAGE_KEY, id)
+  }
+  return id
+}
+
+/* ─────────────────────────────────────────────────────────────
+   API
+───────────────────────────────────────────────────────────── */
+async function aiChatApi(
+  userMessage: string,
+  history: ConversationTurn[],
+  sessionId: string,
+): Promise<AiChatApiResult> {
+  const token =
+    typeof window !== 'undefined' ? localStorage.getItem('ct_auth_token') : null
+
+  const res = await fetch(`${API_URL}/ai/chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({
+      message:    userMessage,
+      session_id: sessionId,
+      history:    history.slice(-6),
+    }),
+  })
+
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.message ?? 'AI request failed')
+
+  return {
+    message:  json.message  ?? '',
+    products: json.products ?? [],
+    intent:   json.intent   ?? 'general',
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   INTENT → ACTION BUTTONS
+   Single source of truth. Driven by backend intent only.
+   No keyword guessing anywhere in the codebase.
+───────────────────────────────────────────────────────────── */
+function resolveIntentActions(intent: string): Action[] {
+  switch (intent) {
+    case 'seller_onboarding':
+      return [
+        { label: '🏪 Become a Seller', href: '/become-a-vendor' },
+        { label: '💼 View Plans',       href: '/become-a-vendor#plans' },
+      ]
+    case 'checkout_guidance':
+      return [
+        { label: '🛒 Go to Cart', href: '/cart' },
+      ]
+    default:
+      return []
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   QUESTION TREE
 ───────────────────────────────────────────────────────────── */
 const QUESTION_GROUPS: QuestionGroup[] = [
   {
@@ -236,7 +271,7 @@ const QUESTION_GROUPS: QuestionGroup[] = [
 ]
 
 /* ─────────────────────────────────────────────────────────────
-   WELCOME MESSAGES (one per tab)
+   WELCOME MESSAGES
 ───────────────────────────────────────────────────────────── */
 const FAQ_WELCOME: ChatMessage = {
   id: 'faq-welcome',
@@ -250,9 +285,6 @@ const AI_WELCOME: ChatMessage = {
   text: '🛍️ Hi! I\'m your AI shopping assistant.\n\nTell me what you\'re looking for and I\'ll find real products for you. For example:\n• "I need a laptop under 1500 TND"\n• "Show me popular shoes"\n• "أبحث عن هاتف رخيص"',
 }
 
-/* ─────────────────────────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────────────────────────── */
 function uid(): string {
   return Math.random().toString(36).slice(2)
 }
@@ -280,15 +312,19 @@ function TypingBubble() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   PRODUCT CARD (renders real products returned by AI)
+   PRODUCT CARD
 ───────────────────────────────────────────────────────────── */
 function ProductCard({ product }: { product: AiProduct }) {
+  const href = product.is_pack
+    ? `/deals/${product.slug}`
+    : `/products/${product.slug}`
+
   const imgSrc = product.primary_image_url
     ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(product.name)}&background=f4f4f5&color=374151&size=80`
 
   return (
     <Link
-      href={`/products/${product.slug}`}
+      href={href}
       style={{
         display: 'flex', gap: 10, alignItems: 'center',
         padding: '8px 10px',
@@ -308,7 +344,6 @@ function ProductCard({ product }: { product: AiProduct }) {
         e.currentTarget.style.boxShadow = 'none'
       }}
     >
-      {/* Product image */}
       <div style={{
         width: 52, height: 52, borderRadius: 8, overflow: 'hidden',
         flexShrink: 0, background: '#f4f4f5',
@@ -317,13 +352,12 @@ function ProductCard({ product }: { product: AiProduct }) {
           src={imgSrc}
           alt={product.name}
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          onError={(e) => {
+          onError={e => {
             e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(product.name)}&background=f4f4f5&color=374151&size=80`
           }}
         />
       </div>
 
-      {/* Product info */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{
           margin: 0, fontSize: 12, fontWeight: 700,
@@ -333,11 +367,10 @@ function ProductCard({ product }: { product: AiProduct }) {
           {product.name}
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 11, color: '#6b7280' }}>
-          {product.category}
+          {product.is_pack ? '📦 Bundle Deal' : product.category}
         </p>
       </div>
 
-      {/* Price + stock badge */}
       <div style={{ flexShrink: 0, textAlign: 'right' }}>
         <p style={{
           margin: 0, fontSize: 12, fontWeight: 900,
@@ -345,7 +378,16 @@ function ProductCard({ product }: { product: AiProduct }) {
         }}>
           {product.price.toFixed(3)} TND
         </p>
-        {product.stock <= 0 && (
+        {product.is_pack && product.savings && product.savings > 0 && (
+          <span style={{
+            fontSize: 9, fontWeight: 700, color: '#10b981',
+            background: '#f0fdf4', padding: '1px 5px',
+            borderRadius: 4, marginTop: 2, display: 'inline-block',
+          }}>
+            Save {product.savings.toFixed(3)}
+          </span>
+        )}
+        {product.stock <= 0 && !product.is_pack && (
           <span style={{
             fontSize: 9, fontWeight: 700, color: '#ef4444',
             background: '#fef2f2', padding: '1px 5px',
@@ -373,7 +415,6 @@ function Bubble({ msg }: { msg: ChatMessage }) {
       alignItems: 'flex-end',
       animation: 'ct-fadein 0.22s ease both',
     }}>
-      {/* Avatar */}
       {isBot && (
         <div style={{
           width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
@@ -389,7 +430,6 @@ function Bubble({ msg }: { msg: ChatMessage }) {
         maxWidth: '80%', display: 'flex', flexDirection: 'column',
         gap: 6, alignItems: isBot ? 'flex-start' : 'flex-end',
       }}>
-        {/* Text bubble */}
         {msg.typing ? (
           <TypingBubble />
         ) : (
@@ -406,11 +446,10 @@ function Bubble({ msg }: { msg: ChatMessage }) {
           </div>
         )}
 
-        {/* Inline product cards (AI tab only) */}
         {!msg.typing && msg.products && msg.products.length > 0 && (
           <div style={{
             width: '100%', display: 'flex', flexDirection: 'column', gap: 6,
-            animation: 'ct-fadein 0.3s ease 0.1s both', opacity: 0,
+            animation: 'ct-fadein 0.3s ease 0.1s both',
           }}>
             {msg.products.map(p => (
               <ProductCard key={p.id} product={p} />
@@ -418,7 +457,6 @@ function Bubble({ msg }: { msg: ChatMessage }) {
           </div>
         )}
 
-        {/* Action buttons (FAQ tab) */}
         {!msg.typing && msg.actions && msg.actions.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingLeft: 2 }}>
             {msg.actions.map((action, i) => (
@@ -454,7 +492,7 @@ function Bubble({ msg }: { msg: ChatMessage }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   QUESTION MENU  (unchanged from original)
+   QUESTION MENU
 ───────────────────────────────────────────────────────────── */
 function QuestionMenu({ onSelect }: { onSelect: (q: Question) => void }) {
   const [openGroup, setOpenGroup] = useState<string | null>(null)
@@ -524,6 +562,18 @@ function QuestionMenu({ onSelect }: { onSelect: (q: Question) => void }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   ROTATING HINTS
+───────────────────────────────────────────────────────────── */
+const HINTS = [
+  'Search for a product…',
+  'e.g. "laptop under 1500 TND"',
+  'e.g. "show me popular shoes"',
+  'e.g. "أبحث عن هاتف رخيص"',
+  'e.g. "show me cheaper ones"',
+  'e.g. "comment devenir vendeur?"',
+]
+
+/* ─────────────────────────────────────────────────────────────
    AI TEXT INPUT BAR
 ───────────────────────────────────────────────────────────── */
 function AiInputBar({
@@ -533,8 +583,16 @@ function AiInputBar({
   onSend: (text: string) => void
   disabled: boolean
 }) {
-  const [value, setValue] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [value,   setValue]   = useState('')
+  const [hintIdx, setHintIdx] = useState(0)
+
+  useEffect(() => {
+    if (value !== '') return
+    const id = setInterval(() => {
+      setHintIdx(i => (i + 1) % HINTS.length)
+    }, 3000)
+    return () => clearInterval(id)
+  }, [value])
 
   const submit = () => {
     const trimmed = value.trim()
@@ -554,12 +612,11 @@ function AiInputBar({
       background: '#fff',
     }}>
       <input
-        ref={inputRef}
         value={value}
         onChange={e => setValue(e.target.value)}
         onKeyDown={handleKey}
         disabled={disabled}
-        placeholder="Search for a product…"
+        placeholder={HINTS[hintIdx]}
         style={{
           flex: 1, padding: '9px 12px',
           border: `1.5px solid ${disabled ? '#e5e7eb' : '#d1d5db'}`,
@@ -585,7 +642,8 @@ function AiInputBar({
             : `0 4px 12px ${RED}40`,
         }}
       >
-        <svg width="16" height="16" fill="none" stroke={disabled || !value.trim() ? '#94a3b8' : '#fff'}
+        <svg width="16" height="16" fill="none"
+          stroke={disabled || !value.trim() ? '#94a3b8' : '#fff'}
           strokeWidth="2.5" viewBox="0 0 24 24">
           <path d="M22 2L11 13" />
           <path d="M22 2L15 22 11 13 2 9l20-7z" />
@@ -599,26 +657,30 @@ function AiInputBar({
    MAIN WIDGET
 ───────────────────────────────────────────────────────────── */
 export default function SupportChatWidget() {
-  const [open,       setOpen]      = useState(false)
-  const [activeTab,  setActiveTab] = useState<ActiveTab>('ai')
+  const [open,      setOpen]      = useState(false)
+  const [activeTab, setActiveTab] = useState<ActiveTab>('ai')
 
-  // Separate message lists for each tab
   const [faqMessages, setFaqMessages] = useState<ChatMessage[]>([FAQ_WELCOME])
   const [aiMessages,  setAiMessages]  = useState<ChatMessage[]>([AI_WELCOME])
 
-  const [showMenu,  setShowMenu]  = useState(true)   // FAQ tab menu
-  const [aiLoading, setAiLoading] = useState(false)  // AI tab loading state
+  const [showMenu,  setShowMenu]  = useState(true)
+  const [aiLoading, setAiLoading] = useState(false)
+
+  // Session ID — sync from localStorage, never empty on first call
+  const sessionId = useRef<string>(getOrCreateSessionId())
+
+  // Messages ref — avoids stale closure in handleAiSend
+  const aiMessagesRef = useRef<ChatMessage[]>(aiMessages)
+  useEffect(() => { aiMessagesRef.current = aiMessages }, [aiMessages])
 
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  /* Listen for the global open event fired by the Navbar button */
   useEffect(() => {
     const handler = () => setOpen(true)
     window.addEventListener('open-support-chat', handler)
     return () => window.removeEventListener('open-support-chat', handler)
   }, [])
 
-  /* Scroll to bottom on new message */
   useEffect(() => {
     if (open) {
       setTimeout(() => {
@@ -627,14 +689,13 @@ export default function SupportChatWidget() {
     }
   }, [faqMessages, aiMessages, open])
 
-  /* Close on Escape */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  /* ── FAQ tab: handle predefined question ────────────────────────────── */
+  /* ── FAQ tab ────────────────────────────────────────────────────────── */
   const handleFaqQuestion = useCallback((q: Question) => {
     setShowMenu(false)
 
@@ -664,7 +725,7 @@ export default function SupportChatWidget() {
     }, 900)
   }, [])
 
-  /* ── AI tab: send message to /api/ai/chat ───────────────────────────── */
+  /* ── AI tab ─────────────────────────────────────────────────────────── */
   const handleAiSend = useCallback(async (text: string) => {
     if (aiLoading) return
 
@@ -676,28 +737,42 @@ export default function SupportChatWidget() {
     setAiLoading(true)
 
     try {
-      const result = await aiChatApi(text)
+      const history: ConversationTurn[] = aiMessagesRef.current
+        .filter(m => m.id !== 'ai-welcome' && !m.typing)
+        .map(m => ({
+          role:    m.role === 'user' ? 'user' : 'assistant',
+          content: m.text,
+        }))
+
+      const result = await aiChatApi(text, history, sessionId.current)
+      console.log('INTENT:', result.intent) // ← add this
+console.log('ACTIONS:', resolveIntentActions(result.intent)) // ← and this
+      // ── ONE setAiMessages call. resolveIntentActions is the only
+      //    source of action buttons — no duplicate logic anywhere.
+      const actions = resolveIntentActions(result.intent)
 
       setAiMessages(prev =>
         prev.map(m =>
           m.id === typingId
             ? {
                 id:       typingId,
-                role:     'bot',
+                role:     'bot' as MsgRole,
                 text:     result.message,
                 products: result.products,
+                actions:  actions.length > 0 ? actions : undefined,
               }
             : m
         )
       )
-    } catch (err: any) {
+
+    } catch {
       setAiMessages(prev =>
         prev.map(m =>
           m.id === typingId
             ? {
                 id:   typingId,
-                role: 'bot',
-                text: '⚠️ Sorry, I couldn\'t connect to the AI service. Please try again in a moment.',
+                role: 'bot' as MsgRole,
+                text: "Connexion interrompue. Vérifiez votre réseau et réessayez. 🙏",
               }
             : m
         )
@@ -707,13 +782,14 @@ export default function SupportChatWidget() {
     }
   }, [aiLoading])
 
-  /* ── Resets ─────────────────────────────────────────────────────────── */
+  /* ── Reset ──────────────────────────────────────────────────────────── */
   const handleReset = () => {
     if (activeTab === 'faq') {
       setFaqMessages([FAQ_WELCOME])
       setShowMenu(true)
     } else {
       setAiMessages([AI_WELCOME])
+      sessionId.current = createFreshSessionId()
     }
   }
 
@@ -754,7 +830,7 @@ export default function SupportChatWidget() {
         animation: 'ct-slidein 0.28s cubic-bezier(0.34,1.56,0.64,1) both',
       }}>
 
-        {/* ── Header ────────────────────────────────────────────────────── */}
+        {/* Header */}
         <div style={{
           background: `linear-gradient(135deg, ${RED} 0%, #9b0f1f 100%)`,
           padding: '16px 18px 14px',
@@ -809,7 +885,7 @@ export default function SupportChatWidget() {
           </div>
         </div>
 
-        {/* ── Tab switcher ──────────────────────────────────────────────── */}
+        {/* Tab switcher */}
         <div style={{
           display: 'flex', flexShrink: 0,
           borderBottom: '1px solid #f1f5f9',
@@ -834,7 +910,7 @@ export default function SupportChatWidget() {
           ))}
         </div>
 
-        {/* ── Messages ──────────────────────────────────────────────────── */}
+        {/* Messages */}
         <div style={{
           flex: 1, overflowY: 'auto', padding: '16px 16px 8px',
           display: 'flex', flexDirection: 'column', gap: 12,
@@ -844,7 +920,6 @@ export default function SupportChatWidget() {
             <Bubble key={msg.id} msg={msg} />
           ))}
 
-          {/* FAQ question menu */}
           {activeTab === 'faq' && showMenu && (
             <div style={{ animation: 'ct-fadein 0.2s ease 0.1s both', opacity: 0 }}>
               <p style={{
@@ -861,12 +936,10 @@ export default function SupportChatWidget() {
           <div ref={bottomRef} />
         </div>
 
-        {/* ── Bottom area ────────────────────────────────────────────────── */}
+        {/* Bottom area */}
         {activeTab === 'ai' ? (
-          // AI tab: text input
           <AiInputBar onSend={handleAiSend} disabled={aiLoading} />
         ) : (
-          // FAQ tab: footer with complaint link (original)
           <div style={{
             padding: '10px 16px 12px',
             borderTop: '1px solid #f1f5f9', flexShrink: 0,
