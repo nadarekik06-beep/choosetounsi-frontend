@@ -19,6 +19,7 @@ import {
   Zap, BarChart3, Target, Info, Star, Rocket,
   ArrowRight, ShoppingBag, Search, CheckCircle2, Layers, Tag,
 } from 'lucide-react';
+
 import {
   sellerAiApi,
   type PriceOptimizerResult, type PriceOptimizerDataContext,
@@ -669,17 +670,164 @@ useEffect(() => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 // CHANGE 1: Only one SEASON_META — using DB slugs as keys
-const SEASON_META: Record<string, { emoji: string; color: string; desc: string }> = {
-  'all_seasons':   { emoji:'📅', color:'#6b7280', desc:'Regular period' },
-  'ramadan':       { emoji:'🌙', color:'#8b5cf6', desc:'Peak demand' },
-  'eid_al_fitr':   { emoji:'🎉', color:'#f59e0b', desc:'Shopping surge' },
-  'eid_al_adha':   { emoji:'🐑', color:'#10b981', desc:'Gift buying' },
-  'summer':        { emoji:'☀️', color:'#f97316', desc:'Holiday mood' },
-  'back_to_school':{ emoji:'🎒', color:'#3b82f6', desc:'School rush' },
-  'winter':        { emoji:'❄️', color:'#06b6d4', desc:'Cold season' },
-  'spring':        { emoji:'🌸', color:'#ec4899', desc:'New arrivals' },
-};
+const ALL_SEASONS = [
+  { value: 'all_seasons',    label: 'All Seasons',    emoji: '📅' },
+  { value: 'summer',         label: 'Summer',         emoji: '☀️' },
+  { value: 'winter',         label: 'Winter',         emoji: '❄️' },
+  { value: 'spring',         label: 'Spring',         emoji: '🌸' },
+  { value: 'autumn',         label: 'Autumn',         emoji: '🍂' },
+  { value: 'ramadan',        label: 'Ramadan',        emoji: '🌙' },
+  { value: 'eid_al_fitr',    label: 'Eid al-Fitr',   emoji: '🎉' },
+  { value: 'eid_al_adha',    label: 'Eid al-Adha',   emoji: '🐑' },
+  { value: 'back_to_school', label: 'Back to School', emoji: '📚' },
+  { value: 'new_year',       label: 'New Year',       emoji: '🎆' },
+] as const;
 
+const SEASON_MAP = Object.fromEntries(ALL_SEASONS.map(s => [s.value, s]));
+
+const SEASON_META: Record<string, { emoji: string; color: string; desc: string }> = {
+  all_seasons:   { emoji: '📅', color: '#6b7280', desc: 'Regular period' },
+  ramadan:       { emoji: '🌙', color: '#8b5cf6', desc: 'Peak demand' },
+  eid_al_fitr:   { emoji: '🎉', color: '#f59e0b', desc: 'Shopping surge' },
+  eid_al_adha:   { emoji: '🐑', color: '#10b981', desc: 'Gift buying' },
+  summer:        { emoji: '☀️', color: '#f97316', desc: 'Holiday mood' },
+  back_to_school:{ emoji: '📚', color: '#3b82f6', desc: 'School rush' },
+  winter:        { emoji: '❄️', color: '#06b6d4', desc: 'Cold season' },
+  spring:        { emoji: '🌸', color: '#ec4899', desc: 'New arrivals' },
+  autumn:        { emoji: '🍂', color: '#a16207', desc: 'Harvest period' },
+  new_year:      { emoji: '🎆', color: '#db142e', desc: 'Celebration surge' },
+};
+function SeasonSelector({
+  productSeasons, selected, onChange, dark,
+}: {
+  productSeasons: string[]; selected: string[];
+  onChange: (seasons: string[]) => void; dark: boolean;
+}) {
+  const muted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const toggle = (slug: string) => {
+    if (slug === 'all_seasons') {
+      onChange(selected.includes('all_seasons') ? [] : ['all_seasons']);
+      return;
+    }
+    const without = selected.filter(s => s !== 'all_seasons');
+    if (without.includes(slug)) {
+      const next = without.filter(s => s !== slug);
+      onChange(next.length > 0 ? next : []);
+    } else {
+      onChange([...without, slug]);
+    }
+  };
+  const availableSeasons = productSeasons
+    .map(slug => SEASON_MAP[slug as keyof typeof SEASON_MAP])
+    .filter(Boolean);
+  if (availableSeasons.length === 0) return null;
+  if (availableSeasons.length === 1 && availableSeasons[0].value === 'all_seasons') return null;
+  return (
+    <div>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+        <p style={{ fontSize:10, fontWeight:800, color:muted, margin:0, textTransform:'uppercase', letterSpacing:'0.06em' }}>
+          Forecast for season
+        </p>
+        {selected.length > 0 && (
+          <span style={{ fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:999, background:'rgba(219,20,46,0.1)', border:'1px solid rgba(219,20,46,0.25)', color:'#f87171' }}>
+            {selected.length} selected
+          </span>
+        )}
+      </div>
+      <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+        {availableSeasons.map(season => {
+          const isSelected = selected.includes(season.value);
+          const meta = SEASON_META[season.value] ?? { emoji:'📅', color:'#6b7280' };
+          return (
+            <button key={season.value} onClick={() => toggle(season.value)} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:999, border: isSelected ? `1.5px solid ${meta.color}` : `1.5px solid ${dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`, background: isSelected ? `${meta.color}18` : (dark ? 'rgba(255,255,255,0.04)' : '#f8fafc'), cursor:'pointer', fontSize:12, fontWeight: isSelected ? 800 : 600, color: isSelected ? meta.color : muted, transition:'all 0.15s ease', outline:'none' }}>
+              <span style={{ fontSize:14 }}>{season.emoji}</span>
+              {season.label}
+              {isSelected && <span style={{ width:6, height:6, borderRadius:'50%', background:meta.color, flexShrink:0 }} />}
+            </button>
+          );
+        })}
+      </div>
+      {selected.length === 0 && (
+        <p style={{ fontSize:10, color: dark ? 'rgba(255,255,255,0.3)' : '#aaa', margin:'6px 0 0', fontStyle:'italic' }}>
+          No season selected — will forecast across all product seasons.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function SeasonBreakdownPanel({ perSeasonData, dark }: {
+  perSeasonData: Array<{ slug: string; label: string; effective_multiplier: number; multiplier_source: string; real_data_points: number; same_season_products: number }>;
+  dark: boolean;
+}) {
+  if (!perSeasonData || perSeasonData.length < 2) return null;
+  const muted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+      <p style={{ fontSize:10, fontWeight:800, color:muted, margin:0, textTransform:'uppercase', letterSpacing:'0.06em' }}>Per-season breakdown</p>
+      <div style={{ display:'grid', gridTemplateColumns:`repeat(${Math.min(perSeasonData.length, 3)}, 1fr)`, gap:8 }}>
+        {perSeasonData.map(sd => {
+          const meta = SEASON_META[sd.slug] ?? { emoji:'📅', color:'#6b7280' };
+          const isReal = sd.multiplier_source === 'real_data';
+          return (
+            <div key={sd.slug} style={{ background: dark?'rgba(255,255,255,0.03)':'#f8fafc', borderRadius:12, border:`1px solid ${meta.color}22`, padding:'12px 14px' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8 }}>
+                <span style={{ fontSize:18 }}>{meta.emoji}</span>
+                <p style={{ fontSize:11, fontWeight:800, color:meta.color, margin:0 }}>{sd.label}</p>
+              </div>
+              <p style={{ fontSize:22, fontWeight:900, color:meta.color, margin:'0 0 4px', letterSpacing:'-0.03em' }}>×{sd.effective_multiplier.toFixed(2)}</p>
+              <p style={{ fontSize:9, color:muted, margin:0, fontWeight:700, textTransform:'uppercase' }}>
+                {isReal ? `✓ Real data (${sd.real_data_points} samples)` : '📊 Market baseline'}
+              </p>
+              {sd.same_season_products > 0 && (
+                <p style={{ fontSize:9, color:muted, margin:'3px 0 0' }}>{sd.same_season_products} similar products</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AlgorithmPanel({ algorithm, dark }: {
+  algorithm: { base_monthly: number; season_multiplier: number; resilience_bonus?: number; momentum_factor: number; formula: string; total_real_data_points?: number };
+  dark: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const muted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const text  = dark ? '#fff' : '#111';
+  return (
+    <div style={{ borderRadius:12, border:'1px solid rgba(99,102,241,0.2)', overflow:'hidden' }}>
+      <button onClick={() => setOpen(o => !o)} style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'10px 14px', background: dark?'rgba(99,102,241,0.06)':'rgba(99,102,241,0.04)', border:'none', cursor:'pointer', outline:'none' }}>
+        <BarChart3 size={13} style={{ color:'#6366f1', flexShrink:0 }} />
+        <p style={{ fontSize:10, fontWeight:800, color:'#6366f1', margin:0, textTransform:'uppercase', letterSpacing:'0.06em' }}>Algorithm transparency</p>
+        <ChevronDown size={12} style={{ color:'#6366f1', marginLeft:'auto', transform: open?'rotate(180deg)':'none', transition:'transform 0.2s' }} />
+      </button>
+      {open && (
+        <div style={{ padding:'12px 14px', background: dark?'rgba(255,255,255,0.02)':'#fafafa', display:'flex', flexDirection:'column', gap:8 }}>
+          <div style={{ fontFamily:'monospace', fontSize:12, fontWeight:700, color:text, background: dark?'rgba(0,0,0,0.3)':'rgba(0,0,0,0.05)', padding:'8px 12px', borderRadius:8 }}>
+            {algorithm.formula}
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
+            {[
+              { label:'Base monthly',      val: algorithm.base_monthly + ' units' },
+              { label:'Season multiplier', val: '×' + algorithm.season_multiplier },
+              { label:'Resilience bonus',  val: algorithm.resilience_bonus ? '×' + algorithm.resilience_bonus : '×1.0' },
+              { label:'Momentum factor',   val: '×' + algorithm.momentum_factor },
+              { label:'Real data samples', val: (algorithm.total_real_data_points ?? 0) + ' orders' },
+            ].map(({ label, val }) => (
+              <div key={label} style={{ background: dark?'rgba(255,255,255,0.03)':'#f1f5f9', borderRadius:8, padding:'6px 10px' }}>
+                <p style={{ fontSize:9, fontWeight:700, color:muted, margin:'0 0 2px', textTransform:'uppercase' }}>{label}</p>
+                <p style={{ fontSize:12, fontWeight:800, color:text, margin:0 }}>{val}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 function MiniBarChart({ weeks, trend, dark }: {
   weeks: Array<{ week: string; predicted: number; baseline: number }>;
   trend: string; dark: boolean;
@@ -852,16 +1000,12 @@ function ProductDNAStrip({ ctx, dark }: {
 }
 
 function SalesPredictorTool({ products, dark, initialProductId }: { products: Array<{ id:number; name:string }>; dark:boolean; initialProductId?: number }) {
-  const [selectedId, setSelectedId] = useState<number|null>(initialProductId ?? null);
-  const [result,     setResult]     = useState<{ ai_result: SalesPredictorResult; data_context: any }|null>(null);
-  const [loading,    setLoading]    = useState(false);
-  const [error,      setError]      = useState<string|null>(null);
-
-  useEffect(() => {
-    if (!initialProductId || products.length === 0) return;
-    const found = products.find(p => p.id === initialProductId);
-    if (found) setSelectedId(initialProductId);
-  }, [initialProductId, products]);
+  const [selectedId,     setSelectedId]     = useState<number|null>(initialProductId ?? null);
+  const [productSeasons, setProductSeasons] = useState<string[]>([]);
+  const [targetSeasons,  setTargetSeasons]  = useState<string[]>([]);
+  const [result,         setResult]         = useState<{ ai_result: SalesPredictorResult; data_context: any }|null>(null);
+  const [loading,        setLoading]        = useState(false);
+  const [error,          setError]          = useState<string|null>(null);
 
   const cardBg = dark ? '#161b27' : '#ffffff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
@@ -869,22 +1013,42 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
   const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
   const subBg  = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
 
+  useEffect(() => {
+    if (!initialProductId || products.length === 0) return;
+    if (products.find(p => p.id === initialProductId)) setSelectedId(initialProductId);
+  }, [initialProductId, products]);
+
+  useEffect(() => {
+    if (!selectedId) { setProductSeasons([]); setTargetSeasons([]); setResult(null); }
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (result?.data_context?.product_seasons) {
+      const ps: string[] = result.data_context.product_seasons;
+      setProductSeasons(ps);
+      setTargetSeasons(prev =>
+        prev.filter(s => ps.includes(s)).length > 0 ? prev.filter(s => ps.includes(s)) : ps
+      );
+    }
+  }, [result]);
+
   const run = async () => {
     if (!selectedId) return;
     setLoading(true); setError(null); setResult(null);
     try {
-      const res = await sellerAiApi.salesPredictor(selectedId);
+      const res = await sellerAiApi.salesPredictor(selectedId, targetSeasons);
       setResult(res.data);
+    } catch (e: any) {
+      setError(e.message ?? 'Prediction failed');
+    } finally {
+      setLoading(false);
     }
-    catch (e: any) { setError(e.message ?? 'Prediction failed'); }
-    finally { setLoading(false); }
   };
 
   const r   = result?.ai_result   ?? null;
   const ctx = result?.data_context ?? null;
-
-  // CHANGE 6: sm computed after ctx, using DB slug keys
-  const sm = SEASON_META[ctx?.season ?? 'all_seasons'] ?? SEASON_META['all_seasons'];
+  const primarySeason = ctx?.season ?? 'all_seasons';
+  const sm = SEASON_META[primarySeason] ?? SEASON_META['all_seasons'];
   const trendColor = r ? (TREND_COLORS[r.trend] ?? '#3b82f6') : '#3b82f6';
   const confColor  = r ? (CONFIDENCE_COLORS[r.confidence] ?? '#94a3b8') : '#94a3b8';
 
@@ -898,61 +1062,59 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
       `}</style>
 
       {/* ── Input card ── */}
-      <div style={{ background:cardBg, borderRadius:18, border:`1px solid ${border}`, padding:'18px 20px' }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+      <div style={{ background:cardBg, borderRadius:18, border:`1px solid ${border}`, padding:'18px 20px', display:'flex', flexDirection:'column', gap:14 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ width:32, height:32, borderRadius:10, background:'rgba(59,130,246,0.12)', border:'1px solid rgba(59,130,246,0.25)', display:'flex', alignItems:'center', justifyContent:'center' }}>
               <TrendingUp size={15} style={{ color:'#3b82f6' }} />
             </div>
             <div>
               <p style={{ fontWeight:900, fontSize:13, color:text, margin:0 }}>Sales Forecast</p>
-              <p style={{ fontSize:10, color:muted, margin:0 }}>AI-powered · Subcategory & variant aware</p>
+              <p style={{ fontSize:10, color:muted, margin:0 }}>AI-powered · Season-aware · Variant intelligence</p>
             </div>
           </div>
           <AiTag />
         </div>
 
-        {/* CHANGE 2 & 3 & 4: No season selector; season badge between ProdSelect and RunBtn; correct RunBtn label */}
-        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-          <ProdSelect products={products} value={selectedId} onChange={setSelectedId} dark={dark} />
+        <ProdSelect products={products} value={selectedId} onChange={id => { setSelectedId(id); setResult(null); setTargetSeasons([]); setProductSeasons([]); }} dark={dark} />
 
-          {/* CHANGE 3: Season badge shown here after result arrives */}
-          {result && ctx?.season_label && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '10px 14px', borderRadius: 10,
-              background: dark ? 'rgba(139,92,246,0.08)' : 'rgba(139,92,246,0.05)',
-              border: '1px solid rgba(139,92,246,0.2)',
-            }}>
-              <span style={{ fontSize: 16 }}>
-                {(SEASON_META[ctx.season] ?? SEASON_META['all_seasons']).emoji}
-              </span>
-              <div>
-                <p style={{ fontSize: 10, fontWeight: 800, color: '#8b5cf6', margin: '0 0 1px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  Product Season
-                </p>
-                <p style={{ fontSize: 12, fontWeight: 700, color: dark ? '#fff' : '#111', margin: 0 }}>
-                  {ctx.season_label}
-                </p>
-              </div>
-              <span style={{
-                marginLeft: 'auto', fontSize: 9, fontWeight: 800,
-                padding: '2px 8px', borderRadius: 999,
-                background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)',
-                color: '#8b5cf6',
-              }}>
-                Set on product
-              </span>
-            </div>
-          )}
+        {productSeasons.length > 0 && !(productSeasons.length === 1 && productSeasons[0] === 'all_seasons') && (
+          <div style={{ padding:'12px 14px', borderRadius:12, background: dark?'rgba(255,255,255,0.02)':'rgba(0,0,0,0.02)', border:`1px solid ${border}` }}>
+            <SeasonSelector productSeasons={productSeasons} selected={targetSeasons} onChange={setTargetSeasons} dark={dark} />
+          </div>
+        )}
 
-          {/* CHANGE 4: label="Predict Sales" */}
-          <RunBtn onClick={run} loading={loading} label="Predict Sales" icon={TrendingUp} />
-        </div>
-        {error && <p style={{ color:'#ef4444', fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
+        {!selectedId && (
+          <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', borderRadius:10, background:dark?'rgba(59,130,246,0.06)':'rgba(59,130,246,0.04)', border:'1px solid rgba(59,130,246,0.15)' }}>
+            <Info size={13} style={{ color:'#3b82f6', flexShrink:0 }} />
+            <p style={{ fontSize:11, color:muted, margin:0, lineHeight:1.5 }}>Select a product to see its declared seasons and forecast demand.</p>
+          </div>
+        )}
+
+        <RunBtn onClick={run} loading={loading} label="Predict Sales" icon={TrendingUp} />
+        {error && <p style={{ color:'#ef4444', fontSize:12, margin:0, fontWeight:600 }}>{error}</p>}
       </div>
 
-      {/* ── Standard context strip (sales history) ── */}
+      {/* ── Season badge ── */}
+      {ctx?.season_label && !loading && (
+        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', borderRadius:12, background:dark?'rgba(139,92,246,0.08)':'rgba(139,92,246,0.05)', border:'1px solid rgba(139,92,246,0.2)', animation:'fadeIn 0.3s ease' }}>
+          <span style={{ fontSize:18 }}>{ctx.is_multi_season ? '🌐' : (SEASON_META[ctx.season]?.emoji ?? '📅')}</span>
+          <div style={{ flex:1 }}>
+            <p style={{ fontSize:10, fontWeight:800, color:'#8b5cf6', margin:'0 0 1px', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+              {ctx.is_multi_season ? 'Multi-season forecast' : 'Product season'}
+            </p>
+            <p style={{ fontSize:12, fontWeight:700, color:text, margin:0 }}>{ctx.season_label}</p>
+          </div>
+          {ctx.is_multi_season && (
+            <span style={{ fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:999, background:'rgba(139,92,246,0.1)', border:'1px solid rgba(139,92,246,0.2)', color:'#8b5cf6' }}>
+              {ctx.target_seasons?.length} seasons combined
+            </span>
+          )}
+          <span style={{ fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:999, background:'rgba(139,92,246,0.1)', border:'1px solid rgba(139,92,246,0.2)', color:'#8b5cf6' }}>Set on product</span>
+        </div>
+      )}
+
+      {/* ── Context strip ── */}
       {ctx !== null && !loading && (
         <div style={{ background:subBg, borderRadius:14, border:`1px solid ${border}`, padding:'14px 16px', animation:'fadeIn 0.4s ease' }}>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:8 }}>
@@ -973,89 +1135,62 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
           {ctx.momentum && (
             <div style={{ marginTop:10, display:'flex', alignItems:'center', gap:6 }}>
               <span style={{ fontSize:10, fontWeight:700, color:muted }}>Trend:</span>
-              <span style={{ fontSize:10, fontWeight:900,
-                color: ctx.momentum === 'growing' ? '#10b981' : ctx.momentum === 'declining' ? '#ef4444' : '#6b7280' }}>
-                {ctx.momentum === 'growing' ? '📈 Growing' : ctx.momentum === 'declining' ? '📉 Declining' : '➡️ Stable'}
+              <span style={{ fontSize:10, fontWeight:900, color: ctx.momentum==='growing'?'#10b981':ctx.momentum==='declining'?'#ef4444':'#6b7280' }}>
+                {ctx.momentum==='growing'?'📈 Growing':ctx.momentum==='declining'?'📉 Declining':'➡️ Stable'}
               </span>
             </div>
           )}
         </div>
       )}
 
-      {/* ── NEW: Product DNA strip — what the AI actually knew ── */}
-      {ctx !== null && !loading && (
-        <ProductDNAStrip ctx={ctx} dark={dark} />
-      )}
+      {/* ── Product DNA ── */}
+      {ctx !== null && !loading && <ProductDNAStrip ctx={ctx} dark={dark} />}
 
-      {/* ── Result ── */}
+      {/* ── Results ── */}
       {!loading && r !== null && (
         <div style={{ display:'flex', flexDirection:'column', gap:12, animation:'slideUp 0.5s ease' }}>
 
-          {/* ── HERO: predicted units ── */}
           <div style={{ background:`linear-gradient(145deg, ${trendColor}14 0%, ${trendColor}04 100%)`, borderRadius:20, border:`1px solid ${trendColor}30`, padding:'22px 20px', position:'relative', overflow:'hidden' }}>
             <div style={{ position:'absolute', top:-30, right:-30, width:100, height:100, borderRadius:'50%', background:`${trendColor}08` }} />
-
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <span style={{ fontSize:22 }}>{sm.emoji}</span>
+                <span style={{ fontSize:22 }}>{ctx?.is_multi_season ? '🌐' : sm.emoji}</span>
                 <div>
-                  {/* CHANGE 5: forecast header uses ctx?.season_label */}
-                  <p style={{ fontSize:12, fontWeight:900, color:sm.color, margin:0 }}>
-                    {ctx?.season_label ?? 'Sales'} Forecast
-                  </p>
-                  <p style={{ fontSize:10, color:muted, margin:0 }}>{sm.desc}</p>
+                  <p style={{ fontSize:12, fontWeight:900, color:sm.color, margin:0 }}>{ctx?.season_label ?? 'Sales'} Forecast</p>
+                  <p style={{ fontSize:10, color:muted, margin:0 }}>{ctx?.is_multi_season ? 'Combined season intelligence' : sm.desc}</p>
                 </div>
               </div>
-              <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-                <span style={{ fontSize:10, fontWeight:800, padding:'3px 9px', borderRadius:999,
-                  background:`${confColor}18`, color:confColor, border:`1px solid ${confColor}30` }}>
-                  {r.confidence === 'high' ? '✓ High' : r.confidence === 'medium' ? '◎ Medium' : '○ Low'} confidence
-                </span>
-              </div>
+              <span style={{ fontSize:10, fontWeight:800, padding:'3px 9px', borderRadius:999, background:`${confColor}18`, color:confColor, border:`1px solid ${confColor}30` }}>
+                {r.confidence==='high'?'✓ High':r.confidence==='medium'?'◎ Medium':'○ Low'} confidence
+              </span>
             </div>
-
             <div style={{ textAlign:'center', padding:'8px 0 16px' }}>
-              <p style={{ fontSize:10, fontWeight:700, color:muted, margin:'0 0 5px', textTransform:'uppercase', letterSpacing:'0.12em' }}>
-                Predicted units next month
-              </p>
+              <p style={{ fontSize:10, fontWeight:700, color:muted, margin:'0 0 5px', textTransform:'uppercase', letterSpacing:'0.12em' }}>Predicted units next month</p>
               <div style={{ display:'inline-flex', alignItems:'baseline', gap:6 }}>
-                <p style={{ fontSize:64, fontWeight:900, color:trendColor, margin:0, letterSpacing:'-0.05em', lineHeight:1, animation:'countUp 0.8s ease' }}>
-                  {r.predicted_units}
-                </p>
+                <p style={{ fontSize:64, fontWeight:900, color:trendColor, margin:0, letterSpacing:'-0.05em', lineHeight:1, animation:'countUp 0.8s ease' }}>{r.predicted_units}</p>
                 <p style={{ fontSize:16, fontWeight:700, color:`${trendColor}80`, margin:0 }}>units</p>
               </div>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, marginTop:8 }}>
-                <span style={{ fontSize:13, fontWeight:900, color:trendColor }}>
-                  {r.growth_pct >= 0 ? '+' : ''}{r.growth_pct}%
-                </span>
+                <span style={{ fontSize:13, fontWeight:900, color:trendColor }}>{r.growth_pct >= 0 ? '+' : ''}{r.growth_pct}%</span>
                 <span style={{ fontSize:11, color:muted }}>vs monthly average</span>
-                <span style={{ fontSize:11, fontWeight:800,
-                  color: r.trend === 'up' ? '#10b981' : r.trend === 'down' ? '#ef4444' : '#6b7280' }}>
-                  {r.trend === 'up' ? '↑ Trending up' : r.trend === 'down' ? '↓ Trending down' : '→ Stable'}
+                <span style={{ fontSize:11, fontWeight:800, color: r.trend==='up'?'#10b981':r.trend==='down'?'#ef4444':'#6b7280' }}>
+                  {r.trend==='up'?'↑ Trending up':r.trend==='down'?'↓ Trending down':'→ Stable'}
                 </span>
               </div>
             </div>
-
             {r.weekly_breakdown?.length === 4 && (
               <div style={{ borderTop:`1px solid ${trendColor}20`, paddingTop:14 }}>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
                   <p style={{ fontSize:10, fontWeight:800, color:muted, margin:0, textTransform:'uppercase', letterSpacing:'0.06em' }}>Weekly breakdown</p>
-                  {r.best_selling_week && (
-                    <span style={{ fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:999,
-                      background:`${trendColor}18`, color:trendColor, border:`1px solid ${trendColor}30` }}>
-                      🔥 Peak: {r.best_selling_week}
-                    </span>
-                  )}
+                  {r.best_selling_week && <span style={{ fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:999, background:`${trendColor}18`, color:trendColor, border:`1px solid ${trendColor}30` }}>🔥 Peak: {r.best_selling_week}</span>}
                 </div>
                 <MiniBarChart weeks={r.weekly_breakdown} trend={r.trend} dark={dark} />
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:6, marginTop:8 }}>
                   {r.weekly_breakdown.map((w, i) => {
                     const isBest = w.week === r.best_selling_week;
                     return (
-                      <div key={w.week} style={{ textAlign:'center', padding:'6px 4px', borderRadius:8,
-                        background: isBest ? `${trendColor}10` : 'transparent',
-                        border: isBest ? `1px solid ${trendColor}25` : '1px solid transparent' }}>
-                        <p style={{ fontSize:12, fontWeight:900, color: isBest ? trendColor : text, margin:'0 0 1px' }}>{w.predicted}</p>
+                      <div key={w.week} style={{ textAlign:'center', padding:'6px 4px', borderRadius:8, background:isBest?`${trendColor}10`:'transparent', border:isBest?`1px solid ${trendColor}25`:'1px solid transparent' }}>
+                        <p style={{ fontSize:12, fontWeight:900, color:isBest?trendColor:text, margin:'0 0 1px' }}>{w.predicted}</p>
                         <p style={{ fontSize:8, color:muted, margin:0 }}>W{i+1} · base:{w.baseline}</p>
                       </div>
                     );
@@ -1065,42 +1200,40 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
             )}
           </div>
 
-          {/* ── Key insight ── */}
+          {ctx?.per_season_data && ctx.per_season_data.length > 1 && (
+            <SeasonBreakdownPanel perSeasonData={ctx.per_season_data} dark={dark} />
+          )}
+
           <div style={{ background:cardBg, borderRadius:16, border:`1px solid ${border}`, padding:'14px 16px', display:'flex', gap:10, alignItems:'flex-start' }}>
             <div style={{ width:30, height:30, borderRadius:9, background:'rgba(59,130,246,0.1)', border:'1px solid rgba(59,130,246,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
               <Brain size={14} style={{ color:'#3b82f6' }} />
             </div>
             <div>
               <p style={{ fontSize:10, fontWeight:900, color:'#3b82f6', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'0.06em' }}>AI Verdict</p>
-              <p style={{ fontSize:12, color: dark?'rgba(255,255,255,0.82)':'#333', margin:0, lineHeight:1.65, fontWeight:500 }}>{r.key_factor}</p>
+              <p style={{ fontSize:12, color:dark?'rgba(255,255,255,0.82)':'#333', margin:0, lineHeight:1.65, fontWeight:500 }}>{r.key_factor}</p>
             </div>
           </div>
 
-          {/* ── Action plan row ── */}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-            <div style={{ background: dark?'rgba(16,185,129,0.07)':'rgba(16,185,129,0.04)', border:'1px solid rgba(16,185,129,0.2)', borderRadius:16, padding:'14px 16px' }}>
+            <div style={{ background:dark?'rgba(16,185,129,0.07)':'rgba(16,185,129,0.04)', border:'1px solid rgba(16,185,129,0.2)', borderRadius:16, padding:'14px 16px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
                 <span style={{ fontSize:20 }}>📦</span>
                 <p style={{ fontSize:11, fontWeight:900, color:'#10b981', margin:0, textTransform:'uppercase', letterSpacing:'0.05em' }}>Stock Target</p>
               </div>
-              <p style={{ fontSize:28, fontWeight:900, color:'#10b981', margin:'0 0 4px', letterSpacing:'-0.03em' }}>
-                {r.stock_recommendation || r.predicted_units + ' units'}
-              </p>
+              <p style={{ fontSize:28, fontWeight:900, color:'#10b981', margin:'0 0 4px', letterSpacing:'-0.03em' }}>{r.stock_recommendation || r.predicted_units + ' units'}</p>
               <p style={{ fontSize:10, color:muted, margin:0, lineHeight:1.5 }}>{r.advice}</p>
             </div>
-
             {r.opportunity && (
-              <div style={{ background: dark?'rgba(245,158,11,0.07)':'rgba(245,158,11,0.04)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:16, padding:'14px 16px' }}>
+              <div style={{ background:dark?'rgba(245,158,11,0.07)':'rgba(245,158,11,0.04)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:16, padding:'14px 16px' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
                   <span style={{ fontSize:20 }}>💡</span>
                   <p style={{ fontSize:11, fontWeight:900, color:'#f59e0b', margin:0, textTransform:'uppercase', letterSpacing:'0.05em' }}>Opportunity</p>
                 </div>
-                <p style={{ fontSize:12, color: dark?'rgba(255,255,255,0.82)':'#333', margin:0, lineHeight:1.6, fontWeight:500 }}>{r.opportunity}</p>
+                <p style={{ fontSize:12, color:dark?'rgba(255,255,255,0.82)':'#333', margin:0, lineHeight:1.6, fontWeight:500 }}>{r.opportunity}</p>
               </div>
             )}
           </div>
 
-          {/* ── Promotion ideas ── */}
           {r.promotion_ideas?.length > 0 && (
             <div style={{ background:cardBg, borderRadius:16, border:`1px solid ${border}`, padding:'14px 16px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
@@ -1109,20 +1242,15 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                 {r.promotion_ideas.map((idea, i) => (
-                  <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'10px 12px', borderRadius:10,
-                    background: subBg, border:`1px solid ${border}`,
-                    animation:`fadeIn ${0.3 + i * 0.12}s ease` }}>
-                    <span style={{ fontSize:14, minWidth:22, textAlign:'center' }}>
-                      {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
-                    </span>
-                    <p style={{ fontSize:12, color: dark?'rgba(255,255,255,0.8)':'#333', margin:0, lineHeight:1.55, fontWeight:500 }}>{idea}</p>
+                  <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'10px 12px', borderRadius:10, background:subBg, border:`1px solid ${border}` }}>
+                    <span style={{ fontSize:14, minWidth:22, textAlign:'center' }}>{i===0?'🥇':i===1?'🥈':'🥉'}</span>
+                    <p style={{ fontSize:12, color:dark?'rgba(255,255,255,0.8)':'#333', margin:0, lineHeight:1.55, fontWeight:500 }}>{idea}</p>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* ── Risk factors ── */}
           {(r.risk_factors?.length ?? 0) > 0 && (
             <div style={{ background:'rgba(239,68,68,0.04)', border:'1px solid rgba(239,68,68,0.15)', borderRadius:14, padding:'14px 16px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
@@ -1133,19 +1261,20 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
                 {r.risk_factors.map((f, i) => (
                   <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
                     <span style={{ fontSize:11, color:'#ef4444', flexShrink:0, marginTop:1 }}>→</span>
-                    <p style={{ fontSize:12, color: dark?'rgba(255,255,255,0.75)':'#444', margin:0, lineHeight:1.5 }}>{f}</p>
+                    <p style={{ fontSize:12, color:dark?'rgba(255,255,255,0.75)':'#444', margin:0, lineHeight:1.5 }}>{f}</p>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
+          {ctx?.algorithm && <AlgorithmPanel algorithm={ctx.algorithm} dark={dark} />}
+
         </div>
       )}
     </div>
   );
 }
-
 // ═════════════════════════════════════════════════════════════════════════════
 // TOOL 3 — DESCRIPTION GENERATOR — UNCHANGED
 // ═════════════════════════════════════════════════════════════════════════════

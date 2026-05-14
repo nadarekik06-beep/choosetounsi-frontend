@@ -8,6 +8,8 @@
  *   1. Added `restockApi` — direct stock updates (no admin approval)
  *   2. Updated `productUpdateRequestsApi.submit` type to include full variant CRUD
  *   3. color_images key typed as string (was already done, kept)
+ *   4. ProductPayload: season → seasons (JSON-stringified array)
+ *   5. buildFormData updated: seasons handling, is_pack, variant_images
  *
  * Everything else is IDENTICAL to the original.
  */
@@ -94,9 +96,12 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
 
   if (isUpdate) fd.append('_method', 'PUT')
 
+  // ── Scalar fields ──────────────────────────────────────────────────────────
+  // 'season' is intentionally NOT in this list — it arrives as a JSON array
+  // string under the key 'seasons' and is handled separately below.
   const scalars: string[] = [
     'name', 'slug', 'sku', 'description', 'short_description',
-    'price', 'stock', 'category_id', 'subcategory_id', 'season',
+    'price', 'stock', 'category_id', 'subcategory_id',
   ]
   scalars.forEach(key => {
     const val = (payload as Record<string, any>)[key]
@@ -105,16 +110,38 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
     }
   })
 
+  // ── Seasons (JSON array string) ────────────────────────────────────────────
+  // ProductModal sends:  seasons: JSON.stringify(['summer', 'winter'])
+  // Backend parseSeasons() expects the 'seasons' key with a JSON string value.
+  if (payload.seasons !== undefined && payload.seasons !== null) {
+    // Already JSON.stringify'd by the modal — just forward it
+    fd.append('seasons', payload.seasons)
+  } else if ((payload as any).season !== undefined) {
+    // Legacy fallback: a plain string value under the old 'season' key.
+    // Wrap it in an array so the backend parser always receives valid JSON.
+    fd.append('seasons', JSON.stringify([(payload as any).season]))
+  }
+  // If neither is present the backend falls back to ['all_seasons'] (correct).
+
+  // ── Boolean fields ─────────────────────────────────────────────────────────
   fd.append('is_active', payload.is_active === false ? '0' : '1')
 
+  if (payload.is_pack !== undefined) {
+    fd.append('is_pack', payload.is_pack ? '1' : '0')
+  }
+
+  // ── Images ─────────────────────────────────────────────────────────────────
   if (payload.images?.length) {
     payload.images.forEach((file, i) => fd.append(`images[${i}]`, file))
   }
 
   if (payload.delete_image_ids?.length) {
-    payload.delete_image_ids.forEach((id, i) => fd.append(`delete_image_ids[${i}]`, String(id)))
+    payload.delete_image_ids.forEach((id, i) =>
+      fd.append(`delete_image_ids[${i}]`, String(id))
+    )
   }
 
+  // ── Attributes ─────────────────────────────────────────────────────────────
   if (payload.attributes) {
     Object.entries(payload.attributes).forEach(([slug, val]) => {
       if (val !== undefined && val !== null && val !== '') {
@@ -123,10 +150,13 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
     })
   }
 
+  // ── Variants ───────────────────────────────────────────────────────────────
   if (payload.variants?.length) {
     payload.variants.forEach((variant, i) => {
       if (variant.id != null) fd.append(`variants[${i}][id]`, String(variant.id))
-      variant.option_ids.forEach((optId, j) => fd.append(`variants[${i}][option_ids][${j}]`, String(optId)))
+      variant.option_ids.forEach((optId, j) =>
+        fd.append(`variants[${i}][option_ids][${j}]`, String(optId))
+      )
       fd.append(`variants[${i}][stock]`,     String(variant.stock ?? 0))
       fd.append(`variants[${i}][is_active]`, variant.is_active === false ? '0' : '1')
       if (variant.price_override != null && variant.price_override !== '') {
@@ -136,13 +166,27 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
     })
   }
 
+  // ── Color group images ─────────────────────────────────────────────────────
+  // The '|' → '_' replacement is the existing fix for the Laravel key parsing bug.
   if (payload.color_images) {
     Object.entries(payload.color_images).forEach(([groupKey, files]) => {
       if (!Array.isArray(files)) return
       files.forEach((file, j) => {
-          fd.append(`color_images[${groupKey.replace(/\|/g, '_')}][${j}]`, file)
+        fd.append(`color_images[${groupKey.replace(/\|/g, '_')}][${j}]`, file)
       })
     })
+  }
+
+  // ── Variant images (edit mode: new uploads per variant) ───────────────────
+  if (payload.variant_images) {
+    Object.entries(payload.variant_images as Record<number, File[]>).forEach(
+      ([variantId, files]) => {
+        if (!Array.isArray(files)) return
+        files.forEach((file, j) => {
+          fd.append(`variant_images[${variantId}][${j}]`, file)
+        })
+      }
+    )
   }
 
   return fd
@@ -200,12 +244,14 @@ export interface ProductPayload {
   category_id: number | string
   subcategory_id?: number | string | null
   is_active?: boolean
-  season?: string
+  is_pack?: boolean | number
+  seasons?: string        // ← was 'season?: string' — now plural, JSON array string
   images?: File[]
   delete_image_ids?: number[]
   attributes?: Record<string, string>
   variants?: VariantPayload[]
   color_images?: Record<string, File[]>
+  variant_images?: Record<number, File[]>
   [key: string]: any
 }
 
@@ -349,6 +395,7 @@ const api = {
   patch:  <T = any>(path: string, body?: any) => jsonRequest<T>('PATCH',  path, body),
   delete: <T = any>(path: string)             => jsonRequest<T>('DELETE', path),
 }
+
 // ─── Packs API ────────────────────────────────────────────────────────────────
 
 export interface PackItemPayload {
@@ -380,14 +427,14 @@ function buildPackFormData(payload: PackPayload, isUpdate = false): FormData {
   if (payload.image)             fd.append('image',             payload.image)
 
   payload.items.forEach((item, i) => {
-  fd.append(`items[${i}][product_id]`, String(item.product_id))
-  fd.append(`items[${i}][quantity]`,   String(item.quantity))
-  if (item.allowed_variant_ids != null) {
-    item.allowed_variant_ids.forEach((vid, j) => {
-      fd.append(`items[${i}][allowed_variant_ids][${j}]`, String(vid))
-    })
-  }
-})
+    fd.append(`items[${i}][product_id]`, String(item.product_id))
+    fd.append(`items[${i}][quantity]`,   String(item.quantity))
+    if (item.allowed_variant_ids != null) {
+      item.allowed_variant_ids.forEach((vid, j) => {
+        fd.append(`items[${i}][allowed_variant_ids][${j}]`, String(vid))
+      })
+    }
+  })
 
   return fd
 }
@@ -417,6 +464,7 @@ export const packsApi = {
 
   delete: (id: number) => jsonRequest<any>('DELETE', `/seller/packs/${id}`),
 }
+
 export const invoiceApi = {
   /**
    * GET /api/seller/orders/{id}/invoice
@@ -425,4 +473,5 @@ export const invoiceApi = {
   get: (sellerOrderId: number) =>
     jsonRequest<any>('GET', `/seller/orders/${sellerOrderId}/invoice`),
 }
+
 export default api

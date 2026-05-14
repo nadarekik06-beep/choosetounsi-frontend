@@ -199,9 +199,8 @@ export const sellerAiApi = {
       'POST', '/seller/ai/price-optimizer', { product_id: productId }
     ),
 
-  salesPredictor: (productId: number) =>
-    jsonRequest<AIResponse<SalesPredictorResult>>('POST', '/seller/ai/sales-predictor', { product_id: productId}),
-
+salesPredictor: (productId: number, targetSeasons: string[] = []) =>
+  jsonRequest<AIResponse<SalesPredictorResult>>('POST', '/seller/ai/sales-predictor', { product_id: productId, target_seasons: targetSeasons }),
   descriptionGenerator: (productId: number, tone = 'professional', language = 'fr') =>
     jsonRequest<AIResponse<DescriptionResult>>('POST', '/seller/ai/description-generator', { product_id: productId, tone, language }),
 

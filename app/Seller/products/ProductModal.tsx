@@ -19,23 +19,19 @@ import { useSubscriptionStandalone } from '@/app/hooks/useSubscription';
 import AiDescriptionPanel from '../components/AiDescriptionPanel';
 import CommissionPreview from '@/app/seller/components/CommissionPreview'
 
-
-
-
-
-
 const SEASONS = [
-  { value: 'all_seasons',    label: 'All Seasons' },
-  { value: 'summer',         label: '☀️ Summer' },
-  { value: 'winter',         label: '❄️ Winter' },
-  { value: 'spring',         label: '🌸 Spring' },
-  { value: 'autumn',         label: '🍂 Autumn' },
-  { value: 'ramadan',        label: '🌙 Ramadan' },
-  { value: 'eid_al_fitr',    label: '🎉 Eid al-Fitr' },
-  { value: 'eid_al_adha',    label: '🐑 Eid al-Adha' },
-  { value: 'back_to_school', label: '📚 Back to School' },
-  { value: 'new_year',       label: '🎆 New Year' },
+  { value: 'all_seasons',    label: 'All Seasons',     emoji: '🌍' },
+  { value: 'summer',         label: 'Summer',          emoji: '☀️' },
+  { value: 'winter',         label: 'Winter',          emoji: '❄️' },
+  { value: 'spring',         label: 'Spring',          emoji: '🌸' },
+  { value: 'autumn',         label: 'Autumn',          emoji: '🍂' },
+  { value: 'ramadan',        label: 'Ramadan',         emoji: '🌙' },
+  { value: 'eid_al_fitr',    label: 'Eid al-Fitr',     emoji: '🎉' },
+  { value: 'eid_al_adha',    label: 'Eid al-Adha',     emoji: '🐑' },
+  { value: 'back_to_school', label: 'Back to School',  emoji: '📚' },
+  { value: 'new_year',       label: 'New Year',        emoji: '🎆' },
 ]
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FullProduct {
@@ -83,6 +79,22 @@ function serializeAttributes(values: AttributeValues): Record<string, string> {
     }
   }
   return out
+}
+
+// Parse season from product data — supports both string and array formats
+function parseSeasons(raw: unknown): string[] {
+  if (!raw) return ['all_seasons']
+  if (Array.isArray(raw)) return raw.length > 0 ? raw : ['all_seasons']
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.length > 0 ? parsed : ['all_seasons']
+    } catch {
+      // plain string value
+    }
+    return [raw]
+  }
+  return ['all_seasons']
 }
 
 // ─── Locked Field Wrapper ─────────────────────────────────────────────────────
@@ -144,8 +156,6 @@ function ImageThumb({ src, isPrimary, onRemove, onSetPrimary }: {
 }
 
 // ─── Locked Variant Row ───────────────────────────────────────────────────────
-// Displays a single existing variant in read-only mode with its label,
-// stock, price, and images.  Used in the isLocked branch of the modal.
 
 interface LockedVariantRowData extends VariantRow {
   label?: string
@@ -164,13 +174,11 @@ function LockedVariantCard({ variant }: { variant: LockedVariantRowData }) {
     <div style={{
       border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden',
     }}>
-      {/* Header — label + badges */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
         padding: '8px 12px', background: '#f8fafc',
         borderBottom: '1px solid #f0f0f0', flexWrap: 'wrap',
       }}>
-        {/* Color swatches */}
         {colorEntry && (
           <span style={{ display: 'inline-flex', gap: 3 }}>
             {(colorEntry.ids ?? [colorEntry.id]).map(id => (
@@ -182,18 +190,12 @@ function LockedVariantCard({ variant }: { variant: LockedVariantRowData }) {
             ))}
           </span>
         )}
-
-        {/* Human-readable label */}
-        <span style={{
-          fontSize: 12, fontWeight: 700, color: '#1e293b', flex: 1,
-        }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#1e293b', flex: 1 }}>
           {variant.label || [
             colorEntry?.value,
             ...otherEntries.map(([, v]) => (v as any).value),
           ].filter(Boolean).join(' / ')}
         </span>
-
-        {/* Active badge */}
         <span style={{
           fontSize: 9, fontWeight: 800,
           color: variant.is_active ? '#10b981' : '#94a3b8',
@@ -204,82 +206,143 @@ function LockedVariantCard({ variant }: { variant: LockedVariantRowData }) {
           {variant.is_active ? 'Active' : 'Inactive'}
         </span>
       </div>
-
-      {/* Body — stock, price, images */}
       <div style={{
         padding: '10px 12px',
         display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
         gap: 12, alignItems: 'start',
       }}>
-        {/* Stock — read-only */}
         <div>
-          <p style={{
-            fontSize: 9, fontWeight: 800, color: '#94a3b8',
-            textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px',
-          }}>Stock</p>
-          <div style={{
-            background: '#f8fafc', border: '1px solid #e5e7eb',
-            borderRadius: 8, padding: '6px 10px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            opacity: 0.7,
-          }}>
-            <span style={{ fontSize: 14, fontWeight: 900, color: variant.stock === 0 ? '#ef4444' : '#0f172a' }}>
-              {variant.stock}
-            </span>
+          <p style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px' }}>Stock</p>
+          <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: 0.7 }}>
+            <span style={{ fontSize: 14, fontWeight: 900, color: variant.stock === 0 ? '#ef4444' : '#0f172a' }}>{variant.stock}</span>
             <Lock size={11} color="#94a3b8" />
           </div>
         </div>
-
-        {/* Price override — read-only */}
         <div>
-          <p style={{
-            fontSize: 9, fontWeight: 800, color: '#94a3b8',
-            textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px',
-          }}>Price Override</p>
-          <div style={{
-            background: '#f8fafc', border: '1px solid #e5e7eb',
-            borderRadius: 8, padding: '6px 10px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            opacity: 0.7,
-          }}>
+          <p style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px' }}>Price Override</p>
+          <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: 0.7 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
               {variant.price_override ? `${Number(variant.price_override).toFixed(3)} TND` : '—'}
             </span>
             <Lock size={11} color="#94a3b8" />
           </div>
         </div>
-
-        {/* SKU — read-only */}
         <div>
-          <p style={{
-            fontSize: 9, fontWeight: 800, color: '#94a3b8',
-            textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px',
-          }}>SKU</p>
-          <div style={{
-            background: '#f8fafc', border: '1px solid #e5e7eb',
-            borderRadius: 8, padding: '6px 10px',
-            opacity: 0.7,
-          }}>
-            <span style={{ fontSize: 12, fontWeight: 500, color: '#64748b', fontFamily: 'monospace' }}>
-              {variant.sku || '—'}
-            </span>
+          <p style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px' }}>SKU</p>
+          <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 10px', opacity: 0.7 }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color: '#64748b', fontFamily: 'monospace' }}>{variant.sku || '—'}</span>
           </div>
         </div>
       </div>
-
-      {/* Image thumbnails — read-only display */}
       {(variant.image_urls ?? []).length > 0 && (
         <div style={{ padding: '0 12px 10px', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {(variant.image_urls ?? []).map((url, i) => (
-            <div key={i} style={{
-              width: 48, height: 48, borderRadius: 6, overflow: 'hidden',
-              border: '1px solid #e5e7eb', flexShrink: 0,
-            }}>
+            <div key={i} style={{ width: 48, height: 48, borderRadius: 6, overflow: 'hidden', border: '1px solid #e5e7eb', flexShrink: 0 }}>
               <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Season Checkbox Picker ───────────────────────────────────────────────────
+
+function SeasonPicker({
+  selected,
+  onChange,
+}: {
+  selected: string[]
+  onChange: (seasons: string[]) => void
+}) {
+  const toggle = (value: string) => {
+    if (value === 'all_seasons') {
+      // "All Seasons" is exclusive — selecting it clears everything else
+      onChange(selected.includes('all_seasons') ? [] : ['all_seasons'])
+      return
+    }
+    // Toggling a specific season removes "all_seasons" if present
+    const without = selected.filter(s => s !== 'all_seasons')
+    if (without.includes(value)) {
+      const next = without.filter(s => s !== value)
+      onChange(next.length > 0 ? next : [])
+    } else {
+      onChange([...without, value])
+    }
+  }
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(5, 1fr)',
+      gap: 7,
+    }}>
+      {SEASONS.map(season => {
+        const isChecked = selected.includes(season.value)
+        const isAllSeasons = season.value === 'all_seasons'
+
+        return (
+          <button
+            key={season.value}
+            type="button"
+            onClick={() => toggle(season.value)}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 4,
+              padding: '8px 6px',
+              borderRadius: 10,
+              border: isChecked
+                ? '1.5px solid #dc2626'
+                : '1.5px solid #e5e7eb',
+              background: isChecked
+                ? 'rgba(220,38,38,0.06)'
+                : '#f8fafc',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              position: 'relative',
+              outline: 'none',
+            }}
+          >
+            {/* Checkmark badge */}
+            {isChecked && (
+              <span style={{
+                position: 'absolute',
+                top: 4,
+                right: 4,
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                background: '#dc2626',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
+                  <path d="M1 3.5L2.8 5.5L6 1.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </span>
+            )}
+
+            {/* Emoji */}
+            <span style={{ fontSize: 18, lineHeight: 1 }}>{season.emoji}</span>
+
+            {/* Label */}
+            <span style={{
+              fontSize: isAllSeasons ? 9 : 9,
+              fontWeight: isChecked ? 800 : 600,
+              color: isChecked ? '#dc2626' : '#64748b',
+              textAlign: 'center',
+              lineHeight: 1.2,
+              letterSpacing: '-0.01em',
+            }}>
+              {season.label}
+            </span>
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -353,9 +416,9 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     category_id:       p?.category_id?.toString()   ?? '',
     subcategory_id:    p?.subcategory_id != null ? String(p.subcategory_id) : '',
     is_active:         p?.is_active ?? true,
-    is_pack:           !!(p as any)?.is_pack,   // ← ADD
-    season:            (p as any)?.season ?? 'all_seasons',
-
+    is_pack:           !!(p as any)?.is_pack,
+    // seasons is now an array — parse from existing product data
+    seasons:           parseSeasons((p as any)?.seasons ?? (p as any)?.season),
   })
 
   const [attrValues,  setAttrValues]  = useState<AttributeValues>(p?.existing_attributes ?? {})
@@ -366,22 +429,15 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const [colorGroupImages, setColorGroupImages] = useState<Record<string, File[]>>({})
 
   // ── VARIANT IMAGE MANAGEMENT (edit mode) ──────────────────────────────────
-  // Tracks new uploads + deletion requests for existing variant images.
-  // Only used when isEdit=true and the product has variant_rows.
   const [variantImageChanges, setVariantImageChanges] = useState<{
     newImagesByVariantId: Record<number, File[]>
     deleteImageIds: number[]
   }>({ newImagesByVariantId: {}, deleteImageIds: [] })
 
-  // Build the VariantForImageManager[] from server data (memoized, never changes
-  // after mount since locked variants can't be structurally modified)
   const variantsForImageManager = useMemo((): VariantForImageManager[] => {
     if (!isEdit) return []
-
     const serverVariants = (p?.variant_rows ?? []) as LockedVariantRowData[]
     if (serverVariants.length === 0) return []
-
-    // Build a map of variant_id → image rows (need DB id for deletion)
     const imagesByVariantId: Record<number, Array<{ id: number; url: string; is_primary?: boolean }>> = {}
     if (p?.images) {
       for (const img of p.images) {
@@ -389,15 +445,10 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
           const url = storageUrl(img.url ?? img.image_path)
           if (!url) continue
           if (!imagesByVariantId[img.variant_id]) imagesByVariantId[img.variant_id] = []
-          imagesByVariantId[img.variant_id].push({
-            id:         img.id,
-            url,
-            is_primary: img.is_primary,
-          })
+          imagesByVariantId[img.variant_id].push({ id: img.id, url, is_primary: img.is_primary })
         }
       }
     }
-
     return serverVariants
       .filter(v => v.id != null)
       .map(v => ({
@@ -444,8 +495,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const [apiError, setApiError] = useState('')
 
   // ── Product-level Images ───────────────────────────────────────────────────
-  // These are images NOT attached to any variant (variant_id = null, color_option_id = null).
-  // In edit mode we separate them from variant images.
   const [existingImages,  setExistingImages]  = useState<ExistingImage[]>(() => {
     if (!p?.images) return []
     return p.images
@@ -574,6 +623,9 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     if (form.price === '' || isNaN(Number(form.price)) || Number(form.price) < 0) {
       e.price = 'Enter a valid price.'
     }
+    if (form.seasons.length === 0) {
+      e.seasons = 'Select at least one season.'
+    }
 
     if (hasVariantRows) {
       const varStockErrs = validateVariantStocks(variantRows)
@@ -620,7 +672,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         ? variantTotalStock
         : parseInt(form.stock, 10)
 
-      // Merge product-level deleted IDs with variant image deleted IDs
       const allDeletedImageIds = [
         ...deletedImageIds,
         ...variantImageChanges.deleteImageIds,
@@ -633,9 +684,9 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         description:       form.description.trim()       || undefined,
         short_description: form.short_description.trim() || undefined,
         is_active:         form.is_active,
-        is_pack:           form.is_pack ? 1 : 0,   // ← ADD
-        season:            form.season, 
-        // Product-level new images
+        is_pack:           form.is_pack ? 1 : 0,
+        // Send seasons as JSON array — backend should store as JSON column or comma-separated
+        seasons:           JSON.stringify(form.seasons),
         images:            previews.map(prev => prev.file),
         delete_image_ids:  allDeletedImageIds.length ? allDeletedImageIds : undefined,
         attributes:        serializeAttributes(attrValues),
@@ -644,8 +695,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         category_id: isLocked ? (p?.category_id ?? 0) : parseInt(form.category_id, 10),
       }
 
-      // Variant-level new images: sent as variant_images[{variantId}][j]
-      // The backend's saveVariantImages() method reads this key.
       if (Object.keys(variantImageChanges.newImagesByVariantId).length > 0) {
         payload.variant_images = variantImageChanges.newImagesByVariantId
       }
@@ -686,9 +735,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     }
   }
 
-  // Whether we should show the VariantImageManager section:
-  // - Only in edit mode
-  // - Only when the product already has server-side variants with IDs
   const showVariantImageManager = isEdit && variantsForImageManager.length > 0
 
   return (
@@ -717,10 +763,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                 {isEdit ? 'Edit Product' : 'Add New Product'}
               </h2>
               {isLocked && (
-                <p style={{
-                  fontSize: 11, color: '#6366f1', margin: '3px 0 0',
-                  display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600,
-                }}>
+                <p style={{ fontSize: 11, color: '#6366f1', margin: '3px 0 0', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
                   <Lock size={10} /> Some fields are locked — product is approved
                 </p>
               )}
@@ -829,34 +872,34 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                   />
                 </Field>
                 <Field label="Full Description">
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-    <textarea
-      rows={4}
-      value={form.description}
-      onChange={e => set('description', e.target.value)}
-      placeholder="Describe your product in detail…"
-      className={`${inputCls()} resize-none`}
-    />
-    <AiDescriptionPanel
-  productName={form.name}
-  categoryId={form.category_id}
-  categoryName={categories.find(c => c.id === Number(form.category_id))?.name}
-  price={form.price}
-  shortDescription={form.short_description}
-  imageCount={previews.length + existingImages.length}
-  attrValues={attrValues}
-  variantRows={variantRows}
-  variantAxes={variantAxes}
-  infoAxes={infoAxes}
-  hasVariantAxes={variantAxes.length > 0}
-  canUseAi={canUseAi}
-  onInsert={({ short_description, description }) => {
-    if (short_description !== undefined) set('short_description', short_description);
-    if (description       !== undefined) set('description', description);
-  }}
-/>
-            </div>
-          </Field>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <textarea
+                      rows={4}
+                      value={form.description}
+                      onChange={e => set('description', e.target.value)}
+                      placeholder="Describe your product in detail…"
+                      className={`${inputCls()} resize-none`}
+                    />
+                    <AiDescriptionPanel
+                      productName={form.name}
+                      categoryId={form.category_id}
+                      categoryName={categories.find(c => c.id === Number(form.category_id))?.name}
+                      price={form.price}
+                      shortDescription={form.short_description}
+                      imageCount={previews.length + existingImages.length}
+                      attrValues={attrValues}
+                      variantRows={variantRows}
+                      variantAxes={variantAxes}
+                      infoAxes={infoAxes}
+                      hasVariantAxes={variantAxes.length > 0}
+                      canUseAi={canUseAi}
+                      onInsert={({ short_description, description }) => {
+                        if (short_description !== undefined) set('short_description', short_description);
+                        if (description       !== undefined) set('description', description);
+                      }}
+                    />
+                  </div>
+                </Field>
               </div>
             </section>
 
@@ -867,24 +910,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                 letterSpacing: '0.1em', color: '#94a3b8',
                 paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16,
               }}>Pricing & Inventory</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
 
-                {/* Season — seller declares once, AI uses always */}
-                      <Field
-                        label="Product Season"
-                        required
-                        hint="AI predictions use this. Choose the season when this product sells best."
-                      >
-                        <select
-                          value={form.season}
-                          onChange={e => set('season', e.target.value)}
-                          className={inputCls()}
-                        >
-                          {SEASONS.map(s => (
-                            <option key={s.value} value={s.value}>{s.label}</option>
-                          ))}
-                        </select>
-                      </Field>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                 {/* Price */}
                 <Field label="Base Price (TND)" required error={errors.price} locked={isLocked}>
                   <div style={{ position: 'relative' }}>
@@ -904,16 +931,12 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                     }}>TND</span>
                   </div>
                 </Field>
+
                 <CommissionPreview price={form.price} />
 
                 {/* Stock — ONLY shown when no variants exist */}
                 {!hasVariantRows && (
-                  <Field
-                    label="Stock"
-                    required
-                    error={errors.stock}
-                    locked={isLocked}
-                  >
+                  <Field label="Stock" required error={errors.stock} locked={isLocked}>
                     <input
                       type="number"
                       min="0"
@@ -942,8 +965,53 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                   </select>
                 </Field>
               </div>
+
+              {/* ── Season Picker — full width below the grid ── */}
+              <div>
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  marginBottom: 8,
+                }}>
+                  <label style={{
+                    fontSize: 11, fontWeight: 800, textTransform: 'uppercase',
+                    letterSpacing: '0.07em', color: '#94a3b8',
+                    display: 'flex', alignItems: 'center', gap: 6,
+                  }}>
+                    Product Season(s) <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  {form.seasons.length > 0 && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700,
+                      color: '#dc2626',
+                      background: 'rgba(220,38,38,0.07)',
+                      border: '1px solid rgba(220,38,38,0.2)',
+                      padding: '2px 8px', borderRadius: 999,
+                    }}>
+                      {form.seasons.length} selected
+                    </span>
+                  )}
+                </div>
+                <div style={{
+                  border: errors.seasons ? '1.5px solid #fca5a5' : '1.5px solid #e5e7eb',
+                  borderRadius: 14,
+                  padding: 10,
+                  background: errors.seasons ? '#fef2f2' : '#f8fafc',
+                }}>
+                  <SeasonPicker
+                    selected={form.seasons}
+                    onChange={seasons => set('seasons', seasons)}
+                  />
+                </div>
+                {errors.seasons && (
+                  <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.seasons}</p>
+                )}
+                <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 5 }}>
+                  Select all seasons when this product sells best. AI predictions use this.
+                </p>
+              </div>
+
               {/* ── Is Pack ── */}
-              <div style={{ marginTop: 12 }}>
+              <div style={{ marginTop: 14 }}>
                 <label style={{
                   display: 'flex', alignItems: 'center', gap: 10,
                   cursor: 'pointer', userSelect: 'none',
@@ -1053,10 +1121,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                   paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16,
                 }}>
                   Product Details
-                  <span style={{
-                    marginLeft: 8, fontSize: 9, fontWeight: 500,
-                    color: '#c4b5fd', textTransform: 'none',
-                  }}>informational only</span>
+                  <span style={{ marginLeft: 8, fontSize: 9, fontWeight: 500, color: '#c4b5fd', textTransform: 'none' }}>informational only</span>
                 </p>
                 <DynamicAttributeSection
                   subcategoryId={Number(form.subcategory_id)}
@@ -1080,10 +1145,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                     letterSpacing: '0.1em', color: '#94a3b8', margin: 0,
                   }}>Variants</p>
                   {axesLoading && (
-                    <span style={{
-                      fontSize: 10, color: '#94a3b8',
-                      display: 'flex', alignItems: 'center', gap: 4,
-                    }}>
+                    <span style={{ fontSize: 10, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Loader2 size={10} style={{ animation: 'spin 0.8s linear infinite' }} />
                       Loading…
                     </span>
@@ -1143,21 +1205,9 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                           border: '1.5px solid rgba(220,38,38,0.2)',
                           borderRadius: 12, padding: '10px 16px',
                         }}>
-                          <span style={{
-                            fontSize: 10, fontWeight: 800, color: '#94a3b8',
-                            textTransform: 'uppercase', letterSpacing: '0.08em',
-                          }}>
-                            Total Stock
-                          </span>
-                          <span style={{
-                            fontSize: 22, fontWeight: 900, color: '#db142e',
-                            lineHeight: 1,
-                          }}>
-                            {variantTotalStock}
-                          </span>
-                          <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
-                            units (auto-calculated)
-                          </span>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total Stock</span>
+                          <span style={{ fontSize: 22, fontWeight: 900, color: '#db142e', lineHeight: 1 }}>{variantTotalStock}</span>
+                          <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>units (auto-calculated)</span>
                         </div>
                       </div>
                     )}
@@ -1166,12 +1216,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
               </section>
             )}
 
-            {/* ══════════════════════════════════════════════════════════════
-                LOCKED VARIANTS DISPLAY — full read-only table
-                Shows every variant with its human-readable label,
-                stock, price, SKU, active status, and thumbnail images.
-                REPLACES the old "9 variant(s) — use Request Update" message.
-            ════════════════════════════════════════════════════════════════*/}
+            {/* ── Locked Variants Display ── */}
             {isLocked && (p?.variant_rows ?? []).length > 0 && (
               <section>
                 <div style={{
@@ -1179,10 +1224,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <p style={{
-                      fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-                      letterSpacing: '0.1em', color: '#94a3b8', margin: 0,
-                    }}>Variants</p>
+                    <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>Variants</p>
                     <span style={{
                       fontSize: 9, fontWeight: 700, color: '#6366f1',
                       background: 'rgba(99,102,241,0.08)',
@@ -1194,32 +1236,22 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                     </span>
                     <span style={{
                       fontSize: 9, fontWeight: 700, color: '#94a3b8',
-                      background: '#f1f5f9',
-                      border: '1px solid #e5e7eb',
+                      background: '#f1f5f9', border: '1px solid #e5e7eb',
                       padding: '1px 6px', borderRadius: 4,
                     }}>
                       {(p?.variant_rows ?? []).length} variant{(p?.variant_rows ?? []).length !== 1 ? 's' : ''}
                     </span>
                   </div>
                 </div>
-
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {((p?.variant_rows ?? []) as LockedVariantRowData[]).map((variant, idx) => (
-                    <LockedVariantCard
-                      key={variant.id ?? idx}
-                      variant={variant}
-                    />
+                    <LockedVariantCard key={variant.id ?? idx} variant={variant} />
                   ))}
                 </div>
               </section>
             )}
 
-            {/* ══════════════════════════════════════════════════════════════
-                VARIANT IMAGE MANAGEMENT
-                Shown in edit mode for ALL products that have variants,
-                whether locked or not. Allows instant upload/deletion of
-                per-variant images with NO admin approval required.
-            ════════════════════════════════════════════════════════════════*/}
+            {/* ── Variant Image Management ── */}
             {showVariantImageManager && (
               <section>
                 <VariantImageManager
@@ -1230,32 +1262,20 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
               </section>
             )}
 
-            {/* ── General Images ──
-                Shown when:
-                  (a) Add mode (no variants yet), OR
-                  (b) Edit mode with no server-side variants
-                When a product has variants, images are managed per-variant above.
-                We still show product-level images (no variant_id) for edit mode
-                so sellers can manage cover / gallery images.
-            ── */}
+            {/* ── General Images ── */}
             {(!hasVariantRows || (isEdit && existingImages.length > 0)) && !showVariantImageManager && (
               <section>
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 14,
                 }}>
-                  <p style={{
-                    fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-                    letterSpacing: '0.1em', color: '#94a3b8', margin: 0,
-                  }}>Images</p>
+                  <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>Images</p>
                   <span style={{ fontSize: 11, color: '#94a3b8' }}>{totalImages}/8</span>
                 </div>
 
                 {existingImages.length > 0 && (
                   <div style={{ marginBottom: 12 }}>
-                    <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>
-                      Current Images
-                    </p>
+                    <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>Current Images</p>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
                       {existingImages.map(img => (
                         <ImageThumb
@@ -1271,9 +1291,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
 
                 {previews.length > 0 && (
                   <div style={{ marginBottom: 12 }}>
-                    <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>
-                      New Images
-                    </p>
+                    <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>New Images</p>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
                       {previews.map(prev => (
                         <ImageThumb
@@ -1292,9 +1310,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                     onDragOver={e => e.preventDefault()}
                     onDrop={e => {
                       e.preventDefault()
-                      addFiles(
-                        Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))
-                      )
+                      addFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')))
                     }}
                     onClick={() => fileInputRef.current?.click()}
                     style={{
@@ -1309,9 +1325,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                     <p style={{ fontSize: 13, fontWeight: 600, color: '#64748b', margin: 0 }}>
                       Drop images or <span style={{ color: '#dc2626' }}>browse</span>
                     </p>
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
-                      JPG, PNG, WebP · max 5 MB each
-                    </p>
+                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>JPG, PNG, WebP · max 5 MB each</p>
                     <input
                       ref={fileInputRef}
                       type="file" accept="image/*" multiple
