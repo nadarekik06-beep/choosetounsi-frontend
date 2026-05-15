@@ -89,10 +89,28 @@ export interface SimilarProductsResult {
 }
 
 export interface EventSignal {
-  slug: string; name: string; type: string; starts_at: string;
-  ends_at: string; boost_score: number; top_regions: string[]; days_until: number;
+  // Original fields (unchanged)
+  slug: string;
+  name: string;
+  type: string;
+  starts_at: string;
+  ends_at: string;
+  boost_score: number;          // now dynamic (was static DB value)
+  top_regions: string[];
+  days_until: number;
+ 
+  // NEW enrichment fields
+  dynamic_multiplier: number;   // category-aware, data-driven
+  multiplier_source: 'real_data' | 'category_baseline' | 'tunisia_baseline';
+  demand_increase_pct: number;  // e.g. 42.0 means +42%
+  predicted_units: number | null; // null when no product selected
+  data_points: number;          // how many orders backed the multiplier
+  confidence_score: number;     // 0-100
+  confidence_label: 'high' | 'medium' | 'low';
+  ai_explanation: string;       // 1 sentence from Groq
+  stock_action: string;         // e.g. "Increase stock significantly"
+  category_aware: boolean;      // true when category was resolved
 }
-
 export interface AIExplanation {
   summary: string; main_opportunity: string; main_risk: string; seasonal_tip: string;
 }
@@ -100,7 +118,15 @@ export interface AIExplanation {
 export interface CacheAge {
   computed_at: string | null; age_minutes: number | null; is_stale: boolean;
 }
-
+// Helper (add once, near the top of the forecastApi object or above it):
+function buildEventsQuery(categorySlug?: string, productId?: number | null): string {
+  const params = new URLSearchParams();
+  if (categorySlug) params.set('category_slug', categorySlug);
+  if (productId)    params.set('product_id', String(productId));
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
+}
+ 
 // ─── API calls ────────────────────────────────────────────────────────────────
 
 export const forecastApi = {
@@ -125,11 +151,11 @@ export const forecastApi = {
     jsonRequest<{ success: boolean; data: SimilarProductsResult }>(
       'GET', `/seller/analytics/forecast/similar?product_id=${productId}`
     ),
-
-  getEvents: (categorySlug?: string) =>
-    jsonRequest<{ success: boolean; data: EventSignal[] }>(
-      'GET', `/seller/analytics/forecast/events${categorySlug ? `?category_slug=${categorySlug}` : ''}`
-    ),
+ getEvents: (categorySlug?: string, productId?: number | null) =>
+     jsonRequest<{ success: boolean; data: EventSignal[] }>(
+       'GET',
+       `/seller/analytics/forecast/events${buildEventsQuery(categorySlug, productId)}`
+     ),
 
   getAIExplanation: (
     productId: number, forecastData: ForecastResult,

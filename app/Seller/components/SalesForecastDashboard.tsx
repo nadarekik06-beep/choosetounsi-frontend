@@ -122,103 +122,555 @@ function DemandScoreGauge({ score, dark }: { score: number; dark: boolean }) {
     </div>
   );
 }
-
 function ForecastLineChart({ history, projections, dark }: {
   history: ForecastResult['history'];
   projections: ForecastResult['projections'];
   dark: boolean;
 }) {
-  const W = 700; const H = 200; const PAD = 40;
-  const innerW = W - PAD * 2;
-  const innerH = H - PAD * 1.5;
-
-  const allPts = [
-    ...history.map(h => ({ label: h.label, value: h.units })),
-    ...projections.map(p => ({ label: p.label, value: p.predicted_units })),
-  ];
-  if (allPts.length === 0) return null;
-
-  const maxVal = Math.max(...allPts.map(p => p.value), 1);
-  const step   = innerW / Math.max(1, allPts.length - 1);
-  const coord  = (i: number, v: number) => ({
-    x: PAD + i * step,
-    y: PAD + innerH - (v / maxVal) * innerH,
-  });
-
-  const hPath = history.map((h, i) => { const {x,y} = coord(i, h.units); return i===0?`M ${x} ${y}`:`L ${x} ${y}`; }).join(' ');
-  const fPath = projections.map((p, i) => {
-    const v = i === 0 ? (history[history.length-1]?.units ?? p.predicted_units) : p.predicted_units;
-    const {x,y} = coord(history.length - 1 + i, v);
-    return i===0?`M ${x} ${y}`:`L ${x} ${y}`;
-  }).join(' ');
-
-  const tc = dark ? 'rgba(255,255,255,0.5)' : '#888';
-  const gc = dark ? 'rgba(255,255,255,0.05)' : '#f1f5f9';
-
+  if (projections.length === 0) return null;
+ 
+  const W     = 700;
+  const H     = 230;
+  const PAD_L = 44;   // left — Y axis labels
+  const PAD_R = 16;
+  const PAD_T = 32;   // top — value labels above dots
+  const PAD_B = 32;   // bottom — X month labels
+  const innerW = W - PAD_L - PAD_R;
+  const innerH = H - PAD_T - PAD_B;
+ 
+  // ── Y scale ──────────────────────────────────────────────────────────
+  const histVals = history.map(h => h.units);
+  const foreVals = projections.map(p => p.predicted_units);
+  const allVals  = [...histVals, ...foreVals];
+  const rawMax   = Math.max(...allVals, 1);
+  const rawMin   = Math.min(...allVals, 0);
+ 
+  // Enforce minimum visible span so close values (5,5,6,7) still show slope
+  const minSpan  = Math.max(3, rawMax * 0.45);
+  const maxVal   = rawMax + minSpan * 0.18;
+  const minVal   = Math.max(0, rawMin - minSpan * 0.05);
+  const ySpan    = Math.max(minSpan, maxVal - minVal);
+ 
+  const toY = (v: number) =>
+    PAD_T + innerH - ((v - minVal) / ySpan) * innerH;
+ 
+  // ── X zones ───────────────────────────────────────────────────────────
+  // History zone: PAD_L → PAD_L + histZoneW
+  // Gap zone:     PAD_L + histZoneW → PAD_L + histZoneW + gapW
+  // Forecast zone: PAD_L + histZoneW + gapW → PAD_L + innerW
+ 
+  const hasHistory  = history.length > 0;
+  const histZoneW   = hasHistory ? innerW * 0.18 : 0;   // 18% for history
+  const gapW        = hasHistory ? innerW * 0.08 : 0;   // 8% gap
+  const foreZoneW   = innerW - histZoneW - gapW;        // rest for forecast
+ 
+  // X coordinate within history zone
+  const histX = (i: number) => {
+    if (history.length === 1) return PAD_L + histZoneW * 0.5;
+    return PAD_L + (i / (history.length - 1)) * histZoneW;
+  };
+ 
+  // X coordinate within forecast zone
+  const foreX = (i: number) => {
+    const zoneStart = PAD_L + histZoneW + gapW;
+    if (projections.length === 1) return zoneStart + foreZoneW * 0.5;
+    return zoneStart + (i / (projections.length - 1)) * foreZoneW;
+  };
+ 
+  // ── Coordinate arrays ─────────────────────────────────────────────────
+  const hCoords = history.map((h, i) => ({
+    x: histX(i),
+    y: toY(h.units),
+    value: h.units,
+    label: h.label,
+  }));
+ 
+  const fCoords = projections.map((p, i) => ({
+    x: foreX(i),
+    y: toY(p.predicted_units),
+    value: p.predicted_units,
+    label: p.label,
+    eventBoost: p.event_boost ?? 1.0,
+    eventName: p.event_name ?? null,
+    confidence: p.confidence,
+  }));
+ 
+  // ── SVG path helpers ──────────────────────────────────────────────────
+  const makePath = (pts: Array<{x: number; y: number}>) =>
+    pts.map(({ x, y }, i) =>
+      `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`
+    ).join(' ');
+ 
+  const makeArea = (pts: Array<{x: number; y: number}>) => {
+    if (pts.length < 2) return '';
+    const base = PAD_T + innerH;
+    return `${makePath(pts)} L ${pts[pts.length-1].x.toFixed(1)} ${base} L ${pts[0].x.toFixed(1)} ${base} Z`;
+  };
+ 
+  const hPath     = hCoords.length >= 2 ? makePath(hCoords) : '';
+  const hAreaPath = hCoords.length >= 2 ? makeArea(hCoords) : '';
+  const fPath     = fCoords.length >= 2 ? makePath(fCoords) : '';
+  const fAreaPath = fCoords.length >= 2 ? makeArea(fCoords) : '';
+ 
+  // Connector from last history → first forecast (crosses the gap zone)
+  const lastH = hCoords[hCoords.length - 1];
+  const firstF = fCoords[0];
+  const connectorPath = (lastH && firstF)
+    ? `M ${lastH.x.toFixed(1)} ${lastH.y.toFixed(1)} L ${firstF.x.toFixed(1)} ${firstF.y.toFixed(1)}`
+    : '';
+ 
+  // Divider line x position = middle of the gap zone
+  const dividerX = hasHistory
+    ? PAD_L + histZoneW + gapW * 0.5
+    : null;
+ 
+  // ── Grid ──────────────────────────────────────────────────────────────
+  const gridLines = [0, 0.25, 0.5, 0.75, 1].map(pct => ({
+    pct,
+    value: Math.round(minVal + pct * ySpan),
+    y: PAD_T + innerH - pct * innerH,
+  }));
+ 
+  const tc = dark ? 'rgba(255,255,255,0.45)' : '#888';
+  const gc = dark ? 'rgba(255,255,255,0.05)' : '#f0f4f8';
+ 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
-      {[0, 0.25, 0.5, 0.75, 1].map(pct => {
-        const y = PAD + innerH - pct * innerH;
-        return (
-          <g key={pct}>
-            <line x1={PAD} y1={y} x2={PAD+innerW} y2={y} stroke={gc} strokeWidth="1"/>
-            <text x={PAD-6} y={y+4} textAnchor="end" fontSize="9" fill={tc}>{Math.round(maxVal*pct)}</text>
-          </g>
-        );
-      })}
-      {history.length > 0 && (
-        <line x1={PAD+(history.length-1)*step} y1={PAD} x2={PAD+(history.length-1)*step} y2={PAD+innerH}
-          stroke={dark?'rgba(255,255,255,0.15)':'#e2e8f0'} strokeWidth="1.5" strokeDasharray="4 4"/>
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      style={{ width: '100%', height: 'auto', overflow: 'visible' }}
+    >
+      <defs>
+        <linearGradient id="hGrad2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.01" />
+        </linearGradient>
+        <linearGradient id="fGrad2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#10b981" stopOpacity="0.16" />
+          <stop offset="100%" stopColor="#10b981" stopOpacity="0.01" />
+        </linearGradient>
+      </defs>
+ 
+      {/* Grid */}
+      {gridLines.map(({ pct, value, y }) => (
+        <g key={pct}>
+          <line x1={PAD_L} y1={y} x2={PAD_L + innerW} y2={y}
+            stroke={gc} strokeWidth="1" />
+          <text x={PAD_L - 5} y={y + 4}
+            textAnchor="end" fontSize="9" fill={tc}>{value}</text>
+        </g>
+      ))}
+ 
+      {/* NOW divider in gap zone */}
+      {dividerX !== null && (
+        <>
+          <line
+            x1={dividerX} y1={PAD_T}
+            x2={dividerX} y2={PAD_T + innerH}
+            stroke={dark ? 'rgba(255,255,255,0.12)' : '#cbd5e1'}
+            strokeWidth="1" strokeDasharray="4 4" />
+          <text
+            x={dividerX} y={PAD_T - 6}
+            textAnchor="middle" fontSize="8"
+            fill={dark ? 'rgba(255,255,255,0.3)' : '#aaa'}
+            fontStyle="italic">
+            now
+          </text>
+        </>
       )}
-      <path d={hPath} fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round"/>
-      <path d={fPath} fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="6 4"/>
-      {projections.map((p, i) => {
-        if (!p.event_name) return null;
-        const {x,y} = coord(history.length-1+i, p.predicted_units);
+ 
+      {/* ── HISTORY ── */}
+ 
+      {/* History area */}
+      {hAreaPath && <path d={hAreaPath} fill="url(#hGrad2)" />}
+ 
+      {/* History line (multi-point) */}
+      {hPath && (
+        <path d={hPath} fill="none"
+          stroke="#3b82f6" strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round" />
+      )}
+ 
+      {/* History: single point */}
+      {hCoords.length === 1 && (
+        <g>
+          <line x1={hCoords[0].x} y1={hCoords[0].y}
+            x2={hCoords[0].x} y2={PAD_T + innerH}
+            stroke="#3b82f6" strokeWidth="1.5"
+            strokeDasharray="2 3" opacity="0.35" />
+          <circle cx={hCoords[0].x} cy={hCoords[0].y}
+            r="8" fill="#3b82f6" opacity="0.15" />
+          <circle cx={hCoords[0].x} cy={hCoords[0].y}
+            r="5" fill="#3b82f6"
+            stroke={dark ? '#161b27' : '#fff'} strokeWidth="2" />
+          <text x={hCoords[0].x} y={hCoords[0].y - 13}
+            textAnchor="middle" fontSize="11"
+            fill="#60a5fa" fontWeight="bold">
+            {hCoords[0].value}
+          </text>
+        </g>
+      )}
+ 
+      {/* History dots + labels (multi-point) */}
+      {hCoords.length >= 2 && hCoords.map(({ x, y, value }, i) => (
+        <g key={`hd${i}`}>
+          <circle cx={x} cy={y} r="4"
+            fill="#3b82f6"
+            stroke={dark ? '#161b27' : '#fff'} strokeWidth="1.5" />
+          <text x={x} y={y - 9}
+            textAnchor="middle" fontSize="9"
+            fill="#60a5fa" fontWeight="bold">{value}</text>
+        </g>
+      ))}
+ 
+      {/* Connector history → forecast */}
+      {connectorPath && (
+        <path d={connectorPath} fill="none"
+          stroke={dark ? 'rgba(255,255,255,0.12)' : '#e2e8f0'}
+          strokeWidth="1.5" strokeDasharray="3 4" />
+      )}
+ 
+      {/* ── FORECAST ── */}
+ 
+      {/* Forecast area */}
+      {fAreaPath && <path d={fAreaPath} fill="url(#fGrad2)" />}
+ 
+      {/* Forecast dashed line */}
+      {fPath && (
+        <path d={fPath} fill="none"
+          stroke="#10b981" strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round"
+          strokeDasharray="6 4" />
+      )}
+ 
+      {/* Forecast dots + value labels (non-event months) */}
+      {fCoords.map(({ x, y, value, eventBoost }, i) => {
+        if (eventBoost > 1.0) return null; // event dots rendered on top
         return (
-          <g key={p.month}>
-            <circle cx={x} cy={y} r="5" fill="#f59e0b"/>
-            <text x={x} y={y-10} textAnchor="middle" fontSize="8" fill="#f59e0b" fontWeight="bold">⚡</text>
+          <g key={`fd${i}`}>
+            <circle cx={x} cy={y} r="3.5"
+              fill="#10b981"
+              stroke={dark ? '#161b27' : '#fff'} strokeWidth="1.5" />
+            <text x={x} y={y - 9}
+              textAnchor="middle" fontSize="9"
+              fill="#10b981" fontWeight="bold">{value}</text>
           </g>
         );
       })}
-      {allPts.map((pt, i) => {
-        if (i % 2 !== 0) return null;
-        const {x} = coord(i, 0);
-        return <text key={i} x={x} y={H-4} textAnchor="middle" fontSize="9" fill={tc}>{pt.label.split(' ')[0].slice(0,3)}</text>;
-      })}
-      <g transform={`translate(${PAD},${H-20})`}>
-        <line x1="0" y1="0" x2="20" y2="0" stroke="#3b82f6" strokeWidth="2.5"/>
-        <text x="25" y="4" fontSize="9" fill={tc}>History</text>
-        <line x1="70" y1="0" x2="90" y2="0" stroke="#10b981" strokeWidth="2.5" strokeDasharray="4 3"/>
-        <text x="95" y="4" fontSize="9" fill={tc}>Forecast</text>
-        <circle cx="150" cy="0" r="4" fill="#f59e0b"/>
-        <text x="158" y="4" fontSize="9" fill={tc}>Event boost</text>
+ 
+      {/* X-axis: history labels */}
+      {hCoords.map(({ x, label }, i) => (
+        <text key={`hxl${i}`} x={x} y={PAD_T + innerH + 16}
+          textAnchor="middle" fontSize="9" fill={tc}>
+          {label?.split(' ')[0]?.slice(0, 3)}
+        </text>
+      ))}
+ 
+      {/* X-axis: forecast labels */}
+      {fCoords.map(({ x, label }, i) => (
+        <text key={`fxl${i}`} x={x} y={PAD_T + innerH + 16}
+          textAnchor="middle" fontSize="9" fill={tc}>
+          {label?.split(' ')[0]?.slice(0, 3)}
+        </text>
+      ))}
+ 
+      {/* ── EVENT BOOST DOTS — always on top ── */}
+      {fCoords
+        .filter(d => d.eventBoost > 1.0 || !!d.eventName)
+        .map(({ x, y, value, eventBoost, eventName }, i) => (
+          <g key={`ev${i}`}>
+            <circle cx={x} cy={y} r="15" fill="#f59e0b" opacity="0.08" />
+            <circle cx={x} cy={y} r="9"  fill="#f59e0b" opacity="0.18" />
+            <circle cx={x} cy={y} r="5.5"
+              fill="#f59e0b"
+              stroke={dark ? '#161b27' : '#fff'} strokeWidth="2" />
+            <text x={x} y={y - 13}
+              textAnchor="middle" fontSize="10"
+              fill="#f59e0b" fontWeight="900">{value}</text>
+            <text x={x} y={y - 23}
+              textAnchor="middle" fontSize="8"
+              fill="#f59e0b" opacity="0.9">
+              ⚡ ×{eventBoost.toFixed(2)}
+            </text>
+            {eventName && (
+              <text x={x} y={y + 20}
+                textAnchor="middle" fontSize="7"
+                fill="#f59e0b" opacity="0.75">
+                {eventName.split(' ').slice(0, 3).join(' ')}
+              </text>
+            )}
+          </g>
+        ))
+      }
+ 
+      {/* Legend */}
+      <g transform={`translate(${PAD_L}, ${PAD_T + innerH + 22})`}>
+        <line x1="0" y1="0" x2="18" y2="0"
+          stroke="#3b82f6" strokeWidth="2.5" />
+        <text x="22" y="4" fontSize="9" fill={tc}>History</text>
+        <line x1="68" y1="0" x2="86" y2="0"
+          stroke="#10b981" strokeWidth="2.5" strokeDasharray="4 3" />
+        <text x="90" y="4" fontSize="9" fill={tc}>Forecast</text>
+        <circle cx="148" cy="0" r="5" fill="#f59e0b" />
+        <text x="156" y="4" fontSize="9" fill={tc}>Event boost</text>
       </g>
     </svg>
   );
 }
-
 function EventsCalendar({ events, dark }: { events: EventSignal[]; dark: boolean }) {
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
-  if (events.length === 0) return <p style={{ fontSize: 12, color: muted, margin: 0, textAlign: 'center', padding: '20px 0' }}>No upcoming events for this product category.</p>;
+  const text   = dark ? '#fff' : '#111';
+ 
+  if (events.length === 0) {
+    return (
+      <p style={{ fontSize: 12, color: muted, margin: 0, textAlign: 'center', padding: '20px 0' }}>
+        No upcoming events for this product category.
+      </p>
+    );
+  }
+ 
+  // Confidence badge colours
+  const confColors: Record<string, string> = {
+    high:   '#10b981',
+    medium: '#f59e0b',
+    low:    '#ef4444',
+  };
+ 
+  // Multiplier source badge copy
+  const sourceLabel: Record<string, string> = {
+    real_data:          '✓ Real data',
+    category_baseline:  '📊 Category model',
+    tunisia_baseline:   '🇹🇳 Tunisia baseline',
+  };
+ 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {events.map(ev => {
-        const color = EVENT_COLORS[ev.type] ?? '#6b7280';
-        const emoji = EVENT_EMOJIS[ev.type] ?? '📅';
-        const urgent = ev.days_until <= 14;
+        const color   = EVENT_COLORS[ev.type] ?? '#6b7280';
+        const emoji   = EVENT_EMOJIS[ev.type] ?? '📅';
+        const urgent  = ev.days_until <= 14;
+        const mult    = ev.dynamic_multiplier ?? ev.boost_score;
+        const confCol = confColors[ev.confidence_label ?? 'low'] ?? '#6b7280';
+ 
+        // Demand increase sign + colour
+        const demandPct = ev.demand_increase_pct ?? Math.round((mult - 1) * 100);
+        const isPositive = demandPct >= 0;
+        const demandColor = isPositive ? '#10b981' : '#ef4444';
+        const demandSign  = isPositive ? '+' : '';
+ 
         return (
-          <div key={ev.slug} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 12, background: urgent ? `${color}10` : (dark ? 'rgba(255,255,255,0.03)' : '#fafafa'), border: urgent ? `1px solid ${color}30` : `1px solid ${border}` }}>
-            <span style={{ fontSize: 20, flexShrink: 0 }}>{emoji}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 11, fontWeight: 800, color, margin: '0 0 2px' }}>{ev.name}</p>
-              <p style={{ fontSize: 9, color: muted, margin: 0 }}>{new Date(ev.starts_at).toLocaleDateString('fr-TN')} → {new Date(ev.ends_at).toLocaleDateString('fr-TN')}</p>
+          <div
+            key={ev.slug}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0,
+              borderRadius: 14,
+              background: urgent
+                ? (dark ? `${color}12` : `${color}08`)
+                : (dark ? 'rgba(255,255,255,0.03)' : '#fafafa'),
+              border: urgent ? `1px solid ${color}30` : `1px solid ${border}`,
+              overflow: 'hidden',
+            }}
+          >
+            {/* ── Row 1: original card content (UNCHANGED layout) ── */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
+              <span style={{ fontSize: 22, flexShrink: 0 }}>{emoji}</span>
+ 
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 12, fontWeight: 800, color, margin: '0 0 2px' }}>
+                  {ev.name}
+                </p>
+                <p style={{ fontSize: 9, color: muted, margin: 0 }}>
+                  {new Date(ev.starts_at).toLocaleDateString('fr-TN')}
+                  {' → '}
+                  {new Date(ev.ends_at).toLocaleDateString('fr-TN')}
+                </p>
+              </div>
+ 
+              {/* Multiplier — now dynamic, highlighted */}
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <p
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 900,
+                    color,
+                    margin: '0 0 2px',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  ×{mult.toFixed(2)}
+                </p>
+                <p style={{ fontSize: 9, color: muted, margin: 0 }}>
+                  {ev.days_until === 0 ? '🔴 Now' : `in ${ev.days_until}d`}
+                </p>
+              </div>
             </div>
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <p style={{ fontSize: 13, fontWeight: 900, color, margin: '0 0 2px', letterSpacing: '-0.02em' }}>×{ev.boost_score.toFixed(2)}</p>
-              <p style={{ fontSize: 9, color: muted, margin: 0 }}>{ev.days_until === 0 ? '🔴 Now' : `in ${ev.days_until}d`}</p>
+ 
+            {/* ── Row 2: NEW enrichment strip ── */}
+            <div
+              style={{
+                background: dark ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.03)',
+                borderTop: `1px solid ${color}18`,
+                padding: '10px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
+              {/* Stat pills row */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+ 
+                {/* Demand increase */}
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '3px 9px',
+                    borderRadius: 999,
+                    background: `${demandColor}14`,
+                    border: `1px solid ${demandColor}30`,
+                    fontSize: 11,
+                    fontWeight: 900,
+                    color: demandColor,
+                  }}
+                >
+                  {demandSign}{demandPct}% demand
+                </span>
+ 
+                {/* Predicted units — only when product selected */}
+                {ev.predicted_units != null && (
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '3px 9px',
+                      borderRadius: 999,
+                      background: `${color}14`,
+                      border: `1px solid ${color}30`,
+                      fontSize: 11,
+                      fontWeight: 900,
+                      color,
+                    }}
+                  >
+                    📦 {ev.predicted_units} units
+                  </span>
+                )}
+ 
+                {/* Confidence */}
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '3px 9px',
+                    borderRadius: 999,
+                    background: `${confCol}12`,
+                    border: `1px solid ${confCol}25`,
+                    fontSize: 10,
+                    fontWeight: 800,
+                    color: confCol,
+                  }}
+                >
+                  {ev.confidence_label === 'high' ? '✓' : ev.confidence_label === 'medium' ? '◎' : '○'}
+                  {' '}{ev.confidence_score ?? 0}% confidence
+                </span>
+ 
+                {/* Data source */}
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '3px 9px',
+                    borderRadius: 999,
+                    background: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                    border: `1px solid ${border}`,
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: muted,
+                  }}
+                >
+                  {sourceLabel[ev.multiplier_source ?? 'tunisia_baseline'] ?? '🇹🇳 Tunisia baseline'}
+                </span>
+              </div>
+ 
+              {/* Top regions */}
+              {ev.top_regions && ev.top_regions.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    🗺️ Best regions:
+                  </span>
+                  {ev.top_regions.slice(0, 4).map((region: string) => (
+                    <span
+                      key={region}
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: '2px 7px',
+                        borderRadius: 999,
+                        background: `${color}10`,
+                        border: `1px solid ${color}20`,
+                        color,
+                      }}
+                    >
+                      {region}
+                    </span>
+                  ))}
+                </div>
+              )}
+ 
+              {/* Stock action */}
+              {ev.stock_action && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 10px',
+                    borderRadius: 8,
+                    background: urgent
+                      ? `${color}10`
+                      : (dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'),
+                    border: `1px solid ${urgent ? color + '25' : border}`,
+                  }}
+                >
+                  <span style={{ fontSize: 12 }}>📦</span>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: urgent ? color : muted, margin: 0 }}>
+                    {ev.stock_action}
+                  </p>
+                </div>
+              )}
+ 
+              {/* AI explanation */}
+              {ev.ai_explanation && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 7,
+                    padding: '7px 10px',
+                    borderRadius: 8,
+                    background: dark ? 'rgba(139,92,246,0.06)' : 'rgba(139,92,246,0.04)',
+                    border: '1px solid rgba(139,92,246,0.15)',
+                  }}
+                >
+                  <span style={{ fontSize: 11, flexShrink: 0, marginTop: 1 }}>🧠</span>
+                  <p
+                    style={{
+                      fontSize: 10,
+                      color: dark ? 'rgba(255,255,255,0.75)' : '#444',
+                      margin: 0,
+                      lineHeight: 1.5,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {ev.ai_explanation}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -399,7 +851,7 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
       // Events
       try {
         const catSlug   = (forecastRes.data as any).category_slug;
-        const eventsRes = await forecastApi.getEvents(catSlug);
+        const eventsRes = await forecastApi.getEvents(catSlug, productId);
         setEvents(eventsRes.data);
       } catch { /* events are non-critical */ }
 

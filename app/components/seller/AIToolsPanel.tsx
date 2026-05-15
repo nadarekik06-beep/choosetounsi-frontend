@@ -27,7 +27,7 @@ import {
   type RecommenderResult, type MarketReport,
 } from '@/lib/sellerAiApi';
 import { productsApi as sellerProductsApi } from '@/lib/sellerApi';
-
+import SalesForecastDashboard from '@/app/seller/components/SalesForecastDashboard';
 const fmt = (n: number) =>
   new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(n) + ' TND';
 
@@ -1550,7 +1550,7 @@ const [activeTool, setActiveTool] = useState(validTab);
 
       <div>
         {activeTool === 'price'       && <PriceOptimizerTool      products={products} dark={dark} initialProductId={initialProductId} autorun={autorun} />}
-        {activeTool === 'sales'       && <SalesPredictorTool       products={products} dark={dark} initialProductId={initialProductId} />}
+        {activeTool === 'sales'       && <SalesForecastDashboard   dark={dark} />}
         {activeTool === 'description' && <DescriptionGeneratorTool products={products} dark={dark} initialProductId={initialProductId} />}
         {activeTool === 'bundles'     && <BundleRecommenderTool    products={products} dark={dark} initialProductId={initialProductId} />}
       </div>

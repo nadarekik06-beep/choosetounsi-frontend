@@ -105,7 +105,7 @@ export default function TunisiaHeatmap({ regional, dark = true }: Props) {
   }, [regional]);
 
   const maxUnits = ranked[0]?.total_units ?? 1;
-  const reached  = byName.size;
+  const reached = Array.from(byName.values()).filter(r => r.total_units > 0).length;
   const top      = regional?.top_region;
 
   if (!regional?.has_data) return (

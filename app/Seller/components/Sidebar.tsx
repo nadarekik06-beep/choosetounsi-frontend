@@ -43,7 +43,6 @@ const GROWTH_NAV = [
 const RED_NAV = [
   { href: '/seller/analytics', label: 'Analytics', icon: BarChart2, accent: '#fca5a5' },
   { href: '/seller/ai-tools',  label: 'AI Tools',  icon: Brain,     accent: '#c4b5fd' },
-  { href: '/seller/analytics/forecast', label: 'Sales Forecast', icon: TrendingUp, accent: '#6ee7b7' }, // ← ADD
 
 ];
 const BLACK_NAV = [
