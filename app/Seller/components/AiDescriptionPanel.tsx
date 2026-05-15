@@ -23,7 +23,6 @@ const TONES = [
 
 const LANGS = [
   { value: 'fr', label: 'French'  },
-  { value: 'ar', label: 'Arabic'  },
   { value: 'en', label: 'English' },
 ];
 

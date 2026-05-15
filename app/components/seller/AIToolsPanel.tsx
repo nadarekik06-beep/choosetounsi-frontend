@@ -37,7 +37,7 @@ const RISK_COLORS: Record<string, string>       = { low: '#10b981', medium: '#f5
 const POSITIONING_COLORS: Record<string, string>= { underpriced: '#10b981', competitive: '#3b82f6', overpriced: '#ef4444', unknown: '#6b7280' };
 
 const TONES   = ['professional','casual','exciting','trust-focused'];
-const LANGS   = [{ value: 'fr', label: 'French' },{ value: 'ar', label: 'Arabic' },{ value: 'en', label: 'English' }];
+const LANGS   = [{ value: 'fr', label: 'French' },{ value: 'en', label: 'English' }];
 
 // ─── Analysis steps for multi-step loader ────────────────────────────────────
 const ANALYSIS_STEPS = [
@@ -1336,27 +1336,184 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
         {error && <p style={{ color:'#ef4444', fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
       </div>
       {r !== null && (
-        <div style={{ background:cardBg, borderRadius:18, border:'1px solid rgba(16,185,129,0.2)', padding:'18px 20px', display:'flex', flexDirection:'column', gap:12 }}>
-          {[{ key:'title', label:'SEO TITLE' },{ key:'short_description', label:'SHORT DESCRIPTION' },{ key:'description', label:'FULL DESCRIPTION' }].map(({ key, label }) => (
-            <div key={key} style={{ background:subBg, borderRadius:10, padding:'12px 14px', display:'flex', justifyContent:'space-between', gap:10 }}>
-              <div style={{ flex:1 }}>
-                <p style={{ fontSize:10, fontWeight:800, color:muted, margin:'0 0 4px', textTransform:'uppercase' }}>{label}</p>
-                <p style={{ fontSize: key==='title'?14:12, fontWeight: key==='title'?800:400, color:text, margin:0, lineHeight:1.5, whiteSpace:'pre-wrap' }}>{(r as any)[key]}</p>
-              </div>
-              <CopyBtn text={(r as any)[key]} dark={dark} />
-            </div>
-          ))}
-          <div>
-            <p style={{ fontSize:10, fontWeight:800, color:muted, margin:'0 0 8px', textTransform:'uppercase' }}>SEO KEYWORDS</p>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-              {(r.keywords ?? []).map((kw, i) => <span key={i} style={{ padding:'4px 10px', borderRadius:999, background:'rgba(59,130,246,0.12)', border:'1px solid rgba(59,130,246,0.25)', fontSize:11, fontWeight:700, color:'#60a5fa' }}>{kw}</span>)}
-            </div>
-          </div>
-          <Field dark={dark} label="Meta Title"       value={r.meta_title} />
-          <Field dark={dark} label="Meta Description" value={r.meta_description} />
-          <Field dark={dark} label="Call to Action"   value={r.call_to_action} />
-        </div>
-      )}
+  <div
+    style={{
+      background: cardBg,
+      borderRadius: 18,
+      border: '1px solid rgba(16,185,129,0.22)',
+      padding: '20px 22px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 14,
+      animation: 'fadeIn 0.4s ease',
+    }}
+  >
+    {/* ── Header ── */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 8,
+          background: 'rgba(16,185,129,0.12)',
+          border: '1px solid rgba(16,185,129,0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <FileText size={14} style={{ color: '#10b981' }} />
+      </div>
+      <p
+        style={{
+          fontSize: 12,
+          fontWeight: 900,
+          color: '#10b981',
+          margin: 0,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+        }}
+      >
+        Generated description
+      </p>
+      <span
+        style={{
+          marginLeft: 'auto',
+          fontSize: 9,
+          fontWeight: 800,
+          padding: '2px 7px',
+          borderRadius: 999,
+          background: 'rgba(16,185,129,0.1)',
+          border: '1px solid rgba(16,185,129,0.25)',
+          color: '#10b981',
+        }}
+      >
+        AI · Human-quality
+      </span>
+    </div>
+ 
+    {/* ── Short Description card ── */}
+    <div
+      style={{
+        background: dark ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+        borderRadius: 12,
+        border: `1px solid ${border}`,
+        padding: '14px 16px',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 8,
+        }}
+      >
+        <p
+          style={{
+            fontSize: 9,
+            fontWeight: 800,
+            color: muted,
+            margin: 0,
+            textTransform: 'uppercase',
+            letterSpacing: '0.07em',
+          }}
+        >
+          Short description
+        </p>
+        <CopyBtn text={r.short_description} dark={dark} />
+      </div>
+      <p
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: text,
+          margin: 0,
+          lineHeight: 1.55,
+        }}
+      >
+        {r.short_description}
+      </p>
+    </div>
+ 
+    {/* ── Full Description card ── */}
+    <div
+      style={{
+        background: dark ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+        borderRadius: 12,
+        border: `1px solid ${border}`,
+        padding: '14px 16px',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 8,
+        }}
+      >
+        <p
+          style={{
+            fontSize: 9,
+            fontWeight: 800,
+            color: muted,
+            margin: 0,
+            textTransform: 'uppercase',
+            letterSpacing: '0.07em',
+          }}
+        >
+          Full description
+        </p>
+        <CopyBtn text={r.description} dark={dark} />
+      </div>
+      <p
+        style={{
+          fontSize: 12,
+          fontWeight: 400,
+          color: text,
+          margin: 0,
+          lineHeight: 1.7,
+          whiteSpace: 'pre-wrap',
+          maxHeight: 240,
+          overflowY: 'auto',
+        }}
+      >
+        {r.description}
+      </p>
+    </div>
+ 
+    {/* ── Copy Both button ── */}
+    <button
+      onClick={() => {
+        const both =
+          `SHORT DESCRIPTION:\n${r.short_description}\n\n` +
+          `FULL DESCRIPTION:\n${r.description}`;
+        navigator.clipboard.writeText(both);
+      }}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 7,
+        padding: '10px 0',
+        borderRadius: 10,
+        border: '1.5px solid rgba(16,185,129,0.35)',
+        background: 'rgba(16,185,129,0.06)',
+        color: '#059669',
+        fontWeight: 700,
+        fontSize: 12,
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        transition: 'background 0.15s',
+      }}
+    >
+      <Copy size={13} />
+      Copy both fields
+    </button>
+  </div>
+)}
     </div>
   );
 }
