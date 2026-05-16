@@ -1,17 +1,8 @@
 'use client'
 
 /**
- * ════════════════════════════════════════════════════════════════════
- *  app/category/[slug]/page.tsx
- *  ChooseTounsi — SHEIN-level category page
- *
- *  CHANGES vs. previous version:
- *  1. ✅ Product type extended with `color_swatches` (returned by updated API)
- *  2. ✅ Card shows short_description (1-line clamp, below name)
- *  3. ✅ Card shows color swatches row (small circles, max 5 + overflow count)
- *  4. ✅ SponsoredProductsSection injected above product grid (Step 5)
- *  5. ✅ All existing logic, styles, and components are UNTOUCHED
- * ════════════════════════════════════════════════════════════════════
+ * app/category/[slug]/page.tsx
+ 
  */
 
 import {
@@ -33,18 +24,39 @@ interface PImg { id: number; image_path: string; is_primary: boolean; url?: stri
 
 interface ColorSwatch { id: number; value: string; color_hex: string | null }
 
+// ── NEW: promotion shape returned by the listing API ─────────────────────────
+interface ActivePromotion {
+  id: number
+  type: 'flash_sale' | 'discount'
+  name: string
+  discount_type: 'percentage' | 'fixed'
+  discount_value: number
+  discount_label: string
+  ends_at: string
+  flash_stock_remaining: number | null
+  is_flash_sale: boolean
+}
+
 interface Product {
-  id: number; name: string; slug: string; price: string; stock: number
+  id: number; name: string; slug: string
+  price: string                // ← original base price (ALWAYS present)
+  stock: number
   short_description?: string
   primary_image?: PImg | null; primary_image_url?: string | null
   images?: PImg[]
   seller?: { id: number; name: string }
-  original_price?: string; is_new?: boolean; is_bestseller?: boolean
+  // ── REMOVED: original_price — was never filled by listing API ────────────
+  is_new?: boolean; is_bestseller?: boolean
   color_swatches?: ColorSwatch[]
   variants?: { id: number; stock: number }[]
   is_sponsored?: boolean
   sponsored_priority?: number
+  // ── NEW: promotion overlay fields — sent by backend since PROMO FIX ──────
+  effective_price?: number | null   // discounted price; equals price when no promo
+  discount_amount?: number | null   // absolute savings amount
+  promotion?: ActivePromotion | null
 }
+
 interface Category { id: number; name: string; slug: string; icon: string | null; description?: string | null }
 interface Paginated { data: Product[]; current_page: number; last_page: number; total: number }
 interface AOpt { id: number; value: string; color_hex?: string | null }
@@ -52,6 +64,7 @@ interface Attr { id: number; slug: string; name: string; type: string; options: 
 type Sort = 'created_at' | 'views' | 'price_asc' | 'price_desc'
 type View = 'grid' | 'list'
 interface F { q: string; pMin: string; pMax: string; inStock: boolean; isPack: boolean; sort: Sort; attrs: Record<string, number[]> }
+
 // ─── Image helpers ────────────────────────────────────────────────────────────
 function primaryImg(p: Product): string | null {
   if (p.primary_image_url) return p.primary_image_url.startsWith('http') ? p.primary_image_url : `${ORIGIN}${p.primary_image_url}`
@@ -71,11 +84,54 @@ function galleryImgs(p: Product): string[] {
   if (pri && !out.includes(pri)) out.unshift(pri)
   return out.filter(Boolean)
 }
+
 const money = (v: string | number) => `${Number(v).toFixed(2)} DT`
-const discPct = (o: string, c: string) => { const p = Math.round(((+o - +c) / +o) * 100); return p > 0 ? p : null }
+
+/**
+ * getDisplayPrices — resolves what to show on the card
+ *
+ * Returns:
+ *   displayPrice   → the price shown large (effective/discounted)
+ *   originalPrice  → shown crossed-out (only when truly discounted)
+ *   discountBadge  → "-20%" label or null
+ */
+function getDisplayPrices(p: Product): {
+  displayPrice: number
+  originalPrice: number | null
+  discountBadge: string | null
+  isFlashSale: boolean
+} {
+  const base      = Number(p.price)                               // always the real price
+  const effective = p.effective_price != null
+    ? Number(p.effective_price)
+    : base
+
+  const hasDiscount = effective < base - 0.001                    // float-safe
+
+  if (!hasDiscount || !p.promotion) {
+    return { displayPrice: base, originalPrice: null, discountBadge: null, isFlashSale: false }
+  }
+
+  // Build badge label
+  let badge: string | null = null
+  if (p.promotion.discount_type === 'percentage') {
+    const pct = Math.round(((base - effective) / base) * 100)
+    if (pct > 0) badge = `-${pct}%`
+  } else {
+    const saved = base - effective
+    if (saved > 0) badge = `-${saved.toFixed(2)} DT`
+  }
+
+  return {
+    displayPrice:  effective,
+    originalPrice: base,
+    discountBadge: badge,
+    isFlashSale:   p.promotion.is_flash_sale,
+  }
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  PRODUCT CARD — unchanged except is_sponsored + sponsored_priority on Product type
+//  PRODUCT CARD
 // ══════════════════════════════════════════════════════════════════════════════
 function Card({ p, idx }: { p: Product; idx: number }) {
   const { addToCart } = useCart()
@@ -92,8 +148,10 @@ function Card({ p, idx }: { p: Product; idx: number }) {
   const tickRef  = useRef<ReturnType<typeof setInterval> | null>(null)
   const resetRef = useRef<ReturnType<typeof setTimeout>  | null>(null)
 
-  const badge = p.original_price ? discPct(p.original_price, p.price) : null
-  const oos   = p.stock <= 0
+  const oos = p.stock <= 0
+
+  // ── FIXED: use promotion-aware price helper ────────────────────────────────
+  const { displayPrice, originalPrice, discountBadge, isFlashSale } = getDisplayPrices(p)
 
   const swatches    = p.color_swatches ?? []
   const maxSwatches = 5
@@ -169,7 +227,7 @@ function Card({ p, idx }: { p: Product; idx: number }) {
           }
         </div>
 
-        {/* Badges — sponsored badge added here, stacks with existing badges */}
+        {/* ── Badges ── */}
         <div className="shc-badges">
           {p.is_sponsored && (
             <span className="shc-badge" style={{
@@ -180,9 +238,40 @@ function Card({ p, idx }: { p: Product; idx: number }) {
               ⭐ Sponsored
             </span>
           )}
-          {badge && <span className="shc-badge shc-disc">-{badge}%</span>}
+
+          {/* ── FIXED: Discount badge from real promotion data ── */}
+          {discountBadge && (
+            <span
+              className="shc-badge shc-disc"
+              style={isFlashSale ? {
+                background: 'linear-gradient(135deg,#dc2626,#f97316)',
+              } : undefined}
+            >
+              {discountBadge}
+            </span>
+          )}
+
           {p.is_new        && <span className="shc-badge shc-new">NEW</span>}
           {p.is_bestseller && <span className="shc-badge shc-hot">TOP</span>}
+
+          {/* ── Flash sale indicator ── */}
+          {p.promotion?.is_flash_sale && (
+            <span className="shc-badge" style={{
+              background: 'rgba(0,0,0,0.7)',
+              color: '#fff',
+              backdropFilter: 'blur(4px)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 3,
+            }}>
+              <span style={{
+                width: 5, height: 5, borderRadius: '50%',
+                background: '#fbbf24', display: 'inline-block',
+                animation: 'shcPulse 1.4s ease-in-out infinite',
+              }} />
+              ⚡ FLASH
+            </span>
+          )}
         </div>
 
         {oos && <div className="shc-oos"><span>Sold Out</span></div>}
@@ -225,11 +314,19 @@ function Card({ p, idx }: { p: Product; idx: number }) {
           <p className="shc-desc">{p.short_description}</p>
         )}
 
+        {/* ══════════════════════════════════════════════════════════════
+            FIXED PRICE BLOCK
+            Before: used p.original_price (never populated from listing API)
+            After:  uses effective_price (discounted) + price (original)
+        ══════════════════════════════════════════════════════════════ */}
         <div className="shc-prices">
-          <span className="shc-price">{money(p.price)}</span>
-          {p.original_price && +p.original_price > +p.price && <span className="shc-orig">{money(p.original_price)}</span>}
+          <span className="shc-price">{money(displayPrice)}</span>
+          {originalPrice !== null && (
+            <span className="shc-orig">{money(originalPrice)}</span>
+          )}
         </div>
 
+        {/* Color swatches */}
         {visSwatches.length > 0 && (
           <div className="shc-swatches">
             {visSwatches.map(sw => (
@@ -252,13 +349,16 @@ function Card({ p, idx }: { p: Product; idx: number }) {
   )
 }
 
-// ─── List card — UNCHANGED ────────────────────────────────────────────────────
+// ─── List card — same price fix applied ───────────────────────────────────────
 function ListCard({ p, idx }: { p: Product; idx: number }) {
   const { addToCart } = useCart()
   const [cs, setCs] = useState<'idle' | 'busy' | 'done'>('idle')
   const [err, setErr] = useState(false)
-  const pri  = primaryImg(p)
-  const badge = p.original_price ? discPct(p.original_price, p.price) : null
+  const pri = primaryImg(p)
+
+  // ── FIXED ───────────────────────────────────────────────────────────────────
+  const { displayPrice, originalPrice, discountBadge, isFlashSale } = getDisplayPrices(p)
+
   const handle = async (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation()
     if (p.stock <= 0 || cs !== 'idle') return
@@ -273,22 +373,43 @@ function ListCard({ p, idx }: { p: Product; idx: number }) {
     setCs('done')
     setTimeout(() => setCs('idle'), 2000)
   }
+
   return (
     <Link href={`/products/${p.slug}`} className="shlc" style={{ '--d': `${Math.min(idx * 0.04, 0.4)}s` } as React.CSSProperties}>
       <div className="shlc-img">
-        {pri && !err ? <img src={pri} alt={p.name} style={{ width:'100%',height:'100%',objectFit:'cover' }} onError={() => setErr(true)} /> : <div className="shc-noimg" />}
-        {badge && <span className="shc-badge shc-disc" style={{ position:'absolute',top:8,left:8,zIndex:2 }}>-{badge}%</span>}
+        {pri && !err
+          ? <img src={pri} alt={p.name} style={{ width:'100%',height:'100%',objectFit:'cover' }} onError={() => setErr(true)} />
+          : <div className="shc-noimg" />
+        }
+        {discountBadge && (
+          <span
+            className="shc-badge shc-disc"
+            style={{
+              position:'absolute', top:8, left:8, zIndex:2,
+              ...(isFlashSale ? { background: 'linear-gradient(135deg,#dc2626,#f97316)' } : {}),
+            }}
+          >
+            {discountBadge}
+          </span>
+        )}
       </div>
       <div className="shlc-body">
         {p.seller?.name && <p className="shc-seller">{p.seller.name}</p>}
         <p className="shlc-name">{p.name}</p>
         {p.short_description && <p className="shlc-desc">{p.short_description}</p>}
         <div className="shlc-foot">
+          {/* ── FIXED price block ── */}
           <div className="shc-prices">
-            <span className="shc-price">{money(p.price)}</span>
-            {p.original_price && +p.original_price > +p.price && <span className="shc-orig">{money(p.original_price)}</span>}
+            <span className="shc-price">{money(displayPrice)}</span>
+            {originalPrice !== null && (
+              <span className="shc-orig">{money(originalPrice)}</span>
+            )}
           </div>
-          <button className={`shc-add shc-add-sm${cs === 'done' ? ' done' : ''}`} onClick={handle} disabled={p.stock <= 0 || cs === 'busy'}>
+          <button
+            className={`shc-add shc-add-sm${cs === 'done' ? ' done' : ''}`}
+            onClick={handle}
+            disabled={p.stock <= 0 || cs === 'busy'}
+          >
             {cs === 'done' ? '✓ Added' : p.stock <= 0 ? 'Sold Out' : '+ Add'}
           </button>
         </div>
@@ -413,7 +534,6 @@ function Sidebar({ f, setF, total, catSlug, subSlug, mOpen, setMOpen }: {
         <div className="sbar-tgl-k"/>
       </div>
     </label>
-    {/* ── Pack filter ── */}
     <label className="sbar-trow">
       <span>Packs only</span>
       <div className={`sbar-tgl${f.isPack?' on':''}`} onClick={()=>upd({isPack:!f.isPack})}>
@@ -549,7 +669,8 @@ function Inner() {
   const [page, setPage]  = useState(1)
   const [view, setView]  = useState<View>('grid')
   const [mOpen,setMOpen] = useState(false)
-const [f, setF] = useState<F>({ q:'',pMin:'',pMax:'',inStock:false,isPack:false,sort:'created_at',attrs:{} })
+  const [f, setF] = useState<F>({ q:'',pMin:'',pMax:'',inStock:false,isPack:false,sort:'created_at',attrs:{} })
+
   useEffect(() => {
     const measure = () => {
       const navbar =
@@ -601,7 +722,8 @@ const [f, setF] = useState<F>({ q:'',pMin:'',pMax:'',inStock:false,isPack:false,
   },[prods,f.q])
 
   const subLabel=subSlug.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
-const fCount=[f.q!=='',f.inStock,f.isPack,f.pMin!==''||f.pMax!=='',subSlug!=='',Object.values(f.attrs).some(v=>v.length)].filter(Boolean).length
+  const fCount=[f.q!=='',f.inStock,f.isPack,f.pMin!==''||f.pMax!=='',subSlug!=='',Object.values(f.attrs).some(v=>v.length)].filter(Boolean).length
+
   return (
     <>
       <style>{`
@@ -616,6 +738,7 @@ const fCount=[f.q!=='',f.inStock,f.isPack,f.pMin!==''||f.pMax!=='',subSlug!=='',
         @keyframes shSlideR {from{transform:translateX(100%)}to{transform:translateX(0%)}}
         @keyframes shSlideIn{from{transform:translateX(-100%);opacity:0}to{transform:translateX(0);opacity:1}}
         @keyframes shPop    {0%{transform:scale(1)}50%{transform:scale(1.22)}100%{transform:scale(1)}}
+        @keyframes shcPulse {0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
 
         .shpage{min-height:100vh;background:#f6f6f7;font-family:'Outfit',sans-serif;color:#111}
 
@@ -725,7 +848,7 @@ const fCount=[f.q!=='',f.inStock,f.isPack,f.pMin!==''||f.pMax!=='',subSlug!=='',
         .shc-name{font-size:12.5px;font-weight:600;color:#1f2937;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
         .shc:hover .shc-name{color:#db142e}
         .shc-desc{font-size:10.5px;font-weight:400;color:#9ca3af;line-height:1.4;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;margin-top:1px}
-        .shc-prices{display:flex;align-items:baseline;gap:5px;margin-top:3px}
+        .shc-prices{display:flex;align-items:baseline;gap:5px;margin-top:3px;flex-wrap:wrap}
         .shc-price{font-size:13.5px;font-weight:900;color:#db142e}
         .shc-orig{font-size:10px;font-weight:500;color:#bbb;text-decoration:line-through}
         .shc-swatches{display:flex;align-items:center;gap:4px;margin-top:5px;flex-wrap:nowrap;overflow:hidden}
@@ -762,11 +885,10 @@ const fCount=[f.q!=='',f.inStock,f.isPack,f.pMin!==''||f.pMax!=='',subSlug!=='',
         @media(max-width:920px){
           .shlayout{grid-template-columns:1fr;padding:13px 15px 38px}
           .sbar-desk{display:none}.catbar-fb{display:flex}
-          .shhero-stats{display:none}.shgrid{grid-template-columns:repeat(3,1fr);gap:10px}
+          .shgrid{grid-template-columns:repeat(3,1fr);gap:10px}
         }
         @media(max-width:560px){
           .shgrid{grid-template-columns:repeat(2,1fr);gap:8px}
-          .shhero{padding:16px 15px}.shbc{padding:0 15px}
           .shlayout{padding:10px 10px 30px}.shlc-img{width:100px}
         }
       `}</style>
@@ -778,9 +900,8 @@ const fCount=[f.q!=='',f.inStock,f.isPack,f.pMin!==''||f.pMax!=='',subSlug!=='',
           <Sidebar f={f} setF={setF} total={prods?.total??0} catSlug={slug} subSlug={subSlug} mOpen={mOpen} setMOpen={setMOpen}/>
 
           <div>
-            {/* ── Sponsored products row — top of category, hidden when no results ── */}
             {!load && (
-               <SponsoredProductsSection
+              <SponsoredProductsSection
                 title="🔥 Trending in this Category"
                 categorySlug={slug}
                 limit={4}

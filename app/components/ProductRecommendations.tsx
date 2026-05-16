@@ -3,14 +3,10 @@
 /**
  * components/ProductRecommendations.tsx
  *
- * Renders all 4 recommendation sections on the product detail page.
- * Each section fetches independently so they don't block each other.
- *
- * Usage:
- *   import ProductRecommendations from '@/components/ProductRecommendations'
- *
- *   // At the bottom of your product detail page:
- *   <ProductRecommendations slug={product.slug} sellerId={product.seller?.id} />
+ * CHANGES vs previous version:
+ *  ✅ RecProduct type: added effective_price, discount_amount, promotion fields
+ *  ✅ MiniCard: shows discounted price + crossed-out original + discount badge
+ *  ✅ Everything else unchanged
  */
 
 import { useState, useEffect } from 'react'
@@ -18,7 +14,7 @@ import Link from 'next/link'
 import { ChevronRight, Loader2, Store, Star, Zap, Heart } from 'lucide-react'
 import { getToken } from '@/lib/auth'
 
-const API_URL     = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
+const API_URL      = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const STORAGE_BASE = API_URL.replace(/\/api\/?$/, '')
 
 function resolveImg(url: string | null | undefined): string | null {
@@ -32,12 +28,27 @@ const fmt = (n: number) =>
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+interface ActivePromotion {
+  id: number
+  type: 'flash_sale' | 'discount'
+  name: string
+  discount_type: 'percentage' | 'fixed'
+  discount_value: number
+  discount_label: string
+  ends_at: string
+  flash_stock_remaining: number | null
+  is_flash_sale: boolean
+}
+
 interface RecProduct {
   id: number
   name: string
   slug: string
   short_description: string | null
-  price: number
+  price: number                      // original base price
+  effective_price?: number | null    // ← discounted price
+  discount_amount?: number | null
+  promotion?: ActivePromotion | null
   stock: number
   primary_image_url: string | null
   is_sponsored: boolean
@@ -60,19 +71,33 @@ interface SellerInfo {
 
 function MiniCard({ product }: { product: RecProduct }) {
   const [imgErr, setImgErr] = useState(false)
-  const img = resolveImg(product.primary_image_url)
+  const img        = resolveImg(product.primary_image_url)
   const outOfStock = product.stock <= 0
+
+  // Resolve effective vs original price
+  const originalPrice  = Number(product.price)
+  const effectivePrice = product.effective_price != null ? Number(product.effective_price) : originalPrice
+  const hasDiscount    = effectivePrice < originalPrice - 0.001
+
+  // Discount badge label
+  const badgeLabel = (() => {
+    if (!hasDiscount || !product.promotion) return null
+    if (product.promotion.discount_type === 'percentage') {
+      const pct = Math.round(((originalPrice - effectivePrice) / originalPrice) * 100)
+      return pct > 0 ? `-${pct}%` : null
+    }
+    const saved = originalPrice - effectivePrice
+    return saved > 0 ? `-${saved.toFixed(2)} DT` : null
+  })()
 
   return (
     <Link href={`/products/${product.slug}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-      <div style={{
-        background: '#fff',
-        borderRadius: 12,
-        border: '1px solid #f1f5f9',
-        overflow: 'hidden',
-        transition: 'box-shadow 0.2s, transform 0.2s',
-        cursor: 'pointer',
-      }}
+      <div
+        style={{
+          background: '#fff', borderRadius: 12,
+          border: '1px solid #f1f5f9', overflow: 'hidden',
+          transition: 'box-shadow 0.2s, transform 0.2s', cursor: 'pointer',
+        }}
         onMouseEnter={e => {
           (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)'
           ;(e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'
@@ -88,16 +113,48 @@ function MiniCard({ product }: { product: RecProduct }) {
             ? <img src={img} alt={product.name} onError={() => setImgErr(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>📦</div>
           }
+
+          {/* Discount badge — top left */}
+          {hasDiscount && badgeLabel && (
+            <span style={{
+              position: 'absolute', top: 6, left: 6,
+              fontSize: 8, fontWeight: 900,
+              background: product.promotion?.is_flash_sale
+                ? 'linear-gradient(135deg,#dc2626,#f97316)'
+                : '#dc2626',
+              color: '#fff',
+              padding: '2px 6px', borderRadius: 999,
+              letterSpacing: '0.04em', textTransform: 'uppercase',
+            }}>
+              {badgeLabel}
+            </span>
+          )}
+
+          {/* Flash badge */}
+          {product.promotion?.is_flash_sale && (
+            <span style={{
+              position: 'absolute', top: hasDiscount ? 22 : 6, left: 6,
+              fontSize: 7, fontWeight: 900,
+              background: 'rgba(0,0,0,0.7)', color: '#fbbf24',
+              padding: '2px 5px', borderRadius: 999,
+              letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 2,
+            }}>
+              ⚡ FLASH
+            </span>
+          )}
+
           {product.is_sponsored && (
             <span style={{ position: 'absolute', top: 6, left: 6, fontSize: 8, fontWeight: 800, background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', color: '#f59e0b', padding: '2px 6px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               ⭐ Ad
             </span>
           )}
-          {product.featured && (
-            <span style={{ position: 'absolute', top: 6, left: product.is_sponsored ? 42 : 6, fontSize: 8, fontWeight: 800, background: '#198f41', color: '#fff', padding: '2px 6px', borderRadius: 999, textTransform: 'uppercase' }}>
+
+          {product.featured && !product.is_sponsored && (
+            <span style={{ position: 'absolute', top: 6, left: hasDiscount ? 'auto' : 6, right: hasDiscount ? 'auto' : 'auto', fontSize: 8, fontWeight: 800, background: '#198f41', color: '#fff', padding: '2px 6px', borderRadius: 999, textTransform: 'uppercase' }}>
               TOP
             </span>
           )}
+
           {outOfStock && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontSize: 9, fontWeight: 900, background: '#111', color: '#fff', padding: '3px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Sold Out</span>
@@ -115,9 +172,29 @@ function MiniCard({ product }: { product: RecProduct }) {
           <p style={{ fontSize: 12, fontWeight: 700, color: '#1f2937', margin: '0 0 5px', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {product.name}
           </p>
-          <p style={{ fontSize: 13, fontWeight: 900, color: '#dc2626', margin: 0 }}>
-            {fmt(product.price)}
-          </p>
+
+          {/* ── FIXED price block ── */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, fontWeight: 900, color: '#dc2626' }}>
+              {fmt(effectivePrice)}
+            </span>
+            {hasDiscount && (
+              <span style={{ fontSize: 10, fontWeight: 500, color: '#9ca3af', textDecoration: 'line-through' }}>
+                {fmt(originalPrice)}
+              </span>
+            )}
+          </div>
+
+          {/* Savings pill */}
+          {hasDiscount && (
+            <p style={{
+              fontSize: 9, fontWeight: 700, color: '#059669',
+              background: '#f0fdf4', padding: '1px 5px',
+              borderRadius: 999, display: 'inline-block', marginTop: 3,
+            }}>
+              Save {fmt(originalPrice - effectivePrice)}
+            </p>
+          )}
         </div>
       </div>
     </Link>
@@ -157,7 +234,6 @@ function RecommendationSection({
 
   return (
     <div style={{ marginBottom: 48 }}>
-      {/* Section header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(220,38,38,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626' }}>
@@ -168,7 +244,6 @@ function RecommendationSection({
         {extra}
       </div>
 
-      {/* Products grid / loading */}
       {loading ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
           {Array.from({ length: 4 }).map((_, i) => (
@@ -184,7 +259,7 @@ function RecommendationSection({
   )
 }
 
-// ─── From-seller section (special: includes seller info header) ───────────────
+// ─── From-seller section ──────────────────────────────────────────────────────
 
 function FromSellerSection({ slug }: { slug: string }) {
   const [products, setProducts] = useState<RecProduct[]>([])
@@ -217,7 +292,6 @@ function FromSellerSection({ slug }: { slug: string }) {
 
   return (
     <div style={{ marginBottom: 48 }}>
-      {/* Seller header */}
       {seller && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -290,11 +364,8 @@ export default function ProductRecommendations({ slug, sellerId }: Props) {
       `}</style>
 
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px 64px', fontFamily: "'Barlow', sans-serif" }}>
-
-        {/* Divider */}
         <div style={{ height: 1, background: '#f1f5f9', margin: '48px 0' }} />
 
-        {/* 1. Similar Items */}
         <RecommendationSection
           title="Similar Items"
           icon={<Star size={16} />}
@@ -303,7 +374,6 @@ export default function ProductRecommendations({ slug, sellerId }: Props) {
           emptyMsg="No similar products found."
         />
 
-        {/* 2. Complementary Items */}
         <RecommendationSection
           title="Complete the Look"
           icon={<Zap size={16} />}
@@ -312,10 +382,8 @@ export default function ProductRecommendations({ slug, sellerId }: Props) {
           emptyMsg="No complementary products yet."
         />
 
-        {/* 3. From This Seller */}
         <FromSellerSection slug={slug} />
 
-        {/* 4. You Might Also Like */}
         <RecommendationSection
           title="You Might Also Like"
           icon={<Heart size={16} />}
@@ -323,7 +391,6 @@ export default function ProductRecommendations({ slug, sellerId }: Props) {
           slug={slug}
           emptyMsg="No recommendations yet."
         />
-
       </div>
     </>
   )

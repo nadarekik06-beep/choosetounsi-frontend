@@ -5,15 +5,30 @@ import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
 import { isAuthenticated } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
+import PriceDisplay from '@/app/components/promotions/PriceDisplay'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+
+interface ActivePromotion {
+  id: number
+  type: 'flash_sale' | 'discount'
+  name: string
+  discount_type: 'percentage' | 'fixed'
+  discount_value: number
+  discount_label: string
+  ends_at: string
+  flash_stock_remaining: number | null
+  is_flash_sale: boolean
+}
 
 interface Product {
   id: number
   name: string
   slug: string
-  price: number | string
-  original_price?: number | string | null
+  price: number | string           // original base price
+  effective_price?: number | null  // ← NEW: discounted price from backend
+  discount_amount?: number | null
+  promotion?: ActivePromotion | null
   stock: number
   primary_image_url: string | null
   category?: { name: string; slug: string } | null
@@ -28,9 +43,6 @@ function CompactProductCard({ product }: { product: Product }) {
 
   const favorited  = isFavorited(product.id)
   const outOfStock = product.stock <= 0
-  const discount   = product.original_price
-    ? Math.round((1 - Number(product.price) / Number(product.original_price)) * 100)
-    : null
 
   const handleCart = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -53,7 +65,15 @@ function CompactProductCard({ product }: { product: Product }) {
           ? <img src={product.primary_image_url} alt={product.name} className="cpc-img" onError={() => setImgErr(true)} />
           : <div className="cpc-img-placeholder">🛍️</div>
         }
-        {discount && <span className="cpc-discount">-{discount}%</span>}
+
+        {/* Discount badge — only when a real promotion exists */}
+        {product.promotion && product.effective_price != null &&
+          Number(product.effective_price) < Number(product.price) && (
+          <span className="cpc-discount">
+            -{Math.round(((Number(product.price) - Number(product.effective_price)) / Number(product.price)) * 100)}%
+          </span>
+        )}
+
         {outOfStock && <div className="cpc-sold-overlay"><span>Sold Out</span></div>}
 
         <div className="cpc-hover-actions">
@@ -73,12 +93,14 @@ function CompactProductCard({ product }: { product: Product }) {
 
       <div className="cpc-info">
         <p className="cpc-name">{product.name}</p>
-        <div className="cpc-price-row">
-          <span className="cpc-price">{Number(product.price).toFixed(2)} DT</span>
-          {product.original_price && (
-            <span className="cpc-original">{Number(product.original_price).toFixed(2)} DT</span>
-          )}
-        </div>
+
+        {/* ── FIXED: replaced manual price JSX with PriceDisplay ── */}
+        <PriceDisplay
+          price={product.price}
+          effectivePrice={product.effective_price}
+          promotion={product.promotion}
+          size="sm"
+        />
       </div>
     </Link>
   )
@@ -109,40 +131,25 @@ export default function AboveFoldProducts() {
         .cpc-title{font-family:'Barlow',sans-serif;font-size:1.1rem;font-weight:800;color:#111;letter-spacing:-.02em;margin:0}
         .cpc-view-all{font-family:'Barlow',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#888;text-decoration:none;transition:color .18s}
         .cpc-view-all:hover{color:#dc2626}
-
-        /* Single horizontal scrollable row */
         .cpc-row{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:none;-ms-overflow-style:none}
         .cpc-row::-webkit-scrollbar{display:none}
-
-        /* Compact card — narrower than grid cards */
         .cpc-card{flex:0 0 auto;width:140px;text-decoration:none;color:inherit;display:block}
         @media(max-width:640px){.cpc-card{width:120px}}
-
         .cpc-img-wrap{position:relative;width:100%;aspect-ratio:3/4;background:#f7f7f7;border-radius:10px;overflow:hidden;border:1.5px solid #efefef;transition:transform .22s ease,box-shadow .22s ease}
         .cpc-card:hover .cpc-img-wrap{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.10)}
-
         .cpc-img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
         .cpc-card:hover .cpc-img{transform:scale(1.05)}
         .cpc-img-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.4rem}
-
         .cpc-discount{position:absolute;top:6px;left:6px;background:#dc2626;color:#fff;font-size:8px;font-weight:800;padding:2px 5px;border-radius:999px;letter-spacing:.05em;text-transform:uppercase}
-
         .cpc-sold-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center}
         .cpc-sold-overlay span{background:#111;color:#fff;font-size:8px;font-weight:900;padding:3px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.08em}
-
         .cpc-hover-actions{position:absolute;bottom:6px;right:5px;display:flex;flex-direction:column;gap:4px;opacity:0;transform:translateX(4px);transition:opacity .2s ease,transform .2s ease;z-index:2}
         .cpc-card:hover .cpc-hover-actions{opacity:1;transform:translateX(0)}
         .cpc-btn{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.9);border:1px solid rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#444;box-shadow:0 2px 6px rgba(0,0,0,0.10);transition:background .15s,color .15s}
         .cpc-btn:hover{background:#dc2626;color:#fff}
         .cpc-btn--added{background:#10b981!important;color:#fff!important}
-
         .cpc-info{padding:7px 2px 0}
         .cpc-name{font-family:'Barlow',sans-serif;font-size:11.5px;font-weight:700;color:#111;margin:0 0 4px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-        .cpc-price-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
-        .cpc-price{font-family:'Barlow',sans-serif;font-size:12px;font-weight:900;color:#dc2626}
-        .cpc-original{font-family:'Barlow',sans-serif;font-size:10px;color:#bbb;text-decoration:line-through}
-
-        /* skeleton */
         .cpc-skel{flex:0 0 auto;width:140px}
         .cpc-skel-img{aspect-ratio:3/4;border-radius:10px;background:linear-gradient(90deg,#efefef 25%,#f8f8f8 50%,#efefef 75%);background-size:600px 100%;animation:cpcShimmer 1.3s infinite linear}
         .cpc-skel-line{height:10px;border-radius:4px;margin-top:8px;background:linear-gradient(90deg,#efefef 25%,#f8f8f8 50%,#efefef 75%);background-size:600px 100%;animation:cpcShimmer 1.3s infinite linear}

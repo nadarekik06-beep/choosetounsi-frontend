@@ -101,6 +101,7 @@ export interface Product {
   price: number;
   stock: number;
   is_approved: boolean;
+  rejection_reason?: string | null;
   is_active: boolean;
   images?: ProductImage[];
   primary_image_url?: string | null;

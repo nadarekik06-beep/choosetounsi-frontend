@@ -32,7 +32,10 @@ export interface PromotionProduct {
   name: string
   slug: string
   price: number
+  effective_price: number   // ← discounted price
+  original_price: number    // ← base price (for strikethrough)
   primary_image_url: string | null
+  seller?: { name: string } | null
 }
 
 export interface Promotion {
@@ -58,13 +61,11 @@ export interface PromotionPayload {
   type: 'flash_sale' | 'discount'
   discount_type: 'percentage' | 'fixed'
   discount_value: number
-  starts_at: string   // ISO string
+  starts_at: string
   ends_at: string
   flash_stock?: number | null
   product_ids: number[]
 }
-
-// ─── Active promotion shape (returned by public API + ProductResource) ────────
 
 export interface ActivePromotion {
   id: number
@@ -81,23 +82,24 @@ export interface ActivePromotion {
 // ─── Seller Promotions API ────────────────────────────────────────────────────
 
 export const sellerPromotionsApi = {
-  getAll:  (params: Record<string, any> = {}) => {
+  getAll: (params: Record<string, any> = {}) => {
     const qs = new URLSearchParams(
-      Object.entries(params).filter(([,v]) => v != null && v !== '').map(([k,v]) => [k, String(v)])
+      Object.entries(params).filter(([, v]) => v != null && v !== '').map(([k, v]) => [k, String(v)])
     ).toString()
     return req<any>('GET', `/seller/promotions${qs ? `?${qs}` : ''}`)
   },
-  getOne:  (id: number)                     => req<any>('GET',    `/seller/promotions/${id}`),
-  stats:   ()                               => req<any>('GET',    '/seller/promotions/stats'),
-  create:  (payload: PromotionPayload)      => req<any>('POST',   '/seller/promotions', payload),
+  getOne:  (id: number)                              => req<any>('GET',    `/seller/promotions/${id}`),
+  stats:   ()                                        => req<any>('GET',    '/seller/promotions/stats'),
+  create:  (payload: PromotionPayload)               => req<any>('POST',   '/seller/promotions', payload),
   update:  (id: number, payload: Partial<PromotionPayload>) =>
-                                               req<any>('PUT',    `/seller/promotions/${id}`, payload),
-  delete:  (id: number)                     => req<any>('DELETE', `/seller/promotions/${id}`),
+                                                        req<any>('PUT',    `/seller/promotions/${id}`, payload),
+  delete:  (id: number)                              => req<any>('DELETE', `/seller/promotions/${id}`),
 }
 
 // ─── Public Promotions API ────────────────────────────────────────────────────
 
 export const publicPromotionsApi = {
-  flashSales:   ()             => req<any>('GET', '/flash-sales'),
-  forProduct:   (id: number)   => req<any>('GET', `/promotions/product/${id}`),
+  flashSales: () => req<any>('GET', '/flash-sales'),
+  discounts:  () => req<any>('GET', '/discounts'),      // ← NEW
+  forProduct: (id: number) => req<any>('GET', `/promotions/product/${id}`),
 }

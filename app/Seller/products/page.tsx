@@ -369,12 +369,49 @@ export default function ProductsPage() {
                             </span>
                           </td>
 
-                          {/* Approval */}
-                          <td style={{ padding: '12px 20px', textAlign: 'center' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999, background: product.is_approved ? 'rgba(59,130,246,0.12)' : 'rgba(245,158,11,0.12)', color: product.is_approved ? '#3b82f6' : '#f59e0b', border: `1px solid ${product.is_approved ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)'}` }}>
-                              {product.is_approved ? <><CheckCircle size={9} />Approved</> : <><Clock size={9} />Pending</>}
-                            </span>
-                          </td>
+                          {/* Approval — replace the existing cell */}
+<td style={{ padding: '12px 20px', textAlign: 'center' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+        <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999,
+            background: product.is_approved
+                ? 'rgba(59,130,246,0.12)'
+                : (product as any).rejection_reason
+                ? 'rgba(239,68,68,0.12)'
+                : 'rgba(245,158,11,0.12)',
+            color: product.is_approved
+                ? '#3b82f6'
+                : (product as any).rejection_reason
+                ? '#ef4444'
+                : '#f59e0b',
+            border: `1px solid ${product.is_approved
+                ? 'rgba(59,130,246,0.25)'
+                : (product as any).rejection_reason
+                ? 'rgba(239,68,68,0.25)'
+                : 'rgba(245,158,11,0.25)'}`,
+        }}>
+            {product.is_approved
+                ? <><CheckCircle size={9} />Approved</>
+                : (product as any).rejection_reason
+                ? <><XCircle size={9} />Rejected</>
+                : <><Clock size={9} />Pending</>
+            }
+        </span>
+        {/* Reason snippet */}
+        {!product.is_approved && (product as any).rejection_reason && (
+            <span style={{
+                fontSize: 9, color: '#ef4444', maxWidth: 120,
+                overflow: 'hidden', textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap', display: 'block',
+            }}
+                title={(product as any).rejection_reason}
+            >
+                {(product as any).rejection_reason}
+            </span>
+        )}
+    </div>
+</td>
 
                           {/* Actions */}
                           <td style={{ padding: '12px 20px' }}>

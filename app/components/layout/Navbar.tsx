@@ -183,7 +183,7 @@ function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible
 ══════════════════════════════════════════════════════════════ */
 const NAV_LINKS = [
   {label:"Shop",href:"/shop"},
-  {label:"Vendors",href:"/vendors"},
+  {label:"WearTounsi",href:"/brand"},
   {label:"Deals",href:"/deals"},
 ];
 
@@ -583,7 +583,7 @@ export default function Navbar() {
               </button>
               <button onClick={handleTextSearch} style={{background:"#dc2626",border:"none",padding:"0 16px",cursor:"pointer",color:"#fff"}}><SearchIcon/></button>
             </div>
-            {[{label:"Shop",href:"/shop"},{label:"Vendors",href:"/vendors"},{label:"Deals",href:"/deals"},{label:"My Orders",href:"/orders"},{label:"My Complaints",href:"/complaints"},{label:"Favorites",href:"/favorites"}].map(l=>(
+            {[{label:"Shop",href:"/shop"},{label:"WearTounsi",href:"/brand"},{label:"Deals",href:"/deals"},{label:"My Orders",href:"/orders"},{label:"My Complaints",href:"/complaints"},{label:"Favorites",href:"/favorites"}].map(l=>(
               <Link key={l.href} href={l.href} onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>{l.label}</Link>
             ))}
             <button onClick={handleCart} style={{fontSize:14,fontWeight:600,color:"#374151",background:"none",border:"none",cursor:"pointer",textAlign:"left",padding:"8px 0",borderBottom:"1px solid #f5f5f5",display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}>

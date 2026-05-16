@@ -180,11 +180,11 @@ export default function ProductDetailPage() {
   const router  = useRouter();
   const id      = Number(params.id);
 
-  const [product,     setProduct]     = useState<ProductDetail | null>(null);
-  const [allImages,   setAllImages]   = useState<ProductImage[]>([]);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState<string | null>(null);
-  const [modalOpen,   setModalOpen]   = useState(false);
+  const [product,   setProduct]   = useState<ProductDetail | null>(null);
+  const [allImages, setAllImages] = useState<ProductImage[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const fetchProduct = useCallback(async () => {
     setLoading(true);
@@ -423,7 +423,9 @@ export default function ProductDetailPage() {
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
             <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Status</h3>
 
+            {/* Status rows — clean space-y-2.5 with no interruptions */}
             <div className="space-y-2.5">
+
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
                   <div className="w-5 h-5 rounded-md bg-slate-50 flex items-center justify-center">
@@ -471,7 +473,25 @@ export default function ProductDetailPage() {
                   {product.featured ? 'Yes' : 'No'}
                 </span>
               </div>
+
             </div>
+
+            {/* ── Rejection Reason — outside space-y-2.5 so row spacing is undisturbed ── */}
+            {!product.is_approved && (product as any).rejection_reason && (
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <div className="flex items-start gap-2.5 p-3 bg-red-50 border border-red-100 rounded-xl">
+                  <AlertTriangle size={14} className="text-red-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-red-500 mb-1">
+                      Rejection Reason
+                    </p>
+                    <p className="text-xs text-red-700 leading-relaxed">
+                      {(product as any).rejection_reason}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Timeline Card */}
