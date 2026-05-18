@@ -26,15 +26,20 @@ import {
 import { useTheme } from '../layout';
 import { useSubscription } from '@/app/hooks/useSubscription';
 import { useState } from 'react';
+import { Wallet } from 'lucide-react'
 
 const STORE_NAV = [
   { href: '/seller',          label: 'Overview',   icon: LayoutDashboard },
   { href: '/seller/products', label: 'Products',   icon: Package },
   { href: '/seller/packs',    label: 'Packs',      icon: Package2 },
   { href: '/seller/orders',   label: 'Orders',     icon: ShoppingBag },
+  { href: '/seller/earnings', label: 'Earnings', icon: Wallet },
+
 ];
 const CUSTOMER_NAV = [
   { href: '/seller/complaints', label: 'Complaints', icon: AlertTriangle },
+    { href: '/seller/reviews', icon: Star, label: 'Reviews & Reputation' },
+
 ];
 const GROWTH_NAV = [
   { href: '/seller/promotions', label: 'Promotions',  icon: Tag },

@@ -42,7 +42,7 @@ export default function SponsoredBadge({ compact = false, className }: Sponsored
           pointerEvents:  'none',
         }}
       >
-        ⭐ Sponsored
+        ⭐ Trending 
       </span>
     );
   }
@@ -68,7 +68,7 @@ export default function SponsoredBadge({ compact = false, className }: Sponsored
         boxShadow:     '0 2px 8px rgba(245,158,11,0.2)',
       }}
     >
-      ⭐ Sponsored
+      ⭐ Trending
     </span>
   );
 }

@@ -1,9 +1,10 @@
 import { Syne } from "next/font/google";
 import "./globals.css";
-import { CartProvider } from '@/context/CartContext'
-import FlashToast from '@/components/FlashToast'
-import CartDrawer from '@/components/CartDrawer'
-import SupportChatWidget from '@/components/SupportChatWidget'   // ✅ NEW
+import { CartProvider } from '@/context/CartContext';
+import FlashToast from '@/components/FlashToast';
+import CartDrawer from '@/components/CartDrawer';
+import SupportChatWidget from '@/components/SupportChatWidget';
+import ReviewPromptPopup from '@/app/components/reviews/ReviewPromptPopup'; // ✅ ADD THIS
 
 const syne = Syne({
   subsets: ["latin"],
@@ -26,11 +27,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={syne.variable}>
-<body className="antialiased text-zinc-900">        <CartProvider>
+      <body className="antialiased text-zinc-900">
+        <CartProvider>
           {children}
           <FlashToast />
           <CartDrawer />
-          <SupportChatWidget />   {/* ✅ Globally available on every page */}
+          <SupportChatWidget />
+          <ReviewPromptPopup />  {/* ✅ INSIDE CartProvider so auth works */}
         </CartProvider>
       </body>
     </html>

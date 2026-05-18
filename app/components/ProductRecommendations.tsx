@@ -145,7 +145,7 @@ function MiniCard({ product }: { product: RecProduct }) {
 
           {product.is_sponsored && (
             <span style={{ position: 'absolute', top: 6, left: 6, fontSize: 8, fontWeight: 800, background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', color: '#f59e0b', padding: '2px 6px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              ⭐ Ad
+              ⭐ Trending
             </span>
           )}
 

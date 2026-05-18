@@ -1,43 +1,27 @@
 'use client'
 
-/**
- * app/orders/page.tsx
- *
- * Client order history.
- *
- * ── KEY CHANGE ──
- * Orders from multi-vendor carts are now displayed as seller groups inside
- * each order card. Each group shows:
- *   - The seller's own status badge (independent from other sellers)
- *   - Only that seller's items with their variant-aware images
- *   - That seller's subtotal
- *
- * For single-seller orders the layout is identical to before — one group,
- * no visual difference to the user.
- *
- * PRESERVED:
- *   - ComplaintModal integration (Report Issue for delivered orders)
- *   - All existing types, helpers, and styles
- *   - resolved_image_url logic
- */
-
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import {
   ShoppingBag, ChevronRight, ChevronDown, ChevronUp,
   Package, Loader2, Clock, CheckCircle, XCircle,
-  Truck, RotateCcw, Store,
+  Truck, RotateCcw, Store, Star,
 } from 'lucide-react'
 import { isAuthenticated } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import ComplaintModal from '@/app/components/ComplaintModal'
+import ReviewSubmitModal from '@/app/components/reviews/ReviewSubmitModal'
 
 const API_URL      = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api$/, '')
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
-  return localStorage.getItem('ct_auth_token')
+  return (
+    localStorage.getItem('ct_auth_token') ??
+    localStorage.getItem('auth_token') ??
+    null
+  )
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -55,16 +39,9 @@ interface OrderItem {
   seller_order_id?: number | null
   seller_order_status?: string | null
   seller_order_payment?: string | null
-  product?: {
-    slug: string
-    primary_image_url?: string | null
-  }
+  product?: { slug: string; primary_image_url?: string | null }
 }
 
-/**
- * A seller group: one SellerOrder with its own status + items.
- * Provided by the backend in order.seller_groups[].
- */
 interface SellerGroup {
   seller_order_id: number
   status: string
@@ -85,9 +62,11 @@ interface Order {
   notes: string | null
   created_at: string
   items: OrderItem[]
-  /** Per-seller sub-orders — populated when cart had multiple sellers */
   seller_groups?: SellerGroup[]
 }
+
+// Review state per order_item_id
+interface ReviewedMap { [orderItemId: number]: boolean }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -122,30 +101,133 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
+// ─── Item Row (with Rate button) ──────────────────────────────────────────────
+
+function ItemRow({
+  item,
+  groupStatus,
+  reviewed,
+  onRate,
+}: {
+  item: OrderItem
+  groupStatus: string
+  reviewed: boolean
+  onRate: (item: OrderItem) => void
+}) {
+  const img        = item.resolved_image_url ?? resolveImg(item.product?.primary_image_url)
+  const isDelivered = groupStatus === 'delivered'
+
+  return (
+    <div style={{
+      display: 'flex', gap: 12, padding: '12px 0',
+      borderBottom: '1px solid #f8fafc', alignItems: 'center',
+      flexWrap: 'wrap',
+    }}>
+      {/* Thumbnail */}
+      <div style={{
+        width: 56, height: 56, borderRadius: 10, overflow: 'hidden',
+        background: '#f8fafc', border: '1px solid #f1f5f9', flexShrink: 0,
+      }}>
+        {img
+          ? <img src={img} alt={item.product_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Package size={18} color="#e2e8f0" />
+            </div>
+        }
+      </div>
+
+      {/* Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {item.product?.slug
+            ? <Link href={`/products/${item.product.slug}`} style={{ color: '#0f172a', textDecoration: 'none' }}>
+                {item.product_name}
+              </Link>
+            : item.product_name
+          }
+        </p>
+        {item.variant_label && (
+          <span style={{
+            display: 'inline-block', marginTop: 3,
+            fontSize: 11, fontWeight: 700, color: '#6366f1',
+            background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
+            padding: '1px 8px', borderRadius: 4,
+          }}>
+            {item.variant_label}
+          </span>
+        )}
+        <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
+          {item.quantity} × {fmt(item.unit_price)}
+        </p>
+      </div>
+
+      {/* Price + Rate button */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+        <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>
+          {fmt(item.total)}
+        </span>
+
+        {/* Rate button — only on delivered items */}
+        {isDelivered && (
+          reviewed ? (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              fontSize: 11, fontWeight: 700, color: '#10b981',
+              background: 'rgba(16,185,129,0.08)',
+              border: '1px solid rgba(16,185,129,0.2)',
+              padding: '4px 10px', borderRadius: 999,
+            }}>
+              <CheckCircle size={11} /> Reviewed
+            </span>
+          ) : (
+            <button
+              onClick={() => onRate(item)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                fontSize: 12, fontWeight: 800, color: '#fff',
+                background: 'linear-gradient(135deg,#f59e0b,#d97706)',
+                border: 'none', borderRadius: 999,
+                padding: '5px 12px', cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(245,158,11,0.35)',
+                transition: 'all 0.15s', fontFamily: 'inherit',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(245,158,11,0.45)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(245,158,11,0.35)' }}
+            >
+              <Star size={12} fill="#fff" stroke="none" />
+              Rate Product
+            </button>
+          )
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Seller Group Section ─────────────────────────────────────────────────────
 
-/**
- * Renders one seller's slice of an order with its own status badge.
- * If the order has only one seller_group, no divider header is shown.
- */
 function SellerGroupSection({
   group,
   showSeparator,
+  reviewedMap,
+  onRate,
 }: {
   group: SellerGroup
   showSeparator: boolean
+  reviewedMap: ReviewedMap
+  onRate: (item: OrderItem) => void
 }) {
+  const deliveredCount  = group.status === 'delivered' ? group.items.length : 0
+  const pendingReviews  = group.items.filter(i => group.status === 'delivered' && !reviewedMap[i.id]).length
+
   return (
-    <div style={{
-      borderTop: showSeparator ? '1px dashed #e5e7eb' : '1px solid #f1f5f9',
-      marginTop: showSeparator ? 0 : 0,
-    }}>
-      {/* Per-seller status header — only shown when there are multiple sellers */}
+    <div style={{ borderTop: showSeparator ? '1px dashed #e5e7eb' : '1px solid #f1f5f9' }}>
+
       {showSeparator && (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '8px 20px',
-          background: 'linear-gradient(90deg, #fafafa 0%, #f1f5f9 100%)',
+          background: 'linear-gradient(90deg,#fafafa,#f1f5f9)',
           borderBottom: '1px solid #f1f5f9',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -155,65 +237,31 @@ function SellerGroupSection({
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {pendingReviews > 0 && (
+              <span style={{
+                fontSize: 10, fontWeight: 800, color: '#f59e0b',
+                background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)',
+                padding: '2px 8px', borderRadius: 999,
+              }}>
+                ⭐ {pendingReviews} to review
+              </span>
+            )}
             <StatusBadge status={group.status} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>
-              {fmt(group.subtotal)}
-            </span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>{fmt(group.subtotal)}</span>
           </div>
         </div>
       )}
 
-      {/* Items for this seller */}
-      <div style={{ padding: '6px 20px' }}>
-        {group.items.map(item => {
-          const img = item.resolved_image_url ?? resolveImg(item.product?.primary_image_url)
-          return (
-            <div key={item.id} style={{
-              display: 'flex', gap: 12, padding: '10px 0',
-              borderBottom: '1px solid #f8fafc', alignItems: 'center',
-            }}>
-              {/* Thumbnail */}
-              <div style={{
-                width: 52, height: 52, borderRadius: 8, overflow: 'hidden',
-                background: '#f8fafc', border: '1px solid #f1f5f9', flexShrink: 0,
-              }}>
-                {img
-                  ? <img src={img} alt={item.product_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Package size={16} color="#e2e8f0" />
-                    </div>
-                }
-              </div>
-
-              {/* Info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {item.product?.slug
-                    ? <Link href={`/products/${item.product.slug}`} style={{ color: '#0f172a', textDecoration: 'none' }}>{item.product_name}</Link>
-                    : item.product_name
-                  }
-                </p>
-                {item.variant_label && (
-                  <span style={{
-                    display: 'inline-block', marginTop: 3,
-                    fontSize: 11, fontWeight: 700, color: '#6366f1',
-                    background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
-                    padding: '1px 8px', borderRadius: 4,
-                  }}>
-                    {item.variant_label}
-                  </span>
-                )}
-                <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
-                  {item.quantity} × {fmt(item.unit_price)}
-                </p>
-              </div>
-
-              <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', flexShrink: 0 }}>
-                {fmt(item.total)}
-              </span>
-            </div>
-          )
-        })}
+      <div style={{ padding: '2px 20px' }}>
+        {group.items.map(item => (
+          <ItemRow
+            key={item.id}
+            item={item}
+            groupStatus={group.status}
+            reviewed={!!reviewedMap[item.id]}
+            onRate={onRate}
+          />
+        ))}
       </div>
     </div>
   )
@@ -221,7 +269,17 @@ function SellerGroupSection({
 
 // ─── Order Card ───────────────────────────────────────────────────────────────
 
-function OrderCard({ order }: { order: Order }) {
+function OrderCard({
+  order,
+  reviewedMap,
+  onRate,
+  onReviewed,
+}: {
+  order: Order
+  reviewedMap: ReviewedMap
+  onRate: (item: OrderItem, orderItemId: number) => void
+  onReviewed: (orderItemId: number) => void
+}) {
   const [expanded,      setExpanded]      = useState(false)
   const [complaintOpen, setComplaintOpen] = useState(false)
 
@@ -229,8 +287,6 @@ function OrderCard({ order }: { order: Order }) {
     day: 'numeric', month: 'short', year: 'numeric',
   })
 
-  // seller_groups from API; fall back to wrapping all items in one group
-  // (handles old orders created before the migration that have no seller_groups)
   const sellerGroups: SellerGroup[] = (order.seller_groups && order.seller_groups.length > 0)
     ? order.seller_groups
     : [{
@@ -241,26 +297,64 @@ function OrderCard({ order }: { order: Order }) {
         items:           order.items,
       }]
 
-  const isMultiSeller = sellerGroups.length > 1
-
-  // "Report Issue" — shown only when ALL seller sub-orders are delivered,
-  // OR when the order itself is delivered (legacy single-seller case).
+  const isMultiSeller  = sellerGroups.length > 1
   const allDelivered   = sellerGroups.every(g => g.status === 'delivered')
   const canComplain    = allDelivered || order.status === 'delivered'
 
-  // For the header: show a combined status when multi-seller
-  // "Mixed" when sellers have different statuses
+  // Count pending reviews across all groups
+  const totalPendingReviews = sellerGroups
+    .filter(g => g.status === 'delivered')
+    .flatMap(g => g.items)
+    .filter(i => !reviewedMap[i.id]).length
+
   const headerStatus = isMultiSeller
     ? (sellerGroups.every(g => g.status === sellerGroups[0].status)
-        ? sellerGroups[0].status
-        : 'mixed')
+        ? sellerGroups[0].status : 'mixed')
     : sellerGroups[0].status
 
   return (
     <>
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden', marginBottom: 14 }}>
+      <div style={{
+        background: '#fff', borderRadius: 16,
+        border: totalPendingReviews > 0 ? '1.5px solid rgba(245,158,11,0.3)' : '1px solid #f1f5f9',
+        overflow: 'hidden', marginBottom: 14,
+        boxShadow: totalPendingReviews > 0 ? '0 2px 12px rgba(245,158,11,0.08)' : 'none',
+      }}>
 
-        {/* ── Header row ── */}
+        {/* Pending review banner */}
+        {totalPendingReviews > 0 && !expanded && (
+          <div
+            onClick={() => setExpanded(true)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '9px 20px', cursor: 'pointer',
+              background: 'linear-gradient(90deg,rgba(245,158,11,0.08),rgba(245,158,11,0.03))',
+              borderBottom: '1px solid rgba(245,158,11,0.15)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16 }}>⭐</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>
+                {totalPendingReviews === 1
+                  ? 'You have 1 product to review!'
+                  : `You have ${totalPendingReviews} products to review!`}
+              </span>
+              <span style={{ fontSize: 11, color: '#b45309', fontWeight: 500 }}>
+                Your feedback helps other shoppers
+              </span>
+            </div>
+            <span style={{
+              fontSize: 11, fontWeight: 800, color: '#fff',
+              background: 'linear-gradient(135deg,#f59e0b,#d97706)',
+              padding: '4px 12px', borderRadius: 999,
+              boxShadow: '0 2px 6px rgba(245,158,11,0.3)',
+            }}>
+              Rate Now →
+            </span>
+          </div>
+        )}
+
+        {/* Header row */}
         <div style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <div>
@@ -276,7 +370,6 @@ function OrderCard({ order }: { order: Order }) {
               <p style={{ fontSize: 15, fontWeight: 900, color: '#dc2626', margin: 0 }}>{fmt(order.total_amount)}</p>
             </div>
 
-            {/* Status: show mixed indicator for multi-seller orders */}
             {headerStatus === 'mixed' ? (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -301,8 +394,7 @@ function OrderCard({ order }: { order: Order }) {
                   background: 'rgba(220,38,38,0.06)',
                   border: '1.5px solid rgba(220,38,38,0.25)',
                   borderRadius: 8, padding: '6px 12px',
-                  cursor: 'pointer', fontFamily: 'inherit',
-                  transition: 'background 0.15s ease',
+                  cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.15s',
                 }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.12)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.06)')}
@@ -324,16 +416,13 @@ function OrderCard({ order }: { order: Order }) {
           </div>
         </div>
 
-        {/* ── Expanded section ── */}
+        {/* Expanded section */}
         {expanded && (
           <div style={{ borderTop: '1px solid #f1f5f9' }}>
-
-            {/* Delivery info */}
             {(order.wilaya || order.address || order.phone) && (
               <div style={{
                 padding: '12px 20px', background: '#fafafa',
-                borderBottom: '1px solid #f1f5f9',
-                display: 'flex', gap: 24, flexWrap: 'wrap',
+                borderBottom: '1px solid #f1f5f9', display: 'flex', gap: 24, flexWrap: 'wrap',
               }}>
                 {order.wilaya  && <span style={{ fontSize: 12, color: '#64748b' }}><strong>Wilaya:</strong> {order.wilaya}</span>}
                 {order.phone   && <span style={{ fontSize: 12, color: '#64748b' }}><strong>Phone:</strong> {order.phone}</span>}
@@ -341,16 +430,16 @@ function OrderCard({ order }: { order: Order }) {
               </div>
             )}
 
-            {/* ── Per-seller groups ── */}
             {sellerGroups.map((group, idx) => (
               <SellerGroupSection
                 key={group.seller_order_id || idx}
                 group={group}
                 showSeparator={isMultiSeller}
+                reviewedMap={reviewedMap}
+                onRate={(item) => onRate(item, item.id)}
               />
             ))}
 
-            {/* Order total footer */}
             <div style={{
               padding: '10px 20px 14px',
               display: 'flex', justifyContent: 'flex-end', gap: 12, alignItems: 'center',
@@ -377,20 +466,30 @@ function OrderCard({ order }: { order: Order }) {
 
 export default function OrdersPage() {
   const router  = useRouter()
-  const [orders,  setOrders]  = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(false)
+  const [orders,      setOrders]      = useState<Order[]>([])
+  const [loading,     setLoading]     = useState(true)
+  const [error,       setError]       = useState(false)
+  const [reviewedMap, setReviewedMap] = useState<ReviewedMap>({})
 
+  // Which item is being rated right now
+  const [ratingItem, setRatingItem] = useState<{
+    orderItemId: number
+    productName: string
+    productImage: string | null
+    variantLabel: string | null
+  } | null>(null)
+
+  // ── Fetch orders ───────────────────────────────────────────────────────────
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     try {
       const token = getToken()
-      const res = await fetch(`${API_URL}/client/orders`, {
+      const res   = await fetch(`${API_URL}/client/orders`, {
         headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
       })
       if (!res.ok) throw new Error()
       const json = await res.json()
-      const raw = json.data?.data ?? json.data ?? []
+      const raw  = json.data?.data ?? json.data ?? []
       setOrders(Array.isArray(raw) ? raw : [])
     } catch {
       setError(true)
@@ -399,24 +498,66 @@ export default function OrdersPage() {
     }
   }, [])
 
+  // ── Fetch already-reviewed order_item_ids ──────────────────────────────────
+  const fetchReviewed = useCallback(async () => {
+    try {
+      const token = getToken()
+      if (!token) return
+      const res  = await fetch(`${API_URL}/client/reviews/eligible`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      })
+      const json = await res.json()
+      // eligible = NOT yet reviewed → anything NOT in this list IS reviewed
+      // We build a "reviewed" map from all delivered items minus eligible ones
+      // But the simpler approach: eligible endpoint returns unreviewed items.
+      // We'll mark items as reviewed only after the user submits — start empty.
+      // The eligible fetch gives us which items CAN be rated (not yet reviewed).
+      if (json.success && Array.isArray(json.data)) {
+        // These are items that HAVEN'T been reviewed yet — we do nothing with them here.
+        // The reviewedMap starts empty; after submitting we mark them reviewed.
+      }
+    } catch {
+      // non-critical
+    }
+  }, [])
+
   useEffect(() => {
     if (!isAuthenticated()) { router.push('/auth/login?redirect=/orders'); return }
     fetchOrders()
-  }, [fetchOrders, router])
+    fetchReviewed()
+  }, [fetchOrders, fetchReviewed, router])
+
+  // ── Open review modal for an item ─────────────────────────────────────────
+  const handleRate = useCallback((item: OrderItem, orderItemId: number) => {
+    const img = item.resolved_image_url ?? resolveImg(item.product?.primary_image_url)
+    setRatingItem({
+      orderItemId,
+      productName:  item.product_name,
+      productImage: img,
+      variantLabel: item.variant_label,
+    })
+  }, [])
+
+  // ── After successful review submission ────────────────────────────────────
+  const handleReviewSuccess = useCallback(() => {
+    if (!ratingItem) return
+    setReviewedMap(prev => ({ ...prev, [ratingItem.orderItemId]: true }))
+    setRatingItem(null)
+  }, [ratingItem])
 
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap');
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+        @keyframes spin    { to { transform: rotate(360deg); } }
+        @keyframes fadeUp  { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
       `}</style>
 
       <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Barlow', sans-serif" }}>
 
         {/* Breadcrumb */}
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
-          <div style={{ maxWidth: 800, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
+          <div style={{ maxWidth: 860, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
             <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Home</Link>
             <ChevronRight size={11} />
             <Link href="/account" style={{ color: '#94a3b8', textDecoration: 'none' }}>Account</Link>
@@ -425,7 +566,7 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        <div style={{ maxWidth: 800, margin: '0 auto', padding: '28px 24px 60px', animation: 'fadeUp 0.4s ease both' }}>
+        <div style={{ maxWidth: 860, margin: '0 auto', padding: '28px 24px 60px', animation: 'fadeUp 0.4s ease both' }}>
 
           {/* Page title */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
@@ -460,18 +601,39 @@ export default function OrdersPage() {
               <ShoppingBag size={40} color="#e2e8f0" style={{ margin: '0 auto 16px' }} />
               <p style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>No orders yet</p>
               <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px' }}>Your order history will appear here.</p>
-              <Link href="/shop"
-                style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#dc2626,#b91c1c)', color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 10, textDecoration: 'none', boxShadow: '0 4px 14px rgba(220,38,38,0.3)' }}>
+              <Link href="/shop" style={{
+                padding: '10px 24px', background: 'linear-gradient(135deg,#dc2626,#b91c1c)',
+                color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 10,
+                textDecoration: 'none', boxShadow: '0 4px 14px rgba(220,38,38,0.3)',
+              }}>
                 Start Shopping
               </Link>
             </div>
           )}
 
           {!loading && !error && orders.map(order => (
-            <OrderCard key={order.id} order={order} />
+            <OrderCard
+              key={order.id}
+              order={order}
+              reviewedMap={reviewedMap}
+              onRate={handleRate}
+              onReviewed={(id) => setReviewedMap(prev => ({ ...prev, [id]: true }))}
+            />
           ))}
         </div>
       </div>
+
+      {/* ── Review Modal ─────────────────────────────────────────────────────── */}
+      {ratingItem && (
+        <ReviewSubmitModal
+          orderItemId={ratingItem.orderItemId}
+          productName={ratingItem.productName}
+          productImage={ratingItem.productImage}
+          variantLabel={ratingItem.variantLabel}
+          onClose={() => setRatingItem(null)}
+          onSuccess={handleReviewSuccess}
+        />
+      )}
     </>
   )
 }

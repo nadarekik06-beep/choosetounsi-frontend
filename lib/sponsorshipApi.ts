@@ -103,6 +103,12 @@ export interface ActivatePayload {
   product_id:     number;
   duration_days?: number;  // default 7
   priority?:      number;  // 1-10, default 5
+ // ── Targeting (all optional) ─────────────────────────────────────────
+  target_gender?:        'male' | 'female' | 'unisex';
+  target_wilaya_ids?:    string[];
+  target_category_ids?:  number[];
+  target_price_min?:     number;
+  target_price_max?:     number;
 }
 
 // ── Boost info (mirrors backend BOOST constant) ───────────────────────────────

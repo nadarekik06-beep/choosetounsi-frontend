@@ -14,7 +14,7 @@ import type { ProductVariant, SelectableAxis } from '@/lib/shopApi'
 import ProductRecommendations from 'app/components/ProductRecommendations'
 import CountdownTimer from '@/app/components/promotions/CountdownTimer'
 import PromotionBadge from '@/app/components/promotions/PromotionBadge'
-
+import ProductReviewsSection from '@/app/components/reviews/ProductReviewsSection';
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL      = `${STORAGE_BASE}/api`
 
@@ -786,6 +786,7 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+      <ProductReviewsSection slug={slug} />
       <ProductRecommendations slug={slug} sellerId={product.seller?.id} />
     </>
   )

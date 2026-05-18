@@ -46,7 +46,7 @@ interface SellerProduct {
   is_approved: boolean;
   image_url:   string | null;
   is_sponsored: boolean;
-  category?:   { name: string };
+  category?:   { id: number; name: string };
 }
 
 const DURATIONS = [
@@ -62,11 +62,25 @@ const PLAN_ICONS: Record<SponsorPlan, React.ReactNode> = {
   black: <Crown size={14} color="#f59e0b" />,
 };
 
+const TUNISIAN_WILAYAS = [
+  'Tunis','Ariana','Ben Arous','Manouba','Nabeul','Zaghouan','Bizerte',
+  'Béja','Jendouba','Kef','Siliana','Sousse','Monastir','Mahdia',
+  'Sfax','Kairouan','Kasserine','Sidi Bouzid','Gabès','Medenine',
+  'Tataouine','Gafsa','Tozeur','Kébili',
+];
+
 // ── Main page component ────────────────────────────────────────────────────────
 export default function PromoteProductPage() {
   const { dark } = useTheme();
   const router   = useRouter();
   const { plan, loading: planLoading } = useSubscription();
+
+  // Targeting state
+  const [targetGender, setTargetGender] = useState<'male' | 'female' | 'unisex' | ''>('');
+  const [targetWilayas,    setTargetWilayas]     = useState<string[]>([]);
+  const [targetCategories, setTargetCategories]  = useState<number[]>([]);
+  const [targetPriceMin,   setTargetPriceMin]    = useState<string>('');
+  const [targetPriceMax,   setTargetPriceMax]    = useState<string>('');
 
   // Product list
   const [products,    setProducts]    = useState<SellerProduct[]>([]);
@@ -162,9 +176,14 @@ export default function PromoteProductPage() {
     setError(null);
     try {
       const res = await sponsorshipApi.sponsor({
-        product_id:    selectedId,
-        duration_days: duration,
+        product_id:           selectedId,
+        duration_days:        duration,
         priority,
+        target_gender:        targetGender || undefined,
+        target_wilaya_ids:    targetWilayas.length ? targetWilayas : undefined,
+        target_category_ids:  targetCategories.length ? targetCategories : undefined,
+        target_price_min:     targetPriceMin ? Number(targetPriceMin) : undefined,
+        target_price_max:     targetPriceMax ? Number(targetPriceMax) : undefined,
       });
       setSuccess(res.data);
       fetchActive();
@@ -418,6 +437,156 @@ export default function PromoteProductPage() {
               Final boost: <strong style={{ color: textMain }}>{finalBoost} points</strong>
               {' '}(plan base: {boostBase})
             </p>
+          </div>
+
+          {/* Step 4: Audience Targeting */}
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 24 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 800, color: textMain, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ background: '#db142e', color: '#fff', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 900 }}>4</span>
+              Audience Targeting
+              <span style={{ fontSize: 11, fontWeight: 600, color: textMuted, marginLeft: 4 }}>(optional)</span>
+            </h2>
+            <p style={{ fontSize: 12, color: textMuted, margin: '0 0 18px' }}>
+              Leave all fields empty to show to everyone. Fill any field to restrict who sees your ad.
+            </p>
+
+            {/* Gender */}
+            <div style={{ marginBottom: 18 }}>
+              <p style={{ fontSize: 11, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>Gender</p>
+              <div style={{ display: 'flex', gap: 8 }}>
+              {([ 
+              { value: '' as const,       label: 'All'    },
+              { value: 'male' as const,   label: 'Men'    },
+              { value: 'female' as const, label: 'Women'  },
+              { value: 'unisex' as const, label: 'Unisex' },
+            ] as const).map(g => (
+                  <button
+                    key={g.value}
+                    onClick={() => setTargetGender(g.value)}
+                    style={{
+                      padding: '7px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                      border: `1.5px solid ${targetGender === g.value ? '#db142e' : border}`,
+                      background: targetGender === g.value
+                        ? (dark ? 'rgba(219,20,46,0.15)' : 'rgba(219,20,46,0.06)')
+                        : 'transparent',
+                      color: targetGender === g.value ? '#db142e' : textMuted,
+                      transition: 'all 0.13s',
+                    }}
+                  >
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Price range */}
+            <div style={{ marginBottom: 18 }}>
+              <p style={{ fontSize: 11, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>Target Price Range (DT)</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={targetPriceMin}
+                  onChange={e => setTargetPriceMin(e.target.value)}
+                  style={{
+                    width: 90, padding: '7px 10px', borderRadius: 8, fontSize: 12,
+                    border: `1.5px solid ${border}`, background: dark ? 'rgba(255,255,255,0.04)' : '#f8f9fa',
+                    color: textMain, outline: 'none', fontFamily: 'inherit',
+                  }}
+                />
+                <span style={{ color: textMuted, fontSize: 12 }}>–</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={targetPriceMax}
+                  onChange={e => setTargetPriceMax(e.target.value)}
+                  style={{
+                    width: 90, padding: '7px 10px', borderRadius: 8, fontSize: 12,
+                    border: `1.5px solid ${border}`, background: dark ? 'rgba(255,255,255,0.04)' : '#f8f9fa',
+                    color: textMain, outline: 'none', fontFamily: 'inherit',
+                  }}
+                />
+                <span style={{ fontSize: 11, color: textMuted }}>Target users whose budget falls in this range</span>
+              </div>
+            </div>
+
+            {/* Wilaya */}
+            <div style={{ marginBottom: 18 }}>
+              <p style={{ fontSize: 11, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>
+                Target Regions
+                {targetWilayas.length > 0 && (
+                  <span style={{ background: '#db142e', color: '#fff', borderRadius: 999, fontSize: 9, fontWeight: 900, padding: '1px 6px', marginLeft: 6 }}>
+                    {targetWilayas.length}
+                  </span>
+                )}
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {TUNISIAN_WILAYAS.map(w => {
+                  const on = targetWilayas.includes(w);
+                  return (
+                    <button
+                      key={w}
+                      onClick={() => setTargetWilayas(prev => on ? prev.filter(x => x !== w) : [...prev, w])}
+                      style={{
+                        padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                        border: `1.5px solid ${on ? '#db142e' : border}`,
+                        background: on ? '#db142e' : 'transparent',
+                        color: on ? '#fff' : textMuted,
+                        transition: 'all 0.12s',
+                      }}
+                    >
+                      {w}
+                    </button>
+                  );
+                })}
+              </div>
+              {targetWilayas.length > 0 && (
+                <button
+                  onClick={() => setTargetWilayas([])}
+                  style={{ marginTop: 8, background: 'none', border: 'none', fontSize: 11, color: '#db142e', cursor: 'pointer', fontWeight: 700 }}
+                >
+                  Clear regions
+                </button>
+              )}
+            </div>
+
+            {/* Categories */}
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>
+                Target Categories
+                {targetCategories.length > 0 && (
+                  <span style={{ background: '#db142e', color: '#fff', borderRadius: 999, fontSize: 9, fontWeight: 900, padding: '1px 6px', marginLeft: 6 }}>
+                    {targetCategories.length}
+                  </span>
+                )}
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {products
+                  .reduce<{ id: number; name: string }[]>((acc, p) => {
+                    const cat = p.category;
+                    if (cat && !acc.find(c => c.id === cat.id)) acc.push(cat);
+                    return acc;
+                  }, [])
+                  .map(cat => {
+                    const on = targetCategories.includes(cat.id);
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setTargetCategories(prev => on ? prev.filter(x => x !== cat.id) : [...prev, cat.id])}
+                        style={{
+                          padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                          border: `1.5px solid ${on ? '#db142e' : border}`,
+                          background: on ? '#db142e' : 'transparent',
+                          color: on ? '#fff' : textMuted,
+                          transition: 'all 0.12s',
+                        }}
+                      >
+                        {cat.name}
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
           </div>
 
           {/* Error */}

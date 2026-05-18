@@ -36,11 +36,22 @@ const PREMIUM_LABELS = [
   { text: 'Viral Product', icon: Zap,       color: '#d97706', bg: '#fffbeb' },
 ];
 
+interface ActivePromotion {
+  id: number;
+  type: 'flash_sale' | 'discount';
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+  is_flash_sale: boolean;
+}
+
 interface OrganicProduct {
   id: number;
   name: string;
   slug: string;
   price: number | string;
+  effective_price?: number | null;
+  discount_amount?: number | null;
+  promotion?: ActivePromotion | null;
   stock: number;
   primary_image_url: string | null;
   category?: { name: string; slug: string };
@@ -242,6 +253,28 @@ function FilterBar({
   );
 }
 
+
+
+
+function getDisplayPrice(item: FeedItem) {
+  const p         = item as any
+  const base      = Number(p.price ?? 0)
+  const effective = p.effective_price != null ? Number(p.effective_price) : base
+  const hasDiscount = effective < base - 0.001
+  if (!hasDiscount || !p.promotion) {
+    return { display: base, original: null, badge: null, isFlash: false }
+  }
+  let badge: string | null = null
+  if (p.promotion.discount_type === 'percentage') {
+    const pct = Math.round(((base - effective) / base) * 100)
+    if (pct > 0) badge = `-${pct}%`
+  } else {
+    const saved = base - effective
+    if (saved > 0) badge = `-${saved.toFixed(2)} DT`
+  }
+  return { display: effective, original: base, badge, isFlash: p.promotion.is_flash_sale }
+}
+
 /* ─────────────────────────────────────────────
    PREMIUM PRODUCT CARD
 ───────────────────────────────────────────── */
@@ -271,7 +304,10 @@ function ProductCard({ item, index }: { item: FeedItem; index: number }) {
     setTimeout(() => setAdded(false), 1800);
   };
 
-  const priceNum = Number((item as any).price ?? 0);
+const { display, original, badge, isFlash } = getDisplayPrice(item);
+console.log((item as any).name, display, original, badge);
+
+
 
   return (
     <Link
@@ -337,6 +373,17 @@ function ProductCard({ item, index }: { item: FeedItem; index: number }) {
               {label.text}
             </div>
           )}
+          {badge && (
+  <span style={{
+    position: 'absolute', top: label ? 38 : 10, left: 10,
+    background: isFlash ? 'linear-gradient(135deg,#dc2626,#f97316)' : '#dc2626',
+    color: '#fff', fontSize: 9, fontWeight: 900,
+    padding: '2px 7px', borderRadius: 999,
+    textTransform: 'uppercase', letterSpacing: '0.04em',
+  }}>
+    {badge}
+  </span>
+)}
 
           {/* Wishlist button */}
           <button
@@ -403,12 +450,14 @@ function ProductCard({ item, index }: { item: FeedItem; index: number }) {
           </p>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{
-              fontSize: 15, fontWeight: 900, color: '#db142e',
-              fontFamily: "'Barlow Condensed', sans-serif",
-            }}>
-              {priceNum.toFixed(2)} <span style={{ fontSize: 10, fontWeight: 700 }}>DT</span>
-            </span>
+            <span style={{ fontSize: 15, fontWeight: 900, color: '#db142e', fontFamily: "'Barlow Condensed', sans-serif" }}>
+                {display.toFixed(2)} <span style={{ fontSize: 10, fontWeight: 700 }}>DT</span>
+              </span>
+              {original !== null && (
+                <span style={{ fontSize: 11, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500, marginLeft: 4 }}>
+                  {original.toFixed(2)} DT
+                </span>
+              )}
 
             {(item as any).stock !== undefined && (item as any).stock <= 5 && (item as any).stock > 0 && (
               <span style={{
@@ -512,17 +561,22 @@ export default function DiscoverPage() {
 
       if (pageNum >= lastPage) setHasMore(false);
 
-      const sponsoredIds = new Set(sponsored.map(s => s.id));
-      const cleanOrganic = organic.filter(o => !sponsoredIds.has(o.id));
-
+      const organicById = new Map(organic.map(o => [o.id, o]));
+const sponsoredWithPromo = sponsored.map(s => ({
+  ...s,
+  ...(organicById.get(s.id) ?? {}),
+}));
+const sponsoredIds = new Set(sponsored.map(s => s.id));
+const cleanOrganic = organic.filter(o => !sponsoredIds.has(o.id));
       const merged: FeedItem[] = [];
       let sIdx = 0;
 
       cleanOrganic.forEach((o, i) => {
         if (i % SPONSORED_EVERY === 0 && sIdx < sponsored.length) {
           const s = sponsored[sIdx++];
+          const enriched = sponsoredWithPromo.find(sp => sp.id === s.id) ?? s;
           merged.push({
-            ...s,
+            ...enriched,
             _is_sponsored: true,
             _sponsor_id: s.sponsor_data?.id,
             _label_idx: labelRef.current++,
@@ -530,11 +584,11 @@ export default function DiscoverPage() {
         }
         merged.push({ ...o, _is_sponsored: false } as FeedItem);
       });
-      while (sIdx < sponsored.length) {
-        const s = sponsored[sIdx++];
-        merged.push({ ...s, _is_sponsored: true, _sponsor_id: s.sponsor_data?.id, _label_idx: labelRef.current++ } as FeedItem);
-      }
-
+    while (sIdx < sponsored.length) {
+  const s = sponsored[sIdx++];
+  const enriched = sponsoredWithPromo.find(sp => sp.id === s.id) ?? s;
+  merged.push({ ...enriched, _is_sponsored: true, _sponsor_id: s.sponsor_data?.id, _label_idx: labelRef.current++ } as FeedItem);
+}
       setFeed(prev => pageNum === 1 ? merged : [...prev, ...merged]);
     } catch {
       /* silent */
