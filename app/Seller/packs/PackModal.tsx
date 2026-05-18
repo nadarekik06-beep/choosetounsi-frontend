@@ -6,6 +6,7 @@ import {
   Search, Upload, Package2, TrendingDown,
 } from 'lucide-react'
 import { packsApi, type PackPayload, type PackItemPayload } from '@/lib/sellerApi'
+import CommissionPreview from '@/app/seller/components/CommissionPreview'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -336,6 +337,23 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                 </Field>
               </div>
 
+              {/*
+               * ── COMMISSION PREVIEW ──────────────────────────────────────
+               * Commission is calculated on the WHOLE pack_price as one unit.
+               * This is the same CommissionPreview used in ProductModal,
+               * just with a different label to make it clear to the seller.
+               *
+               * The seller sees:
+               *   - Commission % on pack_price (not per product)
+               *   - Platform fee amount
+               *   - Their net earnings per pack sold
+               */}
+              <CommissionPreview
+                price={packPrice}
+                label="per pack sold"
+                priceLabel="pack price"
+              />
+
               {/* ── Pricing summary ── */}
               {originalPrice > 0 && (
                 <div style={{
@@ -344,6 +362,9 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                   borderRadius: 14, padding: '14px 16px',
                   display: 'flex', flexDirection: 'column', gap: 8,
                 }}>
+                  <p style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
+                    Customer Savings
+                  </p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
                     <span>Items total (min prices)</span>
                     <span style={{ fontWeight: 700 }}>{fmt(originalPrice)}</span>
@@ -449,7 +470,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                 </p>
               )}
 
-              {/* Items list — overflow:visible so picker dropdown isn't clipped */}
+              {/* Items list */}
               <div style={{
                 display: 'flex', flexDirection: 'column', gap: 12,
                 maxHeight: 560, overflowY: 'auto', overflowX: 'visible',
@@ -513,6 +534,8 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
 }
 
 // ── Item Row ───────────────────────────────────────────────────────────────────
+// (Identical to original — no commission changes needed here.
+//  Commission on packs is on pack_price only, not per item.)
 
 function ItemRow({
   row, products, prodLoading,
@@ -562,7 +585,7 @@ function ItemRow({
       overflow: 'visible',
     }}>
 
-      {/* ── TOP BAR: thumbnail + info + change/remove ── */}
+      {/* ── TOP BAR ── */}
       <div
         onClick={onOpenPicker}
         style={{
@@ -572,7 +595,6 @@ function ItemRow({
           borderRadius: row.product ? '16px 16px 0 0' : 16,
           borderBottom: row.product ? '1px solid #f0f0f0' : 'none',
           cursor: 'pointer',
-          transition: 'background 0.15s',
         }}
       >
         {/* Thumbnail */}
@@ -630,12 +652,12 @@ function ItemRow({
           style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}
           onClick={e => e.stopPropagation()}
         >
-          <span style={{
-            fontSize: 10, fontWeight: 700, color: '#94a3b8',
-            background: '#f1f5f9', border: '1px solid #e5e7eb',
-            padding: '3px 8px', borderRadius: 6,
-            cursor: 'pointer',
-          }}
+          <span
+            style={{
+              fontSize: 10, fontWeight: 700, color: '#94a3b8',
+              background: '#f1f5f9', border: '1px solid #e5e7eb',
+              padding: '3px 8px', borderRadius: 6, cursor: 'pointer',
+            }}
             onClick={onOpenPicker}
           >
             {row.product ? 'Change ↓' : 'Select ↓'}
@@ -669,7 +691,6 @@ function ItemRow({
           boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
           maxHeight: 280, overflowY: 'auto',
         }}>
-          {/* Search bar */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '10px 14px',
@@ -697,13 +718,7 @@ function ItemRow({
 
           {prodLoading ? (
             <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
-              <Loader2
-                size={16}
-                style={{
-                  animation: 'spin 0.8s linear infinite',
-                  margin: '0 auto 6px', display: 'block',
-                }}
-              />
+              <Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite', margin: '0 auto 6px', display: 'block' }} />
               Loading…
             </div>
           ) : products.length === 0 ? (
@@ -718,7 +733,6 @@ function ItemRow({
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '10px 14px', cursor: 'pointer',
                 borderBottom: '1px solid #f8fafc',
-                transition: 'background 0.1s',
               }}
               className="picker-row"
             >
@@ -729,10 +743,7 @@ function ItemRow({
               }}>
                 {p.primary_image_url
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img
-                      src={p.primary_image_url} alt=""
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
+                  ? <img src={p.primary_image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : <Package2 size={16} color="#94a3b8" />
                 }
               </div>
@@ -768,11 +779,8 @@ function ItemRow({
       {row.product && (
         <div style={{ padding: '16px 16px 14px' }}>
 
-          {/* ── Variants grid ── */}
           {row.product.has_variants && row.product.variants.length > 0 && (
             <div style={{ marginBottom: 14 }}>
-
-              {/* Header row */}
               <div style={{
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'space-between', marginBottom: 10,
@@ -795,7 +803,6 @@ function ItemRow({
                 </span>
               </div>
 
-              {/* Chip grid */}
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
@@ -821,11 +828,9 @@ function ItemRow({
                         background: checked
                           ? outOfStock ? 'rgba(239,68,68,0.05)' : 'rgba(220,38,38,0.05)'
                           : '#f8fafc',
-                        transition: 'all 0.15s',
                         textAlign: 'left',
                       }}
                     >
-                      {/* Label */}
                       <p style={{
                         fontSize: 12, fontWeight: 700, margin: '0 0 3px',
                         color: checked
@@ -835,8 +840,7 @@ function ItemRow({
                       }}>
                         {checked && (
                           <span style={{
-                            display: 'inline-flex', alignItems: 'center',
-                            justifyContent: 'center',
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             width: 14, height: 14, borderRadius: '50%',
                             background: outOfStock ? '#ef4444' : '#dc2626',
                             color: '#fff', fontSize: 8, flexShrink: 0,
@@ -844,7 +848,6 @@ function ItemRow({
                         )}
                         {v.label}
                       </p>
-                      {/* Stock */}
                       <p style={{
                         fontSize: 10, margin: 0, fontWeight: 600,
                         color: outOfStock ? '#ef4444' : '#94a3b8',
@@ -856,11 +859,7 @@ function ItemRow({
                 })}
               </div>
 
-              {/* Summary line */}
-              <p style={{
-                fontSize: 11, color: '#94a3b8',
-                margin: '8px 0 0', fontStyle: 'italic',
-              }}>
+              <p style={{ fontSize: 11, color: '#94a3b8', margin: '8px 0 0', fontStyle: 'italic' }}>
                 {checkedIds === null
                   ? `All ${totalVariants} variants included — client picks at checkout`
                   : `${checkedCount} of ${totalVariants} variant${totalVariants !== 1 ? 's' : ''} available to client`
@@ -869,7 +868,6 @@ function ItemRow({
             </div>
           )}
 
-          {/* ── No variants notice ── */}
           {!row.product.has_variants && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
@@ -909,15 +907,12 @@ function ItemRow({
                   border: '1.5px solid #e5e7eb', background: '#fff',
                   cursor: 'pointer', fontSize: 20, fontWeight: 700,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#374151', transition: 'all 0.15s',
+                  color: '#374151',
                 }}
               >
                 −
               </button>
-              <span style={{
-                minWidth: 36, textAlign: 'center',
-                fontSize: 18, fontWeight: 900, color: '#0f172a',
-              }}>
+              <span style={{ minWidth: 36, textAlign: 'center', fontSize: 18, fontWeight: 900, color: '#0f172a' }}>
                 {row.quantity}
               </span>
               <button
@@ -928,7 +923,7 @@ function ItemRow({
                   border: '1.5px solid #e5e7eb', background: '#fff',
                   cursor: 'pointer', fontSize: 20, fontWeight: 700,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#374151', transition: 'all 0.15s',
+                  color: '#374151',
                 }}
               >
                 +

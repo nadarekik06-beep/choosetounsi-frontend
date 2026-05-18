@@ -3,19 +3,25 @@
 /**
  * CommissionPreview
  *
- * Live commission calculator shown below the price field in ProductModal.
- * Debounces API calls, shows:
- *   - Marketplace fee (% and DT)
- *   - Seller earnings
- *   - "You saved X DT with [Plan]" if on a paid plan
- *   - Upgrade nudges if on free plan
+ * Live commission calculator — reused across:
+ *   - ProductModal  (normal products)
+ *   - PackModal     (pass packPrice, set label="Pack Commission")
+ *   - PromotionModal (pass effectivePrice per product)
  *
- * Usage in ProductModal — drop inside the price <Field>:
+ * ONLY CHANGE from original:
+ *   - Added optional `label` prop (default: "per unit sold")
+ *   - Added optional `priceLabel` prop (shown in the fee breakdown line)
+ *   - No logic changes — CommissionService is the single source of truth.
  *
- *   <Field label="Base Price (TND)" ...>
- *     <input ... />
- *   </Field>
+ * Usage:
+ *   // Normal product
  *   <CommissionPreview price={form.price} />
+ *
+ *   // Pack
+ *   <CommissionPreview price={packPrice} label="per pack sold" priceLabel="pack price" />
+ *
+ *   // After discount (promotion)
+ *   <CommissionPreview price={effectivePrice} label="after discount" priceLabel="discounted price" />
  */
 
 import { useEffect, useState, useRef } from 'react'
@@ -69,12 +75,20 @@ const PLAN_LABELS: Record<string, string> = {
 }
 
 interface CommissionPreviewProps {
-  price:    string | number
-  /** Optional: forward quantity for line-item preview (defaults to 1) */
-  quantity?: number
+  price:       string | number
+  quantity?:   number
+  /** Shown in the card header where it previously said "per unit sold" */
+  label?:      string
+  /** Shown in the breakdown line: "X% of {priceLabel}" */
+  priceLabel?: string
 }
 
-export default function CommissionPreview({ price, quantity = 1 }: CommissionPreviewProps) {
+export default function CommissionPreview({
+  price,
+  quantity   = 1,
+  label      = 'per unit sold',
+  priceLabel,
+}: CommissionPreviewProps) {
   const [data,    setData]    = useState<CommissionData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState(false)
@@ -131,10 +145,7 @@ export default function CommissionPreview({ price, quantity = 1 }: CommissionPre
         background: '#f8fafc', borderRadius: 10,
         border: '1px solid #e5e7eb',
       }}>
-        <Loader2
-          size={12}
-          style={{ animation: 'spin 0.8s linear infinite', color: '#94a3b8', flexShrink: 0 }}
-        />
+        <Loader2 size={12} style={{ animation: 'spin 0.8s linear infinite', color: '#94a3b8', flexShrink: 0 }} />
         <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
           Calculating commission…
         </span>
@@ -147,6 +158,10 @@ export default function CommissionPreview({ price, quantity = 1 }: CommissionPre
 
   const planColor = PLAN_COLORS[data.plan_used] ?? '#198f41'
   const planLabel = PLAN_LABELS[data.plan_used] ?? data.plan_used
+  // The price description in the breakdown line
+  const priceLine = priceLabel
+    ? `${data.commission_percentage}% of ${data.unit_price.toFixed(3)} TND (${priceLabel})`
+    : `${data.commission_percentage}% of ${data.unit_price.toFixed(3)} TND`
 
   return (
     <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -178,7 +193,7 @@ export default function CommissionPreview({ price, quantity = 1 }: CommissionPre
             {planLabel}
           </span>
           <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
-            per unit sold
+            {label}
           </span>
         </div>
 
@@ -186,10 +201,7 @@ export default function CommissionPreview({ price, quantity = 1 }: CommissionPre
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
 
           {/* Marketplace fee */}
-          <div style={{
-            padding: '10px 12px',
-            borderRight: '1px solid #f0f0f0',
-          }}>
+          <div style={{ padding: '10px 12px', borderRight: '1px solid #f0f0f0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
               <TrendingDown size={11} color="#ef4444" />
               <span style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
@@ -201,7 +213,7 @@ export default function CommissionPreview({ price, quantity = 1 }: CommissionPre
               <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginLeft: 3 }}>TND</span>
             </p>
             <p style={{ margin: '2px 0 0', fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
-              {data.commission_percentage}% of {data.unit_price.toFixed(3)} TND
+              {priceLine}
             </p>
           </div>
 
