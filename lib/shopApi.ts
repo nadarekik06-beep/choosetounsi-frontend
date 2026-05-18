@@ -126,6 +126,8 @@ export interface CheckoutPayload {
   phone: string
   notes?: string
   payment_method?: 'cod' | 'card' | 'd17' | 'wallet'
+  item_ids?: number[]   // ← ADD THIS LINE
+
 }
 
 export interface BuyNowPayload {

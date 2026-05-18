@@ -1,6 +1,6 @@
 // lib/sponsorshipApi.ts
 // Sponsoring system API layer — seller + public endpoints.
-// Same fetch + token pattern as sellerApi.ts.
+// UPDATED: Added payment types, boost surcharge logic, card payment endpoint.
 
 const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
 const BASE_URL = RAW_URL.replace(/\/api\/?$/, '');
@@ -60,6 +60,10 @@ export interface SponsorshipRecord {
   clicks:           number;
   conversions:      number;
   created_at:       string;
+  // Payment fields
+  payment_status:   'pending' | 'paid' | 'free' | 'failed' | null;
+  payment_method:   'card' | 'free_quota' | null;
+  boost_extra_cost: number;   // extra DT charged for priority > 5
   product?: {
     id:        number;
     name:      string;
@@ -99,19 +103,32 @@ export interface SponsoredProduct {
   } | null;
 }
 
+// ── Payment types ─────────────────────────────────────────────────────────────
+
+export interface CardPaymentDetails {
+  card_number:  string;  // 16 digits (will be masked before sending)
+  expiry_month: string;  // MM
+  expiry_year:  string;  // YY
+  cvv:          string;  // 3-4 digits
+  cardholder:   string;  // name on card
+}
+
 export interface ActivatePayload {
   product_id:     number;
-  duration_days?: number;  // default 7
-  priority?:      number;  // 1-10, default 5
- // ── Targeting (all optional) ─────────────────────────────────────────
+  duration_days?: number;   // default 7
+  priority?:      number;   // 1-10, default 5
+  // ── Targeting (all optional) ─────────────────────────────────────────
   target_gender?:        'male' | 'female' | 'unisex';
   target_wilaya_ids?:    string[];
   target_category_ids?:  number[];
   target_price_min?:     number;
   target_price_max?:     number;
+  // ── Payment ──────────────────────────────────────────────────────────
+  payment_method?: 'card' | 'free_quota';
+  payment_token?:  string;   // tokenised card reference from gateway
 }
 
-// ── Boost info (mirrors backend BOOST constant) ───────────────────────────────
+// ── Pricing constants ─────────────────────────────────────────────────────────
 
 export const BOOST_SCORES: Record<SponsorPlan, number> = {
   free:  10,
@@ -120,16 +137,86 @@ export const BOOST_SCORES: Record<SponsorPlan, number> = {
 };
 
 export const SPONSOR_PRICES: Record<SponsorPlan, number> = {
-  free:  5.000,
-  red:   2.000,
-  black: 0.000,  // free from quota
+  free:  5.000,   // DT per day
+  red:   2.000,   // DT per day
+  black: 1.500,   // DT per day (after quota exhausted)
 };
+
+// Extra charge per visibility point above 5 (applies to ALL plans)
+export const BOOST_SURCHARGE_PER_POINT = 5.000; // DT per extra point
+export const BOOST_FREE_THRESHOLD      = 5;     // points ≤ 5 are free
+
+/**
+ * Calculate the boost surcharge given a priority (1-10).
+ * Points above 5 cost 5 DT each on top of the base campaign price.
+ */
+export function calcBoostSurcharge(priority: number): number {
+  const extra = Math.max(0, priority - BOOST_FREE_THRESHOLD);
+  return extra * BOOST_SURCHARGE_PER_POINT;
+}
+
+/**
+ * Calculate the full campaign cost.
+ * @param plan         - seller plan
+ * @param duration     - days
+ * @param priority     - 1-10
+ * @param freeQuota    - black plan free slot available
+ */
+export function calcTotalCost(
+  plan: SponsorPlan,
+  duration: number,
+  priority: number,
+  freeQuota: boolean,
+): {
+  basePerDay:     number;
+  baseCost:       number;
+  boostSurcharge: number;
+  total:          number;
+  isFree:         boolean;
+} {
+  const surcharge = calcBoostSurcharge(priority);
+
+  if (freeQuota) {
+    // Black plan free quota — only surcharge applies
+    return {
+      basePerDay:     0,
+      baseCost:       0,
+      boostSurcharge: surcharge,
+      total:          surcharge,
+      isFree:         surcharge === 0,
+    };
+  }
+
+  const basePerDay = SPONSOR_PRICES[plan];
+  const baseCost   = basePerDay * duration;
+  const total      = baseCost + surcharge;
+
+  return {
+    basePerDay,
+    baseCost,
+    boostSurcharge: surcharge,
+    total,
+    isFree: total === 0,
+  };
+}
 
 export const PLAN_BOOST_LABELS: Record<SponsorPlan, { label: string; color: string; description: string }> = {
   free:  { label: 'Low Boost',    color: '#198f41', description: '+10 visibility score — basic reach' },
   red:   { label: 'Medium Boost', color: '#db142e', description: '+30 visibility score — 3× more reach' },
   black: { label: 'High Boost',   color: '#f59e0b', description: '+70 visibility score — maximum reach' },
 };
+
+// ── Tokenise card locally (sandbox: just base64-encode masked data) ────────────
+// In production replace with your gateway's JS SDK tokenisation call.
+export function tokeniseCard(card: CardPaymentDetails): string {
+  const masked = {
+    last4:    card.card_number.slice(-4),
+    exp:      `${card.expiry_month}/${card.expiry_year}`,
+    holder:   card.cardholder,
+    // Never send raw card number or CVV to your backend — use gateway tokenisation
+  };
+  return btoa(JSON.stringify(masked));  // sandbox token
+}
 
 // ── API ───────────────────────────────────────────────────────────────────────
 
@@ -148,6 +235,9 @@ export const sponsorshipApi = {
         remaining_free:   number | null;
         ai_tags:          string[];
         ai_ad_copy:       string;
+        amount_charged:   number;
+        boost_extra_cost: number;
+        payment_status:   string;
       };
     }>('POST', '/seller/sponsorships/sponsor', payload),
 
