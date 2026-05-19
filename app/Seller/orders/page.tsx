@@ -696,6 +696,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
               </div>
 
               {/* ── Update Payment Status ── */}
+              {detail.order.payment_status !== 'paid' && (
               <div style={{
                 background: bgSub, borderRadius: 14, padding: 16,
                 border: `1px solid ${detail.order.payment_status === 'unpaid' ? '#f59e0b40' : border}`,
@@ -710,7 +711,6 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                       background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)',
                       borderRadius: 6, padding: '2px 8px',
                     }}>
-                      💰 Cash on Delivery — confirm when cash received
                     </span>
                   )}
                 </div>
@@ -721,8 +721,6 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                     style={selectStyle}
                   >
                     <option value="">Select payment status…</option>
-                    <option value="paid">✓ Paid — cash received</option>
-                    <option value="unpaid">✗ Unpaid — cash not yet received</option>
                     <option value="refunded">↩ Refunded</option>
                   </select>
                   <button
@@ -747,7 +745,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                   </button>
                 </div>
               </div>
-
+              )}
             </div>
           ) : null}
         </div>
