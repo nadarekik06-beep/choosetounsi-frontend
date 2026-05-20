@@ -98,6 +98,17 @@ export default function EarningsPage() {
     { key: 'history',  label: '🧾 History'  },
   ]
 
+  // Helper to build the "Pending Payout" subtitle showing the breakdown
+  function pendingSubtitle(kpis: any): string | null {
+    const awaiting = Number(kpis?.awaiting_cashin_amount ?? 0)
+    const ready    = Number(kpis?.ready_amount ?? 0)
+    if (awaiting === 0 && ready === 0) return null
+    const parts: string[] = []
+    if (awaiting > 0) parts.push(`${awaiting.toFixed(3)} awaiting cash-in`)
+    if (ready > 0)    parts.push(`${ready.toFixed(3)} cash-in done`)
+    return parts.join(' · ')
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
@@ -147,110 +158,153 @@ export default function EarningsPage() {
       ) : (
         <>
           {/* ── OVERVIEW ── */}
-          {tab === 'overview' && overview && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {tab === 'overview' && overview && (() => {
+            const kpis = overview.kpis ?? {}
+            const subtitle = pendingSubtitle(kpis)
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-              {/* Period selector */}
-              <div style={{ display: 'flex', gap: 6 }}>
-                {['today', 'week', 'month', 'all'].map(p => (
-                  <button key={p} onClick={() => setPeriod(p)} style={{
-                    padding: '6px 14px', borderRadius: 8,
-                    border: `1px solid ${border}`,
-                    background: period === p ? 'rgba(219,20,46,0.12)' : 'transparent',
-                    color: period === p ? '#db142e' : textMuted,
-                    fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                    textTransform: 'capitalize',
-                  }}>
-                    {p}
-                  </button>
-                ))}
-              </div>
+                {/* Period selector */}
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {['today', 'week', 'month', 'all'].map(p => (
+                    <button key={p} onClick={() => setPeriod(p)} style={{
+                      padding: '6px 14px', borderRadius: 8,
+                      border: `1px solid ${border}`,
+                      background: period === p ? 'rgba(219,20,46,0.12)' : 'transparent',
+                      color: period === p ? '#db142e' : textMuted,
+                      fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                      textTransform: 'capitalize',
+                    }}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
 
-              {/* KPI Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
-                {[
-                  { label: 'Gross Revenue',  value: fmt(overview.kpis?.gross_revenue    ?? 0), color: '#94a3b8', icon: DollarSign  },
-                  { label: 'Platform Fees',  value: fmt(overview.kpis?.total_commission  ?? 0), color: '#db142e', icon: TrendingDown },
-                  { label: 'Your Net',       value: fmt(overview.kpis?.total_net         ?? 0), color: '#10b981', icon: TrendingUp   },
-                  { label: 'Orders',         value: String(overview.kpis?.orders_count   ?? 0), color: '#3b82f6', icon: Package      },
-                  { label: 'Pending Payout', value: fmt(overview.kpis?.pending_amount    ?? 0), color: '#f59e0b', icon: Clock        },
-                  { label: 'Paid Out',       value: fmt(overview.kpis?.paid_amount       ?? 0), color: '#10b981', icon: CheckCircle  },
-                ].map(({ label, value, color, icon: Icon }) => (
-                  <div key={label} style={{
-                    background: cardBg, border: `1px solid ${color}28`,
+                {/* KPI Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+
+                  {/* Static KPI cards */}
+                  {[
+                    { label: 'Gross Revenue', value: fmt(kpis.gross_revenue   ?? 0), color: '#94a3b8', icon: DollarSign  },
+                    { label: 'Platform Fees', value: fmt(kpis.total_commission ?? 0), color: '#db142e', icon: TrendingDown },
+                    { label: 'Your Net',      value: fmt(kpis.total_net        ?? 0), color: '#10b981', icon: TrendingUp   },
+                    { label: 'Orders',        value: String(kpis.orders_count  ?? 0), color: '#3b82f6', icon: Package      },
+                  ].map(({ label, value, color, icon: Icon }) => (
+                    <div key={label} style={{
+                      background: cardBg, border: `1px solid ${color}28`,
+                      borderRadius: 14, padding: '16px 18px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 8, background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Icon size={13} color={color} />
+                        </div>
+                        <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
+                      </div>
+                      <p style={{ fontSize: 18, fontWeight: 900, color, margin: 0 }}>{value}</p>
+                    </div>
+                  ))}
+
+                  {/* Pending Payout — special card with breakdown subtitle */}
+                  <div style={{
+                    background: cardBg, border: `1px solid #f59e0b28`,
                     borderRadius: 14, padding: '16px 18px',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 8, background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Icon size={13} color={color} />
+                      <div style={{ width: 28, height: 28, borderRadius: 8, background: '#f59e0b15', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Clock size={13} color="#f59e0b" />
                       </div>
-                      <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
+                      <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Pending Payout</span>
                     </div>
-                    <p style={{ fontSize: 18, fontWeight: 900, color, margin: 0 }}>{value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Revenue split */}
-              <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
-                  <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>Revenue Split ({period})</p>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
-                  {[
-                    { label: 'Gross Total',  value: fmt(overview.kpis?.gross_revenue    ?? 0), color: '#94a3b8', note: 'Customer paid' },
-                    { label: 'Platform Fee', value: fmt(overview.kpis?.total_commission  ?? 0), color: '#db142e', note: 'ChooseTounsi commission' },
-                    { label: 'You Receive',  value: fmt(overview.kpis?.total_net         ?? 0), color: '#10b981', note: 'Your net earnings' },
-                  ].map((col, i) => (
-                    <div key={col.label} style={{
-                      padding: '16px 20px',
-                      borderRight: i < 2 ? `1px solid ${border}` : undefined,
-                      background: i === 2 ? 'rgba(16,185,129,0.03)' : i === 1 ? 'rgba(219,20,46,0.03)' : undefined,
-                    }}>
-                      <p style={{ fontSize: 9, fontWeight: 800, color: col.color, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>
-                        {col.label}
+                    <p style={{ fontSize: 18, fontWeight: 900, color: '#f59e0b', margin: '0 0 6px' }}>
+                      {fmt(kpis.pending_amount ?? 0)}
+                    </p>
+                    {/* Breakdown: awaiting cash-in vs cash-in done (ready) */}
+                    {subtitle && (
+                      <p style={{ fontSize: 9, color: textMuted, margin: 0, lineHeight: 1.5 }}>
+                        {subtitle}
                       </p>
-                      <p style={{ fontSize: 18, fontWeight: 900, color: col.color, margin: '0 0 3px' }}>{col.value}</p>
-                      <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{col.note}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    )}
+                  </div>
 
-              {/* Daily breakdown table */}
-              {(overview.daily_chart?.length ?? 0) > 0 && (
+                  {/* Paid Out */}
+                  <div style={{
+                    background: cardBg, border: `1px solid #10b98128`,
+                    borderRadius: 14, padding: '16px 18px',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 8, background: '#10b98115', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <CheckCircle size={13} color="#10b981" />
+                      </div>
+                      <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Paid Out</span>
+                    </div>
+                    <p style={{ fontSize: 18, fontWeight: 900, color: '#10b981', margin: 0 }}>
+                      {fmt(kpis.paid_amount ?? 0)}
+                    </p>
+                  </div>
+
+                </div>
+
+                {/* Revenue split */}
                 <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
                   <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
-                    <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>Daily Breakdown</p>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>Revenue Split ({period})</p>
                   </div>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr>
-                          <th style={th()}>Day</th>
-                          <th style={th(true)}>Orders</th>
-                          <th style={th(true)}>Gross</th>
-                          <th style={th(true)}>Fee</th>
-                          <th style={th(true)}>Net Earnings</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {overview.daily_chart.slice(-14).map((row: any) => (
-                          <tr key={row.day}>
-                            <td style={{ ...td(), fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{row.day}</td>
-                            <td style={{ ...td(true), color: textMuted }}>{row.orders}</td>
-                            <td style={{ ...td(true), color: textMuted }}>{fmt(row.gross ?? 0)}</td>
-                            <td style={{ ...td(true), color: '#db142e' }}>{fmt(row.commission ?? 0)}</td>
-                            <td style={{ ...td(true), color: '#10b981', fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
+                    {[
+                      { label: 'Gross Total',  value: fmt(kpis.gross_revenue   ?? 0), color: '#94a3b8', note: 'Customer paid' },
+                      { label: 'Platform Fee', value: fmt(kpis.total_commission ?? 0), color: '#db142e', note: 'ChooseTounsi commission' },
+                      { label: 'You Receive',  value: fmt(kpis.total_net        ?? 0), color: '#10b981', note: 'Your net earnings' },
+                    ].map((col, i) => (
+                      <div key={col.label} style={{
+                        padding: '16px 20px',
+                        borderRight: i < 2 ? `1px solid ${border}` : undefined,
+                        background: i === 2 ? 'rgba(16,185,129,0.03)' : i === 1 ? 'rgba(219,20,46,0.03)' : undefined,
+                      }}>
+                        <p style={{ fontSize: 9, fontWeight: 800, color: col.color, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>
+                          {col.label}
+                        </p>
+                        <p style={{ fontSize: 18, fontWeight: 900, color: col.color, margin: '0 0 3px' }}>{col.value}</p>
+                        <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{col.note}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              )}
-            </div>
-          )}
+
+                {/* Daily breakdown table */}
+                {(overview.daily_chart?.length ?? 0) > 0 && (
+                  <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
+                    <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
+                      <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>Daily Breakdown</p>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr>
+                            <th style={th()}>Day</th>
+                            <th style={th(true)}>Orders</th>
+                            <th style={th(true)}>Gross</th>
+                            <th style={th(true)}>Fee</th>
+                            <th style={th(true)}>Net Earnings</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {overview.daily_chart.slice(-14).map((row: any) => (
+                            <tr key={row.day}>
+                              <td style={{ ...td(), fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{row.day}</td>
+                              <td style={{ ...td(true), color: textMuted }}>{row.orders}</td>
+                              <td style={{ ...td(true), color: textMuted }}>{fmt(row.gross ?? 0)}</td>
+                              <td style={{ ...td(true), color: '#db142e' }}>{fmt(row.commission ?? 0)}</td>
+                              <td style={{ ...td(true), color: '#10b981', fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
 
           {/* ── ORDERS ── */}
           {tab === 'orders' && (
@@ -386,7 +440,7 @@ export default function EarningsPage() {
                 </div>
               </div>
 
-            </div>  
+            </div>
           )}
 
         </>
