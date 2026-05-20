@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import PriceDisplay from '@/app/components/promotions/PriceDisplay'
 
@@ -17,6 +17,8 @@ interface FlashProduct {
   effective_price: number
   discount_amount: number
   promotion: Record<string, unknown> | null
+    variant_images?: string[]   // ← ADD
+
 }
 
 interface FlashPromotion {
@@ -56,22 +58,54 @@ function MiniCountdown({ endsAt }: { endsAt: string }) {
 
 function FlashDealCard({ product, promo }: { product: FlashProduct; promo: FlashPromotion }) {
   const [imgErr, setImgErr] = useState(false)
+  const [imgIndex, setImgIndex] = useState(0)          // ← NEW
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null) // ← NEW
+
+  const allImages = useMemo(() => {                    // ← NEW
+    const imgs: string[] = []
+    if (product.primary_image_url) imgs.push(product.primary_image_url)
+    ;(product.variant_images ?? []).forEach(url => {
+      if (url && !imgs.includes(url)) imgs.push(url)
+    })
+    return imgs
+  }, [product.primary_image_url, product.variant_images])
+
+  useEffect(() => () => {
+    if (tickRef.current) clearInterval(tickRef.current)
+  }, [])
 
   return (
-    <Link href={`/products/${product.slug}`} className="fds-card">
+    <Link
+      href={`/products/${product.slug}`}
+      className="fds-card"
+      onMouseEnter={() => {                            // ← ADD
+        if (allImages.length > 1) {
+          tickRef.current = setInterval(() => {
+            setImgIndex(i => (i + 1) % allImages.length)
+          }, 1400)
+        }
+      }}
+      onMouseLeave={() => {                            // ← ADD
+        if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
+        setImgIndex(0)
+      }}
+    >
       <div className="fds-img-wrap">
-        {product.primary_image_url && !imgErr
-          ? <img src={product.primary_image_url} alt={product.name} className="fds-img" onError={() => setImgErr(true)} />
+        {allImages.length > 0 && !imgErr   // ← CHANGED from product.primary_image_url &&
+          ? <img
+              src={allImages[imgIndex]}    // ← CHANGED from product.primary_image_url
+              alt={product.name}
+              className="fds-img"
+              onError={() => setImgErr(true)}
+            />
           : <div className="fds-img-placeholder">⚡</div>
         }
-
-        {/* Discount badge — driven by real promotion data */}
+        {/* rest unchanged */}
         {product.original_price > product.effective_price && (
           <span className="fds-discount">
             -{Math.round(((product.original_price - product.effective_price) / product.original_price) * 100)}%
           </span>
         )}
-
         <div className="fds-flash-badge">
           <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
@@ -80,35 +114,22 @@ function FlashDealCard({ product, promo }: { product: FlashProduct; promo: Flash
         </div>
         <MiniCountdown endsAt={promo.ends_at} />
       </div>
-
       <div className="fds-info">
         <p className="fds-name">{product.name}</p>
-
-        {/* ── FIXED: replaced manual price JSX with PriceDisplay ── */}
-        <PriceDisplay
-          price={product.original_price}
-          effectivePrice={product.effective_price}
-          promotion={product.promotion as any}
-          size="sm"
-        />
-
+        <PriceDisplay price={product.original_price} effectivePrice={product.effective_price} promotion={product.promotion as any} size="sm" />
         {promo.flash_stock_remaining !== null && (
           <div className="fds-stock-bar">
-            <div
-              className="fds-stock-fill"
-              style={{
-                width: promo.flash_stock
-                  ? `${Math.min(100, ((promo.flash_stock - (promo.flash_stock_remaining ?? promo.flash_stock)) / promo.flash_stock) * 100)}%`
-                  : '0%'
-              }}
-            />
+            <div className="fds-stock-fill" style={{
+              width: promo.flash_stock
+                ? `${Math.min(100, ((promo.flash_stock - (promo.flash_stock_remaining ?? promo.flash_stock)) / promo.flash_stock) * 100)}%`
+                : '0%'
+            }} />
           </div>
         )}
       </div>
     </Link>
   )
 }
-
 export default function FlashDealsSection() {
   const [promotions, setPromotions] = useState<FlashPromotion[]>([])
   const [loading,    setLoading]    = useState(true)

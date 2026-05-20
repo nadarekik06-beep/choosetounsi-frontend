@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
 import { isAuthenticated } from '@/lib/auth'
@@ -19,6 +19,8 @@ interface Product {
   category?: { name: string; slug: string } | null
   is_featured?: boolean
   is_platform_product?: boolean
+  variant_images?: string[]   
+
 }
 
 function BrandProductCard({ product, index }: { product: Product; index: number }) {
@@ -47,20 +49,46 @@ function BrandProductCard({ product, index }: { product: Product; index: number 
     e.preventDefault()
     toggleFavorite(product.id, null)
   }
+  const [imgIndex, setImgIndex] = useState(0)
+const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+const allImages = useMemo(() => {
+  const imgs: string[] = []
+  if (product.primary_image_url) imgs.push(product.primary_image_url)
+  ;(product.variant_images ?? []).forEach(url => {
+    if (url && !imgs.includes(url)) imgs.push(url)
+  })
+  return imgs
+}, [product.primary_image_url, product.variant_images])
+
+useEffect(() => () => {
+  if (tickRef.current) clearInterval(tickRef.current)
+}, [])
 
   return (
     <Link
       href={`/products/${product.slug}`}
       className="bpc-card"
       style={{ animationDelay: `${index * 0.08}s` }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => {
+  setHovered(true)
+  if (allImages.length > 1) {
+    tickRef.current = setInterval(() => {
+      setImgIndex(i => (i + 1) % allImages.length)
+    }, 1400)
+  }
+}}
+onMouseLeave={() => {
+  setHovered(false)
+  if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
+  setImgIndex(0)
+}}
     >
       {/* Image */}
       <div className="bpc-img-wrap">
-        {product.primary_image_url && !imgErr ? (
+          {allImages.length > 0 && !imgErr ? (
           <img
-            src={product.primary_image_url}
+            src={allImages[imgIndex] ?? product.primary_image_url ?? ''}
             alt={product.name}
             className="bpc-img"
             onError={() => setImgErr(true)}

@@ -7,7 +7,7 @@
  * Design: editorial luxury × North-African energy
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Flame, TrendingUp, Star, Heart, ShoppingBag, Eye,
@@ -56,6 +56,8 @@ interface OrganicProduct {
   primary_image_url: string | null;
   category?: { name: string; slug: string };
   seller?: { name: string };
+  variant_images?: string[]   // ← ADD
+
 }
 
 type FeedItem = (OrganicProduct | SponsoredProduct) & {
@@ -284,7 +286,21 @@ function ProductCard({ item, index }: { item: FeedItem; index: number }) {
   const [wished, setWished]   = useState(false);
   const [hovered, setHovered] = useState(false);
   const [added, setAdded]     = useState(false);
+  const [imgIndex, setImgIndex] = useState(0);          // ← NEW
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null); // ← NEW
+const allImages = useMemo(() => {                     // ← NEW
+    const imgs: string[] = [];
+    const primary = (item as any).primary_image_url;
+    if (primary) imgs.push(primary);
+    ((item as any).variant_images ?? []).forEach((url: string) => {
+      if (url && !imgs.includes(url)) imgs.push(url);
+    });
+    return imgs;
+  }, [(item as any).primary_image_url, (item as any).variant_images]);
 
+  useEffect(() => () => {
+    if (tickRef.current) clearInterval(tickRef.current);
+  }, []);
   const label = item._is_sponsored && item._label_idx !== undefined
     ? PREMIUM_LABELS[item._label_idx % PREMIUM_LABELS.length]
     : null;
@@ -316,9 +332,20 @@ console.log((item as any).name, display, original, badge);
       style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
     >
       <div
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        style={{
+        onMouseEnter={() => {
+  setHovered(true);
+  if (allImages.length > 1) {
+    tickRef.current = setInterval(() => {
+      setImgIndex(i => (i + 1) % allImages.length);
+    }, 1400);
+  }
+}}
+onMouseLeave={() => {
+  setHovered(false);
+  if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
+  setImgIndex(0);
+}}
+    style={{
           background: '#fff',
           borderRadius: 18,
           overflow: 'hidden',
@@ -334,9 +361,9 @@ console.log((item as any).name, display, original, badge);
       >
         {/* ── Image area */}
         <div style={{ aspectRatio: '3/4', background: '#f7f7f7', overflow: 'hidden', position: 'relative' }}>
-          {(item as any).primary_image_url && !imgErr ? (
+          {allImages.length > 0 && !imgErr ? (
             <img
-              src={(item as any).primary_image_url}
+              src={allImages[imgIndex]}
               alt={item.name}
               loading="lazy"
               style={{

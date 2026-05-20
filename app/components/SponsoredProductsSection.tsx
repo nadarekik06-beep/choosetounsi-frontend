@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef,useMemo } from 'react';
 import Link from 'next/link';
 import { sponsorshipApi, SponsoredProduct } from '@/lib/sponsorshipApi';
 
@@ -24,14 +24,26 @@ function SponsoredCard({
   const [imgErr, setImgErr]   = useState(false);
   const [hovered, setHovered] = useState(false);
   const tracked = useRef(false);
+    const [imgIndex, setImgIndex] = useState(0);
+  const tickRef2 = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const allImages = useMemo(() => {
+    const imgs: string[] = [];
+    if (product.primary_image_url) imgs.push(product.primary_image_url);
+    ((product as any).variant_images ?? []).forEach((url: string) => {
+      if (url && !imgs.includes(url)) imgs.push(url);
+    });
+    return imgs;
+  }, [product.primary_image_url, (product as any).variant_images]);
   useEffect(() => {
     if (!tracked.current && product.sponsor_data?.id) {
       tracked.current = true;
       sponsorshipApi.recordImpression(product.sponsor_data.id);
     }
   }, [product.sponsor_data?.id]);
-
+useEffect(() => () => {
+  if (tickRef2.current) clearInterval(tickRef2.current);
+}, []);
   const handleClick = () => {
     if (product.sponsor_data?.id) sponsorshipApi.recordClick(product.sponsor_data.id);
   };
@@ -60,8 +72,19 @@ function SponsoredCard({
       style={{ animationDelay: `${index * 0.055}s` }}
     >
       <div
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+  onMouseEnter={() => {
+    setHovered(true);
+    if (allImages.length > 1) {
+      tickRef2.current = setInterval(() => {
+        setImgIndex(i => (i + 1) % allImages.length);
+      }, 1400);
+    }
+  }}
+  onMouseLeave={() => {
+    setHovered(false);
+    if (tickRef2.current) { clearInterval(tickRef2.current); tickRef2.current = null; }
+    setImgIndex(0);
+  }}
         style={{
           position: 'relative',
           background: '#fff',
@@ -103,9 +126,9 @@ function SponsoredCard({
 
         {/* ── Image ── */}
         <div style={{ position: 'relative', aspectRatio: '3/4', background: '#f7f7f7', overflow: 'hidden', zIndex: 1 }}>
-          {product.primary_image_url && !imgErr ? (
-            <img
-              src={product.primary_image_url}
+          {allImages.length > 0 && !imgErr ? (
+  <img
+              src={allImages[imgIndex] ?? ''}
               alt={product.name}
               style={{
                 width: '100%', height: '100%', objectFit: 'cover', display: 'block',

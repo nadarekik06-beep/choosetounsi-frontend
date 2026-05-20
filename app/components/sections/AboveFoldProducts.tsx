@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
 import { isAuthenticated } from '@/lib/auth'
@@ -33,13 +33,27 @@ interface Product {
   primary_image_url: string | null
   category?: { name: string; slug: string } | null
   is_featured?: boolean
-}
+  variant_images?: string[]   // ← ADD
 
+}
 function CompactProductCard({ product }: { product: Product }) {
   const { addToCart, isFavorited, toggleFavorite } = useCart()
   const router = useRouter()
   const [imgErr, setImgErr] = useState(false)
   const [added, setAdded]   = useState(false)
+  const [imgIndex, setImgIndex] = useState(0)          // ← NEW
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null) // ← NEW
+
+  const allImages = useMemo(() => {                    // ← NEW
+    const imgs: string[] = []
+    if (product.primary_image_url) imgs.push(product.primary_image_url)
+    ;(product.variant_images ?? []).forEach(url => {
+      if (url && !imgs.includes(url)) imgs.push(url)
+    })
+    return imgs
+  }, [product.primary_image_url, product.variant_images])
+
+  const currentImage = allImages[imgIndex] ?? null     // ← NEW
 
   const favorited  = isFavorited(product.id)
   const outOfStock = product.stock <= 0
@@ -58,24 +72,42 @@ function CompactProductCard({ product }: { product: Product }) {
     toggleFavorite(product.id, null)
   }
 
+  // ← NEW: cycling handlers
+  const onEnter = () => {
+    if (allImages.length > 1) {
+      tickRef.current = setInterval(() => {
+        setImgIndex(i => (i + 1) % allImages.length)
+      }, 1400)
+    }
+  }
+  const onLeave = () => {
+    if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
+    setImgIndex(0)
+  }
+  useEffect(() => () => {
+    if (tickRef.current) clearInterval(tickRef.current)
+  }, [])
+
   return (
-    <Link href={`/products/${product.slug}`} className="cpc-card">
+    <Link
+      href={`/products/${product.slug}`}
+      className="cpc-card"
+      onMouseEnter={onEnter}   // ← ADD
+      onMouseLeave={onLeave}   // ← ADD
+    >
       <div className="cpc-img-wrap">
-        {product.primary_image_url && !imgErr
-          ? <img src={product.primary_image_url} alt={product.name} className="cpc-img" onError={() => setImgErr(true)} />
+        {currentImage && !imgErr   // ← CHANGED from product.primary_image_url
+          ? <img src={currentImage} alt={product.name} className="cpc-img" onError={() => setImgErr(true)} />
           : <div className="cpc-img-placeholder">🛍️</div>
         }
-
-        {/* Discount badge — only when a real promotion exists */}
+        {/* rest unchanged */}
         {product.promotion && product.effective_price != null &&
           Number(product.effective_price) < Number(product.price) && (
           <span className="cpc-discount">
             -{Math.round(((Number(product.price) - Number(product.effective_price)) / Number(product.price)) * 100)}%
           </span>
         )}
-
         {outOfStock && <div className="cpc-sold-overlay"><span>Sold Out</span></div>}
-
         <div className="cpc-hover-actions">
           <button className="cpc-btn" onClick={handleFav} title="Wishlist">
             <svg width="13" height="13" fill={favorited ? '#dc2626' : 'none'} stroke={favorited ? '#dc2626' : 'currentColor'} strokeWidth="2" viewBox="0 0 24 24">
@@ -90,17 +122,9 @@ function CompactProductCard({ product }: { product: Product }) {
           </button>
         </div>
       </div>
-
       <div className="cpc-info">
         <p className="cpc-name">{product.name}</p>
-
-        {/* ── FIXED: replaced manual price JSX with PriceDisplay ── */}
-        <PriceDisplay
-          price={product.price}
-          effectivePrice={product.effective_price}
-          promotion={product.promotion}
-          size="sm"
-        />
+        <PriceDisplay price={product.price} effectivePrice={product.effective_price} promotion={product.promotion} size="sm" />
       </div>
     </Link>
   )

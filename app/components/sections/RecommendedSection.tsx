@@ -13,7 +13,7 @@
  *   - Never empty: backend guarantees fallback results
  */
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 
 const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
@@ -40,6 +40,7 @@ interface RecommendedProduct {
   is_sponsored: boolean
   sponsored_priority?: number
   primary_image_url?: string | null
+  variant_images?: string[]           // ← ADD: all variant image URLs
   effective_price?: number | null
   discount_amount?: number | null
   promotion?: Promotion | null
@@ -105,16 +106,48 @@ function getDisplayPrice(p: RecommendedProduct): {
 // ── Card ──────────────────────────────────────────────────────────────────────
 
 function RecommendedCard({ product, index }: { product: RecommendedProduct; index: number }) {
-  const [hovered, setHovered] = useState(false)
-  const [imgErr,  setImgErr]  = useState(false)
+  const [hovered,  setHovered]  = useState(false)
+  const [imgErr,   setImgErr]   = useState(false)
+  const [imgIndex, setImgIndex] = useState(0)        // ← NEW
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null) // ← NEW
+
+  // Build deduplicated image list: primary first, then variant images
+  const allImages = useMemo(() => {                  // ← NEW
+    const imgs: string[] = []
+    if (product.primary_image_url) imgs.push(product.primary_image_url)
+    ;(product.variant_images ?? []).forEach(url => {
+      if (url && !imgs.includes(url)) imgs.push(url)
+    })
+    return imgs
+  }, [product.primary_image_url, product.variant_images])
+
+  const onEnter = () => {                            // ← NEW: replaces inline () => setHovered(true)
+    setHovered(true)
+    if (allImages.length > 1) {
+      tickRef.current = setInterval(() => {
+        setImgIndex(i => (i + 1) % allImages.length)
+      }, 1400)
+    }
+  }
+  const onLeave = () => {                            // ← NEW: replaces inline () => setHovered(false)
+    setHovered(false)
+    if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
+    setImgIndex(0)
+  }
+  useEffect(() => () => {                            // ← NEW: cleanup on unmount
+    if (tickRef.current) clearInterval(tickRef.current)
+  }, [])
+
+  const currentImage = allImages[imgIndex] ?? null  // ← NEW: replaces product.primary_image_url
+
   const { display, original, badge, isFlash } = getDisplayPrice(product)
   const oos = product.stock <= 0
 
   return (
     <Link
       href={`/products/${product.slug}`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={onEnter}   // ← CHANGED from () => setHovered(true)
+      onMouseLeave={onLeave}   // ← CHANGED from () => setHovered(false)
       style={{
         display:         'block',
         textDecoration:  'none',
@@ -134,9 +167,9 @@ function RecommendedCard({ product, index }: { product: RecommendedProduct; inde
     >
       {/* Image */}
       <div style={{ position: 'relative', aspectRatio: '3/4', background: '#f5f5f5', overflow: 'hidden' }}>
-        {product.primary_image_url && !imgErr ? (
+        {currentImage && !imgErr ? (
           <img
-            src={product.primary_image_url}
+            src={currentImage}   
             alt={product.name}
             onError={() => setImgErr(true)}
             style={{
@@ -221,7 +254,28 @@ if (product.is_sponsored && (product.sponsored_priority ?? 0) >= 30) {
             }}>SOLD OUT</span>
           </div>
         )}
+       
+{allImages.length > 1 && hovered && (
+  <div style={{
+    position: 'absolute', bottom: 7, left: '50%',
+    transform: 'translateX(-50%)',
+    display: 'flex', gap: 4, zIndex: 5,
+    pointerEvents: 'none',
+  }}>
+    {allImages.slice(0, 5).map((_, i) => (
+      <span key={i} style={{
+        display: 'block',
+        width: i === imgIndex ? 14 : 5,
+        height: 5,
+        borderRadius: 999,
+        background: i === imgIndex ? '#fff' : 'rgba(255,255,255,0.55)',
+        transition: 'all 0.22s ease',
+      }} />
+    ))}
+  </div>
+)}
       </div>
+      
 
       {/* Info */}
       <div style={{ padding: '9px 11px 11px' }}>
