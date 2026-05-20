@@ -312,62 +312,83 @@ export default function EarningsPage() {
 
           {/* ── HISTORY ── */}
           {tab === 'history' && (
-            <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
-              <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
-                <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>Settlement History</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+              {/* Full report button */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => window.open('/seller/earnings/receipt', '_blank')}
+                  style={{
+                    padding: '8px 16px', borderRadius: 9, border: 'none',
+                    background: 'linear-gradient(135deg,#198f41,#12b34a)',
+                    color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  📄 Rapport de gains complet
+                </button>
               </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                            <tr>
-                              <th style={th()}>Batch Ref</th>
-                              <th style={th()}>Date</th>
-                              <th style={th(true)}>Orders</th>
-                              <th style={th(true)}>Your Payout</th>
-                              <th style={th(true)}>Status</th>
-                              <th style={th(true)}>Paid On</th>
-                              <th style={th(true)}>Receipt</th>
-                            </tr>
-                          </thead>
-                                            <tbody>
-                                              {(history?.data ?? []).map((row: any) => (
-                            <tr key={row.id}>
-                              <td style={{ ...td(), fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{row.batch_reference}</td>
-                              <td style={{ ...td(), color: textMuted, fontFamily: 'monospace' }}>{row.batch_date}</td>
-                              <td style={{ ...td(true), color: textMuted }}>{row.orders_count}</td>
-                              <td style={{ ...td(true), color: '#10b981', fontWeight: 900 }}>{fmt(row.total_seller_payout ?? 0)}</td>
-                              <td style={{ ...td(true) }}><PayoutBadge status={row.status ?? 'draft'} /></td>
-                              <td style={{ ...td(true), color: textMuted, fontSize: 11 }}>
-                                {row.paid_at ? new Date(row.paid_at).toLocaleDateString('fr-TN') : '—'}
-                              </td>
-                              <td style={{ ...td(true) }}>
-                                {row.status === 'paid' && (
-                                  <button
-                                    onClick={() => window.open(`/settlement/${row.id}`, '_blank')}
-                                    style={{
-                                      padding: '4px 10px', borderRadius: 7, border: 'none',
-                                      background: 'linear-gradient(135deg,#db142e,#a50f22)',
-                                      color: '#fff', fontSize: 10, fontWeight: 700, cursor: 'pointer',
-                                    }}
-                                  >
-                                    🖨 Reçu
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                    {(history?.data ?? []).length === 0 && (
+
+              {/* Table card */}
+              <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
+                  <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>Settlement History</p>
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
                       <tr>
-                        <td colSpan={7} style={{ padding: '40px 20px', textAlign: 'center', color: textMuted }}>
-                          No settlements yet
-                        </td>
+                        <th style={th()}>Batch Ref</th>
+                        <th style={th()}>Date</th>
+                        <th style={th(true)}>Orders</th>
+                        <th style={th(true)}>Your Payout</th>
+                        <th style={th(true)}>Status</th>
+                        <th style={th(true)}>Paid On</th>
+                        <th style={th(true)}>Receipt</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {(history?.data ?? []).map((row: any) => (
+                        <tr key={row.id}>
+                          <td style={{ ...td(), fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{row.batch_reference}</td>
+                          <td style={{ ...td(), color: textMuted, fontFamily: 'monospace' }}>{row.batch_date}</td>
+                          <td style={{ ...td(true), color: textMuted }}>{row.orders_count}</td>
+                          <td style={{ ...td(true), color: '#10b981', fontWeight: 900 }}>{fmt(row.total_seller_payout ?? 0)}</td>
+                          <td style={{ ...td(true) }}><PayoutBadge status={row.status ?? 'draft'} /></td>
+                          <td style={{ ...td(true), color: textMuted, fontSize: 11 }}>
+                            {row.paid_at ? new Date(row.paid_at).toLocaleDateString('fr-TN') : '—'}
+                          </td>
+                          <td style={{ ...td(true) }}>
+                            {row.status === 'paid' && (
+                              <button
+                                onClick={() => window.open(`/settlement/${row.id}`, '_blank')}
+                                style={{
+                                  padding: '4px 10px', borderRadius: 7, border: 'none',
+                                  background: 'linear-gradient(135deg,#db142e,#a50f22)',
+                                  color: '#fff', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                                }}
+                              >
+                                🖨 Reçu
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                      {(history?.data ?? []).length === 0 && (
+                        <tr>
+                          <td colSpan={7} style={{ padding: '40px 20px', textAlign: 'center', color: textMuted }}>
+                            No settlements yet
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+
+            </div>  
           )}
+
         </>
       )}
     </div>
