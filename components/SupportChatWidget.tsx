@@ -2,15 +2,17 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 const RED   = '#db142e'
 const GREEN = '#198f41'
+const DARK  = '#9b0f1f'
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api')
   .replace(/\/api\/?$/, '') + '/api'
 
 /* ─────────────────────────────────────────────────────────────
-   TYPES
+   TYPES  (unchanged)
 ───────────────────────────────────────────────────────────── */
 type MsgRole   = 'bot' | 'user'
 type ActiveTab = 'ai' | 'faq'
@@ -69,7 +71,7 @@ interface QuestionGroup {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   SESSION ID
+   SESSION ID  (unchanged)
 ───────────────────────────────────────────────────────────── */
 const SESSION_STORAGE_KEY = 'ct_chat_session_v1'
 
@@ -94,13 +96,13 @@ function createFreshSessionId(): string {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   API
+   API  (unchanged)
 ───────────────────────────────────────────────────────────── */
 async function aiChatApi(
   userMessage: string,
   history: ConversationTurn[],
   sessionId: string,
-  langHint: string = 'en',   // ← ADDED
+  langHint: string = 'en',
 ): Promise<AiChatApiResult> {
   const token =
     typeof window !== 'undefined' ? localStorage.getItem('ct_auth_token') : null
@@ -117,7 +119,7 @@ async function aiChatApi(
       session_id: sessionId,
       history:    history.slice(-6),
       locale:     typeof window !== 'undefined' ? document.documentElement.lang || 'en' : 'en',
-      lang_hint:  langHint,   // ← ADDED
+      lang_hint:  langHint,
     }),
   })
 
@@ -132,9 +134,7 @@ async function aiChatApi(
 }
 
 /* ─────────────────────────────────────────────────────────────
-   INTENT → ACTION BUTTONS
-   Single source of truth. Driven by backend intent only.
-   No keyword guessing anywhere in the codebase.
+   INTENT → ACTION BUTTONS  (unchanged)
 ───────────────────────────────────────────────────────────── */
 function resolveIntentActions(intent: string): Action[] {
   switch (intent) {
@@ -153,7 +153,7 @@ function resolveIntentActions(intent: string): Action[] {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   QUESTION TREE
+   QUESTION TREE  (unchanged)
 ───────────────────────────────────────────────────────────── */
 const QUESTION_GROUPS: QuestionGroup[] = [
   {
@@ -162,22 +162,19 @@ const QUESTION_GROUPS: QuestionGroup[] = [
       {
         id: 'where-order',
         label: 'Where is my order?',
-        response:
-          "You can track your order in real time from your orders page. If your order is still processing, it may take 24–48 hours before a tracking update appears. Need more details?",
+        response: "You can track your order in real time from your orders page. If your order is still processing, it may take 24–48 hours before a tracking update appears. Need more details?",
         actions: [{ label: '📦 View My Orders', href: '/orders' }],
       },
       {
         id: 'track-order',
         label: 'I want to track my order',
-        response:
-          "Head to your orders page — each order shows its current status and delivery progress. If you don't see an update within 48 hours of placing your order, please reach out to us.",
+        response: "Head to your orders page — each order shows its current status and delivery progress. If you don't see an update within 48 hours of placing your order, please reach out to us.",
         actions: [{ label: '🔍 Track Now', href: '/orders' }],
       },
       {
         id: 'delayed-order',
         label: 'My order is delayed',
-        response:
-          "We're sorry to hear that! Delays can happen due to high demand or logistics. Please check your order status first — if the estimated date has passed by more than 3 days, file a complaint so we can investigate.",
+        response: "We're sorry to hear that! Delays can happen due to high demand or logistics. Please check your order status first — if the estimated date has passed by more than 3 days, file a complaint so we can investigate.",
         actions: [
           { label: '📋 Check Order Status', href: '/orders' },
           { label: '🚨 File a Complaint',   href: '/complaints/new' },
@@ -191,15 +188,13 @@ const QUESTION_GROUPS: QuestionGroup[] = [
       {
         id: 'wrong-person',
         label: 'Delivered to the wrong person',
-        response:
-          "That shouldn't happen! Please file a complaint immediately with your order number and a description of the situation. Our team reviews all delivery disputes within 24 hours.",
+        response: "That shouldn't happen! Please file a complaint immediately with your order number and a description of the situation. Our team reviews all delivery disputes within 24 hours.",
         actions: [{ label: '🚨 File a Complaint', href: '/complaints/new' }],
       },
       {
         id: 'missing-damaged',
         label: 'Order missing / damaged / incorrect',
-        response:
-          "We sincerely apologise. Please file a complaint — attach a photo if possible so the seller can review it quickly. We aim to resolve all product issues within 3 business days.",
+        response: "We sincerely apologise. Please file a complaint — attach a photo if possible so the seller can review it quickly. We aim to resolve all product issues within 3 business days.",
         actions: [
           { label: '📸 Report Issue', href: '/complaints/new' },
           { label: '📦 My Orders',   href: '/orders' },
@@ -213,22 +208,19 @@ const QUESTION_GROUPS: QuestionGroup[] = [
       {
         id: 'return-order',
         label: 'How can I return my order?',
-        response:
-          "You can request a return within 14 days of delivery. Go to your orders, select the delivered order, and click 'Report Issue'. Our team will guide you through the return steps.",
+        response: "You can request a return within 14 days of delivery. Go to your orders, select the delivered order, and click 'Report Issue'. Our team will guide you through the return steps.",
         actions: [{ label: '🔄 Start a Return', href: '/orders' }],
       },
       {
         id: 'return-status',
         label: 'Check the status of my return',
-        response:
-          "Return status is visible under My Complaints. Once the seller approves your return, we'll update the status and initiate the refund process.",
+        response: "Return status is visible under My Complaints. Once the seller approves your return, we'll update the status and initiate the refund process.",
         actions: [{ label: '🚨 My Complaints', href: '/complaints' }],
       },
       {
         id: 'refund',
         label: 'When will I receive my refund?',
-        response:
-          "After your return is approved, refunds typically process within 5–7 business days depending on your payment method. COD refunds are issued as store credit or via bank transfer.",
+        response: "After your return is approved, refunds typically process within 5–7 business days depending on your payment method. COD refunds are issued as store credit or via bank transfer.",
         actions: [{ label: '🚨 Check Complaint Status', href: '/complaints' }],
       },
     ],
@@ -239,15 +231,13 @@ const QUESTION_GROUPS: QuestionGroup[] = [
       {
         id: 'payment-issue',
         label: 'Problem with my payment',
-        response:
-          "Payment issues can occur due to bank restrictions or incorrect card details. ChooseTounsi currently supports Cash on Delivery (COD). If you encountered an unexpected charge, please contact us directly.",
+        response: "Payment issues can occur due to bank restrictions or incorrect card details. ChooseTounsi currently supports Cash on Delivery (COD). If you encountered an unexpected charge, please contact us directly.",
         actions: [{ label: '✉️ Contact Support', href: 'mailto:support@choosetounsi.tn' }],
       },
       {
         id: 'update-account',
         label: 'Update my account information',
-        response:
-          "You can update your name, email, phone and password from your profile page at any time.",
+        response: "You can update your name, email, phone and password from your profile page at any time.",
         actions: [{ label: '👤 My Profile', href: '/profile' }],
       },
     ],
@@ -258,15 +248,13 @@ const QUESTION_GROUPS: QuestionGroup[] = [
       {
         id: 'contact',
         label: 'Contact support',
-        response:
-          "Our support team is available Saturday–Thursday, 9 AM – 6 PM (Tunisia time). You can reach us at support@choosetounsi.tn or via the form below.",
+        response: "Our support team is available Saturday–Thursday, 9 AM – 6 PM (Tunisia time). You can reach us at support@choosetounsi.tn or via the form below.",
         actions: [{ label: '✉️ Email Support', href: 'mailto:support@choosetounsi.tn' }],
       },
       {
         id: 'other',
         label: 'Something else',
-        response:
-          "No problem! Please email us at support@choosetounsi.tn and describe your issue in detail. We typically respond within 4 business hours.",
+        response: "No problem! Please email us at support@choosetounsi.tn and describe your issue in detail. We typically respond within 4 business hours.",
         actions: [{ label: '✉️ Email Us', href: 'mailto:support@choosetounsi.tn' }],
       },
     ],
@@ -274,7 +262,7 @@ const QUESTION_GROUPS: QuestionGroup[] = [
 ]
 
 /* ─────────────────────────────────────────────────────────────
-   WELCOME MESSAGES
+   WELCOME MESSAGES  (unchanged)
 ───────────────────────────────────────────────────────────── */
 const FAQ_WELCOME: ChatMessage = {
   id: 'faq-welcome',
@@ -293,7 +281,144 @@ function uid(): string {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   TYPING BUBBLE
+   PEPPER FAB BUTTON  (NEW)
+   Uses /images/logo-chili.png from public/images/
+───────────────────────────────────────────────────────────── */
+function PepperFAB({
+  onClick,
+  showBadge,
+  hasNewMessage,
+}: {
+  onClick: () => void
+  showBadge: boolean
+  hasNewMessage: boolean
+}) {
+  const [hovered, setHovered] = useState(false)
+  const [pulse,   setPulse]   = useState(false)
+
+  // Pulse every 6 seconds when closed to draw attention
+  useEffect(() => {
+    const id = setInterval(() => {
+      setPulse(true)
+      setTimeout(() => setPulse(false), 1000)
+    }, 6000)
+    return () => clearInterval(id)
+  }, [])
+
+  return (
+    <div style={{ position: 'relative' }}>
+      {/* Pulse ring */}
+      {pulse && (
+        <div style={{
+          position: 'absolute',
+          inset: -6,
+          borderRadius: '50%',
+          border: `2px solid ${RED}`,
+          animation: 'ct-pulse-ring 0.9s ease-out forwards',
+          pointerEvents: 'none',
+        }} />
+      )}
+
+      {/* Tooltip */}
+      {hovered && (
+        <div style={{
+          position: 'absolute',
+          bottom: '110%',
+          right: 0,
+          background: '#1a1a2e',
+          color: '#fff',
+          fontSize: 12,
+          fontWeight: 700,
+          padding: '6px 12px',
+          borderRadius: 8,
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+          animation: 'ct-fadein 0.15s ease both',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+        }}>
+          🛍️ Ask AI Assistant
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            right: 18,
+            width: 0, height: 0,
+            borderLeft: '5px solid transparent',
+            borderRight: '5px solid transparent',
+            borderTop: '5px solid #1a1a2e',
+          }} />
+        </div>
+      )}
+
+      {/* Notification badge */}
+      {showBadge && (
+        <div style={{
+          position: 'absolute',
+          top: -3,
+          right: -3,
+          width: 18,
+          height: 18,
+          borderRadius: '50%',
+          background: GREEN,
+          border: '2px solid #fff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 9,
+          fontWeight: 900,
+          color: '#fff',
+          zIndex: 2,
+          animation: hasNewMessage ? 'ct-badge-bounce 0.4s cubic-bezier(0.34,1.56,0.64,1)' : 'none',
+        }}>
+          1
+        </div>
+      )}
+
+      {/* Main FAB button */}
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        aria-label="Open AI Shopping Assistant"
+        style={{
+          width: 60,
+          height: 60,
+          borderRadius: '50%',
+          background: `linear-gradient(135deg, ${RED} 0%, ${DARK} 100%)`,
+          border: `3px solid ${GREEN}`,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: hovered
+            ? `0 8px 30px ${RED}60, 0 0 0 4px ${RED}20`
+            : `0 6px 24px ${RED}50`,
+          transform: hovered ? 'scale(1.1) translateY(-2px)' : 'scale(1)',
+          transition: 'all 0.22s cubic-bezier(0.34,1.56,0.64,1)',
+          overflow: 'hidden',
+          position: 'relative',
+          padding: 0,
+        }}
+      >
+        {/* Chili image — uses logo-chili.png from public/images/ */}
+        <Image
+          src="/images/logo-chili.png"
+          alt="AI Assistant"
+          width={36}
+          height={36}
+          style={{
+            objectFit: 'contain',
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+            transform: hovered ? 'rotate(-12deg) scale(1.08)' : 'rotate(0deg) scale(1)',
+            transition: 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+          }}
+        />
+      </button>
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TYPING BUBBLE  (unchanged)
 ───────────────────────────────────────────────────────────── */
 function TypingBubble() {
   return (
@@ -315,7 +440,7 @@ function TypingBubble() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   PRODUCT CARD
+   PRODUCT CARD  (unchanged logic, minor style polish)
 ───────────────────────────────────────────────────────────── */
 function ProductCard({ product }: { product: AiProduct }) {
   const href = product.is_pack
@@ -341,10 +466,12 @@ function ProductCard({ product }: { product: AiProduct }) {
       onMouseEnter={e => {
         e.currentTarget.style.borderColor = RED
         e.currentTarget.style.boxShadow = `0 2px 12px ${RED}20`
+        e.currentTarget.style.transform = 'translateY(-1px)'
       }}
       onMouseLeave={e => {
         e.currentTarget.style.borderColor = '#e5e7eb'
         e.currentTarget.style.boxShadow = 'none'
+        e.currentTarget.style.transform = 'none'
       }}
     >
       <div style={{
@@ -405,7 +532,7 @@ function ProductCard({ product }: { product: AiProduct }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   MESSAGE BUBBLE
+   MESSAGE BUBBLE  (unchanged logic, avatar now uses chili)
 ───────────────────────────────────────────────────────────── */
 function Bubble({ msg }: { msg: ChatMessage }) {
   const isBot = msg.role === 'bot'
@@ -420,12 +547,20 @@ function Bubble({ msg }: { msg: ChatMessage }) {
     }}>
       {isBot && (
         <div style={{
-          width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-          background: `linear-gradient(135deg, ${RED}, #9b0f1f)`,
+          width: 28, height: 28, borderRadius: '50%',
+          background: `linear-gradient(135deg, ${RED}, ${DARK})`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 14, marginBottom: 2,
+          marginBottom: 2, overflow: 'hidden',
+          border: `1.5px solid ${GREEN}`,
+          flexShrink: 0,
         }}>
-          🤝
+          <Image
+            src="/images/logo-chili.png"
+            alt="Assistant"
+            width={18}
+            height={18}
+            style={{ objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+          />
         </div>
       )}
 
@@ -438,7 +573,7 @@ function Bubble({ msg }: { msg: ChatMessage }) {
         ) : (
           <div style={{
             padding: '10px 14px',
-            background: isBot ? '#f4f4f5' : `linear-gradient(135deg, ${RED}, #9b0f1f)`,
+            background: isBot ? '#f4f4f5' : `linear-gradient(135deg, ${RED}, ${DARK})`,
             color: isBot ? '#1a1a2e' : '#fff',
             borderRadius: isBot ? '16px 16px 16px 4px' : '16px 16px 4px 16px',
             fontSize: 13, lineHeight: 1.6, fontWeight: 500,
@@ -495,7 +630,7 @@ function Bubble({ msg }: { msg: ChatMessage }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   QUESTION MENU
+   QUESTION MENU  (unchanged)
 ───────────────────────────────────────────────────────────── */
 function QuestionMenu({ onSelect }: { onSelect: (q: Question) => void }) {
   const [openGroup, setOpenGroup] = useState<string | null>(null)
@@ -565,7 +700,7 @@ function QuestionMenu({ onSelect }: { onSelect: (q: Question) => void }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   ROTATING HINTS
+   ROTATING HINTS  (unchanged)
 ───────────────────────────────────────────────────────────── */
 const HINTS = [
   'Search for a product…',
@@ -577,7 +712,7 @@ const HINTS = [
 ]
 
 /* ─────────────────────────────────────────────────────────────
-   AI TEXT INPUT BAR
+   AI TEXT INPUT BAR  (unchanged)
 ───────────────────────────────────────────────────────────── */
 function AiInputBar({
   onSend,
@@ -637,7 +772,7 @@ function AiInputBar({
           width: 38, height: 38, borderRadius: 10, flexShrink: 0,
           background: disabled || !value.trim()
             ? '#f4f4f5'
-            : `linear-gradient(135deg, ${RED}, #9b0f1f)`,
+            : `linear-gradient(135deg, ${RED}, ${DARK})`,
           border: 'none', cursor: disabled || !value.trim() ? 'not-allowed' : 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'all 0.15s', boxShadow: disabled || !value.trim()
@@ -657,7 +792,96 @@ function AiInputBar({
 }
 
 /* ─────────────────────────────────────────────────────────────
-   MAIN WIDGET
+   CHAT PANEL HEADER  (new sub-component, cleaner separation)
+───────────────────────────────────────────────────────────── */
+function PanelHeader({
+  activeTab,
+  onReset,
+  onClose,
+}: {
+  activeTab: ActiveTab
+  onReset: () => void
+  onClose: () => void
+}) {
+  return (
+    <div style={{
+      background: `linear-gradient(135deg, ${RED} 0%, ${DARK} 100%)`,
+      padding: '14px 16px 12px',
+      display: 'flex', alignItems: 'center', gap: 11,
+      flexShrink: 0,
+    }}>
+      {/* Chili avatar */}
+      <div style={{
+        width: 42, height: 42, borderRadius: '50%',
+        background: 'rgba(255,255,255,0.15)',
+        border: '2px solid rgba(255,255,255,0.3)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, overflow: 'hidden',
+      }}>
+        <Image
+          src="/images/logo-chili.png"
+          alt="Assistant"
+          width={28}
+          height={28}
+          style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))' }}
+        />
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 14, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.01em' }}>
+          ChooseTounsi Assistant
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+          {/* Live green dot */}
+          <span style={{
+            width: 7, height: 7, borderRadius: '50%', background: '#4ade80',
+            boxShadow: '0 0 0 2px rgba(74,222,128,0.35)',
+            display: 'inline-block',
+          }} />
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.82)', fontWeight: 600 }}>
+            {activeTab === 'ai' ? 'AI Shopping Assistant · Online' : 'Support · Replies instantly'}
+          </span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 5 }}>
+        <button onClick={onReset} title="New conversation"
+          style={{
+            width: 30, height: 30, borderRadius: 8,
+            background: 'rgba(255,255,255,0.12)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            cursor: 'pointer', color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.22)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')}>
+          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
+        </button>
+        <button onClick={onClose} title="Close"
+          style={{
+            width: 30, height: 30, borderRadius: 8,
+            background: 'rgba(255,255,255,0.12)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            cursor: 'pointer', color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 14, fontWeight: 700,
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.22)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')}>
+          ✕
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MAIN WIDGET  (all original logic unchanged, new FAB added)
 ───────────────────────────────────────────────────────────── */
 export default function SupportChatWidget() {
   const [open,      setOpen]      = useState(false)
@@ -666,20 +890,34 @@ export default function SupportChatWidget() {
   const [faqMessages, setFaqMessages] = useState<ChatMessage[]>([FAQ_WELCOME])
   const [aiMessages,  setAiMessages]  = useState<ChatMessage[]>([AI_WELCOME])
 
-  const [showMenu,  setShowMenu]  = useState(true)
-  const [aiLoading, setAiLoading] = useState(false)
+  const [showMenu,     setShowMenu]     = useState(true)
+  const [aiLoading,    setAiLoading]    = useState(false)
+  const [showFAB,      setShowFAB]      = useState(false)
+  const [showBadge,    setShowBadge]    = useState(false)
+  const [hasNewMsg,    setHasNewMsg]    = useState(false)
 
-  // Session ID — sync from localStorage, never empty on first call
-  const sessionId = useRef<string>(getOrCreateSessionId())
+  const sessionId      = useRef<string>(getOrCreateSessionId())
+  const aiMessagesRef  = useRef<ChatMessage[]>(aiMessages)
+  const bottomRef      = useRef<HTMLDivElement>(null)
 
-  // Messages ref — avoids stale closure in handleAiSend
-  const aiMessagesRef = useRef<ChatMessage[]>(aiMessages)
   useEffect(() => { aiMessagesRef.current = aiMessages }, [aiMessages])
 
-  const bottomRef = useRef<HTMLDivElement>(null)
+  // Show FAB after 1.5s on mount, badge after 4s
+  useEffect(() => {
+    const t1 = setTimeout(() => setShowFAB(true),  1500)
+    const t2 = setTimeout(() => { setShowBadge(true); setHasNewMsg(true) }, 4000)
+    const t3 = setTimeout(() => setHasNewMsg(false), 4800)
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
+  }, [])
+
+  // Remove badge once opened
+  const handleOpen = () => {
+    setOpen(true)
+    setShowBadge(false)
+  }
 
   useEffect(() => {
-    const handler = () => setOpen(true)
+    const handler = () => handleOpen()
     window.addEventListener('open-support-chat', handler)
     return () => window.removeEventListener('open-support-chat', handler)
   }, [])
@@ -698,7 +936,7 @@ export default function SupportChatWidget() {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  /* ── FAQ tab ────────────────────────────────────────────────────────── */
+  /* ── FAQ tab (unchanged) ──────────────────────────────────────────────── */
   const handleFaqQuestion = useCallback((q: Question) => {
     setShowMenu(false)
 
@@ -728,7 +966,7 @@ export default function SupportChatWidget() {
     }, 900)
   }, [])
 
-  /* ── AI tab ─────────────────────────────────────────────────────────── */
+  /* ── AI tab (unchanged) ───────────────────────────────────────────────── */
   const handleAiSend = useCallback(async (text: string) => {
     if (aiLoading) return
 
@@ -747,21 +985,16 @@ export default function SupportChatWidget() {
           content: m.text,
         }))
 
-      // Simple client-side language hint — backend uses this to override AI guessing
       const langHint = /[\u0600-\u06FF]/.test(text)
         ? 'ar'
         : /\b(bahi|3andna|nheb|warini|barcha|mafamach|hedha|hedhy)\b/i.test(text)
-        ? 'tz'   // Tunisian Darija romanized
+        ? 'tz'
         : /\b(je|tu|veux|cherche|bonjour|merci|besoin|nous|vous)\b/i.test(text)
         ? 'fr'
         : 'en'
 
       const result = await aiChatApi(text, history, sessionId.current, langHint)
-      console.log('INTENT:', result.intent)
-      console.log('ACTIONS:', resolveIntentActions(result.intent))
 
-      // ── ONE setAiMessages call. resolveIntentActions is the only
-      //    source of action buttons — no duplicate logic anywhere.
       const actions = resolveIntentActions(result.intent)
 
       setAiMessages(prev =>
@@ -795,7 +1028,7 @@ export default function SupportChatWidget() {
     }
   }, [aiLoading])
 
-  /* ── Reset ──────────────────────────────────────────────────────────── */
+  /* ── Reset (unchanged) ────────────────────────────────────────────────── */
   const handleReset = () => {
     if (activeTab === 'faq') {
       setFaqMessages([FAQ_WELCOME])
@@ -806,172 +1039,165 @@ export default function SupportChatWidget() {
     }
   }
 
-  if (!open) return null
-
   const currentMessages = activeTab === 'faq' ? faqMessages : aiMessages
 
   return (
     <>
+      {/* ── All animations ──────────────────────────────────────────────── */}
       <style>{`
-        @keyframes ct-fadein  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
-        @keyframes ct-slidein { from{opacity:0;transform:translateY(20px) scale(0.96)} to{opacity:1;transform:none scale(1)} }
-        @keyframes ct-bounce  { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+        @keyframes ct-fadein      { from{opacity:0;transform:translateY(8px)}   to{opacity:1;transform:none} }
+        @keyframes ct-slidein     { from{opacity:0;transform:translateY(24px) scale(0.95)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes ct-bounce      { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+        @keyframes ct-fab-in      { from{opacity:0;transform:scale(0.4) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @keyframes ct-pulse-ring  { from{opacity:0.8;transform:scale(1)} to{opacity:0;transform:scale(1.7)} }
+        @keyframes ct-badge-bounce{ 0%{transform:scale(0)} 60%{transform:scale(1.3)} 100%{transform:scale(1)} }
+        @media (max-width: 480px) {
+          .ct-panel {
+            bottom: 0 !important;
+            right: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            border-radius: 20px 20px 0 0 !important;
+            max-height: 92vh !important;
+          }
+        }
       `}</style>
 
-      {/* Backdrop */}
-      <div
-        onClick={() => setOpen(false)}
-        style={{
-          position: 'fixed', inset: 0, zIndex: 10000,
-          background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(2px)',
-          animation: 'ct-fadein 0.2s ease both',
-        }}
-      />
-
-      {/* Panel */}
-      <div style={{
-        position: 'fixed',
-        bottom: 24, right: 24,
-        width: 380, maxWidth: 'calc(100vw - 32px)',
-        maxHeight: 'calc(100vh - 48px)',
-        background: '#fff',
-        borderRadius: 20,
-        boxShadow: '0 24px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06)',
-        zIndex: 10001,
-        display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
-        animation: 'ct-slidein 0.28s cubic-bezier(0.34,1.56,0.64,1) both',
-      }}>
-
-        {/* Header */}
+      {/* ── Floating Action Button ───────────────────────────────────────── */}
+      {showFAB && !open && (
         <div style={{
-          background: `linear-gradient(135deg, ${RED} 0%, #9b0f1f 100%)`,
-          padding: '16px 18px 14px',
-          display: 'flex', alignItems: 'center', gap: 12,
-          flexShrink: 0,
+          position: 'fixed',
+          bottom: 28,
+          right: 28,
+          zIndex: 10002,
+          animation: 'ct-fab-in 0.5s cubic-bezier(0.34,1.56,0.64,1) both',
         }}>
-          <div style={{
-            width: 38, height: 38, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.15)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 18, flexShrink: 0,
-          }}>🤝</div>
-
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 14, fontWeight: 900, color: '#fff', margin: 0 }}>
-              ChooseTounsi Assistant
-            </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-              <span style={{
-                width: 7, height: 7, borderRadius: '50%', background: '#4ade80',
-                boxShadow: '0 0 0 2px rgba(74,222,128,0.3)',
-              }} />
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 600 }}>
-                {activeTab === 'ai' ? 'AI Shopping Assistant' : 'Support · Replies instantly'}
-              </span>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={handleReset} title="Restart"
-              style={{
-                width: 30, height: 30, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.12)',
-                border: 'none', cursor: 'pointer', color: '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-              </svg>
-            </button>
-            <button onClick={() => setOpen(false)} title="Close"
-              style={{
-                width: 30, height: 30, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.12)',
-                border: 'none', cursor: 'pointer', color: '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 16,
-              }}>
-              ✕
-            </button>
-          </div>
+          <PepperFAB
+            onClick={handleOpen}
+            showBadge={showBadge}
+            hasNewMessage={hasNewMsg}
+          />
         </div>
+      )}
 
-        {/* Tab switcher */}
-        <div style={{
-          display: 'flex', flexShrink: 0,
-          borderBottom: '1px solid #f1f5f9',
-          background: '#fafafa',
-        }}>
-          {(['ai', 'faq'] as ActiveTab[]).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                flex: 1, padding: '10px 0',
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: 'inherit', fontSize: 12, fontWeight: 800,
-                letterSpacing: '0.03em', textTransform: 'uppercase',
-                color: activeTab === tab ? RED : '#94a3b8',
-                borderBottom: activeTab === tab ? `2.5px solid ${RED}` : '2.5px solid transparent',
-                transition: 'all 0.15s',
-              }}
-            >
-              {tab === 'ai' ? '🛍️ Shop with AI' : '❓ Support FAQ'}
-            </button>
-          ))}
-        </div>
+      {/* ── Open state ───────────────────────────────────────────────────── */}
+      {open && (
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 10000,
+              background: 'rgba(0,0,0,0.22)',
+              backdropFilter: 'blur(2px)',
+              animation: 'ct-fadein 0.2s ease both',
+            }}
+          />
 
-        {/* Messages */}
-        <div style={{
-          flex: 1, overflowY: 'auto', padding: '16px 16px 8px',
-          display: 'flex', flexDirection: 'column', gap: 12,
-          scrollbarWidth: 'thin', scrollbarColor: '#f1f5f9 transparent',
-        }}>
-          {currentMessages.map(msg => (
-            <Bubble key={msg.id} msg={msg} />
-          ))}
-
-          {activeTab === 'faq' && showMenu && (
-            <div style={{ animation: 'ct-fadein 0.2s ease 0.1s both', opacity: 0 }}>
-              <p style={{
-                fontSize: 11, fontWeight: 800, color: '#94a3b8',
-                textTransform: 'uppercase', letterSpacing: '0.07em',
-                marginBottom: 8, paddingLeft: 2,
-              }}>
-                Choose a topic
-              </p>
-              <QuestionMenu onSelect={handleFaqQuestion} />
-            </div>
-          )}
-
-          <div ref={bottomRef} />
-        </div>
-
-        {/* Bottom area */}
-        {activeTab === 'ai' ? (
-          <AiInputBar onSend={handleAiSend} disabled={aiLoading} />
-        ) : (
-          <div style={{
-            padding: '10px 16px 12px',
-            borderTop: '1px solid #f1f5f9', flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-          }}>
-            <p style={{ fontSize: 11, color: '#cbd5e1', fontWeight: 600, margin: 0 }}>
-              Powered by ChooseTounsi
-            </p>
-            <Link href="/complaints/new" style={{
-              fontSize: 11, fontWeight: 700, color: RED,
-              textDecoration: 'none', padding: '4px 10px',
-              borderRadius: 6, border: `1px solid ${RED}30`,
-              background: `${RED}06`, whiteSpace: 'nowrap',
+          {/* Panel */}
+          <div
+            className="ct-panel"
+            style={{
+              position: 'fixed',
+              bottom: 24,
+              right: 24,
+              width: 385,
+              maxWidth: 'calc(100vw - 32px)',
+              maxHeight: 'calc(100vh - 48px)',
+              background: '#fff',
+              borderRadius: 20,
+              boxShadow: `0 28px 80px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05), 0 0 0 3px ${RED}18`,
+              zIndex: 10001,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              animation: 'ct-slidein 0.3s cubic-bezier(0.34,1.56,0.64,1) both',
             }}>
-              🚨 File a Complaint
-            </Link>
+
+            {/* Header */}
+            <PanelHeader
+              activeTab={activeTab}
+              onReset={handleReset}
+              onClose={() => setOpen(false)}
+            />
+
+            {/* Tab switcher */}
+            <div style={{
+              display: 'flex', flexShrink: 0,
+              borderBottom: '1px solid #f1f5f9',
+              background: '#fafafa',
+            }}>
+              {(['ai', 'faq'] as ActiveTab[]).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    flex: 1, padding: '10px 0',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontFamily: 'inherit', fontSize: 12, fontWeight: 800,
+                    letterSpacing: '0.03em', textTransform: 'uppercase',
+                    color: activeTab === tab ? RED : '#94a3b8',
+                    borderBottom: activeTab === tab ? `2.5px solid ${RED}` : '2.5px solid transparent',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {tab === 'ai' ? '🛍️ Shop with AI' : '❓ Support FAQ'}
+                </button>
+              ))}
+            </div>
+
+            {/* Messages */}
+            <div style={{
+              flex: 1, overflowY: 'auto', padding: '16px 16px 8px',
+              display: 'flex', flexDirection: 'column', gap: 12,
+              scrollbarWidth: 'thin', scrollbarColor: '#f1f5f9 transparent',
+            }}>
+              {currentMessages.map(msg => (
+                <Bubble key={msg.id} msg={msg} />
+              ))}
+
+              {activeTab === 'faq' && showMenu && (
+                <div style={{ animation: 'ct-fadein 0.2s ease 0.1s both', opacity: 0 }}>
+                  <p style={{
+                    fontSize: 11, fontWeight: 800, color: '#94a3b8',
+                    textTransform: 'uppercase', letterSpacing: '0.07em',
+                    marginBottom: 8, paddingLeft: 2,
+                  }}>
+                    Choose a topic
+                  </p>
+                  <QuestionMenu onSelect={handleFaqQuestion} />
+                </div>
+              )}
+
+              <div ref={bottomRef} />
+            </div>
+
+            {/* Bottom area */}
+            {activeTab === 'ai' ? (
+              <AiInputBar onSend={handleAiSend} disabled={aiLoading} />
+            ) : (
+              <div style={{
+                padding: '10px 16px 12px',
+                borderTop: '1px solid #f1f5f9', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+              }}>
+                <p style={{ fontSize: 11, color: '#cbd5e1', fontWeight: 600, margin: 0 }}>
+                  Powered by ChooseTounsi
+                </p>
+                <Link href="/complaints/new" style={{
+                  fontSize: 11, fontWeight: 700, color: RED,
+                  textDecoration: 'none', padding: '4px 10px',
+                  borderRadius: 6, border: `1px solid ${RED}30`,
+                  background: `${RED}06`, whiteSpace: 'nowrap',
+                }}>
+                  🚨 File a Complaint
+                </Link>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </>
   )
 }

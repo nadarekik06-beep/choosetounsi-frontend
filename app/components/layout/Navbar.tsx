@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { logout, isAuthenticated, getUser, AuthUser } from "@/lib/auth";
 import { useCart } from "@/context/CartContext";
 import { Heart, ShoppingBag, ClipboardList, AlertCircle } from "lucide-react";
+import Image from 'next/image'
 
 interface ApiCategory {
   id: number; name: string; name_ar: string; slug: string;
@@ -115,6 +116,51 @@ function Avatar({user,size=36}:{user:AuthUser;size?:number}){
 function RoleBadge({role}:{role:AuthUser["role"]}){
   const m:Record<string,string>={seller:"bg-amber-100 text-amber-700",client:"bg-blue-100 text-blue-700",admin:"bg-red-100 text-red-700"};
   return <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full ${m[role]??m.client}`}>{role}</span>;
+}
+function AskAIPill({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      title="Ask AI Shopping Assistant"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '6px 12px 6px 8px',
+        borderRadius: 999,
+        background: 'linear-gradient(135deg, #db142e 0%, #9b0f1f 100%)',
+        border: '1.5px solid #198f41',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        fontSize: 13,
+        fontWeight: 700,
+        color: '#fff',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+        transition: 'all 0.2s cubic-bezier(0.34,1.56,0.64,1)',
+        boxShadow: '0 2px 10px rgba(219,20,46,0.25)',
+      }}
+      onMouseEnter={e => {
+        const el = e.currentTarget as HTMLButtonElement
+        el.style.transform = 'scale(1.05) translateY(-1px)'
+        el.style.boxShadow = '0 6px 20px rgba(219,20,46,0.4)'
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget as HTMLButtonElement
+        el.style.transform = 'scale(1) translateY(0)'
+        el.style.boxShadow = '0 2px 10px rgba(219,20,46,0.25)'
+      }}
+    >
+      <Image
+        src="/images/logo-chili.png"
+        alt="AI"
+        width={18}
+        height={18}
+        style={{ objectFit: 'contain', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.3))' }}
+      />
+      Ask AI
+    </button>
+  )
 }
 
 /* ─── Mega Menu ──────────────────────────────────────────────── */
@@ -522,6 +568,7 @@ export default function Navbar() {
                   {l.label}
                 </Link>
               ))}
+              <AskAIPill onClick={handleSupport} />
               {loggedIn&&isSeller&&(
                 <Link href="/seller"
                   style={{padding:"8px 12px",borderRadius:8,fontSize:14,fontWeight:500,color:"#52525b",textDecoration:"none",transition:"all 0.14s",whiteSpace:"nowrap"}}

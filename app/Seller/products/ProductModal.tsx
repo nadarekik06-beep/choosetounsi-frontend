@@ -568,20 +568,31 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   useEffect(() => () => previews.forEach(prev => URL.revokeObjectURL(prev.preview)), [])
 
   const existingByColorGroup = useMemo(() => {
-    const map: Record<string, string[]> = {}
-    if (p?.images) {
-      for (const img of p.images as any[]) {
-        if (img.color_option_id != null) {
-          const url = storageUrl(img.url ?? img.image_path)
-          if (url) {
-            const key = String(img.color_option_id)
-            map[key] = [...(map[key] ?? []), url]
-          }
-        }
-      }
+  const map: Record<string, string[]> = {}
+  if (!p?.images) return map
+
+  // Build color ID → group key from variant_rows option_map
+  const colorIdToGroupKey: Record<number, string> = {}
+  for (const row of (p?.variant_rows ?? []) as any[]) {
+    const colorEntry = row.option_map?.['color']
+    if (!colorEntry) continue
+    const ids: number[] = colorEntry.ids ?? [colorEntry.id]
+    const groupKey = [...ids].sort((a, b) => a - b).join('|')
+    for (const id of ids) {
+      colorIdToGroupKey[id] = groupKey
     }
-    return map
-  }, [p?.images])
+  }
+
+  for (const img of p.images as any[]) {
+    if (img.color_option_id == null) continue
+    const url = storageUrl(img.url ?? img.image_path)
+    if (!url) continue
+    const key = colorIdToGroupKey[img.color_option_id] ?? String(img.color_option_id)
+    map[key] = [...(map[key] ?? []), url]
+  }
+
+  return map
+}, [p?.images, p?.variant_rows])
 
   const totalImages = existingImages.length + previews.length
 
