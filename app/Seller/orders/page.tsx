@@ -21,6 +21,7 @@ const STATUS_COLORS: Record<string, string> = {
   delivered:  '#14b8a6',
   cancelled:  '#ef4444',
   refunded:   '#a855f7',
+  out_for_delivery: '#8b5cf6',
 };
 
 function StatusBadge({ status, dark }: { status: string; dark: boolean }) {

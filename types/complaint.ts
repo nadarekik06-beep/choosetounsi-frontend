@@ -134,6 +134,9 @@ export interface Complaint {
   order?:           ComplaintOrder
   user?:            ComplaintUser
   seller?:          ComplaintUser
+  refund_status?: 'pending' | 'assigned' | 'picked_up' | 'completed' | null  // ← NEW
+  refund_task_id?: number | null
+  
 }
 
 // ─── Form payload ─────────────────────────────────────────────────────────────

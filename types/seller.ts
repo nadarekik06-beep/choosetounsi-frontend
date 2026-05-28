@@ -124,6 +124,7 @@ export interface ProductStats {
 export type OrderStatus =
   | 'pending'
   | 'processing'
+  | 'out_for_delivery'
   | 'completed'
   | 'cancelled'
   | 'delivered'

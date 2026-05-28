@@ -182,6 +182,12 @@ const C = {
   blueDim:   'rgba(59,130,246,0.12)',
 }
 
+const REFUND_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  pending:   { label: 'Awaiting Pickup', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+  assigned:  { label: 'Agent Assigned',  color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+  picked_up: { label: 'Item Collected',  color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)' },
+  completed: { label: 'Refund Complete', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+}
 // ─── Status meta ──────────────────────────────────────────────────────────────
 
 interface StatusMeta {
@@ -668,6 +674,18 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
                 COMPLAINT #{complaint.id}
               </span>
               <StatusBadge status={complaint.status} />
+              {/* ↓ NEW — refund delivery progress badge */}
+{complaint.refund_status && (
+  <span style={{
+    display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6,
+    fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999,
+    background: REFUND_STATUS_CONFIG[complaint.refund_status]?.bg ?? 'rgba(168,85,247,0.1)',
+    color: REFUND_STATUS_CONFIG[complaint.refund_status]?.color ?? '#a855f7',
+    border: `1px solid ${REFUND_STATUS_CONFIG[complaint.refund_status]?.color ?? '#a855f7'}30`,
+  }}>
+    ↩️ Refund: {REFUND_STATUS_CONFIG[complaint.refund_status]?.label ?? complaint.refund_status}
+  </span>
+)}
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 800, color: T.textMain, margin: 0 }}>
               {COMPLAINT_TYPE_LABELS[complaint.complaint_type]}
