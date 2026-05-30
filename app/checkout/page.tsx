@@ -60,6 +60,7 @@ interface BuyNowProduct {
   name: string
   price: string | number
   primary_image_url: string | null
+  is_free_delivery?: boolean                                         
   images?: { image_path: string; url?: string; color_option_id?: number | null }[]
   variants?: { id: number; price: string | number; sku: string | null; image_urls: string[] }[]
 }
@@ -357,7 +358,6 @@ export default function CheckoutPage() {
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
   const [walletLoading, setWalletLoading] = useState(true)
 
-  const [pendingCardOrderId, setPendingCardOrderId] = useState<number | null>(null)
   const [stripeLoading,      setStripeLoading]      = useState(false)
 
   const [form,     setForm]     = useState({ wilaya: '', address: '', phone: '', notes: '' })
@@ -449,9 +449,26 @@ export default function CheckoutPage() {
     return resolveImg(bnProduct.primary_image_url)
   })()
 
-  const summarySubtotal    = isBuyNow ? bnLineTotal : subtotal
-  const summaryTotal       = summarySubtotal + 8
-  const walletInsufficient = walletBalance !== null && walletBalance < summaryTotal
+const summarySubtotal = isBuyNow ? bnLineTotal : subtotal
+ 
+// Delivery fee logic — mirrors backend resolveCartDeliveryFee() exactly
+const PLATFORM_DELIVERY_FEE = 8
+ 
+const isFreeDelivery = (() => {
+  if (isBuyNow) {
+    // For buy-now, check the product's is_free_delivery flag
+    return (bnProduct as any)?.is_free_delivery === true
+  }
+  // For cart: free only when ALL items (non-pack) have free delivery
+  if (items.length === 0) return false
+  const hasPack = items.some(i => (i as any).is_pack)
+  if (hasPack) return false
+  return items.every(i => (i as any).is_free_delivery === true)
+})()
+ 
+const deliveryFee     = isFreeDelivery ? 0 : PLATFORM_DELIVERY_FEE
+const summaryTotal    = summarySubtotal + deliveryFee
+const walletInsufficient = walletBalance !== null && walletBalance < summaryTotal
 
   // ── Submit ────────────────────────────────────────────────────────────────
 
@@ -493,7 +510,6 @@ export default function CheckoutPage() {
       }
 
       if (paymentMethod === 'card' && res.needs_payment) {
-        setPendingCardOrderId(res.order_id)
         setLoading(false)
         setStripeLoading(true)
         const intentRes = await paymentApi.createStripeIntent(res.order_id)
@@ -822,9 +838,24 @@ export default function CheckoutPage() {
                   <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{fmt(summarySubtotal)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Shipping</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{fmt(8)}</span>
-                </div>
+                    <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Shipping</span>
+                    {isFreeDelivery ? (
+                      <span style={{
+                        fontSize: 12, fontWeight: 800,
+                        color: '#059669',
+                        background: 'rgba(16,185,129,0.1)',
+                        padding: '2px 8px', borderRadius: 999,
+                        border: '1px solid rgba(16,185,129,0.25)',
+                        display: 'flex', alignItems: 'center', gap: 4,
+                      }}>
+                        🚚 Free
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                        {fmt(PLATFORM_DELIVERY_FEE)}
+                      </span>
+                    )}
+                  </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14, padding: '8px 10px', background: '#f8fafc', borderRadius: 8 }}>
                   <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>Payment</span>
                   <span style={{ fontSize: 12, fontWeight: 800, color: '#374151' }}>

@@ -90,6 +90,7 @@ interface Product {
     })[]
   })[]
   color_images: Record<string, string[]>
+  is_free_delivery?: boolean    
 }
 
 // ─── Attribute Display ────────────────────────────────────────────────────────
@@ -175,13 +176,13 @@ function VariantSelector({
                       display:        'flex',
                       alignItems:     'center',
                       justifyContent: 'center',
-                      width:          (isGroup && !hasImage) ? 'auto' : 34,
+                      width:          34,
                       height:         34,
-                      padding:        (isGroup && !hasImage) ? '0 8px' : 0,
-                      gap:            4,
-                      borderRadius:   (isGroup && !hasImage) ? 999 : '50%',
+                      padding:        0,
+                      gap:            0,
+                      borderRadius:   '50%',
                       cursor:         available ? 'pointer' : 'not-allowed',
-                      background:     hasImage ? '#f0f0f0' : isGroup ? '#f8fafc' : (opt.color_hex ?? '#e5e7eb'),
+                      background:     '#f8fafc',
                       border:         chosen ? '3px solid #dc2626' : '2px solid #e5e7eb',
                       outline:        chosen ? '2px solid #fff' : 'none',
                       outlineOffset:  '-4px',
@@ -206,15 +207,31 @@ function VariantSelector({
                         }}
                       />
                     ) : isGroup ? (
-                      swatches.map(s => (
-                        <span key={s.id} title={s.value} style={{
-                          display: 'inline-block', width: 16, height: 16,
-                          borderRadius: '50%', flexShrink: 0,
-                          background: s.color_hex ?? '#e5e7eb',
-                          border: '1.5px solid rgba(0,0,0,0.10)',
-                        }} />
-                      ))
-                    ) : null}
+                      <div style={{
+                        position:     'absolute',
+                        inset:        0,
+                        display:      'flex',
+                        overflow:     'hidden',
+                        borderRadius: '50%',
+                      }}>
+                        {swatches.slice(0, 2).map(s => (
+                          <span key={s.id} title={s.value} style={{
+                            display:    'block',
+                            width:      '50%',
+                            height:     '100%',
+                            flexShrink: 0,
+                            background: s.color_hex ?? '#e5e7eb',
+                          }} />
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{
+                        position:     'absolute',
+                        inset:        0,
+                        borderRadius: '50%',
+                        background:   opt.color_hex ?? '#e5e7eb',
+                      }} />
+                    )}
 
                     {!available && (
                       <svg viewBox="0 0 34 34" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
@@ -655,6 +672,25 @@ export default function ProductDetailPage() {
                   <span style={{ fontSize: 12, color: '#94a3b8' }}>variant price</span>
                 )}
               </div>
+              {(product as any).is_free_delivery && (
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  marginTop: 6,
+                  background: 'rgba(16,185,129,0.08)',
+                  border: '1px solid rgba(16,185,129,0.25)',
+                  borderRadius: 8, padding: '5px 12px',
+                }}>
+                  <svg width="14" height="14" fill="none" stroke="#059669" strokeWidth="2" viewBox="0 0 24 24">
+                    <rect x="1" y="3" width="15" height="13" rx="1"/>
+                    <path d="M16 8h4l3 5v3h-7V8z"/>
+                    <circle cx="5.5" cy="18.5" r="2.5"/>
+                    <circle cx="18.5" cy="18.5" r="2.5"/>
+                  </svg>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: '#059669' }}>
+                    Free Delivery
+                  </span>
+                </div>
+              )}
               {product.sku && (
                 <p style={{ fontSize: 11, color: '#94a3b8', margin: '6px 0 0', fontFamily: 'monospace' }}>
                   SKU: {selectedVariant?.sku ?? product.sku}
@@ -725,7 +761,13 @@ export default function ProductDetailPage() {
 
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden', marginBottom: 20 }}>
               {[
-                { icon: <Truck size={18} color="#10b981" />,       title: 'Free Delivery',   desc: 'On orders over 50 DT across Tunisia' },
+                {
+                  icon: <Truck size={18} color="#10b981" />,
+                  title: product.is_free_delivery ? 'Free Delivery' : 'Delivery',
+                  desc: product.is_free_delivery
+                    ? 'This product ships for free — no delivery fee at checkout!'
+                    : 'On orders over 50 DT across Tunisia',
+                },
                 { icon: <RotateCcw size={18} color="#3b82f6" />,   title: 'Easy Returns',    desc: '30-day hassle-free return policy' },
                 { icon: <Shield size={18} color="#f59e0b" />,      title: 'Secure Payment',  desc: 'Your transaction is fully protected' },
                 { icon: <CheckCircle size={18} color="#dc2626" />, title: 'Verified Seller', desc: 'All sellers are reviewed by our team' },

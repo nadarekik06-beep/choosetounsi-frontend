@@ -91,6 +91,9 @@ export interface CartItem {
   pack_id?: number | null
   pack_slug?: string | null
   pack_selections?: { pack_item_id: number; variant_id: number | null }[]
+  // ── Delivery fields (NEW) ────────────────────────────────────────────────
+  is_free_delivery?: boolean   // ← true when seller enabled free delivery for this product
+  delivery_fee?: number        // ← 0 if free, 8 if default, X if custom
 }
 
 export interface CartResponse {
@@ -147,6 +150,7 @@ export interface CheckoutResponse {
   order_number: string
   order_id: number
   total: number
+  delivery_fee?: number
   needs_payment?: boolean
 }
 

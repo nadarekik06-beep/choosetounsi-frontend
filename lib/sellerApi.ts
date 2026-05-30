@@ -101,7 +101,7 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
   // string under the key 'seasons' and is handled separately below.
   const scalars: string[] = [
     'name', 'slug', 'sku', 'description', 'short_description',
-    'price', 'stock', 'category_id', 'subcategory_id',
+    'price', 'stock', 'category_id', 'subcategory_id', 'delivery_fee',
   ]
   scalars.forEach(key => {
     const val = (payload as Record<string, any>)[key]
@@ -245,7 +245,8 @@ export interface ProductPayload {
   subcategory_id?: number | string | null
   is_active?: boolean
   is_pack?: boolean | number
-  seasons?: string        // ← was 'season?: string' — now plural, JSON array string
+  seasons?: string  
+  delivery_fee?: string      
   images?: File[]
   delete_image_ids?: number[]
   attributes?: Record<string, string>

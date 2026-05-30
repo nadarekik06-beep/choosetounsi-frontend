@@ -25,6 +25,8 @@ import SponsoredBadge from '@/app/components/SponsoredBadge'
 type CartItem = BaseCartItem & {
   is_sponsored?: boolean
   is_pack?: boolean
+  is_free_delivery?: boolean   
+  delivery_fee?: number        
   pack_id?: number | null
   pack_slug?: string | null
   pack_selections?: { pack_item_id: number; variant_id: number | null }[]
@@ -119,11 +121,25 @@ function CartRow({
           {item.is_sponsored && <SponsoredBadge compact />}
         </div>
 
-        {item.variant_label && (
-          <p style={{ fontSize: 11, color: '#64748b', margin: '3px 0 0', fontWeight: 500 }}>
-            {item.variant_label}
-          </p>
-        )}
+        
+                {item.variant_label && (
+                  <p style={{ fontSize: 11, color: '#64748b', margin: '3px 0 0', fontWeight: 500 }}>
+                    {item.variant_label}
+                  </p>
+                )}
+                {item.is_free_delivery && (
+                  <p style={{
+                    fontSize: 10, fontWeight: 800,
+                    color: '#059669',
+                    background: 'rgba(16,185,129,0.1)',
+                    border: '1px solid rgba(16,185,129,0.25)',
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    padding: '2px 8px', borderRadius: 999,
+                    margin: '4px 0 0',
+                  }}>
+                    🚚 Free Delivery
+                  </p>
+                )}
 
         {variantEntries.length > 0 && (
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
@@ -520,9 +536,31 @@ export default function CartDrawer() {
                 {fmt(selectedIds.size > 0 ? selectedSubtotal : subtotal)}
               </span>
             </div>
-            <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 10px', fontWeight: 500 }}>
-              Shipping calculated at checkout
-            </p>
+            {/* Dynamic shipping hint in cart drawer footer */}
+                {(() => {
+                  const allFree = items.length > 0 && items.every(i => !i.is_pack && (i as any).is_free_delivery)
+                  if (allFree) {
+                    return (
+                      <p style={{
+                        fontSize: 11, fontWeight: 800,
+                        color: '#059669',
+                        background: 'rgba(16,185,129,0.08)',
+                        border: '1px solid rgba(16,185,129,0.2)',
+                        borderRadius: 8, padding: '6px 10px',
+                        margin: '0 0 10px',
+                        display: 'flex', alignItems: 'center', gap: 5,
+                      }}>
+                        🚚 All items have free delivery!
+                      </p>
+                    )
+                  }
+                  return (
+                    <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 10px', fontWeight: 500 }}>
+                      Shipping calculated at checkout
+                    </p>
+                  )
+                })()}
+ 
 
             {selectedIds.size > 0 && selectedIds.size < items.length && (
               <div style={{ marginBottom: 12, padding: '8px 12px', background: 'rgba(220,38,38,0.05)', border: '1px solid rgba(220,38,38,0.15)', borderRadius: 8, fontSize: 11, color: '#b91c1c', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
