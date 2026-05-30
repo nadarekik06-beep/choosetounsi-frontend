@@ -17,15 +17,12 @@ function getToken(): string | null {
 }
 
 const COMPLAINT_TYPES = [
-  { value: '',                  label: '— Select a reason —',      icon: null },
-  { value: 'item_not_received', label: 'Item Not Received',        icon: '📦' },
-  { value: 'wrong_item',        label: 'Wrong Item Sent',          icon: '🔄' },
-  { value: 'damaged_item',      label: 'Damaged / Defective Item', icon: '💔' },
-  { value: 'quality_issue',     label: 'Quality Does Not Match',   icon: '⚠️' },
-  { value: 'late_delivery',     label: 'Late Delivery',            icon: '⏰' },
-  { value: 'seller_behavior',   label: 'Seller Behavior Issue',    icon: '🙁' },
-  { value: 'payment_issue',     label: 'Payment / Billing Problem',icon: '💳' },
-  { value: 'other',             label: 'Other',                    icon: '📝' },
+  { value: '',                label: '— Select a reason —',          icon: null },
+  { value: 'wrong_product',   label: 'Wrong Product Received',       icon: '📦' },
+  { value: 'wrong_size',      label: 'Wrong Size',                   icon: '📏' },
+  { value: 'wrong_color',     label: 'Wrong Color',                  icon: '🎨' },
+  { value: 'damaged_product', label: 'Damaged / Defective Product',  icon: '💔' },
+  { value: 'other',           label: 'Other',                        icon: '📝' },
 ]
 
 const ELIGIBLE_STATUSES = ['delivered', 'out_for_delivery', 'completed']
@@ -127,9 +124,9 @@ export default function ComplaintModal({
       const token = getToken()
       const body  = new FormData()
       body.append('order_id',    String(orderId))
-      body.append('type',        type)
+      body.append('complaint_type', type)
       body.append('description', description)
-      if (imageFile) body.append('proof_image', imageFile)
+      if (imageFile) body.append('image', imageFile)
       const res  = await fetch(`${API_URL}/client/complaints`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
