@@ -1,9 +1,8 @@
 /**
- * FILE: lib/complaintApi.ts  (Customer Frontend — port 3000)  ← ADD new methods
+ * FILE: lib/complaintApi.ts  (customer frontend — port 3000)  ← REPLACE
  *
- * Changes from v1: sellerComplaintApi gets approve() and reject() methods.
- * adminComplaintApi gets confirmRejection() and overrideToApproved().
- * Everything else is identical to v1.
+ * Change: complaintApi.submit() now appends resolution_type to FormData.
+ * Everything else is identical to the previous version.
  */
 
 import type { Complaint, ComplaintFormPayload, EligibleOrder } from '@/types/complaint'
@@ -13,8 +12,9 @@ const API_URL = RAW_URL.endsWith('/api') ? RAW_URL : `${RAW_URL}/api`
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
-  return localStorage.getItem('ct_auth_token')
+  return localStorage.getItem('ct_auth_token') ?? null
 }
+
 function authHeaders(): Record<string, string> {
   const token = getToken()
   return token ? { Authorization: `Bearer ${token}` } : {}
@@ -54,24 +54,31 @@ async function formRequest<T>(path: string, data: FormData): Promise<T> {
 
 export const complaintApi = {
   getEligibleOrders: () =>
-    jsonRequest<{ success: boolean; window_days: number; data: EligibleOrder[] }>(
+    jsonRequest<{ success: boolean; window_hours: number; window_days: number; data: EligibleOrder[] }>(
       'GET', '/client/complaints/eligible-orders'
     ),
+
   getAll: (params: Record<string, any> = {}) => {
     const qs = new URLSearchParams(
       Object.entries(params).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)])
     ).toString()
     return jsonRequest<{ success: boolean; data: any }>('GET', `/client/complaints${qs ? `?${qs}` : ''}`)
   },
+
   getOne: (id: number) =>
     jsonRequest<{ success: boolean; data: Complaint }>('GET', `/client/complaints/${id}`),
+
   submit: (payload: ComplaintFormPayload) => {
     const fd = new FormData()
-    fd.append('order_id', String(payload.order_id))
-    fd.append('complaint_type', payload.complaint_type)
-    fd.append('description', payload.description)
+    fd.append('order_id',        String(payload.order_id))
+    fd.append('complaint_type',  payload.complaint_type)
+    fd.append('resolution_type', payload.resolution_type)   // ← NEW
+    fd.append('description',     payload.description)
     if (payload.other_reason) fd.append('other_reason', payload.other_reason)
-    if (payload.image) fd.append('image', payload.image)
+    if (payload.image)        fd.append('image', payload.image)
+    if (payload.item_ids && payload.item_ids.length > 0) {
+      payload.item_ids.forEach(id => fd.append('item_ids[]', String(id)))
+    }
     return formRequest<{ success: boolean; message: string; data: Complaint }>('/client/complaints', fd)
   },
 }
@@ -97,15 +104,11 @@ export const sellerComplaintApi = {
       'PATCH', `/seller/complaints/${id}/note`, { seller_note }
     ),
 
-  // ── NEW ──────────────────────────────────────────────────────────────────
-
-  /** Seller approves → status = APPROVED (direct, client notified) */
   approve: (id: number, seller_note?: string) =>
     jsonRequest<{ success: boolean; message: string; data: Complaint }>(
       'PATCH', `/seller/complaints/${id}/approve`, { seller_note }
     ),
 
-  /** Seller rejects → status = SELLER_REJECTED_PENDING_ADMIN (admin notified) */
   reject: (id: number, seller_note: string, rejection_reason: string) =>
     jsonRequest<{ success: boolean; message: string; data: Complaint }>(
       'PATCH', `/seller/complaints/${id}/reject`, { seller_note, rejection_reason }
@@ -138,15 +141,11 @@ export const adminComplaintApi = {
       'PATCH', `/admin/complaints/${id}/reject`, { rejection_reason }
     ),
 
-  // ── NEW ──────────────────────────────────────────────────────────────────
-
-  /** Admin confirms seller's rejection → status = REJECTED (final) */
   confirmRejection: (id: number) =>
     jsonRequest<{ success: boolean; message: string; data: Complaint }>(
       'PATCH', `/admin/complaints/${id}/confirm-rejection`
     ),
 
-  /** Admin overrides seller's rejection → status = APPROVED (final) */
   overrideToApproved: (id: number) =>
     jsonRequest<{ success: boolean; message: string; data: Complaint }>(
       'PATCH', `/admin/complaints/${id}/override-approve`

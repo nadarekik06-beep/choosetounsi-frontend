@@ -274,11 +274,17 @@ function OrderItemCard({
 
   return (
     <div style={{
-      display: 'flex', gap: 14,
-      padding: '14px 16px',
-      borderBottom: `1px solid ${border}`,
-      alignItems: 'flex-start',
-    }}>
+  display: 'flex', gap: 14,
+  padding: '14px 16px',
+  borderBottom: `1px solid ${border}`,
+  alignItems: 'flex-start',
+ background: item.item_status === 'returned'  ? 'rgba(219,20,46,0.04)'
+             : item.item_status === 'exchanged' ? 'rgba(245,158,11,0.04)'
+             : 'transparent',
+  borderLeft: item.item_status === 'returned'  ? '3px solid #db142e'
+             : item.item_status === 'exchanged' ? '3px solid #f59e0b'
+             : 'none',
+}}>
 
       {/* ── Product / Variant image ── */}
       <div style={{
@@ -320,13 +326,33 @@ function OrderItemCard({
       <div style={{ flex: 1, minWidth: 0 }}>
 
         {/* Product name */}
-        <p style={{
-          fontWeight: 800, color: textMain, fontSize: 13,
-          margin: '0 0 4px',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>
-          {item.product_name}
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+  <p style={{
+    fontWeight: 800,
+   color: item.item_status ? (dark ? '#6b7280' : '#94a3b8') : textMain,
+    fontSize: 13, margin: 0,
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+    textDecoration: item.item_status ? 'line-through' : 'none',
+  }}>
+    {item.product_name}
+  </p>
+  {item.item_status === 'returned' && (
+    <span style={{
+      flexShrink: 0, fontSize: 9, fontWeight: 800,
+      padding: '2px 7px', borderRadius: 999,
+      background: 'rgba(219,20,46,0.15)', color: '#db142e',
+      border: '1px solid rgba(219,20,46,0.35)',
+    }}>↩ Returned</span>
+  )}
+  {item.item_status === 'exchanged' && (
+    <span style={{
+      flexShrink: 0, fontSize: 9, fontWeight: 800,
+      padding: '2px 7px', borderRadius: 999,
+      background: 'rgba(245,158,11,0.15)', color: '#f59e0b',
+      border: '1px solid rgba(245,158,11,0.35)',
+    }}>↔ Exchanged</span>
+  )}
+</div>
 
         {/* Variant label + attributes */}
         {hasVariant && (

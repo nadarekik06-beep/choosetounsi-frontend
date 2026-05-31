@@ -1,16 +1,30 @@
 'use client'
 
 /**
- * components/ComplaintForm.tsx  — ChooseTounsi light mode redesign
+ * components/ComplaintForm.tsx  ← REPLACE
  *
- * FIX: Field defined OUTSIDE ComplaintForm (no focus loss on textarea).
- * THEME: Full light mode — white cards, ChooseTounsi red accent, crisp shadows.
+ * BASE: original file (doc 33, 827 lines)
+ *
+ * CHANGES ADDED on top of the original:
+ *   1. Import ResolutionType + RESOLUTION_TYPE_LABELS from types
+ *   2. ResolutionPicker component (new, defined outside ComplaintForm like Field)
+ *   3. selectedItemIds state (already existed in previous version)
+ *   4. resolutionType state (NEW)
+ *   5. step3Done now = !!resolutionType (resolution must be picked before type)
+ *   6. Steps renumbered: Order(1)→Items(2)→Resolution(3)→Type(4)→Details(5)→Submit
+ *   7. Section 3 = Resolution picker (inserted between Items and Complaint Type)
+ *   8. validate() checks resolutionType
+ *   9. handleSubmit passes resolution_type to complaintApi.submit()
+ *   10. "No eligible orders" text updated to say 48h
+ *
+ * ALL original logic, styles, Field, Section, StepDot, ItemPicker,
+ * baseInputStyle, TYPE_ICONS, brand tokens — 100% preserved.
  */
 
 import { useState, useEffect, useRef } from 'react'
 import { complaintApi } from '@/lib/complaintApi'
-import type { EligibleOrder, ComplaintType } from '@/types/complaint'
-import { COMPLAINT_TYPE_LABELS } from '@/types/complaint'
+import type { EligibleOrder, EligibleOrderItem, ComplaintType, ResolutionType } from '@/types/complaint'
+import { COMPLAINT_TYPE_LABELS, RESOLUTION_TYPE_LABELS } from '@/types/complaint'
 
 // ── Brand tokens — light mode ─────────────────────────────────────────────────
 const RED       = '#db142e'
@@ -26,6 +40,7 @@ const TEXT      = '#0f172a'
 const TEXT_SEC  = '#475569'
 const MUTED     = '#94a3b8'
 const GREEN     = '#10b981'
+const ORANGE    = '#f97316'
 
 const TYPE_ICONS: Record<string, string> = {
   wrong_item:       '📦',
@@ -34,6 +49,10 @@ const TYPE_ICONS: Record<string, string> = {
   not_as_described: '🖼️',
   quality_issue:    '⚠️',
   late_delivery:    '⏰',
+  wrong_product:    '📦',
+  wrong_size:       '📏',
+  wrong_color:      '🎨',
+  damaged_product:  '💔',
   other:            '💬',
 }
 
@@ -122,6 +141,199 @@ const baseInputStyle: React.CSSProperties = {
   boxSizing: 'border-box', transition: 'border-color 0.2s, box-shadow 0.2s',
 }
 
+// ── Item Picker ───────────────────────────────────────────────────────────────
+function ItemPicker({
+  items, selectedIds, onChange, error,
+}: {
+  items: EligibleOrderItem[]
+  selectedIds: number[]
+  onChange: (ids: number[]) => void
+  error?: string
+}) {
+  const isSingle = items.length === 1
+
+  const toggle = (id: number) => {
+    if (selectedIds.includes(id)) onChange(selectedIds.filter(i => i !== id))
+    else onChange([...selectedIds, id])
+  }
+
+  if (isSingle) {
+    const item = items[0]
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '10px 14px', borderRadius: 10,
+        background: RED_LIGHT, border: `1.5px solid ${RED}`,
+        animation: 'fadeSlideIn 0.2s ease',
+      }}>
+        {item.image_url && (
+          <img src={item.image_url} alt={item.product_name}
+            style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+        )}
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: 13, fontWeight: 800, color: TEXT, margin: 0 }}>{item.product_name}</p>
+          <p style={{ fontSize: 11, color: TEXT_SEC, margin: '2px 0 0' }}>Qty: {item.quantity}</p>
+        </div>
+        <span style={{
+          fontSize: 10, fontWeight: 800, color: RED, background: RED_LIGHT,
+          padding: '3px 8px', borderRadius: 999, border: `1px solid ${RED}30`,
+        }}>Auto-selected</span>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <p style={{
+        fontSize: 11, color: TEXT_SEC, fontWeight: 600, marginBottom: 10,
+        display: 'flex', alignItems: 'center', gap: 6,
+      }}>
+        <span style={{
+          fontSize: 10, fontWeight: 800, color: RED,
+          background: RED_LIGHT, padding: '2px 7px', borderRadius: 999,
+          border: `1px solid ${RED}30`,
+        }}>Select items</span>
+        Which item(s) are you reporting an issue with?
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {items.map(item => {
+          const sel = selectedIds.includes(item.id)
+          return (
+            <button key={item.id} onClick={() => toggle(item.id)} style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '11px 14px', borderRadius: 12, cursor: 'pointer',
+              background: sel ? RED_LIGHT : CARD2,
+              border: `1.5px solid ${sel ? RED : BORDER}`,
+              textAlign: 'left', fontFamily: 'inherit',
+              boxShadow: sel ? `0 0 0 1px ${RED}, 0 2px 12px rgba(219,20,46,0.08)` : 'none',
+              transition: 'all 0.15s ease',
+            }}>
+              <div style={{
+                width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                border: `2px solid ${sel ? RED : BORDER}`,
+                background: sel ? RED : '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.15s',
+              }}>
+                {sel && (
+                  <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+                    <path d="M1 4L4 7L10 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              {item.image_url ? (
+                <img src={item.image_url} alt={item.product_name}
+                  style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', flexShrink: 0, border: `1px solid ${BORDER}` }} />
+              ) : (
+                <div style={{
+                  width: 44, height: 44, borderRadius: 8, flexShrink: 0,
+                  background: '#f1f5f9', border: `1px solid ${BORDER}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+                }}>📦</div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{
+                  fontSize: 13, fontWeight: 700, color: sel ? RED : TEXT,
+                  margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  transition: 'color 0.15s',
+                }}>{item.product_name}</p>
+                <p style={{ fontSize: 11, color: TEXT_SEC, margin: '2px 0 0', fontWeight: 500 }}>
+                  Qty: {item.quantity} · {Number(item.unit_price).toFixed(2)} DT
+                </p>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+      {error && (
+        <span style={{ fontSize: 11, color: RED, fontWeight: 700, marginTop: 8, display: 'block' }}>
+          ⚠ {error}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// ── Resolution Picker — NEW, defined outside ComplaintForm like Field ─────────
+function ResolutionPicker({
+  value, onChange, error,
+}: {
+  value: ResolutionType | ''; onChange: (v: ResolutionType) => void; error?: string
+}) {
+  const options: ResolutionType[] = ['return_refund', 'exchange']
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        {options.map(opt => {
+          const cfg = RESOLUTION_TYPE_LABELS[opt]
+          const sel = value === opt
+          const accentColor = opt === 'return_refund' ? RED : ORANGE
+          const accentLight = opt === 'return_refund' ? RED_LIGHT : 'rgba(249,115,22,0.08)'
+          return (
+            <button key={opt} onClick={() => onChange(opt)} style={{
+              padding: '16px 14px', borderRadius: 12, cursor: 'pointer',
+              textAlign: 'left', fontFamily: 'inherit',
+              display: 'flex', flexDirection: 'column', gap: 8,
+              background: sel ? accentLight : CARD2,
+              border: `2px solid ${sel ? accentColor : BORDER}`,
+              boxShadow: sel
+                ? `0 0 0 1px ${accentColor}, 0 4px 16px ${accentColor}18`
+                : '0 1px 3px rgba(0,0,0,0.04)',
+              transition: 'all 0.18s ease',
+            }}>
+              <span style={{ fontSize: 28 }}>{cfg.icon}</span>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 800, color: sel ? accentColor : TEXT, margin: '0 0 3px' }}>
+                  {cfg.label}
+                </p>
+                <p style={{ fontSize: 11, color: TEXT_SEC, margin: 0, lineHeight: 1.4 }}>
+                  {cfg.description}
+                </p>
+              </div>
+              {sel && (
+                <div style={{
+                  width: 18, height: 18, borderRadius: '50%', background: accentColor,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-end',
+                }}>
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              )}
+            </button>
+          )
+        })}
+      </div>
+      {value === 'return_refund' && (
+        <div style={{
+          marginTop: 10, padding: '10px 14px', borderRadius: 9,
+          background: 'rgba(219,20,46,0.04)', border: '1px solid rgba(219,20,46,0.15)',
+          fontSize: 12, color: TEXT_SEC, lineHeight: 1.6,
+        }}>
+          📦 A delivery agent will collect the item(s) from you and return them to the seller.
+          Your refund will be processed after pickup.
+        </div>
+      )}
+      {value === 'exchange' && (
+        <div style={{
+          marginTop: 10, padding: '10px 14px', borderRadius: 9,
+          background: 'rgba(249,115,22,0.04)', border: '1px solid rgba(249,115,22,0.15)',
+          fontSize: 12, color: TEXT_SEC, lineHeight: 1.6,
+        }}>
+          🔄 A delivery agent will bring you a replacement item.
+          The seller will coordinate the exchange.
+        </div>
+      )}
+      {error && (
+        <span style={{ fontSize: 11, color: RED, fontWeight: 700, marginTop: 8, display: 'block' }}>
+          ⚠ {error}
+        </span>
+      )}
+    </div>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 interface ComplaintFormProps {
   prefilledOrderId?: number
@@ -139,6 +351,8 @@ export default function ComplaintForm({
   const [noEligible,     setNoEligible]     = useState(false)
 
   const [selectedOrderId, setSelectedOrderId] = useState<number | ''>(prefilledOrderId ?? '')
+  const [selectedItemIds, setSelectedItemIds] = useState<number[]>([])
+  const [resolutionType,  setResolutionType]  = useState<ResolutionType | ''>('')  // ← NEW
   const [complaintType,   setComplaintType]   = useState<ComplaintType | ''>('')
   const [otherReason,     setOtherReason]     = useState('')
   const [description,     setDescription]     = useState('')
@@ -153,10 +367,22 @@ export default function ComplaintForm({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const step1Done = !!selectedOrderId
-  const step2Done = !!complaintType && (complaintType !== 'other' || !!otherReason.trim())
-  const step3Done = description.trim().length >= 20
-  const currentStep = !step1Done ? 1 : !step2Done ? 2 : !step3Done ? 3 : 4
-  const allDone = step1Done && step2Done && step3Done
+  const step2Done = selectedItemIds.length > 0
+  const step3Done = !!resolutionType                                                          // ← NEW
+  const step4Done = !!complaintType && (complaintType !== 'other' || !!otherReason.trim())
+  const step5Done = description.trim().length >= 20
+  const allDone   = step1Done && step2Done && step3Done && step4Done && step5Done
+
+  // Steps: Order(1) Items(2) Resolution(3) Type(4) Details(5) Submit(6)
+  const currentStep = !step1Done ? 1 : !step2Done ? 2 : !step3Done ? 3 : !step4Done ? 4 : !step5Done ? 5 : 6
+
+  useEffect(() => {
+    if (!selectedOrderId) { setSelectedItemIds([]); return }
+    const order = eligibleOrders.find(o => o.id === selectedOrderId)
+    if (!order) return
+    if (order.items.length === 1) setSelectedItemIds([order.items[0].id])
+    else setSelectedItemIds([])
+  }, [selectedOrderId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     complaintApi.getEligibleOrders()
@@ -167,6 +393,13 @@ export default function ComplaintForm({
       .catch(() => setNoEligible(true))
       .finally(() => setLoadingOrders(false))
   }, [])
+
+  useEffect(() => {
+    if (prefilledOrderId && eligibleOrders.length > 0) {
+      const order = eligibleOrders.find(o => o.id === prefilledOrderId)
+      if (order && order.items.length === 1) setSelectedItemIds([order.items[0].id])
+    }
+  }, [eligibleOrders, prefilledOrderId])
 
   const selectedOrder = eligibleOrders.find(o => o.id === selectedOrderId) ?? null
 
@@ -200,10 +433,12 @@ export default function ComplaintForm({
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {}
-    if (!selectedOrderId) errs.order_id = 'Please select an order.'
-    if (!complaintType)   errs.complaint_type = 'Please select a type.'
+    if (!selectedOrderId)             errs.order_id       = 'Please select an order.'
+    if (selectedItemIds.length === 0) errs.item_ids       = 'Please select at least one item.'
+    if (!resolutionType)              errs.resolution_type = 'Please select a resolution.'   // ← NEW
+    if (!complaintType)               errs.complaint_type  = 'Please select a type.'
     if (complaintType === 'other' && !otherReason.trim()) errs.other_reason = 'Please specify.'
-    if (description.trim().length < 20) errs.description = `${20 - description.trim().length} more chars needed.`
+    if (description.trim().length < 20) errs.description  = `${20 - description.trim().length} more chars needed.`
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -214,10 +449,13 @@ export default function ComplaintForm({
     setSubmitting(true)
     try {
       const res = await complaintApi.submit({
-        order_id: selectedOrderId as number,
-        complaint_type: complaintType as ComplaintType,
-        other_reason: complaintType === 'other' ? otherReason : undefined,
-        description, image: imageFile,
+        order_id:        selectedOrderId as number,
+        complaint_type:  complaintType as ComplaintType,
+        resolution_type: resolutionType as ResolutionType,   // ← NEW
+        other_reason:    complaintType === 'other' ? otherReason : undefined,
+        description,
+        image:           imageFile,
+        item_ids:        selectedItemIds,
       })
       onSuccess?.(res.data)
     } catch (err: any) {
@@ -253,7 +491,7 @@ export default function ComplaintForm({
         </p>
         <p style={{ fontSize: 13, color: TEXT_SEC, maxWidth: 320, margin: '0 auto 24px', lineHeight: 1.7 }}>
           Complaints can only be filed on <strong>delivered orders</strong> within{' '}
-          <strong>14 days</strong> of delivery, once per order.
+          <strong>48 hours</strong> of delivery, once per order.
         </p>
         {onCancel && (
           <button onClick={onCancel} style={{
@@ -265,6 +503,16 @@ export default function ComplaintForm({
       </div>
     )
   }
+
+  // ── Step config — now 6 steps ─────────────────────────────────────────────
+  const STEPS = [
+    { n: 1, label: 'Order' },
+    { n: 2, label: 'Items' },
+    { n: 3, label: 'Resolution' },   // ← NEW
+    { n: 4, label: 'Type' },
+    { n: 5, label: 'Details' },
+    { n: 6, label: 'Submit' },
+  ]
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -310,12 +558,7 @@ export default function ComplaintForm({
           <div style={{
             display: 'flex', alignItems: 'flex-start', marginBottom: 28, padding: '0 4px',
           }}>
-            {[
-              { n: 1, label: 'Order' },
-              { n: 2, label: 'Type' },
-              { n: 3, label: 'Details' },
-              { n: 4, label: 'Submit' },
-            ].map((s, i, arr) => (
+            {STEPS.map((s, i, arr) => (
               <div key={s.n} style={{ display: 'flex', alignItems: 'center', flex: i < arr.length - 1 ? 1 : 0 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
                   <StepDot n={s.n} active={currentStep === s.n} done={currentStep > s.n} />
@@ -392,7 +635,7 @@ export default function ComplaintForm({
                 <option value="">— Choose an order —</option>
                 {eligibleOrders.map(o => (
                   <option key={o.id} value={o.id}>
-                    #{o.order_number} · {o.delivered_at} · {o.days_left}d left
+                    #{o.order_number} · {o.delivered_at} · {o.hours_left}h left
                   </option>
                 ))}
               </select>
@@ -413,15 +656,45 @@ export default function ComplaintForm({
                   background: '#fff', color: TEXT_SEC, border: `1px solid ${BORDER}`,
                 }}>📦 {item.product_name} ×{item.quantity}</span>
               ))}
-              <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 800, color: '#f59e0b' }}>
-                ⏳ {selectedOrder.days_left}d remaining
+              <span style={{
+                marginLeft: 'auto', fontSize: 11, fontWeight: 800,
+                color: selectedOrder.hours_left < 6 ? RED : '#f59e0b',
+              }}>
+                ⏱ {selectedOrder.hours_left}h remaining
               </span>
             </div>
           )}
         </Section>
 
-        {/* ═══ 2 — COMPLAINT TYPE ═════════════════════════════════════════════ */}
-        <Section icon="🏷️" label="Complaint Type" done={step2Done} delay="0.05s">
+        {/* ═══ 2 — ITEM SELECTION ═════════════════════════════════════════════ */}
+        {selectedOrder && (
+          <Section icon="📦" label="Select Item(s)" done={step2Done} delay="0.04s">
+            <ItemPicker
+              items={selectedOrder.items}
+              selectedIds={selectedItemIds}
+              onChange={ids => {
+                setSelectedItemIds(ids)
+                if (ids.length > 0) setErrors(p => { const n = { ...p }; delete n.item_ids; return n })
+              }}
+              error={errors.item_ids}
+            />
+          </Section>
+        )}
+
+        {/* ═══ 3 — RESOLUTION TYPE — NEW ══════════════════════════════════════ */}
+        <Section icon="⚖️" label="What do you want?" done={step3Done} delay="0.08s">
+          <ResolutionPicker
+            value={resolutionType}
+            onChange={v => {
+              setResolutionType(v)
+              setErrors(p => { const n = { ...p }; delete n.resolution_type; return n })
+            }}
+            error={errors.resolution_type}
+          />
+        </Section>
+
+        {/* ═══ 4 — COMPLAINT TYPE ═════════════════════════════════════════════ */}
+        <Section icon="🏷️" label="Complaint Type" done={step4Done} delay="0.12s">
           <div style={{
             display: 'grid',
             gridTemplateColumns: compact ? 'repeat(2,1fr)' : 'repeat(auto-fill, minmax(138px, 1fr))',
@@ -474,8 +747,8 @@ export default function ComplaintForm({
           )}
         </Section>
 
-        {/* ═══ 3 — DESCRIPTION + PHOTO ════════════════════════════════════════ */}
-        <Section icon="✏️" label="Describe the Issue" done={step3Done} delay="0.1s">
+        {/* ═══ 5 — DESCRIPTION + PHOTO ════════════════════════════════════════ */}
+        <Section icon="✏️" label="Describe the Issue" done={step5Done} delay="0.16s">
           <Field label="Description" error={errors.description} hint={`${description.length} / 2000`} required>
             <textarea
               value={description}

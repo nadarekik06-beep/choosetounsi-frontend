@@ -3,8 +3,7 @@
 /**
  * app/seller/black/profit/page.tsx
  *
- * Profit Command Center page — accessible from the sidebar for Black Pepper sellers.
- * Contains: Elite Banner + Profit Center
+ * Revenue Goals Tracker — replaces the old Profit Center page.
  * Non-Black sellers are redirected to /seller/subscription.
  */
 
@@ -12,9 +11,9 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSubscription } from '@/app/hooks/useSubscription';
 import { useTheme } from '../../layout';
-import { EliteBanner, ProfitCenterSection } from '@/app/components/seller/BlackPepperHub';
+import { EliteBanner, RevenueGoalsSection } from '@/app/components/seller/BlackPepperHub';
 
-export default function ProfitCenterPage() {
+export default function RevenueGoalsPage() {
   const { dark } = useTheme();
   const { isBlack, loading } = useSubscription();
   const router = useRouter();
@@ -30,7 +29,7 @@ export default function ProfitCenterPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <EliteBanner dark={dark} />
-      <ProfitCenterSection dark={dark} />
+      <RevenueGoalsSection dark={dark} />
     </div>
   );
 }

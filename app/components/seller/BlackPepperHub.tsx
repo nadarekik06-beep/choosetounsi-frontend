@@ -1,22 +1,18 @@
 'use client';
-// BlackPepperHub.tsx -- PHASE 1 UPDATE
-// Key changes:
-//   1. DailyBriefCard added as first element
-//   2. Sections collapsed by default (defaultOpen=false)
-//   3. Human-language wording (velocityLabel, urgencyLabel helpers)
-//   4. SmartActionButton inline with every insight card
-//   5. Profit margin / confidence human labels applied
+// BlackPepperHub.tsx
+// UPDATED: Replaced ProfitCenterSection with RevenueGoalsSection
+// Everything else is 100% identical to the original.
 
 import { useState, useEffect, useCallback } from 'react';
 import {
   Crown, TrendingUp, TrendingDown, AlertTriangle, Package,
   DollarSign, BarChart2, Zap, Star, Send, CheckCircle,
   Clock, ChevronDown, ChevronUp, RefreshCw, Eye, Flame,
-  Sparkles, Info,
+  Sparkles, Info, Target, Pencil, X, Flame as FireIcon,
 } from 'lucide-react';
 import { blackPepperApi } from '@/lib/blackPepperApi';
 import type {
-  AiHubData, ProfitCenterData, 
+  AiHubData, RevenueGoalsData,
   VipRequest, VipRequestType,
 } from '@/lib/blackPepperApi';
 import DailyBriefCard from './black/DailyBriefCard';
@@ -35,14 +31,12 @@ const pct = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
 
 // ---- Human-language helpers ------------------------------------------------
 
-/** Convert raw multiplier to plain English */
 function velocityLabel(m: number): string {
   if (m >= 3) return `Selling ${Math.round(m)}x faster than usual`;
   if (m >= 2) return 'Selling twice as fast as usual';
   return 'Selling 1.5x faster than usual';
 }
 
-/** Convert urgency + days to plain English */
 function urgencyLabel(urgency: string, days: number): string {
   if (urgency === 'critical') return `Act today — only ${days} day${days === 1 ? '' : 's'} left`;
   if (urgency === 'high') return 'Restock within 48 hours';
@@ -328,167 +322,359 @@ export function AiHubSection({ dark }: { dark: boolean }) {
   );
 }
 
-// ---- Profit Center ---------------------------------------------------------
+// ---- Revenue Goals ---------------------------------------------------------
 
-export function ProfitCenterSection({ dark }: { dark: boolean }) {
-  const [data, setData]       = useState<ProfitCenterData|null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState<string|null>(null);
-  const [tab, setTab]         = useState<'overview'|'products'|'forecast'>('overview');
+export function RevenueGoalsSection({ dark }: { dark: boolean }) {
+  const [data, setData]           = useState<RevenueGoalsData | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
+  const [editing, setEditing]     = useState(false);
+  const [goalInput, setGoalInput] = useState('');
+  const [saving, setSaving]       = useState(false);
+  const [saveMsg, setSaveMsg]     = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
-    try { const r = await blackPepperApi.profitCenter(); setData(r.data); }
-    catch (e: any) { setError(e.message ?? 'Failed to load'); }
-    finally { setLoading(false); }
+    try {
+      const r = await blackPepperApi.revenueGoals();
+      setData(r.data);
+      setGoalInput(r.data.current_goal > 0 ? String(Math.round(r.data.current_goal)) : '');
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to load');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
   useEffect(() => { load(); }, [load]);
+
+  const handleSaveGoal = async () => {
+    const amount = parseFloat(goalInput);
+    if (isNaN(amount) || amount < 0) return;
+    setSaving(true); setSaveMsg(null);
+    try {
+      const month = data?.current_month ?? new Date().toISOString().slice(0, 7);
+      await blackPepperApi.setRevenueGoal(month, amount);
+      setSaveMsg('Goal saved!');
+      setEditing(false);
+      await load();
+    } catch (e: any) {
+      setSaveMsg(e.message ?? 'Failed to save');
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSaveMsg(null), 3000);
+    }
+  };
 
   const textMain  = dark ? '#fff' : '#111';
   const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
   const cardBg    = dark ? '#141209' : '#fff';
   const cardBdr   = dark ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.18)';
-  const tabsBg    = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
-  const mColors: Record<string,string> = { excellent:'#10b981', good:'#3b82f6', fair:GOLD, low:'#ef4444' };
+  const inputBg   = dark ? 'rgba(255,255,255,0.05)' : '#fafaf7';
+  const inputBdr  = dark ? 'rgba(245,158,11,0.3)'   : 'rgba(245,158,11,0.35)';
+
+  // Streak flame color: gold for 1-2, orange for 3-4, red for 5+
+  const streakColor = (s: number) => s >= 5 ? '#ef4444' : s >= 3 ? '#f97316' : GOLD;
 
   return (
-    <SectionCard title="Your Profit Center" subtitle="Revenue, estimated profits, and 30-day forecast"
-      icon={DollarSign} dark={dark} collapsible defaultOpen={false}>
-      {loading && <LoadingSpinner/>}
-      {error && <p style={{ color:'#ef4444', textAlign:'center', fontSize:13 }}>{error}</p>}
+    <SectionCard
+      title="Revenue Goals"
+      subtitle="Set monthly targets, track your pace, build streaks"
+      icon={Target}
+      dark={dark}
+      collapsible
+      defaultOpen={false}
+      badge={
+        data && data.streak >= 1
+          ? <span style={{ fontSize: 11, color: streakColor(data.streak) }}>
+              {'🔥'.repeat(Math.min(data.streak, 5))} {data.streak}-month streak
+            </span>
+          : undefined
+      }
+    >
+      {loading && <LoadingSpinner />}
+      {error && (
+        <div style={{ textAlign: 'center', padding: '24px 0' }}>
+          <p style={{ color: '#ef4444', fontSize: 13 }}>{error}</p>
+          <button onClick={load} style={{ marginTop: 8, padding: '8px 16px', borderRadius: 8,
+            background: `${GOLD}18`, border: `1px solid ${GOLD}33`, color: GOLD,
+            cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
+            <RefreshCw size={12} style={{ display: 'inline', marginRight: 4 }}/> Retry
+          </button>
+        </div>
+      )}
+
       {!loading && !error && data && (
-        <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-          <div style={{ display:'flex', alignItems:'flex-start', gap:8, padding:'10px 12px', borderRadius:10, background:`${GOLD}10`, border:`1px solid ${GOLD}20` }}>
-            <Info size={14} color={GOLD} style={{ flexShrink:0, marginTop:1 }}/>
-            <p style={{ fontSize:11, color:textMuted, margin:0, lineHeight:1.5 }}>{data.summary.margin_disclaimer}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* AI message */}
+          {data.ai_message && (
+            <div style={{ padding: '10px 14px', borderRadius: 10,
+              background: dark
+                ? 'linear-gradient(135deg,rgba(245,158,11,0.1),rgba(245,158,11,0.05))'
+                : 'linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.03))',
+              border: `1px solid ${GOLD}20`,
+              display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <Sparkles size={13} color={GOLD} style={{ flexShrink: 0, marginTop: 1 }}/>
+              <p style={{ fontSize: 12, color: textMain, margin: 0, fontWeight: 500, lineHeight: 1.5 }}>
+                {data.ai_message}
+              </p>
+            </div>
+          )}
+
+          {/* Goal setter */}
+          <div style={{ background: cardBg, borderRadius: 14, border: `1px solid ${cardBdr}`, padding: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 800, color: textMuted, textTransform: 'uppercase',
+                  letterSpacing: '0.07em', margin: '0 0 2px' }}>
+                  {data.current_month} Goal
+                </p>
+                {data.current_goal > 0 ? (
+                  <p style={{ fontSize: 20, fontWeight: 900, color: GOLD, margin: 0 }}>
+                    {fmt(data.current_goal)}
+                  </p>
+                ) : (
+                  <p style={{ fontSize: 13, color: textMuted, margin: 0, fontStyle: 'italic' }}>
+                    No goal set yet
+                  </p>
+                )}
+              </div>
+              <button onClick={() => { setEditing(e => !e); setSaveMsg(null); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px',
+                  borderRadius: 8, background: editing ? 'rgba(239,68,68,0.12)' : `${GOLD}15`,
+                  border: `1px solid ${editing ? 'rgba(239,68,68,0.3)' : `${GOLD}30`}`,
+                  color: editing ? '#ef4444' : GOLD, cursor: 'pointer',
+                  fontSize: 11, fontWeight: 800 }}>
+                {editing ? <><X size={11}/> Cancel</> : <><Pencil size={11}/> {data.current_goal > 0 ? 'Edit' : 'Set Goal'}</>}
+              </button>
+            </div>
+
+            {editing && (
+              <div style={{ marginBottom: 14, display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1, position: 'relative' }}>
+                  <input
+                    type="number"
+                    value={goalInput}
+                    onChange={e => setGoalInput(e.target.value)}
+                    placeholder="e.g. 5000"
+                    min={0}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 9,
+                      background: inputBg, border: `1px solid ${inputBdr}`,
+                      color: textMain, fontSize: 14, fontWeight: 700,
+                      outline: 'none', boxSizing: 'border-box' as const }}
+                  />
+                  <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                    fontSize: 11, color: textMuted, fontWeight: 700, pointerEvents: 'none' }}>TND</span>
+                </div>
+                <button onClick={handleSaveGoal} disabled={saving}
+                  style={{ padding: '10px 18px', borderRadius: 9,
+                    background: saving ? `${GOLD}40` : `linear-gradient(135deg,${GOLD},${GOLD_2})`,
+                    border: 'none', color: '#000', fontWeight: 900, fontSize: 12,
+                    cursor: saving ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' as const }}>
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            )}
+
+            {saveMsg && (
+              <p style={{ fontSize: 12, color: saveMsg === 'Goal saved!' ? '#10b981' : '#ef4444',
+                fontWeight: 700, margin: '0 0 10px' }}>{saveMsg}</p>
+            )}
+
+            {/* Progress bar */}
+            {data.current_goal > 0 && (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: 11, color: textMuted, fontWeight: 600 }}>
+                    {fmt(data.current_revenue)} earned
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 800,
+                    color: data.on_track ? '#10b981' : data.progress_pct > 50 ? GOLD : '#ef4444' }}>
+                    {data.progress_pct}%
+                  </span>
+                </div>
+                <div style={{ height: 8, background: dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb',
+                  borderRadius: 999, overflow: 'hidden', marginBottom: 8 }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${data.progress_pct}%`,
+                    background: data.on_track
+                      ? 'linear-gradient(90deg,#10b981,#34d399)'
+                      : data.progress_pct > 50
+                        ? `linear-gradient(90deg,${GOLD},${GOLD_2})`
+                        : 'linear-gradient(90deg,#ef4444,#f87171)',
+                    borderRadius: 999,
+                    transition: 'width 0.6s ease',
+                  }}/>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 10, color: textMuted }}>
+                    {data.days_left} day{data.days_left === 1 ? '' : 's'} left
+                  </span>
+                  <span style={{ fontSize: 10, color: data.on_track ? '#10b981' : textMuted, fontWeight: 700 }}>
+                    {data.on_track ? '✅ On track' : `Need ${fmt(Math.max(0, data.current_goal - data.current_revenue))} more`}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
+
+          {/* Stats row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
             {[
-              { label:'Revenue (90d)', value:fmt(data.summary.total_revenue_90d), color:GOLD, icon:DollarSign },
-              { label:'Est. Profit',   value:fmt(data.summary.estimated_profit_90d), color:'#10b981', icon:TrendingUp },
-              { label:'Est. Margin',   value:data.summary.estimated_margin_pct+'%', color:'#3b82f6', icon:BarChart2 },
-            ].map(({ label, value, color, icon:Ic }) => (
-              <div key={label} style={{ background:cardBg, borderRadius:12, border:`1px solid ${cardBdr}`, padding:'14px 16px', textAlign:'center' }}>
-                <Ic size={16} color={color} style={{ margin:'0 auto 6px', display:'block' }}/>
-                <p style={{ fontSize:15, fontWeight:900, color, margin:'0 0 2px' }}>{value}</p>
-                <p style={{ fontSize:10, fontWeight:700, color:textMuted, margin:0, textTransform:'uppercase', letterSpacing:'0.06em' }}>{label}</p>
+              {
+                label: 'This Month',
+                value: fmt(data.current_revenue),
+                color: GOLD,
+                icon: DollarSign,
+              },
+              {
+                label: 'Projected',
+                value: fmt(data.projected),
+                color: data.projected >= (data.current_goal || 1) ? '#10b981' : '#f97316',
+                icon: TrendingUp,
+              },
+              {
+                label: 'Last Month',
+                value: fmt(data.last_revenue),
+                color: '#3b82f6',
+                icon: BarChart2,
+              },
+            ].map(({ label, value, color, icon: Ic }) => (
+              <div key={label} style={{ background: cardBg, borderRadius: 12,
+                border: `1px solid ${cardBdr}`, padding: '12px 10px', textAlign: 'center' }}>
+                <Ic size={14} color={color} style={{ margin: '0 auto 5px', display: 'block' }}/>
+                <p style={{ fontSize: 13, fontWeight: 900, color, margin: '0 0 2px',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{value}</p>
+                <p style={{ fontSize: 9, fontWeight: 700, color: textMuted, margin: 0,
+                  textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>{label}</p>
               </div>
             ))}
           </div>
-          <div style={{ display:'flex', gap:4, background:tabsBg, borderRadius:10, padding:4 }}>
-            {(['overview','products','forecast'] as const).map(t => (
-              <button key={t} onClick={() => setTab(t)} style={{
-                flex:1, padding:'7px 0', borderRadius:8,
-                background: tab===t ? `${GOLD}20` : 'transparent',
-                border: tab===t ? `1px solid ${GOLD}35` : '1px solid transparent',
-                color: tab===t ? GOLD : textMuted,
-                fontSize:11, fontWeight:800, cursor:'pointer', textTransform:'capitalize' as const,
-              }}>{t}</button>
-            ))}
-          </div>
-          {tab==='overview' && (
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {data.period_breakdown.map(period => {
-                const maxRev = Math.max(...data.period_breakdown.map(p => p.revenue), 1);
-                return (
-                  <div key={period.month} style={{ background:cardBg, borderRadius:10, border:`1px solid ${cardBdr}`, padding:'10px 14px' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-                      <span style={{ fontSize:12, fontWeight:800, color:textMain }}>{period.month}</span>
-                      <div style={{ display:'flex', gap:16 }}>
-                        <span style={{ fontSize:12, fontWeight:700, color:GOLD }}>{fmt(period.revenue)}</span>
-                        <span style={{ fontSize:12, fontWeight:700, color:'#10b981' }}>~{fmt(period.estimated_profit)}</span>
-                      </div>
-                    </div>
-                    <div style={{ height:4, background:dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb', borderRadius:999, overflow:'hidden' }}>
-                      <div style={{ height:'100%', width:`${(period.revenue/maxRev)*100}%`, background:`linear-gradient(90deg,${GOLD},${GOLD_2})`, borderRadius:999 }}/>
-                    </div>
-                    <div style={{ display:'flex', gap:16, marginTop:6 }}>
-                      <span style={{ fontSize:10, color:textMuted }}>{period.units} units</span>
-                      <span style={{ fontSize:10, color:textMuted }}>{period.orders} orders</span>
-                    </div>
-                  </div>
-                );
-              })}
+
+          {/* Daily pace */}
+          {data.daily_pace > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px',
+              borderRadius: 10, background: `${GOLD}10`, border: `1px solid ${GOLD}20` }}>
+              <Info size={13} color={GOLD} style={{ flexShrink: 0 }}/>
+              <p style={{ fontSize: 12, color: textMain, margin: 0, fontWeight: 500 }}>
+                You're averaging <strong style={{ color: GOLD }}>{fmt(data.daily_pace)}</strong> per day.
+                {data.current_goal > 0 && (
+                  <> To hit your goal you need <strong style={{ color: GOLD }}>
+                    {fmt(Math.max(0, (data.current_goal - data.current_revenue) / Math.max(data.days_left, 1)))}
+                  </strong> /day.</>
+                )}
+              </p>
             </div>
           )}
-          {tab==='products' && (
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {data.product_margins.length===0
-                ? <p style={{ color:textMuted, textAlign:'center', fontSize:13, padding:'16px 0' }}>No sales data yet.</p>
-                : data.product_margins.map(p => {
-                  const mc = mColors[p.margin_label] ?? GOLD;
-                  const mh = (p as any).margin_human || MARGIN_HUMAN[p.margin_label] || p.margin_label;
+
+          {/* 6-month history */}
+          {data.history.length > 0 && (
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 800, color: textMuted, textTransform: 'uppercase',
+                letterSpacing: '0.08em', margin: '0 0 10px',
+                display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Clock size={11}/> 6-Month History
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {[...data.history].reverse().map(m => {
+                  const isCurrentMonth = m.month === data.current_month;
+                  const barMax = Math.max(...data.history.map(h => Math.max(h.revenue, h.goal)), 1);
+                  const revW   = Math.max(2, (m.revenue / barMax) * 100);
+                  const goalW  = m.goal > 0 ? Math.max(2, (m.goal / barMax) * 100) : 0;
                   return (
-                    <div key={p.product_id} style={{ background:cardBg, borderRadius:10, border:`1px solid ${cardBdr}`, padding:'10px 14px', display:'flex', alignItems:'center', gap:12 }}>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <p style={{ fontSize:13, fontWeight:800, color:textMain, margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.product_name}</p>
-                        <p style={{ fontSize:10, color:textMuted, margin:0 }}>{p.total_units} units · {fmt(p.total_revenue)}</p>
+                    <div key={m.month} style={{ background: cardBg, borderRadius: 10,
+                      border: `1px solid ${isCurrentMonth ? `${GOLD}40` : cardBdr}`,
+                      padding: '10px 12px',
+                      boxShadow: isCurrentMonth ? `0 0 0 1px ${GOLD}20` : 'none' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between',
+                        alignItems: 'center', marginBottom: 7 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800,
+                          color: isCurrentMonth ? GOLD : textMain }}>
+                          {m.month}{isCurrentMonth ? ' ← now' : ''}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>
+                            {fmt(m.revenue)}
+                          </span>
+                          {m.goal > 0 && (
+                            <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 7px',
+                              borderRadius: 999,
+                              background: m.hit ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.12)',
+                              color: m.hit ? '#10b981' : '#ef4444',
+                              border: `1px solid ${m.hit ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.25)'}` }}>
+                              {m.hit ? '✓ Goal hit' : `${m.pct}%`}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div style={{ textAlign:'right', flexShrink:0 }}>
-                        <p style={{ fontSize:14, fontWeight:900, color:mc, margin:'0 0 2px' }}>{p.margin_pct.toFixed(1)}%</p>
-                        <span style={{ fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:999, background:`${mc}15`, color:mc, border:`1px solid ${mc}28` }}>{mh}</span>
+                      {/* Stacked bar: revenue vs goal */}
+                      <div style={{ position: 'relative', height: 5,
+                        background: dark ? 'rgba(255,255,255,0.06)' : '#e5e7eb', borderRadius: 999 }}>
+                        {goalW > 0 && (
+                          <div style={{ position: 'absolute', top: 0, left: 0,
+                            width: `${goalW}%`, height: '100%',
+                            background: 'rgba(245,158,11,0.2)', borderRadius: 999 }}/>
+                        )}
+                        <div style={{ position: 'absolute', top: 0, left: 0,
+                          width: `${revW}%`, height: '100%',
+                          background: m.hit
+                            ? 'linear-gradient(90deg,#10b981,#34d399)'
+                            : `linear-gradient(90deg,${GOLD},${GOLD_2})`,
+                          borderRadius: 999 }}/>
                       </div>
+                      {m.goal > 0 && (
+                        <p style={{ fontSize: 9, color: textMuted, margin: '4px 0 0', textAlign: 'right' }}>
+                          Goal: {fmt(m.goal)}
+                        </p>
+                      )}
                     </div>
                   );
-                })
-              }
+                })}
+              </div>
             </div>
           )}
-          {tab==='forecast' && (
-            data.forecast ? (
-              <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-                  <div style={{ background:cardBg, borderRadius:12, border:`1px solid ${cardBdr}`, padding:'14px 16px' }}>
-                    <p style={{ fontSize:12, color:textMuted, margin:'0 0 4px', fontWeight:700 }}>Next 30 Days</p>
-                    <p style={{ fontSize:18, fontWeight:900, color:GOLD, margin:'0 0 2px' }}>{fmt(data.forecast.next_30_days)}</p>
-                    <span style={{ fontSize:11, fontWeight:700, color:data.forecast.growth_pct>=0 ? '#10b981' : '#ef4444' }}>
-                      {pct(data.forecast.growth_pct)} vs last 30 days
-                    </span>
-                  </div>
-                  <div style={{ background:cardBg, borderRadius:12, border:`1px solid ${cardBdr}`, padding:'14px 16px' }}>
-                    <p style={{ fontSize:12, color:textMuted, margin:'0 0 4px', fontWeight:700 }}>Forecast Reliability</p>
-                    <p style={{ fontSize:13, fontWeight:800, color:textMain, margin:'0 0 4px' }}>
-                      {(data.forecast as any).confidence_human || CONFIDENCE_HUMAN[data.forecast.confidence]}
-                    </p>
-                    <span style={{ fontSize:10, color:textMuted }}>
-                      {data.forecast.trend==='up' ? '📈 Trending up' : data.forecast.trend==='down' ? '📉 Trending down' : '➡️ Stable'}
-                    </span>
-                  </div>
-                </div>
-                <div style={{ background:cardBg, borderRadius:12, border:`1px solid ${cardBdr}`, padding:14 }}>
-                  <p style={{ fontSize:11, fontWeight:800, color:textMuted, margin:'0 0 10px', textTransform:'uppercase', letterSpacing:'0.06em' }}>30-Day Forecast</p>
-                  <div style={{ display:'flex', alignItems:'flex-end', gap:2, height:60 }}>
-                    {data.forecast.daily_points.map((pt,i) => {
-                      const mx = Math.max(...data.forecast!.daily_points.map(x => x.predicted),1);
-                      const h  = Math.max(4,(pt.predicted/mx)*56);
-                      return <div key={i} title={`${pt.day}: ${fmt(pt.predicted)}`} style={{ flex:1, height:h, borderRadius:2, background:`linear-gradient(0deg,${GOLD},${GOLD_2})`, opacity:0.5+(i/data.forecast!.daily_points.length)*0.5 }}/>;
-                    })}
-                  </div>
-                  <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
-                    <span style={{ fontSize:9, color:textMuted }}>Today</span>
-                    <span style={{ fontSize:9, color:textMuted }}>+30 days</span>
-                  </div>
-                </div>
+
+          {/* Streak badge */}
+          {data.streak >= 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
+              borderRadius: 12,
+              background: dark
+                ? `linear-gradient(135deg,rgba(239,68,68,0.1),rgba(245,158,11,0.08))`
+                : `linear-gradient(135deg,rgba(239,68,68,0.07),rgba(245,158,11,0.05))`,
+              border: `1px solid ${streakColor(data.streak)}30` }}>
+              <span style={{ fontSize: 24 }}>{'🔥'.repeat(Math.min(data.streak, 5))}</span>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 900, color: streakColor(data.streak), margin: '0 0 1px' }}>
+                  {data.streak}-Month Goal Streak!
+                </p>
+                <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>
+                  {data.streak >= 5
+                    ? 'Legendary consistency — keep it up!'
+                    : data.streak >= 3
+                      ? 'Outstanding — you\'re on a roll!'
+                      : 'Great start — keep hitting those goals!'}
+                </p>
               </div>
-            ) : <p style={{ color:textMuted, textAlign:'center', fontSize:13, padding:'16px 0' }}>Keep selling for 7 days to unlock your forecast.</p>
+            </div>
           )}
+
         </div>
       )}
     </SectionCard>
   );
 }
 
-
-
-// ---- VIP Lounge (unchanged logic, kept for completeness) -------------------
+// ---- VIP Lounge (unchanged) ------------------------------------------------
 
 export function VipLoungeSection({ dark }: { dark: boolean }) {
-  const [requests, setRequests]   = useState<VipRequest[]>([]);
-  const [loading, setLoading]     = useState(true);
+  const [requests, setRequests]     = useState<VipRequest[]>([]);
+  const [loading, setLoading]       = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm]           = useState<{ type: VipRequestType; message: string }>({ type:'reel', message:'' });
-  const [success, setSuccess]     = useState<string|null>(null);
-  const [formError, setFormError] = useState<string|null>(null);
+  const [form, setForm]             = useState<{ type: VipRequestType; message: string }>({ type:'reel', message:'' });
+  const [success, setSuccess]       = useState<string|null>(null);
+  const [formError, setFormError]   = useState<string|null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -619,14 +805,14 @@ export default function BlackPepperHub({ dark }: { dark: boolean }) {
       <DailyBriefCard dark={dark}/>
       <EliteBanner dark={dark}/>
 
-      {/* These three start collapsed — tap to expand */}
+      {/* These start collapsed — tap to expand */}
       <AiHubSection dark={dark}/>
       <ConversionFunnelCard dark={dark}/>
       <ProductQualityAudit dark={dark}/>
       <SmartPromoteCard dark={dark}/>
-      <ProfitCenterSection dark={dark}/>
+      <RevenueGoalsSection dark={dark}/>
 
-      {/* VIP Lounge starts open — sellers use it frequently */}
+      {/* VIP Lounge starts open */}
       <VipLoungeSection dark={dark}/>
     </div>
   );

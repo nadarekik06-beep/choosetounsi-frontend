@@ -1,6 +1,6 @@
 /**
  * lib/blackPepperApi.ts
- * FIXED: Added FunnelInsight and QualityAuditProduct interfaces (were missing, causing TS2304 errors)
+ * UPDATED: Replaced ProfitCenter with RevenueGoals tracker
  */
 
 const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
@@ -118,55 +118,33 @@ export interface AiHubData {
   };
 }
 
-// ─── Profit Center ────────────────────────────────────────────────────────────
+// ─── Revenue Goals ────────────────────────────────────────────────────────────
 
-export interface ProfitPeriod {
-  month:            string;
-  revenue:          number;
-  estimated_profit: number;
-  units:            number;
-  orders:           number;
-  avg_order_value:  number;
+export interface RevenueGoalMonth {
+  month:   string;   // "2026-05"
+  revenue: number;
+  goal:    number;
+  hit:     boolean;
+  pct:     number;   // 0-100
 }
 
-export interface ProductMargin {
-  product_id:       number;
-  product_name:     string;
-  category:         string;
-  price:            number;
-  total_units:      number;
-  total_revenue:    number;
-  estimated_profit: number;
-  margin_pct:       number;
-  margin_label:     'excellent' | 'good' | 'fair' | 'low';
-  margin_human:     string;
+export interface RevenueGoalsData {
+  current_month:   string;
+  current_revenue: number;
+  last_revenue:    number;
+  current_goal:    number;
+  projected:       number;
+  progress_pct:    number;   // 0-100
+  on_track:        boolean;
+  days_left:       number;
+  days_in_month:   number;
+  daily_pace:      number;
+  streak:          number;
+  ai_message:      string;
+  history:         RevenueGoalMonth[];
 }
 
-export interface ForecastData {
-  next_30_days:     number;
-  last_30_actual:   number;
-  growth_pct:       number;
-  trend:            'up' | 'down' | 'stable';
-  daily_points:     Array<{ day: string; predicted: number }>;
-  confidence:       'high' | 'medium' | 'low';
-  confidence_human: string;
-}
-
-export interface ProfitCenterData {
-  summary: {
-    total_revenue_90d:    number;
-    estimated_profit_90d: number;
-    estimated_margin_pct: number;
-    margin_disclaimer:    string;
-    data_points:          number;
-  };
-  period_breakdown: ProfitPeriod[];
-  product_margins:  ProductMargin[];
-  forecast:         ForecastData | null;
-  daily_revenue:    Array<{ day: string; revenue: number; orders: number }>;
-}
-
-
+// ─── VIP Requests ─────────────────────────────────────────────────────────────
 
 export type VipRequestType   = 'reel' | 'promotion' | 'support';
 export type VipRequestStatus = 'pending' | 'in_progress' | 'completed' | 'rejected';
@@ -183,7 +161,7 @@ export interface VipRequest {
   handled_at:   string | null;
 }
 
-// ─── FunnelInsight — FIX: was missing, caused TS2304 in ConversionFunnelCard ─
+// ─── FunnelInsight ────────────────────────────────────────────────────────────
 
 export interface FunnelInsight {
   product_id:       number;
@@ -200,13 +178,13 @@ export interface FunnelInsight {
   fix_action_href:  string;
 }
 
-// ─── QualityAuditProduct — FIX: was missing, caused TS2304 in ProductQualityAudit ─
+// ─── QualityAuditProduct ──────────────────────────────────────────────────────
 
 export interface QualityAuditTip {
-  type:         'images' | 'description' | 'title' | 'attributes' | 'stock' | 'default';
-  label:        string;
-  points:       number;
-  action_href:  string;
+  type:        'images' | 'description' | 'title' | 'attributes' | 'stock' | 'default';
+  label:       string;
+  points:      number;
+  action_href: string;
 }
 
 export interface QualityAuditProduct {
@@ -244,19 +222,21 @@ export const blackPepperApi = {
   aiHub: () =>
     jsonRequest<{ success: boolean; data: AiHubData }>('GET', '/seller/black/ai-hub'),
 
-  profitCenter: () =>
-    jsonRequest<{ success: boolean; data: ProfitCenterData }>('GET', '/seller/black/profit-center'),
+  // ── Revenue Goals (replaces profitCenter) ──────────────────────────────────
+  revenueGoals: () =>
+    jsonRequest<{ success: boolean; data: RevenueGoalsData }>('GET', '/seller/black/revenue-goals'),
 
-
+  setRevenueGoal: (month: string, amount: number) =>
+    jsonRequest<{ success: boolean; message: string; data: { month: string; amount: number } }>(
+      'POST', '/seller/black/revenue-goals', { month, amount }
+    ),
 
   getVipRequests: () =>
     jsonRequest<{ success: boolean; data: VipRequest[] }>('GET', '/seller/black/vip-requests'),
 
-  // FIX: typed with the now-defined FunnelInsight interface
   funnelInsights: () =>
     jsonRequest<{ success: boolean; data: FunnelInsight[] }>('GET', '/seller/black/funnel-insights'),
 
-  // FIX: typed with the now-defined QualityAuditProduct interface
   qualityAudit: () =>
     jsonRequest<{ success: boolean; data: QualityAuditProduct[] }>('GET', '/seller/black/quality-audit'),
 

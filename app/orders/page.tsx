@@ -62,6 +62,7 @@ interface OrderItem {
   seller_order_status?: string | null
   seller_order_payment?: string | null
   product?: { slug: string; primary_image_url?: string | null }
+  is_returned?: boolean
 }
 
 interface DeliveryTracking {
@@ -288,43 +289,118 @@ function ItemRow({ item, groupStatus, reviewed, onRate }: {
 }) {
   const img         = item.resolved_image_url ?? resolveImg(item.product?.primary_image_url)
   const isDelivered = groupStatus === 'delivered'
-
+  const isReturned  = !!item.is_returned   // ← NEW
+ 
   return (
-    <div style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid #f8fafc', alignItems: 'center', flexWrap: 'wrap' }}>
-      <div style={{ width: 56, height: 56, borderRadius: 10, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9', flexShrink: 0 }}>
-        {img ? <img src={img} alt={item.product_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={18} color="#e2e8f0" /></div>}
+    <div style={{
+      display: 'flex', gap: 12,
+      padding: '12px 0',
+      borderBottom: '1px solid #f8fafc',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      // ← NEW: red tint for returned items
+      background: isReturned ? 'rgba(219,20,46,0.03)' : 'transparent',
+      marginLeft: isReturned ? -8 : 0,
+      marginRight: isReturned ? -8 : 0,
+      paddingLeft: isReturned ? 8 : 0,
+      paddingRight: isReturned ? 8 : 0,
+      borderRadius: isReturned ? 8 : 0,
+      borderLeft: isReturned ? '3px solid #db142e' : 'none',
+    }}>
+      {/* Product image */}
+      <div style={{
+        width: 56, height: 56, borderRadius: 10, overflow: 'hidden',
+        background: '#f8fafc', border: '1px solid #f1f5f9', flexShrink: 0,
+        opacity: isReturned ? 0.6 : 1,
+      }}>
+        {img
+          ? <img src={img} alt={item.product_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Package size={18} color="#e2e8f0" />
+            </div>
+        }
       </div>
+ 
+      {/* Name + variant */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {item.product?.slug ? <Link href={`/products/${item.product.slug}`} style={{ color: '#0f172a', textDecoration: 'none' }}>{item.product_name}</Link> : item.product_name}
+        <p style={{
+          fontSize: 13, fontWeight: 700,
+          color: isReturned ? '#94a3b8' : '#0f172a',  // ← greyed out when returned
+          margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          textDecoration: isReturned ? 'line-through' : 'none',  // ← strikethrough
+        }}>
+          {item.product?.slug
+            ? <a href={`/products/${item.product.slug}`} style={{ color: 'inherit', textDecoration: 'inherit' }}>{item.product_name}</a>
+            : item.product_name}
         </p>
         {item.variant_label && (
-          <span style={{ display: 'inline-block', marginTop: 3, fontSize: 11, fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 8px', borderRadius: 4 }}>
+          <span style={{
+            display: 'inline-block', marginTop: 3, fontSize: 11, fontWeight: 700,
+            color: '#6366f1', background: 'rgba(99,102,241,0.08)',
+            border: '1px solid rgba(99,102,241,0.2)', padding: '1px 8px', borderRadius: 4,
+          }}>
             {item.variant_label}
           </span>
         )}
-        <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>{item.quantity} × {fmt(item.unit_price)}</p>
+        <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
+          {item.quantity} × {fmt(item.unit_price)}
+        </p>
       </div>
+ 
+      {/* Price + action */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-        <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>{fmt(item.total)}</span>
-        {isDelivered && (
+        <span style={{
+          fontSize: 14, fontWeight: 800,
+          color: isReturned ? '#94a3b8' : '#0f172a',
+          textDecoration: isReturned ? 'line-through' : 'none',
+        }}>
+          {fmt(item.total)}
+        </span>
+ 
+        {/* ← NEW: Returned badge — shown instead of Rate/Reviewed */}
+        {isReturned ? (
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            fontSize: 11, fontWeight: 800,
+            color: '#db142e',
+            background: 'rgba(219,20,46,0.08)',
+            border: '1px solid rgba(219,20,46,0.25)',
+            padding: '4px 10px', borderRadius: 999,
+          }}>
+            ↩ Returned
+          </span>
+        ) : isDelivered ? (
           reviewed ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', padding: '4px 10px', borderRadius: 999 }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              fontSize: 11, fontWeight: 700, color: '#10b981',
+              background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
+              padding: '4px 10px', borderRadius: 999,
+            }}>
               <CheckCircle size={11} /> Reviewed
             </span>
           ) : (
-            <button onClick={() => onRate(item)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 800, color: '#fff', background: 'linear-gradient(135deg,#f59e0b,#d97706)', border: 'none', borderRadius: 999, padding: '5px 12px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(245,158,11,0.35)', transition: 'all 0.15s', fontFamily: 'inherit' }}
+            <button
+              onClick={() => onRate(item)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                fontSize: 12, fontWeight: 800, color: '#fff',
+                background: 'linear-gradient(135deg,#f59e0b,#d97706)',
+                border: 'none', borderRadius: 999, padding: '5px 12px',
+                cursor: 'pointer', boxShadow: '0 2px 8px rgba(245,158,11,0.35)',
+                transition: 'all 0.15s', fontFamily: 'inherit',
+              }}
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(245,158,11,0.45)' }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(245,158,11,0.35)' }}>
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(245,158,11,0.35)' }}
+            >
               <Star size={12} fill="#fff" stroke="none" /> Rate Product
             </button>
           )
-        )}
+        ) : null}
       </div>
     </div>
   )
 }
-
 // ─── Seller Group Section ─────────────────────────────────────────────────────
 
 function SellerGroupSection({ group, showSeparator, reviewedMap, onRate, order }: {

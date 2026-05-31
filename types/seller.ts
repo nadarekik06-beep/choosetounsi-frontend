@@ -194,6 +194,8 @@ export interface OrderItem {
   commission_amount: number | null;      // platform fee in TND
   seller_amount: number | null;          // what seller receives in TND
   plan_used: 'free' | 'red' | 'black' | null;
+is_returned?: boolean
+  item_status?: 'returned' | 'exchanged' | null
 }
 // ── Commission summary for the order detail modal ────────────────────────────
 export interface OrderCommissionSummary {
