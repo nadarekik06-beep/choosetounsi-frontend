@@ -7,6 +7,7 @@ import { logout, isAuthenticated, getUser, AuthUser } from "@/lib/auth";
 import { useCart } from "@/context/CartContext";
 import { Heart, ShoppingBag, ClipboardList, AlertCircle } from "lucide-react";
 import Image from 'next/image'
+import { sponsorshipApi, SponsoredProduct } from "@/lib/sponsorshipApi";
 
 interface ApiCategory {
   id: number; name: string; name_ar: string; slug: string;
@@ -123,44 +124,22 @@ function AskAIPill({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       title="Ask AI Shopping Assistant"
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: '6px 12px 6px 8px',
-        borderRadius: 999,
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: '6px 12px 6px 8px', borderRadius: 999,
         background: 'linear-gradient(135deg, #db142e 0%, #9b0f1f 100%)',
-        border: '1.5px solid #198f41',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        fontSize: 13,
-        fontWeight: 700,
-        color: '#fff',
-        whiteSpace: 'nowrap',
-        flexShrink: 0,
+        border: '1.5px solid #198f41', cursor: 'pointer',
+        fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
+        color: '#fff', whiteSpace: 'nowrap', flexShrink: 0,
         transition: 'all 0.2s cubic-bezier(0.34,1.56,0.64,1)',
         boxShadow: '0 2px 10px rgba(219,20,46,0.25)',
       }}
-      onMouseEnter={e => {
-        const el = e.currentTarget as HTMLButtonElement
-        el.style.transform = 'scale(1.05) translateY(-1px)'
-        el.style.boxShadow = '0 6px 20px rgba(219,20,46,0.4)'
-      }}
-      onMouseLeave={e => {
-        const el = e.currentTarget as HTMLButtonElement
-        el.style.transform = 'scale(1) translateY(0)'
-        el.style.boxShadow = '0 2px 10px rgba(219,20,46,0.25)'
-      }}
+      onMouseEnter={e => { const el = e.currentTarget as HTMLButtonElement; el.style.transform='scale(1.05) translateY(-1px)'; el.style.boxShadow='0 6px 20px rgba(219,20,46,0.4)'; }}
+      onMouseLeave={e => { const el = e.currentTarget as HTMLButtonElement; el.style.transform='scale(1) translateY(0)'; el.style.boxShadow='0 2px 10px rgba(219,20,46,0.25)'; }}
     >
-      <Image
-        src="/images/logo-chili.png"
-        alt="AI"
-        width={18}
-        height={18}
-        style={{ objectFit: 'contain', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.3))' }}
-      />
+      <Image src="/images/logo-chili.png" alt="AI" width={18} height={18} style={{ objectFit:'contain', filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.3))' }}/>
       Ask AI
     </button>
-  )
+  );
 }
 
 /* ─── Mega Menu ──────────────────────────────────────────────── */
@@ -225,6 +204,430 @@ function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible
 }
 
 /* ══════════════════════════════════════════════════════════════
+   SEARCH DROPDOWN — Trendyol-style
+   Shows when the search input is focused and query is empty.
+   Two sections:
+     1. Trending Searches  — category pills
+     2. Popular Products   — mini product cards from sponsored feed
+══════════════════════════════════════════════════════════════ */
+function SearchDropdown({
+  visible,
+  categories,
+  onCategoryClick,
+  onProductClick,
+}: {
+  visible:         boolean;
+  categories:      ApiCategory[];
+  onCategoryClick: (slug: string) => void;
+  onProductClick:  () => void;
+}) {
+  const [products, setProducts]     = useState<SponsoredProduct[]>([]);
+  const [loadingP, setLoadingP]     = useState(true);
+  const [imgErrors, setImgErrors]   = useState<Record<number, boolean>>({});
+
+  // Load sponsored products once on mount — cached by sponsorshipApi
+  useEffect(() => {
+    sponsorshipApi.publicFeed({ limit: 4 })
+      .then(res => setProducts(res.data ?? []))
+      .catch(() => {})
+      .finally(() => setLoadingP(false));
+  }, []);
+
+  if (!visible) return null;
+
+  // Show max 8 category pills
+  const trendingCats = categories.slice(0, 8);
+
+  return (
+    <>
+      {/* Backdrop — transparent, just closes on click outside */}
+      <div
+        style={{ position: "fixed", inset: 0, zIndex: 9994 }}
+        onClick={onProductClick} // reuse close handler
+      />
+
+      <div style={{
+        position:     "absolute",
+        top:          "calc(100% + 8px)",
+        left:         0,
+        right:        0,
+        background:   "#fff",
+        borderRadius: 16,
+        boxShadow:    "0 20px 60px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.06)",
+        border:       "1.5px solid #f1f5f9",
+        zIndex:       9995,
+        overflow:     "hidden",
+        animation:    "sdropIn 0.2s cubic-bezier(0.34,1.2,0.64,1) both",
+      }}>
+
+        {/* ── Section 1: Trending Searches ── */}
+        <div style={{ padding: "18px 20px 14px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <svg width="14" height="14" fill="none" stroke="#db142e" strokeWidth="2.2" viewBox="0 0 24 24">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+              <polyline points="17 6 23 6 23 12"/>
+            </svg>
+            <span style={{ fontSize: 11, fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Trending Searches
+            </span>
+          </div>
+
+          {/* Category pills */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {trendingCats.map((cat) => (
+              <button
+                key={cat.slug}
+                onMouseDown={(e) => { e.preventDefault(); onCategoryClick(cat.slug); }}
+                style={{
+                  display:      "inline-flex",
+                  alignItems:   "center",
+                  gap:          6,
+                  padding:      "6px 13px 6px 9px",
+                  borderRadius: 999,
+                  border:       "1.5px solid #f1f5f9",
+                  background:   "#f8fafc",
+                  cursor:       "pointer",
+                  fontFamily:   "inherit",
+                  fontSize:     12,
+                  fontWeight:   600,
+                  color:        "#374151",
+                  transition:   "all 0.15s",
+                  whiteSpace:   "nowrap",
+                }}
+                onMouseEnter={e => {
+                  const el = e.currentTarget;
+                  el.style.background    = "#fef2f2";
+                  el.style.borderColor   = "#fecaca";
+                  el.style.color         = "#dc2626";
+                }}
+                onMouseLeave={e => {
+                  const el = e.currentTarget;
+                  el.style.background    = "#f8fafc";
+                  el.style.borderColor   = "#f1f5f9";
+                  el.style.color         = "#374151";
+                }}
+              >
+                <span style={{
+                  width: 22, height: 22, borderRadius: 7,
+                  background: "rgba(219,20,46,0.08)",
+                  color: "#dc2626",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <CatIcon slug={cat.slug} name={cat.name}/>
+                </span>
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: "#f8fafc", margin: "0 20px" }}/>
+
+        {/* ── Section 2: Popular Products ── */}
+        <div style={{ padding: "14px 20px 18px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <svg width="14" height="14" fill="none" stroke="#db142e" strokeWidth="2.2" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Popular Products
+              </span>
+            </div>
+            <Link
+              href="/shop"
+              onMouseDown={e => e.preventDefault()}
+              onClick={onProductClick}
+              style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", textDecoration: "none", display: "flex", alignItems: "center", gap: 3 }}
+            >
+              View all
+              <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </Link>
+          </div>
+
+          {/* Product mini-cards */}
+          {loadingP ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+              {[0,1,2,3].map(i => (
+                <div key={i} style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #f1f5f9" }}>
+                  <div style={{ aspectRatio: "1/1", background: "linear-gradient(90deg,#f1f5f9 25%,#e8edf5 50%,#f1f5f9 75%)", backgroundSize: "200% 100%", animation: "sdShimmer 1.4s infinite" }}/>
+                  <div style={{ padding: "8px 10px 10px" }}>
+                    <div style={{ height: 8, width: "55%", background: "#f1f5f9", borderRadius: 4, marginBottom: 5, animation: "sdShimmer 1.4s infinite" }}/>
+                    <div style={{ height: 11, background: "#f1f5f9", borderRadius: 4, marginBottom: 5, animation: "sdShimmer 1.4s infinite" }}/>
+                    <div style={{ height: 13, width: "45%", background: "#f1f5f9", borderRadius: 4, animation: "sdShimmer 1.4s infinite" }}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : products.length === 0 ? (
+            <p style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", padding: "12px 0" }}>No trending products right now.</p>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+              {products.slice(0, 4).map((product, i) => {
+                const imgUrl = imgErrors[product.id] ? null : product.primary_image_url;
+                return (
+                  <Link
+                    key={product.id}
+                    href={`/products/${product.slug}`}
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={onProductClick}
+                    style={{
+                      textDecoration: "none",
+                      color:          "inherit",
+                      display:        "block",
+                      borderRadius:   12,
+                      overflow:       "hidden",
+                      border:         "1.5px solid #f1f5f9",
+                      transition:     "all 0.18s",
+                      animation:      `sdFadeUp 0.25s ease ${i * 0.05}s both`,
+                    }}
+                    onMouseEnter={e => {
+                      const el = e.currentTarget as HTMLElement;
+                      el.style.borderColor = "#fecaca";
+                      el.style.boxShadow   = "0 8px 24px rgba(219,20,46,0.10)";
+                      el.style.transform   = "translateY(-2px)";
+                    }}
+                    onMouseLeave={e => {
+                      const el = e.currentTarget as HTMLElement;
+                      el.style.borderColor = "#f1f5f9";
+                      el.style.boxShadow   = "none";
+                      el.style.transform   = "none";
+                    }}
+                  >
+                    {/* Image */}
+                    <div style={{ aspectRatio: "1/1", background: "#f8fafc", overflow: "hidden", position: "relative" }}>
+                      {imgUrl ? (
+                        <img
+                          src={imgUrl}
+                          alt={product.name}
+                          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                          onError={() => setImgErrors(prev => ({ ...prev, [product.id]: true }))}
+                        />
+                      ) : (
+                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🔥</div>
+                      )}
+                      {/* HOT badge */}
+                      <span style={{
+                        position:     "absolute", top: 6, left: 6,
+                        background:   "linear-gradient(135deg,#db142e,#ff4757)",
+                        color:        "#fff", fontSize: 7, fontWeight: 800,
+                        padding:      "2px 6px", borderRadius: 999,
+                        letterSpacing:"0.06em", textTransform: "uppercase",
+                      }}>
+                        🔥 HOT
+                      </span>
+                    </div>
+
+                    {/* Info */}
+                    <div style={{ padding: "8px 10px 10px", background: "#fff" }}>
+                      {product.category?.name && (
+                        <p style={{ fontSize: 8, fontWeight: 800, color: "#dc2626", textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 3px" }}>
+                          {product.category.name}
+                        </p>
+                      )}
+                      <p style={{
+                        fontSize: 11, fontWeight: 700, color: "#111",
+                        margin: "0 0 5px", lineHeight: 1.3,
+                        display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+                      }}>
+                        {/* Bold the matching prefix like Trendyol does */}
+                        {product.name}
+                      </p>
+                      <p style={{ fontSize: 13, fontWeight: 900, color: "#db142e", margin: 0, letterSpacing: "-0.01em" }}>
+                        {Number(product.price).toFixed(2)} <span style={{ fontSize: 10, fontWeight: 700 }}>DT</span>
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes sdropIn  { from { opacity:0; transform:translateY(-6px) scale(0.98); } to { opacity:1; transform:none; } }
+        @keyframes sdShimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+        @keyframes sdFadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+      `}</style>
+    </>
+  );
+}
+
+/* ── SEARCH WITH SUGGESTIONS (Trendyol-style) ────────────────────────────── */
+
+type SuggestionItem =
+  | { type: "query";    text: string }
+  | { type: "category"; text: string; slug: string }
+  | { type: "seller";   text: string; initial: string };
+
+function SearchSuggestionsDropdown({
+  visible,
+  query,
+  items,
+  onSelectQuery,
+  onSelectCategory,
+}: {
+  visible:          boolean;
+  query:            string;
+  items:            SuggestionItem[];
+  onSelectQuery:    (s: string) => void;
+  onSelectCategory: (slug: string) => void;
+}) {
+  if (!visible || items.length === 0) return null;
+
+  // Bold the matched prefix inside the suggestion text
+  function HighlightMatch({ text }: { text: string }) {
+    const lower     = text.toLowerCase();
+    const qLower    = query.toLowerCase();
+    const matchIdx  = lower.indexOf(qLower);
+    if (matchIdx === -1 || query.length === 0) {
+      return <span style={{ fontSize: 13, color: "#374151" }}>{text}</span>;
+    }
+    return (
+      <span style={{ fontSize: 13, color: "#374151" }}>
+        {text.slice(0, matchIdx)}
+        <strong style={{ color: "#0f172a", fontWeight: 700 }}>{text.slice(matchIdx, matchIdx + query.length)}</strong>
+        {text.slice(matchIdx + query.length)}
+      </span>
+    );
+  }
+
+  return (
+    <div style={{
+      position:   "absolute",
+      top:        "calc(100% + 0px)",
+      left:       0,
+      right:      0,
+      background: "#fff",
+      borderRadius: "0 0 14px 14px",
+      boxShadow:  "0 16px 40px rgba(0,0,0,0.13)",
+      border:     "2px solid #dc2626",
+      borderTop:  "1px solid #f1f5f9",
+      zIndex:     9995,
+      overflow:   "hidden",
+      animation:  "sdropIn 0.15s ease both",
+    }}>
+      {items.map((item, i) => {
+        const isLast = i === items.length - 1;
+
+        if (item.type === "category") {
+          return (
+            <button
+              key={`cat-${item.slug}`}
+              onMouseDown={e => { e.preventDefault(); onSelectCategory(item.slug); }}
+              style={{
+                display:      "flex",
+                alignItems:   "center",
+                justifyContent:"space-between",
+                gap:          10,
+                width:        "100%",
+                background:   "none",
+                border:       "none",
+                borderBottom: isLast ? "none" : "1px solid #f8fafc",
+                padding:      "11px 18px",
+                cursor:       "pointer",
+                textAlign:    "left",
+                fontFamily:   "inherit",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#fef2f2")}
+              onMouseLeave={e => (e.currentTarget.style.background = "none")}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                {/* Category icon box */}
+                <span style={{
+                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                  background: "rgba(219,20,46,0.07)", color: "#dc2626",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <rect x="2" y="7" width="20" height="14" rx="2"/>
+                    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+                  </svg>
+                </span>
+                <HighlightMatch text={item.text}/>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", flexShrink: 0 }}>Category</span>
+            </button>
+          );
+        }
+
+        if (item.type === "seller") {
+          return (
+            <button
+              key={`seller-${i}`}
+              onMouseDown={e => { e.preventDefault(); onSelectQuery(item.text); }}
+              style={{
+                display:      "flex",
+                alignItems:   "center",
+                justifyContent:"space-between",
+                gap:          10,
+                width:        "100%",
+                background:   "none",
+                border:       "none",
+                borderBottom: isLast ? "none" : "1px solid #f8fafc",
+                padding:      "11px 18px",
+                cursor:       "pointer",
+                textAlign:    "left",
+                fontFamily:   "inherit",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#fef2f2")}
+              onMouseLeave={e => (e.currentTarget.style.background = "none")}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                {/* Seller avatar circle */}
+                <span style={{
+                  width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                  background: "#0f172a", color: "#fff",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 11, fontWeight: 800,
+                }}>
+                  {item.initial}
+                </span>
+                <HighlightMatch text={item.text}/>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", flexShrink: 0 }}>Seller</span>
+            </button>
+          );
+        }
+
+        // Default: query suggestion
+        return (
+          <button
+            key={`q-${i}`}
+            onMouseDown={e => { e.preventDefault(); onSelectQuery(item.text); }}
+            style={{
+              display:      "flex",
+              alignItems:   "center",
+              gap:          12,
+              width:        "100%",
+              background:   "none",
+              border:       "none",
+              borderBottom: isLast ? "none" : "1px solid #f8fafc",
+              padding:      "11px 18px",
+              cursor:       "pointer",
+              textAlign:    "left",
+              fontFamily:   "inherit",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = "#fef2f2")}
+            onMouseLeave={e => (e.currentTarget.style.background = "none")}
+          >
+            <svg width="14" height="14" fill="none" stroke="#c4c4c4" strokeWidth="2" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <HighlightMatch text={item.text}/>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
    NAVBAR
 ══════════════════════════════════════════════════════════════ */
 const NAV_LINKS = [
@@ -235,25 +638,32 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const router = useRouter();
-  const [menuOpen,     setMenuOpen]     = useState(false);
-  const [dropOpen,     setDropOpen]     = useState(false);
-  const [user,         setUser]         = useState<AuthUser|null>(null);
-  const [scrolled,     setScrolled]     = useState(false);
-  const [megaOpen,     setMegaOpen]     = useState(false);
-  const [categories,   setCategories]   = useState<ApiCategory[]>([]);
+  const [menuOpen,   setMenuOpen]   = useState(false);
+  const [dropOpen,   setDropOpen]   = useState(false);
+  const [user,       setUser]       = useState<AuthUser|null>(null);
+  const [scrolled,   setScrolled]   = useState(false);
+  const [megaOpen,   setMegaOpen]   = useState(false);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
 
-  // ── SEARCH STATE (new) ────────────────────────────────────────────────────
-  const [searchQuery,     setSearchQuery]     = useState("");
-  const [imageSearching,  setImageSearching]  = useState(false);
+  // Search state
+  const [searchQuery,    setSearchQuery]    = useState("");
+  const [imageSearching, setImageSearching] = useState(false);
+  const [searchFocused,  setSearchFocused]  = useState(false);
+  const [suggItems,      setSuggItems]      = useState<SuggestionItem[]>([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  // ─────────────────────────────────────────────────────────────────────────
+  const searchWrapRef = useRef<HTMLDivElement>(null);
+  const debounceRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dropRef = useRef<HTMLDivElement>(null);
-
   const { count, favorites, openDrawer } = useCart();
   const favCount = favorites.length;
   const loggedIn = !!user;
   const isSeller = user?.role === "seller";
+
+  // Show the Trendyol-style dropdown when focused AND query is empty
+  const showTrendingDropdown = searchFocused && searchQuery.trim() === "";
+  // Show suggestions dropdown when focused AND query has text AND suggestions exist
+  const showSuggestionsDropdown = searchFocused && searchQuery.trim().length >= 2 && suggItems.length > 0;
 
   useEffect(()=>{ if(isAuthenticated()) setUser(getUser()); },[]);
   useEffect(()=>{
@@ -271,88 +681,125 @@ export default function Navbar() {
     return()=>document.removeEventListener("mousedown",h);
   },[]);
 
-  const closeAll=()=>{ setMegaOpen(false); setDropOpen(false); setMenuOpen(false); };
-  const handleLogout=async()=>{ closeAll(); await logout(); setUser(null); router.push("/auth/login"); };
-  const handleCart=()=>{ closeAll(); openDrawer(); };
-  const handleSupport=()=>{ closeAll(); window.dispatchEvent(new Event("open-support-chat")); };
+  // Close search dropdown when clicking outside the search wrapper
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target as Node)) {
+        setSearchFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
 
-  // ── SEARCH HANDLERS (new) ─────────────────────────────────────────────────
+  // Fetch autocomplete suggestions when query changes — builds rich SuggestionItem list
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) { setSuggItems([]); return; }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${API_URL}/api/search/suggestions?q=${encodeURIComponent(q)}&limit=10`,
+          { headers: { Accept: "application/json" } }
+        );
+        if (!res.ok) return;
+        const data  = await res.json();
+        const words: string[] = data.suggestions ?? [];
+        const qLow  = q.toLowerCase();
 
-  /** Navigate to /search page with query param */
+        // Build items list — Trendyol style: categories first, then queries
+        const items: SuggestionItem[] = [];
+
+        // 1. Matching categories (from already-loaded categories state)
+        const matchingCats = categories.filter(c =>
+          c.name.toLowerCase().includes(qLow)
+        ).slice(0, 2);
+
+        matchingCats.forEach(cat => {
+          items.push({ type: "category", text: cat.name, slug: cat.slug });
+        });
+
+        // 2. Query suggestions from vocabulary (plain text rows)
+        // Filter out any that already appeared as category names
+        const catNames = new Set(matchingCats.map(c => c.name.toLowerCase()));
+        words
+          .filter(w => !catNames.has(w.toLowerCase()))
+          .forEach(w => items.push({ type: "query", text: w }));
+
+        setSuggItems(items.slice(0, 10));
+      } catch { setSuggItems([]); }
+    }, 280);
+  }, [searchQuery, categories]);
+
+  const closeAll = () => { setMegaOpen(false); setDropOpen(false); setMenuOpen(false); setSearchFocused(false); };
+  const handleLogout = async () => { closeAll(); await logout(); setUser(null); router.push("/auth/login"); };
+  const handleCart   = () => { closeAll(); openDrawer(); };
+  const handleSupport = () => { closeAll(); window.dispatchEvent(new Event("open-support-chat")); };
+
   const handleTextSearch = useCallback(() => {
     const q = searchQuery.trim();
     if (!q) return;
+    setSearchFocused(false);
+    setSuggItems([]);
     closeAll();
     router.push(`/search?q=${encodeURIComponent(q)}`);
   }, [searchQuery, router]);
 
-  /** Submit on Enter key */
   const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleTextSearch();
+    if (e.key === "Escape") setSearchFocused(false);
   }, [handleTextSearch]);
 
-  /** Open hidden file input when camera icon is clicked */
-  const handleCameraClick = useCallback(() => {
-    imageInputRef.current?.click();
-  }, []);
+  const handleSelectSuggestion = useCallback((s: string) => {
+    setSearchQuery(s);
+    setSuggItems([]);
+    setSearchFocused(false);
+    router.push(`/search?q=${encodeURIComponent(s)}`);
+  }, [router]);
 
-  /** Handle image file selected for visual search */
+  const handleSelectSuggestionCategory = useCallback((slug: string) => {
+    setSuggItems([]);
+    setSearchFocused(false);
+    router.push(`/category/${slug}`);
+  }, [router]);
+
+  const handleCategoryClick = useCallback((slug: string) => {
+    setSearchFocused(false);
+    router.push(`/category/${slug}`);
+  }, [router]);
+
+  const handleCameraClick = useCallback(() => { imageInputRef.current?.click(); }, []);
+
   const handleImageSelected = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setImageSearching(true);
     closeAll();
-
     try {
-      // Store image in sessionStorage as data URL for search page to use
       const reader = new FileReader();
-      reader.onload = () => {
-        sessionStorage.setItem("searchImagePreview", reader.result as string);
-      };
+      reader.onload = () => { sessionStorage.setItem("searchImagePreview", reader.result as string); };
       reader.readAsDataURL(file);
-
-      // Build FormData and POST to Laravel
       const formData = new FormData();
       formData.append("image", file);
-
-      const res = await fetch(`${API_URL}/api/search/image`, {
-        method: "POST",
-        headers: { Accept: "application/json" },
-        body: formData,
-      });
-
+      const res = await fetch(`${API_URL}/api/search/image`, { method:"POST", headers:{ Accept:"application/json" }, body: formData });
       if (!res.ok) throw new Error("Image search failed");
-
       const data = await res.json();
-
-      // Encode results in URL (compact: just IDs joined by comma)
       const ids = (data.products ?? []).map((p: { id: number }) => p.id).join(",");
       router.push(`/search?mode=image&ids=${ids}`);
-
     } catch {
       alert("Image search failed. Please try again.");
     } finally {
       setImageSearching(false);
-      // Reset input so same file can be re-selected
       if (imageInputRef.current) imageInputRef.current.value = "";
     }
   }, [router]);
-
-  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <>
       <MegaMenu categories={categories} visible={megaOpen} onClose={()=>setMegaOpen(false)}/>
 
-      {/* Hidden image file input */}
-      <input
-        ref={imageInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        style={{ display: "none" }}
-        onChange={handleImageSelected}
-      />
+      <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display:"none" }} onChange={handleImageSelected}/>
 
       <header style={{
         position:"sticky", top:0, zIndex:50,
@@ -418,10 +865,7 @@ export default function Navbar() {
                   <Avatar user={user!} size={22}/>
                   <span style={{maxWidth:90,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user!.name}</span>
                   <RoleBadge role={user!.role}/>
-                  <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
-                    style={{transform:dropOpen?"rotate(180deg)":"none",transition:"transform 0.2s",flexShrink:0}}>
-                    <path d="M6 9l6 6 6-6"/>
-                  </svg>
+                  <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{transform:dropOpen?"rotate(180deg)":"none",transition:"transform 0.2s",flexShrink:0}}><path d="M6 9l6 6 6-6"/></svg>
                 </button>
                 {dropOpen&&(
                   <div style={{position:"fixed",top:100,right:24,width:220,background:"#fff",border:"1px solid #f1f5f9",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.14)",zIndex:9999,overflow:"hidden"}}>
@@ -470,95 +914,96 @@ export default function Navbar() {
               </span>
             </Link>
 
-            {/* ── SEARCH BAR (modified from original) ───────────────────── */}
+            {/* ── SEARCH BAR WRAPPER (relative — dropdown anchors here) ── */}
             <div style={{flex:1,minWidth:0,display:"flex",justifyContent:"center"}}>
-              <div
-                style={{
-                  display:"flex",
-                  width:"100%",
-                  maxWidth:640,
-                  height:42,
-                  border:"2px solid #e5e7eb",
-                  borderRadius:8,
-                  overflow:"hidden",
-                  transition:"border-color 0.18s, box-shadow 0.18s",
-                }}
-                onMouseEnter={e=>{e.currentTarget.style.borderColor="#dc2626"; e.currentTarget.style.boxShadow="0 0 0 3px rgba(219,20,46,0.08)";}}
-                onMouseLeave={e=>{e.currentTarget.style.borderColor="#e5e7eb"; e.currentTarget.style.boxShadow="none";}}
-              >
-                {/* Text input */}
-                <input
-                  type="text"
-                  placeholder="Search products, brands, vendors..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={handleSearchKeyDown}
-                  style={{flex:1,padding:"0 12px",fontSize:14,border:"none",outline:"none",background:"#fff",color:"#111",fontFamily:"inherit",minWidth:0}}
+              <div ref={searchWrapRef} style={{ position:"relative", width:"100%", maxWidth:640 }}>
+
+                {/* Search input row */}
+                <div
+                  style={{
+                    display:"flex",
+                    width:"100%",
+                    height:42,
+                    border:`2px solid ${searchFocused ? "#dc2626" : "#e5e7eb"}`,
+                    borderRadius: (showTrendingDropdown || showSuggestionsDropdown) ? "8px 8px 0 0" : 8,
+                    overflow:"hidden",
+                    transition:"border-color 0.18s, box-shadow 0.18s",
+                    boxShadow: searchFocused ? "0 0 0 3px rgba(219,20,46,0.08)" : "none",
+                    background:"#fff",
+                    zIndex: 9996,
+                    position:"relative",
+                  }}
+                >
+                  {/* Text input */}
+                  <input
+                    type="text"
+                    placeholder="Search products, brands, vendors..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
+                    onFocus={() => { setSearchFocused(true); setMegaOpen(false); setDropOpen(false); }}
+                    style={{flex:1,padding:"0 12px",fontSize:14,border:"none",outline:"none",background:"transparent",color:"#111",fontFamily:"inherit",minWidth:0}}
+                  />
+
+                  {/* Camera button */}
+                  <button
+                    onClick={handleCameraClick}
+                    disabled={imageSearching}
+                    title="Search by image"
+                    className="search-camera-btn"
+                    style={{
+                      background:"transparent", border:"none", borderRight:"1px solid #e5e7eb",
+                      padding:"0 11px", cursor: imageSearching ? "wait" : "pointer",
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      flexShrink:0, color:"#9ca3af",
+                      transition:"background 0.15s, color 0.15s, transform 0.1s",
+                    }}
+                  >
+                    {imageSearching ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" style={{animation:"spin 0.8s linear infinite"}}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                    ) : (
+                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    )}
+                  </button>
+
+                  {/* Search button */}
+                  <button
+                    onClick={handleTextSearch}
+                    style={{background:"#dc2626",border:"none",padding:"0 20px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background 0.15s"}}
+                    onMouseEnter={e=>(e.currentTarget.style.background="#b91c1c")}
+                    onMouseLeave={e=>(e.currentTarget.style.background="#dc2626")}
+                  >
+                    <SearchIcon/>
+                  </button>
+                </div>
+
+                {/* ── Trending dropdown (empty query, focused) ── */}
+                <SearchDropdown
+                  visible={showTrendingDropdown}
+                  categories={categories}
+                  onCategoryClick={handleCategoryClick}
+                  onProductClick={() => setSearchFocused(false)}
                 />
 
-                {/* ── Camera / Image Search Icon (NEW) ──────────────────── */}
-                <button
-                  onClick={handleCameraClick}
-                  disabled={imageSearching}
-                  title="Search by image"
-                  className="search-camera-btn"
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    borderRight: "1px solid #e5e7eb",
-                    padding: "0 11px",
-                    cursor: imageSearching ? "wait" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    color: "#9ca3af",
-                    transition: "background 0.15s, color 0.15s, transform 0.1s",
-                  }}
-                >
-                  {imageSearching ? (
-                    /* Spinner while uploading */
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"
-                      style={{ animation: "spin 0.8s linear infinite" }}>
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                    </svg>
-                  ) : (
-                    /* Camera icon */
-                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                      <circle cx="12" cy="13" r="4"/>
-                    </svg>
-                  )}
-                </button>
-                {/* ─────────────────────────────────────────────────────── */}
+                {/* ── Suggestions dropdown (has query, focused) ── */}
+                <SearchSuggestionsDropdown
+                  visible={showSuggestionsDropdown}
+                  query={searchQuery.trim()}
+                  items={suggItems}
+                  onSelectQuery={handleSelectSuggestion}
+                  onSelectCategory={handleSelectSuggestionCategory}
+                />
 
-                {/* Search button */}
-                <button
-                  onClick={handleTextSearch}
-                  style={{
-                    background:"#dc2626",border:"none",padding:"0 20px",cursor:"pointer",
-                    display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
-                    transition:"background 0.15s",
-                  }}
-                  onMouseEnter={e=>(e.currentTarget.style.background="#b91c1c")}
-                  onMouseLeave={e=>(e.currentTarget.style.background="#dc2626")}
-                >
-                  <SearchIcon/>
-                </button>
               </div>
             </div>
-            {/* ─────────────────────────────────────────────────────────── */}
 
             {/* Nav links */}
             <div style={{display:"flex",alignItems:"center",gap:2,flexShrink:0}}>
-              <button onClick={()=>{setMegaOpen(o=>!o);setDropOpen(false);}}
+              <button onClick={()=>{setMegaOpen(o=>!o);setDropOpen(false);setSearchFocused(false);}}
                 style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:14,fontWeight:500,background:megaOpen?"#fef2f2":"transparent",color:megaOpen?"#dc2626":"#52525b",transition:"all 0.14s",whiteSpace:"nowrap"}}>
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
                 Categories
-                <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
-                  style={{transform:megaOpen?"rotate(180deg)":"none",transition:"transform 0.2s"}}>
-                  <path d="M6 9l6 6 6-6"/>
-                </svg>
+                <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{transform:megaOpen?"rotate(180deg)":"none",transition:"transform 0.2s"}}><path d="M6 9l6 6 6-6"/></svg>
               </button>
               {NAV_LINKS.map(l=>(
                 <Link key={l.href} href={l.href}
@@ -568,7 +1013,7 @@ export default function Navbar() {
                   {l.label}
                 </Link>
               ))}
-              <AskAIPill onClick={handleSupport} />
+              <AskAIPill onClick={handleSupport}/>
               {loggedIn&&isSeller&&(
                 <Link href="/seller"
                   style={{padding:"8px 12px",borderRadius:8,fontSize:14,fontWeight:500,color:"#52525b",textDecoration:"none",transition:"all 0.14s",whiteSpace:"nowrap"}}
@@ -580,19 +1025,14 @@ export default function Navbar() {
             </div>
 
             {/* Mobile burger */}
-            <button
-              style={{display:"none",background:"transparent",border:"none",cursor:"pointer",color:"#374151",padding:4,marginLeft:"auto",flexShrink:0}}
-              className="nb-burger"
-              onClick={()=>setMenuOpen(!menuOpen)}>
+            <button style={{display:"none",background:"transparent",border:"none",cursor:"pointer",color:"#374151",padding:4,marginLeft:"auto",flexShrink:0}} className="nb-burger" onClick={()=>setMenuOpen(!menuOpen)}>
               {menuOpen?<CloseIcon/>:<MenuIcon/>}
             </button>
           </div>
 
           <style>{`
             @keyframes spin { to { transform: rotate(360deg); } }
-            @media(max-width:960px){
-              .nb-burger{display:flex!important}
-            }
+            @media(max-width:960px){ .nb-burger{display:flex!important} }
           `}</style>
         </nav>
 
@@ -609,24 +1049,15 @@ export default function Navbar() {
                 </div>
               </div>
             )}
-            {/* Mobile search with camera */}
+            {/* Mobile search */}
             <div style={{display:"flex",border:"1.5px solid #e5e7eb",borderRadius:8,overflow:"hidden",height:42}}>
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchQuery}
+              <input type="text" placeholder="Search..." value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
                 style={{flex:1,padding:"0 14px",fontSize:14,border:"none",outline:"none",background:"#fff",color:"#111"}}
               />
-              <button
-                onClick={handleCameraClick}
-                style={{background:"transparent",border:"none",borderRight:"1px solid #e5e7eb",padding:"0 10px",cursor:"pointer",color:"#9ca3af"}}
-              >
-                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                  <circle cx="12" cy="13" r="4"/>
-                </svg>
+              <button onClick={handleCameraClick} style={{background:"transparent",border:"none",borderRight:"1px solid #e5e7eb",padding:"0 10px",cursor:"pointer",color:"#9ca3af"}}>
+                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
               </button>
               <button onClick={handleTextSearch} style={{background:"#dc2626",border:"none",padding:"0 16px",cursor:"pointer",color:"#fff"}}><SearchIcon/></button>
             </div>

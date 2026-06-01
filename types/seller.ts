@@ -123,13 +123,12 @@ export interface ProductStats {
 
 export type OrderStatus =
   | 'pending'
-  | 'processing'
+  | 'confirmed'
   | 'out_for_delivery'
   | 'completed'
   | 'cancelled'
   | 'delivered'
   | 'refunded';
-
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
 
 export type PaymentMethod = 'cod' | 'card' | 'd17' | 'wallet';
@@ -215,10 +214,11 @@ export interface OrderDetail {
 export interface OrderStats {
   total: number;
   pending: number;
-  processing: number;
+  confirmed: number;
   completed: number;
   cancelled: number;
   delivered: number;
+  out_for_delivery: number;
 }
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
