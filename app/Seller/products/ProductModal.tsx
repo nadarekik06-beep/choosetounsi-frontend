@@ -579,29 +579,62 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     setPrimaryImageId(id)
     setExistingImages(prev => prev.map(img => ({ ...img, is_primary: img.id === id })))
   }
+  const showVariantImageManager = isEdit && variantsForImageManager.length > 0
 
-  const validate = () => {
-    const e: Record<string, string> = {}
-    if (!form.name.trim()) e.name = 'Required.'
-    if (!form.category_id && !isLocked) e.category_id = 'Select a category.'
-    if (form.price === '' || isNaN(Number(form.price)) || Number(form.price) < 0) e.price = 'Enter a valid price.'
-    if (form.seasons.length === 0) e.seasons = 'Select at least one season.'
-    if (hasVariantRows) {
-      const varStockErrs = validateVariantStocks(variantRows)
-      if (Object.keys(varStockErrs).length > 0) { setVariantStockErrors(varStockErrs); e.variants = 'Fix variant stock errors below.' }
-      else setVariantStockErrors({})
-    } else {
-      if (form.stock === '' || isNaN(Number(form.stock)) || Number(form.stock) < 0) e.stock = 'Enter a valid quantity.'
-    }
-    setErrors(e)
-    return Object.keys(e).length === 0
+
+ const validate = () => {
+  const e: Record<string, string> = {}
+
+  if (!form.name.trim()) e.name = 'Product name is required.'
+
+  if (!form.category_id && !isLocked) e.category_id = 'Please select a category.'
+
+  // ── Price: clearer message with value context ──────────────────────────
+  if (form.price === '' || isNaN(Number(form.price))) {
+    e.price = 'Price is required — enter a number (e.g. 29.900).'
+  } else if (Number(form.price) <= 0) {
+    e.price = 'Price must be greater than 0 TND.'
   }
 
+  if (form.seasons.length === 0) e.seasons = 'Select at least one season.'
+
+  if (hasVariantRows) {
+    const varStockErrs = validateVariantStocks(variantRows)
+    if (Object.keys(varStockErrs).length > 0) {
+      setVariantStockErrors(varStockErrs)
+      e.variants = 'Fix variant stock errors below.'
+    } else {
+      setVariantStockErrors({})
+    }
+
+    // ── Variant product: require at least one color group image ───────────
+    // Only enforce on new products — edit mode uses VariantImageManager
+   
+  } else {
+    // ── No-variant product: require at least 1 image ──────────────────────
+    if (form.stock === '' || isNaN(Number(form.stock)) || Number(form.stock) < 0) {
+      e.stock = 'Enter a valid stock quantity.'
+    }
+
+  }
+
+  setErrors(e)
+  return Object.keys(e).length === 0
+}
+
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validate()) return
-    setSaving(true)
-    setApiError('')
+  e.preventDefault()
+  if (!validate()) {
+    setTimeout(() => {
+      const firstErr = document.querySelector(
+        '.border-red-300, [style*="fecaca"]'
+      ) as HTMLElement | null
+      if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 50)
+    return
+  }
+  setSaving(true)
+  setApiError('')
     try {
       const subId = form.subcategory_id ? parseInt(form.subcategory_id, 10) : null
       const validVariants = variantRows
@@ -645,15 +678,15 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         if (Object.keys(colorGroupImages).length > 0) payload.color_images = colorGroupImages
       }
 
-      if (isEdit) {
-        await productsApi.update(product!.id, payload as ProductPayload)
-        if (primaryImageId !== null) {
-          const orig = p?.images?.find(i => i.is_primary)
-          if (!orig || orig.id !== primaryImageId) await productsApi.setPrimaryImage(product!.id, primaryImageId)
-        }
-      } else {
-        await productsApi.create(payload as ProductPayload)
-      }
+if (isEdit) {
+  await productsApi.update(product!.id, payload as ProductPayload)
+  if (primaryImageId !== null) {
+    const orig = p?.images?.find(i => i.is_primary)
+    if (orig?.id !== primaryImageId) await productsApi.setPrimaryImage(product!.id, primaryImageId)
+  }
+} else {
+  await productsApi.create(payload as ProductPayload)
+}
       onSaved()
       onClose()
     } catch (err: any) {
@@ -670,7 +703,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     }
   }
 
-  const showVariantImageManager = isEdit && variantsForImageManager.length > 0
 
   return (
     <>
@@ -781,12 +813,36 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
               <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>Pricing & Inventory</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                 <Field label="Base Price (TND)" required error={errors.price} locked={isLocked}>
-                  <div style={{ position: 'relative' }}>
-                    <input type="number" min="0" step="0.001" value={form.price}
-                      onChange={e => !isLocked && set('price', e.target.value)} readOnly={isLocked}
-                      placeholder="0.000" className={inputCls(errors.price)}
-                      style={{ paddingRight: 44, cursor: isLocked ? 'not-allowed' : undefined }} />
-                    <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>TND</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="number" min="0" step="0.001" value={form.price}
+                        onChange={e => {
+                          if (!isLocked) {
+                            set('price', e.target.value)
+                            if (errors.price) setErrors(prev => ({ ...prev, price: '' }))
+                          }
+                        }}
+                        readOnly={isLocked}
+                        placeholder="0.000"
+                        className={inputCls(errors.price)}
+                        style={{ paddingRight: 44, cursor: isLocked ? 'not-allowed' : undefined }}
+                      />
+                      <span style={{
+                        position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                        fontSize: 11, color: errors.price ? '#ef4444' : '#94a3b8', fontWeight: 600,
+                      }}>TND</span>
+                    </div>
+                    {errors.price && (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 7, marginTop: 6,
+                        background: '#fef2f2', border: '1px solid #fecaca',
+                        borderRadius: 8, padding: '8px 12px',
+                      }}>
+                        <AlertCircle size={13} color="#dc2626" style={{ flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 700 }}>{errors.price}</span>
+                      </div>
+                    )}
                   </div>
                 </Field>
                 <CommissionPreview price={form.price} />
@@ -887,8 +943,24 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                 {!axesLoading && variantAxes.length > 0 && (
                   <>
                     <VariantBuilder axes={variantAxes} existingVariants={variantRows} onChange={rows => { setVariantRows(rows); setVariantStockErrors({}) }} basePrice={form.price} disabled={saving} externalStockErrors={variantStockErrors} />
-                    {variantRows.length > 0 && <div style={{ marginTop: 16 }}><ColorGroupImageUploader variantRows={variantRows} colorAxis={variantAxes.find(a => a.type === 'color') ?? null} onChange={setColorGroupImages} existingByColorGroup={existingByColorGroup} disabled={saving} /></div>}
-                    {variantRows.length > 0 && (
+{variantRows.length > 0 && (
+  <div style={{ marginTop: 16 }}>
+    
+    <ColorGroupImageUploader
+      variantRows={variantRows}
+      colorAxis={variantAxes.find(a => a.type === 'color') ?? null}
+      onChange={(imgs) => {
+        setColorGroupImages(imgs)
+        // Clear error as soon as seller uploads something
+        if (Object.values(imgs).some(f => f.length > 0)) {
+          setErrors(prev => ({ ...prev, color_images: '' }))
+        }
+      }}
+      existingByColorGroup={existingByColorGroup}
+      disabled={saving}
+    />
+  </div>
+)}                    {variantRows.length > 0 && (
                       <div style={{ marginTop: 14 }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(220,38,38,0.05)', border: '1.5px solid rgba(220,38,38,0.2)', borderRadius: 12, padding: '10px 16px' }}>
                           <span style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total Stock</span>
@@ -923,12 +995,17 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
             {showVariantImageManager && <section><VariantImageManager variants={variantsForImageManager} onChange={setVariantImageChanges} disabled={saving} /></section>}
 
             {/* ── General Images ── */}
-            {(!hasVariantRows || (isEdit && existingImages.length > 0)) && !showVariantImageManager && (
-              <section>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 14 }}>
-                  <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>Images</p>
-                  <span style={{ fontSize: 11, color: '#94a3b8' }}>{totalImages}/8</span>
-                </div>
+                {(!hasVariantRows || (isEdit && existingImages.length > 0)) && !showVariantImageManager && ( 
+                    <section>
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 14 }}>
+    <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>
+Images
+    </p>
+    <span style={{ fontSize: 11, color: '#94a3b8' }}>{totalImages}/8</span>
+  </div>
+
+                       
+               
                 {existingImages.length > 0 && (
                   <div style={{ marginBottom: 12 }}>
                     <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>Current Images</p>

@@ -70,9 +70,7 @@ function ResetPasswordForm() {
 
           {/* Brand */}
           <div className="flex items-center gap-2.5 mb-8">
-            <div className="w-9 h-9 rounded-xl bg-[#E63946] flex items-center justify-center shadow-lg shadow-red-500/30">
-              <ShoppingBag size={18} className="text-white" />
-            </div>
+            <img src="/images/logo-chili.png" alt="ChooseTounsi" className="h-9 w-9 object-contain" />
             <span className="text-xl font-black text-slate-900 tracking-tight">
               Choose<span className="text-[#E63946]">Tounsi</span>
             </span>

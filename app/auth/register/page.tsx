@@ -93,13 +93,11 @@ useEffect(() => {
         {/* ══ LEFT — form ══ */}
         <div className="flex-1 flex flex-col justify-center px-10 py-12 lg:px-14">
           <div className="flex items-center gap-2.5 mb-8">
-            <div className="w-9 h-9 rounded-xl bg-[#E63946] flex items-center justify-center shadow-lg shadow-red-500/30">
-              <ShoppingBag size={18} className="text-white" />
+              <img src="/images/logo-chili.png" alt="ChooseTounsi" className="h-9 w-9 object-contain" />
+              <span className="text-xl font-black text-slate-900 tracking-tight">
+                Choose<span className="text-[#E63946]">Tounsi</span>
+              </span>
             </div>
-            <span className="text-xl font-black text-slate-900 tracking-tight">
-              Choose<span className="text-[#E63946]">Tounsi</span>
-            </span>
-          </div>
 
           <div className="mb-7">
             <h1 className="text-3xl font-black text-slate-900 leading-tight">
@@ -189,8 +187,8 @@ useEffect(() => {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-white/[0.04]" />
           <div className="relative z-10 text-center">
             <div className="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur flex items-center justify-center mx-auto mb-8 shadow-xl">
-              <Store size={36} className="text-white" />
-            </div>
+  <Store size={36} className="text-white" />
+</div>
             <h2 className="text-3xl font-black text-white leading-tight mb-4">Join<br />ChooseTounsi</h2>
             <div className="w-10 h-1 bg-white/60 rounded-full mx-auto mb-6" />
             <p className="text-white/80 text-sm leading-relaxed mb-10 font-medium">

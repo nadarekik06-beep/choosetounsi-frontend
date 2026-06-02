@@ -64,6 +64,28 @@ interface BuyNowProduct {
   images?: { image_path: string; url?: string; color_option_id?: number | null }[]
   variants?: { id: number; price: string | number; sku: string | null; image_urls: string[] }[]
 }
+// ─── Tunisian phone validation ────────────────────────────────────────────────
+function validateTunisianPhone(raw: string): { clean: string; valid: boolean; hint: string } {
+  // Strip spaces, dashes, dots
+  const stripped = raw.replace(/[\s\-\.]/g, '')
+  // Remove country code prefix if present
+  const withoutPrefix = stripped.replace(/^(\+216|00216)/, '')
+  
+  const isValid = /^[2459][0-9]{7}$/.test(withoutPrefix)
+  
+  let hint = ''
+  if (raw.trim() === '') {
+    hint = ''
+  } else if (withoutPrefix.length < 8) {
+    hint = `${withoutPrefix.replace(/\D/g, '').length}/8 digits`
+  } else if (withoutPrefix.length > 8) {
+    hint = 'Too many digits — Tunisian numbers are 8 digits'
+  } else if (!/^[2459]/.test(withoutPrefix)) {
+    hint = 'Must start with 2, 4, 5, or 9 (e.g. 20, 50, 55, 90…)'
+  }
+  
+  return { clean: withoutPrefix, valid: isValid, hint }
+}
 
 // ─── Payment Method Card ──────────────────────────────────────────────────────
 
@@ -331,7 +353,7 @@ export default function CheckoutPage() {
     // Filter to only the IDs the user selected in the drawer
     return allCartItems.filter(i => sel.has(i.id))
   }, [allCartItems, isBuyNow])
-
+  const [phoneTouched, setPhoneTouched] = useState(false)
   // For the partial-selection info banner
   const hasPartialSelection =
     !isBuyNow &&
@@ -427,13 +449,20 @@ export default function CheckoutPage() {
   }
 
   const validate = (): boolean => {
-    const e: Record<string, string> = {}
-    if (!form.wilaya.trim())  e.wilaya  = 'Please select your wilaya.'
-    if (!form.address.trim()) e.address = 'Please enter your delivery address.'
-    if (!form.phone.trim())   e.phone   = 'Please enter your phone number.'
-    setErrors(e)
-    return Object.keys(e).length === 0
+  const e: Record<string, string> = {}
+  if (!form.wilaya.trim())  e.wilaya  = 'Please select your wilaya.'
+  if (!form.address.trim()) e.address = 'Please enter your delivery address.'
+  
+  const phoneCheck = validateTunisianPhone(form.phone)
+  if (!form.phone.trim()) {
+    e.phone = 'Phone number is required.'
+  } else if (!phoneCheck.valid) {
+    e.phone = 'Invalid Tunisian number. Enter 8 digits starting with 2, 4, 5, or 9.'
   }
+  
+  setErrors(e)
+  return Object.keys(e).length === 0
+}
 
   const bnVariant        = bnProduct?.variants?.find(v => v.id === bnVariantId) ?? null
   const bnEffectivePrice = bnVariant ? Number(bnVariant.price) : bnProduct ? Number(bnProduct.price) : 0
@@ -475,6 +504,8 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
+    const { clean: cleanPhone } = validateTunisianPhone(form.phone)
+  const cleanForm = { ...form, phone: cleanPhone }
     setLoading(true)
     setApiError('')
 
@@ -488,7 +519,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
           quantity:       bnQuantity,
           wilaya:         form.wilaya,
           address:        form.address,
-          phone:          form.phone,
+          phone:          cleanForm.phone,
           notes:          form.notes || undefined,
           payment_method: paymentMethod,
         }
@@ -501,7 +532,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
         res = await checkoutApi.place({
           wilaya:         form.wilaya,
           address:        form.address,
-          phone:          form.phone,
+          phone:          cleanForm.phone, 
           notes:          form.notes || undefined,
           payment_method: paymentMethod,
           ...(selectedItemIds ? { item_ids: selectedItemIds } : {}),
@@ -717,17 +748,111 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
                       {errors.address && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.address}</p>}
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
-                        Phone Number <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <Phone size={13} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
-                        <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)}
-                          placeholder="e.g. 20 123 456"
-                          style={{ width: '100%', border: `1.5px solid ${errors.phone ? '#ef4444' : '#e5e7eb'}`, borderRadius: 10, padding: '10px 14px 10px 34px', fontSize: 14, fontFamily: 'inherit', color: '#0f172a', background: errors.phone ? '#fef2f2' : '#fff', outline: 'none' }} />
-                      </div>
-                      {errors.phone && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.phone}</p>}
-                    </div>
+  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
+    Phone Number <span style={{ color: '#ef4444' }}>*</span>
+  </label>
+  
+  {/* Country code prefix badge + input */}
+  <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 6,
+      padding: '0 12px', borderRadius: 10, flexShrink: 0,
+      border: '1.5px solid #e5e7eb', background: '#f8fafc',
+      fontSize: 13, fontWeight: 700, color: '#64748b',
+      whiteSpace: 'nowrap',
+    }}>
+      🇹🇳 +216
+    </div>
+    <div style={{ position: 'relative', flex: 1 }}>
+      {(() => {
+        const phoneCheck = phoneTouched ? validateTunisianPhone(form.phone) : { valid: false, hint: '', clean: '' }
+        const showSuccess = phoneTouched && form.phone.trim() !== '' && phoneCheck.valid
+        const showWarning = phoneTouched && form.phone.trim() !== '' && !phoneCheck.valid
+        const borderColor = errors.phone ? '#ef4444' : showSuccess ? '#10b981' : showWarning ? '#f59e0b' : '#e5e7eb'
+        const bgColor     = errors.phone ? '#fef2f2' : showSuccess ? '#f0fdf4' : '#fff'
+        
+        return (
+          <>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={e => {
+                // Only allow digits, spaces, dashes, plus
+                const val = e.target.value.replace(/[^0-9\s\-\+\.]/g, '')
+                set('phone', val)
+                if (errors.phone) setErrors(prev => ({ ...prev, phone: '' }))
+              }}
+              onBlur={() => setPhoneTouched(true)}
+              onFocus={() => setPhoneTouched(true)}
+              placeholder="20 123 456"
+              maxLength={15}
+              style={{
+                width: '100%', border: `1.5px solid ${borderColor}`,
+                borderRadius: 10, padding: '10px 36px 10px 14px',
+                fontSize: 14, fontFamily: 'inherit', color: '#0f172a',
+                background: bgColor, outline: 'none',
+                transition: 'border-color 0.15s, background 0.15s',
+              }}
+            />
+            {/* Live status icon */}
+            <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+              {showSuccess && (
+                <svg width="16" height="16" fill="none" stroke="#10b981" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+              )}
+              {showWarning && (
+                <svg width="16" height="16" fill="none" stroke="#f59e0b" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              )}
+            </div>
+          </>
+        )
+      })()}
+    </div>
+  </div>
+  
+  {/* Hint text — shown live while typing, before submit */}
+  {(() => {
+    const phoneCheck = phoneTouched ? validateTunisianPhone(form.phone) : { valid: false, hint: '', clean: '' }
+    if (errors.phone) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5 }}>
+          <svg width="12" height="12" fill="none" stroke="#ef4444" strokeWidth="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <p style={{ fontSize: 11, color: '#ef4444', margin: 0, fontWeight: 600 }}>{errors.phone}</p>
+        </div>
+      )
+    }
+    if (phoneTouched && phoneCheck.hint) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5 }}>
+          <svg width="12" height="12" fill="none" stroke="#f59e0b" strokeWidth="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <p style={{ fontSize: 11, color: '#d97706', margin: 0, fontWeight: 600 }}>{phoneCheck.hint}</p>
+        </div>
+      )
+    }
+    if (phoneTouched && form.phone.trim() && phoneCheck.valid) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5 }}>
+          <svg width="12" height="12" fill="none" stroke="#10b981" strokeWidth="2" viewBox="0 0 24 24">
+            <path d="M20 6 9 17l-5-5"/>
+          </svg>
+          <p style={{ fontSize: 11, color: '#059669', margin: 0, fontWeight: 600 }}>Valid Tunisian number ✓</p>
+        </div>
+      )
+    }
+    return (
+      <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 5 }}>
+        8 digits — starts with 2, 4, 5, or 9 · e.g. <strong>20 123 456</strong>
+      </p>
+    )
+  })()}
+</div>
                     <div>
                       <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
                         Order Notes <span style={{ fontSize: 10, fontWeight: 500, textTransform: 'none' }}>(optional)</span>
