@@ -1,6 +1,6 @@
 // lib/subscriptionApi.ts
-// Seller subscription status + upgrade API.
-// Uses the same fetch-based pattern as sellerApi.ts in this project.
+// FULL REPLACEMENT — adds downgrade, cancelDowngrade, history + richer SubscriptionStatus type.
+// All existing exports are preserved so nothing else breaks.
 
 const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const BASE_URL = RAW_URL.replace(/\/api\/?$/, '')
@@ -41,11 +41,34 @@ export type ActivePlan    = 'free' | 'red' | 'black'
 export type PreferredPlan = 'green' | 'red' | 'black'
 export type AppStatus     = 'pending' | 'approved' | 'rejected'
 
+export type SubscriptionStatus_Status =
+  | 'active'
+  | 'grace_period'
+  | 'past_due'
+  | 'canceled'
+  | 'expired'
+  | 'suspended'
+
+export interface SubscriptionLifecycle {
+  id:                    number
+  current_plan:          ActivePlan
+  pending_plan:          ActivePlan | null
+  status:                SubscriptionStatus_Status
+  status_label:          string
+  billing_cycle_start:   string | null   // 'YYYY-MM-DD'
+  billing_cycle_end:     string | null   // 'YYYY-MM-DD'
+  days_remaining:        number
+  grace_period_ends_at:  string | null
+  has_pending_downgrade: boolean
+  max_products:          number | null   // null = unlimited
+}
+
 export interface SubscriptionStatus {
   has_application: boolean
   status:          AppStatus | null
   plan:            ActivePlan | null
   preferred_plan:  PreferredPlan | null
+  subscription:    SubscriptionLifecycle | null  // NEW — null for free/unapproved
   last_payment: {
     plan:       ActivePlan
     amount:     number
@@ -67,12 +90,29 @@ export interface UpgradeResult {
   payment_id: number
 }
 
+export interface DowngradeResult {
+  pending_plan:   ActivePlan
+  effective_date: string
+  days_remaining: number
+}
+
+export interface PlanChange {
+  from_plan:         ActivePlan
+  to_plan:           ActivePlan
+  change_type:       string
+  change_type_label: string
+  effective_at:      string
+  reason:            string | null
+  amount_charged:    number
+}
+
 // ── Plan metadata (mirrors PLANS constant in become-a-vendor page) ─────────────
 
 export const PLAN_META = {
   free: {
     name:        'Green Pepper',
     priceLabel:  'Free',
+    price:       0,
     color:       '#198f41',
     accentColor: '#15803d',
     emoji:       '🌱',
@@ -116,5 +156,29 @@ export const subscriptionApi = {
       'POST', '/seller/subscription/upgrade', payload
     )
     return res.data
+  },
+
+  /** Schedule a deferred downgrade — takes effect at end of billing cycle */
+  async downgrade(plan: 'free' | 'red'): Promise<DowngradeResult> {
+    const res = await jsonRequest<{ success: boolean; data: DowngradeResult }>(
+      'POST', '/seller/subscription/downgrade', { plan }
+    )
+    return res.data
+  },
+
+  /** Cancel a previously scheduled downgrade */
+  async cancelDowngrade(): Promise<{ current_plan: ActivePlan; has_pending_downgrade: false }> {
+    const res = await jsonRequest<{ success: boolean; data: any }>(
+      'DELETE', '/seller/subscription/downgrade'
+    )
+    return res.data
+  },
+
+  /** Full plan change audit log */
+  async history(): Promise<PlanChange[]> {
+    const res = await jsonRequest<{ success: boolean; data: PlanChange[] }>(
+      'GET', '/seller/subscription/history'
+    )
+    return res.data ?? []
   },
 }

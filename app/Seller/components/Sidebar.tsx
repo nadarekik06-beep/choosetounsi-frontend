@@ -21,7 +21,7 @@ import {
   ChevronLeft, ChevronRight, LogOut, Home, Sun, Moon,
   AlertTriangle, BarChart2, Brain, Lock, Crown, Zap,
   Tag, Package2, TrendingUp, Eye, Star, DollarSign,
-  Users, Megaphone, ChevronDown, ChevronUp,
+  Users, Megaphone, ChevronDown, ChevronUp, CreditCard,
 } from 'lucide-react';
 import { useTheme } from '../layout';
 import { useSubscription } from '@/app/hooks/useSubscription';
@@ -34,6 +34,7 @@ const STORE_NAV = [
   { href: '/seller/packs',    label: 'Packs',      icon: Package2 },
   { href: '/seller/orders',   label: 'Orders',     icon: ShoppingBag },
   { href: '/seller/earnings', label: 'Earnings', icon: Wallet },
+  { href: '/seller/subscription', label: 'Subscription',  icon: CreditCard },
 
 ];
 const CUSTOMER_NAV = [
