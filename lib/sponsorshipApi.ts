@@ -101,6 +101,18 @@ export interface SponsoredProduct {
     boost_score: number;
     end_at:     string | null;
   } | null;
+  effective_price?: number | null
+  discount_amount?: number | null
+  promotion?: {
+    id: number
+    type: 'flash_sale' | 'discount'
+    discount_type: 'percentage' | 'fixed'
+    discount_value: number
+    discount_label: string
+    ends_at: string
+    is_flash_sale: boolean
+  } | null
+
 }
 
 // ── Payment types ─────────────────────────────────────────────────────────────

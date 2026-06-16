@@ -367,21 +367,43 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
   const maxDurationLabel = type === 'flash_sale' ? '72 hours' : '90 days'
 
   // ── Validation ──────────────────────────────────────────────────────────────
-  const validate = () => {
-    const e: Record<string, string> = {}
-    if (!name.trim())                   e.name = 'Required.'
-    if (!discountValue || parseFloat(discountValue) <= 0)
-                                        e.discount_value = 'Must be greater than 0.'
-    if (discountType === 'percentage' && parseFloat(discountValue) > maxDiscount)
-                                        e.discount_value = `Max ${maxDiscount}% for ${type === 'flash_sale' ? 'flash sales' : 'discounts'}.`
-    if (!startsAt)                      e.starts_at = 'Required.'
-    if (!endsAt)                        e.ends_at   = 'Required.'
-    if (startsAt && endsAt && new Date(endsAt) <= new Date(startsAt))
-                                        e.ends_at   = 'End must be after start.'
-    if (selectedProductIds.length === 0) e.products = 'Select at least one product.'
-    setErrors(e)
-    return Object.keys(e).length === 0
+ const validate = () => {
+  const e: Record<string, string> = {}
+  if (!name.trim()) e.name = 'Required.'
+
+  if (!discountValue || parseFloat(discountValue) <= 0)
+    e.discount_value = 'Must be greater than 0.'
+  if (discountType === 'percentage' && parseFloat(discountValue) > maxDiscount)
+    e.discount_value = `Max ${maxDiscount}% for ${type === 'flash_sale' ? 'flash sales' : 'discounts'}.`
+
+  if (!startsAt) e.starts_at = 'Required.'
+  if (!endsAt)   e.ends_at   = 'Required.'
+
+  if (startsAt && endsAt) {
+    const start = new Date(startsAt)
+    const end   = new Date(endsAt)
+
+    if (end <= start) {
+      e.ends_at = 'End must be after start.'
+    } else {
+      const diffMs    = end.getTime() - start.getTime()
+      const diffHours = diffMs / (1000 * 60 * 60)
+      const diffDays  = diffHours / 24
+
+      if (type === 'flash_sale') {
+        if (diffHours < 1)  e.ends_at = 'Flash sale must last at least 1 hour.'
+        if (diffHours > 72) e.ends_at = 'Flash sale cannot exceed 72 hours (3 days).'
+      } else {
+        if (diffDays < 1)  e.ends_at = 'Discount must last at least 1 full day.'
+        if (diffDays > 90) e.ends_at = 'Discount cannot exceed 90 days.'
+      }
+    }
   }
+
+  if (selectedProductIds.length === 0) e.products = 'Select at least one product.'
+  setErrors(e)
+  return Object.keys(e).length === 0
+}
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
@@ -411,14 +433,30 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
       onSaved()
       onClose()
     } catch (err: any) {
-      const data = err?.response?.data
-      if (data?.errors) {
-        const first = Object.values(data.errors as Record<string, string[]>)[0]?.[0]
-        setApiError(first ?? 'Validation failed.')
+  const data = err?.response?.data ?? err?.response
+
+  if (data?.errors) {
+    const fieldMap: Record<string, string> = {}
+    let hasGeneral = false
+
+    for (const [key, msgs] of Object.entries(data.errors as Record<string, string[]>)) {
+      const msg = Array.isArray(msgs) ? msgs[0] : String(msgs)
+      if (key === 'general') {
+        setApiError(msg)
+        hasGeneral = true
       } else {
-        setApiError(data?.message ?? 'Failed to save. Please try again.')
+        fieldMap[key] = msg
       }
-    } finally {
+    }
+
+    if (Object.keys(fieldMap).length > 0) {
+      setErrors(prev => ({ ...prev, ...fieldMap }))
+      if (!hasGeneral) setApiError('Please fix the errors highlighted below.')
+    }
+  } else {
+    setApiError(data?.message ?? 'Failed to save. Please try again.')
+  }
+} finally {
       setSaving(false)
     }
   }
@@ -572,24 +610,47 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
               {/* Start / End */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <Field label="Starts At" required error={errors.starts_at}>
-                  <input
+                 <input
                     type="datetime-local"
                     value={startsAt}
-                    onChange={e => setStartsAt(e.target.value)}
+                    min={new Date().toISOString().slice(0, 16)}
+                    onChange={e => {
+                      setStartsAt(e.target.value)
+                      // Reset end date if it's now invalid relative to the new start
+                      if (endsAt && new Date(endsAt) <= new Date(e.target.value)) setEndsAt('')
+                    }}
                     style={inputBase}
                     onFocus={e => (e.target.style.borderColor = '#dc2626')}
-                    onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
+                    onBlur={e => (e.target.style.borderColor = errors.starts_at ? '#fca5a5' : '#e5e7eb')}
                   />
                 </Field>
                 <Field label="Ends At" required error={errors.ends_at}>
-                  <input
-                    type="datetime-local"
-                    value={endsAt}
-                    onChange={e => setEndsAt(e.target.value)}
-                    style={inputBase}
-                    onFocus={e => (e.target.style.borderColor = '#dc2626')}
-                    onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
-                  />
+                 <input
+                      type="datetime-local"
+                      value={endsAt}
+                      min={startsAt
+                        ? (() => {
+                            const minEnd = new Date(startsAt)
+                            if (type === 'flash_sale') minEnd.setHours(minEnd.getHours() + 1)
+                            else minEnd.setDate(minEnd.getDate() + 1)
+                            return minEnd.toISOString().slice(0, 16)
+                          })()
+                        : new Date().toISOString().slice(0, 16)
+                      }
+                      max={startsAt
+                        ? (() => {
+                            const maxEnd = new Date(startsAt)
+                            if (type === 'flash_sale') maxEnd.setHours(maxEnd.getHours() + 72)
+                            else maxEnd.setDate(maxEnd.getDate() + 90)
+                            return maxEnd.toISOString().slice(0, 16)
+                          })()
+                        : undefined
+                      }
+                      onChange={e => setEndsAt(e.target.value)}
+                      style={inputBase}
+                      onFocus={e => (e.target.style.borderColor = '#dc2626')}
+                      onBlur={e => (e.target.style.borderColor = errors.ends_at ? '#fca5a5' : '#e5e7eb')}
+                    />
                 </Field>
               </div>
 

@@ -145,20 +145,32 @@ useEffect(() => () => {
           )}
 
           {/* HOT badge */}
-          {showBadge && (
-            <span style={{
-              position: 'absolute', top: 7, left: 7,
-              background: 'linear-gradient(135deg, #db142e, #ff4757)',
-              color: '#fff', fontSize: 8, fontWeight: 800,
-              padding: '2px 7px', borderRadius: 999,
-              letterSpacing: '0.07em', textTransform: 'uppercase',
-              boxShadow: '0 2px 8px rgba(219,20,46,0.38)',
-              zIndex: 2,
-              fontFamily: "'Barlow', sans-serif",
-            }}>
-              🔥 HOT
-            </span>
-          )}
+          <div style={{ position: 'absolute', top: 7, left: 7, display: 'flex', flexDirection: 'column', gap: 4, zIndex: 2 }}>
+            {/* Flash sale badge — shown when product has an active flash promotion */}
+            {product.promotion?.is_flash_sale && (
+              <span style={{
+                background: 'linear-gradient(135deg, #dc2626, #f97316)',
+                color: '#fff', fontSize: 8, fontWeight: 900,
+                padding: '2px 7px', borderRadius: 999,
+                textTransform: 'uppercase', letterSpacing: '0.06em',
+                whiteSpace: 'nowrap',
+              }}>
+                ⚡ {product.promotion.discount_label}
+              </span>
+            )}
+            {/* HOT badge — shown for high-priority sponsorships without a flash sale */}
+            {showBadge && !product.promotion?.is_flash_sale && (
+              <span style={{
+                background: 'linear-gradient(135deg, #db142e, #ff4757)',
+                color: '#fff', fontSize: 8, fontWeight: 800,
+                padding: '2px 7px', borderRadius: 999,
+                letterSpacing: '0.07em', textTransform: 'uppercase',
+                boxShadow: '0 2px 8px rgba(219,20,46,0.38)',
+              }}>
+                🔥 HOT
+              </span>
+            )}
+          </div>
 
           {/* Sold out */}
           {product.stock <= 0 && (
@@ -202,36 +214,57 @@ useEffect(() => () => {
         </div>
 
         {/* ── Info ── */}
-        <div style={{ padding: '9px 11px 11px', position: 'relative', zIndex: 1, background: '#fff' }}>
-          {product.category?.name && (
-            <p style={{
-              fontFamily: "'Barlow', sans-serif",
-              fontSize: 8, fontWeight: 800,
-              color: accentColor,
-              textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 3px',
-            }}>
-              {product.category.name}
-            </p>
-          )}
-          <p style={{
-            fontFamily: "'Barlow', sans-serif",
-            fontSize: 12, fontWeight: 700, color: '#111',
-            margin: '0 0 5px', lineHeight: 1.3,
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-          }}>
-            {product.name}
-          </p>
-          {product.sponsor_data?.ai_ad_copy && (
-            <p style={{
-              fontFamily: "'Barlow', sans-serif",
-              fontSize: 9.5, color: '#bbb', fontStyle: 'italic',
-              margin: '0 0 5px', lineHeight: 1.4,
-              display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-            }}>
-              {product.sponsor_data.ai_ad_copy}
-            </p>
-          )}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
+        {/* ── Info ── */}
+<div style={{
+  padding: '9px 11px 11px',
+  position: 'relative',
+  zIndex: 1,
+  background: '#fff',
+  display: 'flex',
+  flexDirection: 'column',
+  height: 110,           // fixed height — all cards identical regardless of content
+  justifyContent: 'space-between',
+}}>
+  <div>
+    {product.category?.name && (
+      <p style={{
+        fontFamily: "'Barlow', sans-serif",
+        fontSize: 8, fontWeight: 800,
+        color: accentColor,
+        textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 3px',
+      }}>
+        {product.category.name}
+      </p>
+    )}
+    <p style={{
+      fontFamily: "'Barlow', sans-serif",
+      fontSize: 12, fontWeight: 700, color: '#111',
+      margin: '0 0 3px', lineHeight: 1.3,
+      display: '-webkit-box', WebkitLineClamp: 2,
+      WebkitBoxOrient: 'vertical', overflow: 'hidden',
+    }}>
+      {product.name}
+    </p>
+    {/* Description always occupies exactly 1 line — empty string when absent */}
+    <p style={{
+      fontFamily: "'Barlow', sans-serif",
+      fontSize: 9.5, color: '#bbb', fontStyle: 'italic',
+      margin: 0, lineHeight: 1.4,
+      overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+      height: '1.4em',   // always takes up this space, even when empty
+    }}>
+      {product.sponsor_data?.ai_ad_copy ?? ''}
+    </p>
+  </div>
+
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, flexWrap: 'wrap' }}>
+      {(() => {
+        const original  = Number(product.price)
+        const effective = product.effective_price != null ? Number(product.effective_price) : original
+        const hasDiscount = effective < original - 0.001
+        return (
+          <>
             <p style={{
               fontFamily: "'Barlow Condensed', sans-serif",
               fontSize: 15, fontWeight: 900,
@@ -239,25 +272,37 @@ useEffect(() => () => {
               margin: 0,
               transition: 'color 0.2s ease',
             }}>
-              {Number(product.price).toFixed(2)} DT
+              {effective.toFixed(2)} DT
             </p>
-            <div style={{
-              width: 24, height: 24, borderRadius: '50%',
-              background: hovered ? accentColor : '#f5f5f5',
-              border: `1px solid ${hovered ? accentColor : '#e8e8e8'}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: hovered ? '#fff' : '#aaa',
-              transition: 'all 0.22s ease',
-              transform: hovered ? 'rotate(-45deg)' : 'rotate(0deg)',
-              boxShadow: hovered ? arrowShadow : 'none',
-              flexShrink: 0,
-            }}>
-              <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </div>
-          </div>
-        </div>
+            {hasDiscount && (
+              <span style={{
+                fontSize: 10, color: '#9ca3af',
+                textDecoration: 'line-through', fontWeight: 500,
+              }}>
+                {original.toFixed(2)} DT
+              </span>
+            )}
+          </>
+        )
+      })()}
+    </div>
+    <div style={{
+      width: 24, height: 24, borderRadius: '50%',
+      background: hovered ? accentColor : '#f5f5f5',
+      border: `1px solid ${hovered ? accentColor : '#e8e8e8'}`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: hovered ? '#fff' : '#aaa',
+      transition: 'all 0.22s ease',
+      transform: hovered ? 'rotate(-45deg)' : 'rotate(0deg)',
+      boxShadow: hovered ? arrowShadow : 'none',
+      flexShrink: 0,
+    }}>
+      <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7"/>
+      </svg>
+    </div>
+  </div>
+</div>
       </div>
     </Link>
   );

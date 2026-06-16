@@ -438,8 +438,26 @@ function SearchDropdown({
                         {product.name}
                       </p>
                       <p style={{ fontSize: 13, fontWeight: 900, color: "#db142e", margin: 0, letterSpacing: "-0.01em" }}>
-                        {Number(product.price).toFixed(2)} <span style={{ fontSize: 10, fontWeight: 700 }}>DT</span>
-                      </p>
+                          {/* Price — shows discounted price + strikethrough original when promotion active */}
+                                {(() => {
+                                  const original  = Number(product.price)
+                                  const effective = product.effective_price != null
+                                    ? Number(product.effective_price)
+                                    : original
+                                  const hasDiscount = effective < original - 0.001
+                                  return (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                                      <p style={{ fontSize: 13, fontWeight: 900, color: "#db142e", margin: 0, letterSpacing: "-0.01em" }}>
+                                        {effective.toFixed(2)} <span style={{ fontSize: 10, fontWeight: 700 }}>DT</span>
+                                      </p>
+                                      {hasDiscount && (
+                                        <span style={{ fontSize: 10, color: "#9ca3af", textDecoration: "line-through", fontWeight: 500 }}>
+                                          {original.toFixed(2)} DT
+                                        </span>
+                                      )}
+                                    </div>
+                                  )
+                                })()}                      </p>
                     </div>
                   </Link>
                 );
