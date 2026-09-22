@@ -475,4 +475,16 @@ export const invoiceApi = {
     jsonRequest<any>('GET', `/seller/orders/${sellerOrderId}/invoice`),
 }
 
+export const storeProfileApi = {
+  /** GET /api/seller/store-profile — current branding for the settings page */
+  get: () => jsonRequest<any>('GET', '/seller/store-profile'),
+
+  /** POST /api/seller/store-profile/cover-photo */
+  updateCoverPhoto: (file: File) => {
+    const fd = new FormData()
+    fd.append('cover_photo', file)
+    return formRequest<any>('POST', '/seller/store-profile/cover-photo', fd)
+  },
+}
+
 export default api

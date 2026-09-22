@@ -42,6 +42,7 @@ function FavoriteCard({ item, onRemove }: { item: FavoriteItem; onRemove: () => 
   const otherOptions = Object.values(item.variant_options ?? {}).filter(o => !o.color_hex)
 
   const handleAddToCart = async () => {
+    if (item.product_id == null) return
     setAdding(true)
     try {
       await addToCart(item.product_id, 1, item.variant_id ?? null)
@@ -231,12 +232,12 @@ export default function FavoritesPage() {
 
           {/* Grid */}
           {items.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(220px, 45%), 1fr))', gap: 20 }}>
               {items.map(item => (
                 <FavoriteCard
                   key={`${item.product_id}-${item.variant_id ?? 'base'}`}
                   item={item}
-                  onRemove={() => toggleFavorite(item.product_id, item.variant_id)}
+                  onRemove={() => { if (item.product_id != null) toggleFavorite(item.product_id, item.variant_id) }}
                 />
               ))}
             </div>

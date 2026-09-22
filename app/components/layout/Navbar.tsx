@@ -151,10 +151,11 @@ function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible
   const activeCat=categories.find(c=>c.slug===activeSlug);
   return(
     <>
-      <div onClick={onClose} style={{position:"fixed",inset:0,top:132,background:"rgba(0,0,0,0.45)",zIndex:9997}}/>
-      <div style={{position:"fixed",top:132,left:0,right:0,background:"#fff",boxShadow:"0 16px 48px rgba(0,0,0,0.18)",borderTop:"3px solid #dc2626",zIndex:9998,display:"flex",maxHeight:"80vh",overflow:"hidden"}}>
-        <style>{`@keyframes megaIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}.mcat:hover{background:#fff5f5!important;color:#dc2626!important}.mcat.on{background:#fef2f2!important;color:#dc2626!important;border-left:3px solid #dc2626!important}.msub:hover{color:#dc2626!important}.mmore:hover{color:#dc2626!important}`}</style>
-        <div style={{width:220,flexShrink:0,background:"#fafafa",borderRight:"1px solid #f3f4f6",overflowY:"auto",padding:"8px 0"}}>
+      <div className="mm-back" onClick={onClose} style={{position:"fixed",inset:0,top:132,background:"rgba(0,0,0,0.45)",zIndex:9997}}/>
+      <div className="mm-panel" style={{position:"fixed",top:132,left:0,right:0,background:"#fff",boxShadow:"0 16px 48px rgba(0,0,0,0.18)",borderTop:"3px solid #dc2626",zIndex:9998,display:"flex",maxHeight:"80vh",overflow:"hidden"}}>
+        <style>{`@keyframes megaIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}.mcat:hover{background:#fff5f5!important;color:#dc2626!important}.mcat.on{background:#fef2f2!important;color:#dc2626!important;border-left:3px solid #dc2626!important}.msub:hover{color:#dc2626!important}.mmore:hover{color:#dc2626!important}.mm-close{display:none}@media(max-width:960px){.mm-back{top:0!important}.mm-panel{top:0!important;bottom:0!important;max-height:none!important;height:100vh;height:100dvh;border-top:none!important}.mm-close{display:flex;position:absolute;top:8px;right:10px;width:38px;height:38px;align-items:center;justify-content:center;border:none;background:#f3f4f6;border-radius:50%;cursor:pointer;color:#374151;z-index:2}.mm-rail{width:118px!important}.mcat{padding:10px 8px!important;gap:6px!important;font-size:12px!important}.mcat>span:first-child{width:26px!important;height:26px!important}.mcat>svg{display:none!important}.mcat>span:nth-child(2){white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.2}.mm-body{padding:56px 16px 28px!important}.mm-grid{grid-template-columns:1fr!important;gap:18px!important}}`}</style>
+        <button className="mm-close" onClick={onClose} aria-label="Close categories"><svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        <div className="mm-rail" style={{width:220,flexShrink:0,background:"#fafafa",borderRight:"1px solid #f3f4f6",overflowY:"auto",padding:"8px 0"}}>
           {categories.map(cat=>(
             <button key={cat.slug} onMouseEnter={()=>setSlug(cat.slug)} onClick={()=>setSlug(cat.slug)}
               className={`mcat ${activeSlug===cat.slug?"on":""}`}
@@ -167,7 +168,7 @@ function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible
             </button>
           ))}
         </div>
-        <div style={{flex:1,overflowY:"auto",padding:"24px 32px 32px"}}>
+        <div className="mm-body" style={{flex:1,minWidth:0,overflowY:"auto",padding:"24px 32px 32px"}}>
           {subs.length===0?(
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:14,color:"#9ca3af",minHeight:200}}>
               <p style={{fontSize:14,fontWeight:600}}>Explore {activeCat?.name}</p>
@@ -175,7 +176,7 @@ function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible
             </div>
           ):(
             <>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:"24px 20px"}}>
+              <div className="mm-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:"24px 20px"}}>
                 {subs.map(g=>(
                   <div key={g.title}>
                     <Link href={`/category/${activeSlug}`} onClick={onClose} style={{display:"block",fontSize:11,fontWeight:800,color:"#dc2626",textDecoration:"none",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10,paddingBottom:6,borderBottom:"1.5px solid #fee2e2"}}>{g.title}</Link>
@@ -351,7 +352,7 @@ function SearchDropdown({
 
           {/* Product mini-cards */}
           {loadingP ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+            <div className="sd-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
               {[0,1,2,3].map(i => (
                 <div key={i} style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #f1f5f9" }}>
                   <div style={{ aspectRatio: "1/1", background: "linear-gradient(90deg,#f1f5f9 25%,#e8edf5 50%,#f1f5f9 75%)", backgroundSize: "200% 100%", animation: "sdShimmer 1.4s infinite" }}/>
@@ -366,7 +367,7 @@ function SearchDropdown({
           ) : products.length === 0 ? (
             <p style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", padding: "12px 0" }}>No trending products right now.</p>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+            <div className="sd-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
               {products.slice(0, 4).map((product, i) => {
                 const imgUrl = imgErrors[product.id] ? null : product.primary_image_url;
                 return (
@@ -827,20 +828,20 @@ export default function Navbar() {
       }}>
 
         {/* ── ROW 1: Announcement bar ── */}
-        <div style={{background:"#09090b",color:"#fff",fontSize:11,padding:"7px 0",letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:500}}>
-          <div style={{maxWidth:1400,margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <span>🇹🇳 Free delivery on orders over 50 DT — Tunisia&apos;s #1 marketplace</span>
-            <button onClick={handleSupport} style={{display:"flex",alignItems:"center",gap:5,background:"transparent",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.8)",fontSize:11,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",fontFamily:"inherit",padding:0,transition:"color 0.15s"}}
+        <div className="nb-ann" style={{background:"#09090b",color:"#fff",fontSize:11,padding:"7px 0",letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:500}}>
+          <div className="nb-ann-in" style={{maxWidth:1400,margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <span className="nb-ann-text">🇹🇳 Free delivery on orders over 50 DT<span className="nb-hide-sm"> — Tunisia&apos;s #1 marketplace</span></span>
+            <button className="nb-ann-help" onClick={handleSupport} style={{display:"flex",alignItems:"center",gap:5,background:"transparent",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.8)",fontSize:11,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",fontFamily:"inherit",padding:0,transition:"color 0.15s"}}
               onMouseEnter={e=>(e.currentTarget.style.color="#fff")}
               onMouseLeave={e=>(e.currentTarget.style.color="rgba(255,255,255,0.8)")}>
               <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" strokeWidth="2.5" strokeLinecap="round"/></svg>
-              Help &amp; Support
+              <span className="nb-help-label">Help &amp; Support</span>
             </button>
           </div>
         </div>
 
         {/* ── ROW 2: Utility bar ── */}
-        <div style={{borderBottom:"1px solid #f1f5f9",background:"#fff"}}>
+        <div className="nb-util" style={{borderBottom:"1px solid #f1f5f9",background:"#fff"}}>
           <div style={{maxWidth:1400,margin:"0 auto",padding:"0 24px",height:34,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:2}}>
             <style>{`
               .nu{display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:600;color:#52525b;transition:color .14s,background .14s;white-space:nowrap;position:relative;border:none;background:transparent;cursor:pointer;font-family:inherit}
@@ -910,30 +911,30 @@ export default function Navbar() {
 
         {/* ── ROW 3: Logo | Search | Nav ── */}
         <nav style={{background:"#fff"}}>
-          <div style={{
+          <div className="nb-row3" style={{
             maxWidth:1400, margin:"0 auto", padding:"0 24px",
             height:66,
             display:"flex", alignItems:"center", gap:24,
           }}>
 
             {/* Logo */}
-            <Link href="/" style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,textDecoration:"none"}}>
-              <div style={{
+            <Link href="/" className="nb-logo" style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,textDecoration:"none"}}>
+              <div className="nb-logo-box" style={{
                 width:55,height:55,borderRadius:11,background:"#fff",
                 border:"2px solid #dc2626",
                 boxShadow:"0 0 0 1.5px #198f41,0 0 10px 2px rgba(219,20,46,0.3)",
                 display:"flex",alignItems:"center",justifyContent:"center",
                 flexShrink:0,overflow:"hidden",
               }}>
-                <img src="/images/logo.png" alt="ChooseTounsi" style={{width:46,height:46,objectFit:"contain",display:"block"}}/>
+                <img className="nb-logo-img" src="/images/logo.png" alt="ChooseTounsi" style={{width:46,height:46,objectFit:"contain",display:"block"}}/>
               </div>
-              <span style={{fontSize:20,fontWeight:900,letterSpacing:"-0.02em",color:"#0c0c0d",whiteSpace:"nowrap"}}>
+              <span className="nb-logo-text" style={{fontSize:20,fontWeight:900,letterSpacing:"-0.02em",color:"#0c0c0d",whiteSpace:"nowrap"}}>
                 Choose<span style={{color:"#198f41"}}>Tounsi</span>
               </span>
             </Link>
 
             {/* ── SEARCH BAR WRAPPER (relative — dropdown anchors here) ── */}
-            <div style={{flex:1,minWidth:0,display:"flex",justifyContent:"center"}}>
+            <div className="nb-search-col" style={{flex:1,minWidth:0,display:"flex",justifyContent:"center"}}>
               <div ref={searchWrapRef} style={{ position:"relative", width:"100%", maxWidth:640 }}>
 
                 {/* Search input row */}
@@ -1016,7 +1017,7 @@ export default function Navbar() {
             </div>
 
             {/* Nav links */}
-            <div style={{display:"flex",alignItems:"center",gap:2,flexShrink:0}}>
+            <div className="nb-links" style={{display:"flex",alignItems:"center",gap:2,flexShrink:0}}>
               <button onClick={()=>{setMegaOpen(o=>!o);setDropOpen(false);setSearchFocused(false);}}
                 style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:14,fontWeight:500,background:megaOpen?"#fef2f2":"transparent",color:megaOpen?"#dc2626":"#52525b",transition:"all 0.14s",whiteSpace:"nowrap"}}>
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -1042,21 +1043,47 @@ export default function Navbar() {
               )}
             </div>
 
+            {/* Mobile cart */}
+            <button onClick={handleCart} className="nb-cart-m" aria-label="Cart" style={{display:"none",position:"relative",background:"transparent",border:"none",cursor:"pointer",color:"#374151",padding:4,flexShrink:0}}>
+              <ShoppingBag size={22}/>
+              {count>0&&<span className="nu-bdg" style={{top:-3,right:-5}}>{count>99?"99+":count}</span>}
+            </button>
+
             {/* Mobile burger */}
-            <button style={{display:"none",background:"transparent",border:"none",cursor:"pointer",color:"#374151",padding:4,marginLeft:"auto",flexShrink:0}} className="nb-burger" onClick={()=>setMenuOpen(!menuOpen)}>
+            <button aria-label="Menu" style={{display:"none",background:"transparent",border:"none",cursor:"pointer",color:"#374151",padding:4,flexShrink:0}} className="nb-burger" onClick={()=>setMenuOpen(!menuOpen)}>
               {menuOpen?<CloseIcon/>:<MenuIcon/>}
             </button>
           </div>
 
           <style>{`
             @keyframes spin { to { transform: rotate(360deg); } }
-            @media(max-width:960px){ .nb-burger{display:flex!important} }
+            @media(max-width:960px){
+              .nb-burger,.nb-cart-m{display:flex!important;order:2}
+              .nb-util,.nb-links,.nb-drawer-search{display:none!important}
+              .nb-ann{font-size:10px!important;letter-spacing:0.04em!important}
+              .nb-ann-in{padding:0 12px!important;gap:10px}
+              .nb-ann-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+              .nb-ann-help{flex-shrink:0;font-size:10px!important}
+              .nb-row3{height:auto!important;flex-wrap:wrap;gap:8px 12px!important;padding:8px 12px 10px!important}
+              .nb-logo{order:1;margin-right:auto;min-width:0}
+              .nb-search-col{order:3;flex:1 1 100%!important;width:100%}
+              .nb-search-col input{font-size:16px!important}
+              .nb-drawer{padding:12px 16px 20px!important;max-height:calc(100vh - 150px);max-height:calc(100dvh - 150px);overflow-y:auto}
+            }
+            @media(max-width:640px){
+              .nb-logo-box{width:40px!important;height:40px!important;border-radius:9px!important}
+              .nb-logo-img{width:32px!important;height:32px!important}
+              .nb-logo-text{font-size:17px!important}
+              .nb-hide-sm{display:none}
+              .sd-grid{grid-template-columns:repeat(2,1fr)!important}
+            }
+            @media(max-width:420px){ .nb-help-label{display:none} }
           `}</style>
         </nav>
 
         {/* ── Mobile drawer ── */}
         {menuOpen&&(
-          <div style={{background:"#fff",borderTop:"1px solid #f1f5f9",padding:"16px 24px",display:"flex",flexDirection:"column",gap:10}}>
+          <div className="nb-drawer" style={{background:"#fff",borderTop:"1px solid #f1f5f9",padding:"16px 24px",display:"flex",flexDirection:"column",gap:10}}>
             {loggedIn&&user&&(
               <div style={{display:"flex",alignItems:"center",gap:12,padding:12,background:"#f9fafb",borderRadius:12,border:"1px solid #f1f5f9"}}>
                 <Avatar user={user} size={42}/>
@@ -1067,8 +1094,8 @@ export default function Navbar() {
                 </div>
               </div>
             )}
-            {/* Mobile search */}
-            <div style={{display:"flex",border:"1.5px solid #e5e7eb",borderRadius:8,overflow:"hidden",height:42}}>
+            {/* Mobile search (hidden ≤960px: the header search row replaces it) */}
+            <div className="nb-drawer-search" style={{display:"flex",border:"1.5px solid #e5e7eb",borderRadius:8,overflow:"hidden",height:42}}>
               <input type="text" placeholder="Search..." value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
@@ -1079,7 +1106,13 @@ export default function Navbar() {
               </button>
               <button onClick={handleTextSearch} style={{background:"#dc2626",border:"none",padding:"0 16px",cursor:"pointer",color:"#fff"}}><SearchIcon/></button>
             </div>
-            {[{label:"Shop",href:"/shop"},{label:"WearTounsi",href:"/brand"},{label:"Deals",href:"/deals"},{label:"My Orders",href:"/orders"},{label:"My Complaints",href:"/complaints"},{label:"Favorites",href:"/favorites"}].map(l=>(
+            <button onClick={()=>{setMenuOpen(false);setMegaOpen(true);}} style={{fontSize:14,fontWeight:600,color:"#374151",background:"none",border:"none",cursor:"pointer",textAlign:"left",padding:"8px 0",borderBottom:"1px solid #f5f5f5",display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}>
+              <MenuIcon/>Categories
+            </button>
+            <button onClick={()=>{setMenuOpen(false);handleSupport();}} style={{fontSize:14,fontWeight:700,color:"#dc2626",background:"none",border:"none",cursor:"pointer",textAlign:"left",padding:"8px 0",borderBottom:"1px solid #f5f5f5",fontFamily:"inherit"}}>
+              Ask AI
+            </button>
+            {[{label:"Shop",href:"/shop"},{label:"WearTounsi",href:"/brand"},{label:"Deals",href:"/deals"},{label:"My Orders",href:"/orders"},{label:"My Complaints",href:"/complaints"},{label:"Help / Complaint",href:"/complaints/new"},{label:"Favorites",href:"/favorites"}].map(l=>(
               <Link key={l.href} href={l.href} onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>{l.label}</Link>
             ))}
             <button onClick={handleCart} style={{fontSize:14,fontWeight:600,color:"#374151",background:"none",border:"none",cursor:"pointer",textAlign:"left",padding:"8px 0",borderBottom:"1px solid #f5f5f5",display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}>

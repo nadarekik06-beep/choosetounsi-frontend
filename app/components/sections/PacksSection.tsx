@@ -280,7 +280,7 @@ export default function PacksSection() {
         {loading ? (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
             gap: 18,
           }}>
             {[...Array(4)].map((_, i) => (
@@ -305,7 +305,7 @@ export default function PacksSection() {
         ) : (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
             gap: 18,
           }}>
             {packs.map(pack => (

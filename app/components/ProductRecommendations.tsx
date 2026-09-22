@@ -316,7 +316,7 @@ function FromSellerSection({ slug }: { slug: string }) {
               </p>
             </div>
           </div>
-          <Link href={`/shop?seller_id=${seller.id}`} style={{ fontSize: 12, fontWeight: 700, color: '#dc2626', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
+          <Link href={`/sellers/${seller.id}`} style={{ fontSize: 12, fontWeight: 700, color: '#dc2626', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
             View Shop <ChevronRight size={13} />
           </Link>
         </div>

@@ -85,6 +85,8 @@ export interface CartItem {
   stock: number
   image_url: string | null
   category: string | null
+  seller_id?: number | null
+  seller_name?: string | null
   is_sponsored?: boolean
   // ── Pack fields ─────────────────────────────────────────────────────────────
   is_pack?: boolean
@@ -130,7 +132,7 @@ export interface CheckoutPayload {
   notes?: string
   payment_method?: 'cod' | 'card' | 'd17' | 'wallet'
   item_ids?: number[]   // ← ADD THIS LINE
-
+  coupon_codes?: string[]
 }
 
 export interface BuyNowPayload {
@@ -142,6 +144,7 @@ export interface BuyNowPayload {
   phone: string
   notes?: string
   payment_method?: 'cod' | 'card' | 'd17' | 'wallet'
+  coupon_code?: string
 }
 
 export interface CheckoutResponse {
@@ -150,6 +153,7 @@ export interface CheckoutResponse {
   order_number: string
   order_id: number
   total: number
+  discount_amount?: number
   delivery_fee?: number
   needs_payment?: boolean
 }

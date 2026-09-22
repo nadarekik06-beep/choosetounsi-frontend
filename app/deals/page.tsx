@@ -617,8 +617,8 @@ export default function DealsPage() {
 
         /* Mobile bar */
         .dp-mbar{display:none;position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #eee;box-shadow:0 2px 12px rgba(0,0,0,0.06);padding:0 16px;height:48px;align-items:center;gap:10px}
-        .dp-mbar-title{font-size:13px;font-weight:800;color:#111;flex:1}
-        .dp-mbar-sort{padding:5px 10px;border-radius:7px;border:1.5px solid #e5e7eb;background:#fff;font-size:11px;font-weight:600;color:#555;font-family:'Outfit',sans-serif;cursor:pointer;outline:none}
+        .dp-mbar-title{font-size:13px;font-weight:800;color:#111;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .dp-mbar-sort{min-width:0;max-width:140px;padding:5px 10px;border-radius:7px;border:1.5px solid #e5e7eb;background:#fff;font-size:11px;font-weight:600;color:#555;font-family:'Outfit',sans-serif;cursor:pointer;outline:none}
         .dp-mbar-filter{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;border:1.5px solid #e5e7eb;background:#fff;font-size:11px;font-weight:700;color:#374151;cursor:pointer;font-family:'Outfit',sans-serif;position:relative;white-space:nowrap}
         .dp-mbar-filter:hover{border-color:#db142e;color:#db142e}
         .dp-filter-badge{position:absolute;top:-5px;right:-5px;background:#db142e;color:#fff;font-size:8px;font-weight:900;border-radius:999px;width:15px;height:15px;display:flex;align-items:center;justify-content:center}

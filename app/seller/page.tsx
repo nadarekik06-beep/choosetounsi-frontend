@@ -16,9 +16,31 @@ import OnboardingChecklist from './components/OnboardingChecklist';
 import CommissionUpgradeNudge from './components/CommissionUpgradeNudge';
 import { getUser } from '@/lib/auth';
 
-/* ─────────────────────────────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────────────────────────────── */
+/* ─────────────── RESPONSIVE GRIDS ─────────────── */
+const RESPONSIVE_CSS = `
+  .sd-kpi   { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+  .sd-tri   { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+  .sd-chart { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr); gap:12px; }
+  .sd-pair  { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  .sd-top   { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr)); gap:14px; }
+  .sd-cell  { min-width:0; }
+
+  @media (max-width:1100px) {
+    .sd-kpi   { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .sd-chart { grid-template-columns:minmax(0,1fr); }
+  }
+  @media (max-width:900px) {
+    .sd-pair  { grid-template-columns:minmax(0,1fr); }
+  }
+  @media (max-width:640px) {
+    .sd-tri   { grid-template-columns:minmax(0,1fr); }
+  }
+  @media (max-width:480px) {
+    .sd-kpi   { grid-template-columns:minmax(0,1fr); }
+  }
+`;
+
+/* ─────────────── HELPERS ─────────────── */
 const fmt = (n: number) =>
   new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(n) + ' TND';
 
@@ -50,9 +72,7 @@ function useCount(target: number): string {
   return val.toLocaleString();
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   KPI CARD
-───────────────────────────────────────────────────────────────── */
+/* ─────────────── KPI CARD ─────────────── */
 function KpiCard({ title, value, subtitle, change, icon: Icon, accent, dark }: {
   title: string; value: string | number; subtitle?: string;
   change?: number; icon: React.ElementType; accent: string; dark: boolean;
@@ -69,7 +89,7 @@ function KpiCard({ title, value, subtitle, change, icon: Icon, accent, dark }: {
       padding: '20px 20px 16px',
       position: 'relative', overflow: 'hidden',
       transition: 'transform 0.22s ease, box-shadow 0.22s ease',
-      cursor: 'default',
+      cursor: 'default', minWidth: 0,
     }}>
       <div style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: '50%', background: accent, opacity: dark ? 0.12 : 0.08, filter: 'blur(28px)', pointerEvents: 'none' }} />
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -83,18 +103,16 @@ function KpiCard({ title, value, subtitle, change, icon: Icon, accent, dark }: {
           </span>
         )}
       </div>
-      <p style={{ fontSize: 22, fontWeight: 900, color: textMain, margin: '0 0 4px', letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: 22, fontWeight: 900, color: textMain, margin: '0 0 4px', letterSpacing: '-0.02em', lineHeight: 1.1, overflowWrap: 'anywhere' }}>{value}</p>
       <p style={{ fontSize: 11, fontWeight: 700, color: accent, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</p>
-      {subtitle && <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>{subtitle}</p>}
+      {subtitle && <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500, overflowWrap: 'anywhere' }}>{subtitle}</p>}
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${accent},transparent)`, borderRadius: '0 0 18px 18px', opacity: 0.6 }} />
       <style>{`.kpi-card:hover{transform:translateY(-4px)!important;box-shadow:0 16px 40px rgba(0,0,0,0.15)!important}`}</style>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   TOP PRODUCT CARD
-───────────────────────────────────────────────────────────────── */
+/* ─────────────── TOP PRODUCT CARD ─────────────── */
 function TopProductCard({ product, rank, dark }: { product: TopProduct; rank: number; dark: boolean }) {
   const [imgErr, setImgErr] = useState(false);
   const bg        = dark ? '#161b27' : '#ffffff';
@@ -108,7 +126,7 @@ function TopProductCard({ product, rank, dark }: { product: TopProduct; rank: nu
   const rankColor  = rankColors[rank - 1] ?? '#64748b';
 
   return (
-    <div className="top-product-card" style={{ background: bg, borderRadius: 16, border: `1px solid ${border}`, padding: 16, display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', overflow: 'hidden', transition: 'transform 0.22s ease, box-shadow 0.22s ease' }}>
+    <div className="top-product-card" style={{ background: bg, borderRadius: 16, border: `1px solid ${border}`, padding: 16, display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', overflow: 'hidden', transition: 'transform 0.22s ease, box-shadow 0.22s ease', minWidth: 0 }}>
       <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, width: 24, height: 24, borderRadius: '50%', background: rank <= 3 ? rankColor : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: '#fff', boxShadow: rank <= 3 ? `0 2px 8px ${rankColor}60` : 'none' }}>
         {rank <= 3 ? <Star size={10} fill="#fff" stroke="none" /> : rank}
       </div>
@@ -129,19 +147,19 @@ function TopProductCard({ product, rank, dark }: { product: TopProduct; rank: nu
         <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</p>
         <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{product.category_name ?? '—'}</p>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 15, fontWeight: 900, color: '#db142e', letterSpacing: '-0.01em' }}>{fmt(product.price)}</span>
         <span style={{ fontSize: 11, fontWeight: 700, color: product.stock === 0 ? '#ef4444' : product.stock <= 10 ? '#f59e0b' : '#10b981' }}>
           {product.stock === 0 ? '⚠ Out' : `${product.stock} in stock`}
         </span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 6 }}>
         {[
           { icon: ShoppingBag, label: 'Sales',   value: product.total_sales,   color: '#db142e' },
           { icon: DollarSign,  label: 'Revenue', value: product.total_revenue > 0 ? `${(product.total_revenue / 1000).toFixed(1)}k` : '0', color: '#10b981' },
           { icon: Eye,         label: 'Views',   value: product.views,          color: '#3b82f6' },
         ].map(({ icon: Icon, label, value, color }) => (
-          <div key={label} style={{ background: subBg, borderRadius: 8, padding: '7px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, border: `1px solid ${border}` }}>
+          <div key={label} style={{ background: subBg, borderRadius: 8, padding: '7px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, border: `1px solid ${border}`, minWidth: 0 }}>
             <Icon size={12} style={{ color, opacity: 0.9 }} />
             <span style={{ fontSize: 13, fontWeight: 900, color: textMain, lineHeight: 1 }}>{value}</span>
             <span style={{ fontSize: 9, fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
@@ -153,9 +171,7 @@ function TopProductCard({ product, rank, dark }: { product: TopProduct; rank: nu
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   SKELETON + ERROR
-───────────────────────────────────────────────────────────────── */
+/* ─────────────── SKELETON + ERROR ─────────────── */
 function Skeleton({ dark, style = {} }: { dark: boolean; style?: React.CSSProperties }) {
   return <div style={{ borderRadius: 18, background: dark ? 'rgba(255,255,255,0.05)' : '#e5e7eb', animation: 'shimmer 1.4s infinite linear', ...style }} />;
 }
@@ -179,9 +195,7 @@ function ErrorState({ onRetry, dark }: { onRetry: () => void; dark: boolean }) {
   );
 }
 
-/* ═════════════════════════════════════════════════════════════════
-   PAGE
-═════════════════════════════════════════════════════════════════*/
+/* ═══════════════ PAGE ═══════════════ */
 export default function SellerDashboardPage() {
   const { dark } = useTheme();
   const [data,    setData]    = useState<DashboardData | null>(null);
@@ -211,11 +225,11 @@ export default function SellerDashboardPage() {
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <style>{`@keyframes shimmer{0%{opacity:0.4}50%{opacity:0.8}100%{opacity:0.4}}`}</style>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+      <style>{`@keyframes shimmer{0%{opacity:0.4}50%{opacity:0.8}100%{opacity:0.4}}${RESPONSIVE_CSS}`}</style>
+      <div className="sd-kpi">
         {[...Array(4)].map((_, i) => <Skeleton key={i} dark={dark} style={{ height: 120 }} />)}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+      <div className="sd-chart">
         <Skeleton dark={dark} style={{ height: 320 }} />
         <Skeleton dark={dark} style={{ height: 320 }} />
       </div>
@@ -235,6 +249,7 @@ export default function SellerDashboardPage() {
   return (
     <>
       <style>{`
+          ${RESPONSIVE_CSS}
           @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
           @keyframes shimmer { 0%{opacity:0.4}50%{opacity:0.8}100%{opacity:0.4} }
           .fade-up{opacity:0}
@@ -254,15 +269,15 @@ export default function SellerDashboardPage() {
           .client-row:hover{background:${dark?'rgba(255,255,255,0.03)':'#fafafa'}!important}
         `}</style>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
 
         {/* ─── HEADER ─── */}
-        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
+        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ minWidth: 0 }}>
             <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.02em' }}>Dashboard</h1>
             <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>Overview of your store performance</p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <SubscriptionBadge dark={dark} />
             <span style={{ fontSize: 11, fontWeight: 800, background: 'rgba(219,20,46,0.12)', color: '#db142e', border: '1px solid rgba(219,20,46,0.25)', padding: '5px 14px', borderRadius: 999 }}>
               🟢 Live
@@ -280,7 +295,7 @@ export default function SellerDashboardPage() {
         </div>
 
         {/* ─── KPI CARDS ─── */}
-        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+        <div className={`fade-up sd-kpi ${visible?'show':''}`}>
           <KpiCard dark={dark} title="Total Revenue" icon={DollarSign} accent="#db142e" value={fmt(summary.total_revenue)} subtitle="Completed & paid" change={summary.revenue_growth} />
           <KpiCard dark={dark} title="Total Orders"  icon={ShoppingBag} accent="#3b82f6" value={animTotalOrders} subtitle={`${summary.pending_orders} pending`} />
           <KpiCard dark={dark} title="Products"      icon={Package} accent="#198f41" value={animTotalProducts} subtitle={`${summary.active_products} active`} />
@@ -288,17 +303,17 @@ export default function SellerDashboardPage() {
         </div>
 
         {/* ─── SECONDARY KPIs ─── */}
-        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+        <div className={`fade-up sd-tri ${visible?'show':''}`}>
           {[
             { label: 'Pending Orders',    val: animPendingOrders,    accent: '#f59e0b', icon: Clock       },
             { label: 'Active Products',   val: animActiveProducts,   accent: '#198f41', icon: Package     },
             { label: 'Pending Approvals', val: animPendingApprovals, accent: '#db142e', icon: AlertCircle },
           ].map(({ label, val, accent, icon: Icon }) => (
-            <div key={label} style={{ background: cardBg, borderRadius: 16, border: `1px solid ${border}`, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div key={label} style={{ background: cardBg, borderRadius: 16, border: `1px solid ${border}`, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
               <div style={{ width: 40, height: 40, borderRadius: 12, background: `${accent}1a`, border: `1px solid ${accent}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, flexShrink: 0 }}>
                 <Icon size={18} />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <p style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', lineHeight: 1 }}>{val}</p>
                 <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 600 }}>{label}</p>
               </div>
@@ -306,7 +321,7 @@ export default function SellerDashboardPage() {
           ))}
         </div>
 
-        {/* ─── UPGRADE NUDGE (only shown for free/red plan sellers) ─── */}
+        {/* ─── UPGRADE NUDGE (free/red plan sellers only) ─── */}
         <div className={`fade-up ${visible?'show':''}`}>
           <CommissionUpgradeNudge
             currentPlan={sellerPlan}
@@ -316,13 +331,13 @@ export default function SellerDashboardPage() {
         </div>
 
         {/* ─── REVENUE CHART + WILAYAS ─── */}
-        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
-          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+        <div className={`fade-up sd-chart ${visible?'show':''}`}>
+          <div className="sd-cell" style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
             <RevenueChart data={charts.monthly_revenue} />
           </div>
-          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: 20 }}>
+          <div className="sd-cell" style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(219,20,46,0.12)', border: '1px solid rgba(219,20,46,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#db142e' }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(219,20,46,0.12)', border: '1px solid rgba(219,20,46,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#db142e', flexShrink: 0 }}>
                 <MapPin size={16} />
               </div>
               <div>
@@ -334,11 +349,11 @@ export default function SellerDashboardPage() {
               ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '24px 0' }}>No data yet</p>
               : top_wilayas.map((w, i) => (
                 <div key={w.wilaya} style={{ marginBottom: 14 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: textMain, display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: textMain, display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
                       <span style={{ color: textMuted, fontSize: 10 }}>{i+1}.</span>{w.wilaya}
                     </span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>{fmt(w.revenue)}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: textMuted, flexShrink: 0 }}>{fmt(w.revenue)}</span>
                   </div>
                   <div style={{ height: 5, background: dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
                     <div style={{ height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#db142e,#ff4d6a)', width: `${(w.revenue/maxWilaya)*100}%`, transition: 'width 0.8s ease' }} />
@@ -351,17 +366,17 @@ export default function SellerDashboardPage() {
 
         {/* ─── TOP PRODUCTS ─── */}
         <div className={`fade-up ${visible?'show':''}`}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b', flexShrink: 0 }}>
                 <BarChart2 size={16} />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <p style={{ fontWeight: 900, fontSize: 15, color: textMain, margin: 0, letterSpacing: '-0.01em' }}>Top Products</p>
                 <p style={{ fontSize: 10, color: textMuted, margin: 0, fontWeight: 500 }}>Ranked by total units sold</p>
               </div>
             </div>
-            <a href="/seller/products" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none' }}>
+            <a href="/seller/products" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none', flexShrink: 0 }}>
               View all <ArrowUpRight size={12} />
             </a>
           </div>
@@ -371,7 +386,7 @@ export default function SellerDashboardPage() {
               <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>No product data yet</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
+            <div className="sd-top">
               {top_products.map((product, i) => (
                 <TopProductCard key={product.id} product={product} rank={i + 1} dark={dark} />
               ))}
@@ -380,10 +395,10 @@ export default function SellerDashboardPage() {
         </div>
 
         {/* ─── TOP CLIENTS + ORDER STATUS ─── */}
-        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+        <div className={`fade-up sd-pair ${visible?'show':''}`}>
+          <div className="sd-cell" style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6', flexShrink: 0 }}>
                 <Award size={16} />
               </div>
               <div>
@@ -411,9 +426,9 @@ export default function SellerDashboardPage() {
             }
           </div>
 
-          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+          <div className="sd-cell" style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(25,143,65,0.12)', border: '1px solid rgba(25,143,65,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#198f41' }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(25,143,65,0.12)', border: '1px solid rgba(25,143,65,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#198f41', flexShrink: 0 }}>
                 <ShoppingBag size={16} />
               </div>
               <div>
@@ -447,10 +462,10 @@ export default function SellerDashboardPage() {
         </div>
 
         {/* ─── RECENT ORDERS ─── */}
-        <div className={`fade-up ${visible?'show':''}`} style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
+        <div className={`fade-up ${visible?'show':''}`} style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: `1px solid ${border}`, gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: textMuted }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: textMuted, flexShrink: 0 }}>
                 <Clock size={16} />
               </div>
               <div>
@@ -458,16 +473,16 @@ export default function SellerDashboardPage() {
                 <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>Latest 5 orders</p>
               </div>
             </div>
-            <a href="/seller/orders" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none' }}>
+            <a href="/seller/orders" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none', flexShrink: 0 }}>
               View all <ArrowUpRight size={12} />
             </a>
           </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr style={{ background: dark ? 'rgba(255,255,255,0.03)' : '#f9fafb' }}>
                   {['Order','Customer','Status','Amount','Date'].map((h, i) => (
-                    <th key={h} style={{ padding: '10px 20px', textAlign: i===2?'center':i===3?'right':'left', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: textMuted }}>{h}</th>
+                    <th key={h} style={{ padding: '10px 20px', textAlign: i===2?'center':i===3?'right':'left', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: textMuted, whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -479,16 +494,16 @@ export default function SellerDashboardPage() {
                     return (
                       <tr key={order.id} className="order-row" style={{ borderBottom: `1px solid ${border}`, transition: 'background 0.15s' }}>
                         <td style={{ padding: '12px 20px' }}>
-                          <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 11, background: dark?'rgba(255,255,255,0.07)':'#f1f5f9', color: textMain, padding: '3px 8px', borderRadius: 6 }}>{order.order_number}</span>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 11, background: dark?'rgba(255,255,255,0.07)':'#f1f5f9', color: textMain, padding: '3px 8px', borderRadius: 6, whiteSpace: 'nowrap' }}>{order.order_number}</span>
                         </td>
-                        <td style={{ padding: '12px 20px', color: textMain, fontWeight: 600 }}>{order.user?.name ?? `User #${order.user_id}`}</td>
+                        <td style={{ padding: '12px 20px', color: textMain, fontWeight: 600, whiteSpace: 'nowrap' }}>{order.user?.name ?? `User #${order.user_id}`}</td>
                         <td style={{ padding: '12px 20px', textAlign: 'center' }}>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 999, background: `${sc}18`, color: sc, border: `1px solid ${sc}33`, textTransform: 'capitalize' }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc }} />{order.status}
                           </span>
                         </td>
-                        <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 900, color: textMain }}>{fmt(order.total_amount)}</td>
-                        <td style={{ padding: '12px 20px', color: textMuted, fontWeight: 500 }}>{new Date(order.created_at).toLocaleDateString('fr-TN')}</td>
+                        <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 900, color: textMain, whiteSpace: 'nowrap' }}>{fmt(order.total_amount)}</td>
+                        <td style={{ padding: '12px 20px', color: textMuted, fontWeight: 500, whiteSpace: 'nowrap' }}>{new Date(order.created_at).toLocaleDateString('fr-TN')}</td>
                       </tr>
                     );
                   })

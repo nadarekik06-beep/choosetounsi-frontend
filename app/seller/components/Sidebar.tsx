@@ -1,46 +1,30 @@
 ﻿'use client';
 
-/**
- * app/seller/components/Sidebar.tsx — v3
- *
- * Fixes vs v2:
- *   • Logo is 44px (was 36), text is bigger
- *   • Sidebar bg is #111827 — a proper dark slate, not near-black
- *   • Active item: solid colored left bar + bright white text + accent bg pill
- *   • Inactive text is rgba(255,255,255,0.62) — clearly readable
- *   • Section labels: 10px, 0.15em tracking, rgba(255,255,255,0.35)
- *   • Hover: rgba(255,255,255,0.09) bg + full white text
- *   • Icons are 17px — more visible
- *   • Black Elite items get a subtle amber tint on hover
- */
-
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Package, ShoppingBag,
   ChevronLeft, ChevronRight, LogOut, Home, Sun, Moon,
-  AlertTriangle, BarChart2, Brain, Lock, Crown, Zap,
+  AlertTriangle, BarChart2, Brain, Lock, Crown,
   Tag, Package2, TrendingUp, Eye, Star, DollarSign,
-  Users, Megaphone, ChevronDown, ChevronUp, CreditCard,
+  Users, Megaphone, ChevronDown, ChevronUp, CreditCard, Wallet, X, Store,
 } from 'lucide-react';
 import { useTheme } from '../layout';
 import { useSubscription } from '@/app/hooks/useSubscription';
-import { useState } from 'react';
-import { Wallet } from 'lucide-react'
+import { useState, useEffect } from 'react';
 
 const STORE_NAV = [
-  { href: '/seller',          label: 'Overview',   icon: LayoutDashboard },
-  { href: '/seller/products', label: 'Products',   icon: Package },
-  { href: '/seller/packs',    label: 'Packs',      icon: Package2 },
-  { href: '/seller/orders',   label: 'Orders',     icon: ShoppingBag },
-  { href: '/seller/earnings', label: 'Earnings', icon: Wallet },
-  { href: '/seller/subscription', label: 'Subscription',  icon: CreditCard },
-
+  { href: '/seller',              label: 'Overview',     icon: LayoutDashboard },
+  { href: '/seller/settings',     label: 'Store Settings', icon: Store },
+  { href: '/seller/products',     label: 'Products',     icon: Package },
+  { href: '/seller/packs',        label: 'Packs',        icon: Package2 },
+  { href: '/seller/orders',       label: 'Orders',       icon: ShoppingBag },
+  { href: '/seller/earnings',     label: 'Earnings',     icon: Wallet },
+  { href: '/seller/subscription', label: 'Subscription', icon: CreditCard },
 ];
 const CUSTOMER_NAV = [
-  { href: '/seller/complaints', label: 'Complaints', icon: AlertTriangle },
-    { href: '/seller/reviews', icon: Star, label: 'Reviews & Reputation' },
-
+  { href: '/seller/complaints', label: 'Complaints',            icon: AlertTriangle },
+  { href: '/seller/reviews',    label: 'Reviews & Reputation',  icon: Star },
 ];
 const GROWTH_NAV = [
   { href: '/seller/promotions', label: 'Promotions',  icon: Tag },
@@ -49,7 +33,6 @@ const GROWTH_NAV = [
 const RED_NAV = [
   { href: '/seller/analytics', label: 'Analytics', icon: BarChart2, accent: '#fca5a5' },
   { href: '/seller/ai-tools',  label: 'AI Tools',  icon: Brain,     accent: '#c4b5fd' },
-
 ];
 const BLACK_NAV = [
   { href: '/seller/black',                  label: 'Elite Overview',   icon: Crown,      accent: '#fbbf24' },
@@ -68,7 +51,7 @@ interface SidebarProps {
   onMobileClose: () => void;
 }
 
-export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClose }: SidebarProps) {
+export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const { dark, toggle } = useTheme();
   const { isPaid, isBlack, loading } = useSubscription();
@@ -77,7 +60,17 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
   const [customerOpen, setCustomerOpen] = useState(true);
   const [growthOpen,   setGrowthOpen]   = useState(true);
 
-  // Sidebar is ALWAYS dark regardless of page theme — like a real admin panel
+  // Collapsed mode only makes sense on desktop. On mobile the drawer is always full.
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+  const collapsed = collapsedProp && isDesktop;
+
   const SB_BG       = '#111827';
   const SB_BORDER   = 'rgba(255,255,255,0.07)';
   const TXT_BASE    = 'rgba(255,255,255,0.62)';
@@ -93,7 +86,6 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
     window.location.href = '/auth/login';
   };
 
-  /* ── Section label ── */
   const SectionLabel = ({ label, open, onToggle }: { label: string; open?: boolean; onToggle?: () => void }) => {
     if (collapsed) return (
       <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '10px 14px 6px' }}/>
@@ -112,15 +104,12 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
     );
   };
 
-  /* ── Nav item ── */
   const NavItem = ({ href, label, Icon, accent, exact = false }: {
     href: string; label: string; Icon: React.ElementType; accent?: string; exact?: boolean;
   }) => {
     const isActive = exact
       ? pathname === href
       : href === '/seller' ? pathname === '/seller' : pathname === href || pathname.startsWith(href + '/');
-
-    const color = accent ?? '#ffffff';
 
     return (
       <Link
@@ -146,7 +135,6 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
           color: isActive ? (accent ?? TXT_ACTIVE) : TXT_BASE,
         }}
       >
-        {/* Left active bar */}
         {isActive && !collapsed && (
           <div style={{
             position: 'absolute', left: 0, top: '18%', bottom: '18%',
@@ -166,7 +154,6 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
           </span>
         )}
 
-        {/* Tooltip */}
         {collapsed && (
           <span className="sb3-tip" style={{
             position: 'absolute', left: 'calc(100% + 8px)', top: '50%', transform: 'translateY(-50%)',
@@ -180,7 +167,6 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
     );
   };
 
-  /* ── Locked item ── */
   const LockedItem = ({ label, Icon }: { label: string; Icon: React.ElementType }) => (
     <div style={{
       display: 'flex', alignItems: 'center',
@@ -200,7 +186,6 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
     </div>
   );
 
-  /* ── Tier divider ── */
   const TierDivider = ({ label, color }: { label: string; color: string }) => {
     if (collapsed) return <div style={{ height: 1, background: `${color}30`, margin: '10px 14px 6px' }}/>;
     return (
@@ -214,7 +199,6 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
     );
   };
 
-  /* ── Footer button ── */
   const FooterBtn = ({ icon: Icon, label, onClick, href, danger }: {
     icon: React.ElementType; label: string; onClick?: () => void; href?: string; danger?: boolean;
   }) => {
@@ -226,7 +210,8 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
       borderRadius: 9, margin: collapsed ? '1px 0' : '1px 8px',
       fontSize: 13, fontWeight: 500,
       background: 'transparent', border: 'none', cursor: 'pointer',
-      color: danger ? '#f87171' : TXT_BASE, width: '100%',
+      color: danger ? '#f87171' : TXT_BASE,
+      width: collapsed ? '100%' : 'calc(100% - 16px)',
       transition: 'background 0.14s, color 0.14s', textDecoration: 'none',
     };
     const content = (
@@ -247,10 +232,11 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
 
       <aside
         style={{
-          position: 'fixed', top: 0, left: 0, height: '100%', zIndex: 40,
+          position: 'fixed', top: 0, left: 0, height: '100dvh', zIndex: 40,
           background: SB_BG,
           borderRight: `1px solid ${SB_BORDER}`,
           width: collapsed ? 64 : 242,
+          maxWidth: '85vw',
           transition: 'width 0.28s ease',
           display: 'flex', flexDirection: 'column',
           overflowX: 'hidden',
@@ -258,7 +244,7 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
         className={!mobileOpen ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
       >
 
-        {/* ── Logo ── */}
+        {/* Logo */}
         <div style={{
           display: 'flex', alignItems: 'center',
           gap: collapsed ? 0 : 12,
@@ -278,7 +264,7 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
           </div>
 
           {!collapsed && (
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
               <p style={{ fontWeight: 900, fontSize: 14.5, color: '#fff', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1 }}>
                 Choose<span style={{ color: '#db142e' }}>Tounsi</span>
               </p>
@@ -288,9 +274,25 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
               </p>
             </div>
           )}
+
+          {/* Close button (mobile drawer only) */}
+          {!collapsed && (
+            <button
+              onClick={onMobileClose}
+              aria-label="Close menu"
+              className="lg:hidden"
+              style={{
+                width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+                background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer',
+                color: TXT_BASE, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <X size={18}/>
+            </button>
+          )}
         </div>
 
-        {/* ── Navigation ── */}
+        {/* Navigation */}
         <nav style={{ flex: 1, paddingTop: 4, overflowY: 'auto', overflowX: 'hidden' }}>
 
           <SectionLabel label="My Store" open={storeOpen} onToggle={() => setStoreOpen(p => !p)}/>
@@ -327,42 +329,42 @@ export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClo
           }
         </nav>
 
-        {/* ── Footer ── */}
+        {/* Footer */}
         <div style={{ borderTop: `1px solid ${SB_BORDER}`, paddingTop: 8, paddingBottom: 12, flexShrink: 0 }}>
           <FooterBtn icon={Home} label="Homepage" href="/"/>
           <FooterBtn icon={dark ? Sun : Moon} label={dark ? 'Light Mode' : 'Dark Mode'} onClick={toggle}/>
-          <FooterBtn icon={collapsed ? ChevronRight : ChevronLeft} label="Collapse" onClick={() => onCollapse(!collapsed)}/>
+          {isDesktop && (
+            <FooterBtn
+              icon={collapsed ? ChevronRight : ChevronLeft}
+              label="Collapse"
+              onClick={() => onCollapse(!collapsedProp)}
+            />
+          )}
           <FooterBtn icon={LogOut} label="Sign Out" onClick={handleLogout} danger/>
         </div>
       </aside>
 
       <style>{`
-        /* Nav items */
-        .sb3-item:hover {
-          background: ${HOVER_BG} !important;
-        }
+        .sb3-item:hover { background: ${HOVER_BG} !important; }
         .sb3-item:hover span,
         .sb3-item:hover svg { color: ${TXT_ACTIVE} !important; }
         .sb3-item:hover .sb3-tip { opacity: 1 !important; }
 
-        /* Black Elite item hover gets amber tint */
         .sb3-item[data-accent="#fbbf24"]:hover,
         .sb3-item[data-accent="#6ee7b7"]:hover {
           background: rgba(245,158,11,0.1) !important;
         }
 
-        /* Footer */
         .sb3-footer:hover { background: ${HOVER_BG} !important; }
         .sb3-footer:hover span { color: ${TXT_ACTIVE} !important; }
         .sb3-danger:hover { background: rgba(239,68,68,0.12) !important; }
 
-        /* Scrollbar */
         nav::-webkit-scrollbar { width: 4px; }
         nav::-webkit-scrollbar-track { background: transparent; }
         nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
         nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-        @media (max-width: 1024px) {
+        @media (max-width: 1023px) {
           aside { transition: transform 0.28s ease, width 0.28s ease !important; }
         }
       `}</style>

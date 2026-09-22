@@ -690,7 +690,7 @@ const cleanOrganic = organic.filter(o => !sponsoredIds.has(o.id));
             />
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(170px, 45%), 1fr))',
               gap: 14,
             }}>
               {firstBatch.map((item, i) => (
@@ -753,7 +753,7 @@ const cleanOrganic = organic.filter(o => !sponsoredIds.has(o.id));
             />
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(170px, 45%), 1fr))',
               gap: 14,
             }}>
               {restBatch.map((item, i) => (

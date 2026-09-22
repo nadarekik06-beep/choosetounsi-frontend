@@ -15,6 +15,7 @@ import { useCart } from '@/context/CartContext'
 
 import Navbar from '@/app/components/layout/Navbar'
 import SponsoredProductsSection from '@/app/components/SponsoredProductsSection'
+import ProductFilterSidebar, { type F } from '@/app/components/filters/ProductFilterSidebar'
 
 const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API    = `${ORIGIN}/api`
@@ -59,11 +60,7 @@ interface Product {
 
 interface Category { id: number; name: string; slug: string; icon: string | null; description?: string | null }
 interface Paginated { data: Product[]; current_page: number; last_page: number; total: number }
-interface AOpt { id: number; value: string; color_hex?: string | null }
-interface Attr { id: number; slug: string; name: string; type: string; options: AOpt[] }
-type Sort = 'created_at' | 'views' | 'price_asc' | 'price_desc'
 type View = 'grid' | 'list'
-interface F { q: string; pMin: string; pMax: string; inStock: boolean; isPack: boolean; sort: Sort; attrs: Record<string, number[]> }
 
 // ─── Image helpers ────────────────────────────────────────────────────────────
 function primaryImg(p: Product): string | null {
@@ -429,171 +426,6 @@ const Skel = () => (
   </div>
 )
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  SIDEBAR — UNCHANGED
-// ══════════════════════════════════════════════════════════════════════════════
-const SORTS = [
-  { k:'created_at' as Sort, l:'Newest First' },
-  { k:'views'      as Sort, l:'Most Popular' },
-  { k:'price_asc'  as Sort, l:'Price: Low → High' },
-  { k:'price_desc' as Sort, l:'Price: High → Low' },
-]
-const PRANGES = [
-  { l:'Under 50 DT', mn:'0',   mx:'50' },
-  { l:'50 – 100 DT', mn:'50',  mx:'100' },
-  { l:'100 – 200 DT',mn:'100', mx:'200' },
-  { l:'200 – 500 DT',mn:'200', mx:'500' },
-  { l:'Over 500 DT', mn:'500', mx:'' },
-]
-
-function Sidebar({ f, setF, total, catSlug, subSlug, mOpen, setMOpen }: {
-  f: F; setF: (v: F) => void; total: number; catSlug: string; subSlug: string; mOpen: boolean; setMOpen: (v: boolean) => void
-}) {
-  const [attrs, setAttrs] = useState<Attr[]>([])
-  const [aLoad, setALoad] = useState(false)
-  const [open, setOpen]   = useState(new Set<string>(['sort','price','avail']))
-  const upd = (p: Partial<F>) => setF({ ...f, ...p })
-
-  useEffect(() => {
-    if (!catSlug) return
-    setALoad(true); setAttrs([])
-    ;(async () => {
-      try {
-        if (subSlug) {
-          const r1 = await fetch(`${API}/categories/${catSlug}/subcategories`, { headers:{ Accept:'application/json' } })
-          const j1 = await r1.json()
-          const sub = (j1.data??[]).find((s: any) => s.slug === subSlug)
-          if (sub) {
-            const r2 = await fetch(`${API}/subcategories/${sub.id}/attributes`, { headers:{ Accept:'application/json' } })
-            const j2 = await r2.json()
-            setAttrs((j2.attributes??[]).filter((a: any) => a.is_filterable !== false && a.options?.length)); return
-          }
-        }
-        const r = await fetch(`${API}/categories/${catSlug}/filter-attributes`, { headers:{ Accept:'application/json' } })
-        const j = await r.json()
-        setAttrs((j.data??j.attributes??[]).filter((a: Attr) => a.options?.length))
-      } catch { setAttrs([]) } finally { setALoad(false) }
-    })()
-  }, [catSlug, subSlug])
-
-  const tog  = (k: string) => setOpen(s => { const n = new Set(s); n.has(k)?n.delete(k):n.add(k); return n })
-  const togA = (slug: string, id: number) => { const c = f.attrs[slug]??[]; upd({ attrs:{ ...f.attrs,[slug]:c.includes(id)?c.filter(x=>x!==id):[...c,id] } }) }
-  const setA1= (slug: string, id: number) => { const c = f.attrs[slug]??[]; upd({ attrs:{ ...f.attrs,[slug]:c.includes(id)?[]:[id] } }) }
-  const isR  = (mn: string, mx: string) => f.pMin===mn && f.pMax===mx
-  const applyR=(mn: string, mx: string) => isR(mn,mx)?upd({pMin:'',pMax:''}):upd({pMin:mn,pMax:mx})
-  const hasAny = !!(f.q||f.inStock||f.pMin||f.pMax||Object.values(f.attrs).some(v=>v.length))
-
-  const Acc = ({ k, label }: { k: string; label: string }) => (
-    <button className="sb-head" onClick={() => tog(k)}>
-      <span>{label}</span>
-      <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
-        style={{ transform:open.has(k)?'rotate(180deg)':'none',transition:'transform .2s' }}>
-        <path d="M6 9l6 6 6-6"/>
-      </svg>
-    </button>
-  )
-
-  const inner = (
-    <aside className="sbar">
-      <div className="sbar-hd">
-        <div><p className="sbar-title">Filters</p><p className="sbar-count">{total.toLocaleString()} products</p></div>
-        {hasAny && <button className="sbar-clear" onClick={() => setF({ q:'',pMin:'',pMax:'',inStock:false,isPack:false,sort:f.sort,attrs:{} })}>✕ Clear</button>}
-      </div>
-      <div className="sbar-blk">
-        <div className="sbar-search">
-          <svg width="12" height="12" fill="none" stroke="#bbb" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input placeholder="Search in category…" value={f.q} onChange={e=>upd({q:e.target.value})} />
-          {f.q && <button onClick={()=>upd({q:''})} style={{background:'none',border:'none',cursor:'pointer',color:'#bbb',display:'flex',padding:0}}>
-            <svg width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
-          </button>}
-        </div>
-      </div>
-      <div className="sb-acc"><Acc k="sort" label="Sort By" />
-        {open.has('sort') && <div className="sb-body">{SORTS.map(s=>(
-          <button key={s.k} className={`sbar-sort${f.sort===s.k?' on':''}`} onClick={()=>upd({sort:s.k})}>
-            <span className="sbar-dot"/>{s.l}
-            {f.sort===s.k && <svg width="9" height="9" fill="none" stroke="#db142e" strokeWidth="2.5" viewBox="0 0 24 24" style={{marginLeft:'auto'}}><path d="M20 6L9 17l-5-5"/></svg>}
-          </button>
-        ))}</div>}
-      </div>
-      <div className="sb-acc"><Acc k="price" label="Price Range" />
-        {open.has('price') && <div className="sb-body">
-          <div className="sbar-pr-row">
-            <input type="number" placeholder="Min" value={f.pMin} onChange={e=>upd({pMin:e.target.value})} className="sbar-pin"/>
-            <span style={{color:'#bbb',fontSize:12}}>–</span>
-            <input type="number" placeholder="Max" value={f.pMax} onChange={e=>upd({pMax:e.target.value})} className="sbar-pin"/>
-          </div>
-          {PRANGES.map(r=><button key={r.l} className={`sbar-pr${isR(r.mn,r.mx)?' on':''}`} onClick={()=>applyR(r.mn,r.mx)}>{r.l}</button>)}
-        </div>}
-      </div>
-      <div className="sb-acc"><Acc k="avail" label="Availability" />
-  {open.has('avail') && <div className="sb-body" style={{padding:'6px 16px 12px',display:'flex',flexDirection:'column',gap:8}}>
-    <label className="sbar-trow">
-      <span>In stock only</span>
-      <div className={`sbar-tgl${f.inStock?' on':''}`} onClick={()=>upd({inStock:!f.inStock})}>
-        <div className="sbar-tgl-k"/>
-      </div>
-    </label>
-    <label className="sbar-trow">
-      <span>Packs only</span>
-      <div className={`sbar-tgl${f.isPack?' on':''}`} onClick={()=>upd({isPack:!f.isPack})}>
-        <div className="sbar-tgl-k"/>
-      </div>
-    </label>
-  </div>}
-</div>
-      {aLoad && [1,2].map(k=>(
-        <div key={k} className="sb-acc" style={{padding:'11px 16px'}}>
-          <div className="shsk-ln" style={{width:'54%',height:9,marginBottom:7}}/>
-          <div className="shsk-ln" style={{height:25,borderRadius:8}}/>
-        </div>
-      ))}
-      {!aLoad && attrs.map(a=>{
-        const isOpen=open.has(a.slug); const sel=f.attrs[a.slug]??[]
-        return (
-          <div key={a.id} className="sb-acc">
-            <button className="sb-head" onClick={()=>tog(a.slug)}>
-              <span>{a.name}{sel.length>0&&<span className="sbar-badge">{sel.length}</span>}</span>
-              <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
-                style={{transform:isOpen?'rotate(180deg)':'none',transition:'transform .2s',flexShrink:0}}>
-                <path d="M6 9l6 6 6-6"/>
-              </svg>
-            </button>
-            {isOpen && <div className="sb-body">
-              {a.type==='color' ? (
-                <div className="sbar-sw-row">{a.options.map(o=>(
-                  <button key={o.id} title={o.value} className={`sbar-sw${sel.includes(o.id)?' on':''}`}
-                    style={{'--c':o.color_hex??'#ccc'} as React.CSSProperties} onClick={()=>togA(a.slug,o.id)}>
-                    {sel.includes(o.id)&&<svg width="8" height="8" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>}
-                  </button>
-                ))}</div>
-              ):a.type==='multiselect'?(
-                <div className="sbar-checks">{a.options.map(o=>{const on=sel.includes(o.id);return(
-                  <label key={o.id} className={`sbar-chk${on?' on':''}`} onClick={()=>togA(a.slug,o.id)}>
-                    <div className={`sbar-cb${on?' on':''}`}>{on&&<svg width="8" height="8" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>}</div>
-                    {o.value}
-                  </label>
-                )})}</div>
-              ):(
-                <div className="sbar-pills">{a.options.map(o=>(
-                  <button key={o.id} className={`sbar-pill${sel.includes(o.id)?' on':''}`} onClick={()=>setA1(a.slug,o.id)}>{o.value}</button>
-                ))}</div>
-              )}
-            </div>}
-          </div>
-        )
-      })}
-      <button className="sbar-apply" onClick={()=>setMOpen(false)}>Apply Filters</button>
-    </aside>
-  )
-  return (
-    <>
-      <div className="sbar-desk">{inner}</div>
-      {mOpen&&<><div className="sbar-bd" onClick={()=>setMOpen(false)}/><div className="sbar-drawer">{inner}</div></>}
-    </>
-  )
-}
-
 // ─── Category bar — UNCHANGED ─────────────────────────────────────────────────
 function CatBar({ cats, active, view, setView, mOpen, setMOpen, fCount, shown, total }: {
   cats: Category[]; active: string; view: View; setView:(v:View)=>void
@@ -897,7 +729,8 @@ function Inner() {
         <CatBar cats={allC} active={slug} view={view} setView={setView} mOpen={mOpen} setMOpen={setMOpen} fCount={fCount} shown={displayed.length} total={prods?.total??0}/>
 
         <div className="shlayout">
-          <Sidebar f={f} setF={setF} total={prods?.total??0} catSlug={slug} subSlug={subSlug} mOpen={mOpen} setMOpen={setMOpen}/>
+          <ProductFilterSidebar f={f} setF={setF} total={prods?.total??0} catSlug={slug} subSlug={subSlug}
+            searchPlaceholder="Search in category…" mOpen={mOpen} setMOpen={setMOpen}/>
 
           <div>
             {!load && (

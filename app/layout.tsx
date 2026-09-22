@@ -1,3 +1,4 @@
+import type { Viewport } from "next";
 import { Syne } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from '@/context/CartContext';
@@ -11,6 +12,12 @@ const syne = Syne({
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-syne",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata = {
   title: "ChooseTounsi — Tunisia's #1 Multi-Vendor Marketplace",

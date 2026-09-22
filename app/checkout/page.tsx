@@ -17,7 +17,7 @@ import {
   MapPin, Phone, FileText, ChevronRight, Package,
   Loader2, CheckCircle, ShoppingBag, ArrowLeft, Zap,
   Plus, Star, Home, Briefcase, CreditCard, Wallet,
-  Smartphone, Truck, AlertCircle,
+  Smartphone, Truck, AlertCircle, Ticket, X,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { checkoutApi, walletApi, paymentApi, type BuyNowPayload } from '@/lib/shopApi'
@@ -60,9 +60,61 @@ interface BuyNowProduct {
   name: string
   price: string | number
   primary_image_url: string | null
-  is_free_delivery?: boolean                                         
+  is_free_delivery?: boolean
   images?: { image_path: string; url?: string; color_option_id?: number | null }[]
   variants?: { id: number; price: string | number; sku: string | null; image_urls: string[] }[]
+  seller?: { id: number; name: string } | null
+}
+
+// ─── Coupon box (per seller for cart checkout, single for buy-now) ────────────
+
+interface CouponState { input: string; applied: string | null; loading: boolean; error: string | null; discount: number }
+
+function CouponBox({
+  sellerId, sellerLabel, state, onChange, onApply, onClear,
+}: {
+  sellerId: number; sellerLabel: string; state: CouponState
+  onChange: (v: string) => void; onApply: () => void; onClear: () => void
+}) {
+  return (
+    <div style={{ padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        Coupon · {sellerLabel}
+      </p>
+      {state.applied ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0fdf4', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10, padding: '7px 10px' }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: '#059669', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Ticket size={13} /> {state.applied} applied · -{fmt(state.discount)}
+          </span>
+          <button type="button" onClick={onClear} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex' }}>
+            <X size={14} />
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 6 }}>
+          <input
+            value={state.input}
+            onChange={e => onChange(e.target.value.toUpperCase())}
+            placeholder="Enter code"
+            style={{ flex: 1, minWidth: 0, border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '7px 10px', fontSize: 12, outline: 'none', fontFamily: 'inherit' }}
+          />
+          <button
+            type="button"
+            onClick={onApply}
+            disabled={state.loading || !state.input.trim()}
+            style={{
+              padding: '7px 14px', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 800,
+              background: '#111', color: '#fff', cursor: state.loading ? 'default' : 'pointer',
+              opacity: state.loading || !state.input.trim() ? 0.5 : 1, whiteSpace: 'nowrap',
+            }}
+          >
+            {state.loading ? '…' : 'Apply'}
+          </button>
+        </div>
+      )}
+      {state.error && <p style={{ fontSize: 11, color: '#dc2626', margin: '5px 0 0' }}>{state.error}</p>}
+    </div>
+  )
 }
 // ─── Tunisian phone validation ────────────────────────────────────────────────
 function validateTunisianPhone(raw: string): { clean: string; valid: boolean; hint: string } {
@@ -388,6 +440,56 @@ export default function CheckoutPage() {
   const [success,  setSuccess]  = useState<{ order_number: string; total: number; payment_method: PaymentMethod } | null>(null)
   const [apiError, setApiError] = useState('')
 
+  // ── Coupons — keyed by seller_id, one code per seller ──────────────────────
+  const [couponStates, setCouponStates] = useState<Record<number, CouponState>>({})
+
+  const sellerGroups = useMemo(() => {
+    if (isBuyNow) {
+      return bnProduct?.seller ? [{ sellerId: bnProduct.seller.id, sellerName: bnProduct.seller.name }] : []
+    }
+    const map = new Map<number, { sellerId: number; sellerName: string }>()
+    for (const item of items) {
+      const sid = (item as any).seller_id
+      if (!sid) continue
+      if (!map.has(sid)) map.set(sid, { sellerId: sid, sellerName: (item as any).seller_name ?? `Seller #${sid}` })
+    }
+    return Array.from(map.values())
+  }, [isBuyNow, items, bnProduct])
+
+  const couponState = (sellerId: number): CouponState =>
+    couponStates[sellerId] ?? { input: '', applied: null, loading: false, error: null, discount: 0 }
+
+  const setCouponInput = (sellerId: number, input: string) =>
+    setCouponStates(prev => ({ ...prev, [sellerId]: { ...couponState(sellerId), input, error: null } }))
+
+  const clearCoupon = (sellerId: number) =>
+    setCouponStates(prev => ({ ...prev, [sellerId]: { input: '', applied: null, loading: false, error: null, discount: 0 } }))
+
+  const applyCoupon = async (sellerId: number) => {
+    const cur = couponState(sellerId)
+    if (!cur.input.trim()) return
+    setCouponStates(prev => ({ ...prev, [sellerId]: { ...cur, loading: true, error: null } }))
+    try {
+      const res = await fetch(`${API_URL}/coupons/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ code: cur.input.trim() }),
+      })
+      const json = await res.json()
+      if (json.success && json.seller_id === sellerId) {
+        setCouponStates(prev => ({ ...prev, [sellerId]: { input: cur.input.trim(), applied: cur.input.trim().toUpperCase(), loading: false, error: null, discount: json.discount_amount } }))
+      } else if (json.success && json.seller_id !== sellerId) {
+        setCouponStates(prev => ({ ...prev, [sellerId]: { ...cur, loading: false, error: 'This code belongs to a different seller.' } }))
+      } else {
+        setCouponStates(prev => ({ ...prev, [sellerId]: { ...cur, loading: false, error: json.message ?? 'Invalid coupon.' } }))
+      }
+    } catch {
+      setCouponStates(prev => ({ ...prev, [sellerId]: { ...cur, loading: false, error: 'Could not validate coupon. Try again.' } }))
+    }
+  }
+
+  const totalDiscount = Object.values(couponStates).reduce((s, c) => s + (c.applied ? c.discount : 0), 0)
+
   useEffect(() => {
     if (!isAuthenticated()) router.push('/auth/login?redirect=/checkout')
   }, [router])
@@ -496,7 +598,7 @@ const isFreeDelivery = (() => {
 })()
  
 const deliveryFee     = isFreeDelivery ? 0 : PLATFORM_DELIVERY_FEE
-const summaryTotal    = summarySubtotal + deliveryFee
+const summaryTotal    = Math.max(0, summarySubtotal - totalDiscount) + deliveryFee
 const walletInsufficient = walletBalance !== null && walletBalance < summaryTotal
 
   // ── Submit ────────────────────────────────────────────────────────────────
@@ -514,6 +616,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
 
       if (isBuyNow) {
         if (!bnProduct) throw new Error('Product data missing.')
+        const bnCoupon = bnProduct.seller ? couponState(bnProduct.seller.id) : null
         const payload: BuyNowPayload = {
           product_id:     bnProduct.id,
           quantity:       bnQuantity,
@@ -522,20 +625,23 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
           phone:          cleanForm.phone,
           notes:          form.notes || undefined,
           payment_method: paymentMethod,
+          ...(bnCoupon?.applied ? { coupon_code: bnCoupon.applied } : {}),
         }
         if (bnVariantId) payload.variant_id = bnVariantId
         res = await checkoutApi.buyNow(payload)
       } else {
         const sel = selectedIdsRef.current
         const selectedItemIds = sel && sel.size > 0 ? [...sel] : undefined
+        const appliedCodes = Object.values(couponStates).filter(c => c.applied).map(c => c.applied as string)
 
         res = await checkoutApi.place({
           wilaya:         form.wilaya,
           address:        form.address,
-          phone:          cleanForm.phone, 
+          phone:          cleanForm.phone,
           notes:          form.notes || undefined,
           payment_method: paymentMethod,
           ...(selectedItemIds ? { item_ids: selectedItemIds } : {}),
+          ...(appliedCodes.length > 0 ? { coupon_codes: appliedCodes } : {}),
         })
         await refreshCart()
       }
@@ -957,11 +1063,33 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
                 })}
               </div>
 
+              {sellerGroups.length > 0 && (
+                <div style={{ padding: '0 20px' }}>
+                  {sellerGroups.map(g => (
+                    <CouponBox
+                      key={g.sellerId}
+                      sellerId={g.sellerId}
+                      sellerLabel={g.sellerName}
+                      state={couponState(g.sellerId)}
+                      onChange={v => setCouponInput(g.sellerId, v)}
+                      onApply={() => applyCoupon(g.sellerId)}
+                      onClear={() => clearCoupon(g.sellerId)}
+                    />
+                  ))}
+                </div>
+              )}
+
               <div style={{ padding: '14px 20px', borderTop: '1px solid #f1f5f9' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Subtotal</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{fmt(summarySubtotal)}</span>
                 </div>
+                {totalDiscount > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>Discount</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>-{fmt(totalDiscount)}</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                     <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Shipping</span>
                     {isFreeDelivery ? (

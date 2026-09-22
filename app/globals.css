@@ -16,3 +16,36 @@
     transform: translateY(0);
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Mobile safety net (added for mobile-friendly pass)
+   ───────────────────────────────────────────────────────────── */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: hidden;          /* never allow sideways page scroll */
+}
+body {
+  max-width: 100%;
+  overflow-x: clip;            /* clip (not hidden) keeps position:sticky working */
+}
+img, video, canvas {
+  max-width: 100%;
+}
+/* Inline-styled tables / code blocks scroll inside themselves */
+pre, table {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  /* 16px inputs stop iOS Safari from zooming the page on focus */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+  /* Comfortable tap targets for icon-only buttons */
+  button {
+    touch-action: manipulation;
+  }
+}

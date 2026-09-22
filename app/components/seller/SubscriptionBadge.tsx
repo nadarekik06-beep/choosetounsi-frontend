@@ -139,6 +139,14 @@ const FEATURE_LABELS: Record<FeatureKey, { label: string; description: string; p
   bulk_operations:     { label: 'Bulk Operations',            description: 'Manage hundreds of products at once.',                       plan: 'Black Pepper' },
   api_access:          { label: 'API Access',                 description: 'Direct API access to integrate your systems.',               plan: 'Black Pepper' },
   custom_storefront:   { label: 'Custom Storefront',          description: 'Your branded store page on ChooseTounsi.',                   plan: 'Black Pepper' },
+  ai_hub:              { label: 'AI Hub',                     description: 'All your AI seller tools in one place.',                     plan: 'Black Pepper' },
+  profit_center:       { label: 'Profit Center',              description: 'Track margins and profit per product.',                      plan: 'Black Pepper' },
+  vip_requests:        { label: 'VIP Requests',               description: 'Access exclusive VIP requests from buyers.',                 plan: 'Black Pepper' },
+  sponsored_products:  { label: 'Sponsored Products',         description: 'Promote your products across the marketplace.',              plan: 'Black Pepper' },
+  trend_detection:     { label: 'Trend Detection',            description: 'Spot trending products and categories early.',               plan: 'Black Pepper' },
+  inventory_prediction:{ label: 'Inventory Prediction',       description: 'Forecast stock needs before you run out.',                   plan: 'Black Pepper' },
+  sponsor_product:     { label: 'Sponsor a Product',          description: 'Activate a sponsorship for your product.',                   plan: 'Green Pepper' },
+  sponsor_discount:    { label: 'Sponsorship Discount',       description: 'Get a discounted rate on sponsorships.',                     plan: 'Red Pepper' },
 };
 
 export function UpgradeBanner({ feature, dark = true }: { feature: FeatureKey; dark?: boolean }) {

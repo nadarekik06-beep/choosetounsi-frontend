@@ -222,7 +222,7 @@ function ProductGrid({ products, showRank = false, rankOffset = 0 }: {
   products: SearchProduct[]; showRank?: boolean; rankOffset?: number;
 }) {
   return (
-    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(190px, 1fr))", gap:18 }}>
+    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(min(190px, 45%), 1fr))", gap:18 }}>
       {products.map((p, i) => <ProductCard key={p.id} product={p} rank={showRank ? rankOffset + i + 1 : undefined}/>)}
     </div>
   );
@@ -484,7 +484,7 @@ function SearchPageContent() {
 
           {/* Loading */}
           {loading && (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(190px, 1fr))", gap:18 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(min(190px, 45%), 1fr))", gap:18 }}>
               {Array.from({length:12}).map((_,i) => <SkeletonCard key={i}/>)}
             </div>
           )}
@@ -574,7 +574,7 @@ function SearchPageContent() {
                 </div>
                 <div style={{ flex:1, height:1, background:"#f1f5f9" }}/>
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(190px, 1fr))", gap:18 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(min(190px, 45%), 1fr))", gap:18 }}>
                 {trendingNow.map(p => <ProductCard key={`t-${p.id}`} product={p}/>)}
               </div>
             </div>

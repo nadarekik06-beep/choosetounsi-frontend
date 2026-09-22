@@ -68,7 +68,7 @@ interface Product {
   category: { id: number; name: string; slug: string } | null
   subcategory: { id: number; name: string; slug: string } | null
   is_platform_product?: boolean
-  seller: { id: number; name: string; email: string } | null
+  seller: { id: number; name: string; email: string; business_name?: string; avatar?: string | null } | null
   attribute_data?: Record<string, AttributeData>
   has_variants: boolean
   effective_price?: number
@@ -374,6 +374,7 @@ export default function ProductDetailPage() {
   const [selectorError,   setSelectorError]   = useState(false)
   const [buyNowLoading,   setBuyNowLoading]   = useState(false)
   const [activePromotion, setActivePromotion] = useState<ActivePromotion | null>(null)
+  const [sellerImgErr,    setSellerImgErr]    = useState(false)
   const buyNowRef = useRef(false)
 
   useEffect(() => {
@@ -620,12 +621,18 @@ export default function ProductDetailPage() {
               </div>
             ) : product.seller && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#dc2626,#7f1d1d)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 800 }}>
-                  {product.seller.name.charAt(0).toUpperCase()}
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#dc2626,#7f1d1d)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 800, overflow: 'hidden', flexShrink: 0 }}>
+                  {product.seller.avatar && !sellerImgErr
+                    ? <img src={product.seller.avatar} alt="" onError={() => setSellerImgErr(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : (product.seller.business_name ?? product.seller.name).charAt(0).toUpperCase()
+                  }
                 </div>
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>Sold by</span>
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>{product.seller.name}</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>{product.seller.business_name ?? product.seller.name}</span>
                 <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>Verified</span>
+                <Link href={`/sellers/${product.seller.id}`} style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11, fontWeight: 800, color: '#dc2626', textDecoration: 'none', marginLeft: 'auto' }}>
+                  Visit Store <ChevronRight size={12} />
+                </Link>
               </div>
             )}
 
@@ -813,7 +820,7 @@ export default function ProductDetailPage() {
                       { label: 'Subcategory', value: product.subcategory?.name ?? '—' },
                       { label: 'SKU',         value: selectedVariant?.sku ?? product.sku ?? 'N/A' },
                       { label: 'Stock',       value: `${effectiveStock} units` },
-                      { label: 'Seller',      value: product.is_platform_product ? "CHOOSE'Tounsi Official" : (product.seller?.name ?? '—') },
+                      { label: 'Seller',      value: product.is_platform_product ? "CHOOSE'Tounsi Official" : (product.seller?.business_name ?? product.seller?.name ?? '—') },
                       { label: 'Views',       value: String(product.views ?? 0) },
                     ].map(({ label, value }) => (
                       <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
