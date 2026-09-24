@@ -14,6 +14,7 @@ import { api, getUser, isAuthenticated } from '@/lib/auth'
 import { subscriptionApi, ActivePlan } from '@/lib/subscriptionApi'
 import SubscriptionUpgradePage from '@/app/components/seller/SubscriptionUpgradePage'
 import Link from 'next/link'
+import { useSellerPlans, formatCommission, formatPlanPrice, formatMaxProducts, type SellerPlans } from '@/lib/platformApi'
 
 const WILAYAS = [
   'Ariana','Béja','Ben Arous','Bizerte','Gabès','Gafsa','Jendouba','Kairouan',
@@ -46,12 +47,8 @@ const COMPLETENESS_WEIGHTS = {
 const PLANS = [
   {
     key: 'green',
+    apiKey: 'free' as const,
     name: 'Green Pepper',
-    price: 0,
-    priceLabel: 'Free',
-    priceSub: 'forever',
-    commission: '12% – 20%',
-    maxProducts: 30,
     target: 'Perfect for beginners',
     badge: null as string | null,
     color: '#198f41',
@@ -62,7 +59,6 @@ const PLANS = [
     dark: false,
     ctaLabel: 'Start for Free',
     features: [
-      { text: 'Up to 30 products',             ok: true  },
       { text: 'Basic seller dashboard',         ok: true  },
       { text: 'Coupon creation',                ok: true  },
       { text: 'Flash sales',                    ok: true  },
@@ -74,12 +70,8 @@ const PLANS = [
   },
   {
     key: 'red',
+    apiKey: 'red' as const,
     name: 'Red Pepper',
-    price: 49,
-    priceLabel: '49 DT',
-    priceSub: 'per month',
-    commission: '6% – 10%',
-    maxProducts: 150,
     target: 'Growing businesses',
     badge: 'MOST POPULAR' as string | null,
     color: '#db142e',
@@ -90,7 +82,6 @@ const PLANS = [
     dark: false,
     ctaLabel: 'Get Red Pepper',
     features: [
-      { text: 'Up to 150 products',             ok: true  },
       { text: 'Advanced dashboard',             ok: true  },
       { text: 'Coupons + Flash sales',          ok: true  },
       { text: 'Price Optimization AI',          ok: true  },
@@ -102,12 +93,8 @@ const PLANS = [
   },
   {
     key: 'black',
+    apiKey: 'black' as const,
     name: 'Black Pepper',
-    price: 129,
-    priceLabel: '129 DT',
-    priceSub: 'per month',
-    commission: '3% – 5%',
-    maxProducts: null as number | null,
     target: 'Serious sellers',
     badge: 'BEST VALUE' as string | null,
     color: '#0f172a',
@@ -118,7 +105,6 @@ const PLANS = [
     dark: true,
     ctaLabel: 'Get Black Pepper',
     features: [
-      { text: 'Unlimited products',             ok: true },
       { text: 'Everything in Red Pepper',       ok: true },
       { text: 'Homepage visibility boost',      ok: true },
       { text: '3 free sponsored products/week', ok: true },
@@ -160,14 +146,23 @@ const RULES = [
   },
   {
     icon: Globe, title: 'Commission & Payments', color: '#6366f1',
+    // The per-plan commission lines are generated from /api/seller-plans (see commissionRulePoints).
     points: [
-      'Green plan: 12–20% commission per sale',
-      'Red plan: 6–10% commission per sale',
-      'Black plan: 3–5% commission per sale',
       'Payouts processed every 14 days',
     ],
   },
 ]
+
+/** Commission lines for the rules section, read from CommissionService via the API. */
+function commissionRulePoints(plans: SellerPlans | null): string[] {
+  if (!plans) return []
+  return [
+    `Green plan: ${formatCommission(plans.free)} commission per sale`,
+    `Red plan: ${formatCommission(plans.red)} commission per sale`,
+    `Black plan: ${formatCommission(plans.black)} commission per sale`,
+    'Rate depends on the product price: higher-priced items pay a lower rate',
+  ]
+}
 
 const BENEFITS = [
   { icon: Store,      title: '12,000+ Active Buyers',    desc: "Access Tunisia's fastest-growing marketplace" },
@@ -337,7 +332,8 @@ function LockedPlanModal({ planKey, onClose, onScrollToForm }: {
   const isRed       = planKey === 'red'
   const PlanIcon    = isRed ? Flame : Crown
   const planName    = isRed ? 'Red Pepper' : 'Black Pepper'
-  const planPrice   = isRed ? '49 DT/month' : '129 DT/month'
+  const livePlans   = useSellerPlans()
+  const planPrice   = `${formatPlanPrice(livePlans?.[planKey])}/month`
   const accentColor = isRed ? '#dc2626' : '#f59e0b'
   const darkBg      = !isRed
 
@@ -404,6 +400,7 @@ function LockedPlanModal({ planKey, onClose, onScrollToForm }: {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function BecomeVendorPage() {
+  const livePlans = useSellerPlans()
   const router  = useRouter()
   const formRef = useRef<HTMLDivElement>(null)
 
@@ -911,7 +908,11 @@ export default function BecomeVendorPage() {
             <p className="text-gray-500 mt-3 max-w-xl mx-auto">We maintain high standards to protect buyers and sellers. By applying you agree to these terms.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {RULES.map(({ icon: Icon, title, color, points }) => (
+            {RULES.map(({ icon: Icon, title, color, points: rulePoints }) => {
+              const points = title === 'Commission & Payments'
+                ? [...commissionRulePoints(livePlans), ...rulePoints]
+                : rulePoints
+              return (
               <div key={title} className="rule-card">
                 <div style={{ width:44, height:44, borderRadius:12, background:`${color}18`, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:14 }}>
                   <Icon size={22} color={color} />
@@ -925,7 +926,8 @@ export default function BecomeVendorPage() {
                   ))}
                 </ul>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
@@ -945,6 +947,7 @@ export default function BecomeVendorPage() {
               {PLANS.map(plan => {
                 const { Icon } = plan
                 const isLocked = plan.key !== 'green'
+                const live     = livePlans?.[plan.apiKey]
                 return (
                   <div key={plan.key} className={`plan-card plan-card-${plan.key}`} style={{ background:plan.bgGradient, border:`2px solid ${plan.borderColor}` }}
                     onClick={isLocked ? () => setLockedModal(plan.key as 'red'|'black') : handleGreenClick}>
@@ -964,16 +967,18 @@ export default function BecomeVendorPage() {
                         </div>
                       </div>
                       <div style={{ marginBottom:16 }}>
-                        <span className="bv-display" style={{ fontSize:'2.8rem', fontWeight:900, color:plan.dark ? 'white' : '#111', lineHeight:1 }}>{plan.priceLabel}</span>
-                        <span style={{ fontSize:'0.78rem', color:plan.dark ? 'rgba(255,255,255,0.45)' : '#888', marginLeft:6 }}>/{plan.priceSub}</span>
+                        <span className="bv-display" style={{ fontSize:'2.8rem', fontWeight:900, color:plan.dark ? 'white' : '#111', lineHeight:1 }}>{formatPlanPrice(live)}</span>
+                        {live && (
+                          <span style={{ fontSize:'0.78rem', color:plan.dark ? 'rgba(255,255,255,0.45)' : '#888', marginLeft:6 }}>/{live.price === 0 ? 'forever' : 'per month'}</span>
+                        )}
                       </div>
                       <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:plan.dark ? 'rgba(245,158,11,0.12)' : `${plan.accentColor}12`, borderRadius:8, padding:'6px 10px', marginBottom:18 }}>
                         <BarChart2 size={13} color={plan.dark ? '#f59e0b' : plan.accentColor} />
-                        <span style={{ fontSize:'0.75rem', fontWeight:700, color:plan.dark ? '#f59e0b' : plan.accentColor }}>{plan.commission} commission</span>
+                        <span style={{ fontSize:'0.75rem', fontWeight:700, color:plan.dark ? '#f59e0b' : plan.accentColor }}>{formatCommission(live)} commission</span>
                       </div>
                       <div style={{ fontSize:'0.75rem', color:plan.dark ? 'rgba(255,255,255,0.5)' : '#888', marginBottom:18, display:'flex', alignItems:'center', gap:5 }}>
                         <Package size={13} color={plan.dark ? 'rgba(255,255,255,0.35)' : '#aaa'} />
-                        {plan.maxProducts ? `Up to ${plan.maxProducts} products` : 'Unlimited products'}
+                        {formatMaxProducts(live)}
                       </div>
                       <ul style={{ listStyle:'none', padding:0, margin:'0 0 22px', display:'flex', flexDirection:'column', gap:8 }}>
                         {plan.features.map(f => (

@@ -117,7 +117,8 @@ export const PLAN_META = {
     accentColor: '#15803d',
     emoji:       '🌱',
     maxProducts: 30,
-    commission:  '12–20%',
+    // Static fallback copy — live values come from /api/seller-plans (lib/platformApi.ts).
+    commission:  '3–15%',
   },
   red: {
     name:        'Red Pepper',

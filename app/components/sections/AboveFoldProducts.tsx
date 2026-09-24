@@ -6,6 +6,7 @@ import { useCart } from '@/context/CartContext'
 import { isAuthenticated } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import PriceDisplay from '@/app/components/promotions/PriceDisplay'
+import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -107,6 +108,7 @@ function CompactProductCard({ product }: { product: Product }) {
             -{Math.round(((Number(product.price) - Number(product.effective_price)) / Number(product.price)) * 100)}%
           </span>
         )}
+        <FlashCountdownBadge promotion={product.promotion} />
         {outOfStock && <div className="cpc-sold-overlay"><span>Sold Out</span></div>}
         <div className="cpc-hover-actions">
           <button className="cpc-btn" onClick={handleFav} title="Wishlist">

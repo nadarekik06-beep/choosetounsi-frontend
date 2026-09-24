@@ -22,6 +22,7 @@ import {
 import { useCart } from '@/context/CartContext'
 import { checkoutApi, walletApi, paymentApi, type BuyNowPayload } from '@/lib/shopApi'
 import { isAuthenticated } from '@/lib/auth'
+import { fetchPaymentInfo } from '@/lib/platformApi'
 import type { UserAddress } from '@/app/account/addresses/page'
 
 // ─── Shared sessionStorage key ────────────────────────────────────────────────
@@ -207,7 +208,7 @@ function PaymentMethodCard({
 
 // ─── D17 Instructions Panel ───────────────────────────────────────────────────
 
-function D17Instructions({ total }: { total: number }) {
+function D17Instructions({ total, accountNumber }: { total: number; accountNumber: string }) {
   return (
     <div style={{
       background: 'linear-gradient(135deg, #fef9ec, #fffbf0)',
@@ -220,7 +221,7 @@ function D17Instructions({ total }: { total: number }) {
       <ol style={{ margin: 0, padding: '0 0 0 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
         {[
           `Open your D17 app and send ${fmt(total)} to our account`,
-          "Account number: 71 234 567 (CHOOSE'Tounsi)",
+          `Account number: ${accountNumber} (CHOOSE'Tounsi)`,
           'Add your order number as the transfer note',
           'Screenshot your transfer confirmation',
           'Admin will confirm your order within 2 hours',
@@ -431,6 +432,18 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod')
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
   const [walletLoading, setWalletLoading] = useState(true)
+  // D17 account number comes from the backend .env (D17_ACCOUNT_NUMBER); null until it is set.
+  const [d17Account, setD17Account] = useState<string | null>(null)
+  const [d17Loading, setD17Loading] = useState(true)
+  useEffect(() => {
+    fetchPaymentInfo()
+      .then(info => setD17Account(info.d17_account_number))
+      .catch(() => setD17Account(null))
+      .finally(() => setD17Loading(false))
+  }, [])
+  useEffect(() => {
+    if (!d17Loading && !d17Account && paymentMethod === 'd17') setPaymentMethod('cod')
+  }, [d17Loading, d17Account, paymentMethod])
 
   const [stripeLoading,      setStripeLoading]      = useState(false)
 
@@ -692,7 +705,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
             <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '14px 16px', marginBottom: 20, textAlign: 'left' }}>
               <p style={{ fontSize: 12, fontWeight: 800, color: '#92400e', margin: '0 0 8px' }}>Complete your D17 transfer:</p>
               <p style={{ fontSize: 12, color: '#78350f', margin: '0 0 4px' }}>Amount: <strong>{fmt(success.total)}</strong></p>
-              <p style={{ fontSize: 12, color: '#78350f', margin: '0 0 4px' }}>Account: <strong>71 234 567 (CHOOSE'Tounsi)</strong></p>
+              <p style={{ fontSize: 12, color: '#78350f', margin: '0 0 4px' }}>Account: <strong>{d17Account ?? 'contact support'} (CHOOSE&apos;Tounsi)</strong></p>
               <p style={{ fontSize: 12, color: '#78350f', margin: 0 }}>Reference: <strong>{success.order_number}</strong></p>
             </div>
           )}
@@ -994,9 +1007,9 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <PaymentMethodCard method="cod" selected={paymentMethod === 'cod'} onSelect={() => setPaymentMethod('cod')} icon={Truck} label="Cash on Delivery" description="Pay cash when your order arrives at your door." badge="Most Popular" badgeColor="#198f41" />
                 <PaymentMethodCard method="wallet" selected={paymentMethod === 'wallet'} onSelect={() => !walletInsufficient && setPaymentMethod('wallet')} disabled={walletLoading || walletInsufficient} disabledReason={walletLoading ? 'Loading balance…' : `Insufficient balance (${fmt(walletBalance ?? 0)} available)`} icon={Wallet} label="Wallet" description={walletLoading ? 'Checking balance…' : `Available balance: ${fmt(walletBalance ?? 0)}`} badge={!walletLoading && !walletInsufficient ? 'Instant' : undefined} badgeColor="#6366f1" />
-                <PaymentMethodCard method="d17" selected={paymentMethod === 'd17'} onSelect={() => setPaymentMethod('d17')} icon={Smartphone} label="D17" description="Pay via D17 mobile app — confirmed by admin within 2 hours." badge="Tunisian" badgeColor="#0284c7" />
+                <PaymentMethodCard method="d17" selected={paymentMethod === 'd17'} onSelect={() => d17Account && setPaymentMethod('d17')} disabled={d17Loading || !d17Account} disabledReason={d17Loading ? 'Loading…' : 'D17 payments are not available yet — please choose another method.'} icon={Smartphone} label="D17" description="Pay via D17 mobile app — confirmed by admin within 2 hours." badge="Tunisian" badgeColor="#0284c7" />
                 <PaymentMethodCard method="card" selected={paymentMethod === 'card'} onSelect={() => setPaymentMethod('card')} icon={CreditCard} label="Bank Card" description="Pay securely with Visa or Mastercard via Stripe." badge="Secure" badgeColor="#7c3aed" />
-                {paymentMethod === 'd17' && <D17Instructions total={summaryTotal} />}
+                {paymentMethod === 'd17' && d17Account && <D17Instructions total={summaryTotal} accountNumber={d17Account} />}
                 {paymentMethod === 'card' && <StripeNotice />}
               </div>
             </div>

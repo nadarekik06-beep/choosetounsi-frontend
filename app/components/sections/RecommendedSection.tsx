@@ -15,6 +15,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
+import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
 
 const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API    = `${ORIGIN}/api`
@@ -239,6 +240,8 @@ if (product.is_sponsored && (product.sponsored_priority ?? 0) >= 30) {
             </span>
           )}
         </div>
+
+        <FlashCountdownBadge promotion={product.promotion} />
 
         {oos && (
           <div style={{

@@ -114,6 +114,11 @@ function CommissionItemBadge({ item }: { item: OrderItem; dark: boolean }) {
           {PLAN_LABELS[item.plan_used ?? 'free']} plan
         </span>
       </div>
+      {Number(item.discount_amount ?? 0) > 0 && (
+        <span style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700 }}>
+          Coupon −{Number(item.discount_amount).toFixed(3)} TND · fee on {Number(item.net_total).toFixed(3)} TND
+        </span>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <span style={{ fontSize: 9, fontWeight: 800, color: '#10b981' }}>YOU RECEIVE</span>
         <span style={{ fontSize: 11, fontWeight: 900, color: '#10b981' }}>
@@ -128,9 +133,15 @@ function CommissionSummaryCard({ commission, dark, border, bgSub }: {
   commission: OrderCommissionSummary; dark: boolean; border: string; bgSub: string;
 }) {
   if (!commission.has_commission) return null;
+  const discount = Number(commission.total_discount ?? 0);
+  const net      = Number(commission.total_net ?? commission.total_gross);
+  // Coupon is seller-funded; the platform fee is charged on the price after it.
   const columns = [
-    { label: 'Gross Total',  value: Number(commission.total_gross).toFixed(3),             color: dark ? '#93c5fd' : '#1e40af', bg: dark ? 'rgba(59,130,246,0.08)' : '#eff6ff', bd: dark ? 'rgba(59,130,246,0.15)' : '#bfdbfe', note: 'Customer paid' },
-    { label: 'Platform Fee', value: Number(commission.total_commission_amount).toFixed(3), color: '#ef4444', bg: 'rgba(239,68,68,0.06)', bd: 'rgba(239,68,68,0.18)', note: 'ChooseTounsi commission' },
+    { label: 'Gross Total',  value: Number(commission.total_gross).toFixed(3),             color: dark ? '#93c5fd' : '#1e40af', bg: dark ? 'rgba(59,130,246,0.08)' : '#eff6ff', bd: dark ? 'rgba(59,130,246,0.15)' : '#bfdbfe', note: discount > 0 ? 'Before coupon' : 'Customer paid' },
+    ...(discount > 0 ? [
+      { label: 'Coupon',     value: '−' + discount.toFixed(3),                               color: '#f59e0b', bg: 'rgba(245,158,11,0.06)', bd: 'rgba(245,158,11,0.18)', note: `Customer paid ${net.toFixed(3)}` },
+    ] : []),
+    { label: 'Platform Fee', value: Number(commission.total_commission_amount).toFixed(3), color: '#ef4444', bg: 'rgba(239,68,68,0.06)', bd: 'rgba(239,68,68,0.18)', note: discount > 0 ? `On ${net.toFixed(3)}` : 'ChooseTounsi commission' },
     { label: 'You Receive',  value: Number(commission.total_seller_net).toFixed(3),        color: '#10b981', bg: 'rgba(16,185,129,0.06)', bd: 'rgba(16,185,129,0.18)', note: 'Net after fees' },
   ];
   return (
@@ -139,7 +150,7 @@ function CommissionSummaryCard({ commission, dark, border, bgSub }: {
         <span style={{ fontSize: 11, fontWeight: 800, color: dark ? 'rgba(255,255,255,0.7)' : '#374151' }}>Commission Breakdown</span>
         <span style={{ fontSize: 9, fontWeight: 700, background: 'rgba(219,20,46,0.1)', color: '#db142e', border: '1px solid rgba(219,20,46,0.2)', padding: '1px 6px', borderRadius: 4, textTransform: 'uppercase' as const }}>Order Summary</span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns.length}, 1fr)`, gap: 8 }}>
         {columns.map(col => (
           <div key={col.label} style={{ background: col.bg, border: `1px solid ${col.bd}`, borderRadius: 12, padding: '10px 12px', textAlign: 'center' as const }}>
             <p style={{ fontSize: 9, fontWeight: 800, color: col.color, margin: '0 0 5px', opacity: 0.8, textTransform: 'uppercase' as const }}>{col.label}</p>
@@ -352,9 +363,24 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                   {detail.items.map(item => (
                     <OrderItemCard key={item.id} item={item} dark={dark} border={border} textMain={textMain} textMuted={textMuted} bgSub={bgSub} />
                   ))}
+                  {Number(detail.discount_amount ?? 0) > 0 && (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: `1px solid ${border}` }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: textMuted }}>Subtotal</span>
+                        <span style={{ fontWeight: 800, color: textMain, fontSize: 13 }}>{Number(detail.seller_subtotal).toFixed(3)} TND</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: `1px solid ${border}` }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>
+                          Coupon{detail.coupon_code ? ` (${detail.coupon_code})` : ''}
+                          {detail.coupon_type === 'percentage' && detail.coupon_value ? ` · ${Number(detail.coupon_value)}%` : ''}
+                        </span>
+                        <span style={{ fontWeight: 800, color: '#f59e0b', fontSize: 13 }}>−{Number(detail.discount_amount).toFixed(3)} TND</span>
+                      </div>
+                    </>
+                  )}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: dark ? 'rgba(59,130,246,0.08)' : '#eff6ff', borderTop: `1px solid ${border}` }}>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: dark ? '#93c5fd' : '#1e40af' }}>Your Subtotal</span>
-                    <span style={{ fontWeight: 900, color: '#3b82f6', fontSize: 15 }}>{Number(detail.seller_subtotal).toFixed(3)} TND</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: dark ? '#93c5fd' : '#1e40af' }}>{Number(detail.discount_amount ?? 0) > 0 ? 'Your Total (after coupon)' : 'Your Subtotal'}</span>
+                    <span style={{ fontWeight: 900, color: '#3b82f6', fontSize: 15 }}>{Number(detail.seller_total ?? detail.seller_subtotal).toFixed(3)} TND</span>
                   </div>
                 </div>
 

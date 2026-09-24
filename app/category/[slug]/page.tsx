@@ -11,6 +11,7 @@ import {
 } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
 import { useCart } from '@/context/CartContext'
 
 import Navbar from '@/app/components/layout/Navbar'
@@ -271,6 +272,8 @@ function Card({ p, idx }: { p: Product; idx: number }) {
           )}
         </div>
 
+        <FlashCountdownBadge promotion={p.promotion} />
+
         {oos && <div className="shc-oos"><span>Sold Out</span></div>}
 
         <button className={`shc-wish${wish ? ' on' : ''}`}
@@ -389,6 +392,7 @@ function ListCard({ p, idx }: { p: Product; idx: number }) {
             {discountBadge}
           </span>
         )}
+        <FlashCountdownBadge promotion={p.promotion} />
       </div>
       <div className="shlc-body">
         {p.seller?.name && <p className="shc-seller">{p.seller.name}</p>}
