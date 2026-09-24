@@ -395,6 +395,8 @@ export default function ProductsPage() {
                 ? <><CheckCircle size={9} />Approved</>
                 : (product as any).rejection_reason
                 ? <><XCircle size={9} />Rejected</>
+                : (product as any).changes_requested_at
+                ? <><Clock size={9} />Changes requested</>
                 : <><Clock size={9} />Pending</>
             }
         </span>

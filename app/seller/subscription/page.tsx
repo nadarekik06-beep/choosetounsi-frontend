@@ -18,14 +18,34 @@ import {
   Clock, Calendar, RefreshCw, Shield, ChevronRight,
   TrendingDown, AlertTriangle, History, BarChart2, Package,
 } from 'lucide-react'
-import { subscriptionApi, PLAN_META, type ActivePlan, type SubscriptionLifecycle, type PlanChange } from '@/lib/subscriptionApi'
+import { subscriptionApi, planMeta, planKeys, planRank, planTier, livePlan, type ActivePlan, type SubscriptionLifecycle, type PlanChange } from '@/lib/subscriptionApi'
 import { refreshUser } from '@/lib/auth'
 import { useTheme } from '../layout'
 
 // ── Plan configuration ────────────────────────────────────────────────────────
 
-const PLAN_ICONS: Record<ActivePlan, React.ElementType> = {
-  free: Leaf, red: Flame, black: Crown,
+const TIER_ICONS: React.ElementType[] = [Leaf, Flame, Crown]
+/** Icon by tier, so admin-created plans get the look of their tier. */
+const planIcon = (slug: string) => TIER_ICONS[planTier(slug)]
+
+// Labels for the plan features the backend enforces (subscription_plans.features)
+const BACKEND_FEATURE_LABELS: Record<string, string> = {
+  analytics:    'Advanced analytics dashboard',
+  ai_tools:     'AI seller tools (price, description, sales)',
+  black_hub:    'Black Pepper hub (AI hub, VIP lounge, insights)',
+  promotions:   'Flash sales & promotions',
+  coupons:      'Store coupons',
+  sponsorships: 'Sponsoring system access',
+}
+
+/** Feature list for any plan: marketing copy for the base plans, live flags for custom ones. */
+function planFeatures(slug: string): string[] {
+  const meta  = planMeta(slug)
+  const limit = meta.maxProducts === null ? 'Unlimited active products' : `Up to ${meta.maxProducts} active products`
+  const base  = PLAN_FEATURES[slug as ActivePlan]
+  if (base) return [limit, ...base.slice(1)]
+  const flags = livePlan(slug)?.features ?? {}
+  return [limit, ...Object.entries(BACKEND_FEATURE_LABELS).filter(([k]) => flags[k]).map(([, label]) => label)]
 }
 
 const PLAN_FEATURES: Record<ActivePlan, string[]> = {
@@ -67,9 +87,9 @@ function formatExpiry(v: string): string {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function PlanBadge({ plan, size = 'md' }: { plan: ActivePlan; size?: 'sm' | 'md' | 'lg' }) {
-  const meta  = PLAN_META[plan]
-  const Icon  = PLAN_ICONS[plan]
+function PlanBadge({ plan, size = 'md' }: { plan: string; size?: 'sm' | 'md' | 'lg' }) {
+  const meta  = planMeta(plan)
+  const Icon  = planIcon(plan)
   const sizes = { sm: { text: 11, icon: 12, pad: '3px 10px' }, md: { text: 13, icon: 15, pad: '5px 14px' }, lg: { text: 16, icon: 19, pad: '8px 20px' } }
   const s = sizes[size]
   return (
@@ -83,8 +103,8 @@ function PlanBadge({ plan, size = 'md' }: { plan: ActivePlan; size?: 'sm' | 'md'
 // ── Payment form ──────────────────────────────────────────────────────────────
 
 interface PaymentFormProps {
-  targetPlan: 'red' | 'black'
-  onSuccess: (plan: 'red' | 'black') => void
+  targetPlan: string
+  onSuccess: (plan: string) => void
   onCancel: () => void
   dark: boolean
 }
@@ -98,8 +118,8 @@ function PaymentForm({ targetPlan, onSuccess, onCancel, dark }: PaymentFormProps
   const [error, setError]   = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
-  const meta  = PLAN_META[targetPlan]
-  const Icon  = PLAN_ICONS[targetPlan]
+  const meta  = planMeta(targetPlan)
+  const Icon  = planIcon(targetPlan)
   const cardBg = dark ? '#1a1f2e' : '#fff'
   const borderColor = dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'
 
@@ -209,21 +229,21 @@ function PaymentForm({ targetPlan, onSuccess, onCancel, dark }: PaymentFormProps
 // ── Downgrade confirmation modal ──────────────────────────────────────────────
 
 function DowngradeModal({ currentPlan, targetPlan, billingCycleEnd, daysRemaining, onConfirm, onCancel, loading, dark }: {
-  currentPlan: ActivePlan; targetPlan: 'free' | 'red'
+  currentPlan: string; targetPlan: string
   billingCycleEnd: string | null; daysRemaining: number
   onConfirm: () => void; onCancel: () => void; loading: boolean; dark: boolean
 }) {
-  const currentMeta = PLAN_META[currentPlan]
-  const targetMeta  = PLAN_META[targetPlan]
-  const CurrentIcon = PLAN_ICONS[currentPlan]
-  const TargetIcon  = PLAN_ICONS[targetPlan]
+  const currentMeta = planMeta(currentPlan)
+  const targetMeta  = planMeta(targetPlan)
+  const CurrentIcon = planIcon(currentPlan)
+  const TargetIcon  = planIcon(targetPlan)
   const cardBg      = dark ? '#161b27' : '#fff'
   const textMain    = dark ? '#fff' : '#111'
   const textMuted   = dark ? 'rgba(255,255,255,0.5)' : '#6b7280'
 
   // Features that will be LOST
-  const currentFeatures = PLAN_FEATURES[currentPlan]
-  const targetFeatures  = new Set(PLAN_FEATURES[targetPlan])
+  const currentFeatures = planFeatures(currentPlan)
+  const targetFeatures  = new Set(planFeatures(targetPlan))
   const lostFeatures    = currentFeatures.filter(f => !targetFeatures.has(f))
 
   return (
@@ -321,11 +341,11 @@ export default function SellerSubscriptionPage() {
   const [historyOpen,  setHistoryOpen]  = useState(false)
 
   // Upgrade flow state
-  const [upgradeTarget, setUpgradeTarget] = useState<'red' | 'black' | null>(null)
+  const [upgradeTarget, setUpgradeTarget] = useState<string | null>(null)
   const [upgradeDone,   setUpgradeDone]   = useState(false)
 
   // Downgrade flow state
-  const [downgradeTarget,  setDowngradeTarget]  = useState<'free' | 'red' | null>(null)
+  const [downgradeTarget,  setDowngradeTarget]  = useState<string | null>(null)
   const [downgradeLoading, setDowngradeLoading] = useState(false)
   const [downgradeDone,    setDowngradeDone]    = useState(false)
 
@@ -356,7 +376,7 @@ export default function SellerSubscriptionPage() {
   useEffect(() => { loadStatus() }, [])
   useEffect(() => { if (historyOpen && history.length === 0) loadHistory() }, [historyOpen])
 
-  const handleUpgradeSuccess = async (plan: 'red' | 'black') => {
+  const handleUpgradeSuccess = async (plan: string) => {
     setUpgradeTarget(null)
     setUpgradeDone(true)
     await loadStatus()
@@ -398,12 +418,13 @@ export default function SellerSubscriptionPage() {
     )
   }
 
-  const currentPlan: ActivePlan = status?.plan ?? 'free'
+  const currentPlan: string = status?.plan ?? 'free'
   const sub: SubscriptionLifecycle | null = status?.subscription ?? null
-  const currentMeta = PLAN_META[currentPlan]
-  const CurrentIcon = PLAN_ICONS[currentPlan]
-  const planHierarchy: Record<ActivePlan, number> = { free: 0, red: 1, black: 2 }
-  const currentLevel = planHierarchy[currentPlan]
+  const currentMeta = planMeta(currentPlan)
+  const CurrentIcon = planIcon(currentPlan)
+  const offered      = planKeys()
+  const currentLevel = planRank(currentPlan)
+  const topLevel     = Math.max(...offered.map(planRank), currentLevel)
 
   return (
     <>
@@ -501,7 +522,7 @@ export default function SellerSubscriptionPage() {
               <AlertTriangle size={16} color="#f59e0b" style={{ flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>
-                  Downgrade to {PLAN_META[sub.pending_plan].name} scheduled for {sub.billing_cycle_end}
+                  Downgrade to {planMeta(sub.pending_plan).name} scheduled for {sub.billing_cycle_end}
                 </p>
                 <p style={{ margin: '2px 0 0', fontSize: 11, color: textMuted }}>
                   You keep all current features until then. Cancel anytime.
@@ -521,7 +542,7 @@ export default function SellerSubscriptionPage() {
           <div style={{ padding: '14px 22px' }}>
             <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: textMuted, margin: '0 0 10px' }}>Included Features</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 6 }}>
-              {PLAN_FEATURES[currentPlan].map(f => (
+              {planFeatures(currentPlan).map(f => (
                 <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: textMain }}>
                   <Check size={12} color={currentMeta.accentColor} style={{ flexShrink: 0 }} /> {f}
                 </div>
@@ -546,14 +567,14 @@ export default function SellerSubscriptionPage() {
         {!upgradeTarget && (
           <div className="sub-enter">
             <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.14em', color: textMuted, margin: '0 0 12px' }}>
-              {currentLevel === 2 ? 'You are on the highest plan' : 'Upgrade or Downgrade'}
+              {currentLevel >= topLevel ? 'You are on the highest plan' : 'Upgrade or Downgrade'}
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-              {(['free', 'red', 'black'] as ActivePlan[]).map(plan => {
-                const meta   = PLAN_META[plan]
-                const Icon   = PLAN_ICONS[plan]
-                const level  = planHierarchy[plan]
+              {offered.map(plan => {
+                const meta   = planMeta(plan)
+                const Icon   = planIcon(plan)
+                const level  = planRank(plan)
                 const isCurrent = plan === currentPlan
                 const isUpgrade = level > currentLevel
                 const isDowngrade = level < currentLevel
@@ -600,13 +621,13 @@ export default function SellerSubscriptionPage() {
                       </div>
                     ) : isUpgrade ? (
                       <button
-                        onClick={() => setUpgradeTarget(plan as 'red' | 'black')}
+                        onClick={() => setUpgradeTarget(plan)}
                         style={{ width: '100%', padding: '9px', borderRadius: 10, border: 'none', background: `linear-gradient(135deg, ${meta.accentColor}, ${meta.accentColor}cc)`, color: plan === 'black' ? '#0f172a' : '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                         Upgrade <ArrowRight size={12} />
                       </button>
                     ) : isDowngrade && !isPending && !sub?.has_pending_downgrade ? (
                       <button
-                        onClick={() => setDowngradeTarget(plan as 'free' | 'red')}
+                        onClick={() => setDowngradeTarget(plan)}
                         style={{ width: '100%', padding: '9px', borderRadius: 10, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.12)' : '#e5e7eb'}`, background: 'transparent', color: textMuted, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                         <ArrowDown size={12} /> Downgrade
                       </button>

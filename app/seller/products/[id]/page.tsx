@@ -43,6 +43,13 @@ function StatusBadge({ product }: { product: ProductDetail }) {
       </span>
     );
   }
+  if (!product.is_approved && (product as any).changes_requested_at && !(product as any).rejection_reason) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
+        <AlertTriangle size={12} /> Changes Requested
+      </span>
+    );
+  }
   if (!product.is_approved) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
@@ -475,6 +482,31 @@ export default function ProductDetailPage() {
               </div>
 
             </div>
+
+            {/* ── Admin requested changes — editing the product resubmits it ── */}
+            {!product.is_approved && (product as any).changes_request && (
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <div className="flex items-start gap-2.5 p-3 bg-sky-50 border border-sky-100 rounded-xl">
+                  <AlertTriangle size={14} className="text-sky-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-sky-600 mb-1">
+                      Changes Requested
+                    </p>
+                    {(product as any).changes_request.reasons?.length > 0 && (
+                      <p className="text-xs font-semibold text-sky-800 mb-1">
+                        {(product as any).changes_request.reasons.join(' · ')}
+                      </p>
+                    )}
+                    <p className="text-xs text-sky-800 leading-relaxed whitespace-pre-line">
+                      {(product as any).changes_request.note}
+                    </p>
+                    <p className="text-[10px] text-sky-600 mt-1.5">
+                      Edit and save the product to resubmit it for review.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* ── Rejection Reason — outside space-y-2.5 so row spacing is undisturbed ── */}
             {!product.is_approved && (product as any).rejection_reason && (

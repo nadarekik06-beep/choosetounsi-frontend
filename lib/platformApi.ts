@@ -23,6 +23,13 @@ export interface SellerPlanInfo {
   max_products: number | null
   commission_min: number
   commission_max: number
+  // Admin-managed plan fields (subscription_plans)
+  description?: string | null
+  badge_color?: string
+  tier?: 0 | 1 | 2
+  price_yearly?: number | null
+  trial_days?: number
+  features?: Record<string, boolean>
 }
 
 export type SellerPlans = Record<PlanKey, SellerPlanInfo>
