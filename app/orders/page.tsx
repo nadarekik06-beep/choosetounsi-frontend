@@ -454,10 +454,9 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed }: {
 
   const isMultiSeller = sellerGroups.length > 1
 
-  const canComplain = sellerGroups.some(g =>
-    ['delivered', 'out_for_delivery', 'completed'].includes(g.status)
-  ) || ['delivered', 'out_for_delivery', 'completed'].includes(order.status)
-
+ const canComplain = sellerGroups.some(g =>
+  ['delivered'].includes(g.status)
+) || ['delivered'].includes(order.status)
   const totalPendingReviews = sellerGroups
     .filter(g => g.status === 'delivered')
     .flatMap(g => g.items)

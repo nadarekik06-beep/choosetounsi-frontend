@@ -90,7 +90,7 @@ export default function NewComplaintPage() {
                 </p>
                 <p style={{ fontSize: 12, color: '#3b82f6', margin: 0, lineHeight: 1.6 }}>
                   Complaints can only be filed for <strong>delivered orders</strong> within{' '}
-                  <strong>14 days</strong> of delivery. Only one complaint per order is allowed.
+                  <strong>48 Hours</strong> of delivery. Only one complaint per order is allowed.
                   A proof photo strengthens your case.
                 </p>
               </div>

@@ -208,6 +208,7 @@ export default function ComplaintModal({
     if (!type)           { setError('Please select a complaint type.'); return }
     if (!resolutionType) { setError('Please select what you want: Exchange or Return & Refund.'); return } // ← NEW
     if (!charOk)         { setError(`Description needs at least ${MIN_CHARS} characters.`); return }
+    if (!imageFile)      { setError('A proof photo is required. Please upload one.'); return }  // ← ADD
     if (orderItems.length > 0 && selectedItemIds.length === 0) {
       setError('Please select at least one item you are reporting an issue with.')
       return
@@ -822,8 +823,8 @@ export default function ComplaintModal({
                 <div>
                   <label style={labelStyle}>
                     Proof Image{' '}
-                    <span style={{ color: '#94a3b8', fontWeight: 600, textTransform: 'none', letterSpacing: 0, fontSize: 10 }}>
-                      — optional
+                    <span style={{ color: RED, fontWeight: 700, textTransform: 'none', letterSpacing: 0, fontSize: 10 }}>
+                      — required
                     </span>
                   </label>
                   {imagePreview ? (

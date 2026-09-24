@@ -103,12 +103,14 @@ function Field({
 
 // ── Section card ──────────────────────────────────────────────────────────────
 function Section({
-  icon, label, done, delay, children,
+  icon, label, done, delay, children, hasError,
 }: {
-  icon: string; label: string; done: boolean; delay: string; children: React.ReactNode
+  icon: string; label: string; done: boolean; delay: string; children: React.ReactNode; hasError?: boolean
 }) {
   return (
-    <div style={{
+    <div
+      data-error={hasError ? 'true' : undefined} 
+style={{
       background: CARD, borderRadius: 16, padding: '20px 22px',
       border: `1.5px solid ${done ? 'rgba(219,20,46,0.2)' : BORDER}`,
       marginBottom: 12, transition: 'border-color 0.3s, box-shadow 0.3s',
@@ -439,13 +441,22 @@ export default function ComplaintForm({
     if (!complaintType)               errs.complaint_type  = 'Please select a type.'
     if (complaintType === 'other' && !otherReason.trim()) errs.other_reason = 'Please specify.'
     if (description.trim().length < 20) errs.description  = `${20 - description.trim().length} more chars needed.`
+     if (!imageFile)                   errs.image           = 'A proof photo is required.'   // ← ADD THIS
+
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
-
+const scrollToFirstError = () => {
+  const firstError = document.querySelector('[data-error="true"]')
+  if (firstError) {
+    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
   const handleSubmit = async () => {
     setServerError('')
-    if (!validate()) return
+   if (!validate()) {
+    setTimeout(scrollToFirstError, 50)   // ← ADD THIS
+    return }
     setSubmitting(true)
     try {
       const res = await complaintApi.submit({
@@ -596,7 +607,7 @@ export default function ComplaintForm({
         )}
 
         {/* ═══ 1 — ORDER ══════════════════════════════════════════════════════ */}
-        <Section icon="🛒" label="Select Order" done={step1Done} delay="0s">
+        <Section icon="🛒" label="Select Order" done={step1Done} delay="0s" hasError={!!errors.order_id}>
           <Field label="Your Order" error={errors.order_id} required>
             {loadingOrders ? (
               <div style={{
@@ -668,7 +679,7 @@ export default function ComplaintForm({
 
         {/* ═══ 2 — ITEM SELECTION ═════════════════════════════════════════════ */}
         {selectedOrder && (
-          <Section icon="📦" label="Select Item(s)" done={step2Done} delay="0.04s">
+          <Section icon="📦" label="Select Item(s)" done={step2Done} delay="0.04s" hasError={!!errors.item_ids}>
             <ItemPicker
               items={selectedOrder.items}
               selectedIds={selectedItemIds}
@@ -682,7 +693,7 @@ export default function ComplaintForm({
         )}
 
         {/* ═══ 3 — RESOLUTION TYPE — NEW ══════════════════════════════════════ */}
-        <Section icon="⚖️" label="What do you want?" done={step3Done} delay="0.08s">
+        <Section icon="⚖️" label="What do you want?" done={step3Done} delay="0.08s" hasError={!!errors.resolution_type}>
           <ResolutionPicker
             value={resolutionType}
             onChange={v => {
@@ -694,7 +705,7 @@ export default function ComplaintForm({
         </Section>
 
         {/* ═══ 4 — COMPLAINT TYPE ═════════════════════════════════════════════ */}
-        <Section icon="🏷️" label="Complaint Type" done={step4Done} delay="0.12s">
+        <Section icon="🏷️" label="Complaint Type" done={step4Done} delay="0.12s" hasError={!!errors.complaint_type}>
           <div style={{
             display: 'grid',
             gridTemplateColumns: compact ? 'repeat(2,1fr)' : 'repeat(auto-fill, minmax(138px, 1fr))',
@@ -748,7 +759,7 @@ export default function ComplaintForm({
         </Section>
 
         {/* ═══ 5 — DESCRIPTION + PHOTO ════════════════════════════════════════ */}
-        <Section icon="✏️" label="Describe the Issue" done={step5Done} delay="0.16s">
+        <Section icon="✏️" label="Describe the Issue" done={step5Done} delay="0.16s" hasError={!!errors.description || !!errors.image}>
           <Field label="Description" error={errors.description} hint={`${description.length} / 2000`} required>
             <textarea
               value={description}
@@ -782,7 +793,7 @@ export default function ComplaintForm({
 
           {/* Photo upload */}
           <div style={{ marginTop: 18 }}>
-            <Field label="Proof Photo" error={errors.image} hint="Optional · max 5 MB">
+              <Field label="Proof Photo" error={errors.image} hint="Required · max 5 MB">
               {imagePreview ? (
                 <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: `1.5px solid ${BORDER}` }}>
                   <img
@@ -811,10 +822,12 @@ export default function ComplaintForm({
                   onDragOver={e => e.preventDefault()}
                   onDrop={handleDrop}
                   style={{
-                    border: `2px dashed #cbd5e1`, borderRadius: 10, padding: '24px 16px',
-                    textAlign: 'center', cursor: 'pointer', background: '#f8fafc',
-                    transition: 'all 0.2s ease',
-                  }}>
+                        border: errors.image ? `2px dashed ${RED}` : `2px dashed #cbd5e1`,
+                        borderRadius: 10, padding: '24px 16px',
+                        textAlign: 'center', cursor: 'pointer',
+                        background: errors.image ? 'rgba(219,20,46,0.03)' : '#f8fafc',
+                        transition: 'all 0.2s ease',
+                      }}>
                   <div style={{ fontSize: 30, marginBottom: 8 }}>📷</div>
                   <p style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, margin: '0 0 4px' }}>
                     Drop photo here or <span style={{ color: RED }}>click to browse</span>
