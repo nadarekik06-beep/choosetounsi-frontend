@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useCart } from '@/context/CartContext'
+import ChatProductCard, { CHAT_PRODUCT_CARD_CSS, type ChatLang, type ChatProduct } from './chat/ChatProductCard'
+import ChatStepsCard, { type ChatStep } from './chat/ChatStepsCard'
+import ChatActions, { CHAT_ACTIONS_CSS, sanitizeActions, type ChatAction } from './chat/ChatActions'
 
 const RED   = '#db142e'
 const GREEN = '#198f41'
@@ -11,45 +15,38 @@ const DARK  = '#9b0f1f'
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api')
   .replace(/\/api\/?$/, '') + '/api'
 
+const AI_TIMEOUT_MS = 30_000
+
 /* ─────────────────────────────────────────────────────────────
-   TYPES  (unchanged)
+   TYPES
 ───────────────────────────────────────────────────────────── */
 type MsgRole   = 'bot' | 'user'
 type ActiveTab = 'ai' | 'faq'
 
-interface ConversationTurn {
-  role: 'user' | 'assistant'
-  content: string
-}
-
+/** POST /api/ai/chat response. The backend decides the language and the buttons. */
 interface AiChatApiResult {
-  message: string
-  products: AiProduct[]
+  reply: string
+  products: ChatProduct[]
+  steps: ChatStep[]
+  actions: ChatAction[]
+  language: ChatLang
   intent: string
-}
-
-interface AiProduct {
-  id: number
-  name: string
-  slug: string
-  price: number
-  stock: number
-  short_description: string
-  category: string
-  category_slug: string
-  primary_image_url: string | null
-  is_pack?: boolean
-  original_price?: number
-  savings?: number
 }
 
 interface ChatMessage {
   id: string
   role: MsgRole
   text: string
-  products?: AiProduct[]
+  lang?: ChatLang
+  products?: ChatProduct[]
+  steps?: ChatStep[]
+  /** AI tab: link / quick-reply buttons from the backend (or the starter buttons). */
+  chatActions?: ChatAction[]
+  /** FAQ tab: static buttons. */
   actions?: Action[]
   typing?: boolean
+  /** Set on a failed AI request: the user text to resend with "Retry". */
+  retryText?: string
 }
 
 interface Action {
@@ -71,9 +68,13 @@ interface QuestionGroup {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   SESSION ID  (unchanged)
+   SESSION ID + CONVERSATION PERSISTENCE
+   session id  → localStorage (server-side memory key)
+   AI messages → sessionStorage (survives page navigation / reload in this tab)
 ───────────────────────────────────────────────────────────── */
-const SESSION_STORAGE_KEY = 'ct_chat_session_v1'
+const SESSION_STORAGE_KEY  = 'ct_chat_session_v1'
+const MESSAGES_STORAGE_KEY = 'ct_chat_ai_messages_v2'
+const MAX_STORED_MESSAGES  = 40
 
 function getOrCreateSessionId(): string {
   if (typeof window === 'undefined') {
@@ -95,65 +96,155 @@ function createFreshSessionId(): string {
   return id
 }
 
+function loadStoredMessages(): ChatMessage[] | null {
+  try {
+    const raw = sessionStorage.getItem(MESSAGES_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return null
+    return parsed
+      .filter((m): m is ChatMessage => m && typeof m.id === 'string' && typeof m.text === 'string' && !m.typing)
+      .map(m => ({ ...m, chatActions: sanitizeActions(m.chatActions) }))
+  } catch {
+    return null
+  }
+}
+
+function storeMessages(messages: ChatMessage[]): void {
+  try {
+    const clean = messages.filter(m => !m.typing).slice(-MAX_STORED_MESSAGES)
+    sessionStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(clean))
+  } catch { /* storage full or blocked — conversation just won't persist */ }
+}
+
+function clearStoredMessages(): void {
+  try { sessionStorage.removeItem(MESSAGES_STORAGE_KEY) } catch { /* ignore */ }
+}
+
 /* ─────────────────────────────────────────────────────────────
-   API  (unchanged)
+   API — the conversation history lives on the server (per session_id)
 ───────────────────────────────────────────────────────────── */
-async function aiChatApi(
-  userMessage: string,
-  history: ConversationTurn[],
-  sessionId: string,
-  langHint: string = 'en',
-): Promise<AiChatApiResult> {
-  const token =
-    typeof window !== 'undefined' ? localStorage.getItem('ct_auth_token') : null
+class ChatRequestError extends Error {
+  constructor(public kind: 'network' | 'timeout' | 'rate_limited' | 'server') {
+    super(kind)
+  }
+}
 
-  const res = await fetch(`${API_URL}/ai/chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify({
-      message:    userMessage,
-      session_id: sessionId,
-      history:    history.slice(-6),
-      locale:     typeof window !== 'undefined' ? document.documentElement.lang || 'en' : 'en',
-      lang_hint:  langHint,
-    }),
-  })
+async function aiChatApi(userMessage: string, sessionId: string): Promise<AiChatApiResult> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('ct_auth_token') : null
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS)
 
-  const json = await res.json()
-  if (!res.ok) throw new Error(json.message ?? 'AI request failed')
+  let res: Response
+  try {
+    res = await fetch(`${API_URL}/ai/chat`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        // Optional: lets the assistant show *your* orders. Never required.
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ message: userMessage, session_id: sessionId }),
+    })
+  } catch (e) {
+    throw new ChatRequestError(e instanceof DOMException && e.name === 'AbortError' ? 'timeout' : 'network')
+  } finally {
+    clearTimeout(timer)
+  }
+
+  if (res.status === 429) throw new ChatRequestError('rate_limited')
+
+  const json = await res.json().catch(() => null)
+  if (!res.ok || !json || typeof json.reply !== 'string') throw new ChatRequestError('server')
+
+  const steps: ChatStep[] = Array.isArray(json.steps)
+    ? json.steps.filter((s: ChatStep) => s && typeof s.title === 'string' && typeof s.description === 'string')
+    : []
 
   return {
-    message:  json.message  ?? '',
-    products: json.products ?? [],
-    intent:   json.intent   ?? 'general',
+    reply:    json.reply,
+    products: Array.isArray(json.products) ? json.products : [],
+    steps,
+    actions:  sanitizeActions(json.actions),
+    language: json.language === 'ar' || json.language === 'en' ? json.language : 'fr',
+    intent:   json.intent ?? 'search',
   }
 }
 
+const ERROR_TEXT: Record<ChatLang, Record<ChatRequestError['kind'], string>> = {
+  en: {
+    network:      'Connection problem. Check your internet and try again.',
+    timeout:      'The assistant is taking too long to answer. Please try again.',
+    rate_limited: "You're sending messages too quickly. Wait a few seconds and try again.",
+    server:       'Something went wrong on our side. Please try again.',
+  },
+  fr: {
+    network:      'Problème de connexion. Vérifiez votre réseau et réessayez.',
+    timeout:      "L'assistant met trop de temps à répondre. Réessayez.",
+    rate_limited: 'Vous envoyez des messages trop vite. Patientez quelques secondes.',
+    server:       'Un problème est survenu de notre côté. Réessayez.',
+  },
+  ar: {
+    network:      'مشكلة في الاتصال. تثبّت من الإنترنت وعاود جرّب.',
+    timeout:      'المساعد طوّل برشة في الرد. عاود جرّب.',
+    rate_limited: 'تبعث في رسائل بالزربة. استنى شوية ثواني وعاود.',
+    server:       'صارت مشكلة من عندنا. عاود جرّب.',
+  },
+}
+
+const RETRY_LABEL: Record<ChatLang, string> = { en: '↻ Retry', fr: '↻ Réessayer', ar: '↻ عاود جرّب' }
+
 /* ─────────────────────────────────────────────────────────────
-   INTENT → ACTION BUTTONS  (unchanged)
+   STARTER BUTTONS  (client-side, no API call until tapped)
+   Messages match config/chatbot_kb.php quick replies so they hit the
+   free rule-based path on the backend.
 ───────────────────────────────────────────────────────────── */
-function resolveIntentActions(intent: string): Action[] {
-  switch (intent) {
-    case 'seller_onboarding':
-      return [
-        { label: '🏪 Become a Seller', href: '/become-a-vendor' },
-        { label: '💼 View Plans',       href: '/become-a-vendor#plans' },
-      ]
-    case 'checkout_guidance':
-      return [
-        { label: '🛒 Go to Cart', href: '/cart' },
-      ]
-    default:
-      return []
-  }
+const STARTERS: Record<ChatLang, ChatAction[]> = {
+  en: [
+    { type: 'quick_reply', label: '🛍️ Find a product',  message: 'Help me find a product' },
+    { type: 'quick_reply', label: '🛒 How to order',    message: 'How do I place an order?' },
+    { type: 'quick_reply', label: '🏪 Become a seller', message: 'How do I become a seller?' },
+    { type: 'quick_reply', label: '📦 Track my order',  message: 'Track my order' },
+  ],
+  fr: [
+    { type: 'quick_reply', label: '🛍️ Trouver un produit', message: 'Aide-moi à trouver un produit' },
+    { type: 'quick_reply', label: '🛒 Comment commander',  message: 'Comment passer une commande ?' },
+    { type: 'quick_reply', label: '🏪 Devenir vendeur',    message: 'Comment devenir vendeur ?' },
+    { type: 'quick_reply', label: '📦 Suivre ma commande', message: 'Où est ma commande ?' },
+  ],
+  ar: [
+    { type: 'quick_reply', label: '🛍️ لوّج على منتج',   message: 'عاوني نلقى منتج' },
+    { type: 'quick_reply', label: '🛒 كيفاش نكوموندي',  message: 'كيفاش نعمل طلبية؟' },
+    { type: 'quick_reply', label: '🏪 نحب نولّي بائع',  message: 'كيفاش نحل بوتيك؟' },
+    { type: 'quick_reply', label: '📦 وين طلبيتي',      message: 'وين الطلبية متاعي؟' },
+  ],
+}
+
+const WELCOME_TEXT: Record<ChatLang, string> = {
+  en: '🛍️ Hi! I\'m the Choose\'Tounsi assistant.\n\nI can find real products for you, explain how to order, track your orders, or help you open your store. For example:\n• "shoes between 50 and 100 DT"\n• "how do I pay?"',
+  fr: '🛍️ Bonjour ! Je suis l\'assistant Choose\'Tounsi.\n\nJe peux vous trouver de vrais produits, expliquer comment commander, suivre vos commandes ou vous aider à ouvrir votre boutique. Par exemple :\n• « robe rouge moins de 80 dinars »\n• « comment payer ? »',
+  ar: '🛍️ أهلا! أنا مساعد Choose\'Tounsi.\n\nنلقالك منتجات حقيقية، نفسّرلك كيفاش تكوموندي، نتبّع طلبياتك، ولا نعاونك تحل بوتيك. مثلاً:\n• «نحب عسل بأقل من 40 دينار»\n• «كيفاش نخلص؟»',
+}
+
+/** Starter language from the page / browser (the backend decides after the first message). */
+function guessUiLang(): ChatLang {
+  if (typeof window === 'undefined') return 'en'
+  const lang = (document.documentElement.lang || navigator.language || 'en').toLowerCase()
+  if (lang.startsWith('ar')) return 'ar'
+  if (lang.startsWith('fr')) return 'fr'
+  return 'en'
+}
+
+function aiWelcome(lang: ChatLang): ChatMessage {
+  return { id: 'ai-welcome', role: 'bot', text: WELCOME_TEXT[lang], lang, chatActions: STARTERS[lang] }
 }
 
 /* ─────────────────────────────────────────────────────────────
-   QUESTION TREE  (unchanged)
+   FAQ QUESTION TREE
+   Texts checked against the backend rules (complaint window =
+   Complaint::COMPLAINT_WINDOW_HOURS, payment methods = checkout).
 ───────────────────────────────────────────────────────────── */
 const QUESTION_GROUPS: QuestionGroup[] = [
   {
@@ -162,22 +253,22 @@ const QUESTION_GROUPS: QuestionGroup[] = [
       {
         id: 'where-order',
         label: 'Where is my order?',
-        response: "You can track your order in real time from your orders page. If your order is still processing, it may take 24–48 hours before a tracking update appears. Need more details?",
+        response: "You can follow your order from your orders page — each order shows its current status (Pending, Processing, Out for Delivery, Delivered…). You can also ask the AI assistant \"Track my order\" while logged in.",
         actions: [{ label: '📦 View My Orders', href: '/orders' }],
       },
       {
         id: 'track-order',
         label: 'I want to track my order',
-        response: "Head to your orders page — each order shows its current status and delivery progress. If you don't see an update within 48 hours of placing your order, please reach out to us.",
+        response: "Head to your orders page — each order shows its current status and delivery progress. D17 orders stay Pending until our team confirms your transfer.",
         actions: [{ label: '🔍 Track Now', href: '/orders' }],
       },
       {
         id: 'delayed-order',
         label: 'My order is delayed',
-        response: "We're sorry to hear that! Delays can happen due to high demand or logistics. Please check your order status first — if the estimated date has passed by more than 3 days, file a complaint so we can investigate.",
+        response: "We're sorry! Please check your order status first. Complaints can only be filed once an order is delivered, so if your order is taking too long, contact our support team with your order number.",
         actions: [
           { label: '📋 Check Order Status', href: '/orders' },
-          { label: '🚨 File a Complaint',   href: '/complaints/new' },
+          { label: '✉️ Contact Support',   href: 'mailto:support@choosetounsi.tn' },
         ],
       },
     ],
@@ -188,13 +279,16 @@ const QUESTION_GROUPS: QuestionGroup[] = [
       {
         id: 'wrong-person',
         label: 'Delivered to the wrong person',
-        response: "That shouldn't happen! Please file a complaint immediately with your order number and a description of the situation. Our team reviews all delivery disputes within 24 hours.",
-        actions: [{ label: '🚨 File a Complaint', href: '/complaints/new' }],
+        response: "That shouldn't happen! If your order shows as Delivered, file a complaint within 48 hours of delivery with a description of the situation. Otherwise, contact our support team with your order number.",
+        actions: [
+          { label: '🚨 File a Complaint', href: '/complaints/new' },
+          { label: '✉️ Contact Support',  href: 'mailto:support@choosetounsi.tn' },
+        ],
       },
       {
         id: 'missing-damaged',
         label: 'Order missing / damaged / incorrect',
-        response: "We sincerely apologise. Please file a complaint — attach a photo if possible so the seller can review it quickly. We aim to resolve all product issues within 3 business days.",
+        response: "We sincerely apologise. File a complaint within 48 hours of delivery: choose the reason (wrong product, size, color, damaged…), describe the problem, attach a photo if possible, and ask for an exchange or a return & refund.",
         actions: [
           { label: '📸 Report Issue', href: '/complaints/new' },
           { label: '📦 My Orders',   href: '/orders' },
@@ -208,19 +302,19 @@ const QUESTION_GROUPS: QuestionGroup[] = [
       {
         id: 'return-order',
         label: 'How can I return my order?',
-        response: "You can request a return within 14 days of delivery. Go to your orders, select the delivered order, and click 'Report Issue'. Our team will guide you through the return steps.",
-        actions: [{ label: '🔄 Start a Return', href: '/orders' }],
+        response: "You can request a return within 48 hours of delivery, one complaint per order. Go to Complaints → New complaint, select the order and items, describe the problem and choose \"Return & refund\" or \"Exchange\".",
+        actions: [{ label: '🔄 Start a Return', href: '/complaints/new' }],
       },
       {
         id: 'return-status',
         label: 'Check the status of my return',
-        response: "Return status is visible under My Complaints. Once the seller approves your return, we'll update the status and initiate the refund process.",
+        response: "Return status is visible under My Complaints: Pending → Reviewing → Approved or Rejected. If the seller rejects it, our admin team reviews it.",
         actions: [{ label: '🚨 My Complaints', href: '/complaints' }],
       },
       {
         id: 'refund',
         label: 'When will I receive my refund?',
-        response: "After your return is approved, refunds typically process within 5–7 business days depending on your payment method. COD refunds are issued as store credit or via bank transfer.",
+        response: "Once your return is approved, a courier picks up the item and your refund is processed. You can follow each step under My Complaints.",
         actions: [{ label: '🚨 Check Complaint Status', href: '/complaints' }],
       },
     ],
@@ -231,14 +325,17 @@ const QUESTION_GROUPS: QuestionGroup[] = [
       {
         id: 'payment-issue',
         label: 'Problem with my payment',
-        response: "Payment issues can occur due to bank restrictions or incorrect card details. ChooseTounsi currently supports Cash on Delivery (COD). If you encountered an unexpected charge, please contact us directly.",
+        response: "At checkout you can pay by Cash on Delivery, Wallet, D17 or Bank Card (Visa / Mastercard via Stripe). If you encountered an unexpected charge, please contact us directly.",
         actions: [{ label: '✉️ Contact Support', href: 'mailto:support@choosetounsi.tn' }],
       },
       {
         id: 'update-account',
         label: 'Update my account information',
-        response: "You can update your name, email, phone and password from your profile page at any time.",
-        actions: [{ label: '👤 My Profile', href: '/profile' }],
+        response: "You can see your account details on your profile page and manage your delivery addresses in Account → Addresses. Forgot your password? Use \"Forgot Password?\" on the login page.",
+        actions: [
+          { label: '👤 My Profile',   href: '/profile' },
+          { label: '🔑 Reset Password', href: '/auth/forgot-password' },
+        ],
       },
     ],
   },
@@ -262,18 +359,12 @@ const QUESTION_GROUPS: QuestionGroup[] = [
 ]
 
 /* ─────────────────────────────────────────────────────────────
-   WELCOME MESSAGES  (unchanged)
+   WELCOME MESSAGES
 ───────────────────────────────────────────────────────────── */
 const FAQ_WELCOME: ChatMessage = {
   id: 'faq-welcome',
   role: 'bot',
   text: 'Hello! 👋 Welcome to ChooseTounsi Support.\n\nHow can I assist you today? Please choose a topic below, or pick a specific question.',
-}
-
-const AI_WELCOME: ChatMessage = {
-  id: 'ai-welcome',
-  role: 'bot',
-  text: '🛍️ Hi! I\'m your AI shopping assistant.\n\nTell me what you\'re looking for and I\'ll find real products for you. For example:\n• "I need a laptop under 1500 TND"\n• "Show me popular shoes"\n• "أبحث عن هاتف رخيص"',
 }
 
 function uid(): string {
@@ -440,102 +531,24 @@ function TypingBubble() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   PRODUCT CARD  (unchanged logic, minor style polish)
+   MESSAGE BUBBLE
+   Bot replies carry the language chosen by the backend; Arabic is
+   laid out right-to-left (text, steps, product cards and buttons).
 ───────────────────────────────────────────────────────────── */
-function ProductCard({ product }: { product: AiProduct }) {
-  const href = product.is_pack
-    ? `/deals/${product.slug}`
-    : `/products/${product.slug}`
-
-  const imgSrc = product.primary_image_url
-    ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(product.name)}&background=f4f4f5&color=374151&size=80`
-
-  return (
-    <Link
-      href={href}
-      style={{
-        display: 'flex', gap: 10, alignItems: 'center',
-        padding: '8px 10px',
-        background: '#fff',
-        border: '1.5px solid #e5e7eb',
-        borderRadius: 10,
-        textDecoration: 'none',
-        transition: 'all 0.15s',
-        cursor: 'pointer',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = RED
-        e.currentTarget.style.boxShadow = `0 2px 12px ${RED}20`
-        e.currentTarget.style.transform = 'translateY(-1px)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = '#e5e7eb'
-        e.currentTarget.style.boxShadow = 'none'
-        e.currentTarget.style.transform = 'none'
-      }}
-    >
-      <div style={{
-        width: 52, height: 52, borderRadius: 8, overflow: 'hidden',
-        flexShrink: 0, background: '#f4f4f5',
-      }}>
-        <img
-          src={imgSrc}
-          alt={product.name}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          onError={e => {
-            e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(product.name)}&background=f4f4f5&color=374151&size=80`
-          }}
-        />
-      </div>
-
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{
-          margin: 0, fontSize: 12, fontWeight: 700,
-          color: '#1a1a2e', lineHeight: 1.3,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>
-          {product.name}
-        </p>
-        <p style={{ margin: '2px 0 0', fontSize: 11, color: '#6b7280' }}>
-          {product.is_pack ? '📦 Bundle Deal' : product.category}
-        </p>
-      </div>
-
-      <div style={{ flexShrink: 0, textAlign: 'right' }}>
-        <p style={{
-          margin: 0, fontSize: 12, fontWeight: 900,
-          color: RED, letterSpacing: '-0.02em',
-        }}>
-          {product.price.toFixed(3)} TND
-        </p>
-        {product.is_pack && product.savings && product.savings > 0 && (
-          <span style={{
-            fontSize: 9, fontWeight: 700, color: '#10b981',
-            background: '#f0fdf4', padding: '1px 5px',
-            borderRadius: 4, marginTop: 2, display: 'inline-block',
-          }}>
-            Save {product.savings.toFixed(3)}
-          </span>
-        )}
-        {product.stock <= 0 && !product.is_pack && (
-          <span style={{
-            fontSize: 9, fontWeight: 700, color: '#ef4444',
-            background: '#fef2f2', padding: '1px 5px',
-            borderRadius: 4, marginTop: 2, display: 'inline-block',
-          }}>
-            Out of stock
-          </span>
-        )}
-      </div>
-    </Link>
-  )
+interface BubbleHandlers {
+  onRetry?: (text: string) => void
+  onQuickReply?: (message: string) => void
+  onNavigate?: () => void
+  onOpenCart?: () => void
+  busy?: boolean
 }
 
-/* ─────────────────────────────────────────────────────────────
-   MESSAGE BUBBLE  (unchanged logic, avatar now uses chili)
-───────────────────────────────────────────────────────────── */
-function Bubble({ msg }: { msg: ChatMessage }) {
-  const isBot = msg.role === 'bot'
+function Bubble({ msg, onRetry, onQuickReply, onNavigate, onOpenCart, busy }: { msg: ChatMessage } & BubbleHandlers) {
+  const isBot   = msg.role === 'bot'
+  const lang    = msg.lang ?? 'fr'
+  const dir     = msg.lang === 'ar' ? 'rtl' : msg.lang ? 'ltr' : 'auto'
+  const isError = Boolean(msg.retryText)
+  const wide    = Boolean(msg.products?.length || msg.steps?.length || msg.chatActions?.length)
 
   return (
     <div style={{
@@ -556,7 +569,7 @@ function Bubble({ msg }: { msg: ChatMessage }) {
         }}>
           <Image
             src="/images/logo-chili.png"
-            alt="Assistant"
+            alt=""
             width={18}
             height={18}
             style={{ objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
@@ -565,38 +578,73 @@ function Bubble({ msg }: { msg: ChatMessage }) {
       )}
 
       <div style={{
-        maxWidth: '80%', display: 'flex', flexDirection: 'column',
+        maxWidth: wide ? '88%' : '80%',
+        width: wide ? '88%' : undefined,
+        display: 'flex', flexDirection: 'column',
         gap: 6, alignItems: isBot ? 'flex-start' : 'flex-end',
       }}>
         {msg.typing ? (
           <TypingBubble />
         ) : (
-          <div style={{
-            padding: '10px 14px',
-            background: isBot ? '#f4f4f5' : `linear-gradient(135deg, ${RED}, ${DARK})`,
-            color: isBot ? '#1a1a2e' : '#fff',
-            borderRadius: isBot ? '16px 16px 16px 4px' : '16px 16px 4px 16px',
-            fontSize: 13, lineHeight: 1.6, fontWeight: 500,
-            whiteSpace: 'pre-line',
-            boxShadow: isBot ? 'none' : `0 4px 12px ${RED}40`,
-          }}>
+          <div
+            dir={isBot ? dir : 'auto'}
+            role={isError ? 'alert' : undefined}
+            style={{
+              padding: '10px 14px',
+              background: isError ? '#fef2f2' : isBot ? '#f4f4f5' : `linear-gradient(135deg, ${RED}, ${DARK})`,
+              color: isError ? '#991b1b' : isBot ? '#1a1a2e' : '#fff',
+              border: isError ? '1px solid #fecaca' : 'none',
+              borderRadius: isBot ? '16px 16px 16px 4px' : '16px 16px 4px 16px',
+              fontSize: 14, lineHeight: 1.6, fontWeight: 500,
+              whiteSpace: 'pre-line', overflowWrap: 'anywhere',
+              textAlign: 'start',
+              fontFamily: msg.lang === 'ar' ? "'Segoe UI', Tahoma, 'Noto Sans Arabic', sans-serif" : 'inherit',
+              boxShadow: isBot ? 'none' : `0 4px 12px ${RED}40`,
+            }}>
             {msg.text}
           </div>
         )}
 
+        {!msg.typing && msg.steps && msg.steps.length > 0 && (
+          <div style={{ width: '100%', animation: 'ct-fadein 0.3s ease 0.05s both' }}>
+            <ChatStepsCard steps={msg.steps} dir={dir} />
+          </div>
+        )}
+
         {!msg.typing && msg.products && msg.products.length > 0 && (
-          <div style={{
+          <div dir={dir} style={{
             width: '100%', display: 'flex', flexDirection: 'column', gap: 6,
             animation: 'ct-fadein 0.3s ease 0.1s both',
           }}>
             {msg.products.map(p => (
-              <ProductCard key={p.id} product={p} />
+              <ChatProductCard key={p.id} product={p} lang={lang} />
             ))}
           </div>
         )}
 
+        {!msg.typing && isError && onRetry && (
+          <button onClick={() => onRetry(msg.retryText!)} disabled={busy} style={{
+            fontSize: 12, fontWeight: 700, color: RED,
+            border: `1.5px solid ${RED}`, borderRadius: 8, padding: '6px 12px',
+            background: '#fff', cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+          }}>
+            {RETRY_LABEL[lang]}
+          </button>
+        )}
+
+        {!msg.typing && msg.chatActions && msg.chatActions.length > 0 && onQuickReply && (
+          <ChatActions
+            actions={msg.chatActions}
+            dir={dir}
+            disabled={busy}
+            onQuickReply={onQuickReply}
+            onNavigate={onNavigate ?? (() => {})}
+            onOpenCart={onOpenCart ?? (() => {})}
+          />
+        )}
+
         {!msg.typing && msg.actions && msg.actions.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingLeft: 2 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingInlineStart: 2 }}>
             {msg.actions.map((action, i) => (
               action.href ? (
                 <Link key={i} href={action.href} style={{
@@ -704,11 +752,11 @@ function QuestionMenu({ onSelect }: { onSelect: (q: Question) => void }) {
 ───────────────────────────────────────────────────────────── */
 const HINTS = [
   'Search for a product…',
-  'e.g. "laptop under 1500 TND"',
-  'e.g. "show me popular shoes"',
-  'e.g. "أبحث عن هاتف رخيص"',
+  'e.g. "shoes under 100 DT"',
+  'e.g. "sac entre 30 et 60 dinars"',
+  'e.g. "أبحث عن ساعة رخيصة"',
   'e.g. "show me cheaper ones"',
-  'e.g. "comment devenir vendeur?"',
+  'e.g. "n7eb sabbat rkhis"',
 ]
 
 /* ─────────────────────────────────────────────────────────────
@@ -745,7 +793,7 @@ function AiInputBar({
 
   return (
     <div style={{
-      display: 'flex', gap: 8, padding: '10px 14px 12px',
+      display: 'flex', gap: 8, padding: '10px 14px calc(12px + env(safe-area-inset-bottom))',
       borderTop: '1px solid #f1f5f9', flexShrink: 0,
       background: '#fff',
     }}>
@@ -755,10 +803,15 @@ function AiInputBar({
         onKeyDown={handleKey}
         disabled={disabled}
         placeholder={HINTS[hintIdx]}
+        aria-label="Message the shopping assistant"
+        dir="auto"
+        maxLength={500}
+        enterKeyHint="send"
         style={{
-          flex: 1, padding: '9px 12px',
+          flex: 1, minWidth: 0, padding: '9px 12px',
           border: `1.5px solid ${disabled ? '#e5e7eb' : '#d1d5db'}`,
-          borderRadius: 10, fontSize: 13, fontFamily: 'inherit',
+          // 16px stops iOS Safari from zooming into the field
+          borderRadius: 10, fontSize: 16, fontFamily: 'inherit',
           outline: 'none', background: disabled ? '#f9fafb' : '#fff',
           color: '#1a1a2e', transition: 'border-color 0.15s',
         }}
@@ -768,6 +821,7 @@ function AiInputBar({
       <button
         onClick={submit}
         disabled={disabled || !value.trim()}
+        aria-label="Send"
         style={{
           width: 38, height: 38, borderRadius: 10, flexShrink: 0,
           background: disabled || !value.trim()
@@ -839,13 +893,13 @@ function PanelHeader({
             display: 'inline-block',
           }} />
           <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.82)', fontWeight: 600 }}>
-            {activeTab === 'ai' ? 'AI Shopping Assistant · Online' : 'Support · Replies instantly'}
+            {activeTab === 'ai' ? 'AI Assistant · Online' : 'Support · Replies instantly'}
           </span>
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: 5 }}>
-        <button onClick={onReset} title="New conversation"
+        <button onClick={onReset} title={activeTab === 'ai' ? 'Clear chat' : 'Back to topics'} aria-label={activeTab === 'ai' ? 'Clear chat' : 'Restart'}
           style={{
             width: 30, height: 30, borderRadius: 8,
             background: 'rgba(255,255,255,0.12)',
@@ -856,12 +910,18 @@ function PanelHeader({
           }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.22)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')}>
-          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-            <path d="M3 3v5h5" />
-          </svg>
+          {activeTab === 'ai' ? (
+            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" />
+            </svg>
+          ) : (
+            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+          )}
         </button>
-        <button onClick={onClose} title="Close"
+        <button onClick={onClose} title="Close" aria-label="Close"
           style={{
             width: 30, height: 30, borderRadius: 8,
             background: 'rgba(255,255,255,0.12)',
@@ -881,14 +941,16 @@ function PanelHeader({
 }
 
 /* ─────────────────────────────────────────────────────────────
-   MAIN WIDGET  (all original logic unchanged, new FAB added)
+   MAIN WIDGET
 ───────────────────────────────────────────────────────────── */
 export default function SupportChatWidget() {
   const [open,      setOpen]      = useState(false)
   const [activeTab, setActiveTab] = useState<ActiveTab>('ai')
 
   const [faqMessages, setFaqMessages] = useState<ChatMessage[]>([FAQ_WELCOME])
-  const [aiMessages,  setAiMessages]  = useState<ChatMessage[]>([AI_WELCOME])
+  // Same initial state on server and client; the real welcome / stored chat is set after mount.
+  const [aiMessages,  setAiMessages]  = useState<ChatMessage[]>(() => [aiWelcome('en')])
+  const [restored,    setRestored]    = useState(false)
 
   const [showMenu,     setShowMenu]     = useState(true)
   const [aiLoading,    setAiLoading]    = useState(false)
@@ -896,11 +958,23 @@ export default function SupportChatWidget() {
   const [showBadge,    setShowBadge]    = useState(false)
   const [hasNewMsg,    setHasNewMsg]    = useState(false)
 
-  const sessionId      = useRef<string>(getOrCreateSessionId())
-  const aiMessagesRef  = useRef<ChatMessage[]>(aiMessages)
-  const bottomRef      = useRef<HTMLDivElement>(null)
+  const sessionId = useRef<string>(getOrCreateSessionId())
+  const lastLang  = useRef<ChatLang>('fr')
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const { openDrawer } = useCart()
 
-  useEffect(() => { aiMessagesRef.current = aiMessages }, [aiMessages])
+  // Restore this tab's conversation (kept across page navigations / reloads).
+  useEffect(() => {
+    const stored = loadStoredMessages()
+    const lang   = guessUiLang()
+    lastLang.current = lang
+    setAiMessages(stored && stored.length > 0 ? stored : [aiWelcome(lang)])
+    setRestored(true)
+  }, [])
+
+  useEffect(() => {
+    if (restored) storeMessages(aiMessages)
+  }, [aiMessages, restored])
 
   // Show FAB after 1.5s on mount, badge after 4s
   useEffect(() => {
@@ -925,7 +999,7 @@ export default function SupportChatWidget() {
   useEffect(() => {
     if (open) {
       setTimeout(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
       }, 80)
     }
   }, [faqMessages, aiMessages, open])
@@ -966,36 +1040,27 @@ export default function SupportChatWidget() {
     }, 900)
   }, [])
 
-  /* ── AI tab (unchanged) ───────────────────────────────────────────────── */
-  const handleAiSend = useCallback(async (text: string) => {
+  /* ── AI tab ───────────────────────────────────────────────────────────── */
+  // The backend owns the conversation history (per session_id) and decides the
+  // reply language; the widget only sends the text and renders what comes back.
+  const handleAiSend = useCallback(async (text: string, isRetry = false) => {
     if (aiLoading) return
 
-    const userMsg: ChatMessage   = { id: uid(), role: 'user', text }
     const typingId               = uid()
     const typingMsg: ChatMessage = { id: typingId, role: 'bot', text: '', typing: true }
 
-    setAiMessages(prev => [...prev, userMsg, typingMsg])
+    setAiMessages(prev => {
+      // A retry replaces the error bubble instead of repeating the user message.
+      const base = isRetry
+        ? prev.filter(m => !m.retryText)
+        : [...prev, { id: uid(), role: 'user' as MsgRole, text }]
+      return [...base, typingMsg]
+    })
     setAiLoading(true)
 
     try {
-      const history: ConversationTurn[] = aiMessagesRef.current
-        .filter(m => m.id !== 'ai-welcome' && !m.typing)
-        .map(m => ({
-          role:    m.role === 'user' ? 'user' : 'assistant',
-          content: m.text,
-        }))
-
-      const langHint = /[\u0600-\u06FF]/.test(text)
-        ? 'ar'
-        : /\b(bahi|3andna|nheb|warini|barcha|mafamach|hedha|hedhy)\b/i.test(text)
-        ? 'tz'
-        : /\b(je|tu|veux|cherche|bonjour|merci|besoin|nous|vous)\b/i.test(text)
-        ? 'fr'
-        : 'en'
-
-      const result = await aiChatApi(text, history, sessionId.current, langHint)
-
-      const actions = resolveIntentActions(result.intent)
+      const result = await aiChatApi(text, sessionId.current)
+      lastLang.current = result.language
 
       setAiMessages(prev =>
         prev.map(m =>
@@ -1003,23 +1068,22 @@ export default function SupportChatWidget() {
             ? {
                 id:       typingId,
                 role:     'bot' as MsgRole,
-                text:     result.message,
-                products: result.products,
-                actions:  actions.length > 0 ? actions : undefined,
+                text:        result.reply,
+                lang:        result.language,
+                products:    result.products,
+                steps:       result.steps,
+                chatActions: result.actions,
               }
             : m
         )
       )
-
-    } catch {
+    } catch (e) {
+      const kind = e instanceof ChatRequestError ? e.kind : 'server'
+      const lang = lastLang.current
       setAiMessages(prev =>
         prev.map(m =>
           m.id === typingId
-            ? {
-                id:   typingId,
-                role: 'bot' as MsgRole,
-                text: "Connexion interrompue. Vérifiez votre réseau et réessayez. 🙏",
-              }
+            ? { id: typingId, role: 'bot' as MsgRole, text: ERROR_TEXT[lang][kind], lang, retryText: text }
             : m
         )
       )
@@ -1028,14 +1092,25 @@ export default function SupportChatWidget() {
     }
   }, [aiLoading])
 
-  /* ── Reset (unchanged) ────────────────────────────────────────────────── */
+  const handleAiRetry  = useCallback((text: string) => { handleAiSend(text, true) }, [handleAiSend])
+  const handleQuickReply = useCallback((message: string) => { handleAiSend(message) }, [handleAiSend])
+
+  // Link buttons navigate inside the app; close the panel so the page is visible.
+  // The conversation stays (component lives in the root layout + sessionStorage).
+  const handleNavigate = useCallback(() => setOpen(false), [])
+  const handleOpenCart = useCallback(() => { setOpen(false); openDrawer() }, [openDrawer])
+
+  /* ── Reset ──────────────────────────────────────────────────────────── */
   const handleReset = () => {
     if (activeTab === 'faq') {
       setFaqMessages([FAQ_WELCOME])
       setShowMenu(true)
     } else {
-      setAiMessages([AI_WELCOME])
+      // Clear chat: new server-side session (fresh memory) + forget the stored conversation.
+      clearStoredMessages()
+      setAiMessages([aiWelcome(lastLang.current)])
       sessionId.current = createFreshSessionId()
+      setAiLoading(false)
     }
   }
 
@@ -1053,20 +1128,25 @@ export default function SupportChatWidget() {
         @keyframes ct-badge-bounce{ 0%{transform:scale(0)} 60%{transform:scale(1.3)} 100%{transform:scale(1)} }
         @media (max-width: 480px) {
           .ct-panel {
+            top: 0 !important;
             bottom: 0 !important;
             right: 0 !important;
             left: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
-            border-radius: 20px 20px 0 0 !important;
-            max-height: 92vh !important;
+            height: 100dvh !important;
+            max-height: 100dvh !important;
+            border-radius: 0 !important;
           }
+          .ct-fab { bottom: 16px !important; right: 16px !important; }
         }
+        ${CHAT_PRODUCT_CARD_CSS}
+        ${CHAT_ACTIONS_CSS}
       `}</style>
 
       {/* ── Floating Action Button ───────────────────────────────────────── */}
       {showFAB && !open && (
-        <div style={{
+        <div className="ct-fab" style={{
           position: 'fixed',
           bottom: 28,
           right: 28,
@@ -1098,6 +1178,8 @@ export default function SupportChatWidget() {
           {/* Panel */}
           <div
             className="ct-panel"
+            role="dialog"
+            aria-label="ChooseTounsi Assistant"
             style={{
               position: 'fixed',
               bottom: 24,
@@ -1148,13 +1230,28 @@ export default function SupportChatWidget() {
             </div>
 
             {/* Messages */}
-            <div style={{
-              flex: 1, overflowY: 'auto', padding: '16px 16px 8px',
-              display: 'flex', flexDirection: 'column', gap: 12,
-              scrollbarWidth: 'thin', scrollbarColor: '#f1f5f9 transparent',
-            }}>
+            <div
+              aria-live="polite"
+              aria-busy={activeTab === 'ai' && aiLoading}
+              style={{
+                flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', padding: '16px 16px 8px',
+                display: 'flex', flexDirection: 'column', gap: 12,
+                scrollbarWidth: 'thin', scrollbarColor: '#f1f5f9 transparent',
+              }}>
               {currentMessages.map(msg => (
-                <Bubble key={msg.id} msg={msg} />
+                activeTab === 'ai' ? (
+                  <Bubble
+                    key={msg.id}
+                    msg={msg}
+                    busy={aiLoading}
+                    onRetry={handleAiRetry}
+                    onQuickReply={handleQuickReply}
+                    onNavigate={handleNavigate}
+                    onOpenCart={handleOpenCart}
+                  />
+                ) : (
+                  <Bubble key={msg.id} msg={msg} />
+                )
               ))}
 
               {activeTab === 'faq' && showMenu && (

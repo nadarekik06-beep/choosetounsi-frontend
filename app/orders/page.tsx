@@ -77,6 +77,8 @@ interface SellerGroup {
   status: string
   payment_status: string
   subtotal: number
+  coupon_code?: string | null
+  discount_amount?: number
   items: OrderItem[]
   tracking?: DeliveryTracking
 }
@@ -86,7 +88,11 @@ interface Order {
   order_number: string
   status: string
   payment_status: string
-  total_amount: number
+  subtotal?: number            // items before coupon
+  discount_amount?: number     // seller coupons, 0 when none
+  coupon_codes?: string[]
+  shipping_fee?: number
+  total_amount: number         // subtotal − discount + shipping (what the customer pays)
   wilaya: string | null
   address: string | null
   phone: string | null
@@ -422,7 +428,12 @@ function SellerGroupSection({ group, showSeparator, reviewedMap, onRate, order }
               </span>
             )}
             <StatusBadge status={group.status} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>{fmt(group.subtotal)}</span>
+            {Number(group.discount_amount ?? 0) > 0 && (
+              <span style={{ fontSize: 10, fontWeight: 800, color: '#16a34a', background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.2)', padding: '2px 8px', borderRadius: 999 }}>
+                −{fmt(Number(group.discount_amount))}{group.coupon_code ? ` (${group.coupon_code})` : ''}
+              </span>
+            )}
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>{fmt(Number(group.subtotal) - Number(group.discount_amount ?? 0))}</span>
           </div>
         </div>
       )}
@@ -528,9 +539,27 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed }: {
             {sellerGroups.map((group, idx) => (
               <SellerGroupSection key={group.seller_order_id || idx} group={group} showSeparator={isMultiSeller} reviewedMap={reviewedMap} onRate={(item) => onRate(item, item.id)} order={order} />
             ))}
-            <div style={{ padding: '10px 20px 14px', display: 'flex', justifyContent: 'flex-end', gap: 12, alignItems: 'center', borderTop: '1px solid #f1f5f9' }}>
-              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>Order Total:</span>
-              <span style={{ fontSize: 18, fontWeight: 900, color: RED }}>{fmt(order.total_amount)}</span>
+            <div style={{ padding: '10px 20px 14px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, borderTop: '1px solid #f1f5f9' }}>
+              {order.subtotal !== undefined && (
+                <>
+                  <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#64748b', fontWeight: 600 }}>
+                    <span>Subtotal:</span><span>{fmt(Number(order.subtotal))}</span>
+                  </div>
+                  {Number(order.discount_amount ?? 0) > 0 && (
+                    <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#16a34a', fontWeight: 700 }}>
+                      <span>Coupon{order.coupon_codes?.length ? ` (${order.coupon_codes.join(', ')})` : ''}:</span>
+                      <span>−{fmt(Number(order.discount_amount))}</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#64748b', fontWeight: 600 }}>
+                    <span>Shipping:</span><span>{Number(order.shipping_fee ?? 0) > 0 ? fmt(Number(order.shipping_fee)) : 'Free'}</span>
+                  </div>
+                </>
+              )}
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>Order Total:</span>
+                <span style={{ fontSize: 18, fontWeight: 900, color: RED }}>{fmt(order.total_amount)}</span>
+              </div>
             </div>
           </div>
         )}

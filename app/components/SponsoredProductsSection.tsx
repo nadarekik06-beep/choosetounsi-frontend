@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef,useMemo } from 'react';
 import Link from 'next/link';
 import { sponsorshipApi, SponsoredProduct } from '@/lib/sponsorshipApi';
+import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
 
 interface Props {
   title?:        string;
@@ -171,6 +172,8 @@ useEffect(() => () => {
               </span>
             )}
           </div>
+
+          <FlashCountdownBadge promotion={product.promotion} />
 
           {/* Sold out */}
           {product.stock <= 0 && (

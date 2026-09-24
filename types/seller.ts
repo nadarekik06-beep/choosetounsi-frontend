@@ -181,6 +181,8 @@ export interface OrderItem {
   quantity: number;
   price: number;
   total: number;
+  discount_amount?: number;   // this line's share of the seller coupon (0 when none)
+  net_total?: number;         // total − discount_amount (commission base)
 
   // Variant fields (null for simple products)
   variant_id: number | null;
@@ -200,6 +202,8 @@ is_returned?: boolean
 export interface OrderCommissionSummary {
   has_commission: boolean;
   total_gross: number;
+  total_discount?: number;                 // seller coupon, 0 when none
+  total_net?: number;                      // total_gross − total_discount (commission base)
   total_commission_amount: number | null;  // null for legacy orders
   total_seller_net: number | null;         // null for legacy orders
 }
@@ -208,6 +212,11 @@ export interface OrderDetail {
   order: Order & { customer: Customer };
   items: OrderItem[];
   seller_subtotal: number;
+  discount_amount?: number;
+  coupon_code?: string | null;
+  coupon_type?: 'percentage' | 'fixed' | null;
+  coupon_value?: number | null;
+  seller_total?: number;      // seller_subtotal − discount_amount
   commission: OrderCommissionSummary;
 }
 

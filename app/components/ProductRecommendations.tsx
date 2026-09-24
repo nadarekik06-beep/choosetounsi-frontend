@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronRight, Loader2, Store, Star, Zap, Heart } from 'lucide-react'
 import { getToken } from '@/lib/auth'
+import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
 
 const API_URL      = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const STORAGE_BASE = API_URL.replace(/\/api\/?$/, '')
@@ -142,6 +143,7 @@ function MiniCard({ product }: { product: RecProduct }) {
               ⚡ FLASH
             </span>
           )}
+          <FlashCountdownBadge promotion={product.promotion} />
 
           {product.is_sponsored && (
             <span style={{ position: 'absolute', top: 6, left: 6, fontSize: 8, fontWeight: 800, background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', color: '#f59e0b', padding: '2px 6px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>

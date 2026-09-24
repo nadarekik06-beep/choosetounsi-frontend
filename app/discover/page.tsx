@@ -15,6 +15,7 @@ import {
   SlidersHorizontal, Search, X, Check, Sparkles,
 } from 'lucide-react';
 import Navbar from '@/app/components/layout/Navbar';
+import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge';
 import { sponsorshipApi, SponsoredProduct } from '@/lib/sponsorshipApi';
 
 /* ─────────────────────────────────────────────
@@ -42,6 +43,7 @@ interface ActivePromotion {
   discount_type: 'percentage' | 'fixed';
   discount_value: number;
   is_flash_sale: boolean;
+  ends_at?: string;
 }
 
 interface OrganicProduct {
@@ -411,6 +413,7 @@ onMouseLeave={() => {
     {badge}
   </span>
 )}
+          <FlashCountdownBadge promotion={item.promotion} />
 
           {/* Wishlist button */}
           <button

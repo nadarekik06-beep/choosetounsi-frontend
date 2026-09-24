@@ -60,6 +60,8 @@ interface InvoiceData {
   }
   items: InvoiceItem[]
   subtotal: number
+  discount_amount?: number     // seller coupon, 0 / absent on old invoices
+  coupon_code?: string | null
   shipping_fee: number
   grand_total: number
 }
@@ -545,6 +547,12 @@ export default function InvoicePage() {
                   <span>Sous-total</span>
                   <span>{fmt(data.subtotal)}</span>
                 </div>
+                {Number(data.discount_amount ?? 0) > 0 && (
+                  <div style={{ ...totalRowStyle(false), color: '#b45309' }}>
+                    <span>Remise{data.coupon_code ? ` (${data.coupon_code})` : ''}</span>
+                    <span>−{fmt(Number(data.discount_amount))}</span>
+                  </div>
+                )}
                 <div style={totalRowStyle(false)}>
                   <span>Frais de livraison</span>
                   <span>{fmt(data.shipping_fee)}</span>

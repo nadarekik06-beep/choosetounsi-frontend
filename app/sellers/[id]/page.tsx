@@ -8,6 +8,7 @@ import {
   Star, Truck, Tag, Copy, Check, Zap, Home as HomeIcon,
 } from 'lucide-react'
 import PriceDisplay from '@/app/components/promotions/PriceDisplay'
+import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
 import type { ActivePromotion } from '@/lib/promotionsApi'
 import { getToken, isAuthenticated } from '@/lib/auth'
 import ProductFilterSidebar, { DEFAULT_FILTERS, type F } from '@/app/components/filters/ProductFilterSidebar'
@@ -141,6 +142,7 @@ function ProductCard({ product }: { product: GridProduct }) {
               ⚡ FLASH
             </span>
           )}
+          <FlashCountdownBadge promotion={product.promotion} />
           {outOfStock && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontSize: 10, fontWeight: 800, background: '#111', color: '#fff', padding: '4px 10px', borderRadius: 999, letterSpacing: '0.05em' }}>Sold Out</span>

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { subscriptionApi, PLAN_META, ActivePlan } from '@/lib/subscriptionApi'
 import { refreshUser } from '@/lib/auth'
+import { useSellerPlans, formatCommission, formatPlanPrice, type SellerPlans } from '@/lib/platformApi'
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -22,11 +23,6 @@ const UPGRADE_PLANS = [
   {
     key: 'red' as const,
     name: 'Red Pepper',
-    price: 49,
-    priceLabel: '49 DT',
-    priceSub: 'per month',
-    commission: '3% – 12%',
-    maxProducts: 150,
     target: 'For growing businesses',
     badge: 'MOST POPULAR',
     Icon: Flame,
@@ -35,7 +31,6 @@ const UPGRADE_PLANS = [
     borderColor: '#fca5a5',
     accentColor: '#dc2626',
     features: [
-      { text: 'Up to 150 products',           ok: true  },
       { text: 'Advanced dashboard',            ok: true  },
       { text: 'Coupons + Flash sales',         ok: true  },
       { text: 'Price Optimization AI',         ok: true  },
@@ -48,11 +43,6 @@ const UPGRADE_PLANS = [
   {
     key: 'black' as const,
     name: 'Black Pepper',
-    price: 129,
-    priceLabel: '129 DT',
-    priceSub: 'per month',
-    commission: '3% – 9%',
-    maxProducts: null,
     target: 'For serious sellers',
     badge: 'BEST VALUE',
     Icon: Crown,
@@ -61,7 +51,6 @@ const UPGRADE_PLANS = [
     borderColor: '#334155',
     accentColor: '#f59e0b',
     features: [
-      { text: 'Unlimited products',             ok: true },
       { text: 'Everything in Red Pepper',       ok: true },
       { text: 'Homepage visibility boost',      ok: true },
       { text: '3 free sponsored products/week', ok: true },
@@ -78,10 +67,6 @@ const UPGRADE_PLANS = [
 const GREEN_PLAN = {
   key: 'green' as const,
   name: 'Green Pepper',
-  priceLabel: 'Free',
-  priceSub: 'forever',
-  commission: '12% – 20%',
-  maxProducts: 30,
   target: 'Your current plan',
   Icon: Leaf,
   dark: false,
@@ -89,7 +74,6 @@ const GREEN_PLAN = {
   borderColor: '#86efac',
   accentColor: '#15803d',
   features: [
-    { text: 'Up to 30 products',             ok: true  },
     { text: 'Basic seller dashboard',         ok: true  },
     { text: 'Coupon creation',                ok: true  },
     { text: 'Flash sales',                    ok: true  },
@@ -99,6 +83,22 @@ const GREEN_PLAN = {
     { text: 'Priority support',               ok: false },
   ],
 }
+
+// ── Live prices / limits / commission (from /api/seller-plans) ───────────────
+
+function withLive<T extends { key: 'green' | 'red' | 'black' }>(plan: T, plans: SellerPlans | null) {
+  const live = plans?.[plan.key === 'green' ? 'free' : plan.key]
+  return {
+    ...plan,
+    priceLabel:  formatPlanPrice(live),
+    priceSub:    live && live.price === 0 ? 'forever' : 'per month',
+    commission:  formatCommission(live),
+    maxProducts: live ? live.max_products : null,
+    loaded:      Boolean(live),
+  }
+}
+
+type LivePlan = ReturnType<typeof withLive<typeof UPGRADE_PLANS[number]>>
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -141,7 +141,7 @@ function CurrentPlanBadge({ plan }: { plan: ActivePlan }) {
 // ── Payment Form ──────────────────────────────────────────────────────────────
 
 interface PaymentFormProps {
-  selectedPlan: typeof UPGRADE_PLANS[number]
+  selectedPlan: LivePlan
   onSuccess: (plan: 'red' | 'black') => void
   onCancel: () => void
 }
@@ -389,18 +389,20 @@ function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
 
 export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess }: Props) {
   const paymentRef = useRef<HTMLDivElement>(null)
-  const [selectedPlan, setSelectedPlan] = useState<typeof UPGRADE_PLANS[number] | null>(null)
+  const livePlans = useSellerPlans()
+  const [selectedPlan, setSelectedPlan] = useState<LivePlan | null>(null)
   const [upgraded,     setUpgraded]     = useState(false)
   const [newPlan,      setNewPlan]      = useState<'red' | 'black' | null>(null)
 
   const planHierarchy: Record<ActivePlan, number> = { free: 0, red: 1, black: 2 }
   const currentLevel   = planHierarchy[currentPlan]
-  const availablePlans = UPGRADE_PLANS.filter(p => planHierarchy[p.key] > currentLevel)
+  const availablePlans = UPGRADE_PLANS.map(p => withLive(p, livePlans)).filter(p => planHierarchy[p.key] > currentLevel)
+  const green          = withLive(GREEN_PLAN, livePlans)
 
   // For the 3-column grid: show green (current) + available upgrades
   const showGreenCard = currentPlan === 'free'
 
-  const handleSelectPlan = (plan: typeof UPGRADE_PLANS[number]) => {
+  const handleSelectPlan = (plan: LivePlan) => {
     setSelectedPlan(plan)
     setTimeout(() => {
       paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -675,10 +677,10 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                       fontFamily: "'Barlow Condensed', sans-serif",
                       fontSize: '2.8rem', fontWeight: 900, lineHeight: 1, color: '#111',
                     }}>
-                      {GREEN_PLAN.priceLabel}
+                      {green.priceLabel}
                     </span>
                     <span style={{ fontSize: '0.78rem', color: '#888', marginLeft: 6 }}>
-                      /{GREEN_PLAN.priceSub}
+                      /{green.priceSub}
                     </span>
                   </div>
 
@@ -689,7 +691,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                   }}>
                     <BarChart2 size={13} color={GREEN_PLAN.accentColor} />
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, color: GREEN_PLAN.accentColor }}>
-                      {GREEN_PLAN.commission} commission
+                      {green.commission} commission
                     </span>
                   </div>
 
@@ -699,7 +701,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                     color: '#888', marginBottom: 18,
                   }}>
                     <Package size={13} color="#aaa" />
-                    Up to {GREEN_PLAN.maxProducts} products
+                    {green.loaded ? `Up to ${green.maxProducts} products` : '…'}
                   </div>
 
                   {/* Features */}
@@ -818,7 +820,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                       color: plan.dark ? 'rgba(255,255,255,0.5)' : '#888', marginBottom: 18,
                     }}>
                       <Package size={13} color={plan.dark ? 'rgba(255,255,255,0.35)' : '#aaa'} />
-                      {plan.maxProducts ? `Up to ${plan.maxProducts} products` : 'Unlimited products'}
+                      {!plan.loaded ? '…' : plan.maxProducts ? `Up to ${plan.maxProducts} products` : 'Unlimited products'}
                     </div>
 
                     {/* Features */}
