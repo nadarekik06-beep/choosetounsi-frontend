@@ -201,7 +201,7 @@ export default function CommissionPreview({
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
 
           {/* Marketplace fee */}
-          <div style={{ padding: '10px 12px', borderRight: '1px solid #f0f0f0' }}>
+          <div style={{ padding: '10px 12px', borderInlineEnd: '1px solid #f0f0f0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
               <TrendingDown size={11} color="#ef4444" />
               <span style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
@@ -210,7 +210,7 @@ export default function CommissionPreview({
             </div>
             <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#ef4444', lineHeight: 1 }}>
               {data.commission_amount.toFixed(3)}
-              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginLeft: 3 }}>TND</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginInlineStart: 3 }}>TND</span>
             </p>
             <p style={{ margin: '2px 0 0', fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
               {priceLine}
@@ -227,7 +227,7 @@ export default function CommissionPreview({
             </div>
             <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#10b981', lineHeight: 1 }}>
               {data.seller_amount.toFixed(3)}
-              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginLeft: 3 }}>TND</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginInlineStart: 3 }}>TND</span>
             </p>
             <p style={{ margin: '2px 0 0', fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
               after platform fee

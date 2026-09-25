@@ -195,11 +195,11 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
                     <input
                       type="number" min="0.001" step="0.001"
                       value={discountValue} onChange={e => setDiscountValue(e.target.value)}
-                      placeholder="0" style={{ ...inputBase, paddingRight: 40 }}
+                      placeholder="0" style={{ ...inputBase, paddingInlineEnd: 40 }}
                       onFocus={e => (e.target.style.borderColor = '#dc2626')}
                       onBlur={e => (e.target.style.borderColor = errors.discount_value ? '#fca5a5' : '#e5e7eb')}
                     />
-                    <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>
+                    <span style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>
                       {discountType === 'percentage' ? '%' : 'DT'}
                     </span>
                   </div>
@@ -245,7 +245,7 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
                   onClick={() => setIsActive(v => !v)}
                   style={{ width: 35, height: 19, borderRadius: 999, background: isActive ? '#dc2626' : '#e5e7eb', position: 'relative', cursor: 'pointer', transition: 'background 0.19s' }}
                 >
-                  <div style={{ position: 'absolute', top: 2, left: isActive ? 18 : 2, width: 15, height: 15, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.14)', transition: 'left 0.19s' }} />
+                  <div style={{ position: 'absolute', top: 2, insetInlineStart: isActive ? 18 : 2, width: 15, height: 15, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.14)', transition: 'left 0.19s' }} />
                 </div>
                 <span style={{ fontSize: 12.5, fontWeight: 700, color: '#374151' }}>Active</span>
               </label>
@@ -291,7 +291,7 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
                         border: `1.5px solid ${checked ? '#dc2626' : '#e5e7eb'}`, background: checked ? 'rgba(220,38,38,0.05)' : '#fff',
-                        textAlign: 'left', fontFamily: 'inherit',
+                        textAlign: 'start', fontFamily: 'inherit',
                       }}
                     >
                       <div style={{ width: 40, height: 40, borderRadius: 8, flexShrink: 0, overflow: 'hidden', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -303,7 +303,7 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
                         </p>
                         <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>
                           <span style={effectivePrice !== null ? { textDecoration: 'line-through', color: '#94a3b8' } : {}}>{p.price.toFixed(3)} TND</span>
-                          {effectivePrice !== null && <span style={{ marginLeft: 8, color: '#dc2626', fontWeight: 700 }}>→ {effectivePrice.toFixed(3)} TND</span>}
+                          {effectivePrice !== null && <span style={{ marginInlineStart: 8, color: '#dc2626', fontWeight: 700 }}>→ {effectivePrice.toFixed(3)} TND</span>}
                         </p>
                       </div>
                       <div style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, border: `2px solid ${checked ? '#dc2626' : '#e5e7eb'}`, background: checked ? '#dc2626' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

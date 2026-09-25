@@ -141,7 +141,7 @@ export default function ColorImageUploader({
     <div>
       <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
         Images per Color
-        <span style={{ marginLeft: 8, fontSize: 9, fontWeight: 500, color: '#c4b5fd', textTransform: 'none', letterSpacing: 0 }}>
+        <span style={{ marginInlineStart: 8, fontSize: 9, fontWeight: 500, color: '#c4b5fd', textTransform: 'none', letterSpacing: 0 }}>
           images switch when customer selects a color
         </span>
       </p>
@@ -162,7 +162,7 @@ export default function ColorImageUploader({
                   <span style={{ display: 'inline-block', width: 18, height: 18, borderRadius: '50%', background: opt.color_hex, border: '1px solid rgba(0,0,0,0.15)', flexShrink: 0 }} />
                 )}
                 <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>{opt.value}</span>
-                <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 'auto' }}>
+                <span style={{ fontSize: 11, color: '#94a3b8', marginInlineStart: 'auto' }}>
                   {slot.existingUrls.length + slot.files.length}/5
                 </span>
               </div>
@@ -174,7 +174,7 @@ export default function ColorImageUploader({
                     {slot.existingUrls.map((url, i) => (
                       <div key={i} style={{ position: 'relative', width: 64, height: 64, borderRadius: 8, overflow: 'hidden', border: '1px solid #e5e7eb', flexShrink: 0 }}>
                         <img src={url} alt={opt.value} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <div style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.5)', borderRadius: 4, padding: 1, fontSize: 8, color: '#fff', fontWeight: 700 }}>
+                        <div style={{ position: 'absolute', top: 2, insetInlineEnd: 2, background: 'rgba(0,0,0,0.5)', borderRadius: 4, padding: 1, fontSize: 8, color: '#fff', fontWeight: 700 }}>
                           saved
                         </div>
                       </div>
@@ -192,7 +192,7 @@ export default function ColorImageUploader({
                           type="button"
                           disabled={disabled}
                           onClick={() => removeFile(colorId, fi)}
-                          style={{ position: 'absolute', top: 2, right: 2, width: 16, height: 16, borderRadius: '50%', background: 'rgba(239,68,68,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                          style={{ position: 'absolute', top: 2, insetInlineEnd: 2, width: 16, height: 16, borderRadius: '50%', background: 'rgba(239,68,68,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
                         >
                           <X size={9} color="#fff" />
                         </button>

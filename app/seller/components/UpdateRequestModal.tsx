@@ -402,7 +402,7 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
                     <input type="number" min="0" step="0.001" value={price}
                       onChange={e => setPrice(e.target.value)} style={INPUT} />
                     <span style={{
-                      position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                      position: 'absolute', insetInlineEnd: 10, top: '50%', transform: 'translateY(-50%)',
                       fontSize: 10, color: '#94a3b8', fontWeight: 600,
                     }}>TND</span>
                   </div>
@@ -506,7 +506,7 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
                       }}>
                         <img src={p.preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <button type="button" onClick={() => removePreview(p.id)} style={{
-                          position: 'absolute', top: 4, right: 4, width: 20, height: 20,
+                          position: 'absolute', top: 4, insetInlineEnd: 4, width: 20, height: 20,
                           background: 'rgba(239,68,68,0.85)', border: 'none', borderRadius: '50%',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           cursor: 'pointer', color: '#fff',

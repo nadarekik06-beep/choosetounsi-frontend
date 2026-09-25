@@ -373,7 +373,7 @@ export default function RestockModal({ product, onClose, onRestocked }: Props) {
                       onChange={e => setSimpleStock(e.target.value)}
                       style={{ width: '100%', border: `1.5px solid ${errors.stock ? '#fca5a5' : '#e5e7eb'}`, borderRadius: 10, padding: '9px 44px 9px 12px', fontSize: 14, fontWeight: 700, background: errors.stock ? '#fef2f2' : '#f8fafc', color: '#111', outline: 'none', boxSizing: 'border-box' }}
                     />
-                    <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#94a3b8', fontWeight: 600, pointerEvents: 'none' }}>units</span>
+                    <span style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#94a3b8', fontWeight: 600, pointerEvents: 'none' }}>units</span>
                   </div>
                   {errors.stock && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.stock}</p>}
                   <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Enter the total units you want to set.</p>
@@ -412,7 +412,7 @@ export default function RestockModal({ product, onClose, onRestocked }: Props) {
                               background: variant.is_active ? '#fff' : '#fafafa',
                             }}
                           >
-                            <div style={{ paddingRight: 12 }}>
+                            <div style={{ paddingInlineEnd: 12 }}>
                               {/* ── Rich label with swatches ── */}
                               <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>
                                 {variant.label || `Variant #${variant.id}`}
@@ -421,7 +421,7 @@ export default function RestockModal({ product, onClose, onRestocked }: Props) {
                               <p style={{ fontSize: 10, color: '#94a3b8', margin: '3px 0 0' }}>
                                 Current: <strong style={{ color: parseInt(stockVal, 10) > 0 ? '#10b981' : '#ef4444' }}>{variant.stock}</strong>
                                 {!variant.is_active && (
-                                  <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', padding: '1px 5px', borderRadius: 3 }}>
+                                  <span style={{ marginInlineStart: 6, fontSize: 9, fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', padding: '1px 5px', borderRadius: 3 }}>
                                     Inactive
                                   </span>
                                 )}

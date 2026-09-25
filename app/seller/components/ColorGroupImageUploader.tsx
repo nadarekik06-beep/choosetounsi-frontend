@@ -204,7 +204,7 @@ export default function ColorGroupImageUploader({
       }}>
         Images per Color Group
         <span style={{
-          marginLeft: 8, fontSize: 9, fontWeight: 500,
+          marginInlineStart: 8, fontSize: 9, fontWeight: 500,
           color: '#c4b5fd', textTransform: 'none', letterSpacing: 0,
         }}>
           shared across all sizes in that group
@@ -286,7 +286,7 @@ export default function ColorGroupImageUploader({
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                         <div style={{
-                          position: 'absolute', top: 2, right: 2,
+                          position: 'absolute', top: 2, insetInlineEnd: 2,
                           background: 'rgba(0,0,0,0.5)', borderRadius: 4,
                           padding: '1px 4px', fontSize: 8,
                           color: '#fff', fontWeight: 700,
@@ -316,7 +316,7 @@ export default function ColorGroupImageUploader({
                           disabled={disabled}
                           onClick={() => removeFile(group.key, fi)}
                           style={{
-                            position: 'absolute', top: 2, right: 2,
+                            position: 'absolute', top: 2, insetInlineEnd: 2,
                             width: 16, height: 16, borderRadius: '50%',
                             background: 'rgba(239,68,68,0.9)', border: 'none',
                             cursor: disabled ? 'not-allowed' : 'pointer',

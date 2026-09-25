@@ -13,7 +13,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { sellerComplaintApi } from '@/lib/complaintApi'
 import type { Complaint } from '@/types/complaint'
 import { STATUS_CONFIG, COMPLAINT_TYPE_LABELS } from '@/types/complaint'
-import { useTheme } from '../layout'
+import { useTheme } from '../SellerShell'
 
 // ─── Icon props ───────────────────────────────────────────────────────────────
 
@@ -437,7 +437,7 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
         style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', zIndex: 10000 }}
       />
       <div style={{
-        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+        position: 'fixed', top: '50%', insetInlineStart: '50%', transform: 'translate(-50%,-50%)',
         width: '92%', maxWidth: 480,
         background: T.cardBg,
         border: `1px solid ${T.border}`,
@@ -480,7 +480,7 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
           <span style={{ fontSize: 12.5, color: T.textSub, fontWeight: 600 }}>
             {COMPLAINT_TYPE_LABELS[complaint.complaint_type]}
           </span>
-          <span style={{ marginLeft: 'auto', fontSize: 11.5, color: T.textMuted, fontFamily: 'monospace' }}>
+          <span style={{ marginInlineStart: 'auto', fontSize: 11.5, color: T.textMuted, fontFamily: 'monospace' }}>
             #{complaint.order?.order_number ?? complaint.order_id}
           </span>
         </div>
@@ -652,9 +652,9 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
       />
 
       <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: 520,
+        position: 'fixed', top: 0, insetInlineEnd: 0, bottom: 0, width: '100%', maxWidth: 520,
         background: T.drawerBg,
-        borderLeft: `1px solid ${T.drawerBorder}`,
+        borderInlineStart: `1px solid ${T.drawerBorder}`,
         boxShadow: dark ? '-24px 0 80px rgba(0,0,0,0.4)' : '-8px 0 40px rgba(0,0,0,0.12)',
         zIndex: 9001, overflowY: 'auto', display: 'flex', flexDirection: 'column',
         animation: 'slideIn 0.28s cubic-bezier(0.22,1,0.36,1)',
@@ -915,7 +915,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
       {/* Toast */}
       {toast && (
         <div style={{
-          position: 'fixed', bottom: 28, left: '50%',
+          position: 'fixed', bottom: 28, insetInlineStart: '50%',
           background: T.toastBg,
           color: '#fff', padding: '11px 22px',
           borderRadius: 999, fontSize: 13, fontWeight: 700, zIndex: 99999,
@@ -1052,7 +1052,7 @@ export default function SellerComplaintsPage() {
 
         {/* ── Filter tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: 11.5, color: T.textMuted, fontWeight: 600, marginRight: 4 }}>
+          <span style={{ fontSize: 11.5, color: T.textMuted, fontWeight: 600, marginInlineEnd: 4 }}>
             FILTER
           </span>
           {FILTERS.map(f => {
@@ -1174,7 +1174,7 @@ export default function SellerComplaintsPage() {
                     </div>
 
                     {/* Date + arrow */}
-                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
                       <span style={{ fontSize: 11.5, color: T.textFaint, fontWeight: 500 }}>
                         {new Date(c.created_at).toLocaleDateString('en-GB', {
                           day: 'numeric', month: 'short', year: 'numeric',

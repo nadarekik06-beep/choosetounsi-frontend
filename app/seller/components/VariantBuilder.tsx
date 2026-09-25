@@ -382,7 +382,7 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
                 }}>
                   {colorAxis.name}
                   <span style={{
-                    marginLeft: 8, fontSize: 9, fontWeight: 700,
+                    marginInlineStart: 8, fontSize: 9, fontWeight: 700,
                     color: '#6366f1',
                     background: 'rgba(99,102,241,0.08)',
                     border: '1px solid rgba(99,102,241,0.2)',
@@ -452,7 +452,7 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
                         }}>
                           Group {groupIdx + 1}
                           <span style={{
-                            marginLeft: 6, fontWeight: 500, color: '#94a3b8',
+                            marginInlineStart: 6, fontWeight: 500, color: '#94a3b8',
                           }}>
                             ({selected.length}/{MAX_COLORS_PER_GROUP})
                           </span>
@@ -593,7 +593,7 @@ opacity: atMax ? 0.4 : 1,
                 }}>
                   {axis.name}
                   <span style={{
-                    marginLeft: 8, fontWeight: 500, color: '#94a3b8',
+                    marginInlineStart: 8, fontWeight: 500, color: '#94a3b8',
                     textTransform: 'none', letterSpacing: 0,
                   }}>
                     ({selected.length} selected)

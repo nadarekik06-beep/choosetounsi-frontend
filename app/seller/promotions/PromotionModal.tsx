@@ -209,13 +209,13 @@ function PromotionCommissionPreview({
             <p style={{
               fontSize: 12, fontWeight: 700, color: '#374151', margin: 0,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              paddingRight: 10,
+              paddingInlineEnd: 10,
             }}>
               {p.name}
             </p>
 
             {/* Original → effective */}
-            <div style={{ textAlign: 'right', paddingRight: 14 }}>
+            <div style={{ textAlign: 'end', paddingInlineEnd: 14 }}>
               <p style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through', margin: '0 0 1px', fontWeight: 500 }}>
                 {p.price.toFixed(3)} TND
               </p>
@@ -225,7 +225,7 @@ function PromotionCommissionPreview({
             </div>
 
             {/* Platform fee */}
-            <div style={{ textAlign: 'right', paddingRight: 14, minWidth: 80 }}>
+            <div style={{ textAlign: 'end', paddingInlineEnd: 14, minWidth: 80 }}>
               {result ? (
                 <>
                   <p style={{ fontSize: 9, color: '#94a3b8', margin: '0 0 1px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -241,7 +241,7 @@ function PromotionCommissionPreview({
             </div>
 
             {/* Seller net */}
-            <div style={{ textAlign: 'right', minWidth: 80 }}>
+            <div style={{ textAlign: 'end', minWidth: 80 }}>
               {result ? (
                 <>
                   <p style={{ fontSize: 9, color: '#94a3b8', margin: '0 0 1px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -271,7 +271,7 @@ function PromotionCommissionPreview({
           <p style={{ fontSize: 11, fontWeight: 800, color: '#64748b', margin: 0 }}>
             Total ({selected.length} products)
           </p>
-          <div style={{ textAlign: 'right', paddingRight: 14 }}>
+          <div style={{ textAlign: 'end', paddingInlineEnd: 14 }}>
             <p style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through', margin: '0 0 1px' }}>
               {totalOriginal.toFixed(3)} TND
             </p>
@@ -279,12 +279,12 @@ function PromotionCommissionPreview({
               {totalEffective.toFixed(3)} TND
             </p>
           </div>
-          <div style={{ textAlign: 'right', paddingRight: 14 }}>
+          <div style={{ textAlign: 'end', paddingInlineEnd: 14 }}>
             <p style={{ fontSize: 12, fontWeight: 800, color: '#ef4444', margin: 0 }}>
               −{totalCommission.toFixed(3)} TND
             </p>
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div style={{ textAlign: 'end' }}>
             <p style={{ fontSize: 12, fontWeight: 900, color: '#10b981', margin: 0 }}>
               {totalSeller.toFixed(3)} TND
             </p>
@@ -593,12 +593,12 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
                       value={discountValue}
                       onChange={e => setDiscountValue(e.target.value)}
                       placeholder="0"
-                      style={{ ...inputBase, paddingRight: 40 }}
+                      style={{ ...inputBase, paddingInlineEnd: 40 }}
                       onFocus={e => (e.target.style.borderColor = '#dc2626')}
                       onBlur={e => (e.target.style.borderColor = errors.discount_value ? '#fca5a5' : '#e5e7eb')}
                     />
                     <span style={{
-                      position: 'absolute', right: 12, top: '50%',
+                      position: 'absolute', insetInlineEnd: 12, top: '50%',
                       transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 700,
                     }}>
                       {discountType === 'percentage' ? '%' : 'DT'}
@@ -762,7 +762,7 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
                         padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
                         border: `1.5px solid ${checked ? '#dc2626' : '#e5e7eb'}`,
                         background: checked ? 'rgba(220,38,38,0.05)' : '#fff',
-                        textAlign: 'left', fontFamily: 'inherit',
+                        textAlign: 'start', fontFamily: 'inherit',
                       }}
                     >
                       {/* Thumbnail */}
@@ -793,7 +793,7 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
                           </span>
                           {/* Discounted price shown when discount is entered */}
                           {effectivePrice !== null && (
-                            <span style={{ marginLeft: 8, color: '#dc2626', fontWeight: 700 }}>
+                            <span style={{ marginInlineStart: 8, color: '#dc2626', fontWeight: 700 }}>
                               → {effectivePrice.toFixed(3)} TND
                             </span>
                           )}

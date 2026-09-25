@@ -197,7 +197,7 @@ export default function VariantImageUploader({
       }}>
         Images per Variant
         <span style={{
-          marginLeft: 8, fontSize: 9, fontWeight: 500,
+          marginInlineStart: 8, fontSize: 9, fontWeight: 500,
           color: '#c4b5fd', textTransform: 'none', letterSpacing: 0,
         }}>
           each variant has its own gallery
@@ -259,7 +259,7 @@ export default function VariantImageUploader({
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                         <div style={{
-                          position: 'absolute', top: 2, right: 2,
+                          position: 'absolute', top: 2, insetInlineEnd: 2,
                           background: 'rgba(0,0,0,0.5)', borderRadius: 4,
                           padding: '1px 4px', fontSize: 8,
                           color: '#fff', fontWeight: 700,
@@ -289,7 +289,7 @@ export default function VariantImageUploader({
                           disabled={disabled}
                           onClick={() => removeFile(idx, fi)}
                           style={{
-                            position: 'absolute', top: 2, right: 2,
+                            position: 'absolute', top: 2, insetInlineEnd: 2,
                             width: 16, height: 16, borderRadius: '50%',
                             background: 'rgba(239,68,68,0.9)', border: 'none',
                             cursor: disabled ? 'not-allowed' : 'pointer',

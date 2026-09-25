@@ -121,7 +121,7 @@ export default function AttributeField({ attr, values, onChange, disabled }: Pro
         onClick={() => !disabled && onChange(attr.slug, !on)}
         className={`relative w-10 h-6 rounded-full cursor-pointer transition-colors ${on ? 'bg-red-500' : 'bg-slate-200'}`}
       >
-        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${on ? 'left-5' : 'left-1'}`} />
+        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${on ? 'start-5' : 'start-1'}`} />
       </div>
     )
   }

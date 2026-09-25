@@ -332,7 +332,7 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                           />
                           {img.is_primary && (
                             <div style={{
-                              position: 'absolute', bottom: 2, left: 2,
+                              position: 'absolute', bottom: 2, insetInlineStart: 2,
                               background: 'rgba(220,38,38,0.85)', borderRadius: 3,
                               padding: '1px 4px', fontSize: 7, color: '#fff', fontWeight: 800,
                             }}>
@@ -367,7 +367,7 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                               onClick={() => markDelete(variant.id, img.id)}
                               title="Remove"
                               style={{
-                                position: 'absolute', top: 3, right: 3,
+                                position: 'absolute', top: 3, insetInlineEnd: 3,
                                 width: 18, height: 18, borderRadius: '50%',
                                 background: 'rgba(239,68,68,0.9)', border: 'none',
                                 cursor: 'pointer',
@@ -424,7 +424,7 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                                 onClick={() => undoDelete(variant.id, imgId, { id: imgId, url: original.url, is_primary: original.is_primary })}
                                 title="Undo"
                                 style={{
-                                  position: 'absolute', top: 2, right: 2,
+                                  position: 'absolute', top: 2, insetInlineEnd: 2,
                                   width: 18, height: 18, borderRadius: '50%',
                                   background: 'rgba(16,185,129,0.9)', border: 'none',
                                   cursor: 'pointer',
@@ -467,7 +467,7 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                               type="button"
                               onClick={() => removeNew(variant.id, fi)}
                               style={{
-                                position: 'absolute', top: 2, right: 2,
+                                position: 'absolute', top: 2, insetInlineEnd: 2,
                                 width: 18, height: 18, borderRadius: '50%',
                                 background: 'rgba(239,68,68,0.9)', border: 'none',
                                 cursor: 'pointer',
@@ -506,7 +506,7 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                     <Upload size={13} color="#94a3b8" />
                     <span style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>
                       Add images
-                      <span style={{ color: '#94a3b8', marginLeft: 4, fontWeight: 400 }}>
+                      <span style={{ color: '#94a3b8', marginInlineStart: 4, fontWeight: 400 }}>
                         ({MAX_PER_VARIANT - totalShown} remaining)
                       </span>
                     </span>

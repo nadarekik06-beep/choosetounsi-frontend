@@ -263,11 +263,11 @@ function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
               placeholder="1234 5678 9012 3456"
               value={cardNumber}
               onChange={e => setCardNumber(formatCardNumber(e.target.value))}
-              style={{ ...inputStyle(!!fieldErrors.card_number), paddingLeft: 44 }}
+              style={{ ...inputStyle(!!fieldErrors.card_number), paddingInlineStart: 44 }}
               onFocus={e => { e.currentTarget.style.borderColor = selectedPlan.accentColor }}
               onBlur={e => { e.currentTarget.style.borderColor = fieldErrors.card_number ? '#dc2626' : '#e5e7eb' }}
             />
-            <CreditCard size={16} color="#9ca3af" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+            <CreditCard size={16} color="#9ca3af" style={{ position: 'absolute', insetInlineStart: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
           </div>
           {fieldErrors.card_number && <p style={errStyle}><AlertCircle size={11} />{fieldErrors.card_number}</p>}
         </div>
@@ -571,17 +571,17 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
           }}
         >
           <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+            position: 'absolute', top: 0, insetInlineStart: 0, insetInlineEnd: 0, height: 3,
             background: 'linear-gradient(90deg, #db142e 0%, #198f41 50%, #db142e 100%)',
           }} />
           <div style={{
-            position: 'absolute', top: '-60px', right: '-60px',
+            position: 'absolute', top: '-60px', insetInlineEnd: '-60px',
             width: 280, height: 280, borderRadius: '50%',
             background: 'radial-gradient(circle, rgba(219,20,46,0.14) 0%, transparent 70%)',
             pointerEvents: 'none',
           }} />
           <div style={{
-            position: 'absolute', bottom: '-40px', left: '-40px',
+            position: 'absolute', bottom: '-40px', insetInlineStart: '-40px',
             width: 200, height: 200, borderRadius: '50%',
             background: 'radial-gradient(circle, rgba(25,143,65,0.1) 0%, transparent 70%)',
             pointerEvents: 'none',
@@ -644,7 +644,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
               >
                 {/* "YOUR PLAN" badge */}
                 <div style={{
-                  position: 'absolute', top: 14, left: 14, zIndex: 2,
+                  position: 'absolute', top: 14, insetInlineStart: 14, zIndex: 2,
                   display: 'flex', alignItems: 'center', gap: 5,
                   background: 'rgba(25,143,65,0.9)', backdropFilter: 'blur(4px)',
                   borderRadius: 99, padding: '4px 10px',
@@ -679,7 +679,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                     }}>
                       {green.priceLabel}
                     </span>
-                    <span style={{ fontSize: '0.78rem', color: '#888', marginLeft: 6 }}>
+                    <span style={{ fontSize: '0.78rem', color: '#888', marginInlineStart: 6 }}>
                       /{green.priceSub}
                     </span>
                   </div>
@@ -754,7 +754,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                 >
                   {/* Badge */}
                   {plan.badge && (
-                    <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 1 }}>
+                    <div style={{ position: 'absolute', top: 14, insetInlineEnd: 14, zIndex: 1 }}>
                       <span style={{
                         fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.12em',
                         padding: '4px 10px', borderRadius: 999,
@@ -797,7 +797,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                       }}>
                         {plan.priceLabel}
                       </span>
-                      <span style={{ fontSize: '0.78rem', color: plan.dark ? 'rgba(255,255,255,0.4)' : '#888', marginLeft: 6 }}>
+                      <span style={{ fontSize: '0.78rem', color: plan.dark ? 'rgba(255,255,255,0.4)' : '#888', marginInlineStart: 6 }}>
                         /{plan.priceSub}
                       </span>
                     </div>

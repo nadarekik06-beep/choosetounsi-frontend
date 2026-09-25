@@ -489,7 +489,7 @@ function EventsCalendar({ events, dark }: { events: EventSignal[]; dark: boolean
               </div>
  
               {/* Multiplier — now dynamic, highlighted */}
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ textAlign: 'end', flexShrink: 0 }}>
                 <p
                   style={{
                     fontSize: 18,
@@ -976,7 +976,7 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
               <option value="">— Select a product to forecast —</option>
               {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <ChevronDown size={14} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: dark ? '#fff' : '#111', pointerEvents: 'none' }}/>
+            <ChevronDown size={14} style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)', color: dark ? '#fff' : '#111', pointerEvents: 'none' }}/>
           </div>
           {selectedId && (
             <button
@@ -1027,12 +1027,12 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
               { label: 'Stock Needed (3m)', value: `${forecast.stock_recommendation_3m}`,  sub: 'units (30% buffer)',      color: forecast.stock_recommendation_3m > forecast.current_stock ? '#ef4444' : '#10b981', icon: '📊' },
             ].map(({ label, value, sub, color, icon }) => (
               <div key={label} style={{ background: bg, borderRadius: 14, border: `1px solid ${border}`, padding: '14px 16px', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: -20, right: -20, width: 70, height: 70, borderRadius: '50%', background: color, opacity: dark ? 0.1 : 0.06, filter: 'blur(16px)' }}/>
+                <div style={{ position: 'absolute', top: -20, insetInlineEnd: -20, width: 70, height: 70, borderRadius: '50%', background: color, opacity: dark ? 0.1 : 0.06, filter: 'blur(16px)' }}/>
                 <p style={{ fontSize: 18, margin: '0 0 6px' }}>{icon}</p>
                 <p style={{ fontSize: 18, fontWeight: 900, color, margin: '0 0 2px', letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</p>
                 <p style={{ fontSize: 9, fontWeight: 800, color: muted, margin: '0 0 1px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
                 <p style={{ fontSize: 10, color: muted, margin: 0 }}>{sub}</p>
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${color},transparent)`, borderRadius: '0 0 14px 14px' }}/>
+                <div style={{ position: 'absolute', bottom: 0, insetInlineStart: 0, insetInlineEnd: 0, height: 3, background: `linear-gradient(90deg,${color},transparent)`, borderRadius: '0 0 14px 14px' }}/>
               </div>
             ))}
           </div>
@@ -1128,7 +1128,7 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
                   You need <strong style={{ color: text }}>{forecast.stock_recommendation_3m} units</strong> but only have <strong style={{ color: text }}>{forecast.current_stock}</strong>. Restock <strong style={{ color: '#ef4444' }}>{forecast.stock_recommendation_3m - forecast.current_stock} units</strong> now.
                 </p>
               </div>
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ textAlign: 'end', flexShrink: 0 }}>
                 <p style={{ fontSize: 22, fontWeight: 900, color: '#ef4444', margin: '0 0 1px', letterSpacing: '-0.02em' }}>-{forecast.stock_recommendation_3m - forecast.current_stock}</p>
                 <p style={{ fontSize: 9, color: muted, margin: 0, fontWeight: 700 }}>units short</p>
               </div>
@@ -1156,7 +1156,7 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
             <TrendingUp size={24} style={{ color: '#db142e' }}/>
           </div>
           <p style={{ fontSize: 15, fontWeight: 800, color: text, margin: '0 0 6px' }}>Select a product to forecast</p>
-          <p style={{ fontSize: 12, color: muted, margin: 0, maxWidth: 360, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>
+          <p style={{ fontSize: 12, color: muted, margin: 0, maxWidth: 360, marginInlineStart: 'auto', marginInlineEnd: 'auto', lineHeight: 1.6 }}>
             The AI will analyze your sales history, Tunisia seasonal patterns, and upcoming events to generate a 6-month forward forecast with live regional demand heatmap.
           </p>
         </div>

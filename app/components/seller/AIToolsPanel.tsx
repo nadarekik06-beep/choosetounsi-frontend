@@ -91,7 +91,7 @@ function ProdSelect({ products, value, onChange, dark }: { products: Array<{ id:
         <option value="" style={{ background:optionBg, color:selectClr }}>— Select a product —</option>
         {products.map(p => <option key={p.id} value={p.id} style={{ background:optionBg, color:selectClr }}>{p.name}</option>)}
       </select>
-      <ChevronDown size={14} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', color:selectClr, pointerEvents:'none' }} />
+      <ChevronDown size={14} style={{ position:'absolute', insetInlineEnd:12, top:'50%', transform:'translateY(-50%)', color:selectClr, pointerEvents:'none' }} />
     </div>
   );
 }
@@ -171,7 +171,7 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
           <p style={{ fontWeight:900, fontSize:14, color:text, margin:'0 0 2px' }}>AI Price Analysis Running</p>
           <p style={{ fontSize:11, color:muted, margin:0 }}>Collecting real Tunisian market data…</p>
         </div>
-        <div style={{ marginLeft:'auto', fontSize:24, fontWeight:900, color:'#db142e', letterSpacing:'-0.04em' }}>
+        <div style={{ marginInlineStart:'auto', fontSize:24, fontWeight:900, color:'#db142e', letterSpacing:'-0.04em' }}>
           {progressPct}%
         </div>
       </div>
@@ -245,7 +245,7 @@ function PriceCard({ label, price, accent, highlight = false, dark }: {
       <p style={{ fontSize:9, fontWeight:800, color: highlight ? accent : (dark?'rgba(255,255,255,0.4)':'#888'), margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.07em' }}>{label}</p>
       <p style={{ fontSize: highlight ? 20 : 16, fontWeight:900, color: highlight ? accent : (dark?'#fff':'#111'), margin:0, letterSpacing:'-0.03em' }}>
         {new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(price)}
-        <span style={{ fontSize:10, fontWeight:700, marginLeft:3 }}>TND</span>
+        <span style={{ fontSize:10, fontWeight:700, marginInlineStart:3 }}>TND</span>
       </p>
     </div>
   );
@@ -291,7 +291,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
         <p style={{ fontSize:10, fontWeight:900, color:muted, margin:0, textTransform:'uppercase', letterSpacing:'0.08em' }}>
           Platforms analysed
         </p>
-      <span style={{ marginLeft:'auto', fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:999,
+      <span style={{ marginInlineStart:'auto', fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:999,
   background: hasRealData ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
   color: hasRealData ? '#10b981' : '#f59e0b',
   border: hasRealData ? '1px solid rgba(16,185,129,0.25)' : '1px solid rgba(245,158,11,0.25)' }}>
@@ -313,7 +313,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
               <p style={{ fontSize:11, fontWeight:800, color:'#db142e', margin:0 }}>ChooseTounsi</p>
               <p style={{ fontSize:9, color:muted, margin:0 }}>Platform data</p>
             </div>
-            <CheckCircle2 size={12} style={{ color:'#10b981', marginLeft:2 }} />
+            <CheckCircle2 size={12} style={{ color:'#10b981', marginInlineStart:2 }} />
           </div>
         ); })()}
 
@@ -329,7 +329,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
                 <p style={{ fontSize:11, fontWeight:800, color:m.color, margin:0 }}>{src.source}</p>
                 <p style={{ fontSize:9, color:muted, margin:0 }}>{src.count} products · avg {new Intl.NumberFormat('fr-TN',{maximumFractionDigits:0}).format(src.avg)} TND</p>
               </div>
-              <CheckCircle2 size={12} style={{ color:'#10b981', marginLeft:2 }} />
+              <CheckCircle2 size={12} style={{ color:'#10b981', marginInlineStart:2 }} />
             </div>
           );
         })}
@@ -346,7 +346,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
         <p style={{ fontSize:11, fontWeight:800, color:m.color, margin:0 }}>{name}</p>
         <p style={{ fontSize:9, color:muted, margin:0 }}>Google indexed</p>
       </div>
-      <CheckCircle2 size={12} style={{ color:'#10b981', marginLeft:2 }} />
+      <CheckCircle2 size={12} style={{ color:'#10b981', marginInlineStart:2 }} />
     </div>
   );
 })}
@@ -405,7 +405,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
           <p style={{ fontSize:11, fontWeight:900, color:'#10b981', margin:'0 0 1px' }}>Verified by ChooseTounsi AI</p>
           <p style={{ fontSize:10, color:muted, margin:0 }}>Cross-validated · Tunisian market · Optimised for conversion</p>
         </div>
-        <Star size={14} style={{ color:'#f59e0b', marginLeft:'auto', flexShrink:0 }} />
+        <Star size={14} style={{ color:'#f59e0b', marginInlineStart:'auto', flexShrink:0 }} />
       </div>
     </div>
   );
@@ -523,7 +523,7 @@ useEffect(() => {
         <div style={{ display:'flex', flexDirection:'column', gap:12, animation:'fadeIn 0.5s ease' }}>
 
           <div style={{ background:'linear-gradient(145deg,rgba(219,20,46,0.13) 0%,rgba(219,20,46,0.03) 100%)', borderRadius:22, border:'1px solid rgba(219,20,46,0.22)', padding:'22px 20px', position:'relative', overflow:'hidden' }}>
-            <div style={{ position:'absolute', top:-40, right:-40, width:120, height:120, borderRadius:'50%', background:'rgba(219,20,46,0.08)', pointerEvents:'none' }} />
+            <div style={{ position:'absolute', top:-40, insetInlineEnd:-40, width:120, height:120, borderRadius:'50%', background:'rgba(219,20,46,0.08)', pointerEvents:'none' }} />
 
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18 }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -802,7 +802,7 @@ function AlgorithmPanel({ algorithm, dark }: {
       <button onClick={() => setOpen(o => !o)} style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'10px 14px', background: dark?'rgba(99,102,241,0.06)':'rgba(99,102,241,0.04)', border:'none', cursor:'pointer', outline:'none' }}>
         <BarChart3 size={13} style={{ color:'#6366f1', flexShrink:0 }} />
         <p style={{ fontSize:10, fontWeight:800, color:'#6366f1', margin:0, textTransform:'uppercase', letterSpacing:'0.06em' }}>Algorithm transparency</p>
-        <ChevronDown size={12} style={{ color:'#6366f1', marginLeft:'auto', transform: open?'rotate(180deg)':'none', transition:'transform 0.2s' }} />
+        <ChevronDown size={12} style={{ color:'#6366f1', marginInlineStart:'auto', transform: open?'rotate(180deg)':'none', transition:'transform 0.2s' }} />
       </button>
       {open && (
         <div style={{ padding:'12px 14px', background: dark?'rgba(255,255,255,0.02)':'#fafafa', display:'flex', flexDirection:'column', gap:8 }}>
@@ -915,7 +915,7 @@ function ProductDNAStrip({ ctx, dark }: {
         <p style={{ fontSize:10, fontWeight:900, color:'#8b5cf6', margin:0, textTransform:'uppercase', letterSpacing:'0.07em' }}>
           Product DNA — used by AI
         </p>
-        <span style={{ marginLeft:'auto', fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:999, background:'rgba(139,92,246,0.1)', border:'1px solid rgba(139,92,246,0.2)', color:'#8b5cf6' }}>
+        <span style={{ marginInlineStart:'auto', fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:999, background:'rgba(139,92,246,0.1)', border:'1px solid rgba(139,92,246,0.2)', color:'#8b5cf6' }}>
           🧬 Context
         </span>
       </div>
@@ -1151,7 +1151,7 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
         <div style={{ display:'flex', flexDirection:'column', gap:12, animation:'slideUp 0.5s ease' }}>
 
           <div style={{ background:`linear-gradient(145deg, ${trendColor}14 0%, ${trendColor}04 100%)`, borderRadius:20, border:`1px solid ${trendColor}30`, padding:'22px 20px', position:'relative', overflow:'hidden' }}>
-            <div style={{ position:'absolute', top:-30, right:-30, width:100, height:100, borderRadius:'50%', background:`${trendColor}08` }} />
+            <div style={{ position:'absolute', top:-30, insetInlineEnd:-30, width:100, height:100, borderRadius:'50%', background:`${trendColor}08` }} />
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ fontSize:22 }}>{ctx?.is_multi_season ? '🌐' : sm.emoji}</span>
@@ -1379,7 +1379,7 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
       </p>
       <span
         style={{
-          marginLeft: 'auto',
+          marginInlineStart: 'auto',
           fontSize: 9,
           fontWeight: 800,
           padding: '2px 7px',

@@ -15,7 +15,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { ImageUp, Loader2, CheckCircle2, AlertCircle, Store } from 'lucide-react'
 import { storeProfileApi, storageUrl } from '@/lib/sellerApi'
-import { useTheme } from '../layout'
+import { useTheme } from '../SellerShell'
 
 const MAX_SIZE = 4 * 1024 * 1024 // 4MB — matches backend validation
 const ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']

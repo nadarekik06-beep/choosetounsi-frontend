@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { DollarSign, TrendingDown, TrendingUp, Clock, CheckCircle, Package } from 'lucide-react'
 import api from '@/lib/sellerApi'
-import { useTheme } from '../layout'
+import { useTheme } from '../SellerShell'
 
 function fmt(v: number | string) {
   return `${Number(v).toFixed(3)} TND`
@@ -257,7 +257,7 @@ export default function EarningsPage() {
                     ].map((col, i) => (
                       <div key={col.label} style={{
                         padding: '16px 20px',
-                        borderRight: i < 2 ? `1px solid ${border}` : undefined,
+                        borderInlineEnd: i < 2 ? `1px solid ${border}` : undefined,
                         background: i === 2 ? 'rgba(16,185,129,0.03)' : i === 1 ? 'rgba(219,20,46,0.03)' : undefined,
                       }}>
                         <p style={{ fontSize: 9, fontWeight: 800, color: col.color, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>

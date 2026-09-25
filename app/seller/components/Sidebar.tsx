@@ -7,41 +7,44 @@ import {
   ChevronLeft, ChevronRight, LogOut, Home, Sun, Moon,
   AlertTriangle, BarChart2, Brain, Lock, Crown,
   Tag, Package2, TrendingUp, Eye, Star, DollarSign,
-  Users, Megaphone, ChevronDown, ChevronUp, CreditCard, Wallet, X, Store,
+  Users, Megaphone, ChevronDown, ChevronUp, CreditCard, Wallet, X, Store, Globe,
 } from 'lucide-react';
-import { useTheme } from '../layout';
+import { useLocale, useTranslations } from 'next-intl';
+import { useLanguage } from '@/components/i18n/LanguageSwitcher';
+import { useTheme } from '../SellerShell';
 import { useSubscription } from '@/app/hooks/useSubscription';
 import { useState, useEffect } from 'react';
 
+// `label` is a key in the seller.nav messages
 const STORE_NAV = [
-  { href: '/seller',              label: 'Overview',     icon: LayoutDashboard },
-  { href: '/seller/settings',     label: 'Store Settings', icon: Store },
-  { href: '/seller/products',     label: 'Products',     icon: Package },
-  { href: '/seller/packs',        label: 'Packs',        icon: Package2 },
-  { href: '/seller/orders',       label: 'Orders',       icon: ShoppingBag },
-  { href: '/seller/earnings',     label: 'Earnings',     icon: Wallet },
-  { href: '/seller/subscription', label: 'Subscription', icon: CreditCard },
+  { href: '/seller',              label: 'overview',     icon: LayoutDashboard },
+  { href: '/seller/settings',     label: 'settings',     icon: Store },
+  { href: '/seller/products',     label: 'products',     icon: Package },
+  { href: '/seller/packs',        label: 'packs',        icon: Package2 },
+  { href: '/seller/orders',       label: 'orders',       icon: ShoppingBag },
+  { href: '/seller/earnings',     label: 'earnings',     icon: Wallet },
+  { href: '/seller/subscription', label: 'subscription', icon: CreditCard },
 ];
 const CUSTOMER_NAV = [
-  { href: '/seller/complaints', label: 'Complaints',            icon: AlertTriangle },
-  { href: '/seller/reviews',    label: 'Reviews & Reputation',  icon: Star },
+  { href: '/seller/complaints', label: 'complaints', icon: AlertTriangle },
+  { href: '/seller/reviews',    label: 'reviews',    icon: Star },
 ];
 const GROWTH_NAV = [
-  { href: '/seller/promotions', label: 'Promotions',  icon: Tag },
-  { href: '/seller/promote',    label: 'Ads & Boost', icon: Megaphone },
+  { href: '/seller/promotions', label: 'promotions', icon: Tag },
+  { href: '/seller/promote',    label: 'promote',    icon: Megaphone },
 ];
 const RED_NAV = [
-  { href: '/seller/analytics', label: 'Analytics', icon: BarChart2, accent: '#fca5a5' },
-  { href: '/seller/ai-tools',  label: 'AI Tools',  icon: Brain,     accent: '#c4b5fd' },
+  { href: '/seller/analytics', label: 'analytics', icon: BarChart2, accent: '#fca5a5' },
+  { href: '/seller/ai-tools',  label: 'aiTools',   icon: Brain,     accent: '#c4b5fd' },
 ];
 const BLACK_NAV = [
-  { href: '/seller/black',                  label: 'Elite Overview',   icon: Crown,      accent: '#fbbf24' },
-  { href: '/seller/black/ai-intelligence',  label: 'AI Intelligence',  icon: Brain,      accent: '#c4b5fd' },
-  { href: '/seller/black/visitor-insights', label: 'Visitor Insights', icon: Eye,        accent: '#93c5fd' },
-  { href: '/seller/black/listing-quality',  label: 'Listing Quality',  icon: Star,       accent: '#d8b4fe' },
-  { href: '/seller/black/smart-promotions', label: 'Smart Promotions', icon: TrendingUp, accent: '#fbbf24' },
-  { href: '/seller/black/profit',           label: 'Profit Center',    icon: DollarSign, accent: '#6ee7b7' },
-  { href: '/seller/black/vip-lounge',       label: 'VIP Lounge',       icon: Users,      accent: '#fbbf24' },
+  { href: '/seller/black',                  label: 'eliteOverview',   icon: Crown,      accent: '#fbbf24' },
+  { href: '/seller/black/ai-intelligence',  label: 'aiIntelligence',  icon: Brain,      accent: '#c4b5fd' },
+  { href: '/seller/black/visitor-insights', label: 'visitorInsights', icon: Eye,        accent: '#93c5fd' },
+  { href: '/seller/black/listing-quality',  label: 'listingQuality',  icon: Star,       accent: '#d8b4fe' },
+  { href: '/seller/black/smart-promotions', label: 'smartPromotions', icon: TrendingUp, accent: '#fbbf24' },
+  { href: '/seller/black/profit',           label: 'profitCenter',    icon: DollarSign, accent: '#6ee7b7' },
+  { href: '/seller/black/vip-lounge',       label: 'vipLounge',       icon: Users,      accent: '#fbbf24' },
 ];
 
 interface SidebarProps {
@@ -53,6 +56,10 @@ interface SidebarProps {
 
 export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
+  const t = useTranslations('seller.nav');
+  const locale = useLocale();
+  const isRtl = locale === 'ar';
+  const { openModal: openLanguage } = useLanguage();
   const { dark, toggle } = useTheme();
   const { isPaid, isBlack, loading } = useSubscription();
 
@@ -137,8 +144,8 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
       >
         {isActive && !collapsed && (
           <div style={{
-            position: 'absolute', left: 0, top: '18%', bottom: '18%',
-            width: 3.5, borderRadius: '0 3px 3px 0',
+            position: 'absolute', insetInlineStart: 0, top: '18%', bottom: '18%',
+            width: 3.5, borderStartEndRadius: 3, borderEndEndRadius: 3,
             background: accent ?? '#db142e',
           }}/>
         )}
@@ -156,7 +163,7 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
 
         {collapsed && (
           <span className="sb3-tip" style={{
-            position: 'absolute', left: 'calc(100% + 8px)', top: '50%', transform: 'translateY(-50%)',
+            position: 'absolute', insetInlineStart: 'calc(100% + 8px)', top: '50%', transform: 'translateY(-50%)',
             padding: '5px 12px', background: '#1f2937', color: '#fff',
             fontSize: 12, fontWeight: 600, borderRadius: 8, whiteSpace: 'nowrap',
             boxShadow: '0 4px 20px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)',
@@ -232,16 +239,16 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
 
       <aside
         style={{
-          position: 'fixed', top: 0, left: 0, height: '100dvh', zIndex: 40,
+          position: 'fixed', top: 0, insetInlineStart: 0, height: '100dvh', zIndex: 40,
           background: SB_BG,
-          borderRight: `1px solid ${SB_BORDER}`,
+          borderInlineEnd: `1px solid ${SB_BORDER}`,
           width: collapsed ? 64 : 242,
           maxWidth: '85vw',
           transition: 'width 0.28s ease',
           display: 'flex', flexDirection: 'column',
           overflowX: 'hidden',
         }}
-        className={!mobileOpen ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
+        className={!mobileOpen ? (isRtl ? 'translate-x-full lg:translate-x-0' : '-translate-x-full lg:translate-x-0') : 'translate-x-0'}
       >
 
         {/* Logo */}
@@ -270,7 +277,7 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
               </p>
               <p style={{ fontSize: 9, fontWeight: 800, margin: 0, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1,
                 color: isBlack ? '#f59e0b' : '#4ade80' }}>
-                {isBlack ? '⬛ Elite Portal' : 'Seller Portal'}
+                {isBlack ? t('elitePortal') : t('portal')}
               </p>
             </div>
           )}
@@ -279,7 +286,7 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
           {!collapsed && (
             <button
               onClick={onMobileClose}
-              aria-label="Close menu"
+              aria-label={t('closeMenu')}
               className="lg:hidden"
               style={{
                 width: 34, height: 34, borderRadius: 9, flexShrink: 0,
@@ -295,52 +302,53 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
         {/* Navigation */}
         <nav style={{ flex: 1, paddingTop: 4, overflowY: 'auto', overflowX: 'hidden' }}>
 
-          <SectionLabel label="My Store" open={storeOpen} onToggle={() => setStoreOpen(p => !p)}/>
+          <SectionLabel label={t('sections.store')} open={storeOpen} onToggle={() => setStoreOpen(p => !p)}/>
           {storeOpen && STORE_NAV.map(item => (
-            <NavItem key={item.href} href={item.href} label={item.label} Icon={item.icon} exact={item.href === '/seller'}/>
+            <NavItem key={item.href} href={item.href} label={t(item.label)} Icon={item.icon} exact={item.href === '/seller'}/>
           ))}
 
-          <SectionLabel label="Customer" open={customerOpen} onToggle={() => setCustomerOpen(p => !p)}/>
+          <SectionLabel label={t('sections.customer')} open={customerOpen} onToggle={() => setCustomerOpen(p => !p)}/>
           {customerOpen && CUSTOMER_NAV.map(item => (
-            <NavItem key={item.href} href={item.href} label={item.label} Icon={item.icon}/>
+            <NavItem key={item.href} href={item.href} label={t(item.label)} Icon={item.icon}/>
           ))}
 
-          <SectionLabel label="Growth" open={growthOpen} onToggle={() => setGrowthOpen(p => !p)}/>
+          <SectionLabel label={t('sections.growth')} open={growthOpen} onToggle={() => setGrowthOpen(p => !p)}/>
           {growthOpen && GROWTH_NAV.map(item => (
-            <NavItem key={item.href} href={item.href} label={item.label} Icon={item.icon}/>
+            <NavItem key={item.href} href={item.href} label={t(item.label)} Icon={item.icon}/>
           ))}
 
-          {!loading && <TierDivider label={isPaid ? '● Red Pepper' : '● Premium'} color="#f87171"/>}
+          {!loading && <TierDivider label={isPaid ? t('tierRed') : t('tierPremium')} color="#f87171"/>}
           {RED_NAV.map(item =>
             isPaid
-              ? <NavItem key={item.href} href={item.href} label={item.label} Icon={item.icon} accent={item.accent}/>
-              : <LockedItem key={item.href} label={item.label} Icon={item.icon}/>
+              ? <NavItem key={item.href} href={item.href} label={t(item.label)} Icon={item.icon} accent={item.accent}/>
+              : <LockedItem key={item.href} label={t(item.label)} Icon={item.icon}/>
           )}
 
-          {!loading && <TierDivider label={isBlack ? '■ Black Elite' : '■ Black Pepper'} color="#f59e0b"/>}
+          {!loading && <TierDivider label={isBlack ? t('tierBlackElite') : t('tierBlack')} color="#f59e0b"/>}
           {isBlack
             ? BLACK_NAV.map(item => (
-              <NavItem key={item.href} href={item.href} label={item.label} Icon={item.icon}
+              <NavItem key={item.href} href={item.href} label={t(item.label)} Icon={item.icon}
                 accent={item.accent} exact={item.href === '/seller/black'}/>
             ))
             : BLACK_NAV.slice(0, 2).map(item => (
-              <LockedItem key={item.href} label={item.label} Icon={item.icon}/>
+              <LockedItem key={item.href} label={t(item.label)} Icon={item.icon}/>
             ))
           }
         </nav>
 
         {/* Footer */}
         <div style={{ borderTop: `1px solid ${SB_BORDER}`, paddingTop: 8, paddingBottom: 12, flexShrink: 0 }}>
-          <FooterBtn icon={Home} label="Homepage" href="/"/>
-          <FooterBtn icon={dark ? Sun : Moon} label={dark ? 'Light Mode' : 'Dark Mode'} onClick={toggle}/>
+          <FooterBtn icon={Home} label={t('homepage')} href="/"/>
+          <FooterBtn icon={dark ? Sun : Moon} label={dark ? t('lightMode') : t('darkMode')} onClick={toggle}/>
+          <FooterBtn icon={Globe} label={t('language', { code: locale.toUpperCase() })} onClick={() => { onMobileClose(); openLanguage(); }}/>
           {isDesktop && (
             <FooterBtn
               icon={collapsed ? ChevronRight : ChevronLeft}
-              label="Collapse"
+              label={collapsed ? t('expand') : t('collapse')}
               onClick={() => onCollapse(!collapsedProp)}
             />
           )}
-          <FooterBtn icon={LogOut} label="Sign Out" onClick={handleLogout} danger/>
+          <FooterBtn icon={LogOut} label={t('signOut')} onClick={handleLogout} danger/>
         </div>
       </aside>
 

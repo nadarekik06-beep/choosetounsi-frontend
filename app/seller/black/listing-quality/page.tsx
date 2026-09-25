@@ -5,7 +5,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSubscription } from '@/app/hooks/useSubscription';
-import { useTheme } from '../../layout';
+import { useTheme } from '../../SellerShell';
 import ProductQualityAudit from '@/app/components/seller/black/ProductQualityAudit';
 
 export default function ListingQualityPage() {

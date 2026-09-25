@@ -2,7 +2,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { useTheme } from '../layout';
+import { useTheme } from '../SellerShell';
 
 interface StatCardProps {
   title: string;
@@ -46,7 +46,7 @@ export default function StatCard({
     >
       {/* glow blob */}
       <div style={{
-        position:'absolute', top:-24, right:-24,
+        position:'absolute', top:-24, insetInlineEnd:-24,
         width:80, height:80, borderRadius:'50%',
         background: '#3b82f6', opacity: dark ? 0.1 : 0.06,
         filter:'blur(20px)', pointerEvents:'none',

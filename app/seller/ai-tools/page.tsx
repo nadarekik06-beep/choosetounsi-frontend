@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useTheme } from '../layout';
+import { useTheme } from '../SellerShell';
 import { PlanGate } from '@/app/components/seller/SubscriptionBadge';
 import AIToolsPanel from '@/app/components/seller/AIToolsPanel';
 import { Brain } from 'lucide-react';

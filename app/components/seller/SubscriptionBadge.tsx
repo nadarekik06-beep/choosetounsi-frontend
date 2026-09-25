@@ -11,6 +11,7 @@
 import { useSubscription, type FeatureKey } from '@/app/hooks/useSubscription';
 import { PLAN_META } from '@/lib/subscriptionApi';
 import { Lock, Sparkles, Zap, Crown } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 // ─── SubscriptionBadge ────────────────────────────────────────────────────────
 
@@ -129,28 +130,30 @@ export function PlanGate({ feature, children, fallback, silent = false, dark = t
 
 // ─── UpgradeBanner ────────────────────────────────────────────────────────────
 
-const FEATURE_LABELS: Record<FeatureKey, { label: string; description: string; plan: string }> = {
-  advanced_analytics:  { label: 'Advanced Analytics',        description: 'Deep sales insights, customer segments, and heatmaps.',     plan: 'Red Pepper' },
-  ai_price_optimizer:  { label: 'AI Price Optimizer',        description: 'AI-suggested optimal prices based on your real sales data.',  plan: 'Red Pepper' },
-  ai_sales_predictor:  { label: 'AI Sales Predictor',        description: 'Predict future sales with Tunisian seasonal intelligence.',   plan: 'Red Pepper' },
-  ai_description_gen:  { label: 'AI Description Generator',  description: 'Auto-generate SEO titles & descriptions from product data.', plan: 'Red Pepper' },
-  ai_recommender:      { label: 'AI Bundle Recommender',     description: 'Smart product bundles and cross-sell recommendations.',       plan: 'Red Pepper' },
-  max_products_150:    { label: '150 Product Limit',          description: 'List up to 150 products (Green plan allows 30).',            plan: 'Red Pepper' },
-  bulk_operations:     { label: 'Bulk Operations',            description: 'Manage hundreds of products at once.',                       plan: 'Black Pepper' },
-  api_access:          { label: 'API Access',                 description: 'Direct API access to integrate your systems.',               plan: 'Black Pepper' },
-  custom_storefront:   { label: 'Custom Storefront',          description: 'Your branded store page on ChooseTounsi.',                   plan: 'Black Pepper' },
-  ai_hub:              { label: 'AI Hub',                     description: 'All your AI seller tools in one place.',                     plan: 'Black Pepper' },
-  profit_center:       { label: 'Profit Center',              description: 'Track margins and profit per product.',                      plan: 'Black Pepper' },
-  vip_requests:        { label: 'VIP Requests',               description: 'Access exclusive VIP requests from buyers.',                 plan: 'Black Pepper' },
-  sponsored_products:  { label: 'Sponsored Products',         description: 'Promote your products across the marketplace.',              plan: 'Black Pepper' },
-  trend_detection:     { label: 'Trend Detection',            description: 'Spot trending products and categories early.',               plan: 'Black Pepper' },
-  inventory_prediction:{ label: 'Inventory Prediction',       description: 'Forecast stock needs before you run out.',                   plan: 'Black Pepper' },
-  sponsor_product:     { label: 'Sponsor a Product',          description: 'Activate a sponsorship for your product.',                   plan: 'Green Pepper' },
-  sponsor_discount:    { label: 'Sponsorship Discount',       description: 'Get a discounted rate on sponsorships.',                     plan: 'Red Pepper' },
+// Plan that unlocks each feature; labels and descriptions live in seller.features.<key>
+const FEATURE_PLAN: Record<FeatureKey, string> = {
+  advanced_analytics:   'Red Pepper',
+  ai_price_optimizer:   'Red Pepper',
+  ai_sales_predictor:   'Red Pepper',
+  ai_description_gen:   'Red Pepper',
+  ai_recommender:       'Red Pepper',
+  max_products_150:     'Red Pepper',
+  bulk_operations:      'Black Pepper',
+  api_access:           'Black Pepper',
+  custom_storefront:    'Black Pepper',
+  ai_hub:               'Black Pepper',
+  profit_center:        'Black Pepper',
+  vip_requests:         'Black Pepper',
+  sponsored_products:   'Black Pepper',
+  trend_detection:      'Black Pepper',
+  inventory_prediction: 'Black Pepper',
+  sponsor_product:      'Green Pepper',
+  sponsor_discount:     'Red Pepper',
 };
 
 export function UpgradeBanner({ feature, dark = true }: { feature: FeatureKey; dark?: boolean }) {
-  const info    = FEATURE_LABELS[feature];
+  const t       = useTranslations('seller.features');
+  const plan    = FEATURE_PLAN[feature];
   const cardBg  = dark ? '#161b27' : '#ffffff';
   const border  = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const textMain = dark ? '#ffffff' : '#111827';
@@ -187,10 +190,10 @@ export function UpgradeBanner({ feature, dark = true }: { feature: FeatureKey; d
 
       {/* Text */}
       <p style={{ fontSize: 15, fontWeight: 800, color: textMain, margin: '0 0 6px', letterSpacing: '-0.01em' }}>
-        {info.label}
+        {t(`${feature}.label`)}
       </p>
       <p style={{ fontSize: 12, color: textMuted, margin: '0 0 16px', lineHeight: 1.5 }}>
-        {info.description}
+        {t(`${feature}.description`)}
       </p>
 
       {/* Plan tag */}
@@ -203,7 +206,7 @@ export function UpgradeBanner({ feature, dark = true }: { feature: FeatureKey; d
       }}>
         <Zap size={11} style={{ color: '#db142e' }} />
         <span style={{ fontSize: 11, fontWeight: 800, color: '#db142e' }}>
-          Requires {info.plan}
+          {t('requires', { plan })}
         </span>
       </div>
 
@@ -223,7 +226,7 @@ export function UpgradeBanner({ feature, dark = true }: { feature: FeatureKey; d
           cursor: 'pointer',
         }}>
           <Zap size={13} />
-          Upgrade to {info.plan}
+          {t('upgradeTo', { plan })}
         </a>
       </div>
     </div>

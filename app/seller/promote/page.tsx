@@ -22,7 +22,7 @@ import {
   Calendar, Hash,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useTheme } from '../layout';
+import { useTheme } from '../SellerShell';
 import { useSubscription } from '@/app/hooks/useSubscription';
 import {
   sponsorshipApi,
@@ -171,7 +171,7 @@ function AdPreviewCard({
         boxShadow: dark ? '0 8px 32px rgba(0,0,0,0.4)' : '0 4px 24px rgba(0,0,0,0.08)',
       }}>
         <div style={{
-          position: 'absolute', top: 10, left: 10, zIndex: 2,
+          position: 'absolute', top: 10, insetInlineStart: 10, zIndex: 2,
           background: 'linear-gradient(135deg,#db142e,#a00f22)',
           borderRadius: 6, padding: '3px 8px',
           fontSize: 9, fontWeight: 800, color: '#fff', textTransform: 'uppercase',
@@ -398,14 +398,14 @@ function PaymentModal({
                   placeholder="1234 5678 9012 3456"
                   value={showNum ? formatCardNumber(card.card_number) : card.card_number.replace(/\D/g, '').slice(0, 16)}
                   onChange={e => setCard(c => ({ ...c, card_number: e.target.value.replace(/\D/g, '').slice(0, 16) }))}
-                  style={{ ...inp, paddingRight: 44, borderColor: errors.card_number ? '#ef4444' : border }}
+                  style={{ ...inp, paddingInlineEnd: 44, borderColor: errors.card_number ? '#ef4444' : border }}
                   autoComplete="cc-number"
                   inputMode="numeric"
                 />
                 <button
                   type="button"
                   onClick={() => setShowNum(v => !v)}
-                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: textMuted, fontSize: 11, fontWeight: 700 }}
+                  style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: textMuted, fontSize: 11, fontWeight: 700 }}
                 >
                   {showNum ? 'Hide' : 'Show'}
                 </button>
@@ -768,14 +768,14 @@ export default function PromoteProductPage() {
               Boost: <strong style={{ color: textMain }}>{success.boost_score} pts</strong> &nbsp;·&nbsp;
               Expires: <strong style={{ color: textMain }}>{new Date(success.expires_at).toLocaleDateString('en-GB')}</strong>
               {success.used_free_quota && (
-                <span style={{ marginLeft: 8, color: '#f59e0b', fontWeight: 700 }}>⬛ Free quota used ({success.remaining_free} left this week)</span>
+                <span style={{ marginInlineStart: 8, color: '#f59e0b', fontWeight: 700 }}>⬛ Free quota used ({success.remaining_free} left this week)</span>
               )}
               {success.amount_charged > 0 && (
-                <span style={{ marginLeft: 8, color: '#198f41', fontWeight: 700 }}>✓ {Number(success.amount_charged).toFixed(3)} DT charged</span>
+                <span style={{ marginInlineStart: 8, color: '#198f41', fontWeight: 700 }}>✓ {Number(success.amount_charged).toFixed(3)} DT charged</span>
               )}
             </p>
             {success.ai_ad_copy && (
-              <p style={{ fontSize: 12, color: textMain, fontStyle: 'italic', margin: '0 0 8px', background: dark ? 'rgba(255,255,255,0.05)' : '#f8f9fa', padding: '8px 12px', borderRadius: 8, borderLeft: '3px solid #db142e' }}>
+              <p style={{ fontSize: 12, color: textMain, fontStyle: 'italic', margin: '0 0 8px', background: dark ? 'rgba(255,255,255,0.05)' : '#f8f9fa', padding: '8px 12px', borderRadius: 8, borderInlineStart: '3px solid #db142e' }}>
                 "{success.ai_ad_copy}"
               </p>
             )}
@@ -809,7 +809,7 @@ export default function PromoteProductPage() {
                 )}
               </div>
               <div style={{ position: 'relative' }}>
-                <Search size={13} color={textMuted} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                <Search size={13} color={textMuted} style={{ position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="text" placeholder="Search products…" value={search}
                   onChange={e => setSearch(e.target.value)}
@@ -850,7 +850,7 @@ export default function PromoteProductPage() {
                         border: 'none', borderBottom: `1px solid ${border}`,
                         borderLeft: isSelected ? '3px solid #db142e' : '3px solid transparent',
                         cursor: alreadySponsored ? 'not-allowed' : 'pointer', opacity: alreadySponsored ? 0.55 : 1,
-                        textAlign: 'left', transition: 'all 0.12s ease', outline: 'none',
+                        textAlign: 'start', transition: 'all 0.12s ease', outline: 'none',
                       }}
                     >
                       <div style={{ width: 48, height: 48, borderRadius: 10, flexShrink: 0, background: dark ? 'rgba(255,255,255,0.06)' : '#f0f2f5', overflow: 'hidden', position: 'relative', border: isSelected ? '2px solid #db142e' : `1px solid ${border}` }}>
@@ -1096,7 +1096,7 @@ export default function PromoteProductPage() {
             <div style={{ background: dark ? 'rgba(239,68,68,0.1)' : '#fef2f2', border: '1px solid #ef4444', borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, animation: 'fadeUp 0.2s ease' }}>
               <AlertCircle size={16} color="#ef4444" />
               <p style={{ fontSize: 12, color: '#ef4444', margin: 0, fontWeight: 600 }}>{error}</p>
-              <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', marginLeft: 'auto', padding: 0 }}>✕</button>
+              <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', marginInlineStart: 'auto', padding: 0 }}>✕</button>
             </div>
           )}
         </div>
@@ -1112,7 +1112,7 @@ export default function PromoteProductPage() {
               <span style={{ color: planMeta.color }}>{planMeta.icon}</span>
               <span style={{ fontSize: 12, fontWeight: 800, color: planMeta.color }}>{planMeta.label}</span>
               {currentPlan === 'black' && quota && (
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: 3 }}>
+                <div style={{ marginInlineStart: 'auto', display: 'flex', gap: 3 }}>
                   {Array.from({ length: 3 }).map((_, i) => (
                     <div key={i} style={{ width: 18, height: 6, borderRadius: 3, background: i < (quota.remaining ?? 0) ? '#f59e0b' : dark ? 'rgba(255,255,255,0.12)' : '#d1d5db' }} />
                   ))}

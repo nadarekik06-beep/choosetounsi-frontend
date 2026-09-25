@@ -9,7 +9,7 @@
 import { useState, useEffect } from 'react';
 import { Eye, MousePointer, ShoppingBag, TrendingUp, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useTheme } from '../../layout';
+import { useTheme } from '../../SellerShell';
 import { sponsorshipApi, SponsorshipRecord } from '@/lib/sponsorshipApi';
 
 export default function SponsorshipAnalyticsPage() {
@@ -128,7 +128,7 @@ export default function SponsorshipAnalyticsPage() {
               <thead>
                 <tr style={{ borderBottom: `1px solid ${border}` }}>
                   {['Product', 'Plan', 'Status', 'Boost', 'Period', 'Impressions', 'Clicks', 'CTR', 'Conversions', 'Cost'].map(h => (
-                    <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                    <th key={h} style={{ padding: '12px 16px', textAlign: 'start', fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
                       {h}
                     </th>
                   ))}

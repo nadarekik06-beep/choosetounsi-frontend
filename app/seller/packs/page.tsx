@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { packsApi } from '@/lib/sellerApi'
-import { useTheme } from '../layout'
+import { useTheme } from '../SellerShell'
 import {
   Package2, Plus, Edit2, Trash2, AlertCircle,
   RefreshCw, Tag, TrendingDown, CheckCircle, Clock
@@ -204,7 +204,7 @@ function PackCard({
         )}
         {/* Approval badge */}
         <div style={{
-          position: 'absolute', top: 10, right: 10,
+          position: 'absolute', top: 10, insetInlineEnd: 10,
           display: 'flex', alignItems: 'center', gap: 4,
           fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999,
           background: pack.is_approved
@@ -220,7 +220,7 @@ function PackCard({
         {/* Savings badge */}
         {savings > 0 && (
           <div style={{
-            position: 'absolute', top: 10, left: 10,
+            position: 'absolute', top: 10, insetInlineStart: 10,
             display: 'flex', alignItems: 'center', gap: 4,
             fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999,
             background: 'rgba(219,20,46,0.9)', color: '#fff',

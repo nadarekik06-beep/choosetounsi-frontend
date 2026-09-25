@@ -97,7 +97,7 @@ function LockedField({ children, locked }: { children: React.ReactNode; locked: 
       <div style={{ opacity: 0.5, pointerEvents: 'none', userSelect: 'none' }}>{children}</div>
       <div style={{
         position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
-        justifyContent: 'flex-end', paddingRight: 10, pointerEvents: 'none',
+        justifyContent: 'flex-end', paddingInlineEnd: 10, pointerEvents: 'none',
       }}>
         <Lock size={13} color="#94a3b8" />
       </div>
@@ -116,7 +116,7 @@ function ImageThumb({ src, isPrimary, onRemove, onSetPrimary }: {
       <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       {isPrimary && (
         <div style={{
-          position: 'absolute', top: 4, left: 4, background: '#dc2626', color: '#fff',
+          position: 'absolute', top: 4, insetInlineStart: 4, background: '#dc2626', color: '#fff',
           fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 999,
         }}>Primary</div>
       )}
@@ -253,7 +253,7 @@ function SeasonPicker({ selected, onChange }: { selected: string[]; onChange: (s
           }}>
             {isChecked && (
               <span style={{
-                position: 'absolute', top: 4, right: 4, width: 12, height: 12,
+                position: 'absolute', top: 4, insetInlineEnd: 4, width: 12, height: 12,
                 borderRadius: '50%', background: '#dc2626',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
@@ -290,7 +290,7 @@ function FreeDeliveryToggle({ value, onChange }: { value: boolean; onChange: (v:
         >
           <div style={{
             position: 'absolute', top: 3,
-            left: value ? 'calc(100% - 19px)' : '3px',
+            insetInlineStart: value ? 'calc(100% - 19px)' : '3px',
             width: 16, height: 16, borderRadius: '50%', background: '#fff',
             boxShadow: '0 1px 4px rgba(0,0,0,0.15)', transition: 'left 0.2s ease',
           }} />
@@ -318,7 +318,7 @@ function FreeDeliveryToggle({ value, onChange }: { value: boolean; onChange: (v:
       </label>
       {value && (
         <div style={{
-          marginTop: 10, marginLeft: 50,
+          marginTop: 10, marginInlineStart: 50,
           background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)',
           borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'flex-start', gap: 8,
         }}>
@@ -366,7 +366,7 @@ function Field({ label, required, error, hint, children, locked, labelAction }: 
           </span>
         )}
         {labelAction && (
-          <span style={{ marginLeft: 'auto', textTransform: 'none', letterSpacing: 0, fontWeight: 400 }}>
+          <span style={{ marginInlineStart: 'auto', textTransform: 'none', letterSpacing: 0, fontWeight: 400 }}>
             {labelAction}
           </span>
         )}
@@ -826,10 +826,10 @@ if (isEdit) {
                         readOnly={isLocked}
                         placeholder="0.000"
                         className={inputCls(errors.price)}
-                        style={{ paddingRight: 44, cursor: isLocked ? 'not-allowed' : undefined }}
+                        style={{ paddingInlineEnd: 44, cursor: isLocked ? 'not-allowed' : undefined }}
                       />
                       <span style={{
-                        position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                        position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)',
                         fontSize: 11, color: errors.price ? '#ef4444' : '#94a3b8', fontWeight: 600,
                       }}>TND</span>
                     </div>
@@ -925,7 +925,7 @@ if (isEdit) {
             {form.subcategory_id && !axesLoading && infoAxes.length > 0 && (
               <section>
                 <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
-                  Product Details <span style={{ marginLeft: 8, fontSize: 9, fontWeight: 500, color: '#c4b5fd', textTransform: 'none' }}>informational only</span>
+                  Product Details <span style={{ marginInlineStart: 8, fontSize: 9, fontWeight: 500, color: '#c4b5fd', textTransform: 'none' }}>informational only</span>
                 </p>
                 <DynamicAttributeSection subcategoryId={Number(form.subcategory_id)} values={attrValues} onChange={setAttrValues} disabled={saving} overrideAttributes={infoAxes} />
               </section>

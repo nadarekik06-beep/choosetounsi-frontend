@@ -24,6 +24,8 @@
 
 import { Flame, Crown, ArrowRight, X } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 interface CommissionUpgradeNudgeProps {
   currentPlan:     string
@@ -45,6 +47,9 @@ const NEXT_PLAN: Record<string, { key: string; name: string; cost: number; icon:
 export default function CommissionUpgradeNudge({
   currentPlan, monthlyRevenue, dark,
 }: CommissionUpgradeNudgeProps) {
+  const t = useTranslations('seller.nudge')
+  const { price } = useFormat()
+  const whole = (n: number) => price(n, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
   const [dismissed, setDismissed] = useState(false)
 
   const next = NEXT_PLAN[currentPlan]
@@ -77,7 +82,7 @@ export default function CommissionUpgradeNudge({
 
       {/* Background glow */}
       <div style={{
-        position: 'absolute', top: -40, right: -40,
+        position: 'absolute', top: -40, insetInlineEnd: -40,
         width: 120, height: 120, borderRadius: '50%',
         background: color, opacity: dark ? 0.08 : 0.06,
         filter: 'blur(30px)', pointerEvents: 'none',
@@ -95,15 +100,17 @@ export default function CommissionUpgradeNudge({
       {/* Text */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: '0 0 3px', fontSize: 13, fontWeight: 800, color: textMain }}>
-          Upgrade to {name} and keep more of your revenue
+          {t('title', { plan: name })}
         </p>
         <p style={{ margin: 0, fontSize: 11, color: textMuted, fontWeight: 500 }}>
-          Based on this month's revenue of {monthlyRevenue.toFixed(0)} TND — you'd save{' '}
-          <span style={{ color, fontWeight: 800 }}>~{monthlySaved.toFixed(0)} TND/month</span>
-          {' '}in fees vs your current plan.
+          {t.rich('body', {
+            revenue: whole(monthlyRevenue),
+            saved: whole(monthlySaved),
+            hl: (chunks) => <span style={{ color, fontWeight: 800 }}>{chunks}</span>,
+          })}
           {netGain > 0 && (
             <span style={{ fontWeight: 700, color: '#10b981' }}>
-              {' '}Net gain after {cost} DT plan cost: +{netGain.toFixed(0)} TND.
+              {' '}{t('netGain', { cost: whole(cost), gain: whole(netGain) })}
             </span>
           )}
         </p>
@@ -123,18 +130,19 @@ export default function CommissionUpgradeNudge({
           transition: 'filter 0.15s',
         }}
       >
-        Upgrade <ArrowRight size={13} />
+        {t('cta')} <ArrowRight size={13} />
       </a>
 
       {/* Dismiss */}
       <button
         onClick={() => setDismissed(true)}
         style={{
-          position: 'absolute', top: 8, right: 8,
+          position: 'absolute', top: 8, insetInlineEnd: 8,
           background: 'transparent', border: 'none',
           cursor: 'pointer', color: textMuted, padding: 4,
         }}
-        title="Dismiss"
+        title={t('dismiss')}
+        aria-label={t('dismiss')}
       >
         <X size={13} />
       </button>

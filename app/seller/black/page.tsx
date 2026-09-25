@@ -21,7 +21,7 @@ import {
   ArrowRight, Sparkles, AlertTriangle,
 } from 'lucide-react';
 import { useSubscription } from '@/app/hooks/useSubscription';
-import { useTheme } from '../layout';
+import { useTheme } from '../SellerShell';
 import { blackPepperApi, type DailyBriefData } from '@/lib/blackPepperApi';
 import { dashboardApi } from '@/lib/sellerApi';
 
@@ -101,7 +101,7 @@ function FeatureGatewayCard({ href, title, subtitle, icon: Icon, accent, badge, 
     }}>
       {/* Accent glow */}
       <div style={{
-        position: 'absolute', top: -24, right: -24, width: 80, height: 80,
+        position: 'absolute', top: -24, insetInlineEnd: -24, width: 80, height: 80,
         borderRadius: '50%', background: accent, opacity: dark ? 0.1 : 0.07,
         filter: 'blur(20px)', pointerEvents: 'none',
       }} />
@@ -136,7 +136,7 @@ function FeatureGatewayCard({ href, title, subtitle, icon: Icon, accent, badge, 
 
       {/* Bottom accent line */}
       <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: 2,
+        position: 'absolute', bottom: 0, insetInlineStart: 0, insetInlineEnd: 0, height: 2,
         background: `linear-gradient(90deg,${accent},transparent)`, opacity: 0.5,
       }} />
     </Link>
@@ -306,7 +306,7 @@ export default function BlackOverviewPage() {
           padding: '22px 24px', position: 'relative', overflow: 'hidden',
         }}>
           <div style={{
-            position: 'absolute', top: -40, right: -40, width: 180, height: 180,
+            position: 'absolute', top: -40, insetInlineEnd: -40, width: 180, height: 180,
             borderRadius: '50%', background: 'rgba(245,158,11,0.07)', filter: 'blur(50px)',
           }} />
 
@@ -370,7 +370,7 @@ export default function BlackOverviewPage() {
                 Priority: <span style={{ color: txtMain, fontWeight: 700 }}>{brief.top_action.label}</span>
               </span>
               <Link href={brief.top_action.href} style={{
-                marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5,
+                marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: 5,
                 padding: '6px 14px', borderRadius: 9,
                 background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
                 color: '#000', fontSize: 11, fontWeight: 800, textDecoration: 'none',

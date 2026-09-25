@@ -8,7 +8,7 @@
  * Free sellers are redirected to /seller/subscription via the sidebar lock.
  */
 
-import { useTheme } from '../layout';
+import { useTheme } from '../SellerShell';
 import { PlanGate } from '@/app/components/seller/SubscriptionBadge';
 import AdvancedAnalytics from '@/app/components/seller/AdvancedAnalytics';
 import { BarChart2 } from 'lucide-react';

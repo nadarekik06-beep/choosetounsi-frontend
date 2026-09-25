@@ -490,7 +490,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
                       </p>
                       <TempBadge temp={data.market_insights.market_temperature} />
                     </div>
-                    <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <ul style={{ margin: 0, paddingInlineStart: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {data.market_insights.insights.map((ins, i) => (
                         <li key={i} style={{ fontSize: 12.5, color: textMain, lineHeight: 1.6 }}>{ins}</li>
                       ))}

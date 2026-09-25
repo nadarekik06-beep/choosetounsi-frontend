@@ -1,6 +1,7 @@
 'use client'
 
 import { CheckCircle, Circle, Package, User, Truck, ChevronRight } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 interface OnboardingChecklistProps {
   totalProducts: number
@@ -18,6 +19,7 @@ interface CheckItem {
 }
 
 export default function OnboardingChecklist({ totalProducts, hasProfilePicture, dark }: OnboardingChecklistProps) {
+  const t = useTranslations('seller.checklist')
   const bg        = dark ? '#161b27' : '#ffffff'
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'
   const textMain  = dark ? '#fff' : '#111'
@@ -26,24 +28,24 @@ export default function OnboardingChecklist({ totalProducts, hasProfilePicture, 
   const items: CheckItem[] = [
     {
       id: 'first_product',
-      label: 'Add your first product',
-      description: 'List a product so buyers can discover your store',
+      label: t('firstProduct'),
+      description: t('firstProductDesc'),
       done: totalProducts > 0,
       href: '/seller/products/new',
       icon: Package,
     },
     {
       id: 'profile',
-      label: 'Complete your profile',
-      description: 'Add a profile picture and social links',
+      label: t('profile'),
+      description: t('profileDesc'),
       done: hasProfilePicture,
       href: '/seller/settings',
       icon: User,
     },
     {
       id: 'delivery',
-      label: 'Review delivery options',
-      description: 'Make sure buyers know your shipping options',
+      label: t('delivery'),
+      description: t('deliveryDesc'),
       done: false,
       href: '/seller/settings',
       icon: Truck,
@@ -62,10 +64,10 @@ export default function OnboardingChecklist({ totalProducts, hasProfilePicture, 
       <div style={{ padding: '16px 20px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <p style={{ fontWeight: 900, fontSize: 15, color: textMain, margin: '0 0 2px', letterSpacing: '-0.01em' }}>
-            🚀 Getting Started
+            {t('title')}
           </p>
           <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>
-            {completedCount} of {items.length} steps completed
+            {t('progress', { done: completedCount, total: items.length })}
           </p>
         </div>
         <div style={{ width: 80 }}>
@@ -77,7 +79,7 @@ export default function OnboardingChecklist({ totalProducts, hasProfilePicture, 
               transition: 'width 0.5s ease',
             }} />
           </div>
-          <p style={{ fontSize: 10, color: textMuted, margin: '4px 0 0', textAlign: 'right' }}>
+          <p style={{ fontSize: 10, color: textMuted, margin: '4px 0 0', textAlign: 'end' }}>
             {Math.round((completedCount / items.length) * 100)}%
           </p>
         </div>

@@ -7,7 +7,7 @@ import {
   ShoppingBag, AlertCircle, User, MapPin, Package,
   Hash, Calendar, Tag,
 } from 'lucide-react';
-import { useTheme } from '../layout';
+import { useTheme } from '../SellerShell';
 import type { Order, OrderDetail, OrderItem, VariantAttribute, PaginatedResponse, OrderCommissionSummary } from '@/types/seller';
 
 // ─── Status colors ────────────────────────────────────────────────────────────
@@ -176,7 +176,7 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
     <div style={{
       display: 'flex', gap: 14, padding: '14px 16px', borderBottom: `1px solid ${border}`, alignItems: 'flex-start',
       background: item.item_status === 'returned' ? 'rgba(219,20,46,0.04)' : item.item_status === 'exchanged' ? 'rgba(245,158,11,0.04)' : 'transparent',
-      borderLeft: item.item_status === 'returned' ? '3px solid #db142e' : item.item_status === 'exchanged' ? '3px solid #f59e0b' : 'none',
+      borderInlineStart: item.item_status === 'returned' ? '3px solid #db142e' : item.item_status === 'exchanged' ? '3px solid #f59e0b' : 'none',
     }}>
       <div style={{ width: 72, height: 72, flexShrink: 0, borderRadius: 12, overflow: 'hidden', border: `1.5px solid ${border}`, background: dark ? 'rgba(255,255,255,0.04)' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
         {hasImage
@@ -184,7 +184,7 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
           : <Package size={24} style={{ color: dark ? 'rgba(255,255,255,0.15)' : '#cbd5e1' }} />
         }
         {hasVariant && (
-          <div style={{ position: 'absolute', bottom: 4, right: 4, width: 16, height: 16, borderRadius: '50%', background: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'absolute', bottom: 4, insetInlineEnd: 4, width: 16, height: 16, borderRadius: '50%', background: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Tag size={8} color="#fff" />
           </div>
         )}
@@ -226,7 +226,7 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
         <CommissionItemBadge item={item} dark={dark} />
       </div>
 
-      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+      <div style={{ textAlign: 'end', flexShrink: 0 }}>
         <p style={{ fontWeight: 900, color: '#3b82f6', fontSize: 14, margin: 0 }}>{Number(item.total).toFixed(3)}</p>
         <p style={{ fontSize: 9, fontWeight: 700, color: textMuted, margin: '2px 0 0', textTransform: 'uppercase' }}>TND</p>
       </div>
@@ -544,8 +544,8 @@ export default function OrdersPage() {
       {/* Filters */}
       <div style={{ background: cardBg, borderRadius: 16, padding: 16, border: `1px solid ${border}`, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
-          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: textMuted, pointerEvents: 'none' }} />
-          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search order number or customer name…" style={{ ...inputStyle, width: '100%', paddingLeft: 32 }} />
+          <Search size={13} style={{ position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)', color: textMuted, pointerEvents: 'none' }} />
+          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search order number or customer name…" style={{ ...inputStyle, width: '100%', paddingInlineStart: 32 }} />
         </div>
         <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} style={inputStyle}>
           <option value="">All Statuses</option>
@@ -559,7 +559,7 @@ export default function OrdersPage() {
             <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
           ))}
         </select>
-        {data && <span style={{ fontSize: 11, fontWeight: 700, color: textMuted, marginLeft: 'auto' }}>{data.total} order{data.total !== 1 ? 's' : ''}</span>}
+        {data && <span style={{ fontSize: 11, fontWeight: 700, color: textMuted, marginInlineStart: 'auto' }}>{data.total} order{data.total !== 1 ? 's' : ''}</span>}
       </div>
 
       {/* Table */}
@@ -606,7 +606,7 @@ export default function OrdersPage() {
                     <td style={{ padding: '13px 20px' }}><StatusBadge status={order.status} dark={dark} /></td>
                     <td style={{ padding: '13px 20px' }}><PaymentBadge status={order.payment_status} /></td>
                     <td style={{ padding: '13px 20px' }}><MethodBadge method={order.payment_method} /></td>
-                    <td style={{ padding: '13px 20px', textAlign: 'right', fontWeight: 900, color: textMain, fontSize: 12 }}>{Number(order.total_amount).toFixed(3)} TND</td>
+                    <td style={{ padding: '13px 20px', textAlign: 'end', fontWeight: 900, color: textMain, fontSize: 12 }}>{Number(order.total_amount).toFixed(3)} TND</td>
                     <td style={{ padding: '13px 20px', fontSize: 11, color: textMuted, fontWeight: 500 }}>{new Date(order.created_at).toLocaleDateString('fr-TN')}</td>
                     <td style={{ padding: '13px 20px', textAlign: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>

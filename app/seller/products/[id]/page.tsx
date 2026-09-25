@@ -102,7 +102,7 @@ function ImageGallery({ images }: { images: ProductImage[] }) {
           className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
         />
         {current.is_primary && (
-          <div className="absolute top-3 left-3">
+          <div className="absolute top-3 start-3">
             <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-rose-600 text-white shadow">
               <Star size={9} fill="currentColor" /> Primary
             </span>
@@ -113,20 +113,20 @@ function ImageGallery({ images }: { images: ProductImage[] }) {
             <button
               onClick={() => setSelected((s) => Math.max(0, s - 1))}
               disabled={selected === 0}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition disabled:opacity-30"
+              className="absolute start-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition disabled:opacity-30"
             >
               <ChevronLeft size={14} />
             </button>
             <button
               onClick={() => setSelected((s) => Math.min(images.length - 1, s + 1))}
               disabled={selected === images.length - 1}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition disabled:opacity-30"
+              className="absolute end-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition disabled:opacity-30"
             >
               <ChevronRight size={14} />
             </button>
           </>
         )}
-        <div className="absolute bottom-3 right-3 text-[10px] font-bold bg-black/40 text-white px-2 py-1 rounded-full backdrop-blur-sm">
+        <div className="absolute bottom-3 end-3 text-[10px] font-bold bg-black/40 text-white px-2 py-1 rounded-full backdrop-blur-sm">
           {selected + 1} / {images.length}
         </div>
       </div>
@@ -380,10 +380,10 @@ export default function ProductDetailPage() {
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">Price</p>
                 <p className="text-3xl font-black text-slate-900">
                   {Number(product.price).toFixed(3)}
-                  <span className="text-base font-bold text-slate-400 ml-1">TND</span>
+                  <span className="text-base font-bold text-slate-400 ms-1">TND</span>
                 </p>
               </div>
-              <div className="text-right">
+              <div className="text-end">
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">Stock</p>
                 <div className="flex items-center gap-2 justify-end">
                   <p className={`text-2xl font-black ${stockColor}`}>{product.stock}</p>

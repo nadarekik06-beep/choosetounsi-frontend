@@ -134,7 +134,7 @@ export function EliteBanner({ dark }: { dark: boolean }) {
       borderRadius: 20, border: '1px solid rgba(245,158,11,0.35)', padding: '20px 24px',
       display: 'flex', alignItems: 'center', gap: 16, position: 'relative', overflow: 'hidden',
       boxShadow: '0 8px 40px rgba(245,158,11,0.12)' }}>
-      <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180,
+      <div style={{ position: 'absolute', top: -40, insetInlineEnd: -40, width: 180, height: 180,
         borderRadius: '50%', background: 'rgba(245,158,11,0.08)', filter: 'blur(40px)', pointerEvents: 'none' }}/>
       <div style={{ width: 52, height: 52, borderRadius: 16, flexShrink: 0,
         background: 'linear-gradient(135deg,rgba(245,158,11,0.25),rgba(251,191,36,0.15))',
@@ -190,7 +190,7 @@ export function AiHubSection({ dark }: { dark: boolean }) {
           <p style={{ color:'#ef4444', fontSize:13 }}>{error}</p>
           <button onClick={load} style={{ marginTop:8, padding:'8px 16px', borderRadius:8,
             background:`${GOLD}18`, border:`1px solid ${GOLD}33`, color:GOLD, cursor:'pointer', fontWeight:700, fontSize:12 }}>
-            <RefreshCw size={12} style={{ display:'inline', marginRight:4 }}/> Retry
+            <RefreshCw size={12} style={{ display:'inline', marginInlineEnd:4 }}/> Retry
           </button>
         </div>
       )}
@@ -399,7 +399,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
           <button onClick={load} style={{ marginTop: 8, padding: '8px 16px', borderRadius: 8,
             background: `${GOLD}18`, border: `1px solid ${GOLD}33`, color: GOLD,
             cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
-            <RefreshCw size={12} style={{ display: 'inline', marginRight: 4 }}/> Retry
+            <RefreshCw size={12} style={{ display: 'inline', marginInlineEnd: 4 }}/> Retry
           </button>
         </div>
       )}
@@ -464,7 +464,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                       color: textMain, fontSize: 14, fontWeight: 700,
                       outline: 'none', boxSizing: 'border-box' as const }}
                   />
-                  <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                  <span style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)',
                     fontSize: 11, color: textMuted, fontWeight: 700, pointerEvents: 'none' }}>TND</span>
                 </div>
                 <button onClick={handleSaveGoal} disabled={saving}
@@ -613,11 +613,11 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                       <div style={{ position: 'relative', height: 5,
                         background: dark ? 'rgba(255,255,255,0.06)' : '#e5e7eb', borderRadius: 999 }}>
                         {goalW > 0 && (
-                          <div style={{ position: 'absolute', top: 0, left: 0,
+                          <div style={{ position: 'absolute', top: 0, insetInlineStart: 0,
                             width: `${goalW}%`, height: '100%',
                             background: 'rgba(245,158,11,0.2)', borderRadius: 999 }}/>
                         )}
-                        <div style={{ position: 'absolute', top: 0, left: 0,
+                        <div style={{ position: 'absolute', top: 0, insetInlineStart: 0,
                           width: `${revW}%`, height: '100%',
                           background: m.hit
                             ? 'linear-gradient(90deg,#10b981,#34d399)'
@@ -625,7 +625,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                           borderRadius: 999 }}/>
                       </div>
                       {m.goal > 0 && (
-                        <p style={{ fontSize: 9, color: textMuted, margin: '4px 0 0', textAlign: 'right' }}>
+                        <p style={{ fontSize: 9, color: textMuted, margin: '4px 0 0', textAlign: 'end' }}>
                           Goal: {fmt(m.goal)}
                         </p>
                       )}
@@ -737,7 +737,7 @@ export function VipLoungeSection({ dark }: { dark: boolean }) {
             rows={3} style={{ width:'100%', padding:'12px 14px', borderRadius:10, background:inputBg,
               border:`1px solid ${inputBdr}`, color:textMain, fontSize:13, fontFamily:'inherit',
               resize:'vertical', outline:'none', boxSizing:'border-box' as const }}/>
-          <p style={{ fontSize:10, color:textMuted, margin:'4px 0 0', textAlign:'right' }}>{form.message.length} / 1000</p>
+          <p style={{ fontSize:10, color:textMuted, margin:'4px 0 0', textAlign: 'end' }}>{form.message.length} / 1000</p>
         </div>
         {formError && <p style={{ fontSize:12, color:'#ef4444', margin:0, fontWeight:600 }}>{formError}</p>}
         {success && (
@@ -775,7 +775,7 @@ export function VipLoungeSection({ dark }: { dark: boolean }) {
                       <p style={{ fontSize:11, color:textMuted, margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{req.message}</p>
                       {req.admin_note && <p style={{ fontSize:11, color:'#10b981', margin:0, fontWeight:600 }}>💬 {req.admin_note}</p>}
                       <p style={{ fontSize:10, color:textMuted, margin:'4px 0 0' }}>
-                        <Clock size={9} style={{ display:'inline', marginRight:3 }}/>
+                        <Clock size={9} style={{ display:'inline', marginInlineEnd:3 }}/>
                         {new Date(req.created_at).toLocaleDateString('fr-TN')}
                       </p>
                     </div>

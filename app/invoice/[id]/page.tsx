@@ -300,7 +300,7 @@ export default function InvoicePage() {
             </div>
 
             {/* Invoice title */}
-            <div style={{ textAlign: 'right' }}>
+            <div style={{ textAlign: 'end' }}>
               <p style={{
                 fontFamily: "'Barlow Condensed', sans-serif",
                 fontSize: 32, fontWeight: 900, color: '#fff',
@@ -409,10 +409,10 @@ export default function InvoicePage() {
               <thead>
                 <tr style={{ background: '#1e293b' }}>
                   <th style={{ ...thStyle, width: hasVariantItems ? 48 : 0, padding: hasVariantItems ? '10px 8px' : 0 }} />
-                  <th style={{ ...thStyle, textAlign: 'left' }}>Produit</th>
+                  <th style={{ ...thStyle, textAlign: 'start' }}>Produit</th>
                   <th style={{ ...thStyle, width: 60 }}>Qté</th>
-                  <th style={{ ...thStyle, width: 110, textAlign: 'right' }}>Prix unitaire</th>
-                  <th style={{ ...thStyle, width: 110, textAlign: 'right' }}>Total</th>
+                  <th style={{ ...thStyle, width: 110, textAlign: 'end' }}>Prix unitaire</th>
+                  <th style={{ ...thStyle, width: 110, textAlign: 'end' }}>Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -465,7 +465,7 @@ export default function InvoicePage() {
                                 {/* Colors as swatches */}
                                 {colors.length > 0 && (
                                   <span style={attrPillStyle}>
-                                    <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748b', marginRight: 4 }}>
+                                    <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748b', marginInlineEnd: 4 }}>
                                       Couleur
                                     </span>
                                     {colors.map((c, ci) =>
@@ -479,12 +479,12 @@ export default function InvoicePage() {
                                             borderRadius: '50%',
                                             background: c.color_hex,
                                             border: '1px solid rgba(0,0,0,0.15)',
-                                            marginRight: 2,
+                                            marginInlineEnd: 2,
                                             verticalAlign: 'middle',
                                           }}
                                         />
                                       ) : (
-                                        <span key={ci} style={{ fontSize: 10, marginRight: 2 }}>{c.value}</span>
+                                        <span key={ci} style={{ fontSize: 10, marginInlineEnd: 2 }}>{c.value}</span>
                                       )
                                     )}
                                     <span style={{ fontSize: 10, color: '#475569' }}>
@@ -496,7 +496,7 @@ export default function InvoicePage() {
                                 {/* Other attributes */}
                                 {others.map((attr, ai) => (
                                   <span key={ai} style={attrPillStyle}>
-                                    <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748b', marginRight: 4 }}>
+                                    <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748b', marginInlineEnd: 4 }}>
                                       {attr.label}
                                     </span>
                                     <span style={{ fontSize: 10, fontWeight: 700, color: '#1e293b' }}>
@@ -517,12 +517,12 @@ export default function InvoicePage() {
                     </td>
 
                     {/* Unit price */}
-                    <td style={{ padding: '10px 12px', textAlign: 'right', verticalAlign: 'middle', color: '#475569', fontWeight: 600 }}>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', verticalAlign: 'middle', color: '#475569', fontWeight: 600 }}>
                       {fmt(item.unit_price)}
                     </td>
 
                     {/* Total */}
-                    <td style={{ padding: '10px 12px', textAlign: 'right', verticalAlign: 'middle', fontWeight: 800, color: '#1e293b' }}>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', verticalAlign: 'middle', fontWeight: 800, color: '#1e293b' }}>
                       {fmt(item.total)}
                     </td>
                   </tr>
@@ -582,7 +582,7 @@ export default function InvoicePage() {
                   Pour toute question, contactez le vendeur ou visitez choosetounsi.tn
                 </p>
               </div>
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ textAlign: 'end', flexShrink: 0 }}>
                 <p style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 600 }}>
                   Document généré le {new Date().toLocaleDateString('fr-TN')}
                 </p>

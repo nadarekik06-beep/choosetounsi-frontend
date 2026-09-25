@@ -5,7 +5,7 @@ import {
   Star, MessageSquare, ThumbsUp, AlertCircle, Reply, Flag, RefreshCw,
   BarChart2, Tag, AlertTriangle, X, CheckCircle,
 } from 'lucide-react';
-import { useTheme } from '@/app/seller/layout';
+import { useTheme } from '@/app/seller/SellerShell';
 
 const API_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
 const getToken = () => typeof window !== 'undefined'
@@ -61,14 +61,14 @@ function KpiCard({ title, value, subtitle, accent, icon: Icon, dark }: {
   const muted = dark ? 'rgba(255,255,255,0.4)' : '#888';
   return (
     <div style={{ background: bg, borderRadius: 18, border: `1px solid ${border}`, padding: '20px 20px 16px', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: -30, right: -30, width: 90, height: 90, borderRadius: '50%', background: accent, opacity: dark ? 0.12 : 0.08, filter: 'blur(24px)' }} />
+      <div style={{ position: 'absolute', top: -30, insetInlineEnd: -30, width: 90, height: 90, borderRadius: '50%', background: accent, opacity: dark ? 0.12 : 0.08, filter: 'blur(24px)' }} />
       <div style={{ width: 40, height: 40, borderRadius: 11, background: `${accent}22`, border: `1px solid ${accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, marginBottom: 12 }}>
         <Icon size={18} />
       </div>
       <p style={{ fontSize: 24, fontWeight: 900, color: txt, margin: '0 0 4px', letterSpacing: '-0.03em', lineHeight: 1 }}>{value}</p>
       <p style={{ fontSize: 11, fontWeight: 800, color: accent, margin: '0 0 3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</p>
       {subtitle && <p style={{ fontSize: 11, color: muted, margin: 0, fontWeight: 500 }}>{subtitle}</p>}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${accent},transparent)`, opacity: 0.6 }} />
+      <div style={{ position: 'absolute', bottom: 0, insetInlineStart: 0, insetInlineEnd: 0, height: 3, background: `linear-gradient(90deg,${accent},transparent)`, opacity: 0.6 }} />
     </div>
   );
 }
@@ -154,7 +154,7 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
                   key={r.value}
                   onClick={() => setReason(r.value)}
                   style={{
-                    padding: '10px 14px', borderRadius: 10, textAlign: 'left',
+                    padding: '10px 14px', borderRadius: 10, textAlign: 'start',
                     border: `1.5px solid ${reason === r.value ? '#ef4444' : (dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb')}`,
                     background: reason === r.value ? 'rgba(239,68,68,0.08)' : (dark ? 'rgba(255,255,255,0.03)' : '#f8fafc'),
                     color: reason === r.value ? '#ef4444' : (dark ? 'rgba(255,255,255,0.7)' : '#374151'),
@@ -249,7 +249,7 @@ function ReplyModal({ reviewId, existing, dark, onClose, onSaved }: {
           rows={5} maxLength={1000} placeholder="Write your professional reply…"
           style={{ width: '100%', borderRadius: 12, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`, background: dark ? 'rgba(255,255,255,0.05)' : '#f8fafc', padding: '12px 14px', fontSize: 14, color: dark ? '#fff' : '#374151', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', outline: 'none' }}
         />
-        <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'right', margin: '4px 0 16px' }}>{body.length}/1000</p>
+        <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'end', margin: '4px 0 16px' }}>{body.length}/1000</p>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onClose} style={{ flex: 1, height: 44, borderRadius: 12, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`, background: 'transparent', color: dark ? 'rgba(255,255,255,0.6)' : '#64748b', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>Cancel</button>
           <button onClick={handleSave} disabled={saving || body.trim().length < 5}
@@ -283,7 +283,7 @@ function ReviewRow({ review, dark, onReply, onReport }: {
           </div>
           <div>
             <span style={{ fontSize: 13, fontWeight: 800, color: txt }}>{review.display_name}</span>
-            {review.is_verified && <span style={{ fontSize: 10, color: '#059669', fontWeight: 700, marginLeft: 6, background: 'rgba(5,150,105,0.1)', padding: '1px 6px', borderRadius: 999, border: '1px solid rgba(5,150,105,0.2)' }}>✅ Verified</span>}
+            {review.is_verified && <span style={{ fontSize: 10, color: '#059669', fontWeight: 700, marginInlineStart: 6, background: 'rgba(5,150,105,0.1)', padding: '1px 6px', borderRadius: 999, border: '1px solid rgba(5,150,105,0.2)' }}>✅ Verified</span>}
             <p style={{ fontSize: 11, color: muted, margin: '2px 0 0' }}>{review.product?.name} · {review.created_at}</p>
           </div>
         </div>
@@ -323,7 +323,7 @@ function ReviewRow({ review, dark, onReply, onReport }: {
       )}
 
       {review.reply && (
-        <div style={{ background: dark ? 'rgba(255,255,255,0.04)' : '#f8fafc', borderRadius: 10, padding: '10px 12px', borderLeft: '3px solid #db142e' }}>
+        <div style={{ background: dark ? 'rgba(255,255,255,0.04)' : '#f8fafc', borderRadius: 10, padding: '10px 12px', borderInlineStart: '3px solid #db142e' }}>
           <p style={{ fontSize: 11, fontWeight: 800, color: '#db142e', margin: '0 0 4px' }}>Your Reply</p>
           <p style={{ fontSize: 12, color: dark ? 'rgba(255,255,255,0.7)' : '#374151', margin: 0, lineHeight: 1.5 }}>{review.reply.body}</p>
         </div>
@@ -437,12 +437,12 @@ export default function SellerReviewsPage() {
                 return (
                   <button key={star} onClick={() => setRFilter(rFilter === star ? null : star)}
                     style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', marginBottom: 8, background: rFilter === star ? 'rgba(219,20,46,0.05)' : 'transparent', border: 'none', borderRadius: 8, padding: '4px 8px', cursor: 'pointer', fontFamily: 'inherit' }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: muted, minWidth: 12, textAlign: 'right' }}>{star}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: muted, minWidth: 12, textAlign: 'end' }}>{star}</span>
                     <Star size={11} fill="#f59e0b" stroke="#f59e0b" />
                     <div style={{ flex: 1, height: 5, background: dark ? 'rgba(255,255,255,0.08)' : '#f1f5f9', borderRadius: 999, overflow: 'hidden' }}>
                       <div style={{ height: '100%', borderRadius: 999, background: star >= 4 ? '#10b981' : star === 3 ? '#f59e0b' : '#ef4444', width: `${pct}%`, transition: 'width 0.6s ease' }} />
                     </div>
-                    <span style={{ fontSize: 11, color: muted, minWidth: 28, textAlign: 'right' }}>{count}</span>
+                    <span style={{ fontSize: 11, color: muted, minWidth: 28, textAlign: 'end' }}>{count}</span>
                   </button>
                 );
               })}

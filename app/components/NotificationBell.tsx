@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/Usenotifications';
 import type { AppNotification } from '@/lib/notificationApi';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
 // ─── sound ────────────────────────────────────────────────────────
 function playSound() {
@@ -62,15 +64,6 @@ function accent(action: string): string {
   return '#db142e';
 }
 
-// ─── relative time ────────────────────────────────────────────────
-function timeAgo(iso: string): string {
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
-  if (mins < 1)  return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24)  return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
 
 // ─── single notification row ──────────────────────────────────────
 function NotifRow({
@@ -82,6 +75,7 @@ function NotifRow({
   dark: boolean;
   onRead: (n: AppNotification) => void;
 }) {
+  const { relative } = useFormat();
   const a         = accent(n.data.action);
   const textMain  = dark ? '#ffffff' : '#111827';
   const textMuted = dark ? 'rgba(255,255,255,0.45)' : '#6b7280';
@@ -93,7 +87,7 @@ function NotifRow({
     <button
       onClick={() => onRead(n)}
       style={{
-        width: '100%', textAlign: 'left',
+        width: '100%', textAlign: 'start',
         padding: '11px 14px',
         background: n.is_read ? 'transparent' : unreadBg,
         borderBottom: `1px solid ${border}`,
@@ -125,8 +119,8 @@ function NotifRow({
           }}>
             {n.data.title}
           </span>
-          <span style={{ fontSize: 10, color: textMuted, flexShrink: 0, marginLeft: 6 }}>
-            {timeAgo(n.created_at)}
+          <span style={{ fontSize: 10, color: textMuted, flexShrink: 0, marginInlineStart: 6 }}>
+            {relative(n.created_at)}
           </span>
         </div>
         <p style={{
@@ -174,6 +168,7 @@ export default function NotificationBell({
   pollInterval = 30_000,
 }: NotificationBellProps) {
 
+  const t = useTranslations('seller.bell');
   const onNew = useCallback(() => playSound(), []);
 
   const {
@@ -232,12 +227,13 @@ export default function NotificationBell({
             color: open ? '#db142e' : textMuted,
             position: 'relative', transition: 'all 0.2s ease',
           }}
-          title="Notifications"
+          title={t('title')}
+          aria-label={t('title')}
         >
           <Bell size={16} />
           {unreadCount > 0 && (
             <span style={{
-              position: 'absolute', top: -5, right: -5,
+              position: 'absolute', top: -5, insetInlineEnd: -5,
               minWidth: 18, height: 18, borderRadius: 999,
               background: '#db142e',
               border: `2px solid ${dark ? '#0d1117' : '#f0f2f5'}`,
@@ -254,7 +250,7 @@ export default function NotificationBell({
         {/* Dropdown */}
         {open && (
           <div style={{
-            position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+            position: 'absolute', top: 'calc(100% + 10px)', insetInlineEnd: 0,
             width: 360, maxHeight: 500,
             background: bg,
             border: `1px solid ${border}`,
@@ -275,7 +271,7 @@ export default function NotificationBell({
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Bell size={14} style={{ color: '#db142e' }} />
                 <span style={{ fontSize: 13, fontWeight: 800, color: textMain }}>
-                  Notifications
+                  {t('title')}
                 </span>
                 {unreadCount > 0 && (
                   <span style={{
@@ -285,7 +281,7 @@ export default function NotificationBell({
                     color: '#db142e',
                     border: '1px solid rgba(219,20,46,0.25)',
                   }}>
-                    {unreadCount} new
+                    {t('newCount', { count: unreadCount })}
                   </span>
                 )}
               </div>
@@ -300,10 +296,10 @@ export default function NotificationBell({
                       background: 'transparent', border: 'none',
                       cursor: 'pointer', padding: '3px 7px', borderRadius: 7,
                     }}
-                    title="Mark all read"
+                    title={t('markAllRead')}
                   >
                     <CheckCheck size={12} />
-                    All read
+                    {t('allRead')}
                   </button>
                 )}
                 <button
@@ -314,7 +310,8 @@ export default function NotificationBell({
                     display: 'flex', alignItems: 'center',
                     padding: 4, borderRadius: 6,
                   }}
-                  title="Refresh"
+                  title={t('refresh')}
+                  aria-label={t('refresh')}
                 >
                   <RefreshCw size={12} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
                 </button>
@@ -325,16 +322,16 @@ export default function NotificationBell({
             <div style={{ overflowY: 'auto', maxHeight: 420 }}>
               {loading && items.length === 0 ? (
                 <div style={{ padding: '40px 16px', textAlign: 'center', color: textMuted, fontSize: 13 }}>
-                  Loading…
+                  {t('loading')}
                 </div>
               ) : items.length === 0 ? (
                 <div style={{ padding: '48px 16px', textAlign: 'center' }}>
                   <Bell size={32} style={{ color: textMuted, opacity: 0.2, margin: '0 auto 12px', display: 'block' }} />
                   <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: 0 }}>
-                    No notifications yet
+                    {t('empty')}
                   </p>
                   <p style={{ fontSize: 11, color: textMuted, opacity: 0.6, margin: '4px 0 0' }}>
-                    You'll see activity here when things happen.
+                    {t('emptyHint')}
                   </p>
                 </div>
               ) : (

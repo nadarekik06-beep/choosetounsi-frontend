@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Menu, Sun, Moon, Flame, Crown } from 'lucide-react';
+import { Menu, Sun, Moon, Flame, Crown, Globe } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { useLanguage } from '@/components/i18n/LanguageSwitcher';
+import { formatDate } from '@/lib/i18n/format';
 import { useRouter } from 'next/navigation';
 import { getUser, AuthUser } from '@/lib/auth';
-import { useTheme } from '../layout';
+import { useTheme } from '../SellerShell';
 import NotificationBell from '@/app/components/NotificationBell';
 import { sellerNotificationApi } from '@/lib/notificationApi';
 import { useSubscription } from '@/app/hooks/useSubscription';
@@ -29,6 +32,7 @@ function fixGoogle(url: string) {
 
 /* Red Pepper badge */
 function RedPepperBadge({ dark }: { dark: boolean }) {
+  const t = useTranslations('seller.topbar');
   const [showTip, setShowTip] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   return (
@@ -49,7 +53,7 @@ function RedPepperBadge({ dark }: { dark: boolean }) {
       }}>
         <Flame size={11} style={{ color: '#db142e', fill: 'rgba(219,20,46,0.35)', flexShrink: 0 }} />
         <span style={{ fontSize: 9, fontWeight: 800, color: '#db142e', letterSpacing: '0.07em', textTransform: 'uppercase', lineHeight: 1 }}>
-          Red
+          {t('red')}
         </span>
       </span>
 
@@ -64,7 +68,7 @@ function RedPepperBadge({ dark }: { dark: boolean }) {
           border: `1px solid ${dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
           pointerEvents: 'none', zIndex: 100, animation: 'fadeUp 0.15s ease forwards',
         }}>
-          🌶️ Red Pepper — Premium Seller
+          {t('redTip')}
           <span style={{
             position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
             width: 0, height: 0,
@@ -79,6 +83,7 @@ function RedPepperBadge({ dark }: { dark: boolean }) {
 
 /* Black Pepper badge */
 function BlackPepperBadge({ dark }: { dark: boolean }) {
+  const t = useTranslations('seller.topbar');
   const [showTip, setShowTip] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -100,7 +105,7 @@ function BlackPepperBadge({ dark }: { dark: boolean }) {
       }}>
         <Crown size={11} style={{ color: '#f59e0b', fill: 'rgba(245,158,11,0.4)', flexShrink: 0 }} />
         <span style={{ fontSize: 9, fontWeight: 800, color: '#f59e0b', letterSpacing: '0.07em', textTransform: 'uppercase', lineHeight: 1 }}>
-          Elite
+          {t('elite')}
         </span>
       </span>
 
@@ -115,7 +120,7 @@ function BlackPepperBadge({ dark }: { dark: boolean }) {
           border: `1px solid ${dark ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.15)'}`,
           pointerEvents: 'none', zIndex: 100, animation: 'fadeUp 0.15s ease forwards',
         }}>
-          ⬛ Black Seller Elite — All Premium Features Unlocked
+          {t('blackTip')}
           <span style={{
             position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
             width: 0, height: 0,
@@ -131,6 +136,10 @@ function BlackPepperBadge({ dark }: { dark: boolean }) {
 /* TOPBAR */
 export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => void }) {
   const { dark, toggle }    = useTheme();
+  const t                    = useTranslations('seller.topbar');
+  const tn                   = useTranslations('seller.nav');
+  const locale               = useLocale();
+  const { openModal: openLanguage } = useLanguage();
   const { isRed, isBlack }  = useSubscription();
   const router               = useRouter();
   const [user,   setUser]   = useState<AuthUser | null>(null);
@@ -154,9 +163,7 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
   const bg     = isRed || isBlack ? redBg     : baseBg;
   const border = isRed || isBlack ? redBorder : baseBorder;
 
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-  });
+  const today = formatDate(new Date(), locale, 'full');
 
   const { initials, bg: aBg, fg: aFg } = user
     ? avatarMeta(user.name)
@@ -188,7 +195,7 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
       >
         {(isRed || isBlack) && (
           <div style={{
-            position: 'absolute', bottom: 0, left: 0, right: 0, height: 2,
+            position: 'absolute', bottom: 0, insetInline: 0, height: 2,
             background: isBlack
               ? 'linear-gradient(90deg, transparent, #f59e0b 20%, #f59e0b 80%, transparent)'
               : redAccentLine,
@@ -199,7 +206,7 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
         {/* hamburger */}
         <button
           onClick={onMobileMenuOpen}
-          aria-label="Open menu"
+          aria-label={tn('openMenu')}
           className="lg:hidden theme-toggle"
           style={{
             background: 'transparent', border: 'none', cursor: 'pointer',
@@ -216,7 +223,7 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
             fontSize: 16, fontWeight: 800, color: textMain, margin: 0, lineHeight: 1.2,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
-            Dashboard
+            {t('title')}
           </h2>
           <p className="hidden sm:block" style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>{today}</p>
         </div>
@@ -226,7 +233,27 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
 
           {/* dark/light toggle (hidden on mobile — the sidebar has one) */}
           <button
+            onClick={openLanguage}
+            className="theme-toggle hidden sm:flex"
+            aria-label={t('changeLanguage')}
+            title={t('changeLanguage')}
+            style={{
+              height: 38, borderRadius: 10, padding: '0 10px', gap: 5,
+              background: dark ? 'rgba(255,255,255,0.07)' : '#f0f2f5',
+              border: `1px solid ${border}`,
+              cursor: 'pointer',
+              alignItems: 'center', justifyContent: 'center',
+              color: textMain, fontSize: 11, fontWeight: 800,
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <Globe size={15} />
+            {locale.toUpperCase()}
+          </button>
+
+          <button
             onClick={toggle}
+            aria-label={t('toggleTheme')}
             className="theme-toggle hidden sm:flex"
             style={{
               width: 38, height: 38, borderRadius: 10,
@@ -293,7 +320,7 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
             <div className="hidden sm:block" style={{ lineHeight: 1.3 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, margin: 0 }}>
                 <p style={{ fontSize: 12, fontWeight: 800, color: textMain, margin: 0, lineHeight: 1.2 }}>
-                  {user?.name?.split(' ')[0] ?? 'Seller'}
+                  {user?.name?.split(' ')[0] ?? t('sellerFallback')}
                 </p>
                 {isBlack ? <BlackPepperBadge dark={dark} /> : isRed ? <RedPepperBadge dark={dark} /> : null}
               </div>
@@ -302,7 +329,7 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
                 color: isBlack ? '#f59e0b' : isRed ? '#db142e' : '#198f41',
                 margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em',
               }}>
-                {isBlack ? 'Black Elite' : isRed ? 'Premium Seller' : (user?.role ?? 'seller')}
+                {isBlack ? t('blackElite') : isRed ? t('premiumSeller') : t('roleSeller')}
               </p>
             </div>
 
@@ -327,7 +354,7 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
         @media (min-width: 640px) {
           .tb-header { padding: 0 20px; gap: 12px; }
           .tb-right  { gap: 8px; }
-          .tb-pill   { padding: 6px 12px 6px 6px; gap: 10px; }
+          .tb-pill   { padding-block: 6px; padding-inline: 6px 12px; gap: 10px; }
         }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(4px); }

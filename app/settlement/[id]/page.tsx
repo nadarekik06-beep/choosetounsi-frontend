@@ -141,7 +141,7 @@ export default function SettlementReceiptPage() {
                 <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 500, marginTop: 3 }}>Marketplace Tunisien · choosetounsi.tn</p>
               </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
+            <div style={{ textAlign: 'end' }}>
               <p style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>Reçu de Règlement</p>
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: 700, marginTop: 4 }}>{data.batch_reference}</p>
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{paidDate}</p>
@@ -209,10 +209,10 @@ export default function SettlementReceiptPage() {
                   <tr key={order.id} style={{ background: idx % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                     <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 700, color: '#1e293b', fontSize: 11 }}>{order.order_number}</td>
                     <td style={{ padding: '10px 12px', color: '#64748b', fontSize: 11 }}>{new Date(order.created_at).toLocaleDateString('fr-TN')}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#475569', fontWeight: 600 }}>{fmt(order.subtotal)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#db142e', fontWeight: 700 }}>−{fmt(order.commission_amount)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#3b82f6', fontWeight: 600 }}>{fmt(order.delivery_fee)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#10b981', fontWeight: 800 }}>{fmt(order.seller_net_amount)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#475569', fontWeight: 600 }}>{fmt(order.subtotal)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#db142e', fontWeight: 700 }}>−{fmt(order.commission_amount)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#3b82f6', fontWeight: 600 }}>{fmt(order.delivery_fee)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#10b981', fontWeight: 800 }}>{fmt(order.seller_net_amount)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -263,7 +263,7 @@ export default function SettlementReceiptPage() {
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 3 }}>Merci de faire partie de la communauté ChooseTounsi !</p>
                 <p style={{ fontSize: 10, color: '#94a3b8' }}>Pour toute question concernant ce règlement, contactez-nous sur choosetounsi.tn</p>
               </div>
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ textAlign: 'end', flexShrink: 0 }}>
                 <p style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 600 }}>Document généré le {new Date().toLocaleDateString('fr-TN')}</p>
                 <p style={{ fontSize: 10, color: '#e2e8f0' }}>{data.batch_reference}</p>
               </div>

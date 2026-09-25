@@ -164,8 +164,8 @@ export default function TunisiaHeatmap({ regional, dark = true }: Props) {
             <div style={{
               position:'absolute',
               top:`${Math.max(4,Math.min(80,pctY*100))}%`,
-              left:  onRight?'auto':`${Math.min(pctX*100+28,68)}%`,
-              right: onRight?'4px':'auto',
+              insetInlineStart:  onRight?'auto':`${Math.min(pctX*100+28,68)}%`,
+              insetInlineEnd: onRight?'4px':'auto',
               transform:'translateY(-50%)',
               background:dark?'#1c2540':'#fff',
               border:`1px solid ${dark?'rgba(255,255,255,0.10)':'rgba(0,0,0,0.10)'}`,
@@ -215,7 +215,7 @@ export default function TunisiaHeatmap({ regional, dark = true }: Props) {
                       color:hovered===r._c?'#db142e':text,
                       overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
                       transition:'color 0.12s' }}>{r._c??r.wilaya}</span>
-                    <span style={{ fontSize:10, fontWeight:900, color:'#db142e', flexShrink:0, marginLeft:8 }}>
+                    <span style={{ fontSize:10, fontWeight:900, color:'#db142e', flexShrink:0, marginInlineStart:8 }}>
                       {r.total_units.toLocaleString()} unit{r.total_units!==1?'s':''}
                     </span>
                   </div>

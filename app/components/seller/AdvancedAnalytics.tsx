@@ -364,14 +364,14 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
                         <div style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                         <div style={{ fontSize: 10, color: textMuted }}>{p.category_name}</div>
                       </td>
-                      <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 800, color: '#db142e' }}>{fmt(p.total_revenue)}</td>
-                      <td style={{ padding: '10px 16px', textAlign: 'right', color: textMain, fontWeight: 700 }}>{p.total_units}</td>
-                      <td style={{ padding: '10px 16px', textAlign: 'right' }}>
+                      <td style={{ padding: '10px 16px', textAlign: 'end', fontWeight: 800, color: '#db142e' }}>{fmt(p.total_revenue)}</td>
+                      <td style={{ padding: '10px 16px', textAlign: 'end', color: textMain, fontWeight: 700 }}>{p.total_units}</td>
+                      <td style={{ padding: '10px 16px', textAlign: 'end' }}>
                         <span style={{ color: p.conversion_rate > 5 ? '#10b981' : p.conversion_rate > 1 ? '#f59e0b' : textMuted, fontWeight: 700 }}>
                           {p.conversion_rate.toFixed(2)}%
                         </span>
                       </td>
-                      <td style={{ padding: '10px 16px', textAlign: 'right' }}>
+                      <td style={{ padding: '10px 16px', textAlign: 'end' }}>
                         <span style={{ color: p.stock === 0 ? '#ef4444' : p.stock <= 10 ? '#f59e0b' : '#10b981', fontWeight: 700 }}>
                           {p.stock}
                         </span>
@@ -434,12 +434,12 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
                             {c.segment}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, color: textMain }}>{c.order_count}</td>
-                        <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 800, color: '#db142e' }}>{fmt(c.total_spent)}</td>
-                        <td style={{ padding: '10px 16px', textAlign: 'right', color: textMuted, fontSize: 11 }}>
+                        <td style={{ padding: '10px 16px', textAlign: 'end', fontWeight: 700, color: textMain }}>{c.order_count}</td>
+                        <td style={{ padding: '10px 16px', textAlign: 'end', fontWeight: 800, color: '#db142e' }}>{fmt(c.total_spent)}</td>
+                        <td style={{ padding: '10px 16px', textAlign: 'end', color: textMuted, fontSize: 11 }}>
                           {c.days_since_last}d ago
                         </td>
-                        <td style={{ padding: '10px 16px', textAlign: 'right' }}>
+                        <td style={{ padding: '10px 16px', textAlign: 'end' }}>
                           <span style={{ fontSize: 13, fontWeight: 900, color: c.rfm_score >= 4 ? '#10b981' : c.rfm_score >= 3 ? '#f59e0b' : '#ef4444' }}>
                             {c.rfm_score.toFixed(1)}
                           </span>

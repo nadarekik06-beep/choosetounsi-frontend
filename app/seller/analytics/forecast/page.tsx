@@ -11,7 +11,7 @@
  */
 
 import { Suspense } from 'react';
-import { useTheme } from '../../layout';
+import { useTheme } from '../../SellerShell';
 import { PlanGate } from '@/app/components/seller/SubscriptionBadge';
 import SalesForecastDashboard from '@/app/seller/components/SalesForecastDashboard';
 import { TrendingUp } from 'lucide-react';

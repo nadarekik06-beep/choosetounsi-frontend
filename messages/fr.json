@@ -1808,5 +1808,224 @@
     "ctaTitle": "PRÊT À VENDRE ? 🇹🇳",
     "ctaBody": "Rejoignez des centaines d'entrepreneurs tunisiens qui développent déjà leur activité en ligne avec ChooseTounsi.",
     "applyNow": "Postuler"
+  },
+  "seller": {
+    "nav": {
+      "sections": {
+        "store": "Ma boutique",
+        "customer": "Clients",
+        "growth": "Croissance"
+      },
+      "overview": "Vue d'ensemble",
+      "settings": "Paramètres de la boutique",
+      "products": "Produits",
+      "packs": "Packs",
+      "orders": "Commandes",
+      "earnings": "Revenus",
+      "subscription": "Abonnement",
+      "complaints": "Réclamations",
+      "reviews": "Avis & réputation",
+      "promotions": "Promotions",
+      "promote": "Pubs & boost",
+      "analytics": "Statistiques",
+      "aiTools": "Outils IA",
+      "eliteOverview": "Vue Élite",
+      "aiIntelligence": "Intelligence IA",
+      "visitorInsights": "Analyse des visiteurs",
+      "listingQuality": "Qualité des fiches",
+      "smartPromotions": "Promotions intelligentes",
+      "profitCenter": "Centre de profit",
+      "vipLounge": "Salon VIP",
+      "tierRed": "● Red Pepper",
+      "tierPremium": "● Premium",
+      "tierBlackElite": "■ Black Elite",
+      "tierBlack": "■ Black Pepper",
+      "portal": "Espace vendeur",
+      "elitePortal": "⬛ Espace Élite",
+      "closeMenu": "Fermer le menu",
+      "openMenu": "Ouvrir le menu",
+      "homepage": "Accueil",
+      "lightMode": "Mode clair",
+      "darkMode": "Mode sombre",
+      "collapse": "Réduire",
+      "expand": "Agrandir",
+      "signOut": "Se déconnecter",
+      "language": "Langue ({code})"
+    },
+    "topbar": {
+      "title": "Tableau de bord",
+      "red": "Red",
+      "elite": "Élite",
+      "redTip": "🌶️ Red Pepper — Vendeur Premium",
+      "blackTip": "⬛ Black Seller Elite — Toutes les fonctionnalités premium débloquées",
+      "sellerFallback": "Vendeur",
+      "blackElite": "Black Elite",
+      "premiumSeller": "Vendeur Premium",
+      "roleSeller": "vendeur",
+      "toggleTheme": "Changer de thème",
+      "changeLanguage": "Changer de langue"
+    },
+    "common": {
+      "active": "Actif",
+      "inactive": "Inactif",
+      "off": "Désactivé",
+      "live": "🟢 En ligne",
+      "viewAll": "Voir tout",
+      "retry": "Réessayer",
+      "noData": "Pas encore de données",
+      "connectionError": "Erreur de connexion",
+      "connectionErrorBody": "Impossible de joindre l'API. Vérifiez que le serveur est lancé.",
+      "userFallback": "Utilisateur #{id}",
+      "ordersCount": "{count, plural, =0 {0 commande} one {# commande} other {# commandes}}",
+      "inStock": "{count} en stock",
+      "outShort": "⚠ Rupture",
+      "loading": "Chargement…"
+    },
+    "overview": {
+      "title": "Tableau de bord",
+      "subtitle": "Aperçu des performances de votre boutique",
+      "totalRevenue": "Chiffre d'affaires",
+      "completedPaid": "Commandes terminées et payées",
+      "totalOrders": "Commandes",
+      "pendingCount": "{count} en attente",
+      "products": "Produits",
+      "activeCount": "{count} actifs",
+      "thisMonth": "Ce mois-ci",
+      "lastMonth": "Mois dernier : {amount}",
+      "pendingOrders": "Commandes en attente",
+      "activeProducts": "Produits actifs",
+      "pendingApprovals": "En attente de validation",
+      "topWilayas": "Meilleurs gouvernorats",
+      "byRevenue": "Par chiffre d'affaires",
+      "topProducts": "Meilleurs produits",
+      "rankedByUnits": "Classés par unités vendues",
+      "noProductData": "Aucune donnée produit pour l'instant",
+      "sales": "Ventes",
+      "revenue": "CA",
+      "views": "Vues",
+      "topClients": "Meilleurs clients",
+      "byLifetimeRevenue": "Par montant total dépensé",
+      "orderStatus": "Statut des commandes",
+      "distribution": "Répartition",
+      "noOrders": "Aucune commande pour l'instant",
+      "recentOrders": "Commandes récentes",
+      "latest5": "Les 5 dernières commandes",
+      "noRecentOrders": "Aucune commande récente",
+      "cols": {
+        "order": "Commande",
+        "customer": "Client",
+        "status": "Statut",
+        "amount": "Montant",
+        "date": "Date"
+      },
+      "thousandsShort": "{value} k"
+    },
+    "checklist": {
+      "title": "🚀 Premiers pas",
+      "progress": "{done} étape(s) sur {total} terminée(s)",
+      "firstProduct": "Ajoutez votre premier produit",
+      "firstProductDesc": "Publiez un produit pour que les acheteurs découvrent votre boutique",
+      "profile": "Complétez votre profil",
+      "profileDesc": "Ajoutez une photo de profil et vos réseaux sociaux",
+      "delivery": "Vérifiez vos options de livraison",
+      "deliveryDesc": "Assurez-vous que les acheteurs connaissent vos modes de livraison"
+    },
+    "charts": {
+      "revenue": "Chiffre d'affaires",
+      "orders": "Commandes",
+      "revenueWithCurrency": "Chiffre d'affaires ({currency})",
+      "revenueOverview": "Évolution du chiffre d'affaires",
+      "last12Months": "Performance mensuelle — 12 derniers mois",
+      "thousandsShort": "{value} k"
+    },
+    "features": {
+      "advanced_analytics": {
+        "label": "Statistiques avancées",
+        "description": "Analyses de ventes détaillées, segments clients et cartes de chaleur."
+      },
+      "ai_price_optimizer": {
+        "label": "Optimiseur de prix IA",
+        "description": "Des prix optimaux suggérés par l'IA à partir de vos vraies ventes."
+      },
+      "ai_sales_predictor": {
+        "label": "Prévision des ventes IA",
+        "description": "Anticipez vos ventes grâce à l'intelligence saisonnière tunisienne."
+      },
+      "ai_description_gen": {
+        "label": "Générateur de descriptions IA",
+        "description": "Générez automatiquement titres et descriptions optimisés pour le référencement."
+      },
+      "ai_recommender": {
+        "label": "Recommandations de packs IA",
+        "description": "Packs de produits intelligents et suggestions de ventes croisées."
+      },
+      "max_products_150": {
+        "label": "Jusqu'à 150 produits",
+        "description": "Publiez jusqu'à 150 produits (30 avec le plan Green)."
+      },
+      "bulk_operations": {
+        "label": "Actions groupées",
+        "description": "Gérez des centaines de produits en une fois."
+      },
+      "api_access": {
+        "label": "Accès API",
+        "description": "Accès direct à l'API pour connecter vos outils."
+      },
+      "custom_storefront": {
+        "label": "Boutique personnalisée",
+        "description": "Votre page boutique à votre image sur ChooseTounsi."
+      },
+      "ai_hub": {
+        "label": "Hub IA",
+        "description": "Tous vos outils IA vendeur au même endroit."
+      },
+      "profit_center": {
+        "label": "Centre de profit",
+        "description": "Suivez vos marges et votre bénéfice par produit."
+      },
+      "vip_requests": {
+        "label": "Demandes VIP",
+        "description": "Accédez aux demandes VIP exclusives des acheteurs."
+      },
+      "sponsored_products": {
+        "label": "Produits sponsorisés",
+        "description": "Mettez vos produits en avant sur toute la marketplace."
+      },
+      "trend_detection": {
+        "label": "Détection des tendances",
+        "description": "Repérez tôt les produits et catégories en vogue."
+      },
+      "inventory_prediction": {
+        "label": "Prévision des stocks",
+        "description": "Anticipez vos besoins en stock avant la rupture."
+      },
+      "sponsor_product": {
+        "label": "Sponsoriser un produit",
+        "description": "Activez un sponsoring pour votre produit."
+      },
+      "sponsor_discount": {
+        "label": "Remise sur le sponsoring",
+        "description": "Bénéficiez d'un tarif réduit sur les sponsorings."
+      },
+      "requires": "Nécessite {plan}",
+      "upgradeTo": "Passer à {plan}"
+    },
+    "nudge": {
+      "title": "Passez à {plan} et gardez une plus grande part de vos ventes",
+      "body": "Sur la base de votre chiffre d'affaires de ce mois ({revenue}), vous économiseriez <hl>~{saved}/mois</hl> de commissions par rapport à votre plan actuel.",
+      "netGain": "Gain net après le coût du plan ({cost}) : +{gain}.",
+      "cta": "Passer au plan supérieur",
+      "dismiss": "Masquer"
+    },
+    "bell": {
+      "title": "Notifications",
+      "newCount": "{count, plural, one {# nouvelle} other {# nouvelles}}",
+      "markAllRead": "Tout marquer comme lu",
+      "allRead": "Tout lu",
+      "refresh": "Actualiser",
+      "loading": "Chargement…",
+      "empty": "Aucune notification pour l'instant",
+      "emptyHint": "L'activité de votre boutique apparaîtra ici."
+    }
   }
 }

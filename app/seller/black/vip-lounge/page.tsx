@@ -6,7 +6,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSubscription } from '@/app/hooks/useSubscription';
-import { useTheme } from '../../layout';
+import { useTheme } from '../../SellerShell';
 import { blackPepperApi, type VipRequest, type VipRequestType } from '@/lib/blackPepperApi';
 import { Crown, Film, Tag, Headphones, CheckCircle, Clock, XCircle, Loader } from 'lucide-react';
 
@@ -127,7 +127,7 @@ export default function VipLoungePage() {
               key={key}
               onClick={() => setSelected(key)}
               style={{
-                padding: '14px 14px', borderRadius: 14, border: 'none', cursor: 'pointer', textAlign: 'left',
+                padding: '14px 14px', borderRadius: 14, border: 'none', cursor: 'pointer', textAlign: 'start',
                 background: selected === key ? 'rgba(245,158,11,0.15)' : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'),
                 outline: selected === key ? '1px solid rgba(245,158,11,0.45)' : '1px solid transparent',
                 transition: 'all 0.15s ease',

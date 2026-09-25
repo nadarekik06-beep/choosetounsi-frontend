@@ -148,7 +148,7 @@ export default function FullReceiptPage() {
                 <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 500, marginTop: 3 }}>Marketplace Tunisien · choosetounsi.tn</p>
               </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
+            <div style={{ textAlign: 'end' }}>
               <p style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 24, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>
                 Rapport de Gains
               </p>
@@ -262,12 +262,12 @@ export default function FullReceiptPage() {
                   <tr key={b.id} style={{ background: idx % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                     <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 700, color: '#1e293b', fontSize: 11 }}>{b.batch_reference}</td>
                     <td style={{ padding: '10px 12px', color: '#64748b', fontSize: 11 }}>{new Date(b.batch_date).toLocaleDateString('fr-TN')}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#64748b' }}>{b.orders_count}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#475569', fontWeight: 600 }}>{fmt(b.total_orders_gross)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#db142e', fontWeight: 700 }}>−{fmt(b.total_commission)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#3b82f6', fontWeight: 600 }}>{fmt(b.total_delivery_fees)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#10b981', fontWeight: 800 }}>{fmt(b.total_seller_payout)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#64748b', fontSize: 11 }}>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#64748b' }}>{b.orders_count}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#475569', fontWeight: 600 }}>{fmt(b.total_orders_gross)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#db142e', fontWeight: 700 }}>−{fmt(b.total_commission)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#3b82f6', fontWeight: 600 }}>{fmt(b.total_delivery_fees)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#10b981', fontWeight: 800 }}>{fmt(b.total_seller_payout)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#64748b', fontSize: 11 }}>
                       {b.paid_at ? new Date(b.paid_at).toLocaleDateString('fr-TN') : '—'}
                     </td>
                   </tr>
@@ -277,19 +277,19 @@ export default function FullReceiptPage() {
                 <tfoot>
                   <tr style={{ background: '#1e293b', color: '#fff', fontWeight: 900 }}>
                   <td colSpan={2} style={{ padding: '11px 12px', fontSize: 11 }}>TOTAL GÉNÉRAL</td>
-                  <td style={{ padding: '11px 12px', textAlign: 'right', fontSize: 11 }}>
+                  <td style={{ padding: '11px 12px', textAlign: 'end', fontSize: 11 }}>
                     {batches.reduce((s, b) => s + Number(b.orders_count), 0)}
                   </td>
-                  <td style={{ padding: '11px 12px', textAlign: 'right', fontSize: 11 }}>
+                  <td style={{ padding: '11px 12px', textAlign: 'end', fontSize: 11 }}>
                     {fmt(batches.reduce((s, b) => s + Number(b.total_orders_gross), 0))}
                   </td>
-                  <td style={{ padding: '11px 12px', textAlign: 'right', color: '#fca5a5', fontSize: 11 }}>
+                  <td style={{ padding: '11px 12px', textAlign: 'end', color: '#fca5a5', fontSize: 11 }}>
                     −{fmt(batches.reduce((s, b) => s + Number(b.total_commission), 0))}
                   </td>
-                  <td style={{ padding: '11px 12px', textAlign: 'right', color: '#93c5fd', fontSize: 11 }}>
+                  <td style={{ padding: '11px 12px', textAlign: 'end', color: '#93c5fd', fontSize: 11 }}>
                     {fmt(batches.reduce((s, b) => s + Number(b.total_delivery_fees), 0))}
                   </td>
-                  <td style={{ padding: '11px 12px', textAlign: 'right', color: '#6ee7b7', fontSize: 13 }}>
+                  <td style={{ padding: '11px 12px', textAlign: 'end', color: '#6ee7b7', fontSize: 13 }}>
                     {fmt(batches.reduce((s, b) => s + Number(b.total_seller_payout), 0))}
                   </td>
                   <td />
@@ -321,7 +321,7 @@ export default function FullReceiptPage() {
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 3 }}>Merci de faire partie de la communauté ChooseTounsi !</p>
                 <p style={{ fontSize: 10, color: '#94a3b8' }}>Ce document est un relevé officieux à usage interne. Pour toute contestation contactez choosetounsi.tn</p>
               </div>
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ textAlign: 'end', flexShrink: 0 }}>
                 <p style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 600 }}>Généré le {generatedDate}</p>
                 <p style={{ fontSize: 10, color: '#e2e8f0' }}>{seller.email}</p>
               </div>

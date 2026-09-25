@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { sellerPromotionsApi, type Promotion, type PromotionPayload } from '@/lib/promotionsApi'
 import { sellerCouponsApi, type Coupon, type CouponStats } from '@/lib/couponsApi'
-import { useTheme } from '../layout'
+import { useTheme } from '../SellerShell'
 import {
   Tag, Plus, Edit2, Trash2, AlertCircle, RefreshCw,
   Clock, CheckCircle, Zap, Calendar, TrendingDown,
@@ -425,7 +425,7 @@ function CouponCard({
             {coupon.code}
           </span>
           <span style={{
-            marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4,
+            marginInlineStart: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4,
             fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999,
             background: coupon.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(100,116,139,0.12)',
             color: coupon.is_active ? '#10b981' : '#64748b',
@@ -518,7 +518,7 @@ function PromotionCard({
             {promo.type === 'flash_sale' ? '⚡ Flash Sale' : '🏷️ Discount'}
           </span>
           <span style={{
-            marginLeft: 'auto',
+            marginInlineStart: 'auto',
             display: 'inline-flex', alignItems: 'center', gap: 4,
             fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999,
             background: st.bg, color: st.color,

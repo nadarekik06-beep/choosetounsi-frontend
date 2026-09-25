@@ -5,11 +5,15 @@ import {
   Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import type { MonthlyDataPoint } from '@/types/seller';
-import { useTheme } from '../layout';
+import { useTheme } from '../SellerShell';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
 interface RevenueChartProps { data: MonthlyDataPoint[]; }
 
 function CustomTooltip({ active, payload, label, dark }: any) {
+  const t = useTranslations('seller.charts');
+  const { price, number } = useFormat();
   if (!active || !payload?.length) return null;
   return (
     <div style={{
@@ -26,10 +30,10 @@ function CustomTooltip({ active, payload, label, dark }: any) {
         <div key={entry.dataKey} style={{ display:'flex', justifyContent:'space-between', gap:16, marginBottom:4 }}>
           <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, color:dark?'rgba(255,255,255,0.5)':'#64748b' }}>
             <span style={{ width:8, height:8, borderRadius:'50%', background:entry.color, display:'inline-block' }}/>
-            {entry.dataKey === 'revenue' ? 'Revenue' : 'Orders'}
+            {entry.dataKey === 'revenue' ? t('revenue') : t('orders')}
           </span>
           <span style={{ fontSize:11, fontWeight:800, color:dark?'#fff':'#0f172a' }}>
-            {entry.dataKey === 'revenue' ? `${entry.value.toLocaleString('fr-TN')} TND` : entry.value}
+            {entry.dataKey === 'revenue' ? price(entry.value, { minimumFractionDigits: 0, maximumFractionDigits: 3 }) : number(entry.value)}
           </span>
         </div>
       ))}
@@ -39,6 +43,8 @@ function CustomTooltip({ active, payload, label, dark }: any) {
 
 export default function RevenueChart({ data }: RevenueChartProps) {
   const { dark } = useTheme();
+  const t = useTranslations('seller.charts');
+  const { isRtl, number, currency } = useFormat();
 
   const bg       = dark ? '#161b27' : '#ffffff';
   const border   = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
@@ -55,8 +61,8 @@ export default function RevenueChart({ data }: RevenueChartProps) {
       transition: 'background 0.3s ease',
     }}>
       <div style={{ marginBottom:20 }}>
-        <h3 style={{ fontSize:14, fontWeight:800, color:textMain, margin:0 }}>Revenue Overview</h3>
-        <p style={{ fontSize:11, color:textMuted, margin:'3px 0 0' }}>Monthly performance — last 12 months</p>
+        <h3 style={{ fontSize:14, fontWeight:800, color:textMain, margin:0 }}>{t('revenueOverview')}</h3>
+        <p style={{ fontSize:11, color:textMuted, margin:'3px 0 0' }}>{t('last12Months')}</p>
       </div>
 
       <ResponsiveContainer width="100%" height={260}>
@@ -73,16 +79,16 @@ export default function RevenueChart({ data }: RevenueChartProps) {
           </defs>
 
           <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false}/>
-          <XAxis dataKey="month" tick={{ fontSize:10, fill:tickColor, fontWeight:600 }} axisLine={false} tickLine={false}/>
-          <YAxis yAxisId="revenue" tick={{ fontSize:10, fill:tickColor }} axisLine={false} tickLine={false}
-            tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} width={36}/>
-          <YAxis yAxisId="orders" orientation="right" tick={{ fontSize:10, fill:tickColor }} axisLine={false} tickLine={false} width={28}/>
+          <XAxis dataKey="month" reversed={isRtl} tick={{ fontSize:10, fill:tickColor, fontWeight:600 }} axisLine={false} tickLine={false}/>
+          <YAxis yAxisId="revenue" orientation={isRtl ? 'right' : 'left'} tick={{ fontSize:10, fill:tickColor }} axisLine={false} tickLine={false}
+            tickFormatter={(v) => t('thousandsShort', { value: number(v / 1000, { maximumFractionDigits: 0 }) })} width={40}/>
+          <YAxis yAxisId="orders" orientation={isRtl ? 'left' : 'right'} tick={{ fontSize:10, fill:tickColor }} axisLine={false} tickLine={false} width={28}/>
 
           <Tooltip content={<CustomTooltip dark={dark}/>}/>
 
           <Legend iconType="circle" iconSize={8}
             wrapperStyle={{ fontSize:'11px', paddingTop:'14px', color:tickColor }}
-            formatter={(val) => val === 'revenue' ? 'Revenue (TND)' : 'Orders'}/>
+            formatter={(val) => val === 'revenue' ? t('revenueWithCurrency', { currency }) : t('orders')}/>
 
           <Area yAxisId="revenue" type="monotone" dataKey="revenue"
             stroke="#3B82F6" strokeWidth={2.5} fill="url(#gradRevenueDark)"

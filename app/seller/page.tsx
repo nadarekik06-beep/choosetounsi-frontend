@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { dashboardApi } from '../../lib/sellerApi';
 import type { DashboardData, TopProduct } from '../../types/seller';
 import RevenueChart from './components/RevenueChart';
-import { useTheme } from './layout';
+import { useTheme } from './SellerShell';
 import {
   DollarSign, ShoppingBag, Package, Clock,
   MapPin, Award, AlertCircle, RefreshCw,
@@ -15,6 +15,10 @@ import { SubscriptionBadge } from '@/app/components/seller/SubscriptionBadge';
 import OnboardingChecklist from './components/OnboardingChecklist';
 import CommissionUpgradeNudge from './components/CommissionUpgradeNudge';
 import { getUser } from '@/lib/auth';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
+import { useStatusLabel } from '@/lib/i18n/useStatusLabel';
+import { useWilayaLabel } from '@/lib/i18n/wilayas';
 
 /* ─────────────── RESPONSIVE GRIDS ─────────────── */
 const RESPONSIVE_CSS = `
@@ -41,8 +45,10 @@ const RESPONSIVE_CSS = `
 `;
 
 /* ─────────────── HELPERS ─────────────── */
-const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(n) + ' TND';
+function usePrice() {
+  const { price } = useFormat();
+  return (n: number) => price(n, { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+}
 
 const STATUS_COLORS: Record<string, string> = {
   pending:    '#f59e0b',
@@ -54,6 +60,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function useCount(target: number): string {
+  const { number } = useFormat();
   const [val, setVal]  = useState(0);
   const rafRef = useRef<number>(0);
   useEffect(() => {
@@ -69,7 +76,7 @@ function useCount(target: number): string {
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
   }, [target]);
-  return val.toLocaleString();
+  return number(val);
 }
 
 /* ─────────────── KPI CARD ─────────────── */
@@ -91,7 +98,7 @@ function KpiCard({ title, value, subtitle, change, icon: Icon, accent, dark }: {
       transition: 'transform 0.22s ease, box-shadow 0.22s ease',
       cursor: 'default', minWidth: 0,
     }}>
-      <div style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: '50%', background: accent, opacity: dark ? 0.12 : 0.08, filter: 'blur(28px)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: -30, insetInlineEnd: -30, width: 100, height: 100, borderRadius: '50%', background: accent, opacity: dark ? 0.12 : 0.08, filter: 'blur(28px)', pointerEvents: 'none' }} />
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
         <div style={{ width: 42, height: 42, borderRadius: 12, background: `${accent}22`, border: `1px solid ${accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, flexShrink: 0 }}>
           <Icon size={19} />
@@ -106,7 +113,7 @@ function KpiCard({ title, value, subtitle, change, icon: Icon, accent, dark }: {
       <p style={{ fontSize: 22, fontWeight: 900, color: textMain, margin: '0 0 4px', letterSpacing: '-0.02em', lineHeight: 1.1, overflowWrap: 'anywhere' }}>{value}</p>
       <p style={{ fontSize: 11, fontWeight: 700, color: accent, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</p>
       {subtitle && <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500, overflowWrap: 'anywhere' }}>{subtitle}</p>}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${accent},transparent)`, borderRadius: '0 0 18px 18px', opacity: 0.6 }} />
+      <div className="rtl-flip" style={{ position: 'absolute', bottom: 0, insetInline: 0, height: 3, background: `linear-gradient(90deg,${accent},transparent)`, borderRadius: '0 0 18px 18px', opacity: 0.6 }} />
       <style>{`.kpi-card:hover{transform:translateY(-4px)!important;box-shadow:0 16px 40px rgba(0,0,0,0.15)!important}`}</style>
     </div>
   );
@@ -114,6 +121,10 @@ function KpiCard({ title, value, subtitle, change, icon: Icon, accent, dark }: {
 
 /* ─────────────── TOP PRODUCT CARD ─────────────── */
 function TopProductCard({ product, rank, dark }: { product: TopProduct; rank: number; dark: boolean }) {
+  const t   = useTranslations('seller.overview');
+  const tc  = useTranslations('seller.common');
+  const fmt = usePrice();
+  const { number } = useFormat();
   const [imgErr, setImgErr] = useState(false);
   const bg        = dark ? '#161b27' : '#ffffff';
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
@@ -127,12 +138,12 @@ function TopProductCard({ product, rank, dark }: { product: TopProduct; rank: nu
 
   return (
     <div className="top-product-card" style={{ background: bg, borderRadius: 16, border: `1px solid ${border}`, padding: 16, display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', overflow: 'hidden', transition: 'transform 0.22s ease, box-shadow 0.22s ease', minWidth: 0 }}>
-      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, width: 24, height: 24, borderRadius: '50%', background: rank <= 3 ? rankColor : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: '#fff', boxShadow: rank <= 3 ? `0 2px 8px ${rankColor}60` : 'none' }}>
+      <div style={{ position: 'absolute', top: 10, insetInlineStart: 10, zIndex: 2, width: 24, height: 24, borderRadius: '50%', background: rank <= 3 ? rankColor : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: '#fff', boxShadow: rank <= 3 ? `0 2px 8px ${rankColor}60` : 'none' }}>
         {rank <= 3 ? <Star size={10} fill="#fff" stroke="none" /> : rank}
       </div>
-      <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 4, zIndex: 2 }}>
+      <div style={{ position: 'absolute', top: 10, insetInlineEnd: 10, display: 'flex', gap: 4, zIndex: 2 }}>
         <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 999, background: product.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: product.is_active ? '#10b981' : '#ef4444', border: `1px solid ${product.is_active ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
-          {product.is_active ? 'Active' : 'Off'}
+          {product.is_active ? tc('active') : tc('off')}
         </span>
       </div>
       <div style={{ width: '100%', aspectRatio: '16/9', borderRadius: 10, overflow: 'hidden', background: subBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -150,14 +161,14 @@ function TopProductCard({ product, rank, dark }: { product: TopProduct; rank: nu
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 15, fontWeight: 900, color: '#db142e', letterSpacing: '-0.01em' }}>{fmt(product.price)}</span>
         <span style={{ fontSize: 11, fontWeight: 700, color: product.stock === 0 ? '#ef4444' : product.stock <= 10 ? '#f59e0b' : '#10b981' }}>
-          {product.stock === 0 ? '⚠ Out' : `${product.stock} in stock`}
+          {product.stock === 0 ? tc('outShort') : tc('inStock', { count: product.stock })}
         </span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 6 }}>
         {[
-          { icon: ShoppingBag, label: 'Sales',   value: product.total_sales,   color: '#db142e' },
-          { icon: DollarSign,  label: 'Revenue', value: product.total_revenue > 0 ? `${(product.total_revenue / 1000).toFixed(1)}k` : '0', color: '#10b981' },
-          { icon: Eye,         label: 'Views',   value: product.views,          color: '#3b82f6' },
+          { icon: ShoppingBag, label: t('sales'),   value: number(product.total_sales),   color: '#db142e' },
+          { icon: DollarSign,  label: t('revenue'), value: product.total_revenue > 0 ? t('thousandsShort', { value: number(product.total_revenue / 1000, { maximumFractionDigits: 1 }) }) : '0', color: '#10b981' },
+          { icon: Eye,         label: t('views'),   value: number(product.views),          color: '#3b82f6' },
         ].map(({ icon: Icon, label, value, color }) => (
           <div key={label} style={{ background: subBg, borderRadius: 8, padding: '7px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, border: `1px solid ${border}`, minWidth: 0 }}>
             <Icon size={12} style={{ color, opacity: 0.9 }} />
@@ -177,6 +188,7 @@ function Skeleton({ dark, style = {} }: { dark: boolean; style?: React.CSSProper
 }
 
 function ErrorState({ onRetry, dark }: { onRetry: () => void; dark: boolean }) {
+  const tc = useTranslations('seller.common');
   const textMain  = dark ? '#fff' : '#111';
   const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
   return (
@@ -185,10 +197,10 @@ function ErrorState({ onRetry, dark }: { onRetry: () => void; dark: boolean }) {
         <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(219,20,46,0.1)', border: '1px solid rgba(219,20,46,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
           <AlertCircle size={24} color="#db142e" />
         </div>
-        <h3 style={{ fontWeight: 800, color: textMain, margin: '0 0 6px' }}>Connection Error</h3>
-        <p style={{ fontSize: 13, color: textMuted, margin: '0 0 18px' }}>Could not reach the API. Make sure Laravel is running.</p>
+        <h3 style={{ fontWeight: 800, color: textMain, margin: '0 0 6px' }}>{tc('connectionError')}</h3>
+        <p style={{ fontSize: 13, color: textMuted, margin: '0 0 18px' }}>{tc('connectionErrorBody')}</p>
         <button onClick={onRetry} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', background: 'linear-gradient(135deg,#db142e,#a00f22)', color: '#fff', fontWeight: 700, fontSize: 13, borderRadius: 12, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(219,20,46,0.35)' }}>
-          <RefreshCw size={14} /> Retry
+          <RefreshCw size={14} /> {tc('retry')}
         </button>
       </div>
     </div>
@@ -198,6 +210,12 @@ function ErrorState({ onRetry, dark }: { onRetry: () => void; dark: boolean }) {
 /* ═══════════════ PAGE ═══════════════ */
 export default function SellerDashboardPage() {
   const { dark } = useTheme();
+  const t      = useTranslations('seller.overview');
+  const tc     = useTranslations('seller.common');
+  const fmt    = usePrice();
+  const { date } = useFormat();
+  const statusLabel = useStatusLabel();
+  const wilaya = useWilayaLabel();
   const [data,    setData]    = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
@@ -274,13 +292,13 @@ export default function SellerDashboardPage() {
         {/* ─── HEADER ─── */}
         <div className={`fade-up ${visible?'show':''}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
           <div style={{ minWidth: 0 }}>
-            <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.02em' }}>Dashboard</h1>
-            <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>Overview of your store performance</p>
+            <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.02em' }}>{t('title')}</h1>
+            <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>{t('subtitle')}</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <SubscriptionBadge dark={dark} />
             <span style={{ fontSize: 11, fontWeight: 800, background: 'rgba(219,20,46,0.12)', color: '#db142e', border: '1px solid rgba(219,20,46,0.25)', padding: '5px 14px', borderRadius: 999 }}>
-              🟢 Live
+              {tc('live')}
             </span>
           </div>
         </div>
@@ -296,18 +314,18 @@ export default function SellerDashboardPage() {
 
         {/* ─── KPI CARDS ─── */}
         <div className={`fade-up sd-kpi ${visible?'show':''}`}>
-          <KpiCard dark={dark} title="Total Revenue" icon={DollarSign} accent="#db142e" value={fmt(summary.total_revenue)} subtitle="Completed & paid" change={summary.revenue_growth} />
-          <KpiCard dark={dark} title="Total Orders"  icon={ShoppingBag} accent="#3b82f6" value={animTotalOrders} subtitle={`${summary.pending_orders} pending`} />
-          <KpiCard dark={dark} title="Products"      icon={Package} accent="#198f41" value={animTotalProducts} subtitle={`${summary.active_products} active`} />
-          <KpiCard dark={dark} title="This Month"    icon={TrendingUp} accent="#f59e0b" value={fmt(summary.revenue_this_month)} subtitle={`Last: ${fmt(summary.revenue_last_month)}`} />
+          <KpiCard dark={dark} title={t('totalRevenue')} icon={DollarSign} accent="#db142e" value={fmt(summary.total_revenue)} subtitle={t('completedPaid')} change={summary.revenue_growth} />
+          <KpiCard dark={dark} title={t('totalOrders')}  icon={ShoppingBag} accent="#3b82f6" value={animTotalOrders} subtitle={t('pendingCount', { count: summary.pending_orders })} />
+          <KpiCard dark={dark} title={t('products')}     icon={Package} accent="#198f41" value={animTotalProducts} subtitle={t('activeCount', { count: summary.active_products })} />
+          <KpiCard dark={dark} title={t('thisMonth')}    icon={TrendingUp} accent="#f59e0b" value={fmt(summary.revenue_this_month)} subtitle={t('lastMonth', { amount: fmt(summary.revenue_last_month) })} />
         </div>
 
         {/* ─── SECONDARY KPIs ─── */}
         <div className={`fade-up sd-tri ${visible?'show':''}`}>
           {[
-            { label: 'Pending Orders',    val: animPendingOrders,    accent: '#f59e0b', icon: Clock       },
-            { label: 'Active Products',   val: animActiveProducts,   accent: '#198f41', icon: Package     },
-            { label: 'Pending Approvals', val: animPendingApprovals, accent: '#db142e', icon: AlertCircle },
+            { label: t('pendingOrders'),    val: animPendingOrders,    accent: '#f59e0b', icon: Clock       },
+            { label: t('activeProducts'),   val: animActiveProducts,   accent: '#198f41', icon: Package     },
+            { label: t('pendingApprovals'), val: animPendingApprovals, accent: '#db142e', icon: AlertCircle },
           ].map(({ label, val, accent, icon: Icon }) => (
             <div key={label} style={{ background: cardBg, borderRadius: 16, border: `1px solid ${border}`, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
               <div style={{ width: 40, height: 40, borderRadius: 12, background: `${accent}1a`, border: `1px solid ${accent}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, flexShrink: 0 }}>
@@ -341,17 +359,17 @@ export default function SellerDashboardPage() {
                 <MapPin size={16} />
               </div>
               <div>
-                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Top Wilayas</p>
-                <p style={{ fontSize: 10, color: textMuted, margin: 0, fontWeight: 500 }}>By revenue</p>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>{t('topWilayas')}</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0, fontWeight: 500 }}>{t('byRevenue')}</p>
               </div>
             </div>
             {top_wilayas.length === 0
-              ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '24px 0' }}>No data yet</p>
+              ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '24px 0' }}>{tc('noData')}</p>
               : top_wilayas.map((w, i) => (
                 <div key={w.wilaya} style={{ marginBottom: 14 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
                     <span style={{ fontSize: 12, fontWeight: 700, color: textMain, display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
-                      <span style={{ color: textMuted, fontSize: 10 }}>{i+1}.</span>{w.wilaya}
+                      <span style={{ color: textMuted, fontSize: 10 }}>{i+1}.</span>{wilaya(w.wilaya)}
                     </span>
                     <span style={{ fontSize: 11, fontWeight: 700, color: textMuted, flexShrink: 0 }}>{fmt(w.revenue)}</span>
                   </div>
@@ -372,18 +390,18 @@ export default function SellerDashboardPage() {
                 <BarChart2 size={16} />
               </div>
               <div style={{ minWidth: 0 }}>
-                <p style={{ fontWeight: 900, fontSize: 15, color: textMain, margin: 0, letterSpacing: '-0.01em' }}>Top Products</p>
-                <p style={{ fontSize: 10, color: textMuted, margin: 0, fontWeight: 500 }}>Ranked by total units sold</p>
+                <p style={{ fontWeight: 900, fontSize: 15, color: textMain, margin: 0, letterSpacing: '-0.01em' }}>{t('topProducts')}</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0, fontWeight: 500 }}>{t('rankedByUnits')}</p>
               </div>
             </div>
             <a href="/seller/products" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none', flexShrink: 0 }}>
-              View all <ArrowUpRight size={12} />
+              {tc('viewAll')} <ArrowUpRight size={12} className="rtl-flip" />
             </a>
           </div>
           {top_products.length === 0 ? (
             <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: '48px 20px', textAlign: 'center' }}>
               <Package size={32} style={{ color: textMuted, opacity: 0.3, margin: '0 auto 12px', display: 'block' }} />
-              <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>No product data yet</p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>{t('noProductData')}</p>
             </div>
           ) : (
             <div className="sd-top">
@@ -402,12 +420,12 @@ export default function SellerDashboardPage() {
                 <Award size={16} />
               </div>
               <div>
-                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Top Clients</p>
-                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>By lifetime revenue</p>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>{t('topClients')}</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{t('byLifetimeRevenue')}</p>
               </div>
             </div>
             {top_clients.length === 0
-              ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '28px 0' }}>No data yet</p>
+              ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '28px 0' }}>{tc('noData')}</p>
               : top_clients.map((c, i) => (
                 <div key={c.id} className="client-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: `1px solid ${border}`, transition: 'background 0.15s ease' }}>
                   <span style={{ width: 24, height: 24, borderRadius: '50%', background: i===0?'rgba(245,158,11,0.2)':i===1?'rgba(148,163,184,0.2)':'rgba(249,115,22,0.2)', color: i===0?'#f59e0b':i===1?'#94a3b8':'#f97316', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>
@@ -417,9 +435,9 @@ export default function SellerDashboardPage() {
                     <p style={{ fontSize: 12, fontWeight: 800, color: textMain, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</p>
                     <p style={{ fontSize: 10, color: textMuted, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.email}</p>
                   </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ textAlign: 'end', flexShrink: 0 }}>
                     <p style={{ fontSize: 12, fontWeight: 900, color: '#db142e', margin: 0 }}>{fmt(c.total_revenue)}</p>
-                    <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{c.total_orders} orders</p>
+                    <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{tc('ordersCount', { count: c.total_orders })}</p>
                   </div>
                 </div>
               ))
@@ -432,21 +450,22 @@ export default function SellerDashboardPage() {
                 <ShoppingBag size={16} />
               </div>
               <div>
-                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Order Status</p>
-                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>Distribution</p>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>{t('orderStatus')}</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{t('distribution')}</p>
               </div>
             </div>
             <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
               {Object.entries(order_status_distribution).length === 0
-                ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '24px 0' }}>No orders yet</p>
-                : Object.entries(order_status_distribution).map(([status, count]) => {
+                ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '24px 0' }}>{t('noOrders')}</p>
+                : Object.entries(order_status_distribution).map(([statusCode, count]) => {
+                  const status = statusCode;
                   const pct   = totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0;
                   const color = STATUS_COLORS[status] ?? '#94a3b8';
                   return (
                     <div key={status}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: textMain, textTransform: 'capitalize' }}>
-                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }} />{status}
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }} />{statusLabel(status)}
                         </span>
                         <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>{count} ({pct}%)</span>
                       </div>
@@ -469,26 +488,26 @@ export default function SellerDashboardPage() {
                 <Clock size={16} />
               </div>
               <div>
-                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Recent Orders</p>
-                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>Latest 5 orders</p>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>{t('recentOrders')}</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{t('latest5')}</p>
               </div>
             </div>
             <a href="/seller/orders" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none', flexShrink: 0 }}>
-              View all <ArrowUpRight size={12} />
+              {tc('viewAll')} <ArrowUpRight size={12} className="rtl-flip" />
             </a>
           </div>
           <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr style={{ background: dark ? 'rgba(255,255,255,0.03)' : '#f9fafb' }}>
-                  {['Order','Customer','Status','Amount','Date'].map((h, i) => (
-                    <th key={h} style={{ padding: '10px 20px', textAlign: i===2?'center':i===3?'right':'left', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: textMuted, whiteSpace: 'nowrap' }}>{h}</th>
+                  {(['order','customer','status','amount','date'] as const).map((h, i) => (
+                    <th key={h} style={{ padding: '10px 20px', textAlign: i===2?'center':i===3?'end':'start', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: textMuted, whiteSpace: 'nowrap' }}>{t(`cols.${h}`)}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {recent_orders.length === 0
-                  ? <tr><td colSpan={5} style={{ padding: '32px 20px', textAlign: 'center', color: textMuted, fontSize: 13 }}>No recent orders</td></tr>
+                  ? <tr><td colSpan={5} style={{ padding: '32px 20px', textAlign: 'center', color: textMuted, fontSize: 13 }}>{t('noRecentOrders')}</td></tr>
                   : recent_orders.map(order => {
                     const sc = STATUS_COLORS[order.status] ?? '#94a3b8';
                     return (
@@ -496,14 +515,14 @@ export default function SellerDashboardPage() {
                         <td style={{ padding: '12px 20px' }}>
                           <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 11, background: dark?'rgba(255,255,255,0.07)':'#f1f5f9', color: textMain, padding: '3px 8px', borderRadius: 6, whiteSpace: 'nowrap' }}>{order.order_number}</span>
                         </td>
-                        <td style={{ padding: '12px 20px', color: textMain, fontWeight: 600, whiteSpace: 'nowrap' }}>{order.user?.name ?? `User #${order.user_id}`}</td>
+                        <td style={{ padding: '12px 20px', color: textMain, fontWeight: 600, whiteSpace: 'nowrap' }}>{order.user?.name ?? tc('userFallback', { id: order.user_id })}</td>
                         <td style={{ padding: '12px 20px', textAlign: 'center' }}>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 999, background: `${sc}18`, color: sc, border: `1px solid ${sc}33`, textTransform: 'capitalize' }}>
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc }} />{order.status}
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc }} />{statusLabel(order.status)}
                           </span>
                         </td>
-                        <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 900, color: textMain, whiteSpace: 'nowrap' }}>{fmt(order.total_amount)}</td>
-                        <td style={{ padding: '12px 20px', color: textMuted, fontWeight: 500, whiteSpace: 'nowrap' }}>{new Date(order.created_at).toLocaleDateString('fr-TN')}</td>
+                        <td style={{ padding: '12px 20px', textAlign: 'end', fontWeight: 900, color: textMain, whiteSpace: 'nowrap' }}>{fmt(order.total_amount)}</td>
+                        <td style={{ padding: '12px 20px', color: textMuted, fontWeight: 500, whiteSpace: 'nowrap' }}>{date(order.created_at, 'short')}</td>
                       </tr>
                     );
                   })

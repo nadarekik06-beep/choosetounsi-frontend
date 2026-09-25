@@ -2,7 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Fragment } from "react";
 import { Syne, Cairo } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
+import { withoutSellerMessages } from "@/lib/i18n/messageScopes";
 import "./globals.css";
 import { dirOf, type Locale } from "@/i18n/config";
 import { CartProvider } from '@/context/CartContext';
@@ -49,12 +50,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const locale = (await getLocale()) as Locale;
+  const messages = withoutSellerMessages(await getMessages());
   const fontClass = locale === "ar" ? `${syne.variable} ${cairo.variable}` : syne.variable;
 
   return (
     <html lang={locale} dir={dirOf(locale)} className={fontClass}>
       <body className="antialiased text-zinc-900">
-        <NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>
           <LanguageProvider>
             <CartProvider>
               {/* Keyed by locale: switching language remounts the page so it

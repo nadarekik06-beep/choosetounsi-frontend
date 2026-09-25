@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import { subscriptionApi, planMeta, planKeys, planRank, planTier, livePlan, type ActivePlan, type SubscriptionLifecycle, type PlanChange } from '@/lib/subscriptionApi'
 import { refreshUser } from '@/lib/auth'
-import { useTheme } from '../layout'
+import { useTheme } from '../SellerShell'
 
 // ── Plan configuration ────────────────────────────────────────────────────────
 
@@ -179,8 +179,8 @@ function PaymentForm({ targetPlan, onSuccess, onCancel, dark }: PaymentFormProps
         <div style={{ position: 'relative' }}>
           <input type="text" inputMode="numeric" placeholder="Card number" value={card}
             onChange={e => setCard(formatCardNumber(e.target.value))}
-            style={{ ...inputStyle(!!fieldErrors.card), paddingLeft: 44 }} />
-          <CreditCard size={16} color="#9ca3af" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+            style={{ ...inputStyle(!!fieldErrors.card), paddingInlineStart: 44 }} />
+          <CreditCard size={16} color="#9ca3af" style={{ position: 'absolute', insetInlineStart: 14, top: '50%', transform: 'translateY(-50%)' }} />
           {fieldErrors.card && <p style={{ fontSize: 11, color: '#dc2626', margin: '4px 0 0' }}>{fieldErrors.card}</p>}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -457,14 +457,14 @@ export default function SellerSubscriptionPage() {
           <div className="sub-enter" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 14, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}>
             <CheckCircle size={18} color="#10b981" />
             <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#10b981' }}>Upgrade successful! Your new plan is now active.</p>
-            <button onClick={() => setUpgradeDone(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#10b981', marginLeft: 'auto' }}><X size={14} /></button>
+            <button onClick={() => setUpgradeDone(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#10b981', marginInlineStart: 'auto' }}><X size={14} /></button>
           </div>
         )}
         {downgradeDone && (
           <div className="sub-enter" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 14, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)' }}>
             <Clock size={18} color="#f59e0b" />
             <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>Downgrade scheduled. You keep your current features until end of billing cycle.</p>
-            <button onClick={() => setDowngradeDone(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f59e0b', marginLeft: 'auto' }}><X size={14} /></button>
+            <button onClick={() => setDowngradeDone(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f59e0b', marginInlineStart: 'auto' }}><X size={14} /></button>
           </div>
         )}
 
@@ -489,7 +489,7 @@ export default function SellerSubscriptionPage() {
                   {currentPlan === 'free' ? 'Free forever' : `${currentMeta.priceLabel} · auto-renews monthly`}
                 </p>
               </div>
-              <div style={{ textAlign: 'right' as const, flexShrink: 0 }}>
+              <div style={{ textAlign: 'end' as const, flexShrink: 0 }}>
                 <p style={{ margin: 0, fontWeight: 900, fontSize: 20, color: textMain }}>{currentMeta.priceLabel === 'Free' ? 'Free' : currentMeta.priceLabel.split('/')[0]}</p>
                 {currentPlan !== 'free' && <p style={{ margin: '2px 0 0', fontSize: 11, color: textMuted }}>/month</p>}
               </div>
@@ -590,12 +590,12 @@ export default function SellerSubscriptionPage() {
                     opacity: isPending ? 0.7 : 1,
                   }}>
                     {isCurrent && (
-                      <div style={{ position: 'absolute', top: 12, right: 12 }}>
+                      <div style={{ position: 'absolute', top: 12, insetInlineEnd: 12 }}>
                         <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: `${meta.color}20`, color: meta.accentColor, border: `1px solid ${meta.color}40` }}>CURRENT</span>
                       </div>
                     )}
                     {isPending && (
-                      <div style={{ position: 'absolute', top: 12, right: 12 }}>
+                      <div style={{ position: 'absolute', top: 12, insetInlineEnd: 12 }}>
                         <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: 'rgba(245,158,11,0.2)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>SCHEDULED</span>
                       </div>
                     )}
@@ -667,7 +667,7 @@ export default function SellerSubscriptionPage() {
                     </p>
                     <p style={{ margin: '2px 0 0', fontSize: 11, color: textMuted }}>{h.reason}</p>
                   </div>
-                  <div style={{ textAlign: 'right' as const, flexShrink: 0 }}>
+                  <div style={{ textAlign: 'end' as const, flexShrink: 0 }}>
                     <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: h.change_type === 'upgrade' ? '#10b981' : textMuted }}>
                       {h.amount_charged > 0 ? `+${h.amount_charged.toFixed(0)} TND` : h.change_type_label}
                     </p>

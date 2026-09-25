@@ -71,7 +71,7 @@ export default function DailyBriefCard({ dark }: { dark: boolean }) {
       boxShadow: "0 8px 40px rgba(245,158,11,0.1)",
     }}>
       <div style={{
-        position:"absolute", top:-60, right:-60, width:220, height:220,
+        position:"absolute", top:-60, insetInlineEnd:-60, width:220, height:220,
         borderRadius:"50%", background:"rgba(245,158,11,0.07)",
         filter:"blur(50px)", pointerEvents:"none",
       }}/>

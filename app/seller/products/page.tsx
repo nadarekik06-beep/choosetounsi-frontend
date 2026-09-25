@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import ProductModal from './ProductModal';
 import RestockModal, { type RestockProduct } from '../components/RestockModal';
-import { useTheme } from '../layout';
+import { useTheme } from '../SellerShell';
 import ProductAlertPanel, {
   AlertIndicator,
   type ProductAlertData,
@@ -211,12 +211,12 @@ export default function ProductsPage() {
         {/* Filters */}
         <div style={{ background: cardBg, borderRadius: 16, padding: 16, border: `1px solid ${border}`, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
-            <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: textMuted, pointerEvents: 'none' }} />
+            <Search size={13} style={{ position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)', color: textMuted, pointerEvents: 'none' }} />
             <input
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
               placeholder="Search by name or SKU…"
-              style={{ ...inputStyle, width: '100%', paddingLeft: 32 }}
+              style={{ ...inputStyle, width: '100%', paddingInlineStart: 32 }}
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -233,7 +233,7 @@ export default function ProductsPage() {
             </select>
           </div>
           {data && (
-            <span style={{ fontSize: 11, fontWeight: 700, color: textMuted, marginLeft: 'auto' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: textMuted, marginInlineStart: 'auto' }}>
               {data.total} product{data.total !== 1 ? 's' : ''}
             </span>
           )}
@@ -347,17 +347,17 @@ export default function ProductsPage() {
                           </td>
 
                           {/* Price */}
-                          <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 900, color: textMain }}>
+                          <td style={{ padding: '12px 20px', textAlign: 'end', fontWeight: 900, color: textMain }}>
                             {Number(product.price).toFixed(3)} TND
                           </td>
 
                           {/* Stock */}
-                          <td style={{ padding: '12px 20px', textAlign: 'right' }}>
+                          <td style={{ padding: '12px 20px', textAlign: 'end' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
                               <span style={{ fontWeight: 800, color: displayStock === 0 ? '#ef4444' : displayStock <= 10 ? '#f59e0b' : textMain }}>
                                 {displayStock}
-                                {displayStock === 0 && <span style={{ fontSize: 10, marginLeft: 4, color: '#ef4444' }}>(Out)</span>}
-                                {displayStock > 0 && displayStock <= 10 && <span style={{ fontSize: 10, marginLeft: 4, color: '#f59e0b' }}>(Low)</span>}
+                                {displayStock === 0 && <span style={{ fontSize: 10, marginInlineStart: 4, color: '#ef4444' }}>(Out)</span>}
+                                {displayStock > 0 && displayStock <= 10 && <span style={{ fontSize: 10, marginInlineStart: 4, color: '#f59e0b' }}>(Low)</span>}
                               </span>
                             </div>
                           </td>

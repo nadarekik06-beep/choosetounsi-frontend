@@ -315,10 +315,10 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                       onChange={e => setPackPrice(e.target.value)}
                       placeholder="0.000"
                       className={inputCls(errors.pack_price)}
-                      style={{ paddingRight: 44 }}
+                      style={{ paddingInlineEnd: 44 }}
                     />
                     <span style={{
-                      position: 'absolute', right: 10, top: '50%',
+                      position: 'absolute', insetInlineEnd: 10, top: '50%',
                       transform: 'translateY(-50%)',
                       fontSize: 11, color: '#94a3b8', fontWeight: 600,
                     }}>TND</span>
@@ -388,7 +388,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                       {savings > 0 && (
                         <span style={{ fontSize: 16, fontWeight: 900, color: '#10b981' }}>
                           {fmt(savings)}
-                          <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 4 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, marginInlineStart: 4 }}>
                             ({savingsPct}%)
                           </span>
                         </span>
@@ -474,7 +474,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
               <div style={{
                 display: 'flex', flexDirection: 'column', gap: 12,
                 maxHeight: 560, overflowY: 'auto', overflowX: 'visible',
-                paddingRight: 2,
+                paddingInlineEnd: 2,
               }}>
                 {items.map((row, idx) => (
                   <ItemRow
@@ -632,7 +632,7 @@ function ItemRow({
                 </strong>
                 {row.product.has_variants && (
                   <span style={{
-                    marginLeft: 8, fontWeight: 700,
+                    marginInlineStart: 8, fontWeight: 700,
                     color: checkedCount > 0 ? '#198f41' : '#ef4444',
                   }}>
                     · {checkedCount}/{totalVariants} variants
@@ -683,7 +683,7 @@ function ItemRow({
       {/* ── PICKER DROPDOWN ── */}
       {pickerOpen && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+          position: 'absolute', top: 'calc(100% + 4px)', insetInlineStart: 0, insetInlineEnd: 0,
           zIndex: 200,
           background: '#fff',
           border: '1.5px solid #e2e8f0',
@@ -828,7 +828,7 @@ function ItemRow({
                         background: checked
                           ? outOfStock ? 'rgba(239,68,68,0.05)' : 'rgba(220,38,38,0.05)'
                           : '#f8fafc',
-                        textAlign: 'left',
+                        textAlign: 'start',
                       }}
                     >
                       <p style={{

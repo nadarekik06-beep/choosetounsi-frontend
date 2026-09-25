@@ -1808,5 +1808,224 @@
     "ctaTitle": "مستعد لبدء البيع؟ 🇹🇳",
     "ctaBody": "انضم إلى مئات رواد الأعمال التونسيين الذين يبنون نشاطهم على الإنترنت مع ChooseTounsi.",
     "applyNow": "قدّم الآن"
+  },
+  "seller": {
+    "nav": {
+      "sections": {
+        "store": "متجري",
+        "customer": "الحرفاء",
+        "growth": "النمو"
+      },
+      "overview": "نظرة عامة",
+      "settings": "إعدادات المتجر",
+      "products": "المنتجات",
+      "packs": "الحزم",
+      "orders": "الطلبات",
+      "earnings": "الأرباح",
+      "subscription": "الاشتراك",
+      "complaints": "الشكاوى",
+      "reviews": "التقييمات والسمعة",
+      "promotions": "التخفيضات",
+      "promote": "الإعلانات والترويج",
+      "analytics": "الإحصائيات",
+      "aiTools": "أدوات الذكاء الاصطناعي",
+      "eliteOverview": "نظرة النخبة",
+      "aiIntelligence": "ذكاء اصطناعي",
+      "visitorInsights": "تحليل الزوار",
+      "listingQuality": "جودة المنتجات المعروضة",
+      "smartPromotions": "عروض ذكية",
+      "profitCenter": "مركز الأرباح",
+      "vipLounge": "صالون VIP",
+      "tierRed": "● Red Pepper",
+      "tierPremium": "● بريميوم",
+      "tierBlackElite": "■ Black Elite",
+      "tierBlack": "■ Black Pepper",
+      "portal": "فضاء البائع",
+      "elitePortal": "⬛ فضاء النخبة",
+      "closeMenu": "إغلاق القائمة",
+      "openMenu": "فتح القائمة",
+      "homepage": "الرئيسية",
+      "lightMode": "الوضع الفاتح",
+      "darkMode": "الوضع الداكن",
+      "collapse": "تصغير",
+      "expand": "توسيع",
+      "signOut": "تسجيل الخروج",
+      "language": "اللغة ({code})"
+    },
+    "topbar": {
+      "title": "لوحة التحكم",
+      "red": "Red",
+      "elite": "نخبة",
+      "redTip": "🌶️ Red Pepper — بائع بريميوم",
+      "blackTip": "⬛ Black Seller Elite — كل الميزات المميزة مفعّلة",
+      "sellerFallback": "بائع",
+      "blackElite": "Black Elite",
+      "premiumSeller": "بائع بريميوم",
+      "roleSeller": "بائع",
+      "toggleTheme": "تغيير المظهر",
+      "changeLanguage": "تغيير اللغة"
+    },
+    "common": {
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "off": "متوقف",
+      "live": "🟢 متصل",
+      "viewAll": "عرض الكل",
+      "retry": "إعادة المحاولة",
+      "noData": "لا توجد بيانات بعد",
+      "connectionError": "خطأ في الاتصال",
+      "connectionErrorBody": "تعذّر الوصول إلى الخادم. تأكّد من أنه يعمل.",
+      "userFallback": "مستخدم #{id}",
+      "ordersCount": "{count, plural, =0 {لا طلبات} one {طلب واحد} two {طلبان} few {# طلبات} many {# طلبًا} other {# طلب}}",
+      "inStock": "{count} في المخزون",
+      "outShort": "⚠ نفد",
+      "loading": "جارٍ التحميل…"
+    },
+    "overview": {
+      "title": "لوحة التحكم",
+      "subtitle": "نظرة عامة على أداء متجرك",
+      "totalRevenue": "إجمالي المداخيل",
+      "completedPaid": "الطلبات المكتملة والمدفوعة",
+      "totalOrders": "الطلبات",
+      "pendingCount": "{count} قيد الانتظار",
+      "products": "المنتجات",
+      "activeCount": "{count} نشط",
+      "thisMonth": "هذا الشهر",
+      "lastMonth": "الشهر الماضي: {amount}",
+      "pendingOrders": "طلبات قيد الانتظار",
+      "activeProducts": "منتجات نشطة",
+      "pendingApprovals": "في انتظار الموافقة",
+      "topWilayas": "أفضل الولايات",
+      "byRevenue": "حسب المداخيل",
+      "topProducts": "أفضل المنتجات",
+      "rankedByUnits": "مرتبة حسب عدد الوحدات المباعة",
+      "noProductData": "لا توجد بيانات عن المنتجات بعد",
+      "sales": "المبيعات",
+      "revenue": "المداخيل",
+      "views": "المشاهدات",
+      "topClients": "أفضل الحرفاء",
+      "byLifetimeRevenue": "حسب إجمالي المشتريات",
+      "orderStatus": "حالة الطلبات",
+      "distribution": "التوزيع",
+      "noOrders": "لا توجد طلبات بعد",
+      "recentOrders": "آخر الطلبات",
+      "latest5": "آخر 5 طلبات",
+      "noRecentOrders": "لا توجد طلبات حديثة",
+      "cols": {
+        "order": "الطلب",
+        "customer": "الحريف",
+        "status": "الحالة",
+        "amount": "المبلغ",
+        "date": "التاريخ"
+      },
+      "thousandsShort": "{value} ألف"
+    },
+    "checklist": {
+      "title": "🚀 الخطوات الأولى",
+      "progress": "{done} من {total} خطوات مكتملة",
+      "firstProduct": "أضف منتجك الأول",
+      "firstProductDesc": "انشر منتجاً ليكتشف المشترون متجرك",
+      "profile": "أكمل ملفك الشخصي",
+      "profileDesc": "أضف صورة شخصية وروابط حساباتك",
+      "delivery": "راجع خيارات التوصيل",
+      "deliveryDesc": "تأكّد من أن المشترين يعرفون طرق التوصيل لديك"
+    },
+    "charts": {
+      "revenue": "المداخيل",
+      "orders": "الطلبات",
+      "revenueWithCurrency": "المداخيل ({currency})",
+      "revenueOverview": "تطور المداخيل",
+      "last12Months": "الأداء الشهري — آخر 12 شهراً",
+      "thousandsShort": "{value} ألف"
+    },
+    "features": {
+      "advanced_analytics": {
+        "label": "إحصائيات متقدمة",
+        "description": "تحليلات مفصّلة للمبيعات وشرائح الحرفاء وخرائط حرارية."
+      },
+      "ai_price_optimizer": {
+        "label": "محسّن الأسعار بالذكاء الاصطناعي",
+        "description": "أسعار مثالية يقترحها الذكاء الاصطناعي بناءً على مبيعاتك الفعلية."
+      },
+      "ai_sales_predictor": {
+        "label": "توقّع المبيعات بالذكاء الاصطناعي",
+        "description": "توقّع مبيعاتك القادمة مع مراعاة المواسم التونسية."
+      },
+      "ai_description_gen": {
+        "label": "مولّد الأوصاف بالذكاء الاصطناعي",
+        "description": "أنشئ تلقائياً عناوين وأوصافاً محسّنة لمحركات البحث."
+      },
+      "ai_recommender": {
+        "label": "اقتراح الحزم بالذكاء الاصطناعي",
+        "description": "حزم منتجات ذكية واقتراحات بيع متقاطع."
+      },
+      "max_products_150": {
+        "label": "حتى 150 منتجاً",
+        "description": "انشر حتى 150 منتجاً (خطة Green تسمح بـ 30)."
+      },
+      "bulk_operations": {
+        "label": "عمليات جماعية",
+        "description": "أدِر مئات المنتجات دفعة واحدة."
+      },
+      "api_access": {
+        "label": "الوصول إلى API",
+        "description": "وصول مباشر إلى الـ API لربط أنظمتك."
+      },
+      "custom_storefront": {
+        "label": "متجر مخصّص",
+        "description": "صفحة متجر بهويتك الخاصة على ChooseTounsi."
+      },
+      "ai_hub": {
+        "label": "مركز الذكاء الاصطناعي",
+        "description": "كل أدوات الذكاء الاصطناعي للبائع في مكان واحد."
+      },
+      "profit_center": {
+        "label": "مركز الأرباح",
+        "description": "تابع هوامشك وأرباحك لكل منتج."
+      },
+      "vip_requests": {
+        "label": "طلبات VIP",
+        "description": "اطّلع على طلبات VIP الحصرية من المشترين."
+      },
+      "sponsored_products": {
+        "label": "منتجات مموّلة",
+        "description": "روّج لمنتجاتك في كامل السوق."
+      },
+      "trend_detection": {
+        "label": "رصد التوجهات",
+        "description": "اكتشف مبكراً المنتجات والأقسام الرائجة."
+      },
+      "inventory_prediction": {
+        "label": "توقّع المخزون",
+        "description": "توقّع احتياجاتك من المخزون قبل نفاده."
+      },
+      "sponsor_product": {
+        "label": "تمويل منتج",
+        "description": "فعّل الترويج المموّل لمنتجك."
+      },
+      "sponsor_discount": {
+        "label": "تخفيض على الترويج",
+        "description": "استفد من سعر مخفّض على الترويج المموّل."
+      },
+      "requires": "يتطلب {plan}",
+      "upgradeTo": "الترقية إلى {plan}"
+    },
+    "nudge": {
+      "title": "انتقل إلى {plan} واحتفظ بجزء أكبر من مداخيلك",
+      "body": "بناءً على مداخيلك هذا الشهر ({revenue})، ستوفّر <hl>حوالي {saved} شهرياً</hl> من العمولات مقارنة بخطتك الحالية.",
+      "netGain": "الربح الصافي بعد كلفة الخطة ({cost}): +{gain}.",
+      "cta": "ترقية",
+      "dismiss": "إخفاء"
+    },
+    "bell": {
+      "title": "الإشعارات",
+      "newCount": "{count, plural, one {# جديد} other {# جديدة}}",
+      "markAllRead": "تعليم الكل كمقروء",
+      "allRead": "قراءة الكل",
+      "refresh": "تحديث",
+      "loading": "جارٍ التحميل…",
+      "empty": "لا توجد إشعارات بعد",
+      "emptyHint": "سيظهر هنا نشاط متجرك."
+    }
   }
 }
