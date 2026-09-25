@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { blackPepperApi, type FunnelInsight } from '@/lib/blackPepperApi'; // ← FIX: FunnelInsight now exported
 import SmartActionButton from '@/app/components/seller/black/SmartActionButton';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
 const GOLD = '#f59e0b';
 
@@ -34,6 +36,8 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
   const [open,    setOpen]    = useState(false);
+  const t = useTranslations('seller.funnel');
+  const { price, number } = useFormat();
 
   const load = useCallback(async () => {
     setLoading(true); setError(false);
@@ -77,7 +81,7 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <p style={{ fontSize: 14, fontWeight: 900, color: textMain, margin: 0 }}>Visitor Insights</p>
+            <p style={{ fontSize: 14, fontWeight: 900, color: textMain, margin: 0 }}>{t('title')}</p>
             {!loading && count > 0 && (
               <span style={{
                 fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999,
@@ -85,7 +89,7 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
                 border: '1px solid rgba(239,68,68,0.3)', textTransform: 'uppercase' as const,
                 letterSpacing: '0.06em',
               }}>
-                {count} need attention
+                {t('needAttention', { count })}
               </span>
             )}
             {!loading && count === 0 && data !== null && (
@@ -93,13 +97,11 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
                 fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999,
                 background: 'rgba(16,185,129,0.15)', color: '#10b981',
                 border: '1px solid rgba(16,185,129,0.3)', textTransform: 'uppercase' as const,
-              }}>All good</span>
+              }}>{t('allGood')}</span>
             )}
           </div>
           <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>
-            {count > 0
-              ? `${count} product${count !== 1 ? 's' : ''} getting visitors but not selling`
-              : 'Products attracting and converting visitors well'}
+            {count > 0 ? t('subtitleIssues', { count }) : t('subtitleOk')}
           </p>
         </div>
         <div style={{ color: textMuted, flexShrink: 0 }}>
@@ -123,7 +125,7 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
 
           {!loading && error && (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <p style={{ fontSize: 12, color: '#ef4444', margin: '0 0 8px' }}>Could not load visitor insights.</p>
+              <p style={{ fontSize: 12, color: '#ef4444', margin: '0 0 8px' }}>{t('loadError')}</p>
               <button
                 onClick={load}
                 style={{
@@ -132,7 +134,7 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
                   borderRadius: 7, padding: '5px 12px', cursor: 'pointer',
                 }}
               >
-                Retry
+                {t('retry')}
               </button>
             </div>
           )}
@@ -146,10 +148,10 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
               <CheckCircle size={18} color="#10b981" />
               <div>
                 <p style={{ fontSize: 13, fontWeight: 700, color: '#10b981', margin: '0 0 2px' }}>
-                  Everything is converting well
+                  {t('okTitle')}
                 </p>
                 <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>
-                  No products with high visits and low sales detected right now.
+                  {t('okText')}
                 </p>
               </div>
             </div>
@@ -162,8 +164,7 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
                 background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)',
               }}>
                 <p style={{ fontSize: 12, color: textMain, margin: 0, lineHeight: 1.55 }}>
-                  These products are getting visitors but people are not buying.
-                  A better photo, clearer title, or small discount can make a big difference.
+                  {t('intro')}
                 </p>
               </div>
 
@@ -194,9 +195,9 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
                       {[
-                        { label: 'Visitors',    value: item.views.toLocaleString(),   color: '#3b82f6' },
-                        { label: 'Bought',      value: String(item.units_sold),        color: item.units_sold > 0 ? '#10b981' : '#ef4444' },
-                        { label: 'Opportunity', value: item.opportunity_tnd + ' TND',  color: GOLD },
+                        { label: t('stats.visitors'),    value: number(item.views),      color: '#3b82f6' },
+                        { label: t('stats.bought'),      value: number(item.units_sold), color: item.units_sold > 0 ? '#10b981' : '#ef4444' },
+                        { label: t('stats.opportunity'), value: price(item.opportunity_tnd, { maximumFractionDigits: 0 }), color: GOLD },
                       ].map(({ label, value, color }) => (
                         <div key={label} style={{
                           background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
@@ -222,7 +223,7 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
                       gap: 8, flexWrap: 'wrap',
                     }}>
                       <p style={{ fontSize: 11, color: textMuted, margin: 0, flex: 1, minWidth: 120 }}>
-                        <span style={{ color: textMain, fontWeight: 700 }}>Try: </span>
+                        <span style={{ color: textMain, fontWeight: 700 }}>{t('try')} </span>
                         {item.fix_suggestion}
                       </p>
                       <SmartActionButton

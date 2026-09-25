@@ -20,6 +20,8 @@ import SmartActionButton from './black/SmartActionButton';
 import ConversionFunnelCard from './black/ConversionFunnelCard';
 import ProductQualityAudit from './black/ProductQualityAudit';
 import SmartPromoteCard from './black/SmartPromoteCard';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
 const GOLD   = '#f59e0b';
 const GOLD_2 = '#fbbf24';
@@ -128,6 +130,7 @@ function LoadingSpinner() {
 // ---- Elite Banner ----------------------------------------------------------
 
 export function EliteBanner({ dark }: { dark: boolean }) {
+  const t = useTranslations('seller.revenueGoals');
   const textMuted = dark ? 'rgba(255,255,255,0.5)' : '#666';
   return (
     <div style={{ background: dark ? ELITE : 'linear-gradient(135deg,#fffbeb,#fef3c7,#fffbeb)',
@@ -144,11 +147,11 @@ export function EliteBanner({ dark }: { dark: boolean }) {
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 900, color: GOLD, margin: 0 }}>Black Seller Elite</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 900, color: GOLD, margin: 0 }}>{t('elite.title')}</h2>
           <GoldBadge text="Black Pepper"/>
         </div>
         <p style={{ fontSize: 12, color: textMuted, margin: 0, fontWeight: 500 }}>
-          Full access to AI Hub, Profit Center, Visibility Control &amp; VIP Lounge.
+          {t('elite.subtitle')}
         </p>
       </div>
       <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
@@ -331,7 +334,11 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
   const [editing, setEditing]     = useState(false);
   const [goalInput, setGoalInput] = useState('');
   const [saving, setSaving]       = useState(false);
-  const [saveMsg, setSaveMsg]     = useState<string | null>(null);
+  const [saveMsg, setSaveMsg]     = useState<{ ok: boolean; text: string } | null>(null);
+  const t = useTranslations('seller.revenueGoals');
+  const { price, date, number } = useFormat();
+  const money = (n: number) => price(n, { maximumFractionDigits: 3 });
+  const monthLabel = (ym: string) => /^\d{4}-\d{2}$/.test(ym) ? date(`${ym}-01T12:00:00`, 'monthYear') : ym;
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -340,11 +347,11 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
       setData(r.data);
       setGoalInput(r.data.current_goal > 0 ? String(Math.round(r.data.current_goal)) : '');
     } catch (e: any) {
-      setError(e.message ?? 'Failed to load');
+      setError(e.message ?? t('loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -355,11 +362,11 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
     try {
       const month = data?.current_month ?? new Date().toISOString().slice(0, 7);
       await blackPepperApi.setRevenueGoal(month, amount);
-      setSaveMsg('Goal saved!');
+      setSaveMsg({ ok: true, text: t('saved') });
       setEditing(false);
       await load();
     } catch (e: any) {
-      setSaveMsg(e.message ?? 'Failed to save');
+      setSaveMsg({ ok: false, text: e.message ?? t('saveFailed') });
     } finally {
       setSaving(false);
       setTimeout(() => setSaveMsg(null), 3000);
@@ -378,8 +385,8 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
 
   return (
     <SectionCard
-      title="Revenue Goals"
-      subtitle="Set monthly targets, track your pace, build streaks"
+      title={t('title')}
+      subtitle={t('subtitle')}
       icon={Target}
       dark={dark}
       collapsible
@@ -387,7 +394,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
       badge={
         data && data.streak >= 1
           ? <span style={{ fontSize: 11, color: streakColor(data.streak) }}>
-              {'🔥'.repeat(Math.min(data.streak, 5))} {data.streak}-month streak
+              {'🔥'.repeat(Math.min(data.streak, 5))} {t('streakBadge', { count: data.streak })}
             </span>
           : undefined
       }
@@ -399,7 +406,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
           <button onClick={load} style={{ marginTop: 8, padding: '8px 16px', borderRadius: 8,
             background: `${GOLD}18`, border: `1px solid ${GOLD}33`, color: GOLD,
             cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
-            <RefreshCw size={12} style={{ display: 'inline', marginInlineEnd: 4 }}/> Retry
+            <RefreshCw size={12} style={{ display: 'inline', marginInlineEnd: 4 }}/> {t('retry')}
           </button>
         </div>
       )}
@@ -428,15 +435,15 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
               <div>
                 <p style={{ fontSize: 12, fontWeight: 800, color: textMuted, textTransform: 'uppercase',
                   letterSpacing: '0.07em', margin: '0 0 2px' }}>
-                  {data.current_month} Goal
+                  {t('monthGoal', { month: monthLabel(data.current_month) })}
                 </p>
                 {data.current_goal > 0 ? (
                   <p style={{ fontSize: 20, fontWeight: 900, color: GOLD, margin: 0 }}>
-                    {fmt(data.current_goal)}
+                    {money(data.current_goal)}
                   </p>
                 ) : (
                   <p style={{ fontSize: 13, color: textMuted, margin: 0, fontStyle: 'italic' }}>
-                    No goal set yet
+                    {t('noGoal')}
                   </p>
                 )}
               </div>
@@ -446,7 +453,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                   border: `1px solid ${editing ? 'rgba(239,68,68,0.3)' : `${GOLD}30`}`,
                   color: editing ? '#ef4444' : GOLD, cursor: 'pointer',
                   fontSize: 11, fontWeight: 800 }}>
-                {editing ? <><X size={11}/> Cancel</> : <><Pencil size={11}/> {data.current_goal > 0 ? 'Edit' : 'Set Goal'}</>}
+                {editing ? <><X size={11}/> {t('cancel')}</> : <><Pencil size={11}/> {data.current_goal > 0 ? t('edit') : t('setGoal')}</>}
               </button>
             </div>
 
@@ -457,7 +464,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                     type="number"
                     value={goalInput}
                     onChange={e => setGoalInput(e.target.value)}
-                    placeholder="e.g. 5000"
+                    placeholder={t('placeholder')}
                     min={0}
                     style={{ width: '100%', padding: '10px 14px', borderRadius: 9,
                       background: inputBg, border: `1px solid ${inputBdr}`,
@@ -465,21 +472,21 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                       outline: 'none', boxSizing: 'border-box' as const }}
                   />
                   <span style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)',
-                    fontSize: 11, color: textMuted, fontWeight: 700, pointerEvents: 'none' }}>TND</span>
+                    fontSize: 11, color: textMuted, fontWeight: 700, pointerEvents: 'none' }}>{t('currency')}</span>
                 </div>
                 <button onClick={handleSaveGoal} disabled={saving}
                   style={{ padding: '10px 18px', borderRadius: 9,
                     background: saving ? `${GOLD}40` : `linear-gradient(135deg,${GOLD},${GOLD_2})`,
                     border: 'none', color: '#000', fontWeight: 900, fontSize: 12,
                     cursor: saving ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' as const }}>
-                  {saving ? 'Saving…' : 'Save'}
+                  {saving ? t('saving') : t('save')}
                 </button>
               </div>
             )}
 
             {saveMsg && (
-              <p style={{ fontSize: 12, color: saveMsg === 'Goal saved!' ? '#10b981' : '#ef4444',
-                fontWeight: 700, margin: '0 0 10px' }}>{saveMsg}</p>
+              <p style={{ fontSize: 12, color: saveMsg.ok ? '#10b981' : '#ef4444',
+                fontWeight: 700, margin: '0 0 10px' }}>{saveMsg.text}</p>
             )}
 
             {/* Progress bar */}
@@ -487,16 +494,16 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <span style={{ fontSize: 11, color: textMuted, fontWeight: 600 }}>
-                    {fmt(data.current_revenue)} earned
+                    {t('earned', { amount: money(data.current_revenue) })}
                   </span>
                   <span style={{ fontSize: 11, fontWeight: 800,
                     color: data.on_track ? '#10b981' : data.progress_pct > 50 ? GOLD : '#ef4444' }}>
-                    {data.progress_pct}%
+                    {number(data.progress_pct / 100, { style: 'percent', maximumFractionDigits: 1 })}
                   </span>
                 </div>
                 <div style={{ height: 8, background: dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb',
                   borderRadius: 999, overflow: 'hidden', marginBottom: 8 }}>
-                  <div style={{
+                  <div className="rtl-flip" style={{
                     height: '100%',
                     width: `${data.progress_pct}%`,
                     background: data.on_track
@@ -510,10 +517,10 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 10, color: textMuted }}>
-                    {data.days_left} day{data.days_left === 1 ? '' : 's'} left
+                    {t('daysLeft', { count: data.days_left })}
                   </span>
                   <span style={{ fontSize: 10, color: data.on_track ? '#10b981' : textMuted, fontWeight: 700 }}>
-                    {data.on_track ? '✅ On track' : `Need ${fmt(Math.max(0, data.current_goal - data.current_revenue))} more`}
+                    {data.on_track ? `✅ ${t('onTrack')}` : t('needMore', { amount: money(Math.max(0, data.current_goal - data.current_revenue)) })}
                   </span>
                 </div>
               </>
@@ -524,20 +531,20 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
             {[
               {
-                label: 'This Month',
-                value: fmt(data.current_revenue),
+                label: t('stats.thisMonth'),
+                value: money(data.current_revenue),
                 color: GOLD,
                 icon: DollarSign,
               },
               {
-                label: 'Projected',
-                value: fmt(data.projected),
+                label: t('stats.projected'),
+                value: money(data.projected),
                 color: data.projected >= (data.current_goal || 1) ? '#10b981' : '#f97316',
                 icon: TrendingUp,
               },
               {
-                label: 'Last Month',
-                value: fmt(data.last_revenue),
+                label: t('stats.lastMonth'),
+                value: money(data.last_revenue),
                 color: '#3b82f6',
                 icon: BarChart2,
               },
@@ -559,11 +566,12 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
               borderRadius: 10, background: `${GOLD}10`, border: `1px solid ${GOLD}20` }}>
               <Info size={13} color={GOLD} style={{ flexShrink: 0 }}/>
               <p style={{ fontSize: 12, color: textMain, margin: 0, fontWeight: 500 }}>
-                You're averaging <strong style={{ color: GOLD }}>{fmt(data.daily_pace)}</strong> per day.
+                {t.rich('pace', { amount: money(data.daily_pace), b: (c) => <strong style={{ color: GOLD }}>{c}</strong> })}
                 {data.current_goal > 0 && (
-                  <> To hit your goal you need <strong style={{ color: GOLD }}>
-                    {fmt(Math.max(0, (data.current_goal - data.current_revenue) / Math.max(data.days_left, 1)))}
-                  </strong> /day.</>
+                  <> {t.rich('paceNeeded', {
+                    amount: money(Math.max(0, (data.current_goal - data.current_revenue) / Math.max(data.days_left, 1))),
+                    b: (c) => <strong style={{ color: GOLD }}>{c}</strong>,
+                  })}</>
                 )}
               </p>
             </div>
@@ -575,7 +583,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
               <p style={{ fontSize: 11, fontWeight: 800, color: textMuted, textTransform: 'uppercase',
                 letterSpacing: '0.08em', margin: '0 0 10px',
                 display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Clock size={11}/> 6-Month History
+                <Clock size={11}/> {t('history')}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {[...data.history].reverse().map(m => {
@@ -592,11 +600,11 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                         alignItems: 'center', marginBottom: 7 }}>
                         <span style={{ fontSize: 11, fontWeight: 800,
                           color: isCurrentMonth ? GOLD : textMain }}>
-                          {m.month}{isCurrentMonth ? ' ← now' : ''}
+                          {monthLabel(m.month)}{isCurrentMonth ? ` · ${t('now')}` : ''}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>
-                            {fmt(m.revenue)}
+                            {money(m.revenue)}
                           </span>
                           {m.goal > 0 && (
                             <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 7px',
@@ -604,7 +612,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                               background: m.hit ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.12)',
                               color: m.hit ? '#10b981' : '#ef4444',
                               border: `1px solid ${m.hit ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.25)'}` }}>
-                              {m.hit ? '✓ Goal hit' : `${m.pct}%`}
+                              {m.hit ? `✓ ${t('goalHit')}` : number(m.pct / 100, { style: 'percent', maximumFractionDigits: 1 })}
                             </span>
                           )}
                         </div>
@@ -626,7 +634,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                       </div>
                       {m.goal > 0 && (
                         <p style={{ fontSize: 9, color: textMuted, margin: '4px 0 0', textAlign: 'end' }}>
-                          Goal: {fmt(m.goal)}
+                          {t('goalLine', { amount: money(m.goal) })}
                         </p>
                       )}
                     </div>
@@ -647,14 +655,14 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
               <span style={{ fontSize: 24 }}>{'🔥'.repeat(Math.min(data.streak, 5))}</span>
               <div>
                 <p style={{ fontSize: 13, fontWeight: 900, color: streakColor(data.streak), margin: '0 0 1px' }}>
-                  {data.streak}-Month Goal Streak!
+                  {t('streakTitle', { count: data.streak })}
                 </p>
                 <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>
                   {data.streak >= 5
-                    ? 'Legendary consistency — keep it up!'
+                    ? t('streak5')
                     : data.streak >= 3
-                      ? 'Outstanding — you\'re on a roll!'
-                      : 'Great start — keep hitting those goals!'}
+                      ? t('streak3')
+                      : t('streak1')}
                 </p>
               </div>
             </div>

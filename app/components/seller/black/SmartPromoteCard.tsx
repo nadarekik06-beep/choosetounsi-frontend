@@ -13,6 +13,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Zap, TrendingUp, Star, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 import { blackPepperApi, type AutoPromoteSuggestion } from '@/lib/blackPepperApi';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
 const GOLD  = '#f59e0b';
 const GOLD2 = '#fbbf24';
@@ -27,10 +29,12 @@ function SuggestionCard({
   const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
   const innerBg   = dark ? '#141209' : '#fff';
   const innerBdr  = dark ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.18)';
+  const t = useTranslations('seller.smartPromote');
+  const { price } = useFormat();
 
   return (
     <div style={{ background: innerBg, borderRadius: 14, border: '1px solid ' + innerBdr, overflow: 'hidden' }}>
-      <div style={{ height: 3, background: 'linear-gradient(90deg,' + GOLD + ',' + GOLD2 + ')' }}/>
+      <div className="rtl-flip" style={{ height: 3, background: 'linear-gradient(90deg,' + GOLD + ',' + GOLD2 + ')' }}/>
       <div style={{ padding: '14px 16px' }}>
 
         {/* Product header */}
@@ -56,7 +60,7 @@ function SuggestionCard({
               color: item.trend_signal === 'hot' ? '#ef4444' : GOLD,
               border: '1px solid ' + (item.trend_signal === 'hot' ? 'rgba(239,68,68,0.3)' : GOLD + '35'),
               textTransform: 'uppercase' as const }}>
-              {item.trend_signal === 'hot' ? 'Hot product' : 'Rising fast'}
+              {item.trend_signal === 'hot' ? t('hot') : t('rising')}
             </span>
           </div>
         </div>
@@ -71,9 +75,9 @@ function SuggestionCard({
         {/* 3 impact stats */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
           {[
-            { label: 'Selling',    value: item.velocity_label,                   color: '#10b981' },
-            { label: 'This week',  value: item.seven_day_revenue + ' TND',        color: GOLD       },
-            { label: 'Est. boost', value: '+' + item.estimated_boost_tnd + ' TND', color: '#3b82f6' },
+            { label: t('stats.selling'),  value: item.velocity_label, color: '#10b981' },
+            { label: t('stats.thisWeek'), value: price(item.seven_day_revenue, { maximumFractionDigits: 0 }), color: GOLD },
+            { label: t('stats.estBoost'), value: '+' + price(item.estimated_boost_tnd, { maximumFractionDigits: 0 }), color: '#3b82f6' },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
               borderRadius: 8, padding: '7px 10px', textAlign: 'center' as const }}>
@@ -98,7 +102,7 @@ function SuggestionCard({
   boxShadow: '0 4px 16px ' + GOLD + '40',
   textDecoration: 'none',
 }}>
-  <Star size={14}/> Go to Promote
+  <Star size={14}/> {t('cta')}
 </a>
       </div>
     </div>
@@ -110,6 +114,8 @@ export default function SmartPromoteCard({ dark }: { dark: boolean }) {
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(false);
   const [open,       setOpen]       = useState(false);
+  const t = useTranslations('seller.smartPromote');
+  const { price } = useFormat();
 
   const load = useCallback(async () => {
     setLoading(true); setError(false);
@@ -146,19 +152,19 @@ export default function SmartPromoteCard({ dark }: { dark: boolean }) {
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <p style={{ fontSize: 14, fontWeight: 900, color: textMain, margin: 0 }}>Smart Promotions</p>
+            <p style={{ fontSize: 14, fontWeight: 900, color: textMain, margin: 0 }}>{t('title')}</p>
             {!loading && unspon.length > 0 && (
               <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999,
                 background: GOLD + '20', color: GOLD, border: '1px solid ' + GOLD + '40',
                 textTransform: 'uppercase' as const }}>
-                {unspon.length} ready
+                {t('ready', { count: unspon.length })}
               </span>
             )}
           </div>
           <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>
             {unspon.length > 0
-              ? unspon.length + ' trending product' + (unspon.length !== 1 ? 's' : '') + ' not yet sponsored — est. +' + totalBoost + ' TND'
-              : 'All trending products are already sponsored'}
+              ? t('subtitle', { count: unspon.length, amount: price(totalBoost, { maximumFractionDigits: 0 }) })
+              : t('allSponsored')}
           </p>
         </div>
         <div style={{ color: textMuted, flexShrink: 0 }}>
@@ -180,10 +186,10 @@ export default function SmartPromoteCard({ dark }: { dark: boolean }) {
 
           {!loading && error && (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <p style={{ fontSize: 12, color: '#ef4444', margin: '0 0 8px' }}>Could not load suggestions.</p>
+              <p style={{ fontSize: 12, color: '#ef4444', margin: '0 0 8px' }}>{t('loadError')}</p>
               <button onClick={load} style={{ fontSize: 11, fontWeight: 700, color: GOLD,
                 background: GOLD + '12', border: '1px solid ' + GOLD + '30',
-                borderRadius: 7, padding: '5px 12px', cursor: 'pointer' }}>Retry</button>
+                borderRadius: 7, padding: '5px 12px', cursor: 'pointer' }}>{t('retry')}</button>
             </div>
           )}
 
@@ -192,7 +198,7 @@ export default function SmartPromoteCard({ dark }: { dark: boolean }) {
               background: 'rgba(16,185,129,0.08)', borderRadius: 12, border: '1px solid rgba(16,185,129,0.2)' }}>
               <CheckCircle size={18} color="#10b981"/>
               <p style={{ fontSize: 13, fontWeight: 700, color: '#10b981', margin: 0 }}>
-                All trending products are already sponsored. You are maximizing visibility.
+                {t('allSponsoredLong')}
               </p>
             </div>
           )}
@@ -203,8 +209,7 @@ export default function SmartPromoteCard({ dark }: { dark: boolean }) {
                 background: dark ? 'rgba(245,158,11,0.08)' : 'rgba(245,158,11,0.05)',
                 border: '1px solid ' + GOLD + '20' }}>
                 <p style={{ fontSize: 12, color: textMain, margin: 0, lineHeight: 1.55 }}>
-                  These products are selling fast but are not promoted yet.
-                  Sponsoring them puts them in front of more buyers at exactly the right moment.
+                  {t('intro')}
                 </p>
               </div>
               {unspon.map(item => (

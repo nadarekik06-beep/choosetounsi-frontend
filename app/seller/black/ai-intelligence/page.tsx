@@ -7,12 +7,14 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSubscription } from '@/app/hooks/useSubscription';
 import { useTheme } from '../../SellerShell';
+import { useTranslations } from 'next-intl';
 import AIHubCard from '@/app/components/seller/black/AIHubCard';
 
 export default function AIIntelligencePage() {
   const { dark } = useTheme();
   const { isBlack, loading } = useSubscription();
   const router = useRouter();
+  const t = useTranslations('seller.black.pages');
   useEffect(() => { if (!loading && !isBlack) router.replace('/seller/subscription'); }, [isBlack, loading, router]);
   if (loading || !isBlack) return null;
 
@@ -23,10 +25,10 @@ export default function AIIntelligencePage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div>
         <h1 style={{ fontSize: 20, fontWeight: 900, color: txtMain, margin: '0 0 4px', letterSpacing: '-0.02em' }}>
-          AI Intelligence
+          {t('ai.title')}
         </h1>
         <p style={{ fontSize: 13, color: txtMut, margin: 0 }}>
-          Trending products, stock alerts and market insights — updated every 6 hours.
+          {t('ai.subtitle')}
         </p>
       </div>
       {/* AIHubCard renders fully expanded — no accordion wrapper */}

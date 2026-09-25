@@ -19,16 +19,19 @@ import {
 } from 'lucide-react';
 import { blackPepperApi, type AiHubData, type TrendingProduct, type InventoryAlert } from '@/lib/blackPepperApi';
 import SmartActionButton from '@/app/components/seller/black/SmartActionButton';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
 const GOLD = '#f59e0b';
 
 // ─── Signal badge ─────────────────────────────────────────────────────────────
 
 function SignalBadge({ signal }: { signal: 'hot' | 'rising' | 'warm' }) {
+  const t = useTranslations('seller.aiHub');
   const cfg = {
-    hot:    { color: '#ef4444', bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.35)',   label: '🔥 Hot' },
-    rising: { color: GOLD,     bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.35)', label: '↑ Rising' },
-    warm:   { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.3)',   label: '~ Warm' },
+    hot:    { color: '#ef4444', bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.35)',   label: `🔥 ${t('signal.hot')}` },
+    rising: { color: GOLD,     bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.35)', label: `↑ ${t('signal.rising')}` },
+    warm:   { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.3)',   label: `~ ${t('signal.warm')}` },
   }[signal];
   return (
     <span style={{
@@ -44,10 +47,11 @@ function SignalBadge({ signal }: { signal: 'hot' | 'rising' | 'warm' }) {
 // ─── Urgency badge ────────────────────────────────────────────────────────────
 
 function UrgencyBadge({ urgency }: { urgency: 'critical' | 'high' | 'medium' }) {
+  const t = useTranslations('seller.aiHub');
   const cfg = {
-    critical: { color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.35)', label: 'Critical' },
-    high:     { color: GOLD,     bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.35)', label: 'High' },
-    medium:   { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.3)', label: 'Medium' },
+    critical: { color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.35)', label: t('urgency.critical') },
+    high:     { color: GOLD,     bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.35)', label: t('urgency.high') },
+    medium:   { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.3)', label: t('urgency.medium') },
   }[urgency];
   return (
     <span style={{
@@ -63,6 +67,8 @@ function UrgencyBadge({ urgency }: { urgency: 'critical' | 'high' | 'medium' }) 
 // ─── Trending product row ─────────────────────────────────────────────────────
 
 function TrendingRow({ item, dark }: { item: TrendingProduct; dark: boolean }) {
+  const t = useTranslations('seller.aiHub');
+  const { price, number } = useFormat();
   const textMain  = dark ? '#fff' : '#111';
   const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
   const innerBg   = dark ? 'rgba(255,255,255,0.03)' : '#f9f9f9';
@@ -110,9 +116,9 @@ function TrendingRow({ item, dark }: { item: TrendingProduct; dark: boolean }) {
       {/* 3 stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
         {[
-          { label: 'This week',  value: item.seven_day_units + ' sold',           color: GOLD },
-          { label: 'Revenue',    value: item.seven_day_revenue.toFixed(0) + ' TND', color: '#34d399' },
-          { label: 'Stock left', value: String(item.current_stock),               color: item.current_stock <= 5 ? '#f87171' : textMuted },
+          { label: t('stats.thisWeek'),  value: t('stats.sold', { count: item.seven_day_units }), color: GOLD },
+          { label: t('stats.revenue'),   value: price(item.seven_day_revenue, { maximumFractionDigits: 0 }), color: '#34d399' },
+          { label: t('stats.stockLeft'), value: number(item.current_stock), color: item.current_stock <= 5 ? '#f87171' : textMuted },
         ].map(({ label, value, color }) => (
           <div key={label} style={{
             background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
@@ -147,6 +153,8 @@ function TrendingRow({ item, dark }: { item: TrendingProduct; dark: boolean }) {
 // ─── Inventory alert row ──────────────────────────────────────────────────────
 
 function AlertRow({ item, dark }: { item: InventoryAlert; dark: boolean }) {
+  const t = useTranslations('seller.aiHub');
+  const { price, number } = useFormat();
   const textMain  = dark ? '#fff' : '#111';
   const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
   const innerBg   = dark ? 'rgba(255,255,255,0.03)' : '#f9f9f9';
@@ -193,9 +201,9 @@ function AlertRow({ item, dark }: { item: InventoryAlert; dark: boolean }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
         {[
-          { label: 'Stock left',   value: String(item.current_stock),             color: urgColor },
-          { label: 'Days left',    value: String(item.days_remaining),             color: urgColor },
-          { label: 'Revenue risk', value: item.revenue_at_risk.toFixed(0) + ' TND', color: '#f87171' },
+          { label: t('stats.stockLeft'),   value: number(item.current_stock),  color: urgColor },
+          { label: t('stats.daysLeft'),    value: number(item.days_remaining), color: urgColor },
+          { label: t('stats.revenueRisk'), value: price(item.revenue_at_risk, { maximumFractionDigits: 0 }), color: '#f87171' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{
             background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
@@ -229,11 +237,12 @@ function AlertRow({ item, dark }: { item: InventoryAlert; dark: boolean }) {
 // ─── Market temperature badge ─────────────────────────────────────────────────
 
 function TempBadge({ temp }: { temp: 'hot' | 'warm' | 'cooling' | 'cold' }) {
+  const t = useTranslations('seller.aiHub');
   const cfg = {
-    hot:     { color: '#ef4444', label: '🔥 Hot market' },
-    warm:    { color: GOLD,     label: '☀ Warm market' },
-    cooling: { color: '#60a5fa', label: '↓ Cooling market' },
-    cold:    { color: '#94a3b8', label: '❄ Cold market' },
+    hot:     { color: '#ef4444', label: `🔥 ${t('temp.hot')}` },
+    warm:    { color: GOLD,     label: `☀ ${t('temp.warm')}` },
+    cooling: { color: '#60a5fa', label: `↓ ${t('temp.cooling')}` },
+    cold:    { color: '#94a3b8', label: `❄ ${t('temp.cold')}` },
   }[temp];
   return (
     <span style={{
@@ -273,6 +282,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
   const [error,   setError]   = useState(false);
   const [open,    setOpen]    = useState(defaultOpen);
   const [tab,     setTab]     = useState<'trending' | 'alerts' | 'insights'>('trending');
+  const t = useTranslations('seller.aiHub');
 
   const load = useCallback(async () => {
     setLoading(true); setError(false);
@@ -326,14 +336,14 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <p style={{ fontSize: 14, fontWeight: 900, color: textMain, margin: 0 }}>AI Intelligence</p>
+              <p style={{ fontSize: 14, fontWeight: 900, color: textMain, margin: 0 }}>{t('title')}</p>
               {!loading && trendCount > 0 && (
                 <span style={{
                   fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999,
                   background: 'rgba(245,158,11,0.15)', color: GOLD,
                   border: '1px solid rgba(245,158,11,0.35)', textTransform: 'uppercase' as const,
                 }}>
-                  {trendCount} trending
+                  {t('trendingBadge', { count: trendCount })}
                 </span>
               )}
               {!loading && critCount > 0 && (
@@ -342,17 +352,18 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
                   background: 'rgba(239,68,68,0.15)', color: '#ef4444',
                   border: '1px solid rgba(239,68,68,0.35)', textTransform: 'uppercase' as const,
                 }}>
-                  {critCount} critical
+                  {t('criticalBadge', { count: critCount })}
                 </span>
               )}
             </div>
             <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>
-              Trending products, stock alerts and market insights
+              {t('subtitle')}
             </p>
           </div>
           <button
             onClick={e => { e.stopPropagation(); load(); }}
             disabled={loading}
+            aria-label={t('refresh')}
             style={{
               background: 'transparent', border: 'none', cursor: 'pointer',
               color: textMuted, padding: 4, borderRadius: 6, flexShrink: 0,
@@ -386,7 +397,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
                 }}
               >
                 <RefreshCw size={12} style={{ animation: loading ? 'ai-spin 0.8s linear infinite' : 'none' }} />
-                Refresh
+                {t('refresh')}
               </button>
             </div>
           )}
@@ -395,12 +406,12 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
 
           {!loading && error && (
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <p style={{ fontSize: 13, color: '#ef4444', margin: '0 0 10px' }}>Could not load AI Intelligence data.</p>
+              <p style={{ fontSize: 13, color: '#ef4444', margin: '0 0 10px' }}>{t('loadError')}</p>
               <button onClick={load} style={{
                 fontSize: 11, fontWeight: 700, color: GOLD,
                 background: `${GOLD}12`, border: `1px solid ${GOLD}30`,
                 borderRadius: 7, padding: '5px 12px', cursor: 'pointer',
-              }}>Retry</button>
+              }}>{t('retry')}</button>
             </div>
           )}
 
@@ -410,9 +421,9 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
               {/* Tab bar */}
               <div style={{ display: 'flex', gap: 4, background: tabsBg, borderRadius: 12, padding: 4 }}>
                 {[
-                  { key: 'trending',  label: `Trending (${trendCount})` },
-                  { key: 'alerts',    label: `Stock Alerts (${alertCount})` },
-                  { key: 'insights',  label: 'Market Insights' },
+                  { key: 'trending',  label: t('tabs.trending', { count: trendCount }) },
+                  { key: 'alerts',    label: t('tabs.alerts', { count: alertCount }) },
+                  { key: 'insights',  label: t('tabs.insights') },
                 ].map(({ key, label }) => (
                   <button
                     key={key}
@@ -442,7 +453,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
                     }}>
                       <CheckCircle size={18} color="#10b981" />
                       <p style={{ fontSize: 13, fontWeight: 700, color: '#10b981', margin: 0 }}>
-                        No strong trends detected yet this week. Check back tomorrow.
+                        {t('noTrends')}
                       </p>
                     </div>
                   ) : (
@@ -464,7 +475,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
                     }}>
                       <CheckCircle size={18} color="#10b981" />
                       <p style={{ fontSize: 13, fontWeight: 700, color: '#10b981', margin: 0 }}>
-                        All products have healthy stock levels. No restocking needed.
+                        {t('noAlerts')}
                       </p>
                     </div>
                   ) : (
@@ -505,7 +516,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
                     <Zap size={14} color={GOLD} style={{ flexShrink: 0, marginTop: 1 }} />
                     <div>
                       <p style={{ fontSize: 10, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>
-                        Priority Action
+                        {t('priorityAction')}
                       </p>
                       <p style={{ fontSize: 12.5, color: textMain, margin: 0, lineHeight: 1.55, fontWeight: 500 }}>
                         {data.market_insights.priority_action}

@@ -24,6 +24,8 @@ import { useSubscription } from '@/app/hooks/useSubscription';
 import { useTheme } from '../SellerShell';
 import { blackPepperApi, type DailyBriefData } from '@/lib/blackPepperApi';
 import { dashboardApi } from '@/lib/sellerApi';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -90,6 +92,7 @@ function FeatureGatewayCard({ href, title, subtitle, icon: Icon, accent, badge, 
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const txtM   = dark ? '#fff' : '#111';
   const txtS   = dark ? 'rgba(255,255,255,0.45)' : '#888';
+  const t      = useTranslations('seller.black');
 
   return (
     <Link href={href} className="elite-feature-card" style={{
@@ -130,12 +133,12 @@ function FeatureGatewayCard({ href, title, subtitle, icon: Icon, accent, badge, 
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 'auto' }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: accent }}>Open</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: accent }}>{t('open')}</span>
         <ArrowRight size={11} style={{ color: accent }} />
       </div>
 
       {/* Bottom accent line */}
-      <div style={{
+      <div className="rtl-flip" style={{
         position: 'absolute', bottom: 0, insetInlineStart: 0, insetInlineEnd: 0, height: 2,
         background: `linear-gradient(90deg,${accent},transparent)`, opacity: 0.5,
       }} />
@@ -170,6 +173,8 @@ export default function BlackOverviewPage() {
   const { dark }             = useTheme();
   const { isBlack, loading } = useSubscription();
   const router               = useRouter();
+  const t                    = useTranslations('seller.black');
+  const { price, number }    = useFormat();
 
   const [brief,      setBrief]      = useState<DailyBriefData | null>(null);
   const [dashStats,  setDashStats]  = useState<any>(null);
@@ -203,31 +208,30 @@ export default function BlackOverviewPage() {
   const txtMut  = dark ? 'rgba(255,255,255,0.4)' : '#888';
   const GOLD    = '#f59e0b';
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('fr-TN', { maximumFractionDigits: 0 }).format(n) + ' TND';
+  const fmt = (n: number) => price(n, { maximumFractionDigits: 0 });
 
   const metrics: QuickStat[] = [
     {
-      label: 'Revenue',
+      label: t('metrics.revenue'),
       value: dashStats ? fmt(dashStats.total_revenue ?? 0) : '—',
       color: '#db142e',
       icon: DollarSign,
     },
     {
-      label: 'Orders',
-      value: dashStats ? String(dashStats.total_orders ?? 0) : '—',
+      label: t('metrics.orders'),
+      value: dashStats ? number(dashStats.total_orders ?? 0) : '—',
       color: '#60a5fa',
       icon: ShoppingBag,
     },
     {
-      label: 'Trending',
-      value: brief ? `${brief.trending_count} products` : '—',
+      label: t('metrics.trending'),
+      value: brief ? t('metrics.products', { count: brief.trending_count }) : '—',
       color: '#34d399',
       icon: TrendingUp,
     },
     {
-      label: 'At Risk',
-      value: brief ? `${brief.risk_count} products` : '—',
+      label: t('metrics.atRisk'),
+      value: brief ? t('metrics.products', { count: brief.risk_count }) : '—',
       color: brief?.risk_count ? '#f87171' : '#34d399',
       icon: AlertTriangle,
     },
@@ -236,47 +240,47 @@ export default function BlackOverviewPage() {
   const features: FeatureCard[] = [
     {
       href:     '/seller/black/ai-intelligence',
-      title:    'AI Intelligence',
-      subtitle: 'Trending products, stock alerts and real-time market insights powered by AI.',
+      title:    t('features.ai.title'),
+      subtitle: t('features.ai.subtitle'),
       icon:     Brain,
       accent:   '#a78bfa',
-      badge:    brief?.trending_count ? { text: `${brief.trending_count} trending`, color: '#a78bfa' } : undefined,
+      badge:    brief?.trending_count ? { text: t('features.ai.badge', { count: brief.trending_count }), color: '#a78bfa' } : undefined,
     },
     {
       href:     '/seller/black/visitor-insights',
-      title:    'Visitor Insights',
-      subtitle: 'See which products attract visitors but don\'t convert — and fix them fast.',
+      title:    t('features.visitors.title'),
+      subtitle: t('features.visitors.subtitle'),
       icon:     Eye,
       accent:   '#60a5fa',
     },
     {
       href:     '/seller/black/listing-quality',
-      title:    'Listing Quality',
-      subtitle: 'Product quality scores with step-by-step improvement tips for each listing.',
+      title:    t('features.quality.title'),
+      subtitle: t('features.quality.subtitle'),
       icon:     Star,
       accent:   '#c084fc',
     },
     {
       href:     '/seller/black/smart-promotions',
-      title:    'Smart Promotions',
-      subtitle: 'AI detects your hottest products and recommends the best time to sponsor them.',
+      title:    t('features.smart.title'),
+      subtitle: t('features.smart.subtitle'),
       icon:     TrendingUp,
       accent:   GOLD,
     },
     {
       href:     '/seller/black/profit',
-      title:    'Profit Center',
-      subtitle: 'Revenue breakdown, margin analysis, and a 30-day forecast for your store.',
+      title:    t('features.goals.title'),
+      subtitle: t('features.goals.subtitle'),
       icon:     DollarSign,
       accent:   '#34d399',
     },
     {
       href:     '/seller/black/vip-lounge',
-      title:    'VIP Lounge',
-      subtitle: 'Request reels, custom promotions, or priority support directly from our team.',
+      title:    t('features.vip.title'),
+      subtitle: t('features.vip.subtitle'),
       icon:     Users,
       accent:   GOLD,
-      badge:    { text: 'Exclusive', color: GOLD },
+      badge:    { text: t('features.vip.badge'), color: GOLD },
     },
   ];
 
@@ -323,7 +327,7 @@ export default function BlackOverviewPage() {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                   <span style={{ fontSize: 10, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    Today's Brief
+                    {t('brief.title')}
                   </span>
                   <span style={{
                     fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
@@ -332,7 +336,7 @@ export default function BlackOverviewPage() {
                   }}>⬛ BLACK ELITE</span>
                 </div>
                 <p style={{ fontSize: 16, fontWeight: 900, color: txtMain, margin: 0 }}>
-                  {briefLoad ? 'Loading…' : (brief?.greeting ?? 'Good morning!')}
+                  {briefLoad ? t('brief.loading') : (brief?.greeting ?? t('brief.greeting'))}
                 </p>
               </div>
             </div>
@@ -340,6 +344,7 @@ export default function BlackOverviewPage() {
             <button
               onClick={loadBrief}
               disabled={briefLoad}
+              aria-label={t('brief.refresh')}
               style={{
                 background: 'transparent', border: 'none', cursor: 'pointer',
                 color: txtMut, padding: 4, borderRadius: 6, flexShrink: 0,
@@ -367,7 +372,7 @@ export default function BlackOverviewPage() {
           {!briefLoad && brief?.top_action && (
             <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 11, color: txtMut, fontWeight: 600 }}>
-                Priority: <span style={{ color: txtMain, fontWeight: 700 }}>{brief.top_action.label}</span>
+                {t('brief.priority')} <span style={{ color: txtMain, fontWeight: 700 }}>{brief.top_action.label}</span>
               </span>
               <Link href={brief.top_action.href} style={{
                 marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: 5,
@@ -376,7 +381,7 @@ export default function BlackOverviewPage() {
                 color: '#000', fontSize: 11, fontWeight: 800, textDecoration: 'none',
                 boxShadow: '0 4px 14px rgba(245,158,11,0.35)',
               }}>
-                Do it now <ArrowRight size={11} />
+                {t('brief.doIt')} <ArrowRight size={11} />
               </Link>
             </div>
           )}
@@ -394,21 +399,21 @@ export default function BlackOverviewPage() {
           background: cardBg, borderRadius: 16, border: `1px solid ${border}`, padding: '16px 20px',
         }}>
           <p style={{ fontSize: 11, fontWeight: 800, color: txtMut, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px' }}>
-            Quick Actions
+            {t('quick.title')}
           </p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <QuickAction href="/seller/products/new"          label="Add Product"      icon={Package}     accent="#db142e" dark={dark} />
-            <QuickAction href="/seller/black/ai-intelligence" label="Run AI Tools"     icon={Brain}       accent="#a78bfa" dark={dark} />
-            <QuickAction href="/seller/promote"               label="Boost a Product"  icon={Zap}         accent={GOLD}    dark={dark} />
-            <QuickAction href="/seller/black/profit"          label="View Earnings"    icon={DollarSign}  accent="#34d399" dark={dark} />
-            <QuickAction href="/seller/black/vip-lounge"      label="VIP Request"      icon={Crown}       accent={GOLD}    dark={dark} />
+            <QuickAction href="/seller/products/new"          label={t('quick.addProduct')} icon={Package}     accent="#db142e" dark={dark} />
+            <QuickAction href="/seller/black/ai-intelligence" label={t('quick.aiTools')} icon={Brain}       accent="#a78bfa" dark={dark} />
+            <QuickAction href="/seller/promote"               label={t('quick.boost')} icon={Zap}         accent={GOLD}    dark={dark} />
+            <QuickAction href="/seller/black/profit"          label={t('quick.goals')} icon={DollarSign}  accent="#34d399" dark={dark} />
+            <QuickAction href="/seller/black/vip-lounge"      label={t('quick.vip')} icon={Crown}       accent={GOLD}    dark={dark} />
           </div>
         </div>
 
         {/* ── Feature gateway cards ── */}
         <div className="bk-section">
           <p style={{ fontSize: 11, fontWeight: 800, color: txtMut, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px' }}>
-            Your Black Elite Features
+            {t('featuresTitle')}
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
             {features.map(f => (

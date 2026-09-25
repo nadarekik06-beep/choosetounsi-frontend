@@ -3289,6 +3289,267 @@
         "conversions": "Conversions",
         "cost": "Coût"
       }
+    },
+    "revenueGoals": {
+      "title": "Objectifs de chiffre d'affaires",
+      "subtitle": "Fixez des objectifs mensuels, suivez votre rythme, enchaînez les séries",
+      "loadFailed": "Échec du chargement",
+      "retry": "Réessayer",
+      "saved": "Objectif enregistré !",
+      "saveFailed": "Échec de l'enregistrement",
+      "streakBadge": "{count, plural, one {# mois de suite} other {# mois de suite}}",
+      "monthGoal": "Objectif — {month}",
+      "noGoal": "Aucun objectif défini",
+      "cancel": "Annuler",
+      "edit": "Modifier",
+      "setGoal": "Définir un objectif",
+      "placeholder": "ex. 5000",
+      "currency": "DT",
+      "saving": "Enregistrement…",
+      "save": "Enregistrer",
+      "earned": "{amount} gagnés",
+      "daysLeft": "{count, plural, one {# jour restant} other {# jours restants}}",
+      "onTrack": "Dans les temps",
+      "needMore": "Encore {amount} nécessaires",
+      "pace": "Vous faites en moyenne <b>{amount}</b> par jour.",
+      "paceNeeded": "Pour atteindre votre objectif, il vous faut <b>{amount}</b>/jour.",
+      "history": "Historique sur 6 mois",
+      "now": "en cours",
+      "goalHit": "Objectif atteint",
+      "goalLine": "Objectif : {amount}",
+      "streakTitle": "{count, plural, one {# mois d'objectif atteint d'affilée !} other {# mois d'objectifs atteints d'affilée !}}",
+      "streak5": "Une régularité légendaire — continuez !",
+      "streak3": "Remarquable — vous êtes lancé !",
+      "streak1": "Excellent début — continuez à atteindre vos objectifs !",
+      "stats": {
+        "thisMonth": "Ce mois-ci",
+        "projected": "Projection",
+        "lastMonth": "Mois dernier"
+      },
+      "elite": {
+        "title": "Black Seller Elite",
+        "subtitle": "Accès complet au Hub IA, aux objectifs de revenus, au contrôle de visibilité et au VIP Lounge."
+      }
+    },
+    "black": {
+      "open": "Ouvrir",
+      "featuresTitle": "Vos fonctionnalités Black Elite",
+      "metrics": {
+        "revenue": "Revenus",
+        "orders": "Commandes",
+        "trending": "Tendances",
+        "atRisk": "À risque",
+        "products": "{count, plural, one {# produit} other {# produits}}"
+      },
+      "brief": {
+        "title": "Le brief du jour",
+        "loading": "Chargement…",
+        "greeting": "Bonjour !",
+        "refresh": "Actualiser",
+        "priority": "Priorité :",
+        "doIt": "Le faire maintenant"
+      },
+      "quick": {
+        "title": "Actions rapides",
+        "addProduct": "Ajouter un produit",
+        "aiTools": "Lancer les outils IA",
+        "boost": "Booster un produit",
+        "goals": "Objectifs de revenus",
+        "vip": "Demande VIP"
+      },
+      "features": {
+        "ai": {
+          "title": "Intelligence IA",
+          "subtitle": "Produits tendance, alertes de stock et analyses de marché en temps réel grâce à l'IA.",
+          "badge": "{count, plural, one {# en tendance} other {# en tendance}}"
+        },
+        "visitors": {
+          "title": "Analyse des visiteurs",
+          "subtitle": "Voyez quels produits attirent des visiteurs sans convertir — et corrigez-les vite."
+        },
+        "quality": {
+          "title": "Qualité des fiches",
+          "subtitle": "Scores de qualité des produits avec des conseils d'amélioration pas à pas pour chaque fiche."
+        },
+        "smart": {
+          "title": "Promotions intelligentes",
+          "subtitle": "L'IA détecte vos produits les plus demandés et recommande le meilleur moment pour les sponsoriser."
+        },
+        "goals": {
+          "title": "Objectifs de revenus",
+          "subtitle": "Fixez des objectifs mensuels, suivez votre rythme et enchaînez les séries."
+        },
+        "vip": {
+          "title": "VIP Lounge",
+          "subtitle": "Demandez des reels, des promotions sur mesure ou un support prioritaire directement à notre équipe.",
+          "badge": "Exclusif"
+        }
+      },
+      "pages": {
+        "ai": {
+          "title": "Intelligence IA",
+          "subtitle": "Produits tendance, alertes de stock et analyses de marché — mis à jour toutes les 6 heures."
+        },
+        "quality": {
+          "title": "Qualité des fiches",
+          "subtitle": "Scores de vos fiches produits avec conseils d'amélioration — de meilleures fiches = plus de ventes."
+        },
+        "smart": {
+          "title": "Promotions intelligentes",
+          "subtitle": "L'IA détecte les produits tendance et recommande le bon moment pour les sponsoriser."
+        },
+        "visitors": {
+          "title": "Analyse des visiteurs",
+          "subtitle": "Produits qui attirent des visiteurs sans convertir — avec des solutions en langage simple."
+        }
+      }
+    },
+    "vip": {
+      "title": "VIP Lounge",
+      "subtitle": "Demandes exclusives réservées aux vendeurs Black Elite. Notre équipe répond sous 24 heures.",
+      "submitTitle": "Envoyer une demande",
+      "placeholder": "Décrivez votre demande en détail — quel produit, ce dont vous avez besoin, vos exigences particulières…",
+      "submitting": "Envoi…",
+      "submit": "Envoyer la demande",
+      "submitted": "Demande envoyée ! Notre équipe vous contactera sous 24 heures.",
+      "yourRequests": "Vos demandes",
+      "loading": "Chargement…",
+      "empty": "Aucune demande pour l'instant. Envoyez votre première demande VIP ci-dessus.",
+      "teamNote": "Note de l'équipe :",
+      "errors": {
+        "min": "Décrivez votre demande en au moins 10 caractères.",
+        "generic": "Une erreur s'est produite. Veuillez réessayer."
+      },
+      "types": {
+        "reel": {
+          "label": "Reel produit",
+          "description": "Demandez une courte vidéo professionnelle pour l'un de vos produits."
+        },
+        "promotion": {
+          "label": "Promotion sur mesure",
+          "description": "Obtenez une campagne promotionnelle conçue pour votre boutique."
+        },
+        "support": {
+          "label": "Support prioritaire",
+          "description": "Passez devant — obtenez une réponse directe sous 2 heures."
+        }
+      },
+      "status": {
+        "pending": "En attente",
+        "in_progress": "En cours",
+        "completed": "Terminée",
+        "rejected": "Refusée"
+      }
+    },
+    "aiHub": {
+      "title": "Intelligence IA",
+      "subtitle": "Produits tendance, alertes de stock et analyses de marché",
+      "trendingBadge": "{count} en tendance",
+      "criticalBadge": "{count, plural, one {# critique} other {# critiques}}",
+      "refresh": "Actualiser",
+      "retry": "Réessayer",
+      "loadError": "Impossible de charger les données IA.",
+      "noTrends": "Aucune tendance forte détectée cette semaine. Revenez demain.",
+      "noAlerts": "Tous les produits ont un stock suffisant. Aucun réapprovisionnement nécessaire.",
+      "priorityAction": "Action prioritaire",
+      "tabs": {
+        "trending": "Tendances ({count})",
+        "alerts": "Alertes stock ({count})",
+        "insights": "Analyse du marché"
+      },
+      "signal": {
+        "hot": "Très demandé",
+        "rising": "En hausse",
+        "warm": "Stable"
+      },
+      "urgency": {
+        "critical": "Critique",
+        "high": "Élevée",
+        "medium": "Moyenne"
+      },
+      "temp": {
+        "hot": "Marché très actif",
+        "warm": "Marché actif",
+        "cooling": "Marché en ralentissement",
+        "cold": "Marché calme"
+      },
+      "stats": {
+        "thisWeek": "Cette semaine",
+        "sold": "{count} vendus",
+        "revenue": "Revenus",
+        "stockLeft": "Stock restant",
+        "daysLeft": "Jours restants",
+        "revenueRisk": "Revenus à risque"
+      }
+    },
+    "funnel": {
+      "title": "Analyse des visiteurs",
+      "needAttention": "{count, plural, one {# à revoir} other {# à revoir}}",
+      "allGood": "Tout va bien",
+      "subtitleIssues": "{count, plural, one {# produit attire des visiteurs sans se vendre} other {# produits attirent des visiteurs sans se vendre}}",
+      "subtitleOk": "Vos produits attirent et convertissent bien les visiteurs",
+      "loadError": "Impossible de charger l'analyse des visiteurs.",
+      "retry": "Réessayer",
+      "okTitle": "Tout convertit bien",
+      "okText": "Aucun produit avec beaucoup de visites et peu de ventes pour le moment.",
+      "intro": "Ces produits reçoivent des visiteurs, mais personne n'achète. Une meilleure photo, un titre plus clair ou une petite remise peuvent faire toute la différence.",
+      "stats": {
+        "visitors": "Visiteurs",
+        "bought": "Achetés",
+        "opportunity": "Potentiel"
+      },
+      "try": "À essayer :"
+    },
+    "smartPromote": {
+      "title": "Promotions intelligentes",
+      "ready": "{count, plural, one {# prêt} other {# prêts}}",
+      "subtitle": "{count, plural, one {# produit tendance pas encore sponsorisé} other {# produits tendance pas encore sponsorisés}} — est. +{amount}",
+      "allSponsored": "Tous les produits tendance sont déjà sponsorisés",
+      "allSponsoredLong": "Tous les produits tendance sont déjà sponsorisés. Vous maximisez votre visibilité.",
+      "loadError": "Impossible de charger les suggestions.",
+      "retry": "Réessayer",
+      "intro": "Ces produits se vendent vite mais ne sont pas encore mis en avant. Les sponsoriser les place devant plus d'acheteurs au bon moment.",
+      "hot": "Produit très demandé",
+      "rising": "En forte hausse",
+      "stats": {
+        "selling": "Ventes",
+        "thisWeek": "Cette semaine",
+        "estBoost": "Gain estimé"
+      },
+      "cta": "Aller à la promotion"
+    },
+    "quality": {
+      "score": {
+        "great": "Excellent",
+        "good": "Bon",
+        "needsWork": "À améliorer",
+        "incomplete": "Incomplet"
+      },
+      "fixes": "{count, plural, one {# correction} other {# corrections}}",
+      "clickClose": "Cliquez pour fermer",
+      "viewTips": "{count, plural, one {Voir # conseil} other {Voir # conseils}}",
+      "complete": "Fiche complète",
+      "close": "Fermer",
+      "completeLong": "Cette fiche est complète — excellent travail !",
+      "tipsTitle": "Conseils — corrigez-les pour améliorer votre score",
+      "tipPoints": "+{points} pts pour votre score",
+      "fixIt": "Corriger",
+      "loadError": "Impossible de charger la qualité des fiches.",
+      "retry": "Réessayer",
+      "stats": {
+        "avg": "Score moyen",
+        "needFixes": "À corriger",
+        "great": "Excellentes fiches"
+      },
+      "avgTitle": "Qualité moyenne des fiches",
+      "acrossAll": "{count, plural, one {Sur # produit} other {Sur l'ensemble des # produits}}",
+      "tabs": {
+        "needsWork": "À améliorer ({count})",
+        "all": "Tous les produits ({count})"
+      },
+      "allGoodTitle": "Toutes les fiches dépassent 80",
+      "allGoodText": "Chaque produit a une fiche complète et de qualité.",
+      "empty": "Aucun produit à analyser pour l'instant."
     }
   },
   "invoice": {

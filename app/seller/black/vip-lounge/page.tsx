@@ -9,41 +9,30 @@ import { useSubscription } from '@/app/hooks/useSubscription';
 import { useTheme } from '../../SellerShell';
 import { blackPepperApi, type VipRequest, type VipRequestType } from '@/lib/blackPepperApi';
 import { Crown, Film, Tag, Headphones, CheckCircle, Clock, XCircle, Loader } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
 const GOLD = '#f59e0b';
 
-const REQUEST_TYPES: { key: VipRequestType; label: string; description: string; icon: React.ElementType }[] = [
-  {
-    key: 'reel',
-    label: 'Product Reel',
-    description: 'Request a short professional video for one of your products.',
-    icon: Film,
-  },
-  {
-    key: 'promotion',
-    label: 'Custom Promotion',
-    description: 'Get a tailored promotional campaign designed for your store.',
-    icon: Tag,
-  },
-  {
-    key: 'support',
-    label: 'Priority Support',
-    description: 'Jump the queue — get a direct response within 2 hours.',
-    icon: Headphones,
-  },
+const REQUEST_TYPES: { key: VipRequestType; icon: React.ElementType }[] = [
+  { key: 'reel',      icon: Film },
+  { key: 'promotion', icon: Tag },
+  { key: 'support',   icon: Headphones },
 ];
 
-const STATUS_CFG: Record<string, { icon: React.ElementType; color: string; label: string }> = {
-  pending:     { icon: Clock,        color: GOLD,      label: 'Pending' },
-  in_progress: { icon: Loader,       color: '#60a5fa', label: 'In Progress' },
-  completed:   { icon: CheckCircle,  color: '#34d399', label: 'Done' },
-  rejected:    { icon: XCircle,      color: '#f87171', label: 'Rejected' },
+const STATUS_CFG: Record<string, { icon: React.ElementType; color: string }> = {
+  pending:     { icon: Clock,        color: GOLD      },
+  in_progress: { icon: Loader,       color: '#60a5fa' },
+  completed:   { icon: CheckCircle,  color: '#34d399' },
+  rejected:    { icon: XCircle,      color: '#f87171' },
 };
 
 export default function VipLoungePage() {
   const { dark } = useTheme();
   const { isBlack, loading } = useSubscription();
   const router = useRouter();
+  const t = useTranslations('seller.vip');
+  const { date } = useFormat();
 
   const [requests,    setRequests]    = useState<VipRequest[]>([]);
   const [reqLoading,  setReqLoading]  = useState(true);
@@ -73,17 +62,17 @@ export default function VipLoungePage() {
 
   const handleSubmit = async () => {
     if (!message.trim() || message.length < 10) {
-      setErr('Please describe your request in at least 10 characters.');
+      setErr(t('errors.min'));
       return;
     }
     setSubmitting(true); setErr(''); setSuccess('');
     try {
       await blackPepperApi.submitVipRequest(selected, message);
-      setSuccess('Request submitted! Our team will contact you within 24 hours.');
+      setSuccess(t('submitted'));
       setMessage('');
       loadRequests();
     } catch (e: any) {
-      setErr(e.message ?? 'Something went wrong. Please try again.');
+      setErr(e.message ?? t('errors.generic'));
     } finally {
       setSubmitting(false);
     }
@@ -94,10 +83,10 @@ export default function VipLoungePage() {
       {/* Header */}
       <div>
         <h1 style={{ fontSize: 20, fontWeight: 900, color: txtMain, margin: '0 0 4px', letterSpacing: '-0.02em' }}>
-          VIP Lounge
+          {t('title')}
         </h1>
         <p style={{ fontSize: 13, color: txtMut, margin: 0 }}>
-          Exclusive requests reserved for Black Elite sellers. Our team responds within 24 hours.
+          {t('subtitle')}
         </p>
       </div>
 
@@ -117,12 +106,12 @@ export default function VipLoungePage() {
           }}>
             <Crown size={17} color={GOLD} />
           </div>
-          <p style={{ fontSize: 15, fontWeight: 900, color: txtMain, margin: 0 }}>Submit a Request</p>
+          <p style={{ fontSize: 15, fontWeight: 900, color: txtMain, margin: 0 }}>{t('submitTitle')}</p>
         </div>
 
         {/* Type cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 18 }}>
-          {REQUEST_TYPES.map(({ key, label, description, icon: Icon }) => (
+          {REQUEST_TYPES.map(({ key, icon: Icon }) => (
             <button
               key={key}
               onClick={() => setSelected(key)}
@@ -134,8 +123,8 @@ export default function VipLoungePage() {
               }}
             >
               <Icon size={16} color={selected === key ? GOLD : txtMut} style={{ marginBottom: 8, display: 'block' }} />
-              <p style={{ fontSize: 12, fontWeight: 800, color: selected === key ? GOLD : txtMain, margin: '0 0 4px' }}>{label}</p>
-              <p style={{ fontSize: 10.5, color: txtMut, margin: 0, lineHeight: 1.5 }}>{description}</p>
+              <p style={{ fontSize: 12, fontWeight: 800, color: selected === key ? GOLD : txtMain, margin: '0 0 4px' }}>{t(`types.${key}.label`)}</p>
+              <p style={{ fontSize: 10.5, color: txtMut, margin: 0, lineHeight: 1.5 }}>{t(`types.${key}.description`)}</p>
             </button>
           ))}
         </div>
@@ -144,7 +133,7 @@ export default function VipLoungePage() {
         <textarea
           value={message}
           onChange={e => setMessage(e.target.value)}
-          placeholder="Describe your request in detail — which product, what you need, any specific requirements…"
+          placeholder={t('placeholder')}
           rows={4}
           style={{
             width: '100%', borderRadius: 12, border: `1px solid rgba(245,158,11,0.3)`,
@@ -176,8 +165,8 @@ export default function VipLoungePage() {
           }}
         >
           {submitting
-            ? <><span style={{ width: 12, height: 12, borderRadius: '50%', border: '2px solid #00000030', borderTop: '2px solid #000', animation: 'vip-spin 0.7s linear infinite', display: 'inline-block' }} /> Submitting…</>
-            : <><Crown size={14} /> Submit Request</>
+            ? <><span style={{ width: 12, height: 12, borderRadius: '50%', border: '2px solid #00000030', borderTop: '2px solid #000', animation: 'vip-spin 0.7s linear infinite', display: 'inline-block' }} /> {t('submitting')}</>
+            : <><Crown size={14} /> {t('submit')}</>
           }
         </button>
         <style>{'@keyframes vip-spin{to{transform:rotate(360deg)}}'}</style>
@@ -186,17 +175,17 @@ export default function VipLoungePage() {
       {/* Past requests */}
       <div>
         <p style={{ fontSize: 11, fontWeight: 800, color: txtMut, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px' }}>
-          Your Requests
+          {t('yourRequests')}
         </p>
         {reqLoading ? (
-          <div style={{ textAlign: 'center', padding: '24px', color: txtMut, fontSize: 13 }}>Loading…</div>
+          <div style={{ textAlign: 'center', padding: '24px', color: txtMut, fontSize: 13 }}>{t('loading')}</div>
         ) : requests.length === 0 ? (
           <div style={{
             background: cardBg, borderRadius: 16, border: `1px solid ${border}`,
             padding: '32px', textAlign: 'center',
           }}>
             <Crown size={28} color={GOLD} style={{ opacity: 0.4, margin: '0 auto 10px', display: 'block' }} />
-            <p style={{ fontSize: 13, color: txtMut, margin: 0 }}>No requests yet. Submit your first VIP request above.</p>
+            <p style={{ fontSize: 13, color: txtMut, margin: 0 }}>{t('empty')}</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -217,12 +206,12 @@ export default function VipLoungePage() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: txtMain }}>{req.type_label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: txtMain }}>{t.has(`types.${req.type}.label`) ? t(`types.${req.type}.label`) : req.type_label}</span>
                       <span style={{
                         fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
                         background: `${cfg.color}15`, color: cfg.color, border: `1px solid ${cfg.color}30`,
                         textTransform: 'uppercase' as const,
-                      }}>{cfg.label}</span>
+                      }}>{t.has(`status.${req.status}`) ? t(`status.${req.status}`) : req.status_label}</span>
                     </div>
                     <p style={{ fontSize: 12, color: txtMut, margin: '0 0 4px', lineHeight: 1.5 }}>{req.message}</p>
                     {req.admin_note && (
@@ -231,12 +220,12 @@ export default function VipLoungePage() {
                         background: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
                         border: `1px solid ${border}`,
                       }}>
-                        <strong>Team note:</strong> {req.admin_note}
+                        <strong>{t('teamNote')}</strong> {req.admin_note}
                       </p>
                     )}
                   </div>
                   <span style={{ fontSize: 10, color: txtMut, flexShrink: 0 }}>
-                    {new Date(req.created_at).toLocaleDateString('fr-TN')}
+                    {date(req.created_at, 'short')}
                   </span>
                 </div>
               );

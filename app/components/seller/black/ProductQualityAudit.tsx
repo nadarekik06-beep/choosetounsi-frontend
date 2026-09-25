@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { blackPepperApi, type QualityAuditProduct } from '@/lib/blackPepperApi';
 import SmartActionButton from '@/app/components/seller/black/SmartActionButton';
+import { useTranslations } from 'next-intl';
 
 const GOLD = '#f59e0b';
 
@@ -30,11 +31,11 @@ function scoreColor(score: number) {
   return               { main: '#ef4444',   bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.3)',   track: 'rgba(239,68,68,0.1)' };
 }
 
-function scoreLabel(score: number) {
-  if (score >= 80) return 'Great';
-  if (score >= 60) return 'Good';
-  if (score >= 40) return 'Needs work';
-  return 'Incomplete';
+function scoreKey(score: number) {
+  if (score >= 80) return 'great';
+  if (score >= 60) return 'good';
+  if (score >= 40) return 'needsWork';
+  return 'incomplete';
 }
 
 function initials(name: string) {
@@ -102,7 +103,8 @@ function ProductCard({
   onClick: () => void;
 }) {
   const { main, bg, border } = scoreColor(product.score);
-  const label = scoreLabel(product.score);
+  const t = useTranslations('seller.quality');
+  const label = t(`score.${scoreKey(product.score)}`);
   const txtMain = dark ? '#f1f5f9' : '#0f172a';
   const txtMut  = dark ? 'rgba(255,255,255,0.38)' : '#64748b';
   const cardBg  = dark ? '#13110e' : '#ffffff';
@@ -122,7 +124,7 @@ function ProductCard({
       className="pqa-card"
     >
       {/* Accent top bar */}
-      <div style={{ height: 3, background: `linear-gradient(90deg,${main},${main}55,transparent)` }}/>
+      <div className="rtl-flip" style={{ height: 3, background: `linear-gradient(90deg,${main},${main}55,transparent)` }}/>
 
       {/* Content */}
       <div style={{ padding: '14px 16px' }}>
@@ -151,7 +153,7 @@ function ProductCard({
                   background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
                   color: txtMut,
                 }}>
-                  {product.tips.length} fix{product.tips.length !== 1 ? 'es' : ''}
+                  {t('fixes', { count: product.tips.length })}
                 </span>
               )}
             </div>
@@ -172,7 +174,7 @@ function ProductCard({
 
         {/* Progress bar */}
         <div style={{ height: 4, background: dark ? 'rgba(255,255,255,0.07)' : '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
-          <div style={{
+          <div className="rtl-flip" style={{
             height: '100%', width: `${product.score}%`, borderRadius: 999,
             background: `linear-gradient(90deg,${main}77,${main})`,
             transition: 'width 0.9s ease',
@@ -181,7 +183,7 @@ function ProductCard({
 
         {/* Footer hint */}
         <p style={{ fontSize: 10, color: isSelected ? main : txtMut, fontWeight: 600, margin: '8px 0 0', transition: 'color 0.15s' }}>
-          {isSelected ? '▲ Click to close' : product.tips.length > 0 ? `▼ View ${product.tips.length} improvement tip${product.tips.length !== 1 ? 's' : ''}` : '✓ Complete listing'}
+          {isSelected ? `▲ ${t('clickClose')}` : product.tips.length > 0 ? `▼ ${t('viewTips', { count: product.tips.length })}` : `✓ ${t('complete')}`}
         </p>
       </div>
     </div>
@@ -194,6 +196,7 @@ function DetailPanel({ product, dark, onClose }: {
   product: QualityAuditProduct; dark: boolean; onClose: () => void;
 }) {
   const { main, bg, border } = scoreColor(product.score);
+  const t = useTranslations('seller.quality');
   const txtMain = dark ? '#f1f5f9' : '#0f172a';
   const txtMut  = dark ? 'rgba(255,255,255,0.4)' : '#64748b';
   const panelBg = dark ? '#13110e' : '#ffffff';
@@ -219,10 +222,10 @@ function DetailPanel({ product, dark, onClose }: {
             background: bg, color: main, border: `1px solid ${border}`,
             textTransform: 'uppercase' as const, letterSpacing: '0.07em',
           }}>
-            {scoreLabel(product.score)} — {product.score}/100
+            {t(`score.${scoreKey(product.score)}`)} — {product.score}/100
           </span>
         </div>
-        <button onClick={onClose} style={{
+        <button onClick={onClose} aria-label={t('close')} style={{
           width: 32, height: 32, borderRadius: 9, border: 'none',
           background: dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -240,13 +243,13 @@ function DetailPanel({ product, dark, onClose }: {
         }}>
           <CheckCircle size={18} color="#10b981"/>
           <p style={{ fontSize: 13, fontWeight: 700, color: '#10b981', margin: 0 }}>
-            This listing is complete — great work!
+            {t('completeLong')}
           </p>
         </div>
       ) : (
         <div>
           <p style={{ fontSize: 10, fontWeight: 800, color: txtMut, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px' }}>
-            Improvement tips — fix these to boost your score
+            {t('tipsTitle')}
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: 10 }}>
             {product.tips.map((tip, i) => {
@@ -267,8 +270,8 @@ function DetailPanel({ product, dark, onClose }: {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 12.5, fontWeight: 700, color: txtMain, margin: '0 0 3px' }}>{tip.label}</p>
-                    <p style={{ fontSize: 10, color: tipColor, margin: '0 0 8px', fontWeight: 800 }}>+{tip.points} pts to your score</p>
-                    <SmartActionButton label="Fix it" icon={ArrowUpRight}
+                    <p style={{ fontSize: 10, color: tipColor, margin: '0 0 8px', fontWeight: 800 }}>{t('tipPoints', { points: tip.points })}</p>
+                    <SmartActionButton label={t('fixIt')} icon={ArrowUpRight}
                       href={tip.action_href} color="blue" size="sm" dark={dark}/>
                   </div>
                 </div>
@@ -306,6 +309,7 @@ export default function ProductQualityAudit({ dark }: { dark: boolean }) {
   const [filter,   setFilter]   = useState<'needs_work' | 'all'>('needs_work');
   const [selected, setSelected] = useState<number | null>(null); // product_id of selected card
   const detailRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations('seller.quality');
 
   const load = useCallback(async () => {
     setLoading(true); setError(false); setSelected(null);
@@ -372,8 +376,8 @@ export default function ProductQualityAudit({ dark }: { dark: boolean }) {
         {/* ── Error ── */}
         {!loading && error && (
           <div style={{ textAlign: 'center', padding: '48px', background: cardBg, borderRadius: 20, border: `1px solid ${border}` }}>
-            <p style={{ fontSize: 13, color: '#ef4444', margin: '0 0 12px' }}>Could not load listing quality data.</p>
-            <button onClick={load} style={{ padding: '9px 20px', borderRadius: 10, border: 'none', cursor: 'pointer', background: `${GOLD}18`, color: GOLD, fontSize: 12, fontWeight: 700 }}>Retry</button>
+            <p style={{ fontSize: 13, color: '#ef4444', margin: '0 0 12px' }}>{t('loadError')}</p>
+            <button onClick={load} style={{ padding: '9px 20px', borderRadius: 10, border: 'none', cursor: 'pointer', background: `${GOLD}18`, color: GOLD, fontSize: 12, fontWeight: 700 }}>{t('retry')}</button>
           </div>
         )}
 
@@ -383,9 +387,9 @@ export default function ProductQualityAudit({ dark }: { dark: boolean }) {
             {/* Stats */}
             {data.length > 0 && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
-                <StatPill label="Avg score"      value={`${avgScore}/100`} color={avgColor}   dark={dark}/>
-                <StatPill label="Need fixes"     value={needsWork}          color="#ef4444"    dark={dark}/>
-                <StatPill label="Great listings" value={great}              color="#10b981"    dark={dark}/>
+                <StatPill label={t('stats.avg')} value={`${avgScore}/100`} color={avgColor}   dark={dark}/>
+                <StatPill label={t('stats.needFixes')} value={needsWork}          color="#ef4444"    dark={dark}/>
+                <StatPill label={t('stats.great')} value={great}              color="#10b981"    dark={dark}/>
               </div>
             )}
 
@@ -394,15 +398,15 @@ export default function ProductQualityAudit({ dark }: { dark: boolean }) {
               <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: '18px 22px', boxShadow: dark ? 'none' : '0 2px 12px rgba(0,0,0,0.06)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12 }}>
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 800, color: txtMain, margin: '0 0 2px' }}>Average listing quality</p>
-                    <p style={{ fontSize: 11, color: txtMut, margin: 0 }}>Across all {data.length} products</p>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: txtMain, margin: '0 0 2px' }}>{t('avgTitle')}</p>
+                    <p style={{ fontSize: 11, color: txtMut, margin: 0 }}>{t('acrossAll', { count: data.length })}</p>
                   </div>
                   <p style={{ fontSize: 28, fontWeight: 900, color: avgColor, margin: 0, letterSpacing: '-0.03em' }}>
                     {avgScore}<span style={{ fontSize: 14, fontWeight: 600, color: txtMut }}>/100</span>
                   </p>
                 </div>
                 <div style={{ height: 8, background: dark ? 'rgba(255,255,255,0.07)' : '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${avgScore}%`, borderRadius: 999, background: `linear-gradient(90deg,${avgColor}77,${avgColor})`, transition: 'width 1s ease' }}/>
+                  <div className="rtl-flip" style={{ height: '100%', width: `${avgScore}%`, borderRadius: 999, background: `linear-gradient(90deg,${avgColor}77,${avgColor})`, transition: 'width 1s ease' }}/>
                 </div>
               </div>
             )}
@@ -411,8 +415,8 @@ export default function ProductQualityAudit({ dark }: { dark: boolean }) {
             {data.length > 0 && (
               <div style={{ display: 'flex', gap: 5, background: tabsBg, borderRadius: 14, padding: 5 }}>
                 {[
-                  { val: 'needs_work', label: `Needs Improvement (${data.filter(p => p.score < 80).length})` },
-                  { val: 'all',        label: `All Products (${data.length})` },
+                  { val: 'needs_work', label: t('tabs.needsWork', { count: data.filter(p => p.score < 80).length }) },
+                  { val: 'all',        label: t('tabs.all', { count: data.length }) },
                 ].map(({ val, label }) => (
                   <button key={val} onClick={() => { setFilter(val as any); setSelected(null); }} style={{
                     flex: 1, padding: '9px 0', borderRadius: 10,
@@ -434,8 +438,8 @@ export default function ProductQualityAudit({ dark }: { dark: boolean }) {
                   <CheckCircle size={28} color="#10b981"/>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <p style={{ fontSize: 15, fontWeight: 800, color: '#10b981', margin: '0 0 4px' }}>All listings score 80+</p>
-                  <p style={{ fontSize: 12, color: txtMut, margin: 0 }}>Every product has a complete, high-quality listing.</p>
+                  <p style={{ fontSize: 15, fontWeight: 800, color: '#10b981', margin: '0 0 4px' }}>{t('allGoodTitle')}</p>
+                  <p style={{ fontSize: 12, color: txtMut, margin: 0 }}>{t('allGoodText')}</p>
                 </div>
               </div>
             )}
@@ -467,7 +471,7 @@ export default function ProductQualityAudit({ dark }: { dark: boolean }) {
             {data.length === 0 && (
               <div style={{ textAlign: 'center', padding: '48px', background: cardBg, borderRadius: 20, border: `1px solid ${border}` }}>
                 <Zap size={28} color={GOLD} style={{ opacity: 0.4, margin: '0 auto 12px', display: 'block' }}/>
-                <p style={{ fontSize: 13, color: txtMut, margin: 0 }}>No products to audit yet.</p>
+                <p style={{ fontSize: 13, color: txtMut, margin: 0 }}>{t('empty')}</p>
               </div>
             )}
           </>

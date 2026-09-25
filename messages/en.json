@@ -3289,6 +3289,267 @@
         "conversions": "Conversions",
         "cost": "Cost"
       }
+    },
+    "revenueGoals": {
+      "title": "Revenue Goals",
+      "subtitle": "Set monthly targets, track your pace, build streaks",
+      "loadFailed": "Failed to load",
+      "retry": "Retry",
+      "saved": "Goal saved!",
+      "saveFailed": "Failed to save",
+      "streakBadge": "{count}-month streak",
+      "monthGoal": "{month} Goal",
+      "noGoal": "No goal set yet",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "setGoal": "Set Goal",
+      "placeholder": "e.g. 5000",
+      "currency": "TND",
+      "saving": "Saving…",
+      "save": "Save",
+      "earned": "{amount} earned",
+      "daysLeft": "{count, plural, one {# day left} other {# days left}}",
+      "onTrack": "On track",
+      "needMore": "Need {amount} more",
+      "pace": "You're averaging <b>{amount}</b> per day.",
+      "paceNeeded": "To hit your goal you need <b>{amount}</b>/day.",
+      "history": "6-Month History",
+      "now": "now",
+      "goalHit": "Goal hit",
+      "goalLine": "Goal: {amount}",
+      "streakTitle": "{count}-Month Goal Streak!",
+      "streak5": "Legendary consistency — keep it up!",
+      "streak3": "Outstanding — you're on a roll!",
+      "streak1": "Great start — keep hitting those goals!",
+      "stats": {
+        "thisMonth": "This Month",
+        "projected": "Projected",
+        "lastMonth": "Last Month"
+      },
+      "elite": {
+        "title": "Black Seller Elite",
+        "subtitle": "Full access to AI Hub, Revenue Goals, Visibility Control & VIP Lounge."
+      }
+    },
+    "black": {
+      "open": "Open",
+      "featuresTitle": "Your Black Elite Features",
+      "metrics": {
+        "revenue": "Revenue",
+        "orders": "Orders",
+        "trending": "Trending",
+        "atRisk": "At Risk",
+        "products": "{count, plural, one {# product} other {# products}}"
+      },
+      "brief": {
+        "title": "Today's Brief",
+        "loading": "Loading…",
+        "greeting": "Good morning!",
+        "refresh": "Refresh",
+        "priority": "Priority:",
+        "doIt": "Do it now"
+      },
+      "quick": {
+        "title": "Quick Actions",
+        "addProduct": "Add Product",
+        "aiTools": "Run AI Tools",
+        "boost": "Boost a Product",
+        "goals": "Revenue Goals",
+        "vip": "VIP Request"
+      },
+      "features": {
+        "ai": {
+          "title": "AI Intelligence",
+          "subtitle": "Trending products, stock alerts and real-time market insights powered by AI.",
+          "badge": "{count} trending"
+        },
+        "visitors": {
+          "title": "Visitor Insights",
+          "subtitle": "See which products attract visitors but don't convert — and fix them fast."
+        },
+        "quality": {
+          "title": "Listing Quality",
+          "subtitle": "Product quality scores with step-by-step improvement tips for each listing."
+        },
+        "smart": {
+          "title": "Smart Promotions",
+          "subtitle": "AI detects your hottest products and recommends the best time to sponsor them."
+        },
+        "goals": {
+          "title": "Revenue Goals",
+          "subtitle": "Set monthly targets, track your pace and build streaks."
+        },
+        "vip": {
+          "title": "VIP Lounge",
+          "subtitle": "Request reels, custom promotions, or priority support directly from our team.",
+          "badge": "Exclusive"
+        }
+      },
+      "pages": {
+        "ai": {
+          "title": "AI Intelligence",
+          "subtitle": "Trending products, stock alerts and market insights — updated every 6 hours."
+        },
+        "quality": {
+          "title": "Listing Quality",
+          "subtitle": "Product listing scores with improvement tips — better listings = more sales."
+        },
+        "smart": {
+          "title": "Smart Promotions",
+          "subtitle": "AI detects trending products and recommends the right moment to sponsor them."
+        },
+        "visitors": {
+          "title": "Visitor Insights",
+          "subtitle": "Products attracting visitors but not converting — with plain-language fixes."
+        }
+      }
+    },
+    "vip": {
+      "title": "VIP Lounge",
+      "subtitle": "Exclusive requests reserved for Black Elite sellers. Our team responds within 24 hours.",
+      "submitTitle": "Submit a Request",
+      "placeholder": "Describe your request in detail — which product, what you need, any specific requirements…",
+      "submitting": "Submitting…",
+      "submit": "Submit Request",
+      "submitted": "Request submitted! Our team will contact you within 24 hours.",
+      "yourRequests": "Your Requests",
+      "loading": "Loading…",
+      "empty": "No requests yet. Submit your first VIP request above.",
+      "teamNote": "Team note:",
+      "errors": {
+        "min": "Please describe your request in at least 10 characters.",
+        "generic": "Something went wrong. Please try again."
+      },
+      "types": {
+        "reel": {
+          "label": "Product Reel",
+          "description": "Request a short professional video for one of your products."
+        },
+        "promotion": {
+          "label": "Custom Promotion",
+          "description": "Get a tailored promotional campaign designed for your store."
+        },
+        "support": {
+          "label": "Priority Support",
+          "description": "Jump the queue — get a direct response within 2 hours."
+        }
+      },
+      "status": {
+        "pending": "Pending",
+        "in_progress": "In Progress",
+        "completed": "Done",
+        "rejected": "Rejected"
+      }
+    },
+    "aiHub": {
+      "title": "AI Intelligence",
+      "subtitle": "Trending products, stock alerts and market insights",
+      "trendingBadge": "{count} trending",
+      "criticalBadge": "{count} critical",
+      "refresh": "Refresh",
+      "retry": "Retry",
+      "loadError": "Could not load AI Intelligence data.",
+      "noTrends": "No strong trends detected yet this week. Check back tomorrow.",
+      "noAlerts": "All products have healthy stock levels. No restocking needed.",
+      "priorityAction": "Priority Action",
+      "tabs": {
+        "trending": "Trending ({count})",
+        "alerts": "Stock Alerts ({count})",
+        "insights": "Market Insights"
+      },
+      "signal": {
+        "hot": "Hot",
+        "rising": "Rising",
+        "warm": "Warm"
+      },
+      "urgency": {
+        "critical": "Critical",
+        "high": "High",
+        "medium": "Medium"
+      },
+      "temp": {
+        "hot": "Hot market",
+        "warm": "Warm market",
+        "cooling": "Cooling market",
+        "cold": "Cold market"
+      },
+      "stats": {
+        "thisWeek": "This week",
+        "sold": "{count} sold",
+        "revenue": "Revenue",
+        "stockLeft": "Stock left",
+        "daysLeft": "Days left",
+        "revenueRisk": "Revenue risk"
+      }
+    },
+    "funnel": {
+      "title": "Visitor Insights",
+      "needAttention": "{count} need attention",
+      "allGood": "All good",
+      "subtitleIssues": "{count, plural, one {# product getting visitors but not selling} other {# products getting visitors but not selling}}",
+      "subtitleOk": "Products attracting and converting visitors well",
+      "loadError": "Could not load visitor insights.",
+      "retry": "Retry",
+      "okTitle": "Everything is converting well",
+      "okText": "No products with high visits and low sales detected right now.",
+      "intro": "These products are getting visitors but people are not buying. A better photo, clearer title, or small discount can make a big difference.",
+      "stats": {
+        "visitors": "Visitors",
+        "bought": "Bought",
+        "opportunity": "Opportunity"
+      },
+      "try": "Try:"
+    },
+    "smartPromote": {
+      "title": "Smart Promotions",
+      "ready": "{count} ready",
+      "subtitle": "{count, plural, one {# trending product} other {# trending products}} not yet sponsored — est. +{amount}",
+      "allSponsored": "All trending products are already sponsored",
+      "allSponsoredLong": "All trending products are already sponsored. You are maximizing visibility.",
+      "loadError": "Could not load suggestions.",
+      "retry": "Retry",
+      "intro": "These products are selling fast but are not promoted yet. Sponsoring them puts them in front of more buyers at exactly the right moment.",
+      "hot": "Hot product",
+      "rising": "Rising fast",
+      "stats": {
+        "selling": "Selling",
+        "thisWeek": "This week",
+        "estBoost": "Est. boost"
+      },
+      "cta": "Go to Promote"
+    },
+    "quality": {
+      "score": {
+        "great": "Great",
+        "good": "Good",
+        "needsWork": "Needs work",
+        "incomplete": "Incomplete"
+      },
+      "fixes": "{count, plural, one {# fix} other {# fixes}}",
+      "clickClose": "Click to close",
+      "viewTips": "{count, plural, one {View # improvement tip} other {View # improvement tips}}",
+      "complete": "Complete listing",
+      "close": "Close",
+      "completeLong": "This listing is complete — great work!",
+      "tipsTitle": "Improvement tips — fix these to boost your score",
+      "tipPoints": "+{points} pts to your score",
+      "fixIt": "Fix it",
+      "loadError": "Could not load listing quality data.",
+      "retry": "Retry",
+      "stats": {
+        "avg": "Avg score",
+        "needFixes": "Need fixes",
+        "great": "Great listings"
+      },
+      "avgTitle": "Average listing quality",
+      "acrossAll": "{count, plural, one {Across # product} other {Across all # products}}",
+      "tabs": {
+        "needsWork": "Needs Improvement ({count})",
+        "all": "All Products ({count})"
+      },
+      "allGoodTitle": "All listings score 80+",
+      "allGoodText": "Every product has a complete, high-quality listing.",
+      "empty": "No products to audit yet."
     }
   },
   "invoice": {
