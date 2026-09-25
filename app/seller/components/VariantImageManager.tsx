@@ -22,6 +22,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Upload, X, Trash2, Image as ImageIcon, Check } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -101,6 +102,7 @@ export default function VariantImageManager({
   onChange,
   disabled = false,
 }: Props) {
+  const t = useTranslations('seller.images')
   const [slots, setSlots] = useState<Record<number, ImageSlot>>(() => {
     const init: Record<number, ImageSlot> = {}
     variants.forEach(v => { init[v.id] = buildInitialSlot(v) })
@@ -221,7 +223,7 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
           fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
           letterSpacing: '0.1em', color: '#94a3b8', margin: 0,
         }}>
-          Variant Images
+          {t('variantImages')}
         </p>
         <span style={{
           fontSize: 9, fontWeight: 600, color: '#10b981',
@@ -229,7 +231,7 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
           border: '1px solid rgba(16,185,129,0.2)',
           padding: '1px 6px', borderRadius: 4,
         }}>
-          ✓ Instant — no approval needed
+          {t('instant')}
         </span>
       </div>
 
@@ -287,7 +289,7 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                   fontSize: 12, fontWeight: 700, color: '#374151', flex: 1,
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
-                  {variant.label || `Variant #${variant.id}`}
+                  {variant.label || t('variantFallback', { id: variant.id })}
                 </span>
 
                 {/* Count / deletion badge */}
@@ -299,7 +301,7 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                       border: '1px solid rgba(239,68,68,0.25)',
                       padding: '1px 6px', borderRadius: 4,
                     }}>
-                      {pendingDel} to delete
+                      {t('toDelete', { count: pendingDel })}
                     </span>
                   )}
                   <span style={{ fontSize: 11, color: '#94a3b8' }}>
@@ -317,7 +319,7 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                       fontSize: 10, color: '#94a3b8', fontWeight: 700,
                       textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6,
                     }}>
-                      Saved
+                      {t('saved')}
                     </p>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {slot.kept.map(img => (
@@ -336,7 +338,7 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                               background: 'rgba(220,38,38,0.85)', borderRadius: 3,
                               padding: '1px 4px', fontSize: 7, color: '#fff', fontWeight: 800,
                             }}>
-                              Primary
+                              {t('primary')}
                             </div>
                           )}
                           {/* Delete overlay */}
@@ -344,7 +346,8 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                             <button
                               type="button"
                               onClick={() => markDelete(variant.id, img.id)}
-                              title="Remove this image"
+                              title={t('removeThis')}
+                              aria-label={t('removeThis')}
                               style={{
                                 position: 'absolute', inset: 0,
                                 background: 'rgba(239,68,68,0)',
@@ -365,7 +368,8 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                             <button
                               type="button"
                               onClick={() => markDelete(variant.id, img.id)}
-                              title="Remove"
+                              title={t('remove')}
+                              aria-label={t('remove')}
                               style={{
                                 position: 'absolute', top: 3, insetInlineEnd: 3,
                                 width: 18, height: 18, borderRadius: '50%',
@@ -391,7 +395,7 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                       fontSize: 10, color: '#ef4444', fontWeight: 700,
                       textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6,
                     }}>
-                      Marked for deletion
+                      {t('markedForDeletion')}
                     </p>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {slot.toDelete.map(imgId => {
@@ -422,7 +426,8 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                               <button
                                 type="button"
                                 onClick={() => undoDelete(variant.id, imgId, { id: imgId, url: original.url, is_primary: original.is_primary })}
-                                title="Undo"
+                                title={t('undo')}
+                                aria-label={t('undo')}
                                 style={{
                                   position: 'absolute', top: 2, insetInlineEnd: 2,
                                   width: 18, height: 18, borderRadius: '50%',
@@ -449,7 +454,7 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                       fontSize: 10, color: '#6366f1', fontWeight: 700,
                       textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6,
                     }}>
-                      New (will upload on save)
+                      {t('newOnSave')}
                     </p>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {slot.newPreviews.map((preview, fi) => (
@@ -505,9 +510,9 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                   >
                     <Upload size={13} color="#94a3b8" />
                     <span style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>
-                      Add images
+                      {t('addImages')}
                       <span style={{ color: '#94a3b8', marginInlineStart: 4, fontWeight: 400 }}>
-                        ({MAX_PER_VARIANT - totalShown} remaining)
+                        {t('remaining', { count: MAX_PER_VARIANT - totalShown })}
                       </span>
                     </span>
                     <input
@@ -531,7 +536,7 @@ const undoDelete = useCallback((variantId: number, imageId: number, img: { id: n
                     fontSize: 11, color: '#c4b5fd', margin: '4px 0 0',
                     display: 'flex', alignItems: 'center', gap: 4,
                   }}>
-                    <ImageIcon size={10} /> No images for this variant yet
+                    <ImageIcon size={10} /> {t('noneForVariant')}
                   </p>
                 )}
               </div>

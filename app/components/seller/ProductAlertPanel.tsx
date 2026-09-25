@@ -8,6 +8,7 @@ import {
   Lock, ExternalLink,
 } from 'lucide-react';
 import { useSubscription } from '@/app/hooks/useSubscription';
+import { useTranslations } from 'next-intl';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -64,6 +65,7 @@ function ActionIcon({ icon, size = 13 }: { icon: string; size?: number }) {
 // ── Alert indicator badge (shown in product row) ──────────────────────────────
 
 export function AlertIndicator({ alertData, dark }: { alertData: ProductAlertData; dark: boolean }) {
+  const t = useTranslations('seller.alerts');
   if (!alertData.has_alert) return null;
 
   const isCritical = alertData.alert_level === 'critical';
@@ -80,7 +82,7 @@ export function AlertIndicator({ alertData, dark }: { alertData: ProductAlertDat
       flexShrink: 0,
     }}>
       <AlertTriangle size={8} />
-      {isCritical ? 'Critical' : 'Warning'}
+      {isCritical ? t('critical') : t('warning')}
     </span>
   );
 }
@@ -88,6 +90,7 @@ export function AlertIndicator({ alertData, dark }: { alertData: ProductAlertDat
 // ── Main alert panel (shown below the product row) ────────────────────────────
 
 export default function ProductAlertPanel({ productId, productName, alertData, dark }: Props) {
+  const t = useTranslations('seller.alerts');
   const [expanded,   setExpanded]   = useState(false);
   const [dismissed,  setDismissed]  = useState(false);
   const router = useRouter();
@@ -142,13 +145,13 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
 
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 11, fontWeight: 800, color: accentColor, margin: '0 0 1px' }}>
-                {isCritical ? '⚠️ Action Required' : '💡 Optimization Opportunity'}
+                {isCritical ? t('actionRequired') : t('opportunity')}
                 {' · '}{productName}
               </p>
               <p style={{ fontSize: 10, color: muted, margin: 0 }}>
-                {alertData.reasons?.[0]?.label ?? 'Performance alert'}
+                {alertData.reasons?.[0]?.label ?? t('performanceAlert')}
                 {alertData.units_sold_window !== undefined && (
-                  <> · {alertData.units_sold_window} units sold in {alertData.window_days} days</>
+                  <> · {t('unitsSold', { count: alertData.units_sold_window, days: alertData.window_days ?? 0 })}</>
                 )}
               </p>
             </div>
@@ -161,7 +164,7 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
                   <button
                     key={action.key}
                     onClick={e => { e.stopPropagation(); handleActionClick(action); }}
-                    title={isLocked ? `Upgrade to Red Pepper to use ${action.label}` : action.label}
+                    title={isLocked ? t('upgradeToUse', { action: action.label }) : action.label}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: 4,
                       padding: '4px 10px', borderRadius: 8,
@@ -184,6 +187,7 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
               {/* Expand/collapse */}
               <button
                 onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
+                aria-label={expanded ? t('collapse') : t('expand')}
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: muted, padding: 4 }}
               >
                 {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
@@ -192,7 +196,8 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
               {/* Dismiss */}
               <button
                 onClick={e => { e.stopPropagation(); setDismissed(true); }}
-                title="Dismiss alert"
+                title={t('dismiss')}
+                aria-label={t('dismiss')}
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: muted, padding: 4, opacity: 0.6 }}
               >
                 <XCircle size={12} />
@@ -231,7 +236,7 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
               {/* All action buttons */}
               <div>
                 <p style={{ fontSize: 9, fontWeight: 800, color: muted, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  Recommended actions
+                  {t('recommended')}
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {alertData.suggested_actions?.map(action => {
@@ -240,7 +245,7 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
                       <button
                         key={action.key}
                         onClick={() => handleActionClick(action)}
-                        title={isLocked ? 'Upgrade to Red Pepper to unlock' : action.label}
+                        title={isLocked ? t('upgradeToUnlock') : action.label}
                         style={{
                           display: 'inline-flex', alignItems: 'center', gap: 5,
                           padding: '6px 12px', borderRadius: 9,
@@ -280,7 +285,7 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
                 }}>
                   <Lock size={12} style={{ color: '#db142e', flexShrink: 0 }} />
                   <p style={{ fontSize: 10, color: muted, margin: 0, flex: 1 }}>
-                    Unlock AI-powered actions with <strong style={{ color: '#db142e' }}>Red Pepper (49 DT/mo)</strong>
+                    {t.rich('unlockAi', { b: (chunks) => <strong style={{ color: '#db142e' }}>{chunks}</strong> })}
                   </p>
                   <a href="/seller/subscription" style={{
                     fontSize: 10, fontWeight: 800, color: '#db142e',
@@ -288,7 +293,7 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
                     background: 'rgba(219,20,46,0.1)', border: '1px solid rgba(219,20,46,0.25)',
                     flexShrink: 0,
                   }}>
-                    Upgrade →
+                    {t('upgrade')}
                   </a>
                 </div>
               )}

@@ -24,6 +24,8 @@ import {
 } from 'lucide-react'
 import { productUpdateRequestsApi } from '@/lib/sellerApi'
 import type { VariantRow } from './VariantBuilder'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -90,13 +92,14 @@ function getToken(): string {
 // ─── Visual combination display ───────────────────────────────────────────────
 
 function CombinationDisplay({ row }: { row: VariantRow }) {
+  const t      = useTranslations('seller.updateRequest')
   const map    = (row as any).option_map as OptionMap | undefined | null
   const label  = (row as any).label as string | undefined
 
   if (!map || Object.keys(map).length === 0) {
     return (
       <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>
-        {label || `Option IDs: ${(row.option_ids ?? []).join(', ')}`}
+        {label || t('optionIds', { ids: (row.option_ids ?? []).join(', ') })}
       </span>
     )
   }
@@ -110,7 +113,7 @@ function CombinationDisplay({ row }: { row: VariantRow }) {
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 5,
           background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.1)',
-          borderRadius: 999, padding: '3px 8px 3px 4px',
+          borderRadius: 999, paddingBlock: 3, paddingInline: '4px 8px',
           fontSize: 11, fontWeight: 700, color: '#1e293b',
         }}>
           {/* Multi-color: multiple swatches side-by-side */}
@@ -171,6 +174,8 @@ interface PreviewFile { id: string; file: File; preview: string }
 // ─── Main Modal ────────────────────────────────────────────────────────────────
 
 export default function UpdateRequestModal({ product, variantRows, onClose, onSubmitted }: Props) {
+  const t = useTranslations('seller.updateRequest')
+  const { price: fmt, currency, number } = useFormat()
 
   const [price, setPrice] = useState(String(product.price ?? ''))
   const [stock, setStock] = useState(String(product.stock ?? '0'))
@@ -302,7 +307,7 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
       // If only images were uploaded and nothing else changed
       if (Object.keys(payload).length === 0 || (Object.keys(payload).length === 1 && payload.note)) {
         if (imagesUploaded) { setSuccess(true); setTimeout(() => { onSubmitted(); onClose() }, 1500); return }
-        setError('No changes detected.')
+        setError(t('noChanges'))
         setSaving(false)
         return
       }
@@ -311,7 +316,7 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
       setSuccess(true)
       setTimeout(() => { onSubmitted(); onClose() }, 1500)
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Failed to submit request.')
+      setError(err?.response?.data?.message ?? t('failed'))
     } finally {
       setSaving(false)
     }
@@ -340,13 +345,13 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
         }}>
           <div>
             <h3 style={{ fontSize: 16, fontWeight: 900, color: '#111', margin: 0 }}>
-              Request Product Update
+              {t('title')}
             </h3>
             <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
-              Changes will be reviewed by an admin before applying.
+              {t('subtitle')}
             </p>
           </div>
-          <button type="button" onClick={onClose} style={{
+          <button type="button" onClick={onClose} aria-label={t('close')} style={{
             padding: 6, borderRadius: 10, border: 'none',
             background: 'transparent', cursor: 'pointer', color: '#94a3b8',
           }}>
@@ -366,10 +371,10 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
               <Send size={22} color="#059669" />
             </div>
             <p style={{ fontWeight: 900, color: '#111', margin: '0 0 6px', fontSize: 16 }}>
-              Request submitted!
+              {t('submitted')}
             </p>
             <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>
-              You'll be notified once the admin reviews it.
+              {t('submittedHint')}
             </p>
           </div>
         ) : (
@@ -389,31 +394,31 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
               background: '#f8fafc', border: '1px solid #e5e7eb',
               borderRadius: 12, padding: '10px 14px', fontSize: 12, color: '#64748b',
             }}>
-              <strong style={{ color: '#0f172a' }}>Product:</strong> {product.name}
+              <strong style={{ color: '#0f172a' }}>{t('product')}</strong> {product.name}
             </div>
 
             {/* Price & Stock */}
             <section>
-              <SLabel>Price &amp; Stock Changes</SLabel>
+              <SLabel>{t('priceStock')}</SLabel>
               <div style={{ display: 'grid', gridTemplateColumns: hasVariants ? '1fr' : '1fr 1fr', gap: 12 }}>
                 <div>
-                  <FLabel>New Price (TND)</FLabel>
+                  <FLabel>{t('newPrice', { currency })}</FLabel>
                   <div style={{ position: 'relative' }}>
                     <input type="number" min="0" step="0.001" value={price}
                       onChange={e => setPrice(e.target.value)} style={INPUT} />
                     <span style={{
                       position: 'absolute', insetInlineEnd: 10, top: '50%', transform: 'translateY(-50%)',
                       fontSize: 10, color: '#94a3b8', fontWeight: 600,
-                    }}>TND</span>
+                    }}>{currency}</span>
                   </div>
-                  <Hint>Current: {Number(product.price).toFixed(3)} TND</Hint>
+                  <Hint>{t('current', { value: fmt(product.price, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) })}</Hint>
                 </div>
                 {!hasVariants && (
                   <div>
-                    <FLabel>New Stock</FLabel>
+                    <FLabel>{t('newStock')}</FLabel>
                     <input type="number" min="0" value={stock}
                       onChange={e => setStock(e.target.value)} style={INPUT} />
-                    <Hint>Current: {product.stock}</Hint>
+                    <Hint>{t('current', { value: number(product.stock) })}</Hint>
                   </div>
                 )}
               </div>
@@ -431,14 +436,14 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
                     background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0,
                   }}>
                     <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8' }}>
-                      Variant Changes
+                      {t('variantChanges')}
                     </span>
                     <span style={{
                       fontSize: 9, fontWeight: 800, color: '#6366f1',
                       background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)',
                       padding: '1px 6px', borderRadius: 4,
                     }}>
-                      {editRows.length} variant{editRows.length !== 1 ? 's' : ''}
+                      {t('variantCount', { count: editRows.length })}
                     </span>
                     {showVariants ? <ChevronUp size={12} color="#94a3b8" /> : <ChevronDown size={12} color="#94a3b8" />}
                   </button>
@@ -448,7 +453,7 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
                     background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)',
                     borderRadius: 7, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit',
                   }}>
-                    <Plus size={11} /> Add variant
+                    <Plus size={11} /> {t('addVariant')}
                   </button>
                 </div>
 
@@ -461,8 +466,7 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
                     }}>
                       <Info size={11} style={{ flexShrink: 0, marginTop: 1 }} />
                       <span>
-                        Variant changes go through admin approval. For <strong>stock-only</strong> updates use the{' '}
-                        <strong>Restock</strong> button — it's instant.
+                        {t.rich('variantInfo', { b: (chunks) => <strong>{chunks}</strong> })}
                       </span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -484,14 +488,14 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8' }}>
-                      Add Images
+                      {t('addImages')}
                     </span>
                     <span style={{
                       fontSize: 9, fontWeight: 700, color: '#10b981',
                       background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)',
                       padding: '1px 6px', borderRadius: 4,
                     }}>
-                      ✓ Instant — no approval
+                      {t('instant')}
                     </span>
                   </div>
                   <span style={{ fontSize: 10, color: '#94a3b8' }}>{previews.length}/8</span>
@@ -505,7 +509,7 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
                         borderRadius: 10, overflow: 'hidden', border: '1.5px solid #e5e7eb',
                       }}>
                         <img src={p.preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <button type="button" onClick={() => removePreview(p.id)} style={{
+                        <button type="button" onClick={() => removePreview(p.id)} aria-label={t('remove')} style={{
                           position: 'absolute', top: 4, insetInlineEnd: 4, width: 20, height: 20,
                           background: 'rgba(239,68,68,0.85)', border: 'none', borderRadius: '50%',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -533,9 +537,9 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
                   >
                     <Upload size={18} color="#94a3b8" />
                     <p style={{ fontSize: 12, fontWeight: 600, color: '#64748b', margin: 0 }}>
-                      Drop images or <span style={{ color: '#db142e' }}>browse</span>
+                      {t.rich('dropImages', { hl: (chunks) => <span style={{ color: '#db142e' }}>{chunks}</span> })}
                     </p>
-                    <p style={{ fontSize: 10, color: '#94a3b8', margin: 0 }}>JPG, PNG, WebP · max 5 MB each</p>
+                    <p style={{ fontSize: 10, color: '#94a3b8', margin: 0 }}>{t('imageFormats')}</p>
                     <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
                       onChange={e => { addImageFiles(Array.from(e.target.files ?? [])); e.target.value = '' }} />
                   </div>
@@ -545,9 +549,9 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
 
             {/* Note */}
             <div>
-              <FLabel>Note to admin (optional)</FLabel>
+              <FLabel>{t('note')}</FLabel>
               <textarea rows={3} value={note} onChange={e => setNote(e.target.value)}
-                placeholder="Explain why you're requesting this change…"
+                placeholder={t('notePlaceholder')}
                 style={{ ...INPUT, resize: 'none', lineHeight: 1.5 }} />
             </div>
 
@@ -557,7 +561,7 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
                 flex: 1, padding: '10px 0', border: '1.5px solid #e5e7eb',
                 background: '#fff', color: '#64748b', fontWeight: 700, fontSize: 13,
                 borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
-              }}>Cancel</button>
+              }}>{t('cancel')}</button>
               <button type="submit" disabled={saving} style={{
                 flex: 2, padding: '10px 0',
                 background: 'linear-gradient(135deg,#6366f1,#4f46e5)',
@@ -569,7 +573,7 @@ export default function UpdateRequestModal({ product, variantRows, onClose, onSu
                 transition: 'opacity 0.2s',
               }}>
                 {saving && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
-                {imgUploading ? 'Uploading images…' : 'Submit Request'}
+                {imgUploading ? t('uploadingImages') : t('submit')}
               </button>
             </div>
           </form>
@@ -588,6 +592,7 @@ function VariantCard({ er, index, onUpdate, onRemoveNew }: {
   onUpdate: (f: keyof EditRow, v: any) => void
   onRemoveNew: () => void
 }) {
+  const t = useTranslations('seller.updateRequest')
   const orig = er.origRow
   const stockChanged  = !!orig.id && parseInt(er.stock, 10) !== orig.stock
   const priceChanged  = !!orig.id && (er.price_override || '') !== String(orig.price_override ?? '')
@@ -605,22 +610,22 @@ function VariantCard({ er, index, onUpdate, onRemoveNew }: {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: headerBg, borderBottom: `1px solid ${borderColor}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           {er.isNew ? (
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#6366f1' }}>New Variant #{index + 1}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#6366f1' }}>{t('newVariant', { n: index + 1 })}</span>
           ) : (
             <>
               <CombinationDisplay row={er.origRow} />
-              {isDeleted  && <Bdg color="red">Pending deletion</Bdg>}
-              {anyChanged && !isDeleted && <Bdg color="amber">Modified</Bdg>}
+              {isDeleted  && <Bdg color="red">{t('pendingDeletion')}</Bdg>}
+              {anyChanged && !isDeleted && <Bdg color="amber">{t('modified')}</Bdg>}
             </>
           )}
         </div>
         {er.isNew ? (
           <button type="button" onClick={onRemoveNew} style={{ padding: '3px 8px', borderRadius: 5, border: '1px solid #fca5a5', background: '#fef2f2', cursor: 'pointer', color: '#ef4444', fontSize: 10, fontWeight: 700, fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Trash2 size={10} /> Remove
+            <Trash2 size={10} /> {t('remove')}
           </button>
         ) : (
           <button type="button" onClick={() => onUpdate('_delete', !er._delete)} style={{ padding: '3px 8px', borderRadius: 5, border: er._delete ? '1px solid rgba(239,68,68,0.4)' : '1px solid #e5e7eb', background: er._delete ? 'rgba(239,68,68,0.08)' : 'transparent', cursor: 'pointer', color: er._delete ? '#ef4444' : '#94a3b8', fontSize: 10, fontWeight: 700, fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Trash2 size={10} /> {er._delete ? 'Undo' : 'Delete'}
+            <Trash2 size={10} /> {er._delete ? t('undo') : t('delete')}
           </button>
         )}
       </div>
@@ -630,27 +635,27 @@ function VariantCard({ er, index, onUpdate, onRemoveNew }: {
         <div style={{ padding: '10px 12px' }}>
           {er.isNew && (
             <div style={{ marginBottom: 10 }}>
-              <MLabel>Option IDs (comma-separated) <span style={{ color: '#ef4444' }}>*</span></MLabel>
-              <input type="text" placeholder="e.g. 3, 7" value={er.newOptionIdsStr}
+              <MLabel>{t('optionIdsLabel')} <span style={{ color: '#ef4444' }}>*</span></MLabel>
+              <input type="text" dir="ltr" placeholder={t('optionIdsPlaceholder')} value={er.newOptionIdsStr}
                 onChange={e => onUpdate('newOptionIdsStr', e.target.value)} style={INPUT} />
             </div>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr', gap: 8 }}>
             <div>
-              <MLabel>Stock {stockChanged && <Dot />}</MLabel>
+              <MLabel>{t('stock')} {stockChanged && <Dot />}</MLabel>
               <input type="number" min={0} value={er.stock}
                 onChange={e => onUpdate('stock', e.target.value)}
                 style={{ ...INPUT, textAlign: 'center' }} />
-              {orig.id && <span style={{ fontSize: 9, color: '#94a3b8' }}>was {orig.stock}</span>}
+              {orig.id && <span style={{ fontSize: 9, color: '#94a3b8' }}>{t('was', { value: orig.stock })}</span>}
             </div>
             <div>
-              <MLabel>Price Override {priceChanged && <Dot />}</MLabel>
-              <input type="number" min={0} step="0.001" value={er.price_override} placeholder="base"
+              <MLabel>{t('priceOverride')} {priceChanged && <Dot />}</MLabel>
+              <input type="number" min={0} step="0.001" value={er.price_override} placeholder={t('basePlaceholder')}
                 onChange={e => onUpdate('price_override', e.target.value)} style={INPUT} />
             </div>
             <div>
-              <MLabel>SKU {skuChanged && <Dot />}</MLabel>
-              <input type="text" value={er.sku} placeholder="optional"
+              <MLabel>{t('sku')} {skuChanged && <Dot />}</MLabel>
+              <input type="text" value={er.sku} placeholder={t('optional')}
                 onChange={e => onUpdate('sku', e.target.value)} style={INPUT} />
             </div>
           </div>
@@ -659,7 +664,7 @@ function VariantCard({ er, index, onUpdate, onRemoveNew }: {
               onChange={e => onUpdate('is_active', e.target.checked)}
               style={{ width: 14, height: 14, accentColor: '#6366f1', cursor: 'pointer' }} />
             <label htmlFor={`active-${er.key}`} style={{ fontSize: 11, color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-              Active {activeChanged && <Dot />}
+              {t('active')} {activeChanged && <Dot />}
             </label>
           </div>
         </div>

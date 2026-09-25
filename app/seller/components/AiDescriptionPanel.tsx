@@ -9,22 +9,17 @@ import { sellerAiApi } from '@/lib/sellerAiApi';
 import type { DescriptionResult } from '@/lib/sellerAiApi';
 import type { AttributeValues, Attribute } from '@/types/Attributes';
 import type { VariantRow } from './VariantBuilder';
+import { useLocale, useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const THRESHOLD = 65;
 
-const TONES = [
-  { value: 'professional',  label: 'Professional'  },
-  { value: 'casual',        label: 'Casual'        },
-  { value: 'exciting',      label: 'Exciting'      },
-  { value: 'trust-focused', label: 'Trust-Focused' },
-];
+// Labels live in seller.aiDescription.tones / .langs
+const TONES = ['professional', 'casual', 'exciting', 'trust-focused'] as const;
 
-const LANGS = [
-  { value: 'fr', label: 'French'  },
-  { value: 'en', label: 'English' },
-];
+const LANGS = ['fr', 'ar', 'en'] as const;
 
 // ── Option resolver ────────────────────────────────────────────────────────────
 // Builds a flat map: option_id (number) → human-readable label (string)
@@ -110,9 +105,11 @@ function resolveVariantLabels(
 
 // ── Completeness Engine ────────────────────────────────────────────────────────
 
+type CheckKey = 'name' | 'category' | 'price' | 'photo' | 'shortDescription' | 'attributes' | 'variants';
+
 interface CompletenessResult {
   score:       number;
-  checks:      Array<{ label: string; weight: number; pass: boolean }>;
+  checks:      Array<{ label: CheckKey; weight: number; pass: boolean }>;
   canGenerate: boolean;
 }
 
@@ -126,17 +123,17 @@ function computeCompleteness(p: {
   hasVariantAxes: boolean;
   hasVariants:    boolean;
 }): CompletenessResult {
-  const checks: Array<{ label: string; weight: number; pass: boolean }> = [
-    { label: 'Product name',       weight: 25, pass: !!p.name.trim() },
-    { label: 'Category',           weight: 20, pass: !!p.categoryId },
-    { label: 'Price',              weight: 15, pass: !!p.price && Number(p.price) > 0 },
-    { label: 'At least 1 photo',   weight: 20, pass: p.imageCount > 0 },
-    { label: 'Short description',  weight: 10, pass: !!p.shortDesc.trim() },
-    { label: 'Attributes',         weight:  5, pass: p.hasAttrs },
+  const checks: Array<{ label: CheckKey; weight: number; pass: boolean }> = [
+    { label: 'name',             weight: 25, pass: !!p.name.trim() },
+    { label: 'category',         weight: 20, pass: !!p.categoryId },
+    { label: 'price',            weight: 15, pass: !!p.price && Number(p.price) > 0 },
+    { label: 'photo',            weight: 20, pass: p.imageCount > 0 },
+    { label: 'shortDescription', weight: 10, pass: !!p.shortDesc.trim() },
+    { label: 'attributes',       weight:  5, pass: p.hasAttrs },
   ];
 
   if (p.hasVariantAxes) {
-    checks.push({ label: 'Variants', weight: 5, pass: p.hasVariants });
+    checks.push({ label: 'variants', weight: 5, pass: p.hasVariants });
   }
 
   const total  = checks.reduce((s, c) => s + c.weight, 0);
@@ -171,9 +168,13 @@ export default function AiDescriptionPanel({
   imageCount, attrValues, variantRows, variantAxes, infoAxes,
   hasVariantAxes, canUseAi, onInsert,
 }: AiDescriptionPanelProps) {
+  const t      = useTranslations('seller.aiDescription');
+  const locale = useLocale();
+  const { price: fmtPrice } = useFormat();
   const [open,    setOpen]    = useState(false);
   const [tone,    setTone]    = useState('professional');
-  const [lang,    setLang]    = useState('fr');
+  // Generates in the dashboard language by default
+  const [lang,    setLang]    = useState<string>(locale);
   const [loading, setLoading] = useState(false);
   const [result,  setResult]  = useState<DescriptionResult | null>(null);
   const [error,   setError]   = useState<string | null>(null);
@@ -210,13 +211,13 @@ export default function AiDescriptionPanel({
 
   const scoreColor  = completeness.score >= 65 ? '#10b981' : completeness.score >= 40 ? '#f59e0b' : '#ef4444';
   const showHint    = !!productName.trim() && !completeness.canGenerate && !open;
-  const missingList = completeness.checks.filter(c => !c.pass).map(c => c.label);
+  const missingList = completeness.checks.filter(c => !c.pass).map(c => t(`checks.${c.label}`));
 
   // ── Locked (no plan) ────────────────────────────────────────────────────
   if (!canUseAi) {
     return (
       <span
-        title="Requires Red Pepper or Black Pepper plan"
+        title={t('requiresPlan')}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 5,
           padding: '4px 10px', borderRadius: 8,
@@ -225,7 +226,7 @@ export default function AiDescriptionPanel({
         }}
       >
         <Lock size={10} color="#94a3b8" />
-        <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>AI Generate</span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>{t('generateShort')}</span>
         <span style={{
           fontSize: 8, fontWeight: 800, color: '#db142e',
           background: 'rgba(219,20,46,0.08)', border: '1px solid rgba(219,20,46,0.2)',
@@ -256,7 +257,7 @@ export default function AiDescriptionPanel({
       });
       setResult(res.data.ai_result);
     } catch (e: any) {
-      setError(e.message ?? 'Generation failed. Please try again.');
+      setError(e.message ?? t('failed'));
     } finally {
       setLoading(false);
     }
@@ -280,7 +281,7 @@ export default function AiDescriptionPanel({
           }}
         >
           <Sparkles size={11} color="#db142e" />
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#db142e' }}>AI Generate</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#db142e' }}>{t('generateShort')}</span>
           {completeness.canGenerate
             ? (open ? <ChevronUp size={9} color="#db142e" /> : <ChevronDown size={9} color="#db142e" />)
             : <AlertTriangle size={9} color="#f59e0b" />
@@ -311,9 +312,11 @@ export default function AiDescriptionPanel({
         }}>
           <Info size={11} color="#f59e0b" style={{ flexShrink: 0, marginTop: 1 }} />
           <p style={{ fontSize: 11, color: '#92400e', margin: 0, lineHeight: 1.4, fontWeight: 500 }}>
-            <strong>Tip:</strong> Add {missingList.slice(0, 3).join(', ').toLowerCase()}
-            {missingList.length > 3 ? ` and ${missingList.length - 3} more` : ''} to unlock
-            a more powerful AI description.
+            {t.rich('tip', {
+              items: missingList.slice(0, 3).join(', ').toLocaleLowerCase(locale),
+              more: missingList.length - 3,
+              b: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
         </div>
       )}
@@ -337,11 +340,10 @@ export default function AiDescriptionPanel({
                 <AlertTriangle size={15} color="#f59e0b" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div>
                   <p style={{ fontSize: 12, fontWeight: 800, color: '#92400e', margin: '0 0 3px' }}>
-                    More details = better AI description
+                    {t('moreDetails')}
                   </p>
                   <p style={{ fontSize: 11, color: '#92400e', margin: 0, lineHeight: 1.5, opacity: 0.9 }}>
-                    Complete your product first. The AI needs enough context to write a
-                    persuasive, conversion-optimized description.
+                    {t('completeFirst')}
                   </p>
                 </div>
               </div>
@@ -350,7 +352,7 @@ export default function AiDescriptionPanel({
                 <p style={{
                   fontSize: 9, fontWeight: 800, color: '#94a3b8',
                   textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 8px',
-                }}>Completion checklist</p>
+                }}>{t('checklist')}</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {completeness.checks.map(({ label, pass }) => (
                     <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -362,14 +364,14 @@ export default function AiDescriptionPanel({
                           }} />
                       }
                       <span style={{ fontSize: 11, fontWeight: pass ? 600 : 400, color: pass ? '#374151' : '#9ca3af' }}>
-                        {label}
+                        {t(`checks.${label}`)}
                       </span>
                       {!pass && (
                         <span style={{
                           fontSize: 9, fontWeight: 700, color: '#f59e0b',
                           background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)',
                           padding: '1px 5px', borderRadius: 4,
-                        }}>missing</span>
+                        }}>{t('missing')}</span>
                       )}
                     </div>
                   ))}
@@ -379,10 +381,10 @@ export default function AiDescriptionPanel({
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                   <span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Completeness
+                    {t('completeness')}
                   </span>
                   <span style={{ fontSize: 10, fontWeight: 800, color: scoreColor }}>
-                    {completeness.score}% — need {THRESHOLD}%
+                    {t('scoreNeed', { score: completeness.score, need: THRESHOLD })}
                   </span>
                 </div>
                 <div style={{ height: 6, background: '#e5e7eb', borderRadius: 3, overflow: 'hidden' }}>
@@ -406,15 +408,15 @@ export default function AiDescriptionPanel({
                 <p style={{
                   fontSize: 9, fontWeight: 800, color: '#3b82f6',
                   textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 7px',
-                }}>AI will use this data</p>
+                }}>{t('willUse')}</p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                   {[
                     productName                              && `📦 ${productName}`,
                     categoryName                             && `🏷️ ${categoryName}`,
-                    price && Number(price) > 0               && `💰 ${Number(price).toFixed(3)} TND`,
-                    imageCount > 0                           && `🖼️ ${imageCount} photo${imageCount > 1 ? 's' : ''}`,
+                    price && Number(price) > 0               && `💰 ${fmtPrice(price, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`,
+                    imageCount > 0                           && `🖼️ ${t('photos', { count: imageCount })}`,
                     resolvedVariants.length > 0              && `🎨 ${resolvedVariants.join(', ')}`,
-                    shortDescription.trim()                  && '✍️ Your draft',
+                    shortDescription.trim()                  && `✍️ ${t('yourDraft')}`,
                     ...Object.entries(resolvedAttrs).map(([k, v]) => `${k}: ${v}`),
                   ].filter(Boolean).map((item, i) => (
                     <span key={i} style={{
@@ -430,37 +432,37 @@ export default function AiDescriptionPanel({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <p style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 7px' }}>
-                    Tone
+                    {t('tone')}
                   </p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                    {TONES.map(t => (
-                      <button key={t.value} type="button" onClick={() => setTone(t.value)}
+                    {TONES.map(value => (
+                      <button key={value} type="button" onClick={() => setTone(value)}
                         style={{
                           padding: '4px 9px', borderRadius: 999, fontSize: 10, fontWeight: 700,
                           cursor: 'pointer', border: 'none', fontFamily: 'inherit',
-                          background: tone === t.value ? 'rgba(219,20,46,0.1)' : '#f1f5f9',
-                          color:      tone === t.value ? '#dc2626' : '#64748b',
-                          outline:    tone === t.value ? '1.5px solid rgba(219,20,46,0.35)' : '1px solid transparent',
+                          background: tone === value ? 'rgba(219,20,46,0.1)' : '#f1f5f9',
+                          color:      tone === value ? '#dc2626' : '#64748b',
+                          outline:    tone === value ? '1.5px solid rgba(219,20,46,0.35)' : '1px solid transparent',
                         }}
-                      >{t.label}</button>
+                      >{t(`tones.${value}`)}</button>
                     ))}
                   </div>
                 </div>
                 <div>
                   <p style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 7px' }}>
-                    Language
+                    {t('language')}
                   </p>
                   <div style={{ display: 'flex', gap: 4 }}>
-                    {LANGS.map(l => (
-                      <button key={l.value} type="button" onClick={() => setLang(l.value)}
+                    {LANGS.map(value => (
+                      <button key={value} type="button" onClick={() => setLang(value)}
                         style={{
                           padding: '4px 9px', borderRadius: 999, fontSize: 10, fontWeight: 700,
                           cursor: 'pointer', border: 'none', fontFamily: 'inherit',
-                          background: lang === l.value ? 'rgba(59,130,246,0.1)' : '#f1f5f9',
-                          color:      lang === l.value ? '#3b82f6' : '#64748b',
-                          outline:    lang === l.value ? '1.5px solid rgba(59,130,246,0.35)' : '1px solid transparent',
+                          background: lang === value ? 'rgba(59,130,246,0.1)' : '#f1f5f9',
+                          color:      lang === value ? '#3b82f6' : '#64748b',
+                          outline:    lang === value ? '1.5px solid rgba(59,130,246,0.35)' : '1px solid transparent',
                         }}
-                      >{l.label}</button>
+                      >{t(`langs.${value}`)}</button>
                     ))}
                   </div>
                 </div>
@@ -479,8 +481,8 @@ export default function AiDescriptionPanel({
                 }}
               >
                 {loading
-                  ? <><Loader2 size={13} style={{ animation: 'ai-spin 0.8s linear infinite' }} />Generating…</>
-                  : <><Sparkles size={13} />Generate Description</>
+                  ? <><Loader2 size={13} style={{ animation: 'ai-spin 0.8s linear infinite' }} />{t('generating')}</>
+                  : <><Sparkles size={13} />{t('generate')}</>
                 }
               </button>
 
@@ -493,12 +495,12 @@ export default function AiDescriptionPanel({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ height: 1, background: '#e5e7eb' }} />
                   <ResultBlock
-                    label="Short Description"
+                    label={t('shortDescription')}
                     text={result.short_description}
                     onInsert={() => onInsert({ short_description: result.short_description })}
                   />
                   <ResultBlock
-                    label="Full Description"
+                    label={t('fullDescription')}
                     text={result.description}
                     onInsert={() => onInsert({ description: result.description })}
                     scrollable
@@ -517,7 +519,7 @@ export default function AiDescriptionPanel({
                       color: '#059669', fontWeight: 700, fontSize: 12, cursor: 'pointer',
                     }}
                   >
-                    <Check size={13} /> Insert Both Fields
+                    <Check size={13} /> {t('insertBoth')}
                   </button>
                 </div>
               )}
@@ -534,6 +536,7 @@ export default function AiDescriptionPanel({
 function ResultBlock({ label, text, onInsert, scrollable = false }: {
   label: string; text: string; onInsert: () => void; scrollable?: boolean;
 }) {
+  const t = useTranslations('seller.aiDescription');
   return (
     <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: '10px 12px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
@@ -546,10 +549,10 @@ function ResultBlock({ label, text, onInsert, scrollable = false }: {
           background: 'rgba(16,185,129,0.1)', color: '#059669',
           fontSize: 10, fontWeight: 700, cursor: 'pointer',
         }}>
-          <ArrowRight size={10} /> Insert
+          <ArrowRight size={10} /> {t('insert')}
         </button>
       </div>
-      <p style={{
+      <p dir="auto" style={{
         fontSize: 12, color: '#374151', margin: 0, lineHeight: 1.55, whiteSpace: 'pre-wrap',
         ...(scrollable ? { maxHeight: 120, overflowY: 'auto' } : {}),
       }}>{text}</p>

@@ -26,6 +26,8 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { TrendingUp, TrendingDown, ArrowUpRight, Loader2, Flame, Crown } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 interface CommissionData {
   unit_price:             number
@@ -86,9 +88,13 @@ interface CommissionPreviewProps {
 export default function CommissionPreview({
   price,
   quantity   = 1,
-  label      = 'per unit sold',
+  label,
   priceLabel,
 }: CommissionPreviewProps) {
+  const t = useTranslations('seller.commission')
+  const { price: fmt, currency, number } = useFormat()
+  const dt = (n: number) => fmt(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+  const bare = (n: number) => fmt(n, { minimumFractionDigits: 3, maximumFractionDigits: 3, bare: true })
   const [data,    setData]    = useState<CommissionData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState(false)
@@ -147,7 +153,7 @@ export default function CommissionPreview({
       }}>
         <Loader2 size={12} style={{ animation: 'spin 0.8s linear infinite', color: '#94a3b8', flexShrink: 0 }} />
         <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
-          Calculating commission…
+          {t('calculating')}
         </span>
         <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
       </div>
@@ -160,8 +166,8 @@ export default function CommissionPreview({
   const planLabel = PLAN_LABELS[data.plan_used] ?? data.plan_used
   // The price description in the breakdown line
   const priceLine = priceLabel
-    ? `${data.commission_percentage}% of ${data.unit_price.toFixed(3)} TND (${priceLabel})`
-    : `${data.commission_percentage}% of ${data.unit_price.toFixed(3)} TND`
+    ? t('priceLineLabel', { pct: number(data.commission_percentage), price: dt(data.unit_price), label: priceLabel })
+    : t('priceLine', { pct: number(data.commission_percentage), price: dt(data.unit_price) })
 
   return (
     <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -193,7 +199,7 @@ export default function CommissionPreview({
             {planLabel}
           </span>
           <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
-            {label}
+            {label ?? t('perUnit')}
           </span>
         </div>
 
@@ -205,12 +211,12 @@ export default function CommissionPreview({
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
               <TrendingDown size={11} color="#ef4444" />
               <span style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                Marketplace Fee
+                {t('fee')}
               </span>
             </div>
             <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#ef4444', lineHeight: 1 }}>
-              {data.commission_amount.toFixed(3)}
-              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginInlineStart: 3 }}>TND</span>
+              {bare(data.commission_amount)}
+              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginInlineStart: 3 }}>{currency}</span>
             </p>
             <p style={{ margin: '2px 0 0', fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
               {priceLine}
@@ -222,15 +228,15 @@ export default function CommissionPreview({
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
               <TrendingUp size={11} color="#10b981" />
               <span style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                Your Earnings
+                {t('earnings')}
               </span>
             </div>
             <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#10b981', lineHeight: 1 }}>
-              {data.seller_amount.toFixed(3)}
-              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginInlineStart: 3 }}>TND</span>
+              {bare(data.seller_amount)}
+              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginInlineStart: 3 }}>{currency}</span>
             </p>
             <p style={{ margin: '2px 0 0', fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
-              after platform fee
+              {t('afterFee')}
             </p>
           </div>
         </div>
@@ -245,10 +251,10 @@ export default function CommissionPreview({
           }}>
             <span style={{ fontSize: 15 }}>🎉</span>
             <span style={{ fontSize: 11, fontWeight: 700, color: planColor }}>
-              You saved {data.saved_with_plan.toFixed(3)} TND with {planLabel}
+              {t('saved', { amount: dt(data.saved_with_plan), plan: planLabel })}
             </span>
             <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
-              vs free plan ({data.base_rate}% → {data.commission_percentage}%)
+              {t('vsFree', { from: number(data.base_rate), to: number(data.commission_percentage) })}
             </span>
           </div>
         )}
@@ -284,20 +290,21 @@ export default function CommissionPreview({
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: '#374151' }}>
-                      Upgrade to {suggestion.plan_name}
+                      {t('upgradeTo', { plan: suggestion.plan_name })}
                       <span style={{ fontWeight: 500, color: '#94a3b8' }}>
-                        {' '}({suggestion.monthly_cost} DT/mo)
+                        {' '}{t('perMonth', { amount: fmt(suggestion.monthly_cost, { minimumFractionDigits: 0 }) })}
                       </span>
                     </p>
                     <p style={{ margin: '1px 0 0', fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
-                      Fee drops to {suggestion.new_rate}% → you'd earn{' '}
-                      <span style={{ color, fontWeight: 700 }}>
-                        {suggestion.new_seller_amount.toFixed(3)} TND
-                      </span>
-                      {' '}(save {suggestion.saved_per_sale.toFixed(3)} TND per sale)
+                      {t.rich('upgradeLine', {
+                        rate: number(suggestion.new_rate),
+                        earn: dt(suggestion.new_seller_amount),
+                        save: dt(suggestion.saved_per_sale),
+                        hl: (chunks) => <span style={{ color, fontWeight: 700 }}>{chunks}</span>,
+                      })}
                     </p>
                   </div>
-                  <ArrowUpRight size={12} color={color} style={{ flexShrink: 0 }} />
+                  <ArrowUpRight size={12} color={color} className="rtl-flip" style={{ flexShrink: 0 }} />
                 </div>
               </a>
             )

@@ -27,6 +27,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Upload, X, Image as ImageIcon } from 'lucide-react'
 import type { VariantRow } from './VariantBuilder'
 import type { Attribute } from '@/types/Attributes'
+import { useTranslations } from 'next-intl'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -101,6 +102,7 @@ export default function ColorGroupImageUploader({
   existingByColorGroup = {},
   disabled = false,
 }: Props) {
+  const t = useTranslations('seller.images')
   const [groups,  setGroups]  = useState<ColorGroup[]>([])
   const [slots,   setSlots]   = useState<Record<string, Slot>>({})
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({})
@@ -202,12 +204,12 @@ export default function ColorGroupImageUploader({
         letterSpacing: '0.1em', color: '#94a3b8',
         paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16,
       }}>
-        Images per Color Group
+        {t('perColorGroup')}
         <span style={{
           marginInlineStart: 8, fontSize: 9, fontWeight: 500,
           color: '#c4b5fd', textTransform: 'none', letterSpacing: 0,
         }}>
-          shared across all sizes in that group
+          {t('sharedAcrossSizes')}
         </span>
       </p>
 
@@ -291,7 +293,7 @@ export default function ColorGroupImageUploader({
                           padding: '1px 4px', fontSize: 8,
                           color: '#fff', fontWeight: 700,
                         }}>
-                          saved
+                          {t('savedTag')}
                         </div>
                       </div>
                     ))}
@@ -353,7 +355,7 @@ export default function ColorGroupImageUploader({
                   >
                     <Upload size={14} color="#94a3b8" />
                     <span style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>
-                      Upload images for <strong>{group.label}</strong>
+                      {t.rich('uploadFor', { label: group.label, b: (chunks) => <strong>{chunks}</strong> })}
                     </span>
                     <input
                       ref={el => { inputRefs.current[group.key] = el }}
@@ -376,7 +378,7 @@ export default function ColorGroupImageUploader({
                     fontSize: 11, color: '#c0c0c0', margin: '6px 0 0',
                     display: 'flex', alignItems: 'center', gap: 4,
                   }}>
-                    <ImageIcon size={10} /> No images for this color group yet
+                    <ImageIcon size={10} /> {t('noneForGroup')}
                   </p>
                 )}
 

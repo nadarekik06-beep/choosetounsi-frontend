@@ -33,6 +33,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Info, AlertCircle, Plus, Trash2 } from 'lucide-react'
 import type { Attribute, AttributeOption } from '@/types/Attributes'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 // ─── Public types (unchanged) ─────────────────────────────────────────────────
 
@@ -67,9 +69,9 @@ export function validateVariantStocks(variants: VariantRow[]): Record<number, st
   variants.forEach((row, idx) => {
     const val = row.stock
     if (val === null || val === undefined || String(val) === '') {
-      errors[idx] = 'Stock is required.'
+      errors[idx] = 'stockRequired'   // message key in seller.variants
     } else if (!Number.isInteger(Number(val)) || Number(val) < 0) {
-      errors[idx] = 'Must be a whole number ≥ 0.'
+      errors[idx] = 'stockWhole'
     }
   })
   return errors
@@ -158,6 +160,8 @@ export default function VariantBuilder({
   disabled = false,
   externalStockErrors = {},
 }: Props) {
+  const t = useTranslations('seller.variants')
+  const { currency } = useFormat()
 
   // ── Identify the color axis ────────────────────────────────────────────────
   const colorAxis    = useMemo(() => axes.find(a => a.type === 'color') ?? null, [axes])
@@ -360,7 +364,7 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
           fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
           letterSpacing: '0.1em', color: '#94a3b8', margin: '0 0 12px',
         }}>
-          Step 1 — Select available options per attribute
+          {t('step1')}
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -389,7 +393,7 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
                     padding: '1px 6px', borderRadius: 4,
                     textTransform: 'none', letterSpacing: 0,
                   }}>
-                    multi-group · max {MAX_COLORS_PER_GROUP} per group
+                    {t('multiGroup', { max: MAX_COLORS_PER_GROUP })}
                   </span>
                 </p>
 
@@ -410,7 +414,7 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
                     fontFamily: 'inherit',
                   }}
                 >
-                  <Plus size={11} /> Add group
+                  <Plus size={11} /> {t('addGroup')}
                 </button>
               </div>
 
@@ -421,7 +425,7 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
                   padding: '12px', textAlign: 'center',
                   fontSize: 12, color: '#94a3b8',
                 }}>
-                  No color groups yet. Click <strong>Add group</strong> to create one.
+                  {t.rich('noGroups', { b: (chunks) => <strong>{chunks}</strong> })}
                 </div>
               )}
 
@@ -450,7 +454,7 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
                           border: '1px solid rgba(220,38,38,0.15)',
                           padding: '2px 8px', borderRadius: 4,
                         }}>
-                          Group {groupIdx + 1}
+                          {t('group', { n: groupIdx + 1 })}
                           <span style={{
                             marginInlineStart: 6, fontWeight: 500, color: '#94a3b8',
                           }}>
@@ -474,7 +478,7 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
                             fontFamily: 'inherit',
                           }}
                         >
-                          <Trash2 size={9} /> Remove
+                          <Trash2 size={9} /> {t('remove')}
                         </button>
                       </div>
 
@@ -596,7 +600,7 @@ opacity: atMax ? 0.4 : 1,
                     marginInlineStart: 8, fontWeight: 500, color: '#94a3b8',
                     textTransform: 'none', letterSpacing: 0,
                   }}>
-                    ({selected.length} selected)
+                    {t('selectedCount', { count: selected.length })}
                   </span>
                 </p>
 
@@ -643,8 +647,7 @@ opacity: atMax ? 0.4 : 1,
           }}>
             <Info size={13} style={{ color: '#3b82f6', flexShrink: 0 }} />
             <p style={{ fontSize: 12, color: '#1e40af', margin: 0 }}>
-              {totalCombinations} combination{totalCombinations !== 1 ? 's' : ''} will be generated.
-              Set stock and price for each below.
+              {t('willGenerate', { count: totalCombinations })}
             </p>
           </div>
         )}
@@ -661,8 +664,8 @@ opacity: atMax ? 0.4 : 1,
             <Info size={13} style={{ color: '#d97706', flexShrink: 0 }} />
             <p style={{ fontSize: 12, color: '#92400e', margin: 0 }}>
               {colorAxis
-                ? 'Add at least one color group with colors selected, and select options for every other attribute.'
-                : 'Select at least one option for every attribute to generate combinations.'}
+                ? t('incompleteColor')
+                : t('incomplete')}
             </p>
           </div>
         )}
@@ -695,7 +698,7 @@ opacity: atMax ? 0.4 : 1,
               <span style={{
                 fontSize: 10, fontWeight: 700, color: '#94a3b8',
                 textTransform: 'uppercase', letterSpacing: '0.05em',
-              }}>Total</span>
+              }}>{t('total')}</span>
               <span style={{
                 fontSize: 13, fontWeight: 900,
                 color: hasStockErrors ? '#ef4444' : '#10b981',
@@ -713,7 +716,7 @@ opacity: atMax ? 0.4 : 1,
             }}>
               <AlertCircle size={13} style={{ color: '#dc2626', flexShrink: 0 }} />
               <p style={{ fontSize: 12, color: '#dc2626', margin: 0, fontWeight: 600 }}>
-                All variant stocks are required and must be whole numbers ≥ 0.
+                {t('allStocksRequired')}
               </p>
             </div>
           )}
@@ -726,13 +729,13 @@ opacity: atMax ? 0.4 : 1,
             background: '#f8fafc', borderRadius: '8px 8px 0 0',
             border: '1px solid #e5e7eb', borderBottom: 'none',
           }}>
-            {['Combination', 'Stock *', 'Price (TND)', 'SKU', 'Active'].map(h => (
+            {(['combination', 'stock', 'price', 'sku', 'active'] as const).map(h => (
               <span key={h} style={{
                 fontSize: 9, fontWeight: 800, textTransform: 'uppercase',
                 letterSpacing: '0.08em',
-                color: h === 'Stock *' ? '#dc2626' : '#94a3b8',
+                color: h === 'stock' ? '#dc2626' : '#94a3b8',
               }}>
-                {h}
+                {t(`cols.${h}`, { currency })}
               </span>
             ))}
           </div>
@@ -819,7 +822,7 @@ opacity: atMax ? 0.4 : 1,
                   />
                   {stockError && (
                     <p style={{ fontSize: 10, color: '#ef4444', margin: '3px 0 0', fontWeight: 600 }}>
-                      {stockError}
+                      {t(stockError as 'stockRequired' | 'stockWhole')}
                     </p>
                   )}
                 </div>
@@ -829,7 +832,7 @@ opacity: atMax ? 0.4 : 1,
                   type="number" min="0" step="0.001"
                   value={row.price_override ?? ''}
                   onChange={e => updateRow(rowIdx, 'price_override', e.target.value)}
-                  placeholder={basePrice || 'base'}
+                  placeholder={basePrice || t('basePlaceholder')}
                   disabled={disabled}
                   style={inputStyle()}
                 />
@@ -839,7 +842,7 @@ opacity: atMax ? 0.4 : 1,
                   type="text"
                   value={row.sku ?? ''}
                   onChange={e => updateRow(rowIdx, 'sku', e.target.value)}
-                  placeholder="optional"
+                  placeholder={t('optional')}
                   disabled={disabled}
                   style={inputStyle()}
                 />
@@ -863,11 +866,11 @@ opacity: atMax ? 0.4 : 1,
             display: 'flex', gap: 10, marginTop: 10,
             flexWrap: 'wrap', alignItems: 'center',
           }}>
-            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>Quick fill:</span>
+            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('quickFill')}</span>
             <button
               type="button" disabled={disabled}
               onClick={() => {
-                const s = prompt('Set stock for ALL variants:')
+                const s = prompt(t('setAllPrompt'))
                 if (s === null) return
                 const stock = Math.max(0, Math.floor(Number(s))) || 0
                 setRows(prev => prev.map(r => ({ ...r, stock })))
@@ -879,7 +882,7 @@ opacity: atMax ? 0.4 : 1,
                 borderRadius: 6, padding: '4px 10px',
                 cursor: 'pointer', fontFamily: 'inherit',
               }}
-            >Set all stock</button>
+            >{t('setAllStock')}</button>
             <button
               type="button" disabled={disabled}
               onClick={() => setRows(prev => prev.map(r => ({ ...r, is_active: true })))}
@@ -890,7 +893,7 @@ opacity: atMax ? 0.4 : 1,
                 borderRadius: 6, padding: '4px 10px',
                 cursor: 'pointer', fontFamily: 'inherit',
               }}
-            >Enable all</button>
+            >{t('enableAll')}</button>
             <button
               type="button" disabled={disabled}
               onClick={() => setRows(prev => prev.map(r => ({ ...r, is_active: false })))}
@@ -901,7 +904,7 @@ opacity: atMax ? 0.4 : 1,
                 borderRadius: 6, padding: '4px 10px',
                 cursor: 'pointer', fontFamily: 'inherit',
               }}
-            >Disable all</button>
+            >{t('disableAll')}</button>
           </div>
         </div>
       )}
@@ -916,8 +919,8 @@ opacity: atMax ? 0.4 : 1,
           textAlign: 'center', fontSize: 12, color: '#94a3b8',
         }}>
           {colorAxis
-            ? 'Add a color group and select sizes to generate variant combinations automatically.'
-            : 'Select options above to generate variant combinations automatically.'}
+            ? t('hintColor')
+            : t('hint')}
         </div>
       )}
     </div>

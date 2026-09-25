@@ -14,6 +14,7 @@ import type { Attribute, AttributeValues } from '@/types/Attributes'
 import { categoriesApi } from '@/lib/sellerApi'
 import AttributeField from './AttributeField'
 import { Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 interface Props {
   subcategoryId: number
@@ -35,6 +36,7 @@ export default function DynamicAttributeSection({
   disabled = false,
   overrideAttributes,
 }: Props) {
+  const t = useTranslations('seller.attributes')
   const [attributes, setAttributes] = useState<Attribute[]>(overrideAttributes ?? [])
   const [loading,    setLoading]    = useState(!overrideAttributes)
 
@@ -67,7 +69,7 @@ export default function DynamicAttributeSection({
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 0', color: '#94a3b8', fontSize: 12 }}>
         <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />
-        Loading attributes…
+        {t('loading')}
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     )

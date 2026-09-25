@@ -7,6 +7,7 @@
  */
 
 import { Attribute, AttributeValues } from '@/types/Attributes'
+import { useTranslations } from 'next-intl'
 
 interface Props {
   attr: Attribute
@@ -30,6 +31,7 @@ function toScalar(value: unknown): string | number {
 }
 
 export default function AttributeField({ attr, values, onChange, disabled }: Props) {
+  const t = useTranslations('seller.attributes')
   const value = values[attr.slug]
 
   const required = attr.is_required
@@ -44,7 +46,7 @@ export default function AttributeField({ attr, values, onChange, disabled }: Pro
         className={inputCls()}
         required={required}
       >
-        <option value=''>Select {attr.name}</option>
+        <option value=''>{t('select', { name: attr.name })}</option>
         {attr.options.map(opt => (
           <option key={opt.id} value={opt.id}>{opt.value}</option>
         ))}

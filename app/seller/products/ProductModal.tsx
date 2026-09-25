@@ -18,18 +18,21 @@ import UpdateRequestModal from 'app/seller/components/UpdateRequestModal'
 import { useSubscriptionStandalone } from '@/app/hooks/useSubscription';
 import AiDescriptionPanel from '../components/AiDescriptionPanel';
 import CommissionPreview from '@/app/seller/components/CommissionPreview'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
+// Labels live in seller.seasons.<value>
 const SEASONS = [
-  { value: 'all_seasons',    label: 'All Seasons',     emoji: '🌍' },
-  { value: 'summer',         label: 'Summer',          emoji: '☀️' },
-  { value: 'winter',         label: 'Winter',          emoji: '❄️' },
-  { value: 'spring',         label: 'Spring',          emoji: '🌸' },
-  { value: 'autumn',         label: 'Autumn',          emoji: '🍂' },
-  { value: 'ramadan',        label: 'Ramadan',         emoji: '🌙' },
-  { value: 'eid_al_fitr',    label: 'Eid al-Fitr',     emoji: '🎉' },
-  { value: 'eid_al_adha',    label: 'Eid al-Adha',     emoji: '🐑' },
-  { value: 'back_to_school', label: 'Back to School',  emoji: '📚' },
-  { value: 'new_year',       label: 'New Year',        emoji: '🎆' },
+  { value: 'all_seasons',    emoji: '🌍' },
+  { value: 'summer',         emoji: '☀️' },
+  { value: 'winter',         emoji: '❄️' },
+  { value: 'spring',         emoji: '🌸' },
+  { value: 'autumn',         emoji: '🍂' },
+  { value: 'ramadan',        emoji: '🌙' },
+  { value: 'eid_al_fitr',    emoji: '🎉' },
+  { value: 'eid_al_adha',    emoji: '🐑' },
+  { value: 'back_to_school', emoji: '📚' },
+  { value: 'new_year',       emoji: '🎆' },
 ]
 
 interface FullProduct {
@@ -108,6 +111,7 @@ function LockedField({ children, locked }: { children: React.ReactNode; locked: 
 function ImageThumb({ src, isPrimary, onRemove, onSetPrimary }: {
   src: string; isPrimary: boolean; onRemove: () => void; onSetPrimary: () => void
 }) {
+  const t = useTranslations('seller.productForm')
   return (
     <div style={{
       position: 'relative', aspectRatio: '1', borderRadius: 12, overflow: 'hidden',
@@ -118,7 +122,7 @@ function ImageThumb({ src, isPrimary, onRemove, onSetPrimary }: {
         <div style={{
           position: 'absolute', top: 4, insetInlineStart: 4, background: '#dc2626', color: '#fff',
           fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 999,
-        }}>Primary</div>
+        }}>{t('primary')}</div>
       )}
       <div style={{
         position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)',
@@ -126,14 +130,14 @@ function ImageThumb({ src, isPrimary, onRemove, onSetPrimary }: {
         opacity: 0, transition: 'opacity 0.2s',
       }} className="group-hover:opacity-100">
         {!isPrimary && (
-          <button type="button" onClick={onSetPrimary} style={{
+          <button type="button" onClick={onSetPrimary} title={t('setPrimary')} aria-label={t('setPrimary')} style={{
             padding: 6, borderRadius: 8, background: 'rgba(255,255,255,0.9)',
             border: 'none', cursor: 'pointer', color: '#f59e0b',
           }}>
             <Star size={13} />
           </button>
         )}
-        <button type="button" onClick={onRemove} style={{
+        <button type="button" onClick={onRemove} title={t('removeImage')} aria-label={t('removeImage')} style={{
           padding: 6, borderRadius: 8, background: 'rgba(255,255,255,0.9)',
           border: 'none', cursor: 'pointer', color: '#ef4444',
         }}>
@@ -154,6 +158,8 @@ interface LockedVariantRowData extends VariantRow {
 }
 
 function LockedVariantCard({ variant }: { variant: LockedVariantRowData }) {
+  const t = useTranslations('seller.productForm')
+  const { price } = useFormat()
   const colorEntry = variant.option_map?.['color']
   const otherEntries = Object.entries(variant.option_map ?? {}).filter(([s]) => s !== 'color')
 
@@ -185,28 +191,28 @@ function LockedVariantCard({ variant }: { variant: LockedVariantRowData }) {
           border: `1px solid ${variant.is_active ? 'rgba(16,185,129,0.25)' : 'rgba(148,163,184,0.2)'}`,
           padding: '1px 6px', borderRadius: 4,
         }}>
-          {variant.is_active ? 'Active' : 'Inactive'}
+          {variant.is_active ? t('active') : t('inactive')}
         </span>
       </div>
       <div style={{ padding: '10px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, alignItems: 'start' }}>
         <div>
-          <p style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px' }}>Stock</p>
+          <p style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px' }}>{t('stock')}</p>
           <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: 0.7 }}>
             <span style={{ fontSize: 14, fontWeight: 900, color: variant.stock === 0 ? '#ef4444' : '#0f172a' }}>{variant.stock}</span>
             <Lock size={11} color="#94a3b8" />
           </div>
         </div>
         <div>
-          <p style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px' }}>Price Override</p>
+          <p style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px' }}>{t('priceOverride')}</p>
           <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: 0.7 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-              {variant.price_override ? `${Number(variant.price_override).toFixed(3)} TND` : '—'}
+              {variant.price_override ? price(variant.price_override, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : '—'}
             </span>
             <Lock size={11} color="#94a3b8" />
           </div>
         </div>
         <div>
-          <p style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px' }}>SKU</p>
+          <p style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px' }}>{t('sku')}</p>
           <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 10px', opacity: 0.7 }}>
             <span style={{ fontSize: 12, fontWeight: 500, color: '#64748b', fontFamily: 'monospace' }}>{variant.sku || '—'}</span>
           </div>
@@ -226,6 +232,7 @@ function LockedVariantCard({ variant }: { variant: LockedVariantRowData }) {
 }
 
 function SeasonPicker({ selected, onChange }: { selected: string[]; onChange: (seasons: string[]) => void }) {
+  const ts = useTranslations('seller.seasons')
   const toggle = (value: string) => {
     if (value === 'all_seasons') {
       onChange(selected.includes('all_seasons') ? [] : ['all_seasons'])
@@ -264,7 +271,7 @@ function SeasonPicker({ selected, onChange }: { selected: string[]; onChange: (s
             )}
             <span style={{ fontSize: 18, lineHeight: 1 }}>{season.emoji}</span>
             <span style={{ fontSize: 9, fontWeight: isChecked ? 800 : 600, color: isChecked ? '#dc2626' : '#64748b', textAlign: 'center', lineHeight: 1.2 }}>
-              {season.label}
+              {ts(season.value)}
             </span>
           </button>
         )
@@ -277,6 +284,7 @@ function SeasonPicker({ selected, onChange }: { selected: string[]; onChange: (s
 // FIX: was incorrectly placed as a const inside the JSX return of ProductModal.
 
 function FreeDeliveryToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  const t = useTranslations('seller.productForm')
   return (
     <div style={{ marginTop: 14 }}>
       <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none', width: 'fit-content' }}>
@@ -292,27 +300,24 @@ function FreeDeliveryToggle({ value, onChange }: { value: boolean; onChange: (v:
             position: 'absolute', top: 3,
             insetInlineStart: value ? 'calc(100% - 19px)' : '3px',
             width: 16, height: 16, borderRadius: '50%', background: '#fff',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.15)', transition: 'left 0.2s ease',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.15)', transition: 'inset-inline-start 0.2s ease',
           }} />
         </div>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>Free Delivery</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>{t('freeDelivery')}</span>
             {value && (
               <span style={{
                 fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
                 background: 'rgba(16,185,129,0.12)', color: '#059669',
                 border: '1px solid rgba(16,185,129,0.25)',
               }}>
-                🚚 Enabled
+                {t('freeDeliveryOn')}
               </span>
             )}
           </div>
           <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>
-            {value
-              ? 'Customers will see "Free Delivery" — the 8 DT shipping fee will not be charged.'
-              : 'Standard delivery fee (8 DT) will apply at checkout.'
-            }
+            {value ? t('freeDeliveryYes') : t('freeDeliveryNo')}
           </p>
         </div>
       </label>
@@ -325,12 +330,10 @@ function FreeDeliveryToggle({ value, onChange }: { value: boolean; onChange: (v:
           <span style={{ fontSize: 16, flexShrink: 0 }}>✅</span>
           <div>
             <p style={{ fontSize: 12, fontWeight: 700, color: '#059669', margin: '0 0 3px' }}>
-              Free Delivery is active for this product
+              {t('freeDeliveryActive')}
             </p>
             <p style={{ fontSize: 11, color: '#6b7280', margin: 0 }}>
-              When a cart contains only free-delivery products, the total delivery fee
-              shown at checkout will be 0 DT. If the cart also has regular products,
-              the standard 8 DT fee still applies for that order.
+              {t('freeDeliveryExplain')}
             </p>
           </div>
         </div>
@@ -348,6 +351,7 @@ function Field({ label, required, error, hint, children, locked, labelAction }: 
   label: string; required?: boolean; error?: string; hint?: string
   children: React.ReactNode; locked?: boolean; labelAction?: React.ReactNode
 }) {
+  const t = useTranslations('seller.productForm')
   return (
     <div>
       <label style={{
@@ -362,7 +366,7 @@ function Field({ label, required, error, hint, children, locked, labelAction }: 
             border: '1px solid rgba(99,102,241,0.2)', padding: '1px 6px',
             borderRadius: 4, textTransform: 'none', letterSpacing: 0,
           }}>
-            <Lock size={8} /> Requires admin approval
+            <Lock size={8} /> {t('requiresApproval')}
           </span>
         )}
         {labelAction && (
@@ -388,6 +392,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const isEdit   = !!product
   const p        = product as FullProduct | null
   const isLocked = !!(p?.is_approved)
+  const t = useTranslations('seller.productForm')
+  const { currency } = useFormat()
   const { can } = useSubscriptionStandalone()
   const canUseAi = can('ai_description_gen')
   const [updateRequestModalOpen, setUpdateRequestModalOpen] = useState(false)
@@ -585,24 +591,24 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
  const validate = () => {
   const e: Record<string, string> = {}
 
-  if (!form.name.trim()) e.name = 'Product name is required.'
+  if (!form.name.trim()) e.name = t('errors.name')
 
-  if (!form.category_id && !isLocked) e.category_id = 'Please select a category.'
+  if (!form.category_id && !isLocked) e.category_id = t('errors.category')
 
   // ── Price: clearer message with value context ──────────────────────────
   if (form.price === '' || isNaN(Number(form.price))) {
-    e.price = 'Price is required — enter a number (e.g. 29.900).'
+    e.price = t('errors.priceRequired')
   } else if (Number(form.price) <= 0) {
-    e.price = 'Price must be greater than 0 TND.'
+    e.price = t('errors.pricePositive')
   }
 
-  if (form.seasons.length === 0) e.seasons = 'Select at least one season.'
+  if (form.seasons.length === 0) e.seasons = t('errors.seasons')
 
   if (hasVariantRows) {
     const varStockErrs = validateVariantStocks(variantRows)
     if (Object.keys(varStockErrs).length > 0) {
       setVariantStockErrors(varStockErrs)
-      e.variants = 'Fix variant stock errors below.'
+      e.variants = t('errors.variants')
     } else {
       setVariantStockErrors({})
     }
@@ -613,7 +619,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   } else {
     // ── No-variant product: require at least 1 image ──────────────────────
     if (form.stock === '' || isNaN(Number(form.stock)) || Number(form.stock) < 0) {
-      e.stock = 'Enter a valid stock quantity.'
+      e.stock = t('errors.stock')
     }
 
   }
@@ -696,7 +702,7 @@ if (isEdit) {
         Object.entries(data.errors).forEach(([key, msgs]) => { mapped[key] = (msgs as string[])[0] })
         setErrors(mapped)
       } else {
-        setApiError(data?.message ?? 'Failed to save. Please try again.')
+        setApiError(data?.message ?? t('errors.saveFailed'))
       }
     } finally {
       setSaving(false)
@@ -725,14 +731,14 @@ if (isEdit) {
           }}>
             <div>
               <h2 style={{ fontSize: 16, fontWeight: 900, color: '#111', margin: 0 }}>
-                {isEdit ? 'Edit Product' : 'Add New Product'}
+                {isEdit ? t('editTitle') : t('addTitle')}
               </h2>
               {isLocked && (
                 <p style={{ fontSize: 11, color: '#6366f1', margin: '3px 0 0', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
-                  <Lock size={10} /> Some fields are locked — product is approved
+                  <Lock size={10} /> {t('lockedNotice')}
                 </p>
               )}
-              {!isEdit && <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>Will be reviewed by admin before going live.</p>}
+              {!isEdit && <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>{t('reviewNotice')}</p>}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {isLocked && isEdit && (
@@ -742,10 +748,10 @@ if (isEdit) {
                   fontWeight: 700, fontSize: 12, borderRadius: 10, border: 'none', cursor: 'pointer',
                   boxShadow: '0 4px 12px rgba(99,102,241,0.3)',
                 }}>
-                  <Send size={12} /> Request Update
+                  <Send size={12} /> {t('requestUpdate')}
                 </button>
               )}
-              <button type="button" onClick={onClose} style={{ padding: 6, borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}>
+              <button type="button" onClick={onClose} aria-label={t('close')} style={{ padding: 6, borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}>
                 <X size={18} />
               </button>
             </div>
@@ -755,8 +761,7 @@ if (isEdit) {
             <div style={{ margin: '16px 24px 0', display: 'flex', alignItems: 'flex-start', gap: 10, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '12px 14px', fontSize: 12, color: '#1e40af' }}>
               <Lock size={14} style={{ flexShrink: 0, marginTop: 1 }} />
               <span>
-                <strong>Product is approved and live.</strong> Price, stock, category, and variants are locked.
-                {' '}Use <strong>"Request Update"</strong> to propose changes. Other fields can still be edited directly.
+                {t.rich('lockedBanner', { b: (chunks) => <strong>{chunks}</strong> })}
               </span>
             </div>
           )}
@@ -771,25 +776,25 @@ if (isEdit) {
 
             {/* ── Basic Information ── */}
             <section>
-              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>Basic Information</p>
+              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>{t('sections.basic')}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <Field label="Product Name" required error={errors.name}>
-                  <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. White Cotton T-Shirt" className={inputCls(errors.name)} />
+                <Field label={t('name')} required error={errors.name}>
+                  <input value={form.name} onChange={e => set('name', e.target.value)} placeholder={t('namePlaceholder')} className={inputCls(errors.name)} />
                 </Field>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <Field label="URL Slug" hint="Auto-generated from name">
-                    <input value={form.slug} onChange={e => { slugTouched.current = true; set('slug', e.target.value) }} placeholder="my-product-name" className={inputCls()} />
+                  <Field label={t('slug')} hint={t('slugHint')}>
+                    <input value={form.slug} onChange={e => { slugTouched.current = true; set('slug', e.target.value) }} placeholder="my-product-name" dir="ltr" className={inputCls()} />
                   </Field>
-                  <Field label="SKU" hint="Auto-generated if empty">
-                    <input value={form.sku} onChange={e => set('sku', e.target.value)} placeholder="Leave blank" className={inputCls()} />
+                  <Field label={t('sku')} hint={t('skuHint')}>
+                    <input value={form.sku} onChange={e => set('sku', e.target.value)} placeholder={t('skuPlaceholder')} className={inputCls()} />
                   </Field>
                 </div>
-                <Field label="Short Description" hint="Max 500 chars">
-                  <input value={form.short_description} onChange={e => set('short_description', e.target.value)} maxLength={500} placeholder="One-line summary…" className={inputCls()} />
+                <Field label={t('shortDescription')} hint={t('shortDescriptionHint')}>
+                  <input value={form.short_description} onChange={e => set('short_description', e.target.value)} maxLength={500} placeholder={t('shortDescriptionPlaceholder')} className={inputCls()} />
                 </Field>
-                <Field label="Full Description">
+                <Field label={t('description')}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <textarea rows={4} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Describe your product in detail…" className={`${inputCls()} resize-none`} />
+                    <textarea rows={4} value={form.description} onChange={e => set('description', e.target.value)} placeholder={t('descriptionPlaceholder')} className={`${inputCls()} resize-none`} />
                     <AiDescriptionPanel
                       productName={form.name} categoryId={form.category_id}
                       categoryName={categories.find(c => c.id === Number(form.category_id))?.name}
@@ -810,9 +815,9 @@ if (isEdit) {
 
             {/* ── Pricing & Inventory ── */}
             <section>
-              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>Pricing & Inventory</p>
+              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>{t('sections.pricing')}</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-                <Field label="Base Price (TND)" required error={errors.price} locked={isLocked}>
+                <Field label={t('basePrice', { currency })} required error={errors.price} locked={isLocked}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                     <div style={{ position: 'relative' }}>
                       <input
@@ -831,7 +836,7 @@ if (isEdit) {
                       <span style={{
                         position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)',
                         fontSize: 11, color: errors.price ? '#ef4444' : '#94a3b8', fontWeight: 600,
-                      }}>TND</span>
+                      }}>{currency}</span>
                     </div>
                     {errors.price && (
                       <div style={{
@@ -847,7 +852,7 @@ if (isEdit) {
                 </Field>
                 <CommissionPreview price={form.price} />
                 {!hasVariantRows && (
-                  <Field label="Stock" required error={errors.stock} locked={isLocked}>
+                  <Field label={t('stock')} required error={errors.stock} locked={isLocked}>
                     <input type="number" min="0" value={form.stock}
                       onChange={e => { if (isLocked) return; set('stock', e.target.value) }}
                       readOnly={isLocked} placeholder="0"
@@ -855,10 +860,10 @@ if (isEdit) {
                       style={{ cursor: isLocked ? 'not-allowed' : undefined }} />
                   </Field>
                 )}
-                <Field label="Status">
+                <Field label={t('status')}>
                   <select value={form.is_active ? 'active' : 'inactive'} onChange={e => set('is_active', e.target.value === 'active')} className={inputCls()}>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="active">{t('active')}</option>
+                    <option value="inactive">{t('inactive')}</option>
                   </select>
                 </Field>
               </div>
@@ -867,11 +872,11 @@ if (isEdit) {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                   <label style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    Product Season(s) <span style={{ color: '#ef4444' }}>*</span>
+                    {t('seasons')} <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   {form.seasons.length > 0 && (
                     <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>
-                      {form.seasons.length} selected
+                      {t('selectedCount', { count: form.seasons.length })}
                     </span>
                   )}
                 </div>
@@ -879,7 +884,7 @@ if (isEdit) {
                   <SeasonPicker selected={form.seasons} onChange={seasons => set('seasons', seasons)} />
                 </div>
                 {errors.seasons && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.seasons}</p>}
-                <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 5 }}>Select all seasons when this product sells best. AI predictions use this.</p>
+                <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 5 }}>{t('seasonsHint')}</p>
               </div>
 
               {/* Is Pack */}
@@ -887,10 +892,10 @@ if (isEdit) {
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none', width: 'fit-content' }}>
                   <input type="checkbox" checked={form.is_pack} onChange={e => set('is_pack', e.target.checked)}
                     style={{ width: 16, height: 16, accentColor: '#dc2626', cursor: 'pointer', flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>This is a pack</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)', padding: '1px 7px', borderRadius: 4 }}>Pack</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{t('isPack')}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)', padding: '1px 7px', borderRadius: 4 }}>{t('packTag')}</span>
                 </label>
-                <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0 26px' }}>Check this if the product contains multiple items bundled together.</p>
+                <p style={{ fontSize: 11, color: '#94a3b8', marginBlock: '4px 0', marginInlineStart: 26 }}>{t('isPackHint')}</p>
               </div>
 
               {/* ── FIX: FreeDeliveryToggle is now a proper component called here ── */}
@@ -902,19 +907,19 @@ if (isEdit) {
 
             {/* ── Category ── */}
             <section>
-              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>Category</p>
+              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>{t('sections.category')}</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <Field label="Category" required={!isLocked} error={errors.category_id} locked={isLocked}>
+                <Field label={t('category')} required={!isLocked} error={errors.category_id} locked={isLocked}>
                   <select value={form.category_id} onChange={e => { if (isLocked) return; set('category_id', e.target.value); set('subcategory_id', ''); setAttrValues({}); setVariantRows([]); setVariantAxes([]); setInfoAxes([]); setStockMode('auto'); setVariantStockErrors({}) }}
                     className={inputCls(errors.category_id)} disabled={catLoading || isLocked} style={{ cursor: isLocked ? 'not-allowed' : undefined }}>
-                    <option value="">{catLoading ? 'Loading…' : '— Select category —'}</option>
+                    <option value="">{catLoading ? t('loading') : t('selectCategory')}</option>
                     {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                   </select>
                 </Field>
-                <Field label="Subcategory" hint={!isLocked ? 'Select to unlock attributes & variants' : undefined} locked={isLocked}>
+                <Field label={t('subcategory')} hint={!isLocked ? t('subcategoryHint') : undefined} locked={isLocked}>
                   <select value={form.subcategory_id} onChange={e => { if (isLocked) return; set('subcategory_id', e.target.value); setAttrValues({}); setVariantRows([]); setStockMode('auto'); setVariantStockErrors({}) }}
                     className={inputCls()} disabled={(!form.category_id && !isLocked) || subLoading || isLocked} style={{ cursor: isLocked ? 'not-allowed' : undefined }}>
-                    <option value="">{subLoading ? 'Loading…' : !form.category_id ? '— Select category first —' : '— None (optional) —'}</option>
+                    <option value="">{subLoading ? t('loading') : !form.category_id ? t('selectCategoryFirst') : t('noneOptional')}</option>
                     {subcategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
                   </select>
                 </Field>
@@ -925,7 +930,7 @@ if (isEdit) {
             {form.subcategory_id && !axesLoading && infoAxes.length > 0 && (
               <section>
                 <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
-                  Product Details <span style={{ marginInlineStart: 8, fontSize: 9, fontWeight: 500, color: '#c4b5fd', textTransform: 'none' }}>informational only</span>
+                  {t('sections.details')} <span style={{ marginInlineStart: 8, fontSize: 9, fontWeight: 500, color: '#c4b5fd', textTransform: 'none' }}>{t('informational')}</span>
                 </p>
                 <DynamicAttributeSection subcategoryId={Number(form.subcategory_id)} values={attrValues} onChange={setAttrValues} disabled={saving} overrideAttributes={infoAxes} />
               </section>
@@ -935,11 +940,11 @@ if (isEdit) {
             {form.subcategory_id && !isLocked && (
               <section>
                 <div style={{ paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>Variants</p>
-                  {axesLoading && <span style={{ fontSize: 10, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4 }}><Loader2 size={10} style={{ animation: 'spin 0.8s linear infinite' }} />Loading…</span>}
-                  {!axesLoading && variantAxes.length > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '2px 8px', borderRadius: 4 }}>axes: {variantAxes.map(a => a.name).join(', ')}</span>}
+                  <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>{t('sections.variants')}</p>
+                  {axesLoading && <span style={{ fontSize: 10, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4 }}><Loader2 size={10} style={{ animation: 'spin 0.8s linear infinite' }} />{t('loading')}</span>}
+                  {!axesLoading && variantAxes.length > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '2px 8px', borderRadius: 4 }}>{t('axes', { list: variantAxes.map(a => a.name).join(', ') })}</span>}
                 </div>
-                {!axesLoading && variantAxes.length === 0 && <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#94a3b8' }}>This subcategory has no variant attributes configured.</div>}
+                {!axesLoading && variantAxes.length === 0 && <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#94a3b8' }}>{t('noVariantAxes')}</div>}
                 {!axesLoading && variantAxes.length > 0 && (
                   <>
                     <VariantBuilder axes={variantAxes} existingVariants={variantRows} onChange={rows => { setVariantRows(rows); setVariantStockErrors({}) }} basePrice={form.price} disabled={saving} externalStockErrors={variantStockErrors} />
@@ -963,9 +968,9 @@ if (isEdit) {
 )}                    {variantRows.length > 0 && (
                       <div style={{ marginTop: 14 }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(220,38,38,0.05)', border: '1.5px solid rgba(220,38,38,0.2)', borderRadius: 12, padding: '10px 16px' }}>
-                          <span style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total Stock</span>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('totalStock')}</span>
                           <span style={{ fontSize: 22, fontWeight: 900, color: '#db142e', lineHeight: 1 }}>{variantTotalStock}</span>
-                          <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>units (auto-calculated)</span>
+                          <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{t('unitsAuto')}</span>
                         </div>
                       </div>
                     )}
@@ -979,9 +984,9 @@ if (isEdit) {
               <section>
                 <div style={{ paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>Variants</p>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 6px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 3 }}><Lock size={8} /> Locked — use Request Update</span>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', background: '#f1f5f9', border: '1px solid #e5e7eb', padding: '1px 6px', borderRadius: 4 }}>{(p?.variant_rows ?? []).length} variant{(p?.variant_rows ?? []).length !== 1 ? 's' : ''}</span>
+                    <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>{t('sections.variants')}</p>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 6px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 3 }}><Lock size={8} /> {t('variantsLocked')}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', background: '#f1f5f9', border: '1px solid #e5e7eb', padding: '1px 6px', borderRadius: 4 }}>{t('variantCount', { count: (p?.variant_rows ?? []).length })}</span>
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -999,7 +1004,7 @@ if (isEdit) {
                     <section>
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 14 }}>
     <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>
-Images
+{t('sections.images')}
     </p>
     <span style={{ fontSize: 11, color: '#94a3b8' }}>{totalImages}/8</span>
   </div>
@@ -1008,7 +1013,7 @@ Images
                
                 {existingImages.length > 0 && (
                   <div style={{ marginBottom: 12 }}>
-                    <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>Current Images</p>
+                    <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>{t('currentImages')}</p>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
                       {existingImages.map(img => <ImageThumb key={img.id} src={img.url} isPrimary={img.id === primaryImageId} onRemove={() => removeExisting(img.id)} onSetPrimary={() => setExistingPrimary(img.id)} />)}
                     </div>
@@ -1016,7 +1021,7 @@ Images
                 )}
                 {previews.length > 0 && (
                   <div style={{ marginBottom: 12 }}>
-                    <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>New Images</p>
+                    <p style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 8 }}>{t('newImages')}</p>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
                       {previews.map(prev => <ImageThumb key={prev.id} src={prev.preview} isPrimary={existingImages.length === 0 && previews[0]?.id === prev.id} onRemove={() => removePreview(prev.id)} onSetPrimary={() => {}} />)}
                     </div>
@@ -1026,8 +1031,8 @@ Images
                   <div onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))) }} onClick={() => fileInputRef.current?.click()}
                     style={{ border: '2px dashed #e5e7eb', borderRadius: 14, padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }} className="hover:border-red-300">
                     <Upload size={20} color="#94a3b8" />
-                    <p style={{ fontSize: 13, fontWeight: 600, color: '#64748b', margin: 0 }}>Drop images or <span style={{ color: '#dc2626' }}>browse</span></p>
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>JPG, PNG, WebP · max 5 MB each</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#64748b', margin: 0 }}>{t.rich('dropImages', { hl: (chunks) => <span style={{ color: '#dc2626' }}>{chunks}</span> })}</p>
+                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{t('imageFormats')}</p>
                     <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => { addFiles(Array.from(e.target.files ?? [])); e.target.value = '' }} />
                   </div>
                 )}
@@ -1037,15 +1042,15 @@ Images
             {!isEdit && (
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '12px 14px', fontSize: 12, color: '#92400e' }}>
                 <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-                Your product will go live after admin approval.
+                {t('liveAfterApproval')}
               </div>
             )}
 
             <div style={{ display: 'flex', gap: 12, paddingTop: 4, position: 'sticky', bottom: 0, background: '#fff', paddingBottom: 2 }}>
-              <button type="button" onClick={onClose} style={{ flex: 1, padding: '11px 0', border: '1.5px solid #e5e7eb', background: '#fff', color: '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+              <button type="button" onClick={onClose} style={{ flex: 1, padding: '11px 0', border: '1.5px solid #e5e7eb', background: '#fff', color: '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{t('cancel')}</button>
               <button type="submit" disabled={saving || catLoading} style={{ flex: 1, padding: '11px 0', background: 'linear-gradient(135deg,#dc2626,#b91c1c)', color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(220,38,38,0.3)', opacity: (saving || catLoading) ? 0.6 : 1, fontFamily: 'inherit' }}>
                 {saving && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
-                {isEdit ? 'Save Changes' : 'Submit for Review'}
+                {isEdit ? t('saveChanges') : t('submitForReview')}
               </button>
             </div>
           </form>

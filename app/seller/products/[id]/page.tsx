@@ -10,6 +10,8 @@ import {
   ChevronLeft, ChevronRight, Loader2, Star, Hash, FileText,
 } from 'lucide-react';
 import ProductModal from '../ProductModal';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -21,13 +23,6 @@ interface ProductDetail extends Product {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-function formatDateTime(dateStr: string) {
-  return new Date(dateStr).toLocaleString('en-GB', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
-
 function getImageUrl(image: ProductImage): string {
   if (image.url) return storageUrl(image.url) ?? '';
   return storageUrl(image.image_path) ?? '';
@@ -36,30 +31,31 @@ function getImageUrl(image: ProductImage): string {
 // ─── Status Badge ──────────────────────────────────────────────────────────────
 
 function StatusBadge({ product }: { product: ProductDetail }) {
+  const t = useTranslations('seller.productDetail');
   if (!product.is_active) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-slate-100 text-slate-500">
-        <XCircle size={12} /> Inactive
+        <XCircle size={12} /> {t('inactive')}
       </span>
     );
   }
   if (!product.is_approved && (product as any).changes_requested_at && !(product as any).rejection_reason) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
-        <AlertTriangle size={12} /> Changes Requested
+        <AlertTriangle size={12} /> {t('changesRequested')}
       </span>
     );
   }
   if (!product.is_approved) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
-        <AlertTriangle size={12} /> Pending Approval
+        <AlertTriangle size={12} /> {t('pendingApproval')}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-      <CheckCircle size={12} /> Approved & Active
+      <CheckCircle size={12} /> {t('approvedActive')}
     </span>
   );
 }
@@ -67,25 +63,27 @@ function StatusBadge({ product }: { product: ProductDetail }) {
 // ─── Stock Badge ───────────────────────────────────────────────────────────────
 
 function StockBadge({ stock }: { stock: number }) {
+  const t = useTranslations('seller.productDetail');
   if (stock === 0) {
-    return <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">Out of Stock</span>;
+    return <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">{t('outOfStock')}</span>;
   }
   if (stock < 10) {
-    return <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Low Stock</span>;
+    return <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{t('lowStock')}</span>;
   }
-  return <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">In Stock</span>;
+  return <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{t('inStock')}</span>;
 }
 
 // ─── Image Gallery ─────────────────────────────────────────────────────────────
 
 function ImageGallery({ images }: { images: ProductImage[] }) {
+  const t = useTranslations('seller.productDetail');
   const [selected, setSelected] = useState(0);
 
   if (!images.length) {
     return (
       <div className="aspect-square w-full max-w-lg mx-auto rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3">
         <Package size={40} className="text-slate-300" />
-        <p className="text-sm font-semibold text-slate-400">No images uploaded</p>
+        <p className="text-sm font-semibold text-slate-400">{t('noImages')}</p>
       </div>
     );
   }
@@ -98,13 +96,13 @@ function ImageGallery({ images }: { images: ProductImage[] }) {
       <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shadow-sm group">
         <img
           src={getImageUrl(current)}
-          alt="Product"
+          alt={t('imageAlt')}
           className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
         />
         {current.is_primary && (
           <div className="absolute top-3 start-3">
             <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-rose-600 text-white shadow">
-              <Star size={9} fill="currentColor" /> Primary
+              <Star size={9} fill="currentColor" /> {t('primary')}
             </span>
           </div>
         )}
@@ -113,6 +111,7 @@ function ImageGallery({ images }: { images: ProductImage[] }) {
             <button
               onClick={() => setSelected((s) => Math.max(0, s - 1))}
               disabled={selected === 0}
+              aria-label={t('previous')}
               className="absolute start-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition disabled:opacity-30"
             >
               <ChevronLeft size={14} />
@@ -120,6 +119,7 @@ function ImageGallery({ images }: { images: ProductImage[] }) {
             <button
               onClick={() => setSelected((s) => Math.min(images.length - 1, s + 1))}
               disabled={selected === images.length - 1}
+              aria-label={t('next')}
               className="absolute end-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition disabled:opacity-30"
             >
               <ChevronRight size={14} />
@@ -145,7 +145,7 @@ function ImageGallery({ images }: { images: ProductImage[] }) {
             >
               <img
                 src={getImageUrl(img)}
-                alt={`Thumb ${i + 1}`}
+                alt={t('thumb', { n: i + 1 })}
                 className="w-full h-full object-cover"
               />
               {img.is_primary && (
@@ -185,6 +185,9 @@ function InfoRow({ icon: Icon, label, value, valueClass = '' }: {
 export default function ProductDetailPage() {
   const params  = useParams();
   const router  = useRouter();
+  const t       = useTranslations('seller.productDetail');
+  const { price, number, date } = useFormat();
+  const formatDateTime = (value: string) => date(value, 'datetime');
   const id      = Number(params.id);
 
   const [product,   setProduct]   = useState<ProductDetail | null>(null);
@@ -231,7 +234,7 @@ export default function ProductDetailPage() {
       setAllImages(merged);
       setProduct(data as ProductDetail);
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? 'Failed to load product.');
+      setError(e?.response?.data?.message ?? t('loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -250,7 +253,7 @@ export default function ProductDetailPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 size={28} className="animate-spin text-rose-500" />
-          <p className="text-sm font-semibold text-slate-400">Loading product…</p>
+          <p className="text-sm font-semibold text-slate-400">{t('loading')}</p>
         </div>
       </div>
     );
@@ -264,14 +267,14 @@ export default function ProductDetailPage() {
           <Package size={28} className="text-red-400" />
         </div>
         <div className="text-center">
-          <p className="text-base font-bold text-slate-800">{error ?? 'Product not found'}</p>
-          <p className="text-sm text-slate-400 mt-1">This product may have been deleted or doesn't belong to you.</p>
+          <p className="text-base font-bold text-slate-800">{error ?? t('notFound')}</p>
+          <p className="text-sm text-slate-400 mt-1">{t('notFoundHint')}</p>
         </div>
         <button
           onClick={() => router.push('/seller/products')}
           className="flex items-center gap-2 text-sm font-bold text-rose-600 hover:text-rose-700"
         >
-          <ArrowLeft size={14} /> Back to Products
+          <ArrowLeft size={14} /> {t('backToProducts')}
         </button>
       </div>
     );
@@ -294,7 +297,7 @@ export default function ProductDetailPage() {
             className="flex items-center gap-1.5 text-slate-500 hover:text-rose-600 font-semibold transition"
           >
             <ArrowLeft size={14} />
-            Products
+            {t('products')}
           </button>
           <span className="text-slate-300">/</span>
           <span className="text-slate-800 font-bold truncate max-w-[200px] sm:max-w-none">
@@ -307,7 +310,7 @@ export default function ProductDetailPage() {
           className="flex items-center gap-2 bg-rose-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-rose-700 active:scale-95 transition shadow-lg shadow-rose-500/25"
         >
           <Edit2 size={13} />
-          <span className="hidden sm:inline">Edit Product</span>
+          <span className="hidden sm:inline">{t('edit')}</span>
         </button>
       </div>
 
@@ -330,7 +333,7 @@ export default function ProductDetailPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-2.5">
                     <FileText size={14} className="text-rose-500" />
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Short Description</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">{t('shortDescription')}</h3>
                   </div>
                   <p className="text-sm text-slate-600 leading-relaxed font-medium bg-slate-50 rounded-xl p-4 border border-slate-100">
                     {product.short_description}
@@ -342,7 +345,7 @@ export default function ProductDetailPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-2.5">
                     <FileText size={14} className="text-rose-500" />
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Full Description</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">{t('fullDescription')}</h3>
                   </div>
                   <div className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
                     {product.description}
@@ -362,7 +365,7 @@ export default function ProductDetailPage() {
               <StatusBadge product={product} />
               {product.featured && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-rose-50 text-rose-600 border border-rose-100">
-                  <Star size={9} fill="currentColor" /> Featured
+                  <Star size={9} fill="currentColor" /> {t('featured')}
                 </span>
               )}
             </div>
@@ -372,19 +375,19 @@ export default function ProductDetailPage() {
             </h1>
 
             {product.slug && (
-              <p className="text-xs text-slate-400 font-mono mb-4">/{product.slug}</p>
+              <p className="text-xs text-slate-400 font-mono mb-4" dir="ltr">/{product.slug}</p>
             )}
 
             <div className="flex items-end justify-between gap-3 pt-3 border-t border-slate-50">
               <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">Price</p>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">{t('price')}</p>
                 <p className="text-3xl font-black text-slate-900">
-                  {Number(product.price).toFixed(3)}
-                  <span className="text-base font-bold text-slate-400 ms-1">TND</span>
+                  {price(product.price, { minimumFractionDigits: 3, maximumFractionDigits: 3, bare: true })}
+                  <span className="text-base font-bold text-slate-400 ms-1">{t('currency')}</span>
                 </p>
               </div>
               <div className="text-end">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">Stock</p>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">{t('stock')}</p>
                 <div className="flex items-center gap-2 justify-end">
                   <p className={`text-2xl font-black ${stockColor}`}>{product.stock}</p>
                   <StockBadge stock={product.stock} />
@@ -395,40 +398,40 @@ export default function ProductDetailPage() {
 
           {/* Details Card */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Details</h3>
+            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">{t('details')}</h3>
 
             <InfoRow
               icon={Layers}
-              label="Category"
+              label={t('category')}
               value={product.category?.name ?? '—'}
             />
             <InfoRow
               icon={Hash}
-              label="SKU"
-              value={product.sku ?? <span className="text-slate-300 font-normal italic">Not set</span>}
+              label={t('sku')}
+              value={product.sku ?? <span className="text-slate-300 font-normal italic">{t('notSet')}</span>}
               valueClass="font-mono"
             />
             <InfoRow
               icon={Tag}
-              label="Product ID"
+              label={t('productId')}
               value={`#${product.id}`}
               valueClass="font-mono"
             />
             <InfoRow
               icon={Eye}
-              label="Views"
-              value={`${(product.views ?? 0).toLocaleString()} view${product.views !== 1 ? 's' : ''}`}
+              label={t('views')}
+              value={t('viewsCount', { count: product.views ?? 0, formatted: number(product.views ?? 0) })}
             />
             <InfoRow
               icon={BarChart2}
-              label="Images"
-              value={`${allImages.length} image${allImages.length !== 1 ? 's' : ''}`}
+              label={t('images')}
+              value={t('imagesCount', { count: allImages.length })}
             />
           </div>
 
           {/* Status Card */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Status</h3>
+            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">{t('status')}</h3>
 
             {/* Status rows — clean space-y-2.5 with no interruptions */}
             <div className="space-y-2.5">
@@ -438,14 +441,14 @@ export default function ProductDetailPage() {
                   <div className="w-5 h-5 rounded-md bg-slate-50 flex items-center justify-center">
                     <CheckCircle size={11} className="text-slate-400" />
                   </div>
-                  Active
+                  {t('active')}
                 </span>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                   product.is_active
                     ? 'bg-emerald-50 text-emerald-700'
                     : 'bg-slate-100 text-slate-500'
                 }`}>
-                  {product.is_active ? 'Yes' : 'No'}
+                  {product.is_active ? t('yes') : t('no')}
                 </span>
               </div>
 
@@ -454,14 +457,14 @@ export default function ProductDetailPage() {
                   <div className="w-5 h-5 rounded-md bg-slate-50 flex items-center justify-center">
                     <CheckCircle size={11} className="text-slate-400" />
                   </div>
-                  Admin Approval
+                  {t('adminApproval')}
                 </span>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                   product.is_approved
                     ? 'bg-blue-50 text-blue-700'
                     : 'bg-amber-50 text-amber-600'
                 }`}>
-                  {product.is_approved ? 'Approved' : 'Pending'}
+                  {product.is_approved ? t('approved') : t('pending')}
                 </span>
               </div>
 
@@ -470,14 +473,14 @@ export default function ProductDetailPage() {
                   <div className="w-5 h-5 rounded-md bg-slate-50 flex items-center justify-center">
                     <Star size={11} className="text-slate-400" />
                   </div>
-                  Featured
+                  {t('featured')}
                 </span>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                   product.featured
                     ? 'bg-rose-50 text-rose-600'
                     : 'bg-slate-100 text-slate-500'
                 }`}>
-                  {product.featured ? 'Yes' : 'No'}
+                  {product.featured ? t('yes') : t('no')}
                 </span>
               </div>
 
@@ -490,7 +493,7 @@ export default function ProductDetailPage() {
                   <AlertTriangle size={14} className="text-sky-600 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-sky-600 mb-1">
-                      Changes Requested
+                      {t('changesRequested')}
                     </p>
                     {(product as any).changes_request.reasons?.length > 0 && (
                       <p className="text-xs font-semibold text-sky-800 mb-1">
@@ -501,7 +504,7 @@ export default function ProductDetailPage() {
                       {(product as any).changes_request.note}
                     </p>
                     <p className="text-[10px] text-sky-600 mt-1.5">
-                      Edit and save the product to resubmit it for review.
+                      {t('resubmitHint')}
                     </p>
                   </div>
                 </div>
@@ -515,7 +518,7 @@ export default function ProductDetailPage() {
                   <AlertTriangle size={14} className="text-red-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-red-500 mb-1">
-                      Rejection Reason
+                      {t('rejectionReason')}
                     </p>
                     <p className="text-xs text-red-700 leading-relaxed">
                       {(product as any).rejection_reason}
@@ -528,16 +531,16 @@ export default function ProductDetailPage() {
 
           {/* Timeline Card */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Timeline</h3>
+            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">{t('timeline')}</h3>
 
             <InfoRow
               icon={Calendar}
-              label="Created"
+              label={t('created')}
               value={product.created_at ? formatDateTime(product.created_at) : '—'}
             />
             <InfoRow
               icon={Clock}
-              label="Last Updated"
+              label={t('updated')}
               value={product.updated_at ? formatDateTime(product.updated_at) : '—'}
             />
           </div>

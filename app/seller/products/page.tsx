@@ -27,6 +27,8 @@ import {
 import ProductModal from './ProductModal';
 import RestockModal, { type RestockProduct } from '../components/RestockModal';
 import { useTheme } from '../SellerShell';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 import ProductAlertPanel, {
   AlertIndicator,
   type ProductAlertData,
@@ -42,6 +44,8 @@ const MODAL_CLOSED: ModalState = { open: false, product: null };
 export default function ProductsPage() {
   const router = useRouter();
   const { dark } = useTheme();
+  const t = useTranslations('seller.products');
+  const { price } = useFormat();
 
   const [data,       setData]       = useState<PaginatedResponse<Product> | null>(null);
   const [loading,    setLoading]    = useState(true);
@@ -92,7 +96,7 @@ export default function ProductsPage() {
   const handleSaved  = () => { closeModal(); fetchProducts(); };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete this product? This cannot be undone.')) return;
+    if (!confirm(t('confirmDelete'))) return;
     setDeleting(id);
     try {
       await productsApi.delete(id);
@@ -119,7 +123,6 @@ export default function ProductsPage() {
     try {
       const res = await productsApi.getOne(product.id);
       const full = (res.data ?? res) as any;
-      console.log('variant_rows:', JSON.stringify(full.variant_rows, null, 2));
 
       const hasVariants  = !!full.has_variants || (full.variant_rows?.length > 0);
       const variantStock = full.variant_stock ?? 0;
@@ -194,17 +197,17 @@ export default function ProductsPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.02em' }}>
-              Products
+              {t('title')}
             </h1>
             <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>
-              Manage your store listings
+              {t('subtitle')}
             </p>
           </div>
           <button
             onClick={openAddModal}
             style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 18px', background: 'linear-gradient(135deg,#db142e,#a00f22)', color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 12, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(219,20,46,0.35)' }}
           >
-            <Plus size={15} /> Add Product
+            <Plus size={15} /> {t('add')}
           </button>
         </div>
 
@@ -215,26 +218,26 @@ export default function ProductsPage() {
             <input
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Search by name or SKU…"
+              placeholder={t('searchPlaceholder')}
               style={{ ...inputStyle, width: '100%', paddingInlineStart: 32 }}
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Filter size={13} style={{ color: textMuted, flexShrink: 0 }} />
             <select value={isActive} onChange={e => { setIsActive(e.target.value); setPage(1); }} style={inputStyle}>
-              <option value="">All Status</option>
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
+              <option value="">{t('allStatus')}</option>
+              <option value="true">{t('active')}</option>
+              <option value="false">{t('inactive')}</option>
             </select>
             <select value={isApproved} onChange={e => { setIsApproved(e.target.value); setPage(1); }} style={inputStyle}>
-              <option value="">All Approvals</option>
-              <option value="true">Approved</option>
-              <option value="false">Pending</option>
+              <option value="">{t('allApprovals')}</option>
+              <option value="true">{t('approved')}</option>
+              <option value="false">{t('pending')}</option>
             </select>
           </div>
           {data && (
             <span style={{ fontSize: 11, fontWeight: 700, color: textMuted, marginInlineStart: 'auto' }}>
-              {data.total} product{data.total !== 1 ? 's' : ''}
+              {t('count', { count: data.total })}
             </span>
           )}
         </div>
@@ -250,13 +253,13 @@ export default function ProductsPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: theadBg }}>
-                    {['Product', 'Category', 'Price', 'Stock', 'Status', 'Approval', 'Actions'].map(h => (
+                    {(['product', 'category', 'price', 'stock', 'status', 'approval', 'actions'] as const).map(h => (
                       <th key={h} style={{
                         padding: '10px 20px', fontSize: 9, fontWeight: 800,
                         textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted,
-                        textAlign: ['Price', 'Stock'].includes(h) ? 'right' : ['Status', 'Approval', 'Actions'].includes(h) ? 'center' : 'left',
+                        textAlign: ['price', 'stock'].includes(h) ? 'end' : ['status', 'approval', 'actions'].includes(h) ? 'center' : 'start',
                       }}>
-                        {h}
+                        {t(`cols.${h}`)}
                       </th>
                     ))}
                   </tr>
@@ -287,7 +290,7 @@ export default function ProductsPage() {
                               : isWarning
                               ? (dark ? 'rgba(245,158,11,0.03)' : 'rgba(245,158,11,0.015)')
                               : 'transparent',
-                            borderLeft: isCritical
+                            borderInlineStart: isCritical
                               ? '3px solid rgba(239,68,68,0.5)'
                               : isWarning
                               ? '3px solid rgba(245,158,11,0.5)'
@@ -327,11 +330,11 @@ export default function ProductsPage() {
                                 </p>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                   <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>
-                                    {(product as any).sku ? `SKU: ${(product as any).sku}` : `ID #${product.id}`}
+                                    {(product as any).sku ? t('sku', { sku: (product as any).sku }) : t('id', { id: product.id })}
                                   </p>
                                   {hasVariants && (
                                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 800, color: '#6366f1', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 5px', borderRadius: 4 }}>
-                                      <Layers size={8} /> variants
+                                      <Layers size={8} /> {t('variantsBadge')}
                                     </span>
                                   )}
                                   {/* ── Alert indicator badge ── */}
@@ -348,7 +351,7 @@ export default function ProductsPage() {
 
                           {/* Price */}
                           <td style={{ padding: '12px 20px', textAlign: 'end', fontWeight: 900, color: textMain }}>
-                            {Number(product.price).toFixed(3)} TND
+                            {price(product.price, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                           </td>
 
                           {/* Stock */}
@@ -356,8 +359,8 @@ export default function ProductsPage() {
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
                               <span style={{ fontWeight: 800, color: displayStock === 0 ? '#ef4444' : displayStock <= 10 ? '#f59e0b' : textMain }}>
                                 {displayStock}
-                                {displayStock === 0 && <span style={{ fontSize: 10, marginInlineStart: 4, color: '#ef4444' }}>(Out)</span>}
-                                {displayStock > 0 && displayStock <= 10 && <span style={{ fontSize: 10, marginInlineStart: 4, color: '#f59e0b' }}>(Low)</span>}
+                                {displayStock === 0 && <span style={{ fontSize: 10, marginInlineStart: 4, color: '#ef4444' }}>{t('outTag')}</span>}
+                                {displayStock > 0 && displayStock <= 10 && <span style={{ fontSize: 10, marginInlineStart: 4, color: '#f59e0b' }}>{t('lowTag')}</span>}
                               </span>
                             </div>
                           </td>
@@ -365,7 +368,7 @@ export default function ProductsPage() {
                           {/* Status */}
                           <td style={{ padding: '12px 20px', textAlign: 'center' }}>
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999, background: product.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: product.is_active ? '#10b981' : '#ef4444', border: `1px solid ${product.is_active ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
-                              {product.is_active ? <><CheckCircle size={9} />Active</> : <><XCircle size={9} />Inactive</>}
+                              {product.is_active ? <><CheckCircle size={9} />{t('active')}</> : <><XCircle size={9} />{t('inactive')}</>}
                             </span>
                           </td>
 
@@ -392,12 +395,12 @@ export default function ProductsPage() {
                 : 'rgba(245,158,11,0.25)'}`,
         }}>
             {product.is_approved
-                ? <><CheckCircle size={9} />Approved</>
+                ? <><CheckCircle size={9} />{t('approved')}</>
                 : (product as any).rejection_reason
-                ? <><XCircle size={9} />Rejected</>
+                ? <><XCircle size={9} />{t('rejected')}</>
                 : (product as any).changes_requested_at
-                ? <><Clock size={9} />Changes requested</>
-                : <><Clock size={9} />Pending</>
+                ? <><Clock size={9} />{t('changesRequested')}</>
+                : <><Clock size={9} />{t('pending')}</>
             }
         </span>
         {/* Reason snippet */}
@@ -424,7 +427,8 @@ export default function ProductsPage() {
                                 onClick={() => router.push(`/seller/products/${product.id}`)}
                                 className="act-btn"
                                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#94a3b8', opacity: 0.7 }}
-                                title="View"
+                                title={t('view')}
+                                aria-label={t('view')}
                               >
                                 <Eye size={13} />
                               </button>
@@ -434,7 +438,8 @@ export default function ProductsPage() {
                                 onClick={() => handleEdit(product)}
                                 className="act-btn"
                                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#94a3b8', opacity: 0.7 }}
-                                title="Edit"
+                                title={t('edit')}
+                                aria-label={t('edit')}
                               >
                                 <Edit2 size={13} />
                               </button>
@@ -444,7 +449,7 @@ export default function ProductsPage() {
                                 <button
                                   onClick={() => handleRestock(product)}
                                   className="restock-btn"
-                                  title="Restock — update stock directly"
+                                  title={t('restockHint')}
                                   style={{
                                     display: 'inline-flex', alignItems: 'center', gap: 4,
                                     padding: '5px 10px',
@@ -458,7 +463,7 @@ export default function ProductsPage() {
                                   }}
                                 >
                                   <RefreshCw size={11} />
-                                  Restock
+                                  {t('restock')}
                                 </button>
                               )}
 
@@ -468,7 +473,8 @@ export default function ProductsPage() {
                                 disabled={deleting === product.id}
                                 className="act-btn"
                                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#94a3b8', opacity: deleting === product.id ? 0.4 : 0.7 }}
-                                title="Delete"
+                                title={t('delete')}
+                                aria-label={t('delete')}
                               >
                                 {deleting === product.id
                                   ? <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />
@@ -497,8 +503,8 @@ export default function ProductsPage() {
                     <tr>
                       <td colSpan={7} style={{ padding: '56px 20px', textAlign: 'center' }}>
                         <Package size={28} style={{ margin: '0 auto 10px', display: 'block', color: textMuted, opacity: 0.4 }} />
-                        <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>No products found</p>
-                        <p style={{ fontSize: 11, color: textMuted, opacity: 0.6, margin: 0 }}>Try adjusting your filters or add a new product</p>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>{t('empty')}</p>
+                        <p style={{ fontSize: 11, color: textMuted, opacity: 0.6, margin: 0 }}>{t('emptyHint')}</p>
                       </td>
                     </tr>
                   )}
@@ -511,7 +517,7 @@ export default function ProductsPage() {
           {data && data.last_page > 1 && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: `1px solid ${border}` }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>
-                Showing {data.from}–{data.to} of {data.total}
+                {t('showing', { from: data.from ?? 0, to: data.to ?? 0, total: data.total })}
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: 6, borderRadius: 8, border: `1px solid ${border}`, background: 'transparent', cursor: 'pointer', color: textMuted, opacity: page === 1 ? 0.4 : 1 }}>
