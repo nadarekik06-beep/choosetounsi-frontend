@@ -9,7 +9,10 @@ import {
 } from 'lucide-react'
 import { subscriptionApi, PLAN_META, ActivePlan } from '@/lib/subscriptionApi'
 import { refreshUser } from '@/lib/auth'
-import { useSellerPlans, formatCommission, formatPlanPrice, type SellerPlans } from '@/lib/platformApi'
+import { useSellerPlans, formatCommission, type SellerPlans } from '@/lib/platformApi'
+import { useTranslations } from 'next-intl'
+import { usePlanPrice } from '@/lib/i18n/usePlanPrice'
+// Shown on the storefront become-a-vendor page: messages live in the top-level planUpgrade namespace.
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -23,41 +26,41 @@ const UPGRADE_PLANS = [
   {
     key: 'red' as const,
     name: 'Red Pepper',
-    target: 'For growing businesses',
-    badge: 'MOST POPULAR',
+    target: 'targetRed',
+    badge: 'badgePopular',
     Icon: Flame,
     dark: false,
     bgGradient: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)',
     borderColor: '#fca5a5',
     accentColor: '#dc2626',
     features: [
-      { text: 'Advanced dashboard',            ok: true  },
-      { text: 'Coupons + Flash sales',         ok: true  },
-      { text: 'Price Optimization AI',         ok: true  },
-      { text: 'Sales Prediction AI',           ok: true  },
-      { text: 'Product Description Generator', ok: true  },
-      { text: 'Basic Recommendations AI',      ok: true  },
-      { text: 'VIP Support & promotions',      ok: false },
+      { text: 'advancedDashboard',    ok: true  },
+      { text: 'couponsFlash',         ok: true  },
+      { text: 'priceAi',              ok: true  },
+      { text: 'salesAi',              ok: true  },
+      { text: 'descriptionGenerator', ok: true  },
+      { text: 'recommendationsAi',    ok: true  },
+      { text: 'vipSupport',           ok: false },
     ],
   },
   {
     key: 'black' as const,
     name: 'Black Pepper',
-    target: 'For serious sellers',
-    badge: 'BEST VALUE',
+    target: 'targetBlack',
+    badge: 'badgeValue',
     Icon: Crown,
     dark: true,
     bgGradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
     borderColor: '#334155',
     accentColor: '#f59e0b',
     features: [
-      { text: 'Everything in Red Pepper',       ok: true },
-      { text: 'Homepage visibility boost',      ok: true },
-      { text: '3 free sponsored products/week', ok: true },
-      { text: 'Trend Detection AI',             ok: true },
-      { text: 'Inventory AI',                   ok: true },
-      { text: 'Reels & product shoots',         ok: true },
-      { text: 'Instagram / TikTok promotion',   ok: true },
+      { text: 'everythingRed',  ok: true },
+      { text: 'homepageBoost',  ok: true },
+      { text: 'freeSponsored',  ok: true },
+      { text: 'trendAi',        ok: true },
+      { text: 'inventoryAi',    ok: true },
+      { text: 'reels',          ok: true },
+      { text: 'socialPromo',    ok: true },
     ],
   },
 ]
@@ -67,20 +70,20 @@ const UPGRADE_PLANS = [
 const GREEN_PLAN = {
   key: 'green' as const,
   name: 'Green Pepper',
-  target: 'Your current plan',
+  target: 'targetGreen',
   Icon: Leaf,
   dark: false,
   bgGradient: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
   borderColor: '#86efac',
   accentColor: '#15803d',
   features: [
-    { text: 'Basic seller dashboard',         ok: true  },
-    { text: 'Coupon creation',                ok: true  },
-    { text: 'Flash sales',                    ok: true  },
-    { text: 'Access to sponsoring system',    ok: true  },
-    { text: 'AI tools',                       ok: false },
-    { text: 'Advanced analytics',             ok: false },
-    { text: 'Priority support',               ok: false },
+    { text: 'basicDashboard',    ok: true  },
+    { text: 'couponCreation',    ok: true  },
+    { text: 'flashSales',        ok: true  },
+    { text: 'sponsoring',        ok: true  },
+    { text: 'aiTools',           ok: false },
+    { text: 'advancedAnalytics', ok: false },
+    { text: 'prioritySupport',   ok: false },
   ],
 }
 
@@ -90,8 +93,8 @@ function withLive<T extends { key: 'green' | 'red' | 'black' }>(plan: T, plans: 
   const live = plans?.[plan.key === 'green' ? 'free' : plan.key]
   return {
     ...plan,
-    priceLabel:  formatPlanPrice(live),
-    priceSub:    live && live.price === 0 ? 'forever' : 'per month',
+    price:       live ? live.price : null,
+    priceSub:    live && live.price === 0 ? 'forever' : 'perMonth',
     commission:  formatCommission(live),
     maxProducts: live ? live.max_products : null,
     loaded:      Boolean(live),
@@ -115,6 +118,7 @@ function formatExpiry(value: string): string {
 // ── Current Plan Badge ────────────────────────────────────────────────────────
 
 function CurrentPlanBadge({ plan }: { plan: ActivePlan }) {
+  const t = useTranslations('planUpgrade')
   const meta = PLAN_META[plan]
   const Icon = plan === 'free' ? Leaf : plan === 'red' ? Flame : Crown
   return (
@@ -132,7 +136,7 @@ function CurrentPlanBadge({ plan }: { plan: ActivePlan }) {
         fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999,
         background: `${meta.color}22`, color: meta.accentColor,
       }}>
-        ACTIVE
+        {t('active')}
       </span>
     </div>
   )
@@ -147,6 +151,9 @@ interface PaymentFormProps {
 }
 
 function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
+  const t = useTranslations('planUpgrade')
+  const { short } = usePlanPrice()
+  const priceText = selectedPlan.price === null ? '…' : short(selectedPlan.price)
   const [cardNumber,     setCardNumber]     = useState('')
   const [expiryDate,     setExpiryDate]     = useState('')
   const [cvv,            setCvv]            = useState('')
@@ -158,10 +165,10 @@ function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
   const validate = (): boolean => {
     const errs: Record<string, string> = {}
     const rawCard = cardNumber.replace(/\s/g, '')
-    if (rawCard.length < 13 || rawCard.length > 19) errs.card_number = 'Enter a valid card number.'
-    if (!expiryDate.match(/^(0[1-9]|1[0-2])\/\d{2}$/))  errs.expiry_date = 'Use MM/YY format.'
-    if (!cvv.match(/^\d{3,4}$/))                          errs.cvv = 'Enter 3 or 4 digit CVV.'
-    if (cardholderName.trim().length < 2)                 errs.cardholder_name = 'Enter the cardholder name.'
+    if (rawCard.length < 13 || rawCard.length > 19) errs.card_number = t('errors.card')
+    if (!expiryDate.match(/^(0[1-9]|1[0-2])\/\d{2}$/))  errs.expiry_date = t('errors.expiry')
+    if (!cvv.match(/^\d{3,4}$/))                          errs.cvv = t('errors.cvv')
+    if (cardholderName.trim().length < 2)                 errs.cardholder_name = t('errors.name')
     setFieldErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -187,7 +194,7 @@ function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
     onSuccess(selectedPlan.key)
   } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string; errors?: Record<string, unknown> } } }
-      const msg = e?.response?.data?.message ?? 'Payment failed. Please check your details and try again.'
+      const msg = e?.response?.data?.message ?? t('errors.failed')
       setError(msg)
       const be = e?.response?.data?.errors ?? {}
       const mapped: Record<string, string> = {}
@@ -243,10 +250,10 @@ function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
         </div>
         <div>
           <p style={{ margin: 0, fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: selectedPlan.accentColor }}>
-            Upgrading to
+            {t('upgradingTo')}
           </p>
           <p style={{ margin: '2px 0 0', fontWeight: 900, fontSize: '1.05rem', color: selectedPlan.dark ? 'white' : '#111' }}>
-            {selectedPlan.name} — {selectedPlan.priceLabel}/{selectedPlan.priceSub}
+            {selectedPlan.name} — {priceText} {t(selectedPlan.priceSub)}
           </p>
         </div>
       </div>
@@ -256,10 +263,10 @@ function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
 
         {/* Card number */}
         <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>Card Number</label>
+          <label style={labelStyle}>{t('cardNumber')}</label>
           <div style={{ position: 'relative' }}>
             <input
-              type="text" inputMode="numeric"
+              type="text" inputMode="numeric" dir="ltr"
               placeholder="1234 5678 9012 3456"
               value={cardNumber}
               onChange={e => setCardNumber(formatCardNumber(e.target.value))}
@@ -275,9 +282,9 @@ function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
         {/* Expiry + CVV */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
           <div>
-            <label style={labelStyle}>Expiry Date</label>
+            <label style={labelStyle}>{t('expiry')}</label>
             <input
-              type="text" inputMode="numeric" placeholder="MM/YY"
+              type="text" inputMode="numeric" dir="ltr" placeholder={t('expiryPlaceholder')}
               value={expiryDate}
               onChange={e => setExpiryDate(formatExpiry(e.target.value))}
               style={inputStyle(!!fieldErrors.expiry_date)}
@@ -287,9 +294,9 @@ function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
             {fieldErrors.expiry_date && <p style={errStyle}><AlertCircle size={11} />{fieldErrors.expiry_date}</p>}
           </div>
           <div>
-            <label style={labelStyle}>CVV</label>
+            <label style={labelStyle}>{t('cvv')}</label>
             <input
-              type="text" inputMode="numeric" placeholder="123"
+              type="text" inputMode="numeric" dir="ltr" placeholder="123"
               value={cvv} maxLength={4}
               onChange={e => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
               style={inputStyle(!!fieldErrors.cvv)}
@@ -302,9 +309,9 @@ function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
 
         {/* Cardholder name */}
         <div style={{ marginBottom: 22 }}>
-          <label style={labelStyle}>Cardholder Name</label>
+          <label style={labelStyle}>{t('cardholder')}</label>
           <input
-            type="text" placeholder="Name as on card"
+            type="text" placeholder={t('cardholderPlaceholder')}
             value={cardholderName}
             onChange={e => setCardholderName(e.target.value)}
             style={inputStyle(!!fieldErrors.cardholder_name)}
@@ -322,7 +329,7 @@ function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
         }}>
           <Shield size={13} color="#198f41" />
           <span style={{ fontSize: '0.72rem', color: '#198f41', fontWeight: 600 }}>
-            Your payment is secured and encrypted
+            {t('secure')}
           </span>
         </div>
 
@@ -351,7 +358,7 @@ function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
             onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           >
-            ← Back
+            <span className="rtl-flip" style={{ display: 'inline-block' }}>←</span> {t('back')}
           </button>
           <button
             onClick={handlePay}
@@ -374,8 +381,8 @@ function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
             onMouseLeave={e => { e.currentTarget.style.filter = 'none' }}
           >
             {loading
-              ? <><Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />Processing…</>
-              : <><Lock size={14} />Pay {selectedPlan.priceLabel}</>
+              ? <><Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />{t('processing')}</>
+              : <><Lock size={14} />{t('pay', { price: priceText })}</>
             }
           </button>
         </div>
@@ -388,6 +395,9 @@ function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess }: Props) {
+  const t = useTranslations('planUpgrade')
+  const { short, label } = usePlanPrice()
+  const priceOf = (p: { price: number | null }) => (p.price === null ? '…' : short(p.price))
   const paymentRef = useRef<HTMLDivElement>(null)
   const livePlans = useSellerPlans()
   const [selectedPlan, setSelectedPlan] = useState<LivePlan | null>(null)
@@ -435,10 +445,10 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
             fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900,
             fontSize: '2rem', color: '#111', margin: '0 0 10px',
           }}>
-            YOU&#39;RE AT THE TOP
+            {t('topTitle')}
           </h2>
           <p style={{ color: '#6b7280', fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
-            You&#39;re on the <strong style={{ color: '#f59e0b' }}>Black Pepper</strong> plan — the highest tier. Enjoy all features!
+            {t.rich('topBody', { b: (chunks) => <strong style={{ color: '#f59e0b' }}>{chunks}</strong> })}
           </p>
         </div>
       </div>
@@ -466,7 +476,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
             fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900,
             fontSize: '2.2rem', color: '#111', margin: '0 0 12px', letterSpacing: '-0.02em',
           }}>
-            UPGRADE SUCCESSFUL!
+            {t('successTitle')}
           </h2>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 10, margin: '0 0 16px',
@@ -475,11 +485,11 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
           }}>
             <Icon size={18} color={meta.accentColor} />
             <span style={{ fontWeight: 800, fontSize: '0.95rem', color: meta.accentColor }}>
-              {meta.name} — {meta.priceLabel}
+              {meta.name} — {label(meta.price)}
             </span>
           </div>
           <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.7, margin: '0 0 28px' }}>
-            Your plan is now active. Head to your seller dashboard to use your new features.
+            {t('successBody')}
           </p>
           <a
             href="/seller/dashboard"
@@ -498,7 +508,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
               letterSpacing: '0.04em',
             }}
           >
-            Go to Seller Dashboard <ChevronRight size={15} />
+            {t('goToDashboard')} <ChevronRight size={15} />
           </a>
         </div>
       </div>
@@ -592,7 +602,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
               color: 'rgba(255,255,255,0.45)', fontSize: '0.72rem', fontWeight: 700,
               letterSpacing: '0.14em', textTransform: 'uppercase', margin: '0 0 14px',
             }}>
-              Your Current Plan
+              {t('currentPlan')}
             </p>
             <div className="upg-badge-anim" style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
               <CurrentPlanBadge plan={currentPlan} />
@@ -602,13 +612,13 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
               fontSize: 'clamp(2rem, 5vw, 3.6rem)', color: 'white',
               letterSpacing: '-0.02em', lineHeight: 1, margin: '0 0 14px',
             }}>
-              UNLOCK MORE WITH AN UPGRADE
+              {t('heroTitle')}
             </h1>
             <p className="upg-sub-anim" style={{
               color: 'rgba(255,255,255,0.5)', maxWidth: 420,
               margin: '0 auto', lineHeight: 1.7, fontSize: '0.92rem',
             }}>
-              Choose a plan below and activate it instantly — no waiting, no approval needed.
+              {t('heroBody')}
             </p>
           </div>
         </div>
@@ -620,14 +630,14 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
               color: '#db142e', fontSize: '0.72rem', fontWeight: 800,
               letterSpacing: '0.16em', textTransform: 'uppercase',
             }}>
-              Choose Your Upgrade
+              {t('chooseUpgrade')}
             </span>
             <h2 style={{
               fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900,
               fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', color: '#111',
               letterSpacing: '-0.02em', margin: '6px 0 0',
             }}>
-              🌶️ THREE PLANS, ONE MARKET
+              {t('threePlans')}
             </h2>
           </div>
 
@@ -651,7 +661,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                 }}>
                   <CheckCircle size={10} color="white" />
                   <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'white', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                    Your Plan
+                    {t('yourPlan')}
                   </span>
                 </div>
 
@@ -667,7 +677,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                     </div>
                     <div>
                       <div style={{ fontWeight: 900, fontSize: '1rem', color: '#111', lineHeight: 1 }}>{GREEN_PLAN.name}</div>
-                      <div style={{ fontSize: '0.68rem', color: '#888', marginTop: 2 }}>{GREEN_PLAN.target}</div>
+                      <div style={{ fontSize: '0.68rem', color: '#888', marginTop: 2 }}>{t(GREEN_PLAN.target)}</div>
                     </div>
                   </div>
 
@@ -677,10 +687,10 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                       fontFamily: "'Barlow Condensed', sans-serif",
                       fontSize: '2.8rem', fontWeight: 900, lineHeight: 1, color: '#111',
                     }}>
-                      {green.priceLabel}
+                      {priceOf(green)}
                     </span>
                     <span style={{ fontSize: '0.78rem', color: '#888', marginInlineStart: 6 }}>
-                      /{green.priceSub}
+                      {t(green.priceSub)}
                     </span>
                   </div>
 
@@ -691,7 +701,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                   }}>
                     <BarChart2 size={13} color={GREEN_PLAN.accentColor} />
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, color: GREEN_PLAN.accentColor }}>
-                      {green.commission} commission
+                      {t('commission', { range: green.commission })}
                     </span>
                   </div>
 
@@ -701,7 +711,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                     color: '#888', marginBottom: 18,
                   }}>
                     <Package size={13} color="#aaa" />
-                    {green.loaded ? `Up to ${green.maxProducts} products` : '…'}
+                    {green.loaded ? (green.maxProducts === null ? t('unlimitedProducts') : t('upToProducts', { count: green.maxProducts })) : '…'}
                   </div>
 
                   {/* Features */}
@@ -715,7 +725,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                           ? <Check size={14} color={GREEN_PLAN.accentColor} style={{ flexShrink: 0 }} />
                           : <X size={14} style={{ flexShrink: 0 }} />
                         }
-                        <span style={{ textDecoration: f.ok ? 'none' : 'line-through' }}>{f.text}</span>
+                        <span style={{ textDecoration: f.ok ? 'none' : 'line-through' }}>{t(`features.${f.text}`)}</span>
                       </li>
                     ))}
                   </ul>
@@ -730,7 +740,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                     fontFamily: 'Barlow, sans-serif', letterSpacing: '0.04em', textTransform: 'uppercase',
                   }}>
                     <CheckCircle size={14} />
-                    Active Plan
+                    {t('activePlan')}
                   </div>
                 </div>
               </div>
@@ -763,7 +773,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                           : 'linear-gradient(90deg, #dc2626, #ff4060)',
                         color: plan.dark ? '#0f172a' : 'white',
                       }}>
-                        {plan.badge}
+                        {t(plan.badge)}
                       </span>
                     </div>
                   )}
@@ -783,7 +793,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                           {plan.name}
                         </div>
                         <div style={{ fontSize: '0.68rem', color: plan.dark ? 'rgba(255,255,255,0.45)' : '#888', marginTop: 2 }}>
-                          {plan.target}
+                          {t(plan.target)}
                         </div>
                       </div>
                     </div>
@@ -795,10 +805,10 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                         fontSize: '2.6rem', fontWeight: 900, lineHeight: 1,
                         color: plan.dark ? 'white' : '#111',
                       }}>
-                        {plan.priceLabel}
+                        {priceOf(plan)}
                       </span>
                       <span style={{ fontSize: '0.78rem', color: plan.dark ? 'rgba(255,255,255,0.4)' : '#888', marginInlineStart: 6 }}>
-                        /{plan.priceSub}
+                        {t(plan.priceSub)}
                       </span>
                     </div>
 
@@ -810,7 +820,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                     }}>
                       <BarChart2 size={13} color={plan.dark ? '#f59e0b' : plan.accentColor} />
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, color: plan.dark ? '#f59e0b' : plan.accentColor }}>
-                        {plan.commission} commission
+                        {t('commission', { range: plan.commission })}
                       </span>
                     </div>
 
@@ -820,7 +830,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                       color: plan.dark ? 'rgba(255,255,255,0.5)' : '#888', marginBottom: 18,
                     }}>
                       <Package size={13} color={plan.dark ? 'rgba(255,255,255,0.35)' : '#aaa'} />
-                      {!plan.loaded ? '…' : plan.maxProducts ? `Up to ${plan.maxProducts} products` : 'Unlimited products'}
+                      {!plan.loaded ? '…' : plan.maxProducts ? t('upToProducts', { count: plan.maxProducts }) : t('unlimitedProducts')}
                     </div>
 
                     {/* Features */}
@@ -836,7 +846,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                             ? <Check size={14} color={plan.dark ? '#f59e0b' : plan.accentColor} style={{ flexShrink: 0 }} />
                             : <X size={14} style={{ flexShrink: 0 }} />
                           }
-                          <span style={{ textDecoration: f.ok ? 'none' : 'line-through' }}>{f.text}</span>
+                          <span style={{ textDecoration: f.ok ? 'none' : 'line-through' }}>{t(`features.${f.text}`)}</span>
                         </li>
                       ))}
                     </ul>
@@ -862,8 +872,8 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                       onMouseLeave={e => (e.currentTarget.style.filter = 'none')}
                     >
                       {isSelected
-                        ? <><CheckCircle size={15} /> Selected — Pay Now</>
-                        : <>Upgrade to {plan.name} <ArrowRight size={15} /></>
+                        ? <><CheckCircle size={15} /> {t('selectedPayNow')}</>
+                        : <>{t('upgradeTo', { plan: plan.name })} <ArrowRight size={15} className="rtl-flip" /></>
                       }
                     </button>
                   </div>
@@ -873,7 +883,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
           </div>
 
           <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#9ca3af', marginTop: 20 }}>
-            💡 All plans include: Seller dashboard · Order management · Buyer messaging · Analytics
+            {t('allInclude')}
           </p>
         </div>
 
@@ -886,14 +896,14 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                   color: '#db142e', fontSize: '0.72rem', fontWeight: 800,
                   letterSpacing: '0.16em', textTransform: 'uppercase',
                 }}>
-                  Payment
+                  {t('payment')}
                 </span>
                 <h2 style={{
                   fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900,
                   fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', color: '#111',
                   letterSpacing: '-0.02em', margin: '6px 0 0',
                 }}>
-                  COMPLETE YOUR UPGRADE
+                  {t('completeUpgrade')}
                 </h2>
               </div>
               <PaymentForm
@@ -912,7 +922,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                 style={{ marginBottom: 10, opacity: 0.35, display: 'block', margin: '0 auto 10px' }}
               />
               <p style={{ fontSize: '0.85rem', fontWeight: 600, margin: 0 }}>
-                Select a plan above to see the payment form
+                {t('selectPlanHint')}
               </p>
             </div>
           )}

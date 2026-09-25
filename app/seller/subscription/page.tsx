@@ -21,6 +21,11 @@ import {
 import { subscriptionApi, planMeta, planKeys, planRank, planTier, livePlan, type ActivePlan, type SubscriptionLifecycle, type PlanChange } from '@/lib/subscriptionApi'
 import { refreshUser } from '@/lib/auth'
 import { useTheme } from '../SellerShell'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
+import { usePlanPrice } from '@/lib/i18n/usePlanPrice'
+
+type Translate = ReturnType<typeof useTranslations>
 
 // ── Plan configuration ────────────────────────────────────────────────────────
 
@@ -28,51 +33,24 @@ const TIER_ICONS: React.ElementType[] = [Leaf, Flame, Crown]
 /** Icon by tier, so admin-created plans get the look of their tier. */
 const planIcon = (slug: string) => TIER_ICONS[planTier(slug)]
 
-// Labels for the plan features the backend enforces (subscription_plans.features)
-const BACKEND_FEATURE_LABELS: Record<string, string> = {
-  analytics:    'Advanced analytics dashboard',
-  ai_tools:     'AI seller tools (price, description, sales)',
-  black_hub:    'Black Pepper hub (AI hub, VIP lounge, insights)',
-  promotions:   'Flash sales & promotions',
-  coupons:      'Store coupons',
-  sponsorships: 'Sponsoring system access',
-}
+// Plan features the backend enforces (subscription_plans.features) → seller.subscription.backendFeatures.<key>
+const BACKEND_FEATURES = ['analytics', 'ai_tools', 'black_hub', 'promotions', 'coupons', 'sponsorships'] as const
 
 /** Feature list for any plan: marketing copy for the base plans, live flags for custom ones. */
-function planFeatures(slug: string): string[] {
+function planFeatures(slug: string, t: Translate): string[] {
   const meta  = planMeta(slug)
-  const limit = meta.maxProducts === null ? 'Unlimited active products' : `Up to ${meta.maxProducts} active products`
+  const limit = meta.maxProducts === null ? t('features.unlimited') : t('features.upTo', { count: meta.maxProducts })
   const base  = PLAN_FEATURES[slug as ActivePlan]
-  if (base) return [limit, ...base.slice(1)]
+  if (base) return [limit, ...base.map(key => t(`features.${key}`))]
   const flags = livePlan(slug)?.features ?? {}
-  return [limit, ...Object.entries(BACKEND_FEATURE_LABELS).filter(([k]) => flags[k]).map(([, label]) => label)]
+  return [limit, ...BACKEND_FEATURES.filter(k => flags[k]).map(k => t(`backendFeatures.${k}`))]
 }
 
+// Marketing features per base plan (after the product limit) → seller.subscription.features.<key>
 const PLAN_FEATURES: Record<ActivePlan, string[]> = {
-  free: [
-    'Up to 30 active products',
-    'Basic seller dashboard',
-    'Flash sales & coupons',
-    'Sponsoring system access',
-  ],
-  red: [
-    'Up to 150 active products',
-    'Advanced analytics dashboard',
-    'AI Price Optimizer',
-    'AI Sales Predictor',
-    'AI Description Generator',
-    'Bundle Recommender AI',
-  ],
-  black: [
-    'Unlimited active products',
-    'Everything in Red Pepper',
-    'Homepage visibility boost',
-    '3 free sponsored products/week',
-    'Trend Detection AI',
-    'Inventory AI alerts',
-    'Reels & product photo shoots',
-    'VIP Instagram/TikTok promotion',
-  ],
+  free:  ['basicDashboard', 'flashCoupons', 'sponsoring'],
+  red:   ['analytics', 'priceOptimizer', 'salesPredictor', 'descriptionGenerator', 'bundleRecommender'],
+  black: ['everythingRed', 'homepageBoost', 'freeSponsored', 'trendDetection', 'inventoryAlerts', 'reels', 'vipPromotion'],
 }
 
 // ── Helper: format card number ────────────────────────────────────────────────
@@ -110,6 +88,8 @@ interface PaymentFormProps {
 }
 
 function PaymentForm({ targetPlan, onSuccess, onCancel, dark }: PaymentFormProps) {
+  const t = useTranslations('seller.subscription')
+  const { label: priceLabel } = usePlanPrice()
   const [card, setCard]     = useState('')
   const [expiry, setExpiry] = useState('')
   const [cvv, setCvv]       = useState('')
@@ -125,10 +105,10 @@ function PaymentForm({ targetPlan, onSuccess, onCancel, dark }: PaymentFormProps
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {}
-    if (card.replace(/\s/g, '').length < 13) errs.card = 'Enter a valid card number.'
-    if (!expiry.match(/^(0[1-9]|1[0-2])\/\d{2}$/)) errs.expiry = 'Use MM/YY format.'
-    if (!cvv.match(/^\d{3,4}$/)) errs.cvv = '3 or 4 digit CVV.'
-    if (name.trim().length < 2) errs.name = 'Enter cardholder name.'
+    if (card.replace(/\s/g, '').length < 13) errs.card = t('pay.errors.card')
+    if (!expiry.match(/^(0[1-9]|1[0-2])\/\d{2}$/)) errs.expiry = t('pay.errors.expiry')
+    if (!cvv.match(/^\d{3,4}$/)) errs.cvv = t('pay.errors.cvv')
+    if (name.trim().length < 2) errs.name = t('pay.errors.name')
     setFieldErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -147,7 +127,7 @@ function PaymentForm({ targetPlan, onSuccess, onCancel, dark }: PaymentFormProps
       await refreshUser()
       onSuccess(targetPlan)
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Payment failed. Please try again.')
+      setError(err?.response?.data?.message ?? t('pay.failed'))
       const be = err?.response?.data?.errors ?? {}
       const mapped: Record<string, string> = {}
       Object.entries(be).forEach(([k, v]) => { mapped[k] = Array.isArray(v) ? (v as string[])[0] : String(v) })
@@ -171,13 +151,13 @@ function PaymentForm({ targetPlan, onSuccess, onCancel, dark }: PaymentFormProps
           <Icon size={20} color={meta.accentColor} />
         </div>
         <div>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: meta.accentColor }}>Upgrading to</p>
-          <p style={{ margin: '2px 0 0', fontWeight: 900, fontSize: 15, color: dark ? '#fff' : '#111' }}>{meta.name} — {meta.priceLabel}</p>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: meta.accentColor }}>{t('pay.upgradingTo')}</p>
+          <p style={{ margin: '2px 0 0', fontWeight: 900, fontSize: 15, color: dark ? '#fff' : '#111' }}>{meta.name} — {priceLabel(meta.price)}</p>
         </div>
       </div>
       <div style={{ padding: 20, display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
         <div style={{ position: 'relative' }}>
-          <input type="text" inputMode="numeric" placeholder="Card number" value={card}
+          <input type="text" inputMode="numeric" dir="ltr" placeholder={t('pay.cardNumber')} value={card}
             onChange={e => setCard(formatCardNumber(e.target.value))}
             style={{ ...inputStyle(!!fieldErrors.card), paddingInlineStart: 44 }} />
           <CreditCard size={16} color="#9ca3af" style={{ position: 'absolute', insetInlineStart: 14, top: '50%', transform: 'translateY(-50%)' }} />
@@ -185,27 +165,27 @@ function PaymentForm({ targetPlan, onSuccess, onCancel, dark }: PaymentFormProps
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
-            <input type="text" inputMode="numeric" placeholder="MM/YY" value={expiry}
+            <input type="text" inputMode="numeric" dir="ltr" placeholder={t('pay.expiry')} value={expiry}
               onChange={e => setExpiry(formatExpiry(e.target.value))}
               style={inputStyle(!!fieldErrors.expiry)} />
             {fieldErrors.expiry && <p style={{ fontSize: 11, color: '#dc2626', margin: '4px 0 0' }}>{fieldErrors.expiry}</p>}
           </div>
           <div>
-            <input type="text" inputMode="numeric" placeholder="CVV" value={cvv} maxLength={4}
+            <input type="text" inputMode="numeric" dir="ltr" placeholder={t('pay.cvv')} value={cvv} maxLength={4}
               onChange={e => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
               style={inputStyle(!!fieldErrors.cvv)} />
             {fieldErrors.cvv && <p style={{ fontSize: 11, color: '#dc2626', margin: '4px 0 0' }}>{fieldErrors.cvv}</p>}
           </div>
         </div>
         <div>
-          <input type="text" placeholder="Cardholder name" value={name}
+          <input type="text" placeholder={t('pay.name')} value={name}
             onChange={e => setName(e.target.value)}
             style={inputStyle(!!fieldErrors.name)} />
           {fieldErrors.name && <p style={{ fontSize: 11, color: '#dc2626', margin: '4px 0 0' }}>{fieldErrors.name}</p>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, background: 'rgba(25,143,65,0.08)', border: '1px solid rgba(25,143,65,0.2)' }}>
           <Shield size={13} color="#198f41" />
-          <span style={{ fontSize: 11, color: '#198f41', fontWeight: 600 }}>Payment is secured and encrypted</span>
+          <span style={{ fontSize: 11, color: '#198f41', fontWeight: 600 }}>{t('pay.secure')}</span>
         </div>
         {error && (
           <div style={{ display: 'flex', gap: 8, padding: '10px 14px', borderRadius: 10, background: dark ? '#2a1515' : '#fef2f2', border: '1px solid #fecaca' }}>
@@ -215,10 +195,10 @@ function PaymentForm({ targetPlan, onSuccess, onCancel, dark }: PaymentFormProps
         )}
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onCancel} style={{ flex: 1, padding: '12px', borderRadius: 10, background: 'transparent', border: `1.5px solid ${borderColor}`, color: dark ? 'rgba(255,255,255,0.5)' : '#6b7280', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-            Cancel
+            {t('cancel')}
           </button>
           <button onClick={handlePay} disabled={loading} style={{ flex: 2, padding: '12px', borderRadius: 10, border: 'none', background: `linear-gradient(135deg, ${meta.accentColor}, ${meta.accentColor}cc)`, color: targetPlan === 'black' ? '#0f172a' : '#fff', fontSize: 13, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: loading ? 0.7 : 1 }}>
-            {loading ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />Processing…</> : <><Lock size={13} />Pay {meta.priceLabel}</>}
+            {loading ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />{t('pay.processing')}</> : <><Lock size={13} />{t('pay.pay', { price: priceLabel(meta.price) })}</>}
           </button>
         </div>
       </div>
@@ -233,6 +213,8 @@ function DowngradeModal({ currentPlan, targetPlan, billingCycleEnd, daysRemainin
   billingCycleEnd: string | null; daysRemaining: number
   onConfirm: () => void; onCancel: () => void; loading: boolean; dark: boolean
 }) {
+  const t = useTranslations('seller.subscription')
+  const { date } = useFormat()
   const currentMeta = planMeta(currentPlan)
   const targetMeta  = planMeta(targetPlan)
   const CurrentIcon = planIcon(currentPlan)
@@ -242,8 +224,8 @@ function DowngradeModal({ currentPlan, targetPlan, billingCycleEnd, daysRemainin
   const textMuted   = dark ? 'rgba(255,255,255,0.5)' : '#6b7280'
 
   // Features that will be LOST
-  const currentFeatures = planFeatures(currentPlan)
-  const targetFeatures  = new Set(planFeatures(targetPlan))
+  const currentFeatures = planFeatures(currentPlan, t)
+  const targetFeatures  = new Set(planFeatures(targetPlan, t))
   const lostFeatures    = currentFeatures.filter(f => !targetFeatures.has(f))
 
   return (
@@ -257,11 +239,11 @@ function DowngradeModal({ currentPlan, targetPlan, billingCycleEnd, daysRemainin
               <TrendingDown size={22} color="#ef4444" />
             </div>
             <div>
-              <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: textMain }}>Confirm Downgrade</p>
-              <p style={{ margin: '2px 0 0', fontSize: 11, color: textMuted }}>This takes effect at end of your billing cycle</p>
+              <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: textMain }}>{t('downgrade.title')}</p>
+              <p style={{ margin: '2px 0 0', fontSize: 11, color: textMuted }}>{t('downgrade.subtitle')}</p>
             </div>
           </div>
-          <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', color: textMuted }}><X size={18} /></button>
+          <button onClick={onCancel} aria-label={t('close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: textMuted }}><X size={18} /></button>
         </div>
         <div style={{ padding: '20px 24px' }}>
           {/* Plan transition visual */}
@@ -269,13 +251,13 @@ function DowngradeModal({ currentPlan, targetPlan, billingCycleEnd, daysRemainin
             <div style={{ flex: 1, padding: '12px', borderRadius: 10, background: `${currentMeta.color}10`, border: `1px solid ${currentMeta.color}25`, textAlign: 'center' as const }}>
               <CurrentIcon size={20} color={currentMeta.accentColor} style={{ margin: '0 auto 4px', display: 'block' }} />
               <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: currentMeta.accentColor }}>{currentMeta.name}</p>
-              <p style={{ margin: 0, fontSize: 10, color: textMuted }}>Current</p>
+              <p style={{ margin: 0, fontSize: 10, color: textMuted }}>{t('downgrade.current')}</p>
             </div>
-            <ArrowRight size={16} color={textMuted} />
+            <ArrowRight size={16} color={textMuted} className="rtl-flip" />
             <div style={{ flex: 1, padding: '12px', borderRadius: 10, background: `${targetMeta.color}10`, border: `1px solid ${targetMeta.color}25`, textAlign: 'center' as const }}>
               <TargetIcon size={20} color={targetMeta.accentColor} style={{ margin: '0 auto 4px', display: 'block' }} />
               <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: targetMeta.accentColor }}>{targetMeta.name}</p>
-              <p style={{ margin: 0, fontSize: 10, color: textMuted }}>After downgrade</p>
+              <p style={{ margin: 0, fontSize: 10, color: textMuted }}>{t('downgrade.after')}</p>
             </div>
           </div>
 
@@ -283,19 +265,20 @@ function DowngradeModal({ currentPlan, targetPlan, billingCycleEnd, daysRemainin
           <div style={{ padding: '12px 14px', borderRadius: 10, background: dark ? 'rgba(255,255,255,0.04)' : '#f8fafc', border: `1px solid ${dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`, marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <Clock size={13} color="#f59e0b" />
-              <span style={{ fontSize: 12, fontWeight: 700, color: textMain }}>You keep all current features for {daysRemaining} more days</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: textMain }}>{t('downgrade.keepFor', { count: daysRemaining })}</span>
             </div>
             <p style={{ margin: 0, fontSize: 11, color: textMuted }}>
-              Downgrade takes effect on{' '}
-              <strong style={{ color: textMain }}>{billingCycleEnd ?? 'end of billing period'}</strong>.
-              You can cancel this anytime before then.
+              {t.rich('downgrade.effectiveOn', {
+                date: billingCycleEnd ? date(billingCycleEnd, 'medium') : t('downgrade.endOfPeriod'),
+                b: (chunks) => <strong style={{ color: textMain }}>{chunks}</strong>,
+              })}
             </p>
           </div>
 
           {/* Lost features */}
           {lostFeatures.length > 0 && (
             <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>Features you will lose:</p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>{t('downgrade.lose')}</p>
               <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
                 {lostFeatures.map(f => (
                   <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: textMuted }}>
@@ -311,18 +294,18 @@ function DowngradeModal({ currentPlan, targetPlan, billingCycleEnd, daysRemainin
             <div style={{ display: 'flex', gap: 8, padding: '10px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', marginBottom: 16 }}>
               <AlertTriangle size={14} color="#f59e0b" style={{ flexShrink: 0, marginTop: 1 }} />
               <p style={{ margin: 0, fontSize: 11, color: dark ? '#fbbf24' : '#92400e' }}>
-                Products over the 30-product free tier limit will be soft-hidden (not deleted) and can be reactivated by upgrading.
+                {t('downgrade.productsNote')}
               </p>
             </div>
           )}
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={onCancel} style={{ flex: 1, padding: '11px', borderRadius: 10, background: 'transparent', border: `1.5px solid ${dark ? 'rgba(255,255,255,0.12)' : '#e5e7eb'}`, color: textMuted, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-              Keep current plan
+              {t('downgrade.keep')}
             </button>
             <button onClick={onConfirm} disabled={loading} style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: loading ? 0.7 : 1 }}>
               {loading ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <ArrowDown size={13} />}
-              {loading ? 'Scheduling…' : 'Schedule downgrade'}
+              {loading ? t('downgrade.scheduling') : t('downgrade.schedule')}
             </button>
           </div>
         </div>
@@ -335,6 +318,9 @@ function DowngradeModal({ currentPlan, targetPlan, billingCycleEnd, daysRemainin
 
 export default function SellerSubscriptionPage() {
   const { dark } = useTheme()
+  const t = useTranslations('seller.subscription')
+  const { date, number } = useFormat()
+  const { label: priceLabel, short: priceShort } = usePlanPrice()
   const [status,       setStatus]       = useState<any>(null)
   const [loading,      setLoading]      = useState(true)
   const [history,      setHistory]      = useState<PlanChange[]>([])
@@ -391,7 +377,7 @@ export default function SellerSubscriptionPage() {
       setDowngradeDone(true)
       await loadStatus()
     } catch (err: any) {
-      alert(err?.response?.data?.message ?? 'Failed to schedule downgrade.')
+      alert(err?.response?.data?.message ?? t('downgrade.failed'))
     } finally {
       setDowngradeLoading(false)
     }
@@ -403,7 +389,7 @@ export default function SellerSubscriptionPage() {
       await subscriptionApi.cancelDowngrade()
       await loadStatus()
     } catch (err: any) {
-      alert(err?.response?.data?.message ?? 'Failed to cancel downgrade.')
+      alert(err?.response?.data?.message ?? t('cancelFailed'))
     } finally {
       setCancelLoading(false)
     }
@@ -448,30 +434,30 @@ export default function SellerSubscriptionPage() {
 
         {/* ── Header ── */}
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 4px', letterSpacing: '-0.02em' }}>Subscription & Plan</h1>
-          <p style={{ fontSize: 12, color: textMuted, margin: 0 }}>Manage your seller plan, upgrade or downgrade your subscription.</p>
+          <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 4px', letterSpacing: '-0.02em' }}>{t('title')}</h1>
+          <p style={{ fontSize: 12, color: textMuted, margin: 0 }}>{t('subtitle')}</p>
         </div>
 
         {/* ── Success banners ── */}
         {upgradeDone && (
           <div className="sub-enter" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 14, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}>
             <CheckCircle size={18} color="#10b981" />
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#10b981' }}>Upgrade successful! Your new plan is now active.</p>
-            <button onClick={() => setUpgradeDone(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#10b981', marginInlineStart: 'auto' }}><X size={14} /></button>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#10b981' }}>{t('upgradeDone')}</p>
+            <button onClick={() => setUpgradeDone(false)} aria-label={t('close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#10b981', marginInlineStart: 'auto' }}><X size={14} /></button>
           </div>
         )}
         {downgradeDone && (
           <div className="sub-enter" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 14, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)' }}>
             <Clock size={18} color="#f59e0b" />
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>Downgrade scheduled. You keep your current features until end of billing cycle.</p>
-            <button onClick={() => setDowngradeDone(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f59e0b', marginInlineStart: 'auto' }}><X size={14} /></button>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>{t('downgradeDone')}</p>
+            <button onClick={() => setDowngradeDone(false)} aria-label={t('close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f59e0b', marginInlineStart: 'auto' }}><X size={14} /></button>
           </div>
         )}
 
         {/* ── Current Plan Card ── */}
         <div className="sub-enter" style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
           <div style={{ padding: '20px 22px', borderBottom: `1px solid ${border}` }}>
-            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.14em', color: textMuted, margin: '0 0 12px' }}>Current Plan</p>
+            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.14em', color: textMuted, margin: '0 0 12px' }}>{t('currentPlan')}</p>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
               <div style={{ width: 52, height: 52, borderRadius: 14, background: `${currentMeta.color}18`, border: `1.5px solid ${currentMeta.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <CurrentIcon size={26} color={currentMeta.accentColor} />
@@ -486,12 +472,12 @@ export default function SellerSubscriptionPage() {
                   )}
                 </div>
                 <p style={{ margin: 0, fontSize: 12, color: textMuted }}>
-                  {currentPlan === 'free' ? 'Free forever' : `${currentMeta.priceLabel} · auto-renews monthly`}
+                  {currentPlan === 'free' ? t('freeForever') : t('autoRenews', { price: priceLabel(currentMeta.price) })}
                 </p>
               </div>
               <div style={{ textAlign: 'end' as const, flexShrink: 0 }}>
-                <p style={{ margin: 0, fontWeight: 900, fontSize: 20, color: textMain }}>{currentMeta.priceLabel === 'Free' ? 'Free' : currentMeta.priceLabel.split('/')[0]}</p>
-                {currentPlan !== 'free' && <p style={{ margin: '2px 0 0', fontSize: 11, color: textMuted }}>/month</p>}
+                <p style={{ margin: 0, fontWeight: 900, fontSize: 20, color: textMain }}>{priceShort(currentMeta.price)}</p>
+                {currentMeta.price > 0 && <p style={{ margin: '2px 0 0', fontSize: 11, color: textMuted }}>{t('perMonthShort')}</p>}
               </div>
             </div>
           </div>
@@ -501,16 +487,20 @@ export default function SellerSubscriptionPage() {
             <div style={{ padding: '14px 22px', borderBottom: `1px solid ${border}`, display: 'flex', flexWrap: 'wrap' as const, gap: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Calendar size={14} color={textMuted} />
-                <span style={{ fontSize: 12, color: textMuted }}>Cycle: <strong style={{ color: textMain }}>{sub.billing_cycle_start} → {sub.billing_cycle_end}</strong></span>
+                <span style={{ fontSize: 12, color: textMuted }}>{t.rich('cycle', {
+                  from: sub.billing_cycle_start ? date(sub.billing_cycle_start, 'medium') : '—',
+                  to: date(sub.billing_cycle_end, 'medium'),
+                  b: (chunks) => <strong style={{ color: textMain }}>{chunks}</strong>,
+                })}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Clock size={14} color={textMuted} />
-                <span style={{ fontSize: 12, color: textMuted }}><strong style={{ color: textMain }}>{sub.days_remaining} days</strong> remaining</span>
+                <span style={{ fontSize: 12, color: textMuted }}>{t.rich('daysRemaining', { count: sub.days_remaining, b: (chunks) => <strong style={{ color: textMain }}>{chunks}</strong> })}</span>
               </div>
               {sub.max_products !== null && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Package size={14} color={textMuted} />
-                  <span style={{ fontSize: 12, color: textMuted }}>Max <strong style={{ color: textMain }}>{sub.max_products}</strong> active products</span>
+                  <span style={{ fontSize: 12, color: textMuted }}>{t.rich('maxProducts', { count: sub.max_products, b: (chunks) => <strong style={{ color: textMain }}>{chunks}</strong> })}</span>
                 </div>
               )}
             </div>
@@ -522,10 +512,10 @@ export default function SellerSubscriptionPage() {
               <AlertTriangle size={16} color="#f59e0b" style={{ flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>
-                  Downgrade to {planMeta(sub.pending_plan).name} scheduled for {sub.billing_cycle_end}
+                  {t('pendingDowngrade', { plan: planMeta(sub.pending_plan).name, date: sub.billing_cycle_end ? date(sub.billing_cycle_end, 'medium') : '—' })}
                 </p>
                 <p style={{ margin: '2px 0 0', fontSize: 11, color: textMuted }}>
-                  You keep all current features until then. Cancel anytime.
+                  {t('pendingDowngradeHint')}
                 </p>
               </div>
               <button
@@ -533,16 +523,16 @@ export default function SellerSubscriptionPage() {
                 disabled={cancelLoading}
                 style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid rgba(245,158,11,0.4)', background: 'transparent', color: '#f59e0b', fontSize: 11, fontWeight: 700, cursor: cancelLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
                 {cancelLoading ? <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> : <RefreshCw size={11} />}
-                Cancel downgrade
+                {t('cancelDowngrade')}
               </button>
             </div>
           )}
 
           {/* Current features */}
           <div style={{ padding: '14px 22px' }}>
-            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: textMuted, margin: '0 0 10px' }}>Included Features</p>
+            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: textMuted, margin: '0 0 10px' }}>{t('includedFeatures')}</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 6 }}>
-              {planFeatures(currentPlan).map(f => (
+              {planFeatures(currentPlan, t).map(f => (
                 <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: textMain }}>
                   <Check size={12} color={currentMeta.accentColor} style={{ flexShrink: 0 }} /> {f}
                 </div>
@@ -567,7 +557,7 @@ export default function SellerSubscriptionPage() {
         {!upgradeTarget && (
           <div className="sub-enter">
             <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.14em', color: textMuted, margin: '0 0 12px' }}>
-              {currentLevel >= topLevel ? 'You are on the highest plan' : 'Upgrade or Downgrade'}
+              {currentLevel >= topLevel ? t('highestPlan') : t('changePlan')}
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
@@ -591,12 +581,12 @@ export default function SellerSubscriptionPage() {
                   }}>
                     {isCurrent && (
                       <div style={{ position: 'absolute', top: 12, insetInlineEnd: 12 }}>
-                        <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: `${meta.color}20`, color: meta.accentColor, border: `1px solid ${meta.color}40` }}>CURRENT</span>
+                        <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: `${meta.color}20`, color: meta.accentColor, border: `1px solid ${meta.color}40` }}>{t('badgeCurrent')}</span>
                       </div>
                     )}
                     {isPending && (
                       <div style={{ position: 'absolute', top: 12, insetInlineEnd: 12 }}>
-                        <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: 'rgba(245,158,11,0.2)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>SCHEDULED</span>
+                        <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: 'rgba(245,158,11,0.2)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>{t('badgeScheduled')}</span>
                       </div>
                     )}
 
@@ -606,35 +596,35 @@ export default function SellerSubscriptionPage() {
                       </div>
                       <div>
                         <p style={{ margin: 0, fontWeight: 800, fontSize: 13, color: isCurrent ? meta.accentColor : textMain }}>{meta.name}</p>
-                        <p style={{ margin: '1px 0 0', fontSize: 11, color: textMuted }}>{meta.priceLabel}</p>
+                        <p style={{ margin: '1px 0 0', fontSize: 11, color: textMuted }}>{priceLabel(meta.price)}</p>
                       </div>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, padding: '5px 8px', borderRadius: 7, background: `${meta.color}0d`, width: 'fit-content' as const }}>
                       <BarChart2 size={12} color={meta.accentColor} />
-                      <span style={{ fontSize: 11, fontWeight: 700, color: meta.accentColor }}>{meta.commission} commission</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: meta.accentColor }}>{t('commission', { range: meta.commission })}</span>
                     </div>
 
                     {isCurrent ? (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '9px', borderRadius: 10, background: `${meta.color}10`, border: `1px solid ${meta.color}20`, fontSize: 12, fontWeight: 700, color: meta.accentColor }}>
-                        <CheckCircle size={13} /> Active Plan
+                        <CheckCircle size={13} /> {t('activePlan')}
                       </div>
                     ) : isUpgrade ? (
                       <button
                         onClick={() => setUpgradeTarget(plan)}
                         style={{ width: '100%', padding: '9px', borderRadius: 10, border: 'none', background: `linear-gradient(135deg, ${meta.accentColor}, ${meta.accentColor}cc)`, color: plan === 'black' ? '#0f172a' : '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                        Upgrade <ArrowRight size={12} />
+                        {t('upgrade')} <ArrowRight size={12} className="rtl-flip" />
                       </button>
                     ) : isDowngrade && !isPending && !sub?.has_pending_downgrade ? (
                       <button
                         onClick={() => setDowngradeTarget(plan)}
                         style={{ width: '100%', padding: '9px', borderRadius: 10, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.12)' : '#e5e7eb'}`, background: 'transparent', color: textMuted, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                        <ArrowDown size={12} /> Downgrade
+                        <ArrowDown size={12} /> {t('downgradeBtn')}
                       </button>
                     ) : isDowngrade && sub?.has_pending_downgrade && !isPending ? (
-                      <div style={{ fontSize: 11, color: textMuted, textAlign: 'center' as const, padding: '9px' }}>Downgrade already scheduled</div>
+                      <div style={{ fontSize: 11, color: textMuted, textAlign: 'center' as const, padding: '9px' }}>{t('alreadyScheduled')}</div>
                     ) : isDowngrade && isPending ? (
-                      <div style={{ fontSize: 11, color: '#f59e0b', textAlign: 'center' as const, padding: '9px', fontWeight: 700 }}>Downgrade scheduled</div>
+                      <div style={{ fontSize: 11, color: '#f59e0b', textAlign: 'center' as const, padding: '9px', fontWeight: 700 }}>{t('scheduled')}</div>
                     ) : null}
                   </div>
                 )
@@ -648,30 +638,30 @@ export default function SellerSubscriptionPage() {
           <button onClick={() => setHistoryOpen(p => !p)} style={{ width: '100%', padding: '14px 18px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <History size={16} color={textMuted} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: textMain }}>Plan Change History</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: textMain }}>{t('history')}</span>
             </div>
-            <ChevronRight size={15} color={textMuted} style={{ transform: historyOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
+            <ChevronRight size={15} color={textMuted} style={{ rotate: historyOpen ? '90deg' : '0deg', transition: 'rotate 0.2s' }} />
           </button>
           {historyOpen && (
             <div style={{ borderTop: `1px solid ${border}` }}>
               {history.length === 0 ? (
-                <p style={{ padding: '20px 18px', margin: 0, fontSize: 12, color: textMuted, textAlign: 'center' as const }}>No plan changes yet.</p>
+                <p style={{ padding: '20px 18px', margin: 0, fontSize: 12, color: textMuted, textAlign: 'center' as const }}>{t('noHistory')}</p>
               ) : history.map((h, i) => (
                 <div key={i} style={{ padding: '12px 18px', borderBottom: i < history.length - 1 ? `1px solid ${border}` : 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ width: 28, height: 28, borderRadius: 8, background: h.change_type === 'upgrade' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {h.change_type === 'upgrade' ? <ArrowRight size={12} color="#10b981" /> : <ArrowDown size={12} color="#ef4444" />}
+                    {h.change_type === 'upgrade' ? <ArrowRight size={12} color="#10b981" className="rtl-flip" /> : <ArrowDown size={12} color="#ef4444" />}
                   </div>
                   <div style={{ flex: 1 }}>
                     <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: textMain }}>
-                      <PlanBadge plan={h.from_plan} size="sm" /> → <PlanBadge plan={h.to_plan} size="sm" />
+                      <PlanBadge plan={h.from_plan} size="sm" /> <span className="rtl-flip" style={{ display: 'inline-block' }}>→</span> <PlanBadge plan={h.to_plan} size="sm" />
                     </p>
                     <p style={{ margin: '2px 0 0', fontSize: 11, color: textMuted }}>{h.reason}</p>
                   </div>
                   <div style={{ textAlign: 'end' as const, flexShrink: 0 }}>
                     <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: h.change_type === 'upgrade' ? '#10b981' : textMuted }}>
-                      {h.amount_charged > 0 ? `+${h.amount_charged.toFixed(0)} TND` : h.change_type_label}
+                      {h.amount_charged > 0 ? `+${priceShort(h.amount_charged)}` : h.change_type_label}
                     </p>
-                    <p style={{ margin: '2px 0 0', fontSize: 10, color: textMuted }}>{new Date(h.effective_at).toLocaleDateString('fr-TN')}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 10, color: textMuted }}>{date(h.effective_at, 'short')}</p>
                   </div>
                 </div>
               ))}
