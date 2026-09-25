@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Package2, TrendingDown, Tag, ArrowRight } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -26,14 +28,10 @@ interface Pack {
   seller: { name: string } | null
 }
 
-function fmt(n: number) {
-  return new Intl.NumberFormat('fr-TN', {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-  }).format(n) + ' TND'
-}
-
 function PackCard({ pack }: { pack: Pack }) {
+  const t = useTranslations('packs')
+  const format = useFormat()
+  const fmt = (n: number) => format.price(n, { minimumFractionDigits: 3 })
   const [imgErr, setImgErr] = useState(false)
   const savingsPct = pack.original_price > 0
     ? Math.round((pack.savings / pack.original_price) * 100)
@@ -110,7 +108,7 @@ function PackCard({ pack }: { pack: Pack }) {
         {/* Savings badge top-left */}
         {savingsPct > 0 && (
           <div style={{
-            position: 'absolute', top: 10, left: 10,
+            position: 'absolute', top: 10, insetInlineStart: 10,
             display: 'flex', alignItems: 'center', gap: 4,
             background: '#db142e', color: '#fff',
             fontSize: 11, fontWeight: 800,
@@ -118,13 +116,13 @@ function PackCard({ pack }: { pack: Pack }) {
             boxShadow: '0 2px 8px rgba(219,20,46,0.35)',
           }}>
             <TrendingDown size={11} />
-            Save {savingsPct}%
+            {t('savePct', { pct: savingsPct })}
           </div>
         )}
 
         {/* Items count badge top-right */}
         <div style={{
-          position: 'absolute', top: 10, right: 10,
+          position: 'absolute', top: 10, insetInlineEnd: 10,
           display: 'flex', alignItems: 'center', gap: 4,
           background: 'rgba(0,0,0,0.55)', color: '#fff',
           backdropFilter: 'blur(4px)',
@@ -132,7 +130,7 @@ function PackCard({ pack }: { pack: Pack }) {
           padding: '3px 8px', borderRadius: 999,
         }}>
           <Tag size={9} />
-          {pack.items_count} items
+          {t('itemsCount', { count: pack.items_count })}
         </div>
       </div>
 
@@ -163,7 +161,7 @@ function PackCard({ pack }: { pack: Pack }) {
         {/* Seller */}
         {pack.seller && (
           <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
-            by <strong style={{ color: '#64748b' }}>{pack.seller.name}</strong>
+            {t.rich('bySeller', { name: pack.seller.name, b: chunks => <strong style={{ color: '#64748b' }}>{chunks}</strong> })}
           </p>
         )}
 
@@ -189,7 +187,7 @@ function PackCard({ pack }: { pack: Pack }) {
               display: 'flex', alignItems: 'center', gap: 4,
             }}>
               <TrendingDown size={11} />
-              You save {fmt(pack.savings)}
+              {t('youSave', { amount: fmt(pack.savings) })}
             </p>
           )}
         </div>
@@ -199,6 +197,7 @@ function PackCard({ pack }: { pack: Pack }) {
 }
 
 export default function PacksSection() {
+  const t = useTranslations('packs')
   const [packs,   setPacks]   = useState<Pack[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -253,11 +252,11 @@ export default function PacksSection() {
                 letterSpacing: '-0.02em', margin: 0,
                 fontFamily: "'Barlow', sans-serif",
               }}>
-                Bundle Deals 🎁
+                {t('sectionTitle')}
               </h2>
             </div>
             <p style={{ fontSize: 13, color: '#64748b', margin: 0, fontWeight: 500 }}>
-              Save more when you buy together
+              {t('sectionSubtitle')}
             </p>
           </div>
           <Link
@@ -272,7 +271,7 @@ export default function PacksSection() {
               transition: 'background 0.15s',
             }}
           >
-            View All Deals <ArrowRight size={13} />
+            {t('viewAllDeals')} <ArrowRight size={13} />
           </Link>
         </div>
 

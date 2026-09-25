@@ -19,6 +19,8 @@ import Navbar from '@/app/components/layout/Navbar'
 import { isAuthenticated } from '@/lib/auth'
 import { ShoppingCart, Heart, Star, Loader2, AlertCircle, Package } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -30,9 +32,6 @@ function resolveImg(path: string | null | undefined): string | null {
   if (path.startsWith('http')) return path
   return `${STORAGE_BASE}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
 }
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 2, maximumFractionDigits: 3 }).format(n) + ' DT'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -48,18 +47,22 @@ interface BrandProduct {
   category: { id: number; name: string; slug: string } | null
 }
 
-// ─── Hero slides (unchanged) ──────────────────────────────────────────────────
+// ─── Hero slides — texts in messages: brandPage.slides.s<id>.{tag,title,headline} ──
 
 const HERO_SLIDES = [
-  { id: 1, tag: 'Latest Drop',  title: 'A New Era Of', headline: 'TUNISIAN STYLE',  bg: '#f5c518', src: '/images/im1.jpg', alt: 'Latest Drop' },
-  { id: 2, tag: 'New Arrivals', title: 'Tunisian',     headline: 'FASHION',          bg: '#1a1a1a', src: '/images/im2.jpg', alt: 'New Arrivals' },
-  { id: 3, tag: 'Fresh Drop',   title: 'Premium',      headline: 'SETS & HOODIES',   bg: '#dc2626', src: '/images/im3.jpg', alt: 'Fresh Drop' },
-  { id: 4, tag: 'Best Deal',    title: 'Luxury',       headline: 'WEAR TOUNSI',      bg: '#0f172a', src: '/images/im4.jpg', alt: 'Best Deal' },
+  { id: 1, bg: '#f5c518', src: '/images/im1.jpg' },
+  { id: 2, bg: '#1a1a1a', src: '/images/im2.jpg' },
+  { id: 3, bg: '#dc2626', src: '/images/im3.jpg' },
+  { id: 4, bg: '#0f172a', src: '/images/im4.jpg' },
 ]
 
 // ─── ProductCard ──────────────────────────────────────────────────────────────
 
 function ProductCard({ product }: { product: BrandProduct }) {
+  const t  = useTranslations('brandPage')
+  const tc = useTranslations('common')
+  const { price } = useFormat()
+  const fmt = (n: number) => price(n, { maximumFractionDigits: 3 })
   const { addToCart, isFavorited, toggleFavorite } = useCart()
   const router = useRouter()
   const [adding, setAdding] = useState(false)
@@ -102,8 +105,8 @@ function ProductCard({ product }: { product: BrandProduct }) {
 
           {/* Featured badge */}
           {product.featured && (
-            <div className="absolute top-3 left-3 flex items-center gap-1 bg-yellow-400 text-yellow-900 text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-widest">
-              <Star size={8} fill="currentColor" /> Featured
+            <div className="absolute top-3 start-3 flex items-center gap-1 bg-yellow-400 text-yellow-900 text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-widest">
+              <Star size={8} fill="currentColor" /> {t('featured')}
             </div>
           )}
 
@@ -111,15 +114,17 @@ function ProductCard({ product }: { product: BrandProduct }) {
           {outOfStock && (
             <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
               <span className="text-xs font-black text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full uppercase tracking-widest">
-                Out of Stock
+                {tc('outOfStock')}
               </span>
             </div>
           )}
 
           {/* Hover actions */}
-          <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-3 end-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={handleFav}
+              aria-label={t('wishlist')}
+              aria-pressed={favorited}
               className="w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-sm flex items-center justify-center transition-all"
             >
               <Heart
@@ -132,6 +137,7 @@ function ProductCard({ product }: { product: BrandProduct }) {
             <button
               onClick={handleAdd}
               disabled={outOfStock || adding}
+              aria-label={tc('addToCart')}
               className="w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-sm flex items-center justify-center transition-all disabled:opacity-50"
             >
               {adding
@@ -156,7 +162,7 @@ function ProductCard({ product }: { product: BrandProduct }) {
             <span className="text-base font-black text-red-600">{fmt(product.price)}</span>
             {!outOfStock && product.stock <= 10 && (
               <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">
-                {product.stock} left
+                {t('left', { count: product.stock })}
               </span>
             )}
           </div>
@@ -169,6 +175,8 @@ function ProductCard({ product }: { product: BrandProduct }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function BrandPage() {
+  const t  = useTranslations('brandPage')
+  const tc = useTranslations('common')
   const [mounted,      setMounted]      = useState(false)
   const [activeSlide,  setActiveSlide]  = useState(0)
   const [transitioning,setTransitioning]= useState(false)
@@ -238,7 +246,12 @@ export default function BrandPage() {
     router.push('/become-a-vendor')
   }
 
-  const slide = HERO_SLIDES[activeSlide]
+  const slideText = (id: number) => ({
+    tag:      t(`slides.s${id}.tag`),
+    title:    t(`slides.s${id}.title`),
+    headline: t(`slides.s${id}.headline`),
+  })
+  const slide = { ...HERO_SLIDES[activeSlide], ...slideText(HERO_SLIDES[activeSlide].id) }
 
   return (
     <>
@@ -286,7 +299,7 @@ export default function BrandPage() {
             </p>
             <div className="relative">
               <h1
-                className="select-none pointer-events-none absolute -top-6 -left-2 font-black text-zinc-900 leading-none whitespace-nowrap"
+                className="select-none pointer-events-none absolute -top-6 -start-2 font-black text-zinc-900 leading-none whitespace-nowrap"
                 style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(4rem,10vw,9rem)', opacity: 0.07 }}
                 aria-hidden="true"
               >
@@ -305,8 +318,8 @@ export default function BrandPage() {
                 className="btn-shop inline-flex items-center gap-2 bg-red-600 text-white font-bold text-xs px-6 py-3 rounded-full tracking-widest uppercase shadow-md shadow-red-200"
                 style={{ fontFamily: "'Barlow',sans-serif" }}
               >
-                SHOP THE COLLECTION
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                {t('shopCollection')}
+                <svg className="rtl-flip" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </Link>
               <button
                 onClick={handleBecomeVendor}
@@ -317,7 +330,7 @@ export default function BrandPage() {
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                   <polyline points="9 22 9 12 15 12 15 22"/>
                 </svg>
-                BECOME A VENDOR
+                {t('becomeVendor')}
               </button>
             </div>
             <div className="flex items-center gap-2 mt-8">
@@ -327,7 +340,7 @@ export default function BrandPage() {
                   onClick={() => goToSlide(i)}
                   className="dot-btn h-2 rounded-full"
                   style={{ width: i === activeSlide ? '28px' : '8px', backgroundColor: i === activeSlide ? '#dc2626' : '#a1a1aa' }}
-                  aria-label={`Go to slide ${i + 1}`}
+                  aria-label={t('goToSlide', { n: i + 1 })}
                 />
               ))}
             </div>
@@ -348,21 +361,21 @@ export default function BrandPage() {
                   pointerEvents: i === activeSlide ? 'auto' : 'none',
                 }}
               >
-                <Image src={s.src} alt={s.alt} fill className="object-cover object-center" priority={i === 0} unoptimized />
+                <Image src={s.src} alt={slideText(s.id).tag} fill className="object-cover object-center" priority={i === 0} unoptimized />
               </div>
             ))}
 
             {/* Thumbnail strip */}
-            <div className="absolute bottom-0 left-0 right-0 flex gap-2 p-3 bg-gradient-to-t from-black/40 to-transparent z-10">
+            <div className="absolute bottom-0 inset-x-0 flex gap-2 p-3 bg-gradient-to-t from-black/40 to-transparent z-10">
               {HERO_SLIDES.map((s, i) => (
                 <button
                   key={s.id}
                   onClick={() => goToSlide(i)}
                   className="thumb-btn relative flex-1 h-14 overflow-hidden rounded"
                   style={{ opacity: i === activeSlide ? 1 : 0.55, boxShadow: i === activeSlide ? '0 0 0 2px #dc2626' : 'none' }}
-                  aria-label={`View ${s.headline}`}
+                  aria-label={t('viewSlide', { name: slideText(s.id).headline })}
                 >
-                  <Image src={s.src} alt={s.alt} fill className="object-cover object-center" unoptimized />
+                  <Image src={s.src} alt={slideText(s.id).tag} fill className="object-cover object-center" unoptimized />
                 </button>
               ))}
             </div>
@@ -370,17 +383,17 @@ export default function BrandPage() {
             {/* Prev / Next arrows */}
             <button
               onClick={() => goToSlide((activeSlide - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/80 hover:bg-white flex items-center justify-center shadow-md transition-all"
-              aria-label="Previous slide"
+              className="absolute start-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/80 hover:bg-white flex items-center justify-center shadow-md transition-all"
+              aria-label={t('prevSlide')}
             >
-              <svg width="16" height="16" fill="none" stroke="#111" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+              <svg className="rtl-flip" width="16" height="16" fill="none" stroke="#111" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
             <button
               onClick={() => goToSlide((activeSlide + 1) % HERO_SLIDES.length)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/80 hover:bg-white flex items-center justify-center shadow-md transition-all"
-              aria-label="Next slide"
+              className="absolute end-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/80 hover:bg-white flex items-center justify-center shadow-md transition-all"
+              aria-label={t('nextSlide')}
             >
-              <svg width="16" height="16" fill="none" stroke="#111" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+              <svg className="rtl-flip" width="16" height="16" fill="none" stroke="#111" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
             </button>
           </div>
 
@@ -405,20 +418,20 @@ export default function BrandPage() {
                 textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4,
                 fontFamily: "'Barlow',sans-serif",
               }}>
-                CHOOSE'Tounsi Originals
+                {t('eyebrow')}
               </p>
               <h2 style={{
                 fontSize: 'clamp(1.5rem,3vw,2.25rem)', fontWeight: 900,
                 color: '#0f172a', margin: 0, letterSpacing: '-0.02em',
                 fontFamily: "'Barlow Condensed',sans-serif",
               }}>
-                THE COLLECTION
+                {t('collection')}
                 {total > 0 && (
                   <span style={{
                     fontSize: 14, fontWeight: 600, color: '#94a3b8',
-                    marginLeft: 12, letterSpacing: 0, fontFamily: "'Barlow',sans-serif",
+                    marginInlineStart: 12, letterSpacing: 0, fontFamily: "'Barlow',sans-serif",
                   }}>
-                    {total} product{total !== 1 ? 's' : ''}
+                    {tc('products', { count: total })}
                   </span>
                 )}
               </h2>
@@ -428,6 +441,7 @@ export default function BrandPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <button
                 onClick={() => { setFilterFeatured(f => !f); setPage(1) }}
+                aria-pressed={filterFeatured}
                 style={{
                   fontSize: 11, fontWeight: 700,
                   padding: '6px 14px', borderRadius: 999,
@@ -440,11 +454,12 @@ export default function BrandPage() {
                 }}
               >
                 <Star size={11} fill={filterFeatured ? '#dc2626' : 'none'} stroke="currentColor" />
-                Featured
+                {t('featured')}
               </button>
               <select
                 value={sortBy}
                 onChange={e => { setSortBy(e.target.value); setPage(1) }}
+                aria-label={t('sortLabel')}
                 style={{
                   fontSize: 12, fontWeight: 600, color: '#374151',
                   padding: '6px 12px', borderRadius: 10,
@@ -453,10 +468,10 @@ export default function BrandPage() {
                   outline: 'none',
                 }}
               >
-                <option value="created_at">Latest</option>
-                <option value="price_asc">Price: Low → High</option>
-                <option value="price_desc">Price: High → Low</option>
-                <option value="views">Most Viewed</option>
+                <option value="created_at">{t('sortLatest')}</option>
+                <option value="price_asc">{t('sortPriceAsc')}</option>
+                <option value="price_desc">{t('sortPriceDesc')}</option>
+                <option value="views">{t('sortViews')}</option>
               </select>
             </div>
           </div>
@@ -473,7 +488,7 @@ export default function BrandPage() {
             }}>
               <AlertCircle size={28} color="#dc2626" />
               <p style={{ fontSize: 14, fontWeight: 700, color: '#374151' }}>
-                Failed to load products.
+                {t('loadFailed')}
               </p>
               <button
                 onClick={fetchProducts}
@@ -485,7 +500,7 @@ export default function BrandPage() {
                   fontFamily: "'Barlow',sans-serif",
                 }}
               >
-                Try Again
+                {tc('retry')}
               </button>
             </div>
           ) : products.length === 0 ? (
@@ -495,7 +510,7 @@ export default function BrandPage() {
             }}>
               <Package size={40} color="#e5e7eb" />
               <p style={{ fontSize: 14, fontWeight: 700, color: '#94a3b8' }}>
-                {filterFeatured ? 'No featured products yet.' : 'No products in the collection yet.'}
+                {filterFeatured ? t('emptyFeatured') : t('empty')}
               </p>
             </div>
           ) : (
@@ -520,6 +535,7 @@ export default function BrandPage() {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
+                  aria-current={p === page ? 'page' : undefined}
                   style={{
                     width: 36, height: 36, borderRadius: '50%',
                     border: `2px solid ${p === page ? '#dc2626' : '#e5e7eb'}`,
@@ -542,7 +558,7 @@ export default function BrandPage() {
               fontFamily: "'Barlow',sans-serif", fontSize: 13, color: '#888',
               fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8,
             }}>
-              Also browse the full marketplace
+              {t('alsoBrowse')}
             </p>
             <Link
               href="/shop"
@@ -555,8 +571,8 @@ export default function BrandPage() {
                 boxShadow: '0 6px 20px rgba(220,38,38,0.3)',
               }}
             >
-              Shop All Products
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              {t('shopAll')}
+              <svg className="rtl-flip" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </Link>
           </div>
 

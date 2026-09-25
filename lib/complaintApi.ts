@@ -5,6 +5,7 @@
  * Everything else is identical to the previous version.
  */
 
+import { fallbackError } from '@/lib/i18n/clientLocale'
 import type { Complaint, ComplaintFormPayload, EligibleOrder } from '@/types/complaint'
 
 const RAW_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
@@ -28,7 +29,7 @@ async function jsonRequest<T>(method: string, path: string, body?: unknown): Pro
   })
   const json = await res.json()
   if (!res.ok) {
-    const err: any = new Error(json.message ?? 'Request failed')
+    const err: any = new Error(json.message ?? fallbackError('request'))
     err.response = { data: json, status: res.status }
     throw err
   }
@@ -43,7 +44,7 @@ async function formRequest<T>(path: string, data: FormData): Promise<T> {
   })
   const json = await res.json()
   if (!res.ok) {
-    const err: any = new Error(json.message ?? 'Request failed')
+    const err: any = new Error(json.message ?? fallbackError('request'))
     err.response = { data: json, status: res.status }
     throw err
   }

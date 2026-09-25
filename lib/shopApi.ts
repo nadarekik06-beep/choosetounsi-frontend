@@ -6,6 +6,7 @@
  * Updated to support product variants + Buy Now direct checkout.
  */
 
+import { fallbackError } from '@/lib/i18n/clientLocale'
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 
 function getToken(): string | null {
@@ -32,7 +33,7 @@ async function request<T>(
   const json = await res.json()
 
   if (!res.ok) {
-    throw Object.assign(new Error(json.message ?? 'Request failed'), {
+    throw Object.assign(new Error(json.message ?? fallbackError('request')), {
       status: res.status,
       data: json,
     })

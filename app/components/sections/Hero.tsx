@@ -546,7 +546,7 @@ export default function Hero() {
               <p className={`text-zinc-500 text-sm font-semibold tracking-widest uppercase mb-2 ${mounted ? 'hero-text-1' : 'opacity-0'}`} style={{ fontFamily:"'Barlow',sans-serif" }}>{slide.tag}</p>
               <p className={`text-zinc-900 text-3xl lg:text-4xl font-bold leading-tight mb-1 ${mounted ? 'hero-text-2' : 'opacity-0'}`} style={{ fontFamily:"'Barlow',sans-serif" }}>{slide.title}</p>
               <div className="relative">
-                <h1 className="select-none pointer-events-none absolute -top-6 -left-2 font-black text-zinc-900 leading-none whitespace-nowrap" style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:'clamp(4rem,10vw,9rem)', opacity:0.07 }} aria-hidden="true">{slide.headline}</h1>
+                <h1 className="select-none pointer-events-none absolute -top-6 -start-2 font-black text-zinc-900 leading-none whitespace-nowrap" style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:'clamp(4rem,10vw,9rem)', opacity:0.07 }} aria-hidden="true">{slide.headline}</h1>
                 <h2 className={`relative z-10 text-zinc-900 font-black leading-none tracking-tight ${mounted ? 'hero-text-3' : 'opacity-0'}`} style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:'clamp(3rem,7vw,5.5rem)' }}>{slide.headline}</h2>
               </div>
               <div className={`flex flex-wrap gap-3 mt-6 ${mounted ? 'hero-text-4' : 'opacity-0'}`}>
@@ -573,17 +573,17 @@ export default function Hero() {
                   <Image src={s.src} alt={s.alt} fill className="object-cover object-center" priority={i===0} unoptimized/>
                 </div>
               ))}
-              <div className="absolute bottom-0 left-0 right-0 flex gap-2 p-3 bg-gradient-to-t from-black/40 to-transparent z-10">
+              <div className="absolute bottom-0 start-0 end-0 flex gap-2 p-3 bg-gradient-to-t from-black/40 to-transparent z-10">
                 {HERO_SLIDES.map((s, i) => (
                   <button key={s.id} onClick={() => goToSlide(i)} className="thumb-btn relative flex-1 h-14 overflow-hidden rounded" style={{ opacity:i===activeSlide?1:0.55, boxShadow:i===activeSlide?'0 0 0 2px #dc2626':'none' }} aria-label={`View ${s.headline}`}>
                     <Image src={s.src} alt={s.alt} fill className="object-cover object-center" unoptimized/>
                   </button>
                 ))}
               </div>
-              <button onClick={() => goToSlide((activeSlide-1+HERO_SLIDES.length)%HERO_SLIDES.length)} className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/80 hover:bg-white flex items-center justify-center shadow-md transition-all" aria-label="Previous slide">
+              <button onClick={() => goToSlide((activeSlide-1+HERO_SLIDES.length)%HERO_SLIDES.length)} className="absolute start-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/80 hover:bg-white flex items-center justify-center shadow-md transition-all" aria-label="Previous slide">
                 <svg width="16" height="16" fill="none" stroke="#111" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
               </button>
-              <button onClick={() => goToSlide((activeSlide+1)%HERO_SLIDES.length)} className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/80 hover:bg-white flex items-center justify-center shadow-md transition-all" aria-label="Next slide">
+              <button onClick={() => goToSlide((activeSlide+1)%HERO_SLIDES.length)} className="absolute end-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/80 hover:bg-white flex items-center justify-center shadow-md transition-all" aria-label="Next slide">
                 <svg width="16" height="16" fill="none" stroke="#111" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
               </button>
             </div>
@@ -655,14 +655,14 @@ export default function Hero() {
         {/* ── SALE BANNER ── */}
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="relative overflow-hidden rounded-md flex flex-col md:flex-row items-center justify-between px-8 py-6 gap-6" style={{ background:'linear-gradient(135deg,#dc2626 0%,#991b1b 100%)' }}>
-            <div className="text-white text-center md:text-left">
+            <div className="text-white text-center md:text-start">
               <p className="text-xs font-semibold tracking-[0.3em] uppercase opacity-80 mb-1" style={{ fontFamily:"'Barlow',sans-serif" }}>Exclusive Deals</p>
               <p className="text-4xl lg:text-5xl font-black leading-none tracking-tight" style={{ fontFamily:"'Barlow Condensed',sans-serif" }}>SEASON SALE</p>
             </div>
             <div className="relative w-40 h-28 md:w-52 md:h-36 flex-shrink-0 drop-shadow-2xl">
               <Image src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80" alt="Sale product" fill className="object-contain" unoptimized/>
             </div>
-            <div className="text-white text-center md:text-right">
+            <div className="text-white text-center md:text-end">
               <p className="text-2xl lg:text-3xl font-black" style={{ fontFamily:"'Barlow Condensed',sans-serif" }}>Winter Sale</p>
               <p className="text-xs opacity-70 max-w-[180px] mt-1 leading-relaxed" style={{ fontFamily:"'Barlow',sans-serif" }}>Discover exclusive deals on top Tunisian brands. Limited time only.</p>
               <Link href="/deals" className="inline-block mt-3 bg-white text-red-600 font-bold text-xs px-5 py-2 rounded-full tracking-widest uppercase hover:bg-zinc-100 transition-colors" style={{ fontFamily:"'Barlow',sans-serif" }}>Shop Now</Link>

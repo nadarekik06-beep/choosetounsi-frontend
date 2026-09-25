@@ -24,6 +24,14 @@ import { checkoutApi, walletApi, paymentApi, type BuyNowPayload } from '@/lib/sh
 import { isAuthenticated } from '@/lib/auth'
 import { fetchPaymentInfo } from '@/lib/platformApi'
 import type { UserAddress } from '@/app/account/addresses/page'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
+import { WILAYAS, useWilayaLabel } from '@/lib/i18n/wilayas'
+
+function usePrice() {
+  const { price } = useFormat()
+  return (n: number) => price(n, { maximumFractionDigits: 3 })
+}
 
 // ─── Shared sessionStorage key ────────────────────────────────────────────────
 const SELECTED_ITEMS_KEY = 'ct_selected_items'
@@ -43,16 +51,6 @@ function getToken(): string | null {
   if (typeof window === 'undefined') return null
   return localStorage.getItem('ct_auth_token')
 }
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 2, maximumFractionDigits: 3 }).format(n) + ' DT'
-
-const WILAYAS = [
-  'Ariana', 'Béja', 'Ben Arous', 'Bizerte', 'Gabès', 'Gafsa',
-  'Jendouba', 'Kairouan', 'Kasserine', 'Kébili', 'Le Kef', 'Mahdia',
-  'La Manouba', 'Médenine', 'Monastir', 'Nabeul', 'Sfax', 'Sidi Bouzid',
-  'Siliana', 'Sousse', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan',
-]
 
 type PaymentMethod = 'cod' | 'card' | 'd17' | 'wallet'
 
@@ -77,17 +75,19 @@ function CouponBox({
   sellerId: number; sellerLabel: string; state: CouponState
   onChange: (v: string) => void; onApply: () => void; onClear: () => void
 }) {
+  const t   = useTranslations('checkout')
+  const fmt = usePrice()
   return (
     <div style={{ padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
       <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-        Coupon · {sellerLabel}
+        {t('couponFor', { seller: sellerLabel })}
       </p>
       {state.applied ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0fdf4', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10, padding: '7px 10px' }}>
           <span style={{ fontSize: 12, fontWeight: 800, color: '#059669', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Ticket size={13} /> {state.applied} applied · -{fmt(state.discount)}
+            <Ticket size={13} /> {t('couponApplied', { code: state.applied, amount: fmt(state.discount) })}
           </span>
-          <button type="button" onClick={onClear} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex' }}>
+          <button type="button" onClick={onClear} aria-label={t('removeCoupon')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex' }}>
             <X size={14} />
           </button>
         </div>
@@ -96,7 +96,8 @@ function CouponBox({
           <input
             value={state.input}
             onChange={e => onChange(e.target.value.toUpperCase())}
-            placeholder="Enter code"
+            placeholder={t('couponPlaceholder')}
+            aria-label={t('couponPlaceholder')}
             style={{ flex: 1, minWidth: 0, border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '7px 10px', fontSize: 12, outline: 'none', fontFamily: 'inherit' }}
           />
           <button
@@ -109,7 +110,7 @@ function CouponBox({
               opacity: state.loading || !state.input.trim() ? 0.5 : 1, whiteSpace: 'nowrap',
             }}
           >
-            {state.loading ? '…' : 'Apply'}
+            {state.loading ? '…' : t('apply')}
           </button>
         </div>
       )}
@@ -118,7 +119,8 @@ function CouponBox({
   )
 }
 // ─── Tunisian phone validation ────────────────────────────────────────────────
-function validateTunisianPhone(raw: string): { clean: string; valid: boolean; hint: string } {
+// `hint` is a message key in the `checkout.phone` namespace (with optional values).
+function validateTunisianPhone(raw: string): { clean: string; valid: boolean; hint: string; hintValues?: Record<string, number> } {
   // Strip spaces, dashes, dots
   const stripped = raw.replace(/[\s\-\.]/g, '')
   // Remove country code prefix if present
@@ -127,17 +129,19 @@ function validateTunisianPhone(raw: string): { clean: string; valid: boolean; hi
   const isValid = /^[2459][0-9]{7}$/.test(withoutPrefix)
   
   let hint = ''
+  let hintValues: Record<string, number> | undefined
   if (raw.trim() === '') {
     hint = ''
   } else if (withoutPrefix.length < 8) {
-    hint = `${withoutPrefix.replace(/\D/g, '').length}/8 digits`
+    hint = 'hintDigits'
+    hintValues = { count: withoutPrefix.replace(/\D/g, '').length }
   } else if (withoutPrefix.length > 8) {
-    hint = 'Too many digits — Tunisian numbers are 8 digits'
+    hint = 'hintTooMany'
   } else if (!/^[2459]/.test(withoutPrefix)) {
-    hint = 'Must start with 2, 4, 5, or 9 (e.g. 20, 50, 55, 90…)'
+    hint = 'hintPrefix'
   }
   
-  return { clean: withoutPrefix, valid: isValid, hint }
+  return { clean: withoutPrefix, valid: isValid, hint, hintValues }
 }
 
 // ─── Payment Method Card ──────────────────────────────────────────────────────
@@ -166,7 +170,7 @@ function PaymentMethodCard({
         padding: '14px 16px', borderRadius: 14, cursor: disabled ? 'not-allowed' : 'pointer',
         border: `2px solid ${selected ? '#db142e' : disabled ? '#f1f5f9' : '#e5e7eb'}`,
         background: selected ? 'rgba(219,20,46,0.04)' : disabled ? '#f9fafb' : '#fff',
-        textAlign: 'left', fontFamily: 'inherit', width: '100%',
+        textAlign: 'start', fontFamily: 'inherit', width: '100%',
         transition: 'all 0.15s ease', opacity: disabled ? 0.55 : 1,
         boxShadow: selected ? '0 2px 12px rgba(219,20,46,0.1)' : 'none',
       }}
@@ -209,6 +213,8 @@ function PaymentMethodCard({
 // ─── D17 Instructions Panel ───────────────────────────────────────────────────
 
 function D17Instructions({ total, accountNumber }: { total: number; accountNumber: string }) {
+  const t   = useTranslations('checkout.d17')
+  const fmt = usePrice()
   return (
     <div style={{
       background: 'linear-gradient(135deg, #fef9ec, #fffbf0)',
@@ -216,15 +222,15 @@ function D17Instructions({ total, accountNumber }: { total: number; accountNumbe
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
         <Smartphone size={14} color="#d97706" />
-        <span style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>How to pay with D17</span>
+        <span style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>{t('title')}</span>
       </div>
-      <ol style={{ margin: 0, padding: '0 0 0 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <ol style={{ margin: 0, paddingInlineStart: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
         {[
-          `Open your D17 app and send ${fmt(total)} to our account`,
-          `Account number: ${accountNumber} (CHOOSE'Tounsi)`,
-          'Add your order number as the transfer note',
-          'Screenshot your transfer confirmation',
-          'Admin will confirm your order within 2 hours',
+          t('step1', { amount: fmt(total) }),
+          t('step2', { account: accountNumber }),
+          t('step3'),
+          t('step4'),
+          t('step5'),
         ].map((step, i) => (
           <li key={i} style={{ fontSize: 12, color: '#78350f', lineHeight: 1.5 }}>{step}</li>
         ))}
@@ -232,7 +238,7 @@ function D17Instructions({ total, accountNumber }: { total: number; accountNumbe
       <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef3c7', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
         <AlertCircle size={12} color="#d97706" />
         <span style={{ fontSize: 11, color: '#92400e', fontWeight: 700 }}>
-          Your order will be pending until admin confirms the transfer.
+          {t('pendingNote')}
         </span>
       </div>
     </div>
@@ -242,6 +248,7 @@ function D17Instructions({ total, accountNumber }: { total: number; accountNumbe
 // ─── Stripe Notice ────────────────────────────────────────────────────────────
 
 function StripeNotice() {
+  const t = useTranslations('checkout.stripe')
   return (
     <div style={{
       background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
@@ -249,15 +256,14 @@ function StripeNotice() {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <CreditCard size={14} color="#0284c7" />
-        <span style={{ fontSize: 12, fontWeight: 800, color: '#0c4a6e' }}>Secure card payment via Stripe</span>
+        <span style={{ fontSize: 12, fontWeight: 800, color: '#0c4a6e' }}>{t('title')}</span>
       </div>
       <p style={{ fontSize: 12, color: '#075985', margin: '0 0 8px', lineHeight: 1.4 }}>
-        You'll be redirected to enter your card details after placing your order.
-        Your card information is never stored on our servers.
+        {t('body')}
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
         <CheckCircle size={11} color="#0284c7" />
-        <span style={{ fontSize: 11, color: '#0369a1', fontWeight: 600 }}>Secured by Stripe · 256-bit SSL encryption</span>
+        <span style={{ fontSize: 11, color: '#0369a1', fontWeight: 600 }}>{t('secured')}</span>
       </div>
     </div>
   )
@@ -273,13 +279,15 @@ function AddressSelector({
   onSelect: (addr: UserAddress) => void
   onUseNew: () => void
 }) {
+  const t = useTranslations('checkout')
+  const wilayaLabel = useWilayaLabel()
   return (
     <div style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8' }}>
-          Saved Addresses
+          {t('savedAddresses')}
         </span>
-        <Link href="/account/addresses" style={{ fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none' }}>Manage →</Link>
+        <Link href="/account/addresses" style={{ fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none' }}>{t('manage')}</Link>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {addresses.map(addr => {
@@ -288,7 +296,7 @@ function AddressSelector({
             <button key={addr.id} onClick={() => onSelect(addr)} style={{
               display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
               border: `2px solid ${isSel ? '#db142e' : '#e5e7eb'}`, background: isSel ? 'rgba(219,20,46,0.04)' : '#fff',
-              textAlign: 'left', fontFamily: 'inherit', transition: 'all 0.15s ease',
+              textAlign: 'start', fontFamily: 'inherit', transition: 'all 0.15s ease',
               boxShadow: isSel ? '0 2px 12px rgba(219,20,46,0.1)' : 'none',
             }}>
               <div style={{
@@ -305,13 +313,13 @@ function AddressSelector({
                   </span>
                   {addr.is_default && (
                     <span style={{ fontSize: 9, fontWeight: 800, color: '#db142e', background: 'rgba(219,20,46,0.08)', padding: '1px 7px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                      <Star size={8} fill="currentColor" /> Default
+                      <Star size={8} fill="currentColor" /> {t('default')}
                     </span>
                   )}
                 </div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 2px' }}>{addr.wilaya}</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 2px' }}>{wilayaLabel(addr.wilaya)}</p>
                 <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addr.address}</p>
-                <p style={{ fontSize: 11, color: '#94a3b8', margin: 0, display: 'flex', alignItems: 'center', gap: 3 }}><Phone size={10} /> {addr.phone}</p>
+                <p style={{ fontSize: 11, color: '#94a3b8', margin: 0, display: 'flex', alignItems: 'center', gap: 3 }}><Phone size={10} /> <span dir="ltr">{addr.phone}</span></p>
               </div>
             </button>
           )
@@ -320,14 +328,14 @@ function AddressSelector({
           display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 12, cursor: 'pointer',
           border: `2px dashed ${selectedId === null ? '#db142e' : '#e5e7eb'}`,
           background: selectedId === null ? 'rgba(219,20,46,0.03)' : '#fff',
-          textAlign: 'left', fontFamily: 'inherit', transition: 'all 0.15s ease',
+          textAlign: 'start', fontFamily: 'inherit', transition: 'all 0.15s ease',
         }}>
           <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: 'rgba(219,20,46,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Plus size={14} color="#db142e" />
           </div>
           <div>
-            <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0 }}>Use a different address</p>
-            <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>Enter delivery details manually</p>
+            <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0 }}>{t('differentAddress')}</p>
+            <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{t('differentAddressHint')}</p>
           </div>
         </button>
       </div>
@@ -338,6 +346,11 @@ function AddressSelector({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CheckoutPage() {
+  const t            = useTranslations('checkout')
+  const tc           = useTranslations('common')
+  const tp           = useTranslations('checkout.phone')
+  const fmt          = usePrice()
+  const wilayaLabel  = useWilayaLabel()
   const router       = useRouter()
   const searchParams = useSearchParams()
 
@@ -464,10 +477,10 @@ export default function CheckoutPage() {
     for (const item of items) {
       const sid = (item as any).seller_id
       if (!sid) continue
-      if (!map.has(sid)) map.set(sid, { sellerId: sid, sellerName: (item as any).seller_name ?? `Seller #${sid}` })
+      if (!map.has(sid)) map.set(sid, { sellerId: sid, sellerName: (item as any).seller_name ?? t('sellerN', { id: sid }) })
     }
     return Array.from(map.values())
-  }, [isBuyNow, items, bnProduct])
+  }, [isBuyNow, items, bnProduct, t])
 
   const couponState = (sellerId: number): CouponState =>
     couponStates[sellerId] ?? { input: '', applied: null, loading: false, error: null, discount: 0 }
@@ -492,12 +505,12 @@ export default function CheckoutPage() {
       if (json.success && json.seller_id === sellerId) {
         setCouponStates(prev => ({ ...prev, [sellerId]: { input: cur.input.trim(), applied: cur.input.trim().toUpperCase(), loading: false, error: null, discount: json.discount_amount } }))
       } else if (json.success && json.seller_id !== sellerId) {
-        setCouponStates(prev => ({ ...prev, [sellerId]: { ...cur, loading: false, error: 'This code belongs to a different seller.' } }))
+        setCouponStates(prev => ({ ...prev, [sellerId]: { ...cur, loading: false, error: t('couponOtherSeller') } }))
       } else {
-        setCouponStates(prev => ({ ...prev, [sellerId]: { ...cur, loading: false, error: json.message ?? 'Invalid coupon.' } }))
+        setCouponStates(prev => ({ ...prev, [sellerId]: { ...cur, loading: false, error: json.message ?? t('couponInvalid') } }))
       }
     } catch {
-      setCouponStates(prev => ({ ...prev, [sellerId]: { ...cur, loading: false, error: 'Could not validate coupon. Try again.' } }))
+      setCouponStates(prev => ({ ...prev, [sellerId]: { ...cur, loading: false, error: t('couponError') } }))
     }
   }
 
@@ -565,14 +578,14 @@ export default function CheckoutPage() {
 
   const validate = (): boolean => {
   const e: Record<string, string> = {}
-  if (!form.wilaya.trim())  e.wilaya  = 'Please select your wilaya.'
-  if (!form.address.trim()) e.address = 'Please enter your delivery address.'
+  if (!form.wilaya.trim())  e.wilaya  = t('errors.wilaya')
+  if (!form.address.trim()) e.address = t('errors.address')
   
   const phoneCheck = validateTunisianPhone(form.phone)
   if (!form.phone.trim()) {
-    e.phone = 'Phone number is required.'
+    e.phone = t('errors.phoneRequired')
   } else if (!phoneCheck.valid) {
-    e.phone = 'Invalid Tunisian number. Enter 8 digits starting with 2, 4, 5, or 9.'
+    e.phone = t('errors.phoneInvalid')
   }
   
   setErrors(e)
@@ -628,7 +641,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
       let res: any
 
       if (isBuyNow) {
-        if (!bnProduct) throw new Error('Product data missing.')
+        if (!bnProduct) throw new Error(t('errors.productMissing'))
         const bnCoupon = bnProduct.seller ? couponState(bnProduct.seller.id) : null
         const payload: BuyNowPayload = {
           product_id:     bnProduct.id,
@@ -673,7 +686,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
         payment_method: paymentMethod,
       })
     } catch (err: any) {
-      setApiError(err.message ?? 'Failed to place order. Please try again.')
+      setApiError(err.message ?? t('errors.placeFailed'))
     } finally {
       setLoading(false)
     }
@@ -690,31 +703,35 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
             {isPending ? <Smartphone size={36} color="#f59e0b" /> : <CheckCircle size={36} color="#10b981" />}
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 900, color: '#0f172a', margin: '0 0 8px' }}>
-            {isPending ? 'Order Placed — Awaiting Payment' : 'Order Confirmed!'}
+            {isPending ? t('success.pendingTitle') : t('success.title')}
           </h1>
           <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 6px' }}>
-            {isPending ? 'Please complete your D17 transfer to confirm your order.'
-              : success.payment_method === 'wallet' ? 'Payment deducted from your wallet successfully.'
-              : 'Thank you! Your order has been received.'}
+            {isPending ? t('success.pendingBody')
+              : success.payment_method === 'wallet' ? t('success.walletBody')
+              : t('success.body')}
           </p>
           <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 24px' }}>
-            Order <strong style={{ color: '#0f172a' }}>{success.order_number}</strong>
-            {' '}· Total: <strong style={{ color: '#dc2626' }}>{fmt(success.total)}</strong>
+            {t.rich('success.orderLine', {
+              number: success.order_number,
+              total: fmt(success.total),
+              b: chunks => <strong style={{ color: '#0f172a' }}>{chunks}</strong>,
+              r: chunks => <strong style={{ color: '#dc2626' }}>{chunks}</strong>,
+            })}
           </p>
           {isPending && (
-            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '14px 16px', marginBottom: 20, textAlign: 'left' }}>
-              <p style={{ fontSize: 12, fontWeight: 800, color: '#92400e', margin: '0 0 8px' }}>Complete your D17 transfer:</p>
-              <p style={{ fontSize: 12, color: '#78350f', margin: '0 0 4px' }}>Amount: <strong>{fmt(success.total)}</strong></p>
-              <p style={{ fontSize: 12, color: '#78350f', margin: '0 0 4px' }}>Account: <strong>{d17Account ?? 'contact support'} (CHOOSE&apos;Tounsi)</strong></p>
-              <p style={{ fontSize: 12, color: '#78350f', margin: 0 }}>Reference: <strong>{success.order_number}</strong></p>
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '14px 16px', marginBottom: 20, textAlign: 'start' }}>
+              <p style={{ fontSize: 12, fontWeight: 800, color: '#92400e', margin: '0 0 8px' }}>{t('success.d17Title')}</p>
+              <p style={{ fontSize: 12, color: '#78350f', margin: '0 0 4px' }}>{t.rich('success.d17Amount', { amount: fmt(success.total), b: c => <strong>{c}</strong> })}</p>
+              <p style={{ fontSize: 12, color: '#78350f', margin: '0 0 4px' }}>{t.rich('success.d17Account', { account: d17Account ?? t('success.contactSupport'), b: c => <strong>{c}</strong> })}</p>
+              <p style={{ fontSize: 12, color: '#78350f', margin: 0 }}>{t.rich('success.d17Reference', { number: success.order_number, b: c => <strong>{c}</strong> })}</p>
             </div>
           )}
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
             <Link href="/orders" style={{ padding: '12px 24px', background: 'linear-gradient(135deg,#dc2626,#b91c1c)', color: '#fff', fontWeight: 800, fontSize: 14, borderRadius: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <ShoppingBag size={16} /> View Orders
+              <ShoppingBag size={16} /> {t('success.viewOrders')}
             </Link>
             <Link href="/shop" style={{ padding: '12px 24px', border: '1.5px solid #e5e7eb', color: '#374151', fontWeight: 700, fontSize: 14, borderRadius: 12, textDecoration: 'none' }}>
-              Continue Shopping
+              {t('continueShopping')}
             </Link>
           </div>
         </div>
@@ -729,7 +746,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 40, height: 40, border: '3px solid #eee', borderTopColor: '#dc2626', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 16px' }} />
-          <p style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>Loading…</p>
+          <p style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>{tc('loading')}</p>
         </div>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
@@ -739,8 +756,8 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', fontFamily: "'Barlow', sans-serif" }}>
         <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>Couldn't load product</p>
-          <Link href="/shop" style={{ color: '#dc2626', fontWeight: 700, fontSize: 14 }}>← Back to Shop</Link>
+          <p style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>{t('productLoadFailed')}</p>
+          <Link href="/shop" style={{ color: '#dc2626', fontWeight: 700, fontSize: 14 }}>{t('backToShop')}</Link>
         </div>
       </div>
     )
@@ -762,8 +779,8 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
       <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow', sans-serif" }}>
         <div style={{ textAlign: 'center' }}>
           <ShoppingBag size={40} color="#e2e8f0" style={{ margin: '0 auto 16px' }} />
-          <p style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>Your cart is empty</p>
-          <Link href="/shop" style={{ color: '#dc2626', fontWeight: 700, fontSize: 14 }}>← Back to Shop</Link>
+          <p style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>{t('cartEmpty')}</p>
+          <Link href="/shop" style={{ color: '#dc2626', fontWeight: 700, fontSize: 14 }}>{t('backToShop')}</Link>
         </div>
       </div>
     )
@@ -789,20 +806,20 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
 
         {/* Breadcrumb */}
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
-          <div style={{ maxWidth: 1100, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
-            <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Home</Link>
+          <nav aria-label={t('breadcrumb')} style={{ maxWidth: 1100, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
+            <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>{tc('home')}</Link>
             <ChevronRight size={11} />
-            <Link href="/shop" style={{ color: '#94a3b8', textDecoration: 'none' }}>Shop</Link>
+            <Link href="/shop" style={{ color: '#94a3b8', textDecoration: 'none' }}>{t('shop')}</Link>
             <ChevronRight size={11} />
-            <span style={{ color: '#374151', fontWeight: 600 }}>{isBuyNow ? 'Quick Checkout' : 'Checkout'}</span>
-          </div>
+            <span style={{ color: '#374151', fontWeight: 600 }}>{isBuyNow ? t('quickCheckout') : t('title')}</span>
+          </nav>
         </div>
 
         {isBuyNow && (
           <div style={{ maxWidth: 1100, margin: '12px auto 0', padding: '0 24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: '1.5px solid rgba(220,38,38,0.25)', borderRadius: 10, padding: '8px 14px' }}>
               <Zap size={14} color="#dc2626" />
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#dc2626' }}>Quick Checkout — Buy this item instantly</p>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#dc2626' }}>{t('quickCheckoutBanner')}</p>
             </div>
           </div>
         )}
@@ -813,7 +830,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(220,38,38,0.05)', border: '1.5px solid rgba(220,38,38,0.2)', borderRadius: 10, padding: '9px 14px' }}>
               <CheckCircle size={14} color="#dc2626" />
               <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#b91c1c' }}>
-                Checking out {items.length} selected item{items.length > 1 ? 's' : ''} out of {allCartItems.length} in your cart.
+                {t('partialSelection', { count: items.length, total: allCartItems.length })}
               </p>
             </div>
           </div>
@@ -828,7 +845,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
             <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <MapPin size={16} color="#dc2626" />
-                <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>Delivery Information</h2>
+                <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>{t('deliveryInfo')}</h2>
               </div>
               <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {apiError && (
@@ -838,7 +855,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
                 )}
                 {addressesLoading && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0', color: '#94a3b8', fontSize: 13 }}>
-                    <Loader2 size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> Loading saved addresses…
+                    <Loader2 size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> {t('loadingAddresses')}
                   </div>
                 )}
                 {hasSavedAddresses && (
@@ -848,32 +865,33 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
                   <>
                     <div>
                       <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
-                        Wilaya <span style={{ color: '#ef4444' }}>*</span>
+                        {t('wilaya')} <span style={{ color: '#ef4444' }}>*</span>
                       </label>
-                      <select value={form.wilaya} onChange={e => set('wilaya', e.target.value)}
+                      <select value={form.wilaya} onChange={e => set('wilaya', e.target.value)} aria-label={t('wilaya')} aria-invalid={!!errors.wilaya}
                         style={{ width: '100%', border: `1.5px solid ${errors.wilaya ? '#ef4444' : '#e5e7eb'}`, borderRadius: 10, padding: '10px 14px', fontSize: 14, fontFamily: 'inherit', color: form.wilaya ? '#0f172a' : '#94a3b8', background: errors.wilaya ? '#fef2f2' : '#fff', outline: 'none' }}>
-                        <option value="">— Select wilaya —</option>
-                        {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
+                        <option value="">{t('selectWilaya')}</option>
+                        {WILAYAS.map(w => <option key={w} value={w}>{wilayaLabel(w)}</option>)}
                       </select>
                       {errors.wilaya && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.wilaya}</p>}
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
-                        Full Address <span style={{ color: '#ef4444' }}>*</span>
+                        {t('fullAddress')} <span style={{ color: '#ef4444' }}>*</span>
                       </label>
                       <textarea rows={3} value={form.address} onChange={e => set('address', e.target.value)}
-                        placeholder="Street, building, floor, apartment…"
+                        aria-label={t('fullAddress')} aria-invalid={!!errors.address}
+                        placeholder={t('addressPlaceholder')}
                         style={{ resize: 'none', border: `1.5px solid ${errors.address ? '#ef4444' : '#e5e7eb'}`, borderRadius: 10, padding: '10px 14px', fontSize: 14, fontFamily: 'inherit', color: '#0f172a', background: errors.address ? '#fef2f2' : '#fff', outline: 'none', width: '100%' }} />
                       {errors.address && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.address}</p>}
                     </div>
                     <div>
   <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
-    Phone Number <span style={{ color: '#ef4444' }}>*</span>
+    {t('phoneNumber')} <span style={{ color: '#ef4444' }}>*</span>
   </label>
   
   {/* Country code prefix badge + input */}
   <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
-    <div style={{
+    <div dir="ltr" style={{
       display: 'flex', alignItems: 'center', gap: 6,
       padding: '0 12px', borderRadius: 10, flexShrink: 0,
       border: '1.5px solid #e5e7eb', background: '#f8fafc',
@@ -894,6 +912,9 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
           <>
             <input
               type="tel"
+              dir="ltr"
+              aria-label={t('phoneNumber')}
+              aria-invalid={!!errors.phone}
               value={form.phone}
               onChange={e => {
                 // Only allow digits, spaces, dashes, plus
@@ -951,7 +972,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
           <svg width="12" height="12" fill="none" stroke="#f59e0b" strokeWidth="2" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
-          <p style={{ fontSize: 11, color: '#d97706', margin: 0, fontWeight: 600 }}>{phoneCheck.hint}</p>
+          <p style={{ fontSize: 11, color: '#d97706', margin: 0, fontWeight: 600 }}>{tp(phoneCheck.hint, phoneCheck.hintValues)}</p>
         </div>
       )
     }
@@ -961,26 +982,27 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
           <svg width="12" height="12" fill="none" stroke="#10b981" strokeWidth="2" viewBox="0 0 24 24">
             <path d="M20 6 9 17l-5-5"/>
           </svg>
-          <p style={{ fontSize: 11, color: '#059669', margin: 0, fontWeight: 600 }}>Valid Tunisian number ✓</p>
+          <p style={{ fontSize: 11, color: '#059669', margin: 0, fontWeight: 600 }}>{tp('valid')}</p>
         </div>
       )
     }
     return (
       <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 5 }}>
-        8 digits — starts with 2, 4, 5, or 9 · e.g. <strong>20 123 456</strong>
+        {t.rich('phone.help', { b: c => <strong dir="ltr">{c}</strong> })}
       </p>
     )
   })()}
 </div>
                     <div>
                       <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
-                        Order Notes <span style={{ fontSize: 10, fontWeight: 500, textTransform: 'none' }}>(optional)</span>
+                        {t('orderNotes')} <span style={{ fontSize: 10, fontWeight: 500, textTransform: 'none' }}>({tc('optional')})</span>
                       </label>
                       <div style={{ position: 'relative' }}>
-                        <FileText size={13} style={{ position: 'absolute', left: 12, top: 12, color: '#94a3b8', pointerEvents: 'none' }} />
+                        <FileText size={13} style={{ position: 'absolute', insetInlineStart: 12, top: 12, color: '#94a3b8', pointerEvents: 'none' }} />
                         <textarea rows={2} value={form.notes} onChange={e => set('notes', e.target.value)}
-                          placeholder="Special instructions, delivery notes…"
-                          style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 10, padding: '10px 14px 10px 34px', fontSize: 14, fontFamily: 'inherit', color: '#0f172a', background: '#fff', outline: 'none', resize: 'none' }} />
+                          aria-label={t('orderNotes')}
+                          placeholder={t('notesPlaceholder')}
+                          style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 10, paddingBlock: 10, paddingInline: '34px 14px', fontSize: 14, fontFamily: 'inherit', color: '#0f172a', background: '#fff', outline: 'none', resize: 'none' }} />
                       </div>
                     </div>
                   </>
@@ -988,11 +1010,11 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
                 {hasSavedAddresses && selectedAddressId !== null && (
                   <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', border: '1px solid #e5e7eb' }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <CheckCircle size={11} color="#10b981" /> Delivering to:
+                      <CheckCircle size={11} color="#10b981" /> {t('deliveringTo')}
                     </p>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 2px' }}>{form.wilaya}</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 2px' }}>{wilayaLabel(form.wilaya)}</p>
                     <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 2px' }}>{form.address}</p>
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}><Phone size={10} /> {form.phone}</p>
+                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}><Phone size={10} /> <span dir="ltr">{form.phone}</span></p>
                   </div>
                 )}
               </div>
@@ -1002,13 +1024,13 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
             <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <CreditCard size={16} color="#dc2626" />
-                <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>Payment Method</h2>
+                <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>{t('paymentMethod')}</h2>
               </div>
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <PaymentMethodCard method="cod" selected={paymentMethod === 'cod'} onSelect={() => setPaymentMethod('cod')} icon={Truck} label="Cash on Delivery" description="Pay cash when your order arrives at your door." badge="Most Popular" badgeColor="#198f41" />
-                <PaymentMethodCard method="wallet" selected={paymentMethod === 'wallet'} onSelect={() => !walletInsufficient && setPaymentMethod('wallet')} disabled={walletLoading || walletInsufficient} disabledReason={walletLoading ? 'Loading balance…' : `Insufficient balance (${fmt(walletBalance ?? 0)} available)`} icon={Wallet} label="Wallet" description={walletLoading ? 'Checking balance…' : `Available balance: ${fmt(walletBalance ?? 0)}`} badge={!walletLoading && !walletInsufficient ? 'Instant' : undefined} badgeColor="#6366f1" />
-                <PaymentMethodCard method="d17" selected={paymentMethod === 'd17'} onSelect={() => d17Account && setPaymentMethod('d17')} disabled={d17Loading || !d17Account} disabledReason={d17Loading ? 'Loading…' : 'D17 payments are not available yet — please choose another method.'} icon={Smartphone} label="D17" description="Pay via D17 mobile app — confirmed by admin within 2 hours." badge="Tunisian" badgeColor="#0284c7" />
-                <PaymentMethodCard method="card" selected={paymentMethod === 'card'} onSelect={() => setPaymentMethod('card')} icon={CreditCard} label="Bank Card" description="Pay securely with Visa or Mastercard via Stripe." badge="Secure" badgeColor="#7c3aed" />
+                <PaymentMethodCard method="cod" selected={paymentMethod === 'cod'} onSelect={() => setPaymentMethod('cod')} icon={Truck} label={t('pay.cod')} description={t('pay.codDesc')} badge={t('pay.codBadge')} badgeColor="#198f41" />
+                <PaymentMethodCard method="wallet" selected={paymentMethod === 'wallet'} onSelect={() => !walletInsufficient && setPaymentMethod('wallet')} disabled={walletLoading || walletInsufficient} disabledReason={walletLoading ? t('pay.walletLoading') : t('pay.walletInsufficient', { amount: fmt(walletBalance ?? 0) })} icon={Wallet} label={t('pay.wallet')} description={walletLoading ? t('pay.walletChecking') : t('pay.walletBalance', { amount: fmt(walletBalance ?? 0) })} badge={!walletLoading && !walletInsufficient ? t('pay.walletBadge') : undefined} badgeColor="#6366f1" />
+                <PaymentMethodCard method="d17" selected={paymentMethod === 'd17'} onSelect={() => d17Account && setPaymentMethod('d17')} disabled={d17Loading || !d17Account} disabledReason={d17Loading ? tc('loading') : t('pay.d17Unavailable')} icon={Smartphone} label="D17" description={t('pay.d17Desc')} badge={t('pay.d17Badge')} badgeColor="#0284c7" />
+                <PaymentMethodCard method="card" selected={paymentMethod === 'card'} onSelect={() => setPaymentMethod('card')} icon={CreditCard} label={t('pay.card')} description={t('pay.cardDesc')} badge={t('pay.cardBadge')} badgeColor="#7c3aed" />
                 {paymentMethod === 'd17' && d17Account && <D17Instructions total={summaryTotal} accountNumber={d17Account} />}
                 {paymentMethod === 'card' && <StripeNotice />}
               </div>
@@ -1016,7 +1038,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
 
             <Link href={isBuyNow ? `/products/${bnSlug ?? ''}` : '/shop'}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748b', fontWeight: 600, textDecoration: 'none' }}>
-              <ArrowLeft size={13} /> {isBuyNow ? 'Back to Product' : 'Continue Shopping'}
+              <ArrowLeft size={13} /> {isBuyNow ? t('backToProduct') : t('continueShopping')}
             </Link>
           </form>
 
@@ -1026,9 +1048,9 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
                 {isBuyNow ? <Zap size={16} color="#dc2626" /> : <ShoppingBag size={16} color="#dc2626" />}
                 <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                  {isBuyNow ? 'Quick Order Summary' : 'Order Summary'}
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', marginLeft: 6 }}>
-                    ({summaryCount} {summaryCount === 1 ? 'item' : 'items'})
+                  {isBuyNow ? t('quickSummary') : t('summary')}
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', marginInlineStart: 6 }}>
+                    ({tc('items', { count: summaryCount })})
                   </span>
                 </h2>
               </div>
@@ -1041,7 +1063,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bnProduct.name}</p>
-                      {bnVariant && <p style={{ fontSize: 11, color: '#6366f1', fontWeight: 700, margin: '2px 0 0' }}>{bnVariant.sku ? `SKU: ${bnVariant.sku}` : `Variant #${bnVariant.id}`}</p>}
+                      {bnVariant && <p style={{ fontSize: 11, color: '#6366f1', fontWeight: 700, margin: '2px 0 0' }}>{bnVariant.sku ? t('sku', { sku: bnVariant.sku }) : t('variantN', { id: bnVariant.id })}</p>}
                       <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>{bnQuantity} × {fmt(bnEffectivePrice)}</p>
                     </div>
                     <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', flexShrink: 0 }}>{fmt(bnLineTotal)}</span>
@@ -1094,17 +1116,17 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
 
               <div style={{ padding: '14px 20px', borderTop: '1px solid #f1f5f9' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Subtotal</span>
+                  <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>{tc('subtotal')}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{fmt(summarySubtotal)}</span>
                 </div>
                 {totalDiscount > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>Discount</span>
+                    <span style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>{tc('discount')}</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>-{fmt(totalDiscount)}</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Shipping</span>
+                    <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>{tc('shipping')}</span>
                     {isFreeDelivery ? (
                       <span style={{
                         fontSize: 12, fontWeight: 800,
@@ -1114,7 +1136,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
                         border: '1px solid rgba(16,185,129,0.25)',
                         display: 'flex', alignItems: 'center', gap: 4,
                       }}>
-                        🚚 Free
+                        🚚 {tc('free')}
                       </span>
                     ) : (
                       <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
@@ -1123,13 +1145,13 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
                     )}
                   </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14, padding: '8px 10px', background: '#f8fafc', borderRadius: 8 }}>
-                  <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>Payment</span>
+                  <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{t('payment')}</span>
                   <span style={{ fontSize: 12, fontWeight: 800, color: '#374151' }}>
-                    {{ cod: '🚚 Cash on Delivery', card: '💳 Bank Card', d17: '📱 D17', wallet: '💰 Wallet' }[paymentMethod]}
+                    {{ cod: `🚚 ${t('pay.cod')}`, card: `💳 ${t('pay.card')}`, d17: '📱 D17', wallet: `💰 ${t('pay.wallet')}` }[paymentMethod]}
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, borderTop: '2px solid #f1f5f9', marginBottom: 16 }}>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>Total</span>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{tc('total')}</span>
                   <span style={{ fontSize: 20, fontWeight: 900, color: '#dc2626' }}>{fmt(summaryTotal)}</span>
                 </div>
                 <button
@@ -1147,13 +1169,13 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
                   }}
                 >
                   {loading || stripeLoading
-                    ? <><Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} />{stripeLoading ? 'Redirecting to Stripe…' : 'Placing order…'}</>
-                    : paymentMethod === 'card' ? <><CreditCard size={18} /> Pay with Card</>
-                    : isBuyNow ? <><Zap size={18} /> Place Order Now</>
-                    : <><CheckCircle size={18} /> Place Order</>}
+                    ? <><Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} />{stripeLoading ? t('redirectingStripe') : t('placing')}</>
+                    : paymentMethod === 'card' ? <><CreditCard size={18} /> {t('payWithCard')}</>
+                    : isBuyNow ? <><Zap size={18} /> {t('placeOrderNow')}</>
+                    : <><CheckCircle size={18} /> {t('placeOrder')}</>}
                 </button>
                 <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 10 }}>
-                  {{ cod: '🔒 Pay cash on delivery · Safe & easy', card: '🔒 Secured by Stripe · No card data stored', d17: '🔒 Confirmed by admin within 2 hours', wallet: '🔒 Instant deduction from your wallet' }[paymentMethod]}
+                  {{ cod: t('reassure.cod'), card: t('reassure.card'), d17: t('reassure.d17'), wallet: t('reassure.wallet') }[paymentMethod]}
                 </p>
               </div>
             </div>

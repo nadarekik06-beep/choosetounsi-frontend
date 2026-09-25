@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
 import { isAuthenticated } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -24,6 +26,8 @@ interface Product {
 }
 
 function BrandProductCard({ product, index }: { product: Product; index: number }) {
+  const t   = useTranslations('productCard')
+  const fmt = useFormat()
   const { addToCart, isFavorited, toggleFavorite } = useCart()
   const router = useRouter()
   const [imgErr, setImgErr] = useState(false)
@@ -108,7 +112,7 @@ onMouseLeave={() => {
           <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
             <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
           </svg>
-          Official
+          {t('official')}
         </div>
 
         {/* Discount badge */}
@@ -117,13 +121,13 @@ onMouseLeave={() => {
         {/* Out of stock overlay */}
         {outOfStock && (
           <div className="bpc-sold-overlay">
-            <span>Sold Out</span>
+            <span>{t('soldOut')}</span>
           </div>
         )}
 
         {/* Hover actions */}
         <div className="bpc-actions">
-          <button className={`bpc-action-btn ${favorited ? 'bpc-action-btn--fav' : ''}`} onClick={handleFav} title="Wishlist">
+          <button className={`bpc-action-btn ${favorited ? 'bpc-action-btn--fav' : ''}`} onClick={handleFav} title={t('wishlist')} aria-label={t('wishlist')} aria-pressed={favorited}>
             <svg width="14" height="14" fill={favorited ? '#dc2626' : 'none'} stroke={favorited ? '#dc2626' : 'currentColor'} strokeWidth="2" viewBox="0 0 24 24">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
@@ -132,7 +136,8 @@ onMouseLeave={() => {
             className={`bpc-action-btn bpc-action-btn--cart ${added ? 'bpc-action-btn--added' : ''}`}
             onClick={handleCart}
             disabled={outOfStock}
-            title="Add to cart"
+            title={t('addToCart')}
+            aria-label={t('addToCart')}
           >
             {added ? (
               <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -158,9 +163,9 @@ onMouseLeave={() => {
         )}
         <p className="bpc-name">{product.name}</p>
         <div className="bpc-price-row">
-          <span className="bpc-price">{Number(product.price).toFixed(2)} <span className="bpc-currency">DT</span></span>
+          <span className="bpc-price">{fmt.price(product.price, { bare: true })} <span className="bpc-currency">{fmt.currency}</span></span>
           {product.original_price && (
-            <span className="bpc-original">{Number(product.original_price).toFixed(2)} DT</span>
+            <span className="bpc-original">{fmt.price(product.original_price)}</span>
           )}
         </div>
       </div>
@@ -183,6 +188,7 @@ function BrandSkeleton() {
 }
 
 export default function BrandCollectionSection() {
+  const t = useTranslations('home')
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const sectionRef = useRef<HTMLDivElement>(null)
@@ -359,6 +365,9 @@ export default function BrandCollectionSection() {
         .bpc-view-all:hover svg {
           transform: translateX(3px);
         }
+        [dir=rtl] .bpc-view-all:hover svg {
+          transform: scaleX(-1) translateX(3px);
+        }
 
         /* ── Grid ── */
         .bpc-grid {
@@ -420,7 +429,7 @@ export default function BrandCollectionSection() {
         .bpc-official-badge {
           position: absolute;
           top: 10px;
-          left: 10px;
+          inset-inline-start: 10px;
           display: flex;
           align-items: center;
           gap: 4px;
@@ -441,7 +450,7 @@ export default function BrandCollectionSection() {
         .bpc-discount-badge {
           position: absolute;
           top: 10px;
-          right: 10px;
+          inset-inline-end: 10px;
           background: #fff;
           color: #db142e;
           font-family: 'Barlow', sans-serif;
@@ -472,7 +481,7 @@ export default function BrandCollectionSection() {
         /* Hover action buttons */
         .bpc-actions {
           position: absolute;
-          bottom: 10px; right: 8px;
+          bottom: 10px; inset-inline-end: 8px;
           display: flex; flex-direction: column; gap: 6px;
           opacity: 0;
           transform: translateX(6px);
@@ -653,17 +662,17 @@ export default function BrandCollectionSection() {
             <div className="bpc-header-left">
               <div className="bpc-eyebrow">
                 <div className="bpc-eyebrow-line" />
-                <span className="bpc-eyebrow-text">Exclusive Collection</span>
+                <span className="bpc-eyebrow-text">{t('brandEyebrow')}</span>
               </div>
               <h2 className="bpc-title">
                 Choose<span>Tounsi</span><br />
-                Originals
+                {t('brandOriginals')}
               </h2>
-              <p className="bpc-subtitle">Curated. Verified. Exclusively ours.</p>
+              <p className="bpc-subtitle">{t('brandSubtitle')}</p>
             </div>
             <Link href="/brand" className="bpc-view-all">
-              Explore All
-              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              {t('exploreAll')}
+              <svg className="rtl-flip" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </Link>

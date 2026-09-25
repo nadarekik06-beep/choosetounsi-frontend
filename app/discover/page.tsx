@@ -17,6 +17,8 @@ import {
 import Navbar from '@/app/components/layout/Navbar';
 import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge';
 import { sponsorshipApi, SponsoredProduct } from '@/lib/sponsorshipApi';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
 /* ─────────────────────────────────────────────
    CONSTANTS & TYPES
@@ -28,14 +30,15 @@ const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api')
 const SPONSORED_EVERY = 4;
 
 // Psychologically attractive labels for sponsored products
+// Text lives in messages: discover.labels.<key>
 const PREMIUM_LABELS = [
-  { text: 'Trending Now', icon: TrendingUp, color: '#e11d48', bg: '#fff1f2' },
-  { text: 'Hot Pick',     icon: Flame,      color: '#ea580c', bg: '#fff7ed' },
-  { text: 'Best Seller',  icon: Award,      color: '#0284c7', bg: '#f0f9ff' },
-  { text: 'Most Loved',   icon: Heart,      color: '#db2777', bg: '#fdf2f8' },
-  { text: 'Editor\'s Choice', icon: Star,   color: '#7c3aed', bg: '#faf5ff' },
-  { text: 'Viral Product', icon: Zap,       color: '#d97706', bg: '#fffbeb' },
-];
+  { key: 'trending',  icon: TrendingUp, color: '#e11d48', bg: '#fff1f2' },
+  { key: 'hotPick',   icon: Flame,      color: '#ea580c', bg: '#fff7ed' },
+  { key: 'bestSeller', icon: Award,     color: '#0284c7', bg: '#f0f9ff' },
+  { key: 'mostLoved', icon: Heart,      color: '#db2777', bg: '#fdf2f8' },
+  { key: 'editorsChoice', icon: Star,   color: '#7c3aed', bg: '#faf5ff' },
+  { key: 'viral',     icon: Zap,        color: '#d97706', bg: '#fffbeb' },
+] as const;
 
 interface ActivePromotion {
   id: number;
@@ -73,7 +76,9 @@ type FeedItem = (OrganicProduct | SponsoredProduct) & {
 ───────────────────────────────────────────── */
 
 function HeroSection() {
-  const phrases = ['Discover something new', 'Find Tunisian treasures', 'Shop what\'s trending'];
+  const t   = useTranslations('discover');
+  const fmt = useFormat();
+  const phrases = [t('phrase1'), t('phrase2'), t('phrase3')];
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [visible, setVisible] = useState(true);
 
@@ -89,10 +94,10 @@ function HeroSection() {
   }, []);
 
   const stats = [
-    { value: '12K+', label: 'Products' },
-    { value: '800+', label: 'Sellers' },
-    { value: '4.8★', label: 'Rating' },
-    { value: '50+', label: 'Categories' },
+    { value: '12K+', label: t('statProducts') },
+    { value: '800+', label: t('statSellers') },
+    { value: '4.8★', label: t('statRating') },
+    { value: '50+', label: t('statCategories') },
   ];
 
   return (
@@ -112,13 +117,13 @@ function HeroSection() {
 
       {/* Red glow orb */}
       <div style={{
-        position: 'absolute', right: -60, top: -60,
+        position: 'absolute', insetInlineEnd: -60, top: -60,
         width: 320, height: 320, borderRadius: '50%',
         background: 'radial-gradient(circle, rgba(219,20,46,0.3) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
       <div style={{
-        position: 'absolute', left: '40%', bottom: -40,
+        position: 'absolute', insetInlineStart: '40%', bottom: -40,
         width: 200, height: 200, borderRadius: '50%',
         background: 'radial-gradient(circle, rgba(25,143,65,0.15) 0%, transparent 70%)',
         pointerEvents: 'none',
@@ -133,7 +138,7 @@ function HeroSection() {
         }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#db142e', display: 'inline-block', animation: 'pulse 2s infinite' }} />
           <span style={{ fontSize: 11, fontWeight: 700, color: '#f87171', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-            Live · {new Date().toLocaleDateString('fr-TN', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {t('live', { date: fmt.date(new Date(), 'dayMonth') })}
           </span>
         </div>
 
@@ -147,7 +152,7 @@ function HeroSection() {
           letterSpacing: '-0.02em',
           lineHeight: 1.05,
         }}>
-          Explore &{' '}
+          {t('heroTitle')}{' '}
           <span style={{
             background: 'linear-gradient(90deg, #db142e, #ff6b6b)',
             WebkitBackgroundClip: 'text',
@@ -157,7 +162,7 @@ function HeroSection() {
             transform: visible ? 'translateY(0)' : 'translateY(8px)',
             transition: 'opacity 0.35s ease, transform 0.35s ease',
           }}>
-            Discover
+            {t('heroHighlight')}
           </span>
         </h1>
 
@@ -166,7 +171,7 @@ function HeroSection() {
           fontSize: 17, color: 'rgba(255,255,255,0.5)', margin: '0 0 32px',
           fontFamily: "'Barlow', sans-serif",
           opacity: visible ? 1 : 0,
-          transform: visible ? 'translateX(0)' : 'translateX(-8px)',
+          transform: visible ? 'translateX(0)' : `translateX(${fmt.isRtl ? 8 : -8}px)`,
           transition: 'opacity 0.35s ease 0.1s, transform 0.35s ease 0.1s',
           minHeight: 26,
         }}>
@@ -186,17 +191,17 @@ function HeroSection() {
 
       {/* Floating tag cloud - right side */}
       <div style={{
-        position: 'absolute', right: 48, top: '50%', transform: 'translateY(-50%)',
+        position: 'absolute', insetInlineEnd: 48, top: '50%', transform: 'translateY(-50%)',
         display: 'flex', flexDirection: 'column', gap: 10, opacity: 0.6,
       }} className="hero-tags">
-        {['Fashion', 'Electronics', 'Beauty', 'Home', 'Sports'].map((tag, i) => (
+        {[t('tagFashion'), t('tagElectronics'), t('tagBeauty'), t('tagHome'), t('tagSports')].map((tag, i) => (
           <div key={tag} style={{
             background: 'rgba(255,255,255,0.07)',
             border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: 999, padding: '4px 14px',
             fontSize: 11, color: 'rgba(255,255,255,0.7)',
             fontWeight: 600, letterSpacing: '0.05em',
-            transform: `translateX(${i % 2 === 0 ? 8 : 0}px)`,
+            transform: `translateX(${i % 2 === 0 ? (fmt.isRtl ? -8 : 8) : 0}px)`,
           }}>{tag}</div>
         ))}
       </div>
@@ -214,15 +219,16 @@ function HeroSection() {
 ───────────────────────────────────────────── */
 
 const SORT_OPTIONS = [
-  { key: 'views',      label: 'Trending' },
-  { key: 'newest',     label: 'New Arrivals' },
-  { key: 'price_asc',  label: 'Price ↑' },
-  { key: 'price_desc', label: 'Price ↓' },
-];
+  { key: 'views',      label: 'sortTrending' },
+  { key: 'newest',     label: 'sortNewest' },
+  { key: 'price_asc',  label: 'sortPriceAsc' },
+  { key: 'price_desc', label: 'sortPriceDesc' },
+] as const;
 
 function FilterBar({
   activeSort, onSort,
 }: { activeSort: string; onSort: (k: string) => void }) {
+  const t = useTranslations('discover');
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8, marginBottom: 28,
@@ -231,10 +237,10 @@ function FilterBar({
       <div style={{
         display: 'flex', alignItems: 'center', gap: 4,
         background: '#f8f8f8', borderRadius: 999, padding: '4px 6px',
-        marginRight: 4,
+        marginInlineEnd: 4,
       }}>
         <SlidersHorizontal size={13} color="#888" />
-        <span style={{ fontSize: 11, color: '#888', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sort</span>
+        <span style={{ fontSize: 11, color: '#888', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('sort')}</span>
       </div>
       {SORT_OPTIONS.map(opt => (
         <button
@@ -250,7 +256,7 @@ function FilterBar({
             transition: 'all 0.18s ease',
           }}
         >
-          {opt.label}
+          {t(opt.label)}
         </button>
       ))}
     </div>
@@ -260,7 +266,7 @@ function FilterBar({
 
 
 
-function getDisplayPrice(item: FeedItem) {
+function getDisplayPrice(item: FeedItem, price: (n: number) => string) {
   const p         = item as any
   const base      = Number(p.price ?? 0)
   const effective = p.effective_price != null ? Number(p.effective_price) : base
@@ -274,7 +280,7 @@ function getDisplayPrice(item: FeedItem) {
     if (pct > 0) badge = `-${pct}%`
   } else {
     const saved = base - effective
-    if (saved > 0) badge = `-${saved.toFixed(2)} DT`
+    if (saved > 0) badge = `-${price(saved)}`
   }
   return { display: effective, original: base, badge, isFlash: p.promotion.is_flash_sale }
 }
@@ -284,6 +290,8 @@ function getDisplayPrice(item: FeedItem) {
 ───────────────────────────────────────────── */
 
 function ProductCard({ item, index }: { item: FeedItem; index: number }) {
+  const t   = useTranslations('discover');
+  const fmt = useFormat();
   const [imgErr, setImgErr]   = useState(false);
   const [wished, setWished]   = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -322,8 +330,7 @@ const allImages = useMemo(() => {                     // ← NEW
     setTimeout(() => setAdded(false), 1800);
   };
 
-const { display, original, badge, isFlash } = getDisplayPrice(item);
-console.log((item as any).name, display, original, badge);
+const { display, original, badge, isFlash } = getDisplayPrice(item, fmt.price);
 
 
 
@@ -383,14 +390,14 @@ onMouseLeave={() => {
               alignItems: 'center', justifyContent: 'center', gap: 8,
             }}>
               <Compass size={32} color="#d1d5db" />
-              <span style={{ fontSize: 10, color: '#d1d5db', fontWeight: 600 }}>No image</span>
+              <span style={{ fontSize: 10, color: '#d1d5db', fontWeight: 600 }}>{t('noImage')}</span>
             </div>
           )}
 
           {/* Label badge */}
           {label && (
             <div style={{
-              position: 'absolute', top: 10, left: 10,
+              position: 'absolute', top: 10, insetInlineStart: 10,
               background: label.bg,
               color: label.color,
               fontSize: 9, fontWeight: 800, padding: '3px 8px',
@@ -399,12 +406,12 @@ onMouseLeave={() => {
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}>
               <label.icon size={9} />
-              {label.text}
+              {t(`labels.${label.key}`)}
             </div>
           )}
           {badge && (
   <span style={{
-    position: 'absolute', top: label ? 38 : 10, left: 10,
+    position: 'absolute', top: label ? 38 : 10, insetInlineStart: 10,
     background: isFlash ? 'linear-gradient(135deg,#dc2626,#f97316)' : '#dc2626',
     color: '#fff', fontSize: 9, fontWeight: 900,
     padding: '2px 7px', borderRadius: 999,
@@ -419,7 +426,7 @@ onMouseLeave={() => {
           <button
             onClick={handleWish}
             style={{
-              position: 'absolute', top: 10, right: 10,
+              position: 'absolute', top: 10, insetInlineEnd: 10,
               width: 32, height: 32, borderRadius: '50%',
               background: wished ? '#db142e' : 'rgba(255,255,255,0.92)',
               border: 'none', cursor: 'pointer',
@@ -429,14 +436,15 @@ onMouseLeave={() => {
               opacity: hovered || wished ? 1 : 0,
               transition: 'all 0.22s cubic-bezier(.16,1,.3,1)',
             }}
-            aria-label="Ajouter aux favoris"
+            aria-label={t('addToWishlist')}
+            aria-pressed={wished}
           >
             <Heart size={14} color={wished ? '#fff' : '#374151'} fill={wished ? '#fff' : 'none'} />
           </button>
 
           {/* Quick-add overlay (bottom of image) */}
           <div style={{
-            position: 'absolute', bottom: 0, left: 0, right: 0,
+            position: 'absolute', bottom: 0, insetInline: 0,
             padding: '10px 12px',
             background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)',
             display: 'flex', justifyContent: 'flex-end',
@@ -455,7 +463,7 @@ onMouseLeave={() => {
                 boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
               }}
             >
-              {added ? <><Check size={11} />Ajouté</> : <><ShoppingBag size={11} />Ajouter</>}
+              {added ? <><Check size={11} />{t('added')}</> : <><ShoppingBag size={11} />{t('add')}</>}
             </button>
           </div>
         </div>
@@ -481,11 +489,11 @@ onMouseLeave={() => {
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 15, fontWeight: 900, color: '#db142e', fontFamily: "'Barlow Condensed', sans-serif" }}>
-                {display.toFixed(2)} <span style={{ fontSize: 10, fontWeight: 700 }}>DT</span>
+                {fmt.price(display, { bare: true })} <span style={{ fontSize: 10, fontWeight: 700 }}>{fmt.currency}</span>
               </span>
               {original !== null && (
-                <span style={{ fontSize: 11, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500, marginLeft: 4 }}>
-                  {original.toFixed(2)} DT
+                <span style={{ fontSize: 11, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500, marginInlineStart: 4 }}>
+                  {fmt.price(original)}
                 </span>
               )}
 
@@ -494,7 +502,7 @@ onMouseLeave={() => {
                 fontSize: 9, fontWeight: 700, color: '#ea580c',
                 background: '#fff7ed', padding: '2px 7px', borderRadius: 999,
               }}>
-                {(item as any).stock} left
+                {t('left', { count: (item as any).stock })}
               </span>
             )}
           </div>
@@ -554,7 +562,7 @@ function SectionDivider({ icon: Icon, title, subtitle, accentColor = '#db142e' }
           <p style={{ fontSize: 12, color: '#9ca3af', margin: '2px 0 0', fontWeight: 500 }}>{subtitle}</p>
         )}
       </div>
-      <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, #e5e7eb, transparent)' }} />
+      <div style={{ flex: 1, height: 1, background: 'linear-gradient(to var(--dir-end, right), #e5e7eb, transparent)' }} className="sd-line" />
     </div>
   );
 }
@@ -564,6 +572,8 @@ function SectionDivider({ icon: Icon, title, subtitle, accentColor = '#db142e' }
 ───────────────────────────────────────────── */
 
 export default function DiscoverPage() {
+  const t   = useTranslations('discover');
+  const fmt = useFormat();
   const [feed,      setFeed]      = useState<FeedItem[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [page,      setPage]      = useState(1);
@@ -670,6 +680,7 @@ const cleanOrganic = organic.filter(o => !sponsoredIds.has(o.id));
         .load-more-btn:active {
           transform: translateY(0) !important;
         }
+        [dir=rtl] .sd-line { --dir-end: left; }
       `}</style>
 
       <div style={{
@@ -688,8 +699,8 @@ const cleanOrganic = organic.filter(o => !sponsoredIds.has(o.id));
           <>
             <SectionDivider
               icon={Sparkles}
-              title="Featured for You"
-              subtitle="Curated mix of trending and promoted products"
+              title={t('featuredTitle')}
+              subtitle={t('featuredSubtitle')}
             />
             <div style={{
               display: 'grid',
@@ -716,19 +727,19 @@ const cleanOrganic = organic.filter(o => !sponsoredIds.has(o.id));
             position: 'relative', overflow: 'hidden',
           }}>
             <div style={{
-              position: 'absolute', right: -20, top: -20,
+              position: 'absolute', insetInlineEnd: -20, top: -20,
               width: 180, height: 180, borderRadius: '50%',
               background: 'rgba(255,255,255,0.06)',
             }} />
             <div style={{
-              position: 'absolute', right: 60, bottom: -40,
+              position: 'absolute', insetInlineEnd: 60, bottom: -40,
               width: 120, height: 120, borderRadius: '50%',
               background: 'rgba(255,255,255,0.04)',
             }} />
             <div style={{ position: 'relative' }}>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 6px' }}>Livraison gratuite</p>
-              <h3 style={{ fontSize: 22, fontWeight: 900, color: '#fff', margin: '0 0 4px' }}>Sur toutes commandes +50 DT</h3>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', margin: 0 }}>Partout en Tunisie — livraison rapide garantie</p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 6px' }}>{t('bannerEyebrow')}</p>
+              <h3 style={{ fontSize: 22, fontWeight: 900, color: '#fff', margin: '0 0 4px' }}>{t('bannerTitle', { amount: fmt.price(50, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) })}</h3>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', margin: 0 }}>{t('bannerSubtitle')}</p>
             </div>
             <Link href="/shop" style={{ textDecoration: 'none' }}>
               <button style={{
@@ -739,7 +750,7 @@ const cleanOrganic = organic.filter(o => !sponsoredIds.has(o.id));
                 position: 'relative',
                 transition: 'all 0.2s ease',
               }}>
-                Explorer le Shop <ArrowRight size={14} />
+                {t('bannerCta')} <ArrowRight size={14} />
               </button>
             </Link>
           </div>
@@ -750,8 +761,8 @@ const cleanOrganic = organic.filter(o => !sponsoredIds.has(o.id));
           <>
             <SectionDivider
               icon={TrendingUp}
-              title="Plus de Découvertes"
-              subtitle="Les produits qui font parler d'eux"
+              title={t('moreTitle')}
+              subtitle={t('moreSubtitle')}
               accentColor="#198f41"
             />
             <div style={{
@@ -783,7 +794,7 @@ const cleanOrganic = organic.filter(o => !sponsoredIds.has(o.id));
               }}
             >
               <ChevronRight size={16} />
-              Voir plus de produits
+              {t('loadMore')}
             </button>
           </div>
         )}
@@ -800,8 +811,8 @@ const cleanOrganic = organic.filter(o => !sponsoredIds.has(o.id));
               }}>
                 <Check size={20} color="#9ca3af" />
               </div>
-              <p style={{ fontSize: 13, margin: 0, fontWeight: 600 }}>Vous avez tout vu !</p>
-              <p style={{ fontSize: 11, margin: 0, color: '#d1d5db' }}>Revenez bientôt pour de nouveaux produits</p>
+              <p style={{ fontSize: 13, margin: 0, fontWeight: 600 }}>{t('endTitle')}</p>
+              <p style={{ fontSize: 11, margin: 0, color: '#d1d5db' }}>{t('endSubtitle')}</p>
             </div>
           </div>
         )}

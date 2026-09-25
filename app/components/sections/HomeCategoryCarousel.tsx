@@ -3,10 +3,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
+import { canScrollNext, canScrollPrev, scrollCarousel } from '@/lib/i18n/rtlScroll'
 
 interface Category {
   id: number
   name: string
+  base_name?: string // original English name (the API translates `name`)
   name_ar: string
   slug: string
   icon: string | null
@@ -39,7 +42,7 @@ const CATEGORY_IMAGE_MAP: { keywords: string[]; src: string }[] = [
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=85&auto=format&fit=crop'
 
 function getFallbackImage(cat: Category): string {
-  const searchStr = `${cat.name} ${cat.name_ar ?? ''} ${cat.slug}`.toLowerCase()
+  const searchStr = `${cat.base_name ?? ''} ${cat.name} ${cat.slug}`.toLowerCase()
   for (const entry of CATEGORY_IMAGE_MAP) {
     if (entry.keywords.some(kw => searchStr.includes(kw))) return entry.src
   }
@@ -72,6 +75,8 @@ function CategoryCard({ cat, index, visible }: { cat: Category; index: number; v
 }
 
 export default function HomeCategoryCarousel() {
+  const t          = useTranslations('home')
+  const tc         = useTranslations('common')
   const trackRef   = useRef<HTMLDivElement>(null)
   const [canLeft,  setCanLeft]  = useState(false)
   const [canRight, setCanRight] = useState(true)
@@ -91,16 +96,16 @@ export default function HomeCategoryCarousel() {
 
   useEffect(() => {
     if (!loading && categories.length > 0) {
-      const t = setTimeout(() => setVisible(true), 60)
-      return () => clearTimeout(t)
+      const timer = setTimeout(() => setVisible(true), 60)
+      return () => clearTimeout(timer)
     }
   }, [loading, categories.length])
 
   const checkArrows = useCallback(() => {
     const el = trackRef.current
     if (!el) return
-    setCanLeft(el.scrollLeft > 4)
-    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+    setCanLeft(canScrollPrev(el))
+    setCanRight(canScrollNext(el))
   }, [])
 
   useEffect(() => {
@@ -111,10 +116,9 @@ export default function HomeCategoryCarousel() {
     return () => el.removeEventListener('scroll', checkArrows)
   }, [checkArrows, categories])
 
-  const scroll = (dir: 'left' | 'right') => {
+  const scroll = (dir: 'prev' | 'next') => {
     const el = trackRef.current
-    if (!el) return
-    el.scrollBy({ left: dir === 'right' ? el.clientWidth * 0.75 : -(el.clientWidth * 0.75), behavior: 'smooth' })
+    if (el) scrollCarousel(el, dir)
   }
 
   return (
@@ -144,31 +148,34 @@ export default function HomeCategoryCarousel() {
         .ccat:hover .ccat__img{transform:scale(1.1)}
         .ccat__shine{position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.18) 0%,transparent 60%);pointer-events:none;border-radius:16px;opacity:0;transition:opacity .25s ease}
         .ccat:hover .ccat__shine{opacity:1}
-        .ccat__img-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#dc2626,#ff6b6b);transform:scaleX(0);transform-origin:left;transition:transform .28s ease;border-radius:0 0 16px 16px}
+        .ccat__img-wrap::after{content:'';position:absolute;bottom:0;inset-inline:0;height:3px;background:linear-gradient(90deg,#dc2626,#ff6b6b);transform:scaleX(0);transform-origin:var(--origin-start,left);transition:transform .28s ease;border-radius:0 0 16px 16px}
         .ccat:hover .ccat__img-wrap::after{transform:scaleX(1)}
         .ccat__name{font-family:'Barlow',sans-serif;font-size:.8rem;font-weight:700;color:#222;text-align:center;line-height:1.3;margin:0;max-width:138px;word-break:break-word;transition:color .18s ease}
         .ccat:hover .ccat__name{color:#dc2626}
         .ccat-skeleton{flex:0 0 auto;width:148px;display:flex;flex-direction:column;align-items:center;gap:11px}
         .ccat-skeleton__img{width:148px;height:148px;border-radius:18px;background:linear-gradient(90deg,#e4e4e4 25%,#efefef 50%,#e4e4e4 75%);background-size:600px 100%;animation:shimmer 1.3s infinite linear}
         .ccat-skeleton__text{width:90px;height:12px;border-radius:4px;background:linear-gradient(90deg,#e4e4e4 25%,#efefef 50%,#e4e4e4 75%);background-size:600px 100%;animation:shimmer 1.3s infinite linear}
+        [dir=rtl] .cc-wrap{--origin-start:right}
+        [dir=rtl] .cc-arrow--right:not(:disabled) svg{animation-name:arrowPulseL}
+        [dir=rtl] .cc-arrow--left:not(:disabled) svg{animation-name:arrowPulse}
         @media(max-width:640px){.ccat{width:118px}.ccat__img-wrap{width:118px;height:118px}.ccat-skeleton{width:118px}.ccat-skeleton__img{width:118px;height:118px}.cc-arrow{width:34px;height:34px}}
       `}</style>
 
       <div className="cat-section">
         <div className="cat-inner">
           <div className="cat-header">
-            <h2 className="cat-title">Popular categories</h2>
-            <Link href="/shop" className="cat-view-all">View All →</Link>
+            <h2 className="cat-title">{t('popularCategories')}</h2>
+            <Link href="/shop" className="cat-view-all">{t('viewAllArrow')}</Link>
           </div>
           <div className="cc-wrap">
             <button
               className="cc-arrow cc-arrow--left"
-              onClick={() => scroll('left')}
+              onClick={() => scroll('prev')}
               disabled={!canLeft}
-              aria-label="Scroll left"
+              aria-label={tc('scrollPrev')}
               style={{ opacity: canLeft ? 1 : 0, pointerEvents: canLeft ? 'auto' : 'none' }}
             >
-              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+              <svg className="rtl-flip" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
             <div className="cc-track" ref={trackRef}>
               {loading
@@ -185,12 +192,12 @@ export default function HomeCategoryCarousel() {
             </div>
             <button
               className="cc-arrow cc-arrow--right"
-              onClick={() => scroll('right')}
+              onClick={() => scroll('next')}
               disabled={!canRight}
-              aria-label="Scroll right"
+              aria-label={tc('scrollNext')}
               style={{ opacity: canRight ? 1 : 0, pointerEvents: canRight ? 'auto' : 'none' }}
             >
-              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+              <svg className="rtl-flip" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
             </button>
           </div>
         </div>

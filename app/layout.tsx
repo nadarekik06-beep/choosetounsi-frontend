@@ -1,16 +1,31 @@
-import type { Viewport } from "next";
-import { Syne } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Fragment } from "react";
+import { Syne, Cairo } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import "./globals.css";
+import { dirOf, type Locale } from "@/i18n/config";
 import { CartProvider } from '@/context/CartContext';
+import { LanguageProvider } from '@/components/i18n/LanguageSwitcher';
 import FlashToast from '@/components/FlashToast';
 import CartDrawer from '@/components/CartDrawer';
 import SupportChatWidget from '@/components/SupportChatWidget';
-import ReviewPromptPopup from '@/app/components/reviews/ReviewPromptPopup'; // ✅ ADD THIS
+import SiteFooter from '@/components/layout/SiteFooter';
+import ReviewPromptPopup from '@/app/components/reviews/ReviewPromptPopup';
 
 const syne = Syne({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-syne",
+});
+
+// Arabic typeface — only attached (and therefore only downloaded) for `ar`.
+const cairo = Cairo({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-cairo",
+  preload: false,
+  display: "swap",
 });
 
 export const viewport: Viewport = {
@@ -19,29 +34,43 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export const metadata = {
-  title: "ChooseTounsi — Tunisia's #1 Multi-Vendor Marketplace",
-  description: "Shop from hundreds of local Tunisian vendors. Fashion, electronics, home goods and more.",
-  icons: {
-    icon: "/favicon.ico",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("meta");
+  return {
+    title: { default: t("title"), template: `%s | ChooseTounsi` },
+    description: t("description"),
+    icons: { icon: "/favicon.ico" },
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = (await getLocale()) as Locale;
+  const fontClass = locale === "ar" ? `${syne.variable} ${cairo.variable}` : syne.variable;
+
   return (
-    <html lang="en" className={syne.variable}>
+    <html lang={locale} dir={dirOf(locale)} className={fontClass}>
       <body className="antialiased text-zinc-900">
-        <CartProvider>
-          {children}
-          <FlashToast />
-          <CartDrawer />
-          <SupportChatWidget />
-          <ReviewPromptPopup />  {/* ✅ INSIDE CartProvider so auth works */}
-        </CartProvider>
+        <NextIntlClientProvider>
+          <LanguageProvider>
+            <CartProvider>
+              {/* Keyed by locale: switching language remounts the page so it
+                  refetches API content in the new language (cart/session live
+                  in providers above and are kept). */}
+              <Fragment key={locale}>
+                {children}
+                <SiteFooter />
+              </Fragment>
+              <FlashToast />
+              <CartDrawer />
+              <SupportChatWidget />
+              <ReviewPromptPopup />
+            </CartProvider>
+          </LanguageProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

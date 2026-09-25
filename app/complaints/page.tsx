@@ -13,11 +13,14 @@ import { useRouter } from 'next/navigation'
 import { isAuthenticated } from '@/lib/auth'
 import { complaintApi } from '@/lib/complaintApi'
 import type { Complaint } from '@/types/complaint'
-import { STATUS_CONFIG, COMPLAINT_TYPE_LABELS } from '@/types/complaint'
+import { STATUS_CONFIG } from '@/types/complaint'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 const RED = '#db142e'
 
 function StatusBadge({ status }: { status: Complaint['status'] }) {
+  const t = useTranslations('complaints')
   const cfg = STATUS_CONFIG[status]
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -28,12 +31,14 @@ function StatusBadge({ status }: { status: Complaint['status'] }) {
       {status === 'reviewing' && '🔍'}
       {status === 'approved'  && '✅'}
       {status === 'rejected'  && '❌'}
-      {' '}{cfg.label}
+      {' '}{t(`status.${status}.label`)}
     </span>
   )
 }
 
 function ComplaintCard({ complaint }: { complaint: Complaint }) {
+  const t   = useTranslations('complaints')
+  const fmt = useFormat()
   const [expanded, setExpanded] = useState(false)
   const cfg = STATUS_CONFIG[complaint.status]
 
@@ -53,10 +58,10 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
               <div>
                 <p style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700,
                   textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px' }}>
-                  Complaint #{complaint.id}
+                  {t('complaintN', { id: complaint.id })}
                 </p>
                 <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0 }}>
-                  {COMPLAINT_TYPE_LABELS[complaint.complaint_type]}
+                  {t(`types.${complaint.complaint_type}`)}
                   {complaint.complaint_type === 'other' && complaint.other_reason
                     ? ` — ${complaint.other_reason}`
                     : ''}
@@ -65,7 +70,7 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
               <div>
                 <p style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700,
                   textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px' }}>
-                  Order
+                  {t('order')}
                 </p>
                 <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0 }}>
                   #{complaint.order?.order_number ?? complaint.order_id}
@@ -77,7 +82,7 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
               style={{ fontSize: 12, fontWeight: 700, color: '#64748b', background: '#f8fafc',
                 border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 12px',
                 cursor: 'pointer', fontFamily: 'inherit' }}>
-              {expanded ? '▲ Hide' : '▼ Details'}
+              {expanded ? `▲ ${t('hide')}` : `▼ ${t('details')}`}
             </button>
           </div>
 
@@ -85,7 +90,7 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
           <div style={{ padding: '8px 20px 10px', background: `${cfg.bg}`,
             borderTop: `1px solid ${cfg.color}20` }}>
             <p style={{ fontSize: 12, color: cfg.color, fontWeight: 600, margin: 0 }}>
-              {cfg.description}
+              {t(`status.${complaint.status}.description`)}
             </p>
           </div>
 
@@ -93,17 +98,17 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
           {expanded && (
             <div style={{ padding: '16px 20px', borderTop: '1px solid #f1f5f9' }}>
               <p style={{ fontSize: 13, color: '#374151', margin: '0 0 12px', lineHeight: 1.6 }}>
-                <strong>Description:</strong> {complaint.description}
+                <strong>{t('description')}</strong> {complaint.description}
               </p>
 
               {complaint.image_url && (
                 <div style={{ marginBottom: 12 }}>
                   <p style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8',
                     textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
-                    Proof Photo
+                    {t('proofPhoto')}
                   </p>
                   <a href={complaint.image_url} target="_blank" rel="noreferrer">
-                    <img src={complaint.image_url} alt="Proof"
+                    <img src={complaint.image_url} alt={t('proofPhoto')}
                       style={{ maxWidth: 200, maxHeight: 150, objectFit: 'cover',
                         borderRadius: 10, border: '1.5px solid #e5e7eb', cursor: 'zoom-in' }} />
                   </a>
@@ -115,7 +120,7 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
                   borderRadius: 10, padding: '12px 14px', marginBottom: 10 }}>
                   <p style={{ fontSize: 12, fontWeight: 800, color: '#1e40af',
                     margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Seller Response
+                    {t('sellerResponse')}
                   </p>
                   <p style={{ fontSize: 13, color: '#3b82f6', margin: 0, lineHeight: 1.6 }}>
                     {complaint.seller_note}
@@ -128,7 +133,7 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
                   borderRadius: 10, padding: '12px 14px' }}>
                   <p style={{ fontSize: 12, fontWeight: 800, color: '#dc2626',
                     margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Rejection Reason
+                    {t('rejectionReason')}
                   </p>
                   <p style={{ fontSize: 13, color: '#ef4444', margin: 0, lineHeight: 1.6 }}>
                     {complaint.rejection_reason}
@@ -137,9 +142,7 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
               )}
 
               <p style={{ fontSize: 11, color: '#94a3b8', margin: '12px 0 0', fontWeight: 600 }}>
-                Filed on {new Date(complaint.created_at).toLocaleDateString('en-GB', {
-                  day: 'numeric', month: 'long', year: 'numeric'
-                })}
+                {t('filedOn', { date: fmt.date(complaint.created_at, 'long') })}
               </p>
             </div>
           )}
@@ -150,6 +153,8 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
 }
 
 export default function MyComplaintsPage() {
+  const t      = useTranslations('complaints')
+  const tc     = useTranslations('common')
   const router = useRouter()
   const [complaints, setComplaints] = useState<Complaint[]>([])
   const [loading,    setLoading]    = useState(true)
@@ -187,11 +192,11 @@ export default function MyComplaintsPage() {
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
           <div style={{ maxWidth: 800, margin: '0 auto', padding: '10px 24px',
             display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
-            <Link href="/"       style={{ color: '#94a3b8', textDecoration: 'none' }}>Home</Link>
-            <span>›</span>
-            <Link href="/orders" style={{ color: '#94a3b8', textDecoration: 'none' }}>My Orders</Link>
-            <span>›</span>
-            <span style={{ color: '#374151', fontWeight: 700 }}>My Complaints</span>
+            <Link href="/"       style={{ color: '#94a3b8', textDecoration: 'none' }}>{tc('home')}</Link>
+            <span className="rtl-flip">›</span>
+            <Link href="/orders" style={{ color: '#94a3b8', textDecoration: 'none' }}>{t('myOrders')}</Link>
+            <span className="rtl-flip">›</span>
+            <span style={{ color: '#374151', fontWeight: 700 }}>{t('title')}</span>
           </div>
         </div>
 
@@ -209,11 +214,11 @@ export default function MyComplaintsPage() {
               </div>
               <div>
                 <h1 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>
-                  My Complaints
+                  {t('title')}
                 </h1>
                 {!loading && !error && (
                   <p style={{ fontSize: 12, color: '#94a3b8', margin: 0, fontWeight: 600 }}>
-                    {complaints.length} complaint{complaints.length !== 1 ? 's' : ''}
+                    {t('count', { count: complaints.length })}
                   </p>
                 )}
               </div>
@@ -222,7 +227,7 @@ export default function MyComplaintsPage() {
               style={{ padding: '10px 20px', background: RED, color: '#fff', fontWeight: 800,
                 fontSize: 13, borderRadius: 10, textDecoration: 'none',
                 boxShadow: `0 4px 14px ${RED}40` }}>
-              + New Complaint
+              + {t('new')}
             </Link>
           </div>
 
@@ -233,7 +238,7 @@ export default function MyComplaintsPage() {
                 borderTopColor: RED, borderRadius: '50%',
                 animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
               <p style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>
-                Loading your complaints…
+                {t('loading')}
               </p>
             </div>
           )}
@@ -242,7 +247,7 @@ export default function MyComplaintsPage() {
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca',
               borderRadius: 12, padding: '16px 20px', color: RED,
               fontSize: 13, fontWeight: 600 }}>
-              Failed to load complaints. Please refresh the page.
+              {t('loadFailed')}
             </div>
           )}
 
@@ -250,16 +255,16 @@ export default function MyComplaintsPage() {
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>🚨</div>
               <p style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>
-                No complaints yet
+                {t('emptyTitle')}
               </p>
               <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px' }}>
-                If you have an issue with a delivered order, you can file a complaint.
+                {t('emptyBody')}
               </p>
               <Link href="/complaints/new"
                 style={{ padding: '10px 24px', background: RED, color: '#fff',
                   fontWeight: 800, fontSize: 13, borderRadius: 10, textDecoration: 'none',
                   boxShadow: `0 4px 14px ${RED}40` }}>
-                File a Complaint
+                {t('file')}
               </Link>
             </div>
           )}

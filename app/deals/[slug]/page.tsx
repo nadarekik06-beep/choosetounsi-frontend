@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { isAuthenticated } from '@/lib/auth'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 const ORIGIN  = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL = `${ORIGIN}/api`
@@ -21,8 +23,10 @@ function resolveImg(path: string | null | undefined): string | null {
   return `${ORIGIN}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
 }
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(n) + ' TND'
+function usePackPrice() {
+  const { price } = useFormat()
+  return (n: number) => price(n, { minimumFractionDigits: 3 })
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,6 +64,7 @@ interface PackDetail {
 
 // ─── Gallery component (matches product detail page style) ────────────────────
 function Gallery({ images, name }: { images: string[]; name: string }) {
+  const t = useTranslations('product')
   const [active, setActive] = useState(0)
   const [zoom,   setZoom]   = useState(false)
   const [pos,    setPos]    = useState({ x: 50, y: 50 })
@@ -79,6 +84,7 @@ function Gallery({ images, name }: { images: string[]; name: string }) {
               <button
                 key={i}
                 onClick={() => setActive(i)}
+                aria-label={t('imageN', { n: i + 1 })}
                 style={{
                   width: 72, height: 72, borderRadius: 8,
                   overflow: 'hidden', padding: 0,
@@ -129,13 +135,13 @@ function Gallery({ images, name }: { images: string[]; name: string }) {
             )}
             {!zoom && cur && (
               <div style={{
-                position: 'absolute', bottom: 12, right: 12,
+                position: 'absolute', bottom: 12, insetInlineEnd: 12,
                 background: 'rgba(0,0,0,0.45)', color: '#fff',
                 borderRadius: 8, padding: '5px 8px',
                 display: 'flex', alignItems: 'center', gap: 4,
                 fontSize: 11, fontWeight: 600,
               }}>
-                <ZoomIn size={13} /> Hover to zoom
+                <ZoomIn size={13} /> {t('hoverZoom')}
               </div>
             )}
           </div>
@@ -145,8 +151,9 @@ function Gallery({ images, name }: { images: string[]; name: string }) {
             <>
               <button
                 onClick={() => setActive(i => (i - 1 + images.length) % images.length)}
+                aria-label={t('prevImage')}
                 style={{
-                  position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+                  position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)',
                   width: 32, height: 32, borderRadius: '50%',
                   background: 'rgba(255,255,255,0.9)', border: '1px solid #e5e7eb',
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -157,8 +164,9 @@ function Gallery({ images, name }: { images: string[]; name: string }) {
               </button>
               <button
                 onClick={() => setActive(i => (i + 1) % images.length)}
+                aria-label={t('nextImage')}
                 style={{
-                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                  position: 'absolute', insetInlineEnd: 10, top: '50%', transform: 'translateY(-50%)',
                   width: 32, height: 32, borderRadius: '50%',
                   background: 'rgba(255,255,255,0.9)', border: '1px solid #e5e7eb',
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -178,6 +186,7 @@ function Gallery({ images, name }: { images: string[]; name: string }) {
           {images.map((_, i) => (
             <button
               key={i} onClick={() => setActive(i)}
+              aria-label={t('imageN', { n: i + 1 })}
               style={{
                 width: i === active ? 20 : 7, height: 7,
                 borderRadius: 999,
@@ -202,6 +211,9 @@ function PackItemRow({
   onSelectVariant: (variantId: number | null) => void
   hasError: boolean
 }) {
+  const t = useTranslations('packDetail')
+  const tc = useTranslations('common')
+  const fmt = usePackPrice()
   const product = item.product
   if (!product) return null
 
@@ -266,7 +278,7 @@ function PackItemRow({
                 background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)',
                 padding: '1px 7px', borderRadius: 999,
               }}>
-                ⚠ Select variant
+                ⚠ {t('selectVariant')}
               </span>
             )}
             {variantChosen && needsVariant && (
@@ -276,7 +288,7 @@ function PackItemRow({
                 padding: '1px 7px', borderRadius: 999,
                 display: 'flex', alignItems: 'center', gap: 3,
               }}>
-                <CheckCircle size={9} /> Selected
+                <CheckCircle size={9} /> {t('selected')}
               </span>
             )}
           </div>
@@ -290,7 +302,7 @@ function PackItemRow({
             fontSize: 10, fontWeight: 800, color: '#94a3b8',
             textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px',
           }}>
-            Choose variant
+            {t('chooseVariant')}
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {item.available_variants.map(v => {
@@ -305,6 +317,7 @@ function PackItemRow({
                   type="button"
                   onClick={() => !outOfStock && onSelectVariant(v.id)}
                   disabled={outOfStock}
+                  aria-pressed={chosen}
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
                     padding: '8px 12px', borderRadius: 10,
@@ -312,13 +325,13 @@ function PackItemRow({
                     border: `2px solid ${chosen ? '#db142e' : '#e5e7eb'}`,
                     background: chosen ? 'rgba(219,20,46,0.05)' : outOfStock ? '#fafafa' : '#fff',
                     opacity: outOfStock ? 0.45 : 1,
-                    transition: 'all 0.15s', textAlign: 'left', position: 'relative',
+                    transition: 'all 0.15s', textAlign: 'start', position: 'relative',
                     minWidth: 90,
                   }}
                 >
                   {chosen && (
                     <div style={{
-                      position: 'absolute', top: 5, right: 5,
+                      position: 'absolute', top: 5, insetInlineEnd: 5,
                       width: 14, height: 14, borderRadius: '50%',
                       background: '#db142e',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -349,7 +362,7 @@ function PackItemRow({
                       color: outOfStock ? '#ef4444' : v.stock <= 5 ? '#f59e0b' : '#10b981',
                       fontWeight: 700,
                     }}>
-                      {outOfStock ? 'Out of stock' : `${v.stock} left`}
+                      {outOfStock ? tc('outOfStock') : t('left', { count: v.stock })}
                     </span>
                   </p>
                 </button>
@@ -362,7 +375,7 @@ function PackItemRow({
       {!needsVariant && (
         <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
           <CheckCircle size={13} color="#10b981" />
-          <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>Ready to add — no variant needed</span>
+          <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>{t('noVariantNeeded')}</span>
         </div>
       )}
     </div>
@@ -372,6 +385,11 @@ function PackItemRow({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PackDetailPage() {
+  const t      = useTranslations('packDetail')
+  const tc     = useTranslations('common')
+  const tp     = useTranslations('product')
+  const format = useFormat()
+  const fmt    = usePackPrice()
   const params = useParams()
   const router = useRouter()
   const slug   = params?.slug as string
@@ -441,7 +459,7 @@ export default function PackDetailPage() {
     }
     if (!allVariantsSelected()) {
       setSelectorError(true)
-      setCartError('Please select a variant for each item.')
+      setCartError(t('selectEach'))
       return
     }
     setSelectorError(false); setCartError(''); setAddingToCart(true)
@@ -451,11 +469,11 @@ export default function PackDetailPage() {
       setAddedToCart(true)
       setTimeout(() => setAddedToCart(false), 3000)
     } catch (err: any) {
-      setCartError(err?.message ?? 'Failed to add bundle to cart.')
+      setCartError(err?.message ?? t('addFailed'))
     } finally {
       setAddingToCart(false)
     }
-  }, [pack, allVariantsSelected, addPackToCart, buildPackSelections, router, slug])
+  }, [pack, allVariantsSelected, addPackToCart, buildPackSelections, router, slug, t])
 
   // ── FIXED: Buy Now — add pack as ONE entry then go to checkout ────────────
   const handleBuyNow = useCallback(async () => {
@@ -466,7 +484,7 @@ export default function PackDetailPage() {
     }
     if (!allVariantsSelected()) {
       setSelectorError(true)
-      setCartError('Please select a variant for each item.')
+      setCartError(t('selectEach'))
       return
     }
     setSelectorError(false); setCartError(''); setAddingToCart(true)
@@ -475,11 +493,11 @@ export default function PackDetailPage() {
       await addPackToCart(pack.id, buildPackSelections())
       router.push('/checkout')
     } catch (err: any) {
-      setCartError(err?.message ?? 'Failed to proceed.')
+      setCartError(err?.message ?? t('proceedFailed'))
     } finally {
       setAddingToCart(false)
     }
-  }, [pack, allVariantsSelected, addPackToCart, buildPackSelections, router, slug])
+  }, [pack, allVariantsSelected, addPackToCart, buildPackSelections, router, slug, t])
 
   // Gallery: pack image + product thumbnails
   const galleryImages = pack
@@ -501,7 +519,7 @@ export default function PackDetailPage() {
       <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 40, height: 40, border: '3px solid #eee', borderTopColor: '#db142e', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 14px' }} />
-          <p style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>Loading bundle…</p>
+          <p style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>{t('loading')}</p>
         </div>
       </div>
     </>
@@ -512,8 +530,8 @@ export default function PackDetailPage() {
     <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <Package2 size={48} color="#d1d5db" style={{ margin: '0 auto 16px', display: 'block' }} />
-        <p style={{ fontSize: 18, fontWeight: 800, color: '#111', margin: '0 0 8px' }}>Bundle not found</p>
-        <Link href="/deals" style={{ color: '#db142e', fontWeight: 700, fontSize: 14 }}>← Back to Deals</Link>
+        <p style={{ fontSize: 18, fontWeight: 800, color: '#111', margin: '0 0 8px' }}>{t('notFound')}</p>
+        <Link href="/deals" style={{ color: '#db142e', fontWeight: 700, fontSize: 14 }}>{t('backToDeals')}</Link>
       </div>
     </div>
   )
@@ -537,13 +555,13 @@ export default function PackDetailPage() {
 
         {/* Breadcrumb */}
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
-          <div style={{ maxWidth: 1280, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8', flexWrap: 'wrap' }}>
-            <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Home</Link>
+          <nav aria-label={tp('breadcrumb')} style={{ maxWidth: 1280, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8', flexWrap: 'wrap' }}>
+            <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>{tc('home')}</Link>
             <ChevronRight size={11} />
-            <Link href="/deals" style={{ color: '#94a3b8', textDecoration: 'none' }}>Deals</Link>
+            <Link href="/deals" style={{ color: '#94a3b8', textDecoration: 'none' }}>{t('deals')}</Link>
             <ChevronRight size={11} />
             <span style={{ color: '#374151', fontWeight: 600 }}>{pack.name}</span>
-          </div>
+          </nav>
         </div>
 
         {/* Main 2-col grid */}
@@ -572,7 +590,7 @@ export default function PackDetailPage() {
                 textTransform: 'uppercase', letterSpacing: '0.06em',
                 display: 'flex', alignItems: 'center', gap: 5,
               }}>
-                <Package2 size={11} /> Bundle Deal
+                <Package2 size={11} /> {t('bundleDeal')}
               </span>
               <span style={{
                 fontSize: 11, fontWeight: 700, color: '#64748b',
@@ -580,7 +598,7 @@ export default function PackDetailPage() {
                 padding: '3px 10px', borderRadius: 999,
                 display: 'flex', alignItems: 'center', gap: 4,
               }}>
-                <Tag size={10} /> {pack.items_count} products · {totalItemsCount} items total
+                <Tag size={10} /> {t('counts', { products: pack.items_count, items: totalItemsCount })}
               </span>
             </div>
 
@@ -592,6 +610,8 @@ export default function PackDetailPage() {
               <button
                 className="fav-btn"
                 onClick={() => toggleFavorite(pack.id)}
+                aria-label={favorited ? tp('removeFavorite') : tp('addFavorite')}
+                aria-pressed={favorited}
                 style={{
                   width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
                   border: `2px solid ${favorited ? '#db142e' : '#e5e7eb'}`,
@@ -616,14 +636,14 @@ export default function PackDetailPage() {
                   {pack.seller.name.charAt(0).toUpperCase()}
                 </div>
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>
-                  Bundle by <strong style={{ color: '#db142e' }}>{pack.seller.name}</strong>
+                  {t.rich('bundleBy', { name: pack.seller.name, b: c => <strong style={{ color: '#db142e' }}>{c}</strong> })}
                 </span>
                 <span style={{
                   fontSize: 10, fontWeight: 700, color: '#db142e',
                   background: 'rgba(219,20,46,0.08)', border: '1px solid rgba(219,20,46,0.2)',
                   padding: '2px 8px', borderRadius: 999,
                 }}>
-                  Verified
+                  {tp('verified')}
                 </span>
               </div>
             )}
@@ -657,7 +677,7 @@ export default function PackDetailPage() {
                   padding: '4px 12px', borderRadius: 999,
                 }}>
                   <TrendingDown size={13} />
-                  Save {fmt(pack.savings)} ({savingsPct}%)
+                  {t('saveWithPct', { amount: fmt(pack.savings), pct: savingsPct })}
                 </div>
               )}
             </div>
@@ -668,7 +688,7 @@ export default function PackDetailPage() {
                 fontSize: 11, fontWeight: 800, textTransform: 'uppercase',
                 letterSpacing: '0.08em', color: '#94a3b8', margin: '0 0 12px',
               }}>
-                What's in this bundle — select your variants
+                {t('whatsInside')}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {pack.items.map(item => (
@@ -719,7 +739,7 @@ export default function PackDetailPage() {
               >
                 {addingToCart
                   ? <Loader2 size={17} style={{ animation: 'spin 0.8s linear infinite' }} />
-                  : <><Zap size={16} /> Buy Now</>
+                  : <><Zap size={16} /> {tc('buyNow')}</>
                 }
               </button>
 
@@ -746,8 +766,8 @@ export default function PackDetailPage() {
                 {addingToCart
                   ? <Loader2 size={17} style={{ animation: 'spin 0.8s linear infinite' }} />
                   : addedToCart
-                    ? <><CheckCircle size={17} /> Added to Cart!</>
-                    : <><ShoppingCart size={17} /> Add to Cart</>
+                    ? <><CheckCircle size={17} /> {t('added')}</>
+                    : <><ShoppingCart size={17} /> {tc('addToCart')}</>
                 }
               </button>
 
@@ -755,6 +775,8 @@ export default function PackDetailPage() {
               <button
                 className="fav-btn"
                 onClick={() => toggleFavorite(pack.id)}
+                aria-label={favorited ? tp('removeFavorite') : tp('addFavorite')}
+                aria-pressed={favorited}
                 style={{
                   width: 52, height: 52, flexShrink: 0,
                   borderRadius: '50%',
@@ -771,10 +793,10 @@ export default function PackDetailPage() {
             {/* Trust badges */}
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden', marginBottom: 20 }}>
               {[
-                { icon: <Truck size={17} color="#10b981" />,       title: 'Free Delivery',   desc: 'On orders over 50 DT across Tunisia' },
-                { icon: <RotateCcw size={17} color="#3b82f6" />,   title: 'Easy Returns',    desc: '30-day hassle-free return policy' },
-                { icon: <Shield size={17} color="#f59e0b" />,      title: 'Secure Payment',  desc: 'Your transaction is fully protected' },
-                { icon: <CheckCircle size={17} color="#db142e" />, title: 'Verified Bundle', desc: 'All sellers are reviewed by our team' },
+                { icon: <Truck size={17} color="#10b981" />,       title: tp('freeDelivery'),  desc: tp('trustDeliveryDesc', { amount: format.price(50, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }) },
+                { icon: <RotateCcw size={17} color="#3b82f6" />,   title: tp('trustReturns'),  desc: tp('trustReturnsDesc') },
+                { icon: <Shield size={17} color="#f59e0b" />,      title: tp('trustPayment'),  desc: tp('trustPaymentDesc') },
+                { icon: <CheckCircle size={17} color="#db142e" />, title: t('verifiedBundle'), desc: tp('trustSellerDesc') },
               ].map(({ icon, title, desc }) => (
                 <div key={title} style={{
                   display: 'flex', alignItems: 'center', gap: 12,
@@ -791,31 +813,33 @@ export default function PackDetailPage() {
 
             {/* Tabs — Description / Items */}
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
-              <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9' }}>
+              <div role="tablist" style={{ display: 'flex', borderBottom: '1px solid #f1f5f9' }}>
                 {([
-                  { key: 'description', label: 'Description' },
-                  { key: 'items',       label: `Items (${pack.items_count})` },
-                ] as { key: 'description' | 'items'; label: string }[]).map(t => (
+                  { key: 'description', label: tp('tabDescription') },
+                  { key: 'items',       label: t('itemsTab', { count: pack.items_count }) },
+                ] as { key: 'description' | 'items'; label: string }[]).map(tb => (
                   <button
-                    key={t.key}
+                    key={tb.key}
+                    role="tab"
+                    aria-selected={tab === tb.key}
                     className="pd-tab"
-                    onClick={() => setTab(t.key)}
+                    onClick={() => setTab(tb.key)}
                     style={{
                       flex: 1, height: 44, border: 'none', background: 'transparent',
                       cursor: 'pointer', fontWeight: 700, fontSize: 13,
-                      color: tab === t.key ? '#db142e' : '#94a3b8',
-                      borderBottom: `2px solid ${tab === t.key ? '#db142e' : 'transparent'}`,
+                      color: tab === tb.key ? '#db142e' : '#94a3b8',
+                      borderBottom: `2px solid ${tab === tb.key ? '#db142e' : 'transparent'}`,
                       transition: 'color 0.15s', fontFamily: 'inherit',
                     }}
                   >
-                    {t.label}
+                    {tb.label}
                   </button>
                 ))}
               </div>
               <div style={{ padding: '16px 20px' }}>
                 {tab === 'description' && (
                   <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.7, margin: 0, fontWeight: 500, whiteSpace: 'pre-line' }}>
-                    {pack.description || pack.short_description || 'No description available.'}
+                    {pack.description || pack.short_description || tp('noDescription')}
                   </p>
                 )}
                 {tab === 'items' && (
@@ -840,7 +864,7 @@ export default function PackDetailPage() {
                             {item.product?.name}
                           </p>
                           <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
-                            Qty: {item.quantity} · {fmt(item.product?.price ?? 0)}
+                            {t('qty', { count: item.quantity })} · {fmt(item.product?.price ?? 0)}
                           </p>
                         </div>
                         {item.product?.slug && (
@@ -848,7 +872,7 @@ export default function PackDetailPage() {
                             href={`/products/${item.product.slug}`}
                             style={{ fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none', whiteSpace: 'nowrap' }}
                           >
-                            View →
+                            {t('view')}
                           </Link>
                         )}
                       </div>

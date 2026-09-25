@@ -7,7 +7,10 @@ import { logout, isAuthenticated, getUser, AuthUser } from "@/lib/auth";
 import { useCart } from "@/context/CartContext";
 import { Heart, ShoppingBag, ClipboardList, AlertCircle } from "lucide-react";
 import Image from 'next/image'
+import { useTranslations } from "next-intl";
 import { sponsorshipApi, SponsoredProduct } from "@/lib/sponsorshipApi";
+import { useFormat } from "@/lib/i18n/useFormat";
+import { LanguageLink, LanguageInlineSelect } from "@/components/i18n/LanguageSwitcher";
 
 interface ApiCategory {
   id: number; name: string; name_ar: string; slug: string;
@@ -16,67 +19,68 @@ interface ApiCategory {
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 /* ─── Mega menu data ─────────────────────────────────────────── */
-type SubGroup = { title: string; items: { label: string; slug: string }[] }
+// Labels live in messages: mega.groups.<group> and mega.items.<slug>
+type SubGroup = { group: string; items: string[] }
 type MegaData = Record<string, SubGroup[]>
 const MEGA: MegaData = {
   "fashion-clothing": [
-    { title:"Clothing", items:[{label:"Dress",slug:"dress"},{label:"T-shirt",slug:"t-shirt"},{label:"Shirt",slug:"shirt"},{label:"Jeans",slug:"jeans"},{label:"Denim Jacket",slug:"denim-jacket"},{label:"Shorts",slug:"shorts"},{label:"Sweatshirt",slug:"sweatshirt"}]},
-    { title:"Shoes",    items:[{label:"High Heels",slug:"high-heels"},{label:"Sneakers",slug:"sneakers"},{label:"Sandals",slug:"sandals"}]},
-    { title:"Bags",     items:[{label:"Handbag",slug:"handbag"},{label:"Backpack",slug:"backpack"}]},
-    { title:"Accessories & Bags", items:[{label:"Watch",slug:"watch"},{label:"Scarf",slug:"scarf"}]},
-    { title:"Underwear & Nightwear", items:[{label:"Pyjama Set",slug:"pyjama-set"}]},
-    { title:"Cosmetics", items:[{label:"Perfume",slug:"eau-de-parfum"}]},
-    { title:"Sports & Leisure", items:[{label:"Sweat-shirt",slug:"sweatshirt"},{label:"Sports T-shirt",slug:"sportswear"},{label:"Tracksuit",slug:"tracksuit"}]},
+    { group:"clothing", items:["dress","t-shirt","shirt","jeans","denim-jacket","shorts","sweatshirt"] },
+    { group:"shoes", items:["high-heels","sneakers","sandals"] },
+    { group:"bags", items:["handbag","backpack"] },
+    { group:"accessoriesBags", items:["watch","scarf"] },
+    { group:"underwear", items:["pyjama-set"] },
+    { group:"cosmetics", items:["eau-de-parfum"] },
+    { group:"sportsLeisure", items:["sweatshirt","sportswear","tracksuit"] },
   ],
   "electronics-tech": [
-    { title:"Phones",    items:[{label:"Smartphones",slug:"smartphone"},{label:"Phone Accessories",slug:"phone-case"},{label:"Chargers",slug:"charger"}]},
-    { title:"Computing", items:[{label:"Laptops",slug:"laptop"},{label:"Tablets",slug:"tablet"},{label:"USB Drives",slug:"usb-drive"}]},
-    { title:"Audio & Video", items:[{label:"Earphones",slug:"earphones"},{label:"Speakers",slug:"bluetooth-speaker"},{label:"Headphones",slug:"headphones"},{label:"TV",slug:"tv"}]},
-    { title:"Smartwatches", items:[{label:"Smartwatch",slug:"smartwatch"}]},
-    { title:"Video Games",  items:[{label:"Consoles",slug:"gaming-console"}]},
+    { group:"phones", items:["smartphone","phone-case","charger"] },
+    { group:"computing", items:["laptop","tablet","usb-drive"] },
+    { group:"audioVideo", items:["earphones","bluetooth-speaker","headphones","tv"] },
+    { group:"smartwatches", items:["smartwatch"] },
+    { group:"videoGames", items:["gaming-console"] },
   ],
   "home-living": [
-    { title:"Furniture",      items:[{label:"Sofa",slug:"sofa"},{label:"Bed Frame",slug:"bed-frame"},{label:"Dining Table",slug:"dining-table"}]},
-    { title:"Decoration",     items:[{label:"Candles",slug:"candle"},{label:"Rugs",slug:"rug"},{label:"Wall Art",slug:"wall-art"}]},
-    { title:"Kitchen & Dining",items:[{label:"Crockery",slug:"crockery-set"},{label:"Storage Boxes",slug:"storage-box"}]},
-    { title:"Bedding",        items:[{label:"Bed Sheets",slug:"bed-sheets"},{label:"Curtains",slug:"curtains"}]},
+    { group:"furniture", items:["sofa","bed-frame","dining-table"] },
+    { group:"decoration", items:["candle","rug","wall-art"] },
+    { group:"kitchen", items:["crockery-set","storage-box"] },
+    { group:"bedding", items:["bed-sheets","curtains"] },
   ],
   "food-grocery": [
-    { title:"Grocery",        items:[{label:"Olive Oil",slug:"olive-oil"},{label:"Dates",slug:"dates"},{label:"Honey",slug:"honey"},{label:"Canned Goods",slug:"canned-goods"},{label:"Harissa",slug:"harissa"}]},
-    { title:"Beverages",      items:[{label:"Tea",slug:"tea"},{label:"Coffee",slug:"coffee"}]},
-    { title:"Organic & Natural",items:[{label:"Spices",slug:"spices"},{label:"Organic Products",slug:"organic-products"}]},
+    { group:"grocery", items:["olive-oil","dates","honey","canned-goods","harissa"] },
+    { group:"beverages", items:["tea","coffee"] },
+    { group:"organic", items:["spices","organic-products"] },
   ],
   "beauty-personal-care": [
-    { title:"Face Care", items:[{label:"Moisturiser",slug:"moisturiser"},{label:"Serum",slug:"serum"},{label:"Face Mask",slug:"face-mask"}]},
-    { title:"Makeup",    items:[{label:"Foundation",slug:"foundation"},{label:"Lipstick",slug:"lipstick"},{label:"Mascara",slug:"mascara"}]},
-    { title:"Perfumes",  items:[{label:"Eau de Parfum",slug:"eau-de-parfum"}]},
-    { title:"Hair Care", items:[{label:"Shampoo",slug:"shampoo"},{label:"Hair Mask",slug:"hair-mask"},{label:"Argan Oil",slug:"argan-oil"}]},
+    { group:"faceCare", items:["moisturiser","serum","face-mask"] },
+    { group:"makeup", items:["foundation","lipstick","mascara"] },
+    { group:"perfumes", items:["eau-de-parfum"] },
+    { group:"hairCare", items:["shampoo","hair-mask","argan-oil"] },
   ],
   "sports-outdoors": [
-    { title:"Sportswear",  items:[{label:"Sports T-Shirt",slug:"sports-t-shirt"},{label:"Tracksuit",slug:"tracksuit"}]},
-    { title:"Sports Shoes",items:[{label:"Running Shoes",slug:"running-shoes"},{label:"Football Kit",slug:"football-kit"}]},
-    { title:"Equipment",   items:[{label:"Yoga Mat",slug:"yoga-mat"},{label:"Weights",slug:"weights"},{label:"Bicycle",slug:"bicycle"},{label:"Swimming Gear",slug:"swimming-gear"}]},
+    { group:"sportswear", items:["sports-t-shirt","tracksuit"] },
+    { group:"sportsShoes", items:["running-shoes","football-kit"] },
+    { group:"equipment", items:["yoga-mat","weights","bicycle","swimming-gear"] },
   ],
   "arts-crafts": [
-    { title:"Painting", items:[{label:"Acrylic",slug:"acrylic-paint"},{label:"Canvas",slug:"canvas"}]},
-    { title:"Crafts",   items:[{label:"Pottery",slug:"pottery"},{label:"Jewellery",slug:"handmade-jewelry"},{label:"Embroidery",slug:"embroidery-kit"}]},
-    { title:"Creative Hobbies", items:[{label:"Knitting Yarn",slug:"knitting-yarn"}]},
+    { group:"painting", items:["acrylic-paint","canvas"] },
+    { group:"crafts", items:["pottery","handmade-jewelry","embroidery-kit"] },
+    { group:"hobbies", items:["knitting-yarn"] },
   ],
   "books-stationery": [
-    { title:"Books",     items:[{label:"Novels",slug:"novel"},{label:"Comics & Manga",slug:"comic-manga"},{label:"School Books",slug:"school-textbook"}]},
-    { title:"Stationery",items:[{label:"Notebooks",slug:"notebook"},{label:"Pens",slug:"pen-set"},{label:"Planners",slug:"planner"}]},
+    { group:"books", items:["novel","comic-manga","school-textbook"] },
+    { group:"stationery", items:["notebook","pen-set","planner"] },
   ],
   "kids-baby": [
-    { title:"Toys", items:[{label:"Plush Toys",slug:"plush-toy"},{label:"Educational Games",slug:"educational-game"},{label:"Toy Cars",slug:"toy-car"}]},
-    { title:"Baby", items:[{label:"Baby Clothes",slug:"baby-clothes"},{label:"Strollers",slug:"stroller"},{label:"Baby Bottle",slug:"baby-bottle"}]},
+    { group:"toys", items:["plush-toy","educational-game","toy-car"] },
+    { group:"baby", items:["baby-clothes","stroller","baby-bottle"] },
   ],
   "automotive": [
-    { title:"Accessories", items:[{label:"Car Accessory",slug:"car-accessory"},{label:"Car Seat Cover",slug:"car-seat-cover"},{label:"Car Perfume",slug:"car-perfume"}]},
-    { title:"Motorcycle",  items:[{label:"Motorcycle Gear",slug:"motorcycle-gear"}]},
+    { group:"carAccessories", items:["car-accessory","car-seat-cover","car-perfume"] },
+    { group:"motorcycle", items:["motorcycle-gear"] },
   ],
   "health-wellness": [
-    { title:"Nutrition", items:[{label:"Vitamins",slug:"vitamins"},{label:"Protein Powder",slug:"protein-powder"}]},
-    { title:"Wellness",  items:[{label:"Essential Oil",slug:"essential-oil"},{label:"Herbal Tea",slug:"herbal-tea"},{label:"Medical Device",slug:"medical-device"}]},
+    { group:"nutrition", items:["vitamins","protein-powder"] },
+    { group:"wellness", items:["essential-oil","herbal-tea","medical-device"] },
   ],
 };
 
@@ -115,17 +119,19 @@ function Avatar({user,size=36}:{user:AuthUser;size?:number}){
   return <span style={{width:size,height:size,background:bg,color:fg,fontSize:size*0.38,borderRadius:"50%",display:"inline-flex",alignItems:"center",justifyContent:"center",fontWeight:800,flexShrink:0,letterSpacing:"-0.02em"}}>{initials}</span>;
 }
 function RoleBadge({role}:{role:AuthUser["role"]}){
+  const t=useTranslations("common.role");
   const m:Record<string,string>={seller:"bg-amber-100 text-amber-700",client:"bg-blue-100 text-blue-700",admin:"bg-red-100 text-red-700"};
-  return <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full ${m[role]??m.client}`}>{role}</span>;
+  return <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full ${m[role]??m.client}`}>{t(role in m ? role : "client")}</span>;
 }
 function AskAIPill({ onClick }: { onClick: () => void }) {
+  const t = useTranslations("nav");
   return (
     <button
       onClick={onClick}
-      title="Ask AI Shopping Assistant"
+      title={t("askAiTitle")}
       style={{
         display: 'flex', alignItems: 'center', gap: 6,
-        padding: '6px 12px 6px 8px', borderRadius: 999,
+        paddingBlock: 6, paddingInline: '8px 12px', borderRadius: 999,
         background: 'linear-gradient(135deg, #db142e 0%, #9b0f1f 100%)',
         border: '1.5px solid #198f41', cursor: 'pointer',
         fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
@@ -136,14 +142,15 @@ function AskAIPill({ onClick }: { onClick: () => void }) {
       onMouseEnter={e => { const el = e.currentTarget as HTMLButtonElement; el.style.transform='scale(1.05) translateY(-1px)'; el.style.boxShadow='0 6px 20px rgba(219,20,46,0.4)'; }}
       onMouseLeave={e => { const el = e.currentTarget as HTMLButtonElement; el.style.transform='scale(1) translateY(0)'; el.style.boxShadow='0 2px 10px rgba(219,20,46,0.25)'; }}
     >
-      <Image src="/images/logo-chili.png" alt="AI" width={18} height={18} style={{ objectFit:'contain', filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.3))' }}/>
-      Ask AI
+      <Image src="/images/logo-chili.png" alt={t("aiAlt")} width={18} height={18} style={{ objectFit:'contain', filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.3))' }}/>
+      {t("askAi")}
     </button>
   );
 }
 
 /* ─── Mega Menu ──────────────────────────────────────────────── */
 function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible:boolean;onClose:()=>void}){
+  const t=useTranslations("mega");
   const[activeSlug,setSlug]=useState("");
   useEffect(()=>{ if(visible&&categories.length>0&&!activeSlug) setSlug(categories[0].slug); },[visible,categories,activeSlug]);
   if(!visible) return null;
@@ -152,48 +159,48 @@ function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible
   return(
     <>
       <div className="mm-back" onClick={onClose} style={{position:"fixed",inset:0,top:132,background:"rgba(0,0,0,0.45)",zIndex:9997}}/>
-      <div className="mm-panel" style={{position:"fixed",top:132,left:0,right:0,background:"#fff",boxShadow:"0 16px 48px rgba(0,0,0,0.18)",borderTop:"3px solid #dc2626",zIndex:9998,display:"flex",maxHeight:"80vh",overflow:"hidden"}}>
-        <style>{`@keyframes megaIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}.mcat:hover{background:#fff5f5!important;color:#dc2626!important}.mcat.on{background:#fef2f2!important;color:#dc2626!important;border-left:3px solid #dc2626!important}.msub:hover{color:#dc2626!important}.mmore:hover{color:#dc2626!important}.mm-close{display:none}@media(max-width:960px){.mm-back{top:0!important}.mm-panel{top:0!important;bottom:0!important;max-height:none!important;height:100vh;height:100dvh;border-top:none!important}.mm-close{display:flex;position:absolute;top:8px;right:10px;width:38px;height:38px;align-items:center;justify-content:center;border:none;background:#f3f4f6;border-radius:50%;cursor:pointer;color:#374151;z-index:2}.mm-rail{width:118px!important}.mcat{padding:10px 8px!important;gap:6px!important;font-size:12px!important}.mcat>span:first-child{width:26px!important;height:26px!important}.mcat>svg{display:none!important}.mcat>span:nth-child(2){white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.2}.mm-body{padding:56px 16px 28px!important}.mm-grid{grid-template-columns:1fr!important;gap:18px!important}}`}</style>
-        <button className="mm-close" onClick={onClose} aria-label="Close categories"><svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-        <div className="mm-rail" style={{width:220,flexShrink:0,background:"#fafafa",borderRight:"1px solid #f3f4f6",overflowY:"auto",padding:"8px 0"}}>
+      <div className="mm-panel" style={{position:"fixed",top:132,insetInline:0,background:"#fff",boxShadow:"0 16px 48px rgba(0,0,0,0.18)",borderTop:"3px solid #dc2626",zIndex:9998,display:"flex",maxHeight:"80vh",overflow:"hidden"}}>
+        <style>{`@keyframes megaIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}.mcat:hover{background:#fff5f5!important;color:#dc2626!important}.mcat.on{background:#fef2f2!important;color:#dc2626!important;border-inline-start:3px solid #dc2626!important}.msub:hover{color:#dc2626!important}.mmore:hover{color:#dc2626!important}.mm-close{display:none}@media(max-width:960px){.mm-back{top:0!important}.mm-panel{top:0!important;bottom:0!important;max-height:none!important;height:100vh;height:100dvh;border-top:none!important}.mm-close{display:flex;position:absolute;top:8px;inset-inline-end:10px;width:38px;height:38px;align-items:center;justify-content:center;border:none;background:#f3f4f6;border-radius:50%;cursor:pointer;color:#374151;z-index:2}.mm-rail{width:118px!important}.mcat{padding:10px 8px!important;gap:6px!important;font-size:12px!important}.mcat>span:first-child{width:26px!important;height:26px!important}.mcat>svg{display:none!important}.mcat>span:nth-child(2){white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.2}.mm-body{padding:56px 16px 28px!important}.mm-grid{grid-template-columns:1fr!important;gap:18px!important}}`}</style>
+        <button className="mm-close" onClick={onClose} aria-label={t("close")}><svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        <div className="mm-rail" style={{width:220,flexShrink:0,background:"#fafafa",borderInlineEnd:"1px solid #f3f4f6",overflowY:"auto",padding:"8px 0"}}>
           {categories.map(cat=>(
             <button key={cat.slug} onMouseEnter={()=>setSlug(cat.slug)} onClick={()=>setSlug(cat.slug)}
               className={`mcat ${activeSlug===cat.slug?"on":""}`}
-              style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 16px",textAlign:"left",background:"transparent",border:"none",borderLeft:"3px solid transparent",cursor:"pointer",fontSize:13,fontWeight:activeSlug===cat.slug?700:500,color:activeSlug===cat.slug?"#dc2626":"#374151"}}>
+              style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 16px",textAlign:"start",background:"transparent",border:"none",borderInlineStart:"3px solid transparent",cursor:"pointer",fontSize:13,fontWeight:activeSlug===cat.slug?700:500,color:activeSlug===cat.slug?"#dc2626":"#374151"}}>
               <span style={{width:32,height:32,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(220,38,38,0.08)",color:"#dc2626"}}>
                 <CatIcon slug={cat.slug} name={cat.name}/>
               </span>
               <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{cat.name}</span>
-              <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{flexShrink:0,opacity:0.35}}><path d="M9 18l6-6-6-6"/></svg>
+              <svg className="rtl-flip" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{flexShrink:0,opacity:0.35}}><path d="M9 18l6-6-6-6"/></svg>
             </button>
           ))}
         </div>
         <div className="mm-body" style={{flex:1,minWidth:0,overflowY:"auto",padding:"24px 32px 32px"}}>
           {subs.length===0?(
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:14,color:"#9ca3af",minHeight:200}}>
-              <p style={{fontSize:14,fontWeight:600}}>Explore {activeCat?.name}</p>
-              <Link href={`/category/${activeSlug}`} onClick={onClose} style={{fontSize:13,fontWeight:700,color:"#dc2626",textDecoration:"none",padding:"8px 20px",border:"1.5px solid #dc2626",borderRadius:999}}>View all products →</Link>
+              <p style={{fontSize:14,fontWeight:600}}>{t("explore",{name:activeCat?.name ?? ""})}</p>
+              <Link href={`/category/${activeSlug}`} onClick={onClose} style={{fontSize:13,fontWeight:700,color:"#dc2626",textDecoration:"none",padding:"8px 20px",border:"1.5px solid #dc2626",borderRadius:999}}>{t("viewAllProducts")}</Link>
             </div>
           ):(
             <>
               <div className="mm-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:"24px 20px"}}>
                 {subs.map(g=>(
-                  <div key={g.title}>
-                    <Link href={`/category/${activeSlug}`} onClick={onClose} style={{display:"block",fontSize:11,fontWeight:800,color:"#dc2626",textDecoration:"none",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10,paddingBottom:6,borderBottom:"1.5px solid #fee2e2"}}>{g.title}</Link>
+                  <div key={g.group}>
+                    <Link href={`/category/${activeSlug}`} onClick={onClose} style={{display:"block",fontSize:11,fontWeight:800,color:"#dc2626",textDecoration:"none",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10,paddingBottom:6,borderBottom:"1.5px solid #fee2e2"}}>{t(`groups.${g.group}`)}</Link>
                     <ul style={{listStyle:"none",margin:0,padding:0,display:"flex",flexDirection:"column",gap:5}}>
-                      {g.items.map(item=>(
-                        <li key={item.slug}><Link href={`/category/${activeSlug}?sub=${item.slug}`} onClick={onClose} className="msub" style={{fontSize:13,color:"#4b5563",textDecoration:"none",fontWeight:400,display:"block",lineHeight:1.5,transition:"color 0.12s"}}>{item.label}</Link></li>
+                      {g.items.map(slug=>(
+                        <li key={slug}><Link href={`/category/${activeSlug}?sub=${slug}`} onClick={onClose} className="msub" style={{fontSize:13,color:"#4b5563",textDecoration:"none",fontWeight:400,display:"block",lineHeight:1.5,transition:"color 0.12s"}}>{t(`items.${slug}`)}</Link></li>
                       ))}
                     </ul>
                     <Link href={`/category/${activeSlug}`} onClick={onClose} className="mmore" style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:11,fontWeight:700,color:"#9ca3af",textDecoration:"none",marginTop:8,textTransform:"uppercase",letterSpacing:"0.05em",borderBottom:"1px dashed #d1d5db",paddingBottom:1,transition:"color 0.12s"}}>
-                      View more <svg width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                      {t("viewMore")} <svg className="rtl-flip" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                     </Link>
                   </div>
                 ))}
               </div>
               <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid #f3f4f6"}}>
                 <Link href={`/category/${activeSlug}`} onClick={onClose} style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:12,fontWeight:700,color:"#dc2626",textDecoration:"none",padding:"7px 16px",background:"#fff5f5",borderRadius:999,border:"1.5px solid #fecaca"}}>
-                  View all in {activeCat?.name} →
+                  {t("viewAllIn",{name:activeCat?.name ?? ""})}
                 </Link>
               </div>
             </>
@@ -222,6 +229,9 @@ function SearchDropdown({
   onCategoryClick: (slug: string) => void;
   onProductClick:  () => void;
 }) {
+  const t   = useTranslations("nav");
+  const tc  = useTranslations("common");
+  const fmt = useFormat();
   const [products, setProducts]     = useState<SponsoredProduct[]>([]);
   const [loadingP, setLoadingP]     = useState(true);
   const [imgErrors, setImgErrors]   = useState<Record<number, boolean>>({});
@@ -250,8 +260,7 @@ function SearchDropdown({
       <div style={{
         position:     "absolute",
         top:          "calc(100% + 8px)",
-        left:         0,
-        right:        0,
+        insetInline:  0,
         background:   "#fff",
         borderRadius: 16,
         boxShadow:    "0 20px 60px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.06)",
@@ -269,7 +278,7 @@ function SearchDropdown({
               <polyline points="17 6 23 6 23 12"/>
             </svg>
             <span style={{ fontSize: 11, fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Trending Searches
+              {t("trendingSearches")}
             </span>
           </div>
 
@@ -283,7 +292,8 @@ function SearchDropdown({
                   display:      "inline-flex",
                   alignItems:   "center",
                   gap:          6,
-                  padding:      "6px 13px 6px 9px",
+                  paddingBlock: 6,
+                  paddingInline:"9px 13px",
                   borderRadius: 999,
                   border:       "1.5px solid #f1f5f9",
                   background:   "#f8fafc",
@@ -334,7 +344,7 @@ function SearchDropdown({
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
               <span style={{ fontSize: 11, fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                Popular Products
+                {t("popularProducts")}
               </span>
             </div>
             <Link
@@ -343,8 +353,8 @@ function SearchDropdown({
               onClick={onProductClick}
               style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", textDecoration: "none", display: "flex", alignItems: "center", gap: 3 }}
             >
-              View all
-              <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              {tc("viewAll")}
+              <svg className="rtl-flip" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </Link>
@@ -365,7 +375,7 @@ function SearchDropdown({
               ))}
             </div>
           ) : products.length === 0 ? (
-            <p style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", padding: "12px 0" }}>No trending products right now.</p>
+            <p style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", padding: "12px 0" }}>{t("noTrending")}</p>
           ) : (
             <div className="sd-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
               {products.slice(0, 4).map((product, i) => {
@@ -413,13 +423,13 @@ function SearchDropdown({
                       )}
                       {/* HOT badge */}
                       <span style={{
-                        position:     "absolute", top: 6, left: 6,
+                        position:     "absolute", top: 6, insetInlineStart: 6,
                         background:   "linear-gradient(135deg,#db142e,#ff4757)",
                         color:        "#fff", fontSize: 7, fontWeight: 800,
                         padding:      "2px 6px", borderRadius: 999,
                         letterSpacing:"0.06em", textTransform: "uppercase",
                       }}>
-                        🔥 HOT
+                        {t("hotBadge")}
                       </span>
                     </div>
 
@@ -449,11 +459,11 @@ function SearchDropdown({
                                   return (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                                       <p style={{ fontSize: 13, fontWeight: 900, color: "#db142e", margin: 0, letterSpacing: "-0.01em" }}>
-                                        {effective.toFixed(2)} <span style={{ fontSize: 10, fontWeight: 700 }}>DT</span>
+                                        {fmt.price(effective, { bare: true })} <span style={{ fontSize: 10, fontWeight: 700 }}>{fmt.currency}</span>
                                       </p>
                                       {hasDiscount && (
                                         <span style={{ fontSize: 10, color: "#9ca3af", textDecoration: "line-through", fontWeight: 500 }}>
-                                          {original.toFixed(2)} DT
+                                          {fmt.price(original)}
                                         </span>
                                       )}
                                     </div>
@@ -497,6 +507,7 @@ function SearchSuggestionsDropdown({
   onSelectQuery:    (s: string) => void;
   onSelectCategory: (slug: string) => void;
 }) {
+  const t = useTranslations("nav");
   if (!visible || items.length === 0) return null;
 
   // Bold the matched prefix inside the suggestion text
@@ -520,8 +531,7 @@ function SearchSuggestionsDropdown({
     <div style={{
       position:   "absolute",
       top:        "calc(100% + 0px)",
-      left:       0,
-      right:      0,
+      insetInline: 0,
       background: "#fff",
       borderRadius: "0 0 14px 14px",
       boxShadow:  "0 16px 40px rgba(0,0,0,0.13)",
@@ -550,7 +560,7 @@ function SearchSuggestionsDropdown({
                 borderBottom: isLast ? "none" : "1px solid #f8fafc",
                 padding:      "11px 18px",
                 cursor:       "pointer",
-                textAlign:    "left",
+                textAlign:    "start",
                 fontFamily:   "inherit",
               }}
               onMouseEnter={e => (e.currentTarget.style.background = "#fef2f2")}
@@ -570,7 +580,7 @@ function SearchSuggestionsDropdown({
                 </span>
                 <HighlightMatch text={item.text}/>
               </div>
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", flexShrink: 0 }}>Category</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", flexShrink: 0 }}>{t("suggestionCategory")}</span>
             </button>
           );
         }
@@ -591,7 +601,7 @@ function SearchSuggestionsDropdown({
                 borderBottom: isLast ? "none" : "1px solid #f8fafc",
                 padding:      "11px 18px",
                 cursor:       "pointer",
-                textAlign:    "left",
+                textAlign:    "start",
                 fontFamily:   "inherit",
               }}
               onMouseEnter={e => (e.currentTarget.style.background = "#fef2f2")}
@@ -609,7 +619,7 @@ function SearchSuggestionsDropdown({
                 </span>
                 <HighlightMatch text={item.text}/>
               </div>
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", flexShrink: 0 }}>Seller</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", flexShrink: 0 }}>{t("suggestionSeller")}</span>
             </button>
           );
         }
@@ -629,7 +639,7 @@ function SearchSuggestionsDropdown({
               borderBottom: isLast ? "none" : "1px solid #f8fafc",
               padding:      "11px 18px",
               cursor:       "pointer",
-              textAlign:    "left",
+              textAlign:    "start",
               fontFamily:   "inherit",
             }}
             onMouseEnter={e => (e.currentTarget.style.background = "#fef2f2")}
@@ -650,13 +660,15 @@ function SearchSuggestionsDropdown({
    NAVBAR
 ══════════════════════════════════════════════════════════════ */
 const NAV_LINKS = [
-  {label:"Shop",href:"/shop"},
-  {label:"WearTounsi",href:"/brand"},
-  {label:"Deals",href:"/deals"},
-];
+  {key:"shop",href:"/shop"},
+  {key:"brand",href:"/brand"},
+  {key:"deals",href:"/deals"},
+] as const;
 
 export default function Navbar() {
   const router = useRouter();
+  const t   = useTranslations("nav");
+  const fmt = useFormat();
   const [menuOpen,   setMenuOpen]   = useState(false);
   const [dropOpen,   setDropOpen]   = useState(false);
   const [user,       setUser]       = useState<AuthUser|null>(null);
@@ -807,12 +819,12 @@ export default function Navbar() {
       const ids = (data.products ?? []).map((p: { id: number }) => p.id).join(",");
       router.push(`/search?mode=image&ids=${ids}`);
     } catch {
-      alert("Image search failed. Please try again.");
+      alert(t("imageSearchFailed"));
     } finally {
       setImageSearching(false);
       if (imageInputRef.current) imageInputRef.current.value = "";
     }
-  }, [router]);
+  }, [router, t]);
 
   return (
     <>
@@ -830,12 +842,12 @@ export default function Navbar() {
         {/* ── ROW 1: Announcement bar ── */}
         <div className="nb-ann" style={{background:"#09090b",color:"#fff",fontSize:11,padding:"7px 0",letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:500}}>
           <div className="nb-ann-in" style={{maxWidth:1400,margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <span className="nb-ann-text">🇹🇳 Free delivery on orders over 50 DT<span className="nb-hide-sm"> — Tunisia&apos;s #1 marketplace</span></span>
+            <span className="nb-ann-text">{t("announcement",{amount:fmt.price(50,{maximumFractionDigits:0,minimumFractionDigits:0})})}<span className="nb-hide-sm">{t("announcementTail")}</span></span>
             <button className="nb-ann-help" onClick={handleSupport} style={{display:"flex",alignItems:"center",gap:5,background:"transparent",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.8)",fontSize:11,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",fontFamily:"inherit",padding:0,transition:"color 0.15s"}}
               onMouseEnter={e=>(e.currentTarget.style.color="#fff")}
               onMouseLeave={e=>(e.currentTarget.style.color="rgba(255,255,255,0.8)")}>
               <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" strokeWidth="2.5" strokeLinecap="round"/></svg>
-              <span className="nb-help-label">Help &amp; Support</span>
+              <span className="nb-help-label">{t("helpSupport")}</span>
             </button>
           </div>
         </div>
@@ -846,7 +858,7 @@ export default function Navbar() {
             <style>{`
               .nu{display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:600;color:#52525b;transition:color .14s,background .14s;white-space:nowrap;position:relative;border:none;background:transparent;cursor:pointer;font-family:inherit}
               .nu:hover{color:#dc2626;background:rgba(220,38,38,0.06)}
-              .nu-bdg{position:absolute;top:-2px;right:1px;background:#dc2626;color:#fff;font-size:9px;font-weight:900;border-radius:999px;min-width:15px;height:15px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:1.5px solid #fff}
+              .nu-bdg{position:absolute;top:-2px;inset-inline-end:1px;background:#dc2626;color:#fff;font-size:9px;font-weight:900;border-radius:999px;min-width:15px;height:15px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:1.5px solid #fff}
               .nu-sep{width:1px;height:13px;background:#e5e7eb;flex-shrink:0;margin:0 2px}
               .dd-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;font-weight:600;color:#374151;text-decoration:none;transition:background .12s,color .12s;border:none;background:transparent;cursor:pointer;width:100%;font-family:inherit}
               .dd-item:hover{background:#fafafa;color:#dc2626}
@@ -855,28 +867,30 @@ export default function Navbar() {
               .search-camera-btn:hover { background: rgba(220,38,38,0.08) !important; color: #dc2626 !important; }
               .search-camera-btn:active { transform: scale(0.92); }
             `}</style>
-            <Link href="/orders"         onClick={closeAll} className="nu"><ClipboardList size={13}/>My Orders</Link>
+            <LanguageLink className="nu"/>
             <span className="nu-sep"/>
-            <Link href="/complaints"     onClick={closeAll} className="nu"><AlertCircle size={13}/>My Complaints</Link>
+            <Link href="/orders"         onClick={closeAll} className="nu"><ClipboardList size={13}/>{t("myOrders")}</Link>
             <span className="nu-sep"/>
-            <Link href="/complaints/new" onClick={closeAll} className="nu" style={{color:"#dc2626"}}><AlertCircle size={13}/>Help / Complaint</Link>
+            <Link href="/complaints"     onClick={closeAll} className="nu"><AlertCircle size={13}/>{t("myComplaints")}</Link>
+            <span className="nu-sep"/>
+            <Link href="/complaints/new" onClick={closeAll} className="nu" style={{color:"#dc2626"}}><AlertCircle size={13}/>{t("helpComplaint")}</Link>
             <span className="nu-sep"/>
             <Link href="/favorites"      onClick={closeAll} className="nu" style={{position:"relative"}}>
-              <Heart size={13}/>Favorites
+              <Heart size={13}/>{t("favorites")}
               {favCount>0&&<span className="nu-bdg">{favCount>9?"9+":favCount}</span>}
             </Link>
             <span className="nu-sep"/>
             <button onClick={handleCart} className="nu" style={{position:"relative"}}>
-              <ShoppingBag size={13}/>Cart
+              <ShoppingBag size={13}/>{t("cart")}
               {count>0&&<span className="nu-bdg">{count>99?"99+":count}</span>}
             </button>
             <span className="nu-sep"/>
             {!loggedIn?(
               <>
-                <Link href="/auth/login"    onClick={closeAll} className="nu"><UserIcon/>Log In</Link>
+                <Link href="/auth/login"    onClick={closeAll} className="nu"><UserIcon/>{t("login")}</Link>
                 <Link href="/auth/register" onClick={closeAll} className="nu" style={{background:"#dc2626",color:"#fff",borderRadius:6,padding:"3px 12px"}}
                   onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background="#b91c1c"}}
-                  onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background="#dc2626"}}>Register</Link>
+                  onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background="#dc2626"}}>{t("register")}</Link>
               </>
             ):(
               <div style={{position:"relative"}} ref={dropRef}>
@@ -887,7 +901,7 @@ export default function Navbar() {
                   <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{transform:dropOpen?"rotate(180deg)":"none",transition:"transform 0.2s",flexShrink:0}}><path d="M6 9l6 6 6-6"/></svg>
                 </button>
                 {dropOpen&&(
-                  <div style={{position:"fixed",top:100,right:24,width:220,background:"#fff",border:"1px solid #f1f5f9",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.14)",zIndex:9999,overflow:"hidden"}}>
+                  <div style={{position:"fixed",top:100,insetInlineEnd:24,width:220,background:"#fff",border:"1px solid #f1f5f9",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.14)",zIndex:9999,overflow:"hidden"}}>
                     <div style={{padding:"13px 16px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10}}>
                       <Avatar user={user!} size={40}/>
                       <div style={{minWidth:0}}>
@@ -895,13 +909,13 @@ export default function Navbar() {
                         <p style={{fontSize:11,color:"#94a3b8",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user!.email}</p>
                       </div>
                     </div>
-                    <Link href="/profile"    onClick={()=>setDropOpen(false)} className="dd-item"><UserIcon/>My Profile</Link>
-                    <Link href="/orders"     onClick={()=>setDropOpen(false)} className="dd-item"><OrdersIcon/>My Orders</Link>
-                    <Link href="/complaints" onClick={()=>setDropOpen(false)} className="dd-item"><AlertCircle size={15}/>My Complaints</Link>
-                    <Link href="/favorites"  onClick={()=>setDropOpen(false)} className="dd-item"><HeartIcon/>Favorites</Link>
-                    {isSeller&&<Link href="/seller" onClick={()=>setDropOpen(false)} className="dd-item"><DashboardIcon/>My Store</Link>}
+                    <Link href="/profile"    onClick={()=>setDropOpen(false)} className="dd-item"><UserIcon/>{t("myProfile")}</Link>
+                    <Link href="/orders"     onClick={()=>setDropOpen(false)} className="dd-item"><OrdersIcon/>{t("myOrders")}</Link>
+                    <Link href="/complaints" onClick={()=>setDropOpen(false)} className="dd-item"><AlertCircle size={15}/>{t("myComplaints")}</Link>
+                    <Link href="/favorites"  onClick={()=>setDropOpen(false)} className="dd-item"><HeartIcon/>{t("favorites")}</Link>
+                    {isSeller&&<Link href="/seller" onClick={()=>setDropOpen(false)} className="dd-item"><DashboardIcon/>{t("myStore")}</Link>}
                     <div style={{height:1,background:"#f1f5f9",margin:"4px 0"}}/>
-                    <button onClick={handleLogout} className="dd-item danger"><LogoutIcon/>Log Out</button>
+                    <button onClick={handleLogout} className="dd-item danger"><LogoutIcon/>{t("logout")}</button>
                   </div>
                 )}
               </div>
@@ -926,7 +940,7 @@ export default function Navbar() {
                 display:"flex",alignItems:"center",justifyContent:"center",
                 flexShrink:0,overflow:"hidden",
               }}>
-                <img className="nb-logo-img" src="/images/logo.png" alt="ChooseTounsi" style={{width:46,height:46,objectFit:"contain",display:"block"}}/>
+                <img className="nb-logo-img" src="/images/logo.png" alt={t("brandHome")} style={{width:46,height:46,objectFit:"contain",display:"block"}}/>
               </div>
               <span className="nb-logo-text" style={{fontSize:20,fontWeight:900,letterSpacing:"-0.02em",color:"#0c0c0d",whiteSpace:"nowrap"}}>
                 Choose<span style={{color:"#198f41"}}>Tounsi</span>
@@ -956,7 +970,8 @@ export default function Navbar() {
                   {/* Text input */}
                   <input
                     type="text"
-                    placeholder="Search products, brands, vendors..."
+                    placeholder={t("searchPlaceholder")}
+                    aria-label={t("searchPlaceholder")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={handleSearchKeyDown}
@@ -968,10 +983,11 @@ export default function Navbar() {
                   <button
                     onClick={handleCameraClick}
                     disabled={imageSearching}
-                    title="Search by image"
+                    title={t("searchByImage")}
+                    aria-label={t("searchByImage")}
                     className="search-camera-btn"
                     style={{
-                      background:"transparent", border:"none", borderRight:"1px solid #e5e7eb",
+                      background:"transparent", border:"none", borderInlineEnd:"1px solid #e5e7eb",
                       padding:"0 11px", cursor: imageSearching ? "wait" : "pointer",
                       display:"flex", alignItems:"center", justifyContent:"center",
                       flexShrink:0, color:"#9ca3af",
@@ -988,6 +1004,7 @@ export default function Navbar() {
                   {/* Search button */}
                   <button
                     onClick={handleTextSearch}
+                    aria-label={t("searchButton")}
                     style={{background:"#dc2626",border:"none",padding:"0 20px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background 0.15s"}}
                     onMouseEnter={e=>(e.currentTarget.style.background="#b91c1c")}
                     onMouseLeave={e=>(e.currentTarget.style.background="#dc2626")}
@@ -1021,15 +1038,15 @@ export default function Navbar() {
               <button onClick={()=>{setMegaOpen(o=>!o);setDropOpen(false);setSearchFocused(false);}}
                 style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:14,fontWeight:500,background:megaOpen?"#fef2f2":"transparent",color:megaOpen?"#dc2626":"#52525b",transition:"all 0.14s",whiteSpace:"nowrap"}}>
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-                Categories
+                {t("categories")}
                 <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{transform:megaOpen?"rotate(180deg)":"none",transition:"transform 0.2s"}}><path d="M6 9l6 6 6-6"/></svg>
               </button>
               {NAV_LINKS.map(l=>(
-                <Link key={l.href} href={l.href}
+                <Link key={l.href} href={l.href} prefetch={false}
                   style={{padding:"8px 12px",borderRadius:8,fontSize:14,fontWeight:500,color:"#52525b",textDecoration:"none",transition:"all 0.14s",whiteSpace:"nowrap"}}
                   onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.color="#111";(e.currentTarget as HTMLElement).style.background="#f4f4f5";}}
                   onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.color="#52525b";(e.currentTarget as HTMLElement).style.background="transparent";}}>
-                  {l.label}
+                  {t(l.key)}
                 </Link>
               ))}
               <AskAIPill onClick={handleSupport}/>
@@ -1038,19 +1055,19 @@ export default function Navbar() {
                   style={{padding:"8px 12px",borderRadius:8,fontSize:14,fontWeight:500,color:"#52525b",textDecoration:"none",transition:"all 0.14s",whiteSpace:"nowrap"}}
                   onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.color="#111";(e.currentTarget as HTMLElement).style.background="#f4f4f5";}}
                   onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.color="#52525b";(e.currentTarget as HTMLElement).style.background="transparent";}}>
-                  My Store
+                  {t("myStore")}
                 </Link>
               )}
             </div>
 
             {/* Mobile cart */}
-            <button onClick={handleCart} className="nb-cart-m" aria-label="Cart" style={{display:"none",position:"relative",background:"transparent",border:"none",cursor:"pointer",color:"#374151",padding:4,flexShrink:0}}>
+            <button onClick={handleCart} className="nb-cart-m" aria-label={t("cart")} style={{display:"none",position:"relative",background:"transparent",border:"none",cursor:"pointer",color:"#374151",padding:4,flexShrink:0}}>
               <ShoppingBag size={22}/>
-              {count>0&&<span className="nu-bdg" style={{top:-3,right:-5}}>{count>99?"99+":count}</span>}
+              {count>0&&<span className="nu-bdg" style={{top:-3,insetInlineEnd:-5}}>{count>99?"99+":count}</span>}
             </button>
 
             {/* Mobile burger */}
-            <button aria-label="Menu" style={{display:"none",background:"transparent",border:"none",cursor:"pointer",color:"#374151",padding:4,flexShrink:0}} className="nb-burger" onClick={()=>setMenuOpen(!menuOpen)}>
+            <button aria-label={t("menu")} aria-expanded={menuOpen} style={{display:"none",background:"transparent",border:"none",cursor:"pointer",color:"#374151",padding:4,flexShrink:0}} className="nb-burger" onClick={()=>setMenuOpen(!menuOpen)}>
               {menuOpen?<CloseIcon/>:<MenuIcon/>}
             </button>
           </div>
@@ -1065,7 +1082,7 @@ export default function Navbar() {
               .nb-ann-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
               .nb-ann-help{flex-shrink:0;font-size:10px!important}
               .nb-row3{height:auto!important;flex-wrap:wrap;gap:8px 12px!important;padding:8px 12px 10px!important}
-              .nb-logo{order:1;margin-right:auto;min-width:0}
+              .nb-logo{order:1;margin-inline-end:auto;min-width:0}
               .nb-search-col{order:3;flex:1 1 100%!important;width:100%}
               .nb-search-col input{font-size:16px!important}
               .nb-drawer{padding:12px 16px 20px!important;max-height:calc(100vh - 150px);max-height:calc(100dvh - 150px);overflow-y:auto}
@@ -1096,39 +1113,42 @@ export default function Navbar() {
             )}
             {/* Mobile search (hidden ≤960px: the header search row replaces it) */}
             <div className="nb-drawer-search" style={{display:"flex",border:"1.5px solid #e5e7eb",borderRadius:8,overflow:"hidden",height:42}}>
-              <input type="text" placeholder="Search..." value={searchQuery}
+              <input type="text" placeholder={t("searchShort")} aria-label={t("searchPlaceholder")} value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
                 style={{flex:1,padding:"0 14px",fontSize:14,border:"none",outline:"none",background:"#fff",color:"#111"}}
               />
-              <button onClick={handleCameraClick} style={{background:"transparent",border:"none",borderRight:"1px solid #e5e7eb",padding:"0 10px",cursor:"pointer",color:"#9ca3af"}}>
+              <button onClick={handleCameraClick} aria-label={t("searchByImage")} style={{background:"transparent",border:"none",borderInlineEnd:"1px solid #e5e7eb",padding:"0 10px",cursor:"pointer",color:"#9ca3af"}}>
                 <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
               </button>
-              <button onClick={handleTextSearch} style={{background:"#dc2626",border:"none",padding:"0 16px",cursor:"pointer",color:"#fff"}}><SearchIcon/></button>
+              <button onClick={handleTextSearch} aria-label={t("searchButton")} style={{background:"#dc2626",border:"none",padding:"0 16px",cursor:"pointer",color:"#fff"}}><SearchIcon/></button>
             </div>
-            <button onClick={()=>{setMenuOpen(false);setMegaOpen(true);}} style={{fontSize:14,fontWeight:600,color:"#374151",background:"none",border:"none",cursor:"pointer",textAlign:"left",padding:"8px 0",borderBottom:"1px solid #f5f5f5",display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}>
-              <MenuIcon/>Categories
+            <button onClick={()=>{setMenuOpen(false);setMegaOpen(true);}} style={{fontSize:14,fontWeight:600,color:"#374151",background:"none",border:"none",cursor:"pointer",textAlign:"start",padding:"8px 0",borderBottom:"1px solid #f5f5f5",display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}>
+              <MenuIcon/>{t("categories")}
             </button>
-            <button onClick={()=>{setMenuOpen(false);handleSupport();}} style={{fontSize:14,fontWeight:700,color:"#dc2626",background:"none",border:"none",cursor:"pointer",textAlign:"left",padding:"8px 0",borderBottom:"1px solid #f5f5f5",fontFamily:"inherit"}}>
-              Ask AI
+            <button onClick={()=>{setMenuOpen(false);handleSupport();}} style={{fontSize:14,fontWeight:700,color:"#dc2626",background:"none",border:"none",cursor:"pointer",textAlign:"start",padding:"8px 0",borderBottom:"1px solid #f5f5f5",fontFamily:"inherit"}}>
+              {t("askAi")}
             </button>
-            {[{label:"Shop",href:"/shop"},{label:"WearTounsi",href:"/brand"},{label:"Deals",href:"/deals"},{label:"My Orders",href:"/orders"},{label:"My Complaints",href:"/complaints"},{label:"Help / Complaint",href:"/complaints/new"},{label:"Favorites",href:"/favorites"}].map(l=>(
-              <Link key={l.href} href={l.href} onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>{l.label}</Link>
+            {([{key:"shop",href:"/shop"},{key:"brand",href:"/brand"},{key:"deals",href:"/deals"},{key:"myOrders",href:"/orders"},{key:"myComplaints",href:"/complaints"},{key:"helpComplaint",href:"/complaints/new"},{key:"favorites",href:"/favorites"}] as const).map(l=>(
+              <Link key={l.href} href={l.href} onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>{t(l.key)}</Link>
             ))}
-            <button onClick={handleCart} style={{fontSize:14,fontWeight:600,color:"#374151",background:"none",border:"none",cursor:"pointer",textAlign:"left",padding:"8px 0",borderBottom:"1px solid #f5f5f5",display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}>
-              <ShoppingBag size={16}/>Cart{count>0&&<span style={{background:"#dc2626",color:"#fff",fontSize:10,fontWeight:900,borderRadius:999,padding:"1px 6px"}}>{count}</span>}
+            <button onClick={handleCart} style={{fontSize:14,fontWeight:600,color:"#374151",background:"none",border:"none",cursor:"pointer",textAlign:"start",padding:"8px 0",borderBottom:"1px solid #f5f5f5",display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}>
+              <ShoppingBag size={16}/>{t("cart")}{count>0&&<span style={{background:"#dc2626",color:"#fff",fontSize:10,fontWeight:900,borderRadius:999,padding:"1px 6px"}}>{count}</span>}
             </button>
-            {loggedIn&&isSeller&&<Link href="/seller" onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>My Store</Link>}
+            {loggedIn&&isSeller&&<Link href="/seller" onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>{t("myStore")}</Link>}
             {!loggedIn?(
               <>
-                <Link href="/auth/login"    onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>Log In</Link>
-                <Link href="/auth/register" onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>Register</Link>
+                <Link href="/auth/login"    onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>{t("login")}</Link>
+                <Link href="/auth/register" onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>{t("register")}</Link>
               </>
             ):(
               <button onClick={handleLogout} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"#dc2626",color:"#fff",fontWeight:700,fontSize:14,padding:"12px",borderRadius:10,border:"none",cursor:"pointer",fontFamily:"inherit",marginTop:4}}>
-                <LogoutIcon/>Log Out
+                <LogoutIcon/>{t("logout")}
               </button>
             )}
+            <div style={{padding:"10px 0 2px"}}>
+              <LanguageInlineSelect onChanged={()=>setMenuOpen(false)}/>
+            </div>
           </div>
         )}
       </header>

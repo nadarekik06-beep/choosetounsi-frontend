@@ -23,11 +23,16 @@ import Navbar from '@/app/components/layout/Navbar'
 import CountdownTimer from '@/app/components/promotions/CountdownTimer'
 import { publicPromotionsApi } from '@/lib/promotionsApi'
 import { Package2, ArrowRight } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 const ORIGIN  = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL = `${ORIGIN}/api`
 
-const money = (n: number | string) => `${Number(n).toFixed(2)} DT`
+function useMoney() {
+  const { price } = useFormat()
+  return (n: number | string) => price(n)
+}
 
 function resolveImg(url: string | null | undefined): string | null {
   if (!url) return null
@@ -112,26 +117,29 @@ const DEFAULT_FILTERS: Filters = {
 
 const ITEMS_PER_PAGE = 20
 
+// `l` is a message key in the `deals.sort` namespace.
 const SORTS: { k: SortKey; l: string }[] = [
-  { k: 'flash_first',  l: 'Flash Priority' },
-  { k: 'savings_desc', l: 'Biggest Savings' },
-  { k: 'price_asc',    l: 'Price: Low → High' },
-  { k: 'price_desc',   l: 'Price: High → Low' },
-  { k: 'newest',       l: 'Newest First' },
+  { k: 'flash_first',  l: 'flashFirst' },
+  { k: 'savings_desc', l: 'savings' },
+  { k: 'price_asc',    l: 'priceAsc' },
+  { k: 'price_desc',   l: 'priceDesc' },
+  { k: 'newest',       l: 'newest' },
 ]
 
 const PRICE_RANGES = [
-  { l: 'Under 50 DT',  mn: '0',   mx: '50'  },
-  { l: '50 – 100 DT',  mn: '50',  mx: '100' },
-  { l: '100 – 200 DT', mn: '100', mx: '200' },
-  { l: '200 – 500 DT', mn: '200', mx: '500' },
-  { l: 'Over 500 DT',  mn: '500', mx: ''    },
+  { mn: '0',   mx: '50'  },
+  { mn: '50',  mx: '100' },
+  { mn: '100', mx: '200' },
+  { mn: '200', mx: '500' },
+  { mn: '500', mx: ''    },
 ]
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  FLASH CARD — unchanged
 // ══════════════════════════════════════════════════════════════════════════════
 function FlashCard({ item, idx }: { item: FlashItem; idx: number }) {
+  const t = useTranslations('deals')
+  const money = useMoney()
   const { product, sale } = item
   const [hov, setHov] = useState(false)
   const [imgErr, setErr] = useState(false)
@@ -153,13 +161,13 @@ function FlashCard({ item, idx }: { item: FlashItem; idx: number }) {
         }
         <div className="dc-badges">
           {item._discPct > 0 && <span className="dc-badge dc-disc dc-disc-flash">-{item._discPct}%</span>}
-          <span className="dc-badge dc-flash-live"><span className="dc-pulse" />⚡ LIVE</span>
+          <span className="dc-badge dc-flash-live"><span className="dc-pulse" />⚡ {t('live')}</span>
         </div>
-        {isUrgent && <div className="dc-urgent">🔥 Only {remaining} left!</div>}
+        {isUrgent && <div className="dc-urgent">🔥 {t('onlyLeft', { count: remaining })}</div>}
         <div className={`dc-cta${hov ? ' show' : ''}`}>
           <button className="dc-cta-btn dc-cta-flash" onClick={e => e.preventDefault()}>
             <svg width="11" height="11" fill="none" stroke="#fff" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-            View Deal
+            {t('viewDeal')}
           </button>
         </div>
         <div className={`dc-countdown${hov ? ' hidden' : ''}`}>
@@ -171,7 +179,7 @@ function FlashCard({ item, idx }: { item: FlashItem; idx: number }) {
           <div className="dc-stock-track">
             <div className={`dc-stock-fill${stockPct > 70 ? ' hot' : ''}`} style={{ width: `${Math.max(5, stockPct)}%` }} />
           </div>
-          <span className={`dc-stock-txt${stockPct > 70 ? ' hot' : ''}`}>{remaining != null ? `${remaining} left` : 'Limited'}</span>
+          <span className={`dc-stock-txt${stockPct > 70 ? ' hot' : ''}`}>{remaining != null ? t('left', { count: remaining }) : t('limited')}</span>
         </div>
       )}
       <div className="dc-info">
@@ -190,6 +198,8 @@ function FlashCard({ item, idx }: { item: FlashItem; idx: number }) {
 //  DISCOUNT CARD — new, green accent, no countdown bar
 // ══════════════════════════════════════════════════════════════════════════════
 function DiscountCard({ item, idx }: { item: DiscountItem; idx: number }) {
+  const t = useTranslations('deals')
+  const money = useMoney()
   const { product, promo } = item
   const [hov, setHov]       = useState(false)
   const [imgErr, setImgErr] = useState(false)
@@ -218,7 +228,7 @@ function DiscountCard({ item, idx }: { item: DiscountItem; idx: number }) {
             </span>
           )}
           <span className="dc-badge" style={{ background: 'rgba(5,150,105,0.85)', color: '#fff', backdropFilter: 'blur(4px)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-            🏷️ DISCOUNT
+            🏷️ {t('discountBadge')}
           </span>
         </div>
 
@@ -227,7 +237,7 @@ function DiscountCard({ item, idx }: { item: DiscountItem; idx: number }) {
           <button className="dc-cta-btn" style={{ background: '#059669', color: '#fff', boxShadow: '0 4px 14px rgba(5,150,105,0.4)' }}
             onClick={e => e.preventDefault()}>
             <svg width="11" height="11" fill="none" stroke="#fff" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-            View Deal
+            {t('viewDeal')}
           </button>
         </div>
 
@@ -244,7 +254,7 @@ function DiscountCard({ item, idx }: { item: DiscountItem; idx: number }) {
         <span style={{ fontSize: 9, fontWeight: 800, color: '#059669', letterSpacing: '0.04em' }}>
           🏷️ {promo.discount_label}
         </span>
-        <span style={{ fontSize: 9, color: '#6b7280', marginLeft: 'auto' }}>{promo.name}</span>
+        <span style={{ fontSize: 9, color: '#6b7280', marginInlineStart: 'auto' }}>{promo.name}</span>
       </div>
 
       <div className="dc-info">
@@ -263,7 +273,7 @@ function DiscountCard({ item, idx }: { item: DiscountItem; idx: number }) {
             background: '#f0fdf4', padding: '1px 6px', borderRadius: 999,
             display: 'inline-block', marginTop: 2,
           }}>
-            Save {money(product.original_price - product.effective_price)}
+            {t('save', { amount: money(product.original_price - product.effective_price) })}
           </p>
         )}
       </div>
@@ -275,6 +285,8 @@ function DiscountCard({ item, idx }: { item: DiscountItem; idx: number }) {
 //  BUNDLE CARD — unchanged
 // ══════════════════════════════════════════════════════════════════════════════
 function BundleCard({ item, idx }: { item: BundleItem; idx: number }) {
+  const t = useTranslations('deals')
+  const money = useMoney()
   const { pack } = item
   const router = useRouter()
   const [hov, setHov]       = useState(false)
@@ -318,13 +330,13 @@ function BundleCard({ item, idx }: { item: BundleItem; idx: number }) {
         </div>
         <div className="dc-badges">
           {item._discPct > 0 && <span className="dc-badge dc-disc">-{item._discPct}%</span>}
-          <span className="dc-badge dc-bundle-tag">📦 {pack.items_count} items</span>
+          <span className="dc-badge dc-bundle-tag">📦 {t('itemsCount', { count: pack.items_count })}</span>
         </div>
         {gallery.length > 1 && <div className="dc-dots">{gallery.slice(0,5).map((_,i) => <span key={i} className={`dc-dot${i===cur?' on':''}`} />)}</div>}
         <div className={`dc-cta${hov ? ' show' : ''}`}>
           <button className="dc-cta-btn dc-cta-bundle" onClick={e => { e.preventDefault(); e.stopPropagation(); router.push(`/deals/${pack.slug}`) }}>
             <svg width="11" height="11" fill="none" stroke="#fff" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-            View Bundle
+            {t('viewBundle')}
           </button>
         </div>
       </div>
@@ -336,7 +348,7 @@ function BundleCard({ item, idx }: { item: BundleItem; idx: number }) {
           <span className="dc-price">{money(pack.pack_price)}</span>
           {pack.original_price > pack.pack_price && <span className="dc-orig">{money(pack.original_price)}</span>}
         </div>
-        {pack.savings > 0 && <p className="dc-save">Save {money(pack.savings)}</p>}
+        {pack.savings > 0 && <p className="dc-save">{t('save', { amount: money(pack.savings) })}</p>}
       </div>
     </Link>
   )
@@ -364,6 +376,14 @@ const BundleSkel = () => (
 function DealsSidebar({ f, setF, total, mOpen, setMOpen }: {
   f: Filters; setF: (v: Filters) => void; total: number; mOpen: boolean; setMOpen: (v: boolean) => void
 }) {
+  const t  = useTranslations('deals')
+  const tf = useTranslations('filters')
+  const fmt = useFormat()
+  const whole = (v: string) => fmt.price(v, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  const rangeLabel = (mn: string, mx: string) =>
+    !mx ? tf('rangeOver', { amount: whole(mn) })
+    : mn === '0' ? tf('rangeUnder', { amount: whole(mx) })
+    : tf('rangeBetween', { min: fmt.number(mn), max: whole(mx) })
   const [open, setOpen] = useState(new Set(['sort', 'dealtype', 'price', 'avail']))
   const upd = (p: Partial<Filters>) => setF({ ...f, ...p })
   const tog = (k: string) => setOpen(s => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n })
@@ -371,7 +391,7 @@ function DealsSidebar({ f, setF, total, mOpen, setMOpen }: {
   const applyR = (mn: string, mx: string) => isR(mn, mx) ? upd({ priceMin: '', priceMax: '' }) : upd({ priceMin: mn, priceMax: mx })
   const hasAny = f.dealType !== 'all' || f.inStock || f.priceMin !== '' || f.priceMax !== ''
   const Acc = ({ k, label }: { k: string; label: string }) => (
-    <button className="sb-head" onClick={() => tog(k)}>
+    <button className="sb-head" onClick={() => tog(k)} aria-expanded={open.has(k)}>
       <span>{label}</span>
       <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ transform: open.has(k) ? 'rotate(180deg)' : 'none', transition: 'transform .2s', flexShrink: 0 }}><path d="M6 9l6 6 6-6"/></svg>
     </button>
@@ -379,52 +399,52 @@ function DealsSidebar({ f, setF, total, mOpen, setMOpen }: {
   const inner = (
     <aside className="sbar">
       <div className="sbar-hd">
-        <div><p className="sbar-title">Filters</p><p className="sbar-count">{total.toLocaleString()} deals</p></div>
-        {hasAny && <button className="sbar-clear" onClick={() => setF(DEFAULT_FILTERS)}>✕ Clear</button>}
+        <div><p className="sbar-title">{tf('title')}</p><p className="sbar-count">{t('dealsCount', { count: total })}</p></div>
+        {hasAny && <button className="sbar-clear" onClick={() => setF(DEFAULT_FILTERS)}>{tf('clear')}</button>}
       </div>
-      <div className="sb-acc"><Acc k="sort" label="Sort By" />
+      <div className="sb-acc"><Acc k="sort" label={tf('sortBy')} />
         {open.has('sort') && <div className="sb-body">{SORTS.map(s => (
           <button key={s.k} className={`sbar-sort${f.sort === s.k ? ' on' : ''}`} onClick={() => upd({ sort: s.k })}>
-            <span className="sbar-dot" />{s.l}
-            {f.sort === s.k && <svg width="9" height="9" fill="none" stroke="#db142e" strokeWidth="2.5" viewBox="0 0 24 24" style={{ marginLeft: 'auto' }}><path d="M20 6L9 17l-5-5"/></svg>}
+            <span className="sbar-dot" />{t(`sort.${s.l}`)}
+            {f.sort === s.k && <svg width="9" height="9" fill="none" stroke="#db142e" strokeWidth="2.5" viewBox="0 0 24 24" style={{ marginInlineStart: 'auto' }}><path d="M20 6L9 17l-5-5"/></svg>}
           </button>
         ))}</div>}
       </div>
       {/* Deal Type — now includes Discounts */}
-      <div className="sb-acc"><Acc k="dealtype" label="Deal Type" />
+      <div className="sb-acc"><Acc k="dealtype" label={t('dealType')} />
         {open.has('dealtype') && <div className="sb-body">
           {([
-            { k: 'all',       l: '🔥 All Deals'   },
-            { k: 'flash',     l: '⚡ Flash Sales'  },
-            { k: 'discounts', l: '🏷️ Discounts'   },
-            { k: 'bundles',   l: '📦 Bundles'      },
+            { k: 'all',       l: `🔥 ${t('types.all')}`       },
+            { k: 'flash',     l: `⚡ ${t('types.flash')}`     },
+            { k: 'discounts', l: `🏷️ ${t('types.discounts')}` },
+            { k: 'bundles',   l: `📦 ${t('types.bundles')}`   },
           ] as { k: Filters['dealType']; l: string }[]).map(d => (
             <button key={d.k} className={`sbar-sort${f.dealType === d.k ? ' on' : ''}`} onClick={() => upd({ dealType: d.k })}>
               <span className="sbar-dot" />{d.l}
-              {f.dealType === d.k && <svg width="9" height="9" fill="none" stroke="#db142e" strokeWidth="2.5" viewBox="0 0 24 24" style={{ marginLeft: 'auto' }}><path d="M20 6L9 17l-5-5"/></svg>}
+              {f.dealType === d.k && <svg width="9" height="9" fill="none" stroke="#db142e" strokeWidth="2.5" viewBox="0 0 24 24" style={{ marginInlineStart: 'auto' }}><path d="M20 6L9 17l-5-5"/></svg>}
             </button>
           ))}
         </div>}
       </div>
-      <div className="sb-acc"><Acc k="price" label="Price Range" />
+      <div className="sb-acc"><Acc k="price" label={tf('priceRange')} />
         {open.has('price') && <div className="sb-body">
           <div className="sbar-pr-row">
-            <input type="number" placeholder="Min" value={f.priceMin} onChange={e => upd({ priceMin: e.target.value })} className="sbar-pin" />
+            <input type="number" placeholder={tf('min')} aria-label={tf('minPrice')} value={f.priceMin} onChange={e => upd({ priceMin: e.target.value })} className="sbar-pin" />
             <span style={{ color:'#bbb', fontSize:12 }}>–</span>
-            <input type="number" placeholder="Max" value={f.priceMax} onChange={e => upd({ priceMax: e.target.value })} className="sbar-pin" />
+            <input type="number" placeholder={tf('max')} aria-label={tf('maxPrice')} value={f.priceMax} onChange={e => upd({ priceMax: e.target.value })} className="sbar-pin" />
           </div>
-          {PRICE_RANGES.map(r => <button key={r.l} className={`sbar-pr${isR(r.mn, r.mx) ? ' on' : ''}`} onClick={() => applyR(r.mn, r.mx)}>{r.l}</button>)}
+          {PRICE_RANGES.map(r => <button key={`${r.mn}-${r.mx}`} className={`sbar-pr${isR(r.mn, r.mx) ? ' on' : ''}`} onClick={() => applyR(r.mn, r.mx)}>{rangeLabel(r.mn, r.mx)}</button>)}
         </div>}
       </div>
-      <div className="sb-acc"><Acc k="avail" label="Availability" />
+      <div className="sb-acc"><Acc k="avail" label={tf('availability')} />
         {open.has('avail') && <div className="sb-body" style={{ padding:'6px 16px 12px' }}>
           <label className="sbar-trow">
-            <span>In stock only</span>
+            <span>{tf('inStockOnly')}</span>
             <div className={`sbar-tgl${f.inStock ? ' on' : ''}`} onClick={() => upd({ inStock: !f.inStock })}><div className="sbar-tgl-k" /></div>
           </label>
         </div>}
       </div>
-      <button className="sbar-apply" onClick={() => setMOpen(false)}>Apply Filters</button>
+      <button className="sbar-apply" onClick={() => setMOpen(false)}>{tf('apply')}</button>
     </aside>
   )
   return (
@@ -437,15 +457,16 @@ function DealsSidebar({ f, setF, total, mOpen, setMOpen }: {
 
 // ── Pagination ────────────────────────────────────────────────────────────────
 function Pages({ cur, total, go }: { cur: number; total: number; go: (p: number) => void }) {
+  const t = useTranslations('common')
   if (total <= 1) return null
   const ps = Array.from({ length: total }, (_, i) => i + 1)
     .filter(p => p === 1 || p === total || Math.abs(p - cur) <= 1)
     .reduce<(number | '…')[]>((acc, p, i, arr) => { if (i > 0 && (p as number) - (arr[i-1] as number) > 1) acc.push('…'); acc.push(p); return acc }, [])
   return (
     <div className="pages">
-      <button className="pgb" onClick={() => go(Math.max(1, cur - 1))} disabled={cur === 1}><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button className="pgb" onClick={() => go(Math.max(1, cur - 1))} disabled={cur === 1} aria-label={t('previous')}><svg className="rtl-flip" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
       {ps.map((p, i) => p === '…' ? <span key={`e${i}`} className="pg-sep">…</span> : <button key={p} className={`pgb${cur === p ? ' on' : ''}`} onClick={() => go(p as number)}>{p}</button>)}
-      <button className="pgb" onClick={() => go(Math.min(total, cur + 1))} disabled={cur === total}><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+      <button className="pgb" onClick={() => go(Math.min(total, cur + 1))} disabled={cur === total} aria-label={t('next')}><svg className="rtl-flip" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
     </div>
   )
 }
@@ -454,6 +475,7 @@ function Pages({ cur, total, go }: { cur: number; total: number; go: (p: number)
 //  PAGE
 // ══════════════════════════════════════════════════════════════════════════════
 export default function DealsPage() {
+  const t = useTranslations('deals')
   const [rawFlash,     setRawFlash]     = useState<FlashSale[]>([])
   const [rawDiscounts, setRawDiscounts] = useState<DiscountPromotion[]>([])   // ← NEW
   const [rawBundles,   setRawBundles]   = useState<Pack[]>([])
@@ -595,6 +617,13 @@ export default function DealsPage() {
         @keyframes dpSlideR  {from{transform:translateX(100%)}to{transform:translateX(0)}}
         @keyframes dpFadeIn  {from{opacity:0}to{opacity:1}}
         @keyframes dpSlideIn {from{transform:translateX(-100%);opacity:0}to{transform:translateX(0);opacity:1}}
+        @keyframes dpSlideInRtl {from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+        @keyframes dpSlideLRtl  {from{transform:translateX(0)}to{transform:translateX(100%)}}
+        @keyframes dpSlideRRtl  {from{transform:translateX(-100%)}to{transform:translateX(0)}}
+        [dir=rtl] .sbar-drawer{animation-name:dpSlideInRtl;box-shadow:-4px 0 24px rgba(0,0,0,.12)}
+        [dir=rtl] .dc-layer-out{animation-name:dpSlideLRtl}
+        [dir=rtl] .dc-layer-in{animation-name:dpSlideRRtl}
+        [dir=rtl] .sbar-tgl.on .sbar-tgl-k{transform:translateX(-16px)}
 
         .dp{min-height:100vh;background:#f5f5f7;font-family:'Outfit',sans-serif;color:#111}
 
@@ -621,7 +650,7 @@ export default function DealsPage() {
         .dp-mbar-sort{min-width:0;max-width:140px;padding:5px 10px;border-radius:7px;border:1.5px solid #e5e7eb;background:#fff;font-size:11px;font-weight:600;color:#555;font-family:'Outfit',sans-serif;cursor:pointer;outline:none}
         .dp-mbar-filter{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;border:1.5px solid #e5e7eb;background:#fff;font-size:11px;font-weight:700;color:#374151;cursor:pointer;font-family:'Outfit',sans-serif;position:relative;white-space:nowrap}
         .dp-mbar-filter:hover{border-color:#db142e;color:#db142e}
-        .dp-filter-badge{position:absolute;top:-5px;right:-5px;background:#db142e;color:#fff;font-size:8px;font-weight:900;border-radius:999px;width:15px;height:15px;display:flex;align-items:center;justify-content:center}
+        .dp-filter-badge{position:absolute;top:-5px;inset-inline-end:-5px;background:#db142e;color:#fff;font-size:8px;font-weight:900;border-radius:999px;width:15px;height:15px;display:flex;align-items:center;justify-content:center}
 
         /* Layout */
         .dp-layout{max-width:1520px;margin:0 auto;padding:18px 32px 60px;display:grid;grid-template-columns:246px 1fr;gap:18px;align-items:start}
@@ -638,7 +667,7 @@ export default function DealsPage() {
         .sb-head{width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:#444;transition:color .12s}
         .sb-head:hover{color:#db142e}
         .sb-body{padding:3px 15px 10px}
-        .sbar-sort{display:flex;align-items:center;gap:7px;width:100%;padding:7px 7px;border-radius:6px;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:500;color:#555;text-align:left;transition:all .11s}
+        .sbar-sort{display:flex;align-items:center;gap:7px;width:100%;padding:7px 7px;border-radius:6px;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:500;color:#555;text-align:start;transition:all .11s}
         .sbar-sort:hover{background:#f8f8f8;color:#db142e}
         .sbar-sort.on{background:rgba(219,20,46,.05);color:#db142e;font-weight:700}
         .sbar-dot{width:5px;height:5px;border-radius:50%;border:1.5px solid currentColor;flex-shrink:0;transition:background .11s}
@@ -648,7 +677,7 @@ export default function DealsPage() {
         .sbar-pin::-webkit-outer-spin-button,.sbar-pin::-webkit-inner-spin-button{-webkit-appearance:none}
         .sbar-pin:focus{border-color:#db142e;background:#fff}
         .sbar-pin::placeholder{color:#ccc}
-        .sbar-pr{display:flex;align-items:center;gap:7px;width:100%;padding:7px 7px;border-radius:6px;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;color:#555;text-align:left;transition:all .11s}
+        .sbar-pr{display:flex;align-items:center;gap:7px;width:100%;padding:7px 7px;border-radius:6px;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;color:#555;text-align:start;transition:all .11s}
         .sbar-pr::before{content:'';display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid #d1d5db;flex-shrink:0;background:#fff;transition:all .11s}
         .sbar-pr:hover{background:#f8f8f8;color:#db142e}
         .sbar-pr:hover::before{border-color:#db142e}
@@ -657,11 +686,11 @@ export default function DealsPage() {
         .sbar-trow{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:500;color:#374151;cursor:pointer}
         .sbar-tgl{width:35px;height:19px;border-radius:999px;background:#e5e7eb;position:relative;cursor:pointer;flex-shrink:0;transition:background .19s}
         .sbar-tgl.on{background:#db142e}
-        .sbar-tgl-k{position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.14);transition:transform .19s}
+        .sbar-tgl-k{position:absolute;top:2px;inset-inline-start:2px;width:15px;height:15px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.14);transition:transform .19s}
         .sbar-tgl.on .sbar-tgl-k{transform:translateX(16px)}
         .sbar-apply{display:none;width:calc(100% - 30px);margin:11px 15px 15px;padding:10px;background:#db142e;color:#fff;font-weight:800;font-size:12.5px;border:none;border-radius:9px;cursor:pointer;font-family:'Outfit',sans-serif;align-items:center;justify-content:center}
         .sbar-bd{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:200;animation:dpFadeIn .17s ease;backdrop-filter:blur(2px)}
-        .sbar-drawer{position:fixed;left:0;top:0;bottom:0;z-index:201;width:282px;max-width:90vw;overflow-y:auto;background:#fff;box-shadow:4px 0 24px rgba(0,0,0,.12);animation:dpSlideIn .22s ease}
+        .sbar-drawer{position:fixed;inset-inline-start:0;top:0;bottom:0;z-index:201;width:282px;max-width:90vw;overflow-y:auto;background:#fff;box-shadow:4px 0 24px rgba(0,0,0,.12);animation:dpSlideIn .22s ease}
         .sbar-drawer .sbar{border-radius:0;position:static;box-shadow:none;border:none;max-height:none}
         .sbar-drawer .sbar-apply{display:flex}
 
@@ -677,7 +706,7 @@ export default function DealsPage() {
         .dc-layer{position:absolute;inset:0;will-change:transform}
         .dc-layer-out{z-index:1;animation:dpSlideL .52s cubic-bezier(.77,0,.175,1) forwards}
         .dc-layer-in{z-index:2;animation:dpSlideR .52s cubic-bezier(.77,0,.175,1) forwards}
-        .dc-badges{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;z-index:5}
+        .dc-badges{position:absolute;top:8px;inset-inline-start:8px;display:flex;flex-direction:column;gap:4px;z-index:5}
         .dc-badge{font-size:8px;font-weight:900;padding:2px 6px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;display:inline-flex;align-items:center;gap:3px}
         .dc-disc{background:#db142e;color:#fff}
         .dc-disc-flash{font-size:9px;padding:3px 7px}
@@ -687,15 +716,15 @@ export default function DealsPage() {
         .dc-dots{position:absolute;bottom:52px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:5}
         .dc-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.6);transition:all .22s}
         .dc-dot.on{background:#fff;width:14px;border-radius:3px}
-        .dc-urgent{position:absolute;bottom:56px;left:0;right:0;background:rgba(220,38,38,0.92);color:#fff;font-size:9px;font-weight:900;text-align:center;padding:3px 8px;letter-spacing:.03em;z-index:6}
-        .dc-cta{position:absolute;bottom:0;left:0;right:0;padding:0 9px 9px;z-index:7;transform:translateY(110%);opacity:0;transition:transform .3s cubic-bezier(.34,1.48,.64,1),opacity .22s}
+        .dc-urgent{position:absolute;bottom:56px;inset-inline:0;background:rgba(220,38,38,0.92);color:#fff;font-size:9px;font-weight:900;text-align:center;padding:3px 8px;letter-spacing:.03em;z-index:6}
+        .dc-cta{position:absolute;bottom:0;inset-inline:0;padding:0 9px 9px;z-index:7;transform:translateY(110%);opacity:0;transition:transform .3s cubic-bezier(.34,1.48,.64,1),opacity .22s}
         .dc-cta.show{transform:translateY(0);opacity:1}
         .dc-cta-btn{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:8px 10px;font-size:11.5px;font-weight:800;border:none;border-radius:7px;cursor:pointer;font-family:'Outfit',sans-serif;transition:background .13s,transform .11s;letter-spacing:.01em}
         .dc-cta-flash{background:#db142e;color:#fff;box-shadow:0 4px 14px rgba(219,20,46,.4)}
         .dc-cta-flash:hover{background:#b91c1c}
         .dc-cta-bundle{background:#0f172a;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.25)}
         .dc-cta-bundle:hover{background:#1e293b}
-        .dc-countdown{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:5px 8px;z-index:6;transition:opacity .2s,transform .2s}
+        .dc-countdown{position:absolute;bottom:0;inset-inline:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:5px 8px;z-index:6;transition:opacity .2s,transform .2s}
         .dc-countdown.hidden{opacity:0;transform:translateY(4px);pointer-events:none}
         .dc-stock-wrap{display:flex;align-items:center;gap:7px;padding:5px 10px 2px;background:#fff}
         .dc-stock-track{flex:1;height:3.5px;background:#f1f5f9;border-radius:999px;overflow:hidden}
@@ -757,11 +786,11 @@ export default function DealsPage() {
           <div className="dp-hero-inner">
             <div className="dp-hero-top">
               <div>
-                <p className="dp-hero-eyebrow">ChooseTounsi Exclusive</p>
-                <h1 className="dp-hero-title">Deals &amp; Offers 🔥</h1>
-                <p className="dp-hero-sub">Flash sales, discounts &amp; curated bundles from Tunisia's best sellers</p>
+                <p className="dp-hero-eyebrow">{t('heroEyebrow')}</p>
+                <h1 className="dp-hero-title">{t('heroTitle')}</h1>
+                <p className="dp-hero-sub">{t('heroSub')}</p>
               </div>
-              <Link href="/" className="dp-hero-back">← Back to Home</Link>
+              <Link href="/" className="dp-hero-back">{t('backHome')}</Link>
             </div>
 
             {/* Stats — now 5 columns with Discounts added */}
@@ -769,31 +798,31 @@ export default function DealsPage() {
               <div className="dp-stat">
                 <span className="dp-stat-icon">⚡</span>
                 <span className="dp-stat-val">{loading ? '—' : flashCount}</span>
-                <span className="dp-stat-lbl">Flash Deals</span>
+                <span className="dp-stat-lbl">{t('stats.flash')}</span>
               </div>
               <div className="dp-stat-div" />
               <div className="dp-stat">
                 <span className="dp-stat-icon">🏷️</span>
                 <span className="dp-stat-val">{loading ? '—' : discountCount}</span>
-                <span className="dp-stat-lbl">Discounts</span>
+                <span className="dp-stat-lbl">{t('stats.discounts')}</span>
               </div>
               <div className="dp-stat-div" />
               <div className="dp-stat">
                 <span className="dp-stat-icon">📦</span>
                 <span className="dp-stat-val">{loading ? '—' : bundleCount}</span>
-                <span className="dp-stat-lbl">Bundles</span>
+                <span className="dp-stat-lbl">{t('stats.bundles')}</span>
               </div>
               <div className="dp-stat-div" />
               <div className="dp-stat">
                 <span className="dp-stat-icon">🔖</span>
                 <span className="dp-stat-val">{loading ? '—' : `${Math.max(maxFlashDisc, maxDiscountDisc)}%`}</span>
-                <span className="dp-stat-lbl">Max Off</span>
+                <span className="dp-stat-lbl">{t('stats.maxOff')}</span>
               </div>
               <div className="dp-stat-div" />
               <div className="dp-stat">
                 <span className="dp-stat-icon">💰</span>
                 <span className="dp-stat-val">{loading ? '—' : `${maxBundleSave}%`}</span>
-                <span className="dp-stat-lbl">Bundle Save</span>
+                <span className="dp-stat-lbl">{t('stats.bundleSave')}</span>
               </div>
             </div>
           </div>
@@ -801,13 +830,13 @@ export default function DealsPage() {
 
         {/* Mobile bar */}
         <div className="dp-mbar">
-          <span className="dp-mbar-title">{sortedItems.length} Deals</span>
-          <select className="dp-mbar-sort" value={filters.sort} onChange={e => setFilters(f => ({ ...f, sort: e.target.value as SortKey }))}>
-            {SORTS.map(s => <option key={s.k} value={s.k}>{s.l}</option>)}
+          <span className="dp-mbar-title">{t('dealsCount', { count: sortedItems.length })}</span>
+          <select className="dp-mbar-sort" aria-label={t('sortLabel')} value={filters.sort} onChange={e => setFilters(f => ({ ...f, sort: e.target.value as SortKey }))}>
+            {SORTS.map(s => <option key={s.k} value={s.k}>{t(`sort.${s.l}`)}</option>)}
           </select>
           <button className="dp-mbar-filter" onClick={() => setMOpen(true)}>
             <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
-            Filters
+            {t('filters')}
             {filterCount > 0 && <span className="dp-filter-badge">{filterCount}</span>}
           </button>
         </div>
@@ -827,11 +856,11 @@ export default function DealsPage() {
               <div className="dp-grid">
                 <div className="dp-empty">
                   <span style={{ fontSize: '2.5rem' }}>🔍</span>
-                  <p style={{ fontSize: 15, fontWeight: 800, color: '#374151' }}>No deals match your filters</p>
-                  <p style={{ fontSize: 12, color: '#94a3b8', maxWidth: 260, lineHeight: 1.6 }}>Try adjusting your filters or clearing them to see all deals.</p>
-                  <button onClick={() => setFilters(DEFAULT_FILTERS)} style={{ marginTop: 4, padding: '8px 18px', background: '#db142e', color: '#fff', fontWeight: 800, fontSize: 12, border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>Clear All Filters</button>
+                  <p style={{ fontSize: 15, fontWeight: 800, color: '#374151' }}>{t('emptyTitle')}</p>
+                  <p style={{ fontSize: 12, color: '#94a3b8', maxWidth: 260, lineHeight: 1.6 }}>{t('emptyBody')}</p>
+                  <button onClick={() => setFilters(DEFAULT_FILTERS)} style={{ marginTop: 4, padding: '8px 18px', background: '#db142e', color: '#fff', fontWeight: 800, fontSize: 12, border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>{t('clearAll')}</button>
                   <Link href="/shop" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', border: '1.5px solid #e5e7eb', borderRadius: 8, color: '#374151', textDecoration: 'none', fontWeight: 700, fontSize: 12 }}>
-                    Browse Products <ArrowRight size={12} />
+                    {t('browse')} <ArrowRight size={12} />
                   </Link>
                 </div>
               </div>

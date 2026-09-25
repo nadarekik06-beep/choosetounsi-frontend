@@ -3,8 +3,10 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { isAuthenticated } from '@/lib/auth'
+import { useTranslations } from 'next-intl'
 
 export default function HomeCtaSection() {
+  const t = useTranslations('homeCta')
   const router = useRouter()
 
   const handleSeller = () => {
@@ -52,13 +54,13 @@ export default function HomeCtaSection() {
           flex-direction: column;
           justify-content: center;
           gap: 18px;
-          border-right: 1px solid #f0f0f0;
+          border-inline-end: 1px solid #f0f0f0;
         }
 
         /* Decorative red circle top-right */
         .hcta-left__circle {
           position: absolute;
-          top: -80px; right: -80px;
+          top: -80px; inset-inline-end: -80px;
           width: 280px; height: 280px;
           border-radius: 50%;
           background: radial-gradient(circle, rgba(219,20,46,0.08) 0%, transparent 70%);
@@ -102,7 +104,7 @@ export default function HomeCtaSection() {
         .hcta-left__title span::after {
           content: '';
           position: absolute;
-          bottom: -4px; left: 0; right: 0;
+          bottom: -4px; inset-inline: 0;
           height: 3px;
           background: linear-gradient(90deg, #db142e, #ff6b6b);
           border-radius: 2px;
@@ -179,14 +181,14 @@ export default function HomeCtaSection() {
         /* Decorative green circle */
         .hcta-right__circle {
           position: absolute;
-          bottom: -60px; right: -60px;
+          bottom: -60px; inset-inline-end: -60px;
           width: 240px; height: 240px; border-radius: 50%;
           background: radial-gradient(circle, rgba(25,143,65,0.15) 0%, transparent 70%);
           pointer-events: none;
         }
         .hcta-right__circle2 {
           position: absolute;
-          top: -40px; left: -40px;
+          top: -40px; inset-inline-start: -40px;
           width: 160px; height: 160px; border-radius: 50%;
           background: radial-gradient(circle, rgba(25,143,65,0.1) 0%, transparent 70%);
           pointer-events: none;
@@ -279,37 +281,37 @@ export default function HomeCtaSection() {
 
           <p className="hcta-left__tag">
             <span className="hcta-left__tag-dot" />
-            Explore our brands
+            {t('exploreTag')}
           </p>
 
           <h2 className="hcta-left__title">
-            Shop the<br />
-            <span>Collection</span>
+            {t('shopTitle1')}<br />
+            <span>{t('shopTitle2')}</span>
           </h2>
 
           <p className="hcta-left__sub">
-            Discover curated Tunisian fashion, handmade goods, and local brands — all in one place.
+            {t('shopSubtitle')}
           </p>
 
           {/* Stats */}
           <div className="hcta-left__stats">
             <div className="hcta-left__stat">
               <div className="hcta-left__stat-num">500<span>+</span></div>
-              <div className="hcta-left__stat-label">Products</div>
+              <div className="hcta-left__stat-label">{t('statProducts')}</div>
             </div>
             <div className="hcta-left__stat">
               <div className="hcta-left__stat-num">50<span>+</span></div>
-              <div className="hcta-left__stat-label">Brands</div>
+              <div className="hcta-left__stat-label">{t('statBrands')}</div>
             </div>
             <div className="hcta-left__stat">
               <div className="hcta-left__stat-num">🇹🇳</div>
-              <div className="hcta-left__stat-label">100% Local</div>
+              <div className="hcta-left__stat-label">{t('statLocal')}</div>
             </div>
           </div>
 
           <Link href="/brand" className="hcta-left__btn">
-            Explore Now
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+            {t('exploreNow')}
+            <svg className="rtl-flip" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
           </Link>
@@ -321,24 +323,20 @@ export default function HomeCtaSection() {
           <div className="hcta-right__circle2" />
 
           <p className="hcta-right__tag">
-            🏪 Join Tunisia&apos;s #1 marketplace
+            {t('sellTag')}
           </p>
 
           <h2 className="hcta-right__title">
-            Start Selling<br />
-            <span>Today</span>
+            {t('sellTitle1')}<br />
+            <span>{t('sellTitle2')}</span>
           </h2>
 
           <p className="hcta-right__sub">
-            Set up your store in minutes. Reach thousands of buyers across Tunisia.
+            {t('sellSubtitle')}
           </p>
 
           <div className="hcta-right__perks">
-            {[
-              'Free to register — no setup fee',
-              'Verified seller badge included',
-              'Dedicated seller dashboard',
-            ].map(perk => (
+            {[t('perk1'), t('perk2'), t('perk3')].map(perk => (
               <span key={perk} className="hcta-right__perk">
                 <span className="hcta-right__perk-icon">
                   <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -352,15 +350,15 @@ export default function HomeCtaSection() {
 
           <button className="hcta-right__btn" onClick={handleSeller}>
             <span className="hcta-icon">🏪</span>
-            Open Your Store
+            {t('openStore')}
           </button>
 
           <div className="hcta-right__trust">
-            <span>Free forever</span>
+            <span>{t('trust1')}</span>
             <span className="hcta-right__trust-dot" />
-            <span>No credit card</span>
+            <span>{t('trust2')}</span>
             <span className="hcta-right__trust-dot" />
-            <span>Start in 2 minutes</span>
+            <span>{t('trust3')}</span>
           </div>
         </div>
 

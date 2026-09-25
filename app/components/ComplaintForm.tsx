@@ -25,6 +25,8 @@ import { useState, useEffect, useRef } from 'react'
 import { complaintApi } from '@/lib/complaintApi'
 import type { EligibleOrder, EligibleOrderItem, ComplaintType, ResolutionType } from '@/types/complaint'
 import { COMPLAINT_TYPE_LABELS, RESOLUTION_TYPE_LABELS } from '@/types/complaint'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 // ── Brand tokens — light mode ─────────────────────────────────────────────────
 const RED       = '#db142e'
@@ -152,6 +154,8 @@ function ItemPicker({
   onChange: (ids: number[]) => void
   error?: string
 }) {
+  const t = useTranslations('complaintForm')
+  const { price } = useFormat()
   const isSingle = items.length === 1
 
   const toggle = (id: number) => {
@@ -174,12 +178,12 @@ function ItemPicker({
         )}
         <div style={{ flex: 1 }}>
           <p style={{ fontSize: 13, fontWeight: 800, color: TEXT, margin: 0 }}>{item.product_name}</p>
-          <p style={{ fontSize: 11, color: TEXT_SEC, margin: '2px 0 0' }}>Qty: {item.quantity}</p>
+          <p style={{ fontSize: 11, color: TEXT_SEC, margin: '2px 0 0' }}>{t('qty', { count: item.quantity })}</p>
         </div>
         <span style={{
           fontSize: 10, fontWeight: 800, color: RED, background: RED_LIGHT,
           padding: '3px 8px', borderRadius: 999, border: `1px solid ${RED}30`,
-        }}>Auto-selected</span>
+        }}>{t('autoSelected')}</span>
       </div>
     )
   }
@@ -194,20 +198,20 @@ function ItemPicker({
           fontSize: 10, fontWeight: 800, color: RED,
           background: RED_LIGHT, padding: '2px 7px', borderRadius: 999,
           border: `1px solid ${RED}30`,
-        }}>Select items</span>
-        Which item(s) are you reporting an issue with?
+        }}>{t('selectItemsBadge')}</span>
+        {t('whichItems')}
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {items.map(item => {
           const sel = selectedIds.includes(item.id)
           return (
-            <button key={item.id} onClick={() => toggle(item.id)} style={{
+            <button key={item.id} onClick={() => toggle(item.id)} aria-pressed={sel} style={{
               display: 'flex', alignItems: 'center', gap: 12,
               padding: '11px 14px', borderRadius: 12, cursor: 'pointer',
               background: sel ? RED_LIGHT : CARD2,
               border: `1.5px solid ${sel ? RED : BORDER}`,
-              textAlign: 'left', fontFamily: 'inherit',
+              textAlign: 'start', fontFamily: 'inherit',
               boxShadow: sel ? `0 0 0 1px ${RED}, 0 2px 12px rgba(219,20,46,0.08)` : 'none',
               transition: 'all 0.15s ease',
             }}>
@@ -241,7 +245,7 @@ function ItemPicker({
                   transition: 'color 0.15s',
                 }}>{item.product_name}</p>
                 <p style={{ fontSize: 11, color: TEXT_SEC, margin: '2px 0 0', fontWeight: 500 }}>
-                  Qty: {item.quantity} · {Number(item.unit_price).toFixed(2)} DT
+                  {t('qty', { count: item.quantity })} · {price(item.unit_price)}
                 </p>
               </div>
             </button>
@@ -263,6 +267,7 @@ function ResolutionPicker({
 }: {
   value: ResolutionType | ''; onChange: (v: ResolutionType) => void; error?: string
 }) {
+  const t = useTranslations('complaintForm')
   const options: ResolutionType[] = ['return_refund', 'exchange']
   return (
     <div>
@@ -273,9 +278,9 @@ function ResolutionPicker({
           const accentColor = opt === 'return_refund' ? RED : ORANGE
           const accentLight = opt === 'return_refund' ? RED_LIGHT : 'rgba(249,115,22,0.08)'
           return (
-            <button key={opt} onClick={() => onChange(opt)} style={{
+            <button key={opt} onClick={() => onChange(opt)} aria-pressed={sel} style={{
               padding: '16px 14px', borderRadius: 12, cursor: 'pointer',
-              textAlign: 'left', fontFamily: 'inherit',
+              textAlign: 'start', fontFamily: 'inherit',
               display: 'flex', flexDirection: 'column', gap: 8,
               background: sel ? accentLight : CARD2,
               border: `2px solid ${sel ? accentColor : BORDER}`,
@@ -287,10 +292,10 @@ function ResolutionPicker({
               <span style={{ fontSize: 28 }}>{cfg.icon}</span>
               <div>
                 <p style={{ fontSize: 13, fontWeight: 800, color: sel ? accentColor : TEXT, margin: '0 0 3px' }}>
-                  {cfg.label}
+                  {t(`resolution.${opt}.label`)}
                 </p>
                 <p style={{ fontSize: 11, color: TEXT_SEC, margin: 0, lineHeight: 1.4 }}>
-                  {cfg.description}
+                  {t(`resolution.${opt}.description`)}
                 </p>
               </div>
               {sel && (
@@ -313,8 +318,7 @@ function ResolutionPicker({
           background: 'rgba(219,20,46,0.04)', border: '1px solid rgba(219,20,46,0.15)',
           fontSize: 12, color: TEXT_SEC, lineHeight: 1.6,
         }}>
-          📦 A delivery agent will collect the item(s) from you and return them to the seller.
-          Your refund will be processed after pickup.
+          {t('refundNote')}
         </div>
       )}
       {value === 'exchange' && (
@@ -323,8 +327,7 @@ function ResolutionPicker({
           background: 'rgba(249,115,22,0.04)', border: '1px solid rgba(249,115,22,0.15)',
           fontSize: 12, color: TEXT_SEC, lineHeight: 1.6,
         }}>
-          🔄 A delivery agent will bring you a replacement item.
-          The seller will coordinate the exchange.
+          {t('exchangeNote')}
         </div>
       )}
       {error && (
@@ -347,6 +350,9 @@ interface ComplaintFormProps {
 export default function ComplaintForm({
   prefilledOrderId, onSuccess, onCancel, compact = false,
 }: ComplaintFormProps) {
+  const t  = useTranslations('complaintForm')
+  const tc = useTranslations('complaints')
+  const { date } = useFormat()
 
   const [eligibleOrders, setEligibleOrders] = useState<EligibleOrder[]>([])
   const [loadingOrders,  setLoadingOrders]  = useState(true)
@@ -407,7 +413,7 @@ export default function ComplaintForm({
 
   const processFile = (file: File) => {
     if (file.size > 5 * 1024 * 1024) {
-      setErrors(prev => ({ ...prev, image: 'Image must be under 5 MB.' }))
+      setErrors(prev => ({ ...prev, image: t('errors.imageSize') }))
       return
     }
     setErrors(prev => { const n = { ...prev }; delete n.image; return n })
@@ -435,13 +441,13 @@ export default function ComplaintForm({
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {}
-    if (!selectedOrderId)             errs.order_id       = 'Please select an order.'
-    if (selectedItemIds.length === 0) errs.item_ids       = 'Please select at least one item.'
-    if (!resolutionType)              errs.resolution_type = 'Please select a resolution.'   // ← NEW
-    if (!complaintType)               errs.complaint_type  = 'Please select a type.'
-    if (complaintType === 'other' && !otherReason.trim()) errs.other_reason = 'Please specify.'
-    if (description.trim().length < 20) errs.description  = `${20 - description.trim().length} more chars needed.`
-     if (!imageFile)                   errs.image           = 'A proof photo is required.'   // ← ADD THIS
+    if (!selectedOrderId)             errs.order_id       = t('errors.order')
+    if (selectedItemIds.length === 0) errs.item_ids       = t('errors.items')
+    if (!resolutionType)              errs.resolution_type = t('errors.resolution')
+    if (!complaintType)               errs.complaint_type  = t('errors.type')
+    if (complaintType === 'other' && !otherReason.trim()) errs.other_reason = t('errors.specify')
+    if (description.trim().length < 20) errs.description  = t('charsNeeded', { count: 20 - description.trim().length })
+    if (!imageFile)                   errs.image           = t('errors.photo')
 
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -470,7 +476,7 @@ const scrollToFirstError = () => {
       })
       onSuccess?.(res.data)
     } catch (err: any) {
-      setServerError(err?.response?.data?.message ?? 'Failed to submit. Please try again.')
+      setServerError(err?.response?.data?.message ?? t('errors.submit'))
     } finally {
       setSubmitting(false)
     }
@@ -498,18 +504,17 @@ const scrollToFirstError = () => {
           display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32,
         }}>📦</div>
         <p style={{ fontSize: 16, fontWeight: 900, color: TEXT, margin: '0 0 10px' }}>
-          No eligible orders
+          {t('noEligibleTitle')}
         </p>
         <p style={{ fontSize: 13, color: TEXT_SEC, maxWidth: 320, margin: '0 auto 24px', lineHeight: 1.7 }}>
-          Complaints can only be filed on <strong>delivered orders</strong> within{' '}
-          <strong>48 hours</strong> of delivery, once per order.
+          {t.rich('noEligibleBody', { b: c => <strong>{c}</strong> })}
         </p>
         {onCancel && (
           <button onClick={onCancel} style={{
             padding: '10px 24px', border: `1.5px solid ${BORDER}`, borderRadius: 10,
             background: '#fff', color: TEXT_SEC, fontSize: 13,
             fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-          }}>Close</button>
+          }}>{t('close')}</button>
         )}
       </div>
     )
@@ -517,12 +522,12 @@ const scrollToFirstError = () => {
 
   // ── Step config — now 6 steps ─────────────────────────────────────────────
   const STEPS = [
-    { n: 1, label: 'Order' },
-    { n: 2, label: 'Items' },
-    { n: 3, label: 'Resolution' },   // ← NEW
-    { n: 4, label: 'Type' },
-    { n: 5, label: 'Details' },
-    { n: 6, label: 'Submit' },
+    { n: 1, label: t('steps.order') },
+    { n: 2, label: t('steps.items') },
+    { n: 3, label: t('steps.resolution') },
+    { n: 4, label: t('steps.type') },
+    { n: 5, label: t('steps.details') },
+    { n: 6, label: t('steps.submit') },
   ]
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -607,8 +612,8 @@ const scrollToFirstError = () => {
         )}
 
         {/* ═══ 1 — ORDER ══════════════════════════════════════════════════════ */}
-        <Section icon="🛒" label="Select Order" done={step1Done} delay="0s" hasError={!!errors.order_id}>
-          <Field label="Your Order" error={errors.order_id} required>
+        <Section icon="🛒" label={t('selectOrder')} done={step1Done} delay="0s" hasError={!!errors.order_id}>
+          <Field label={t('yourOrder')} error={errors.order_id} required>
             {loadingOrders ? (
               <div style={{
                 ...baseInputStyle, border: `1.5px solid ${BORDER}`,
@@ -619,7 +624,7 @@ const scrollToFirstError = () => {
                   border: `2px solid #e2e8f0`, borderTopColor: RED,
                   borderRadius: '50%', animation: 'spin 0.8s linear infinite',
                 }} />
-                Loading your orders…
+                {t('loadingOrders')}
               </div>
             ) : prefilledOrderId ? (
               <div style={{
@@ -630,10 +635,10 @@ const scrollToFirstError = () => {
                 <span style={{
                   fontSize: 10, padding: '2px 7px', borderRadius: 5,
                   background: '#e2e8f0', color: MUTED, fontWeight: 800, letterSpacing: '0.06em',
-                }}>LOCKED</span>
+                }}>{t('locked')}</span>
                 {selectedOrder
-                  ? `Order #${selectedOrder.order_number} — ${selectedOrder.delivered_at}`
-                  : `Order #${prefilledOrderId}`}
+                  ? t('orderWithDate', { number: selectedOrder.order_number, date: date(selectedOrder.delivered_at, 'medium') || selectedOrder.delivered_at })
+                  : t('orderN', { number: prefilledOrderId })}
               </div>
             ) : (
               <select
@@ -642,11 +647,12 @@ const scrollToFirstError = () => {
                 onFocus={() => setFocusedField('order')}
                 onBlur={() => setFocusedField(null)}
                 className="ct-select"
+                aria-label={t('yourOrder')}
                 style={{ ...iStyle('order', !!errors.order_id), cursor: 'pointer', appearance: 'none' }}>
-                <option value="">— Choose an order —</option>
+                <option value="">{t('chooseOrder')}</option>
                 {eligibleOrders.map(o => (
                   <option key={o.id} value={o.id}>
-                    #{o.order_number} · {o.delivered_at} · {o.hours_left}h left
+                    #{o.order_number} · {date(o.delivered_at, 'medium') || o.delivered_at} · {t('hoursLeft', { hours: o.hours_left })}
                   </option>
                 ))}
               </select>
@@ -668,10 +674,10 @@ const scrollToFirstError = () => {
                 }}>📦 {item.product_name} ×{item.quantity}</span>
               ))}
               <span style={{
-                marginLeft: 'auto', fontSize: 11, fontWeight: 800,
+                marginInlineStart: 'auto', fontSize: 11, fontWeight: 800,
                 color: selectedOrder.hours_left < 6 ? RED : '#f59e0b',
               }}>
-                ⏱ {selectedOrder.hours_left}h remaining
+                ⏱ {t('hoursRemaining', { hours: selectedOrder.hours_left })}
               </span>
             </div>
           )}
@@ -679,7 +685,7 @@ const scrollToFirstError = () => {
 
         {/* ═══ 2 — ITEM SELECTION ═════════════════════════════════════════════ */}
         {selectedOrder && (
-          <Section icon="📦" label="Select Item(s)" done={step2Done} delay="0.04s" hasError={!!errors.item_ids}>
+          <Section icon="📦" label={t('selectItems')} done={step2Done} delay="0.04s" hasError={!!errors.item_ids}>
             <ItemPicker
               items={selectedOrder.items}
               selectedIds={selectedItemIds}
@@ -693,7 +699,7 @@ const scrollToFirstError = () => {
         )}
 
         {/* ═══ 3 — RESOLUTION TYPE — NEW ══════════════════════════════════════ */}
-        <Section icon="⚖️" label="What do you want?" done={step3Done} delay="0.08s" hasError={!!errors.resolution_type}>
+        <Section icon="⚖️" label={t('whatWant')} done={step3Done} delay="0.08s" hasError={!!errors.resolution_type}>
           <ResolutionPicker
             value={resolutionType}
             onChange={v => {
@@ -705,13 +711,14 @@ const scrollToFirstError = () => {
         </Section>
 
         {/* ═══ 4 — COMPLAINT TYPE ═════════════════════════════════════════════ */}
-        <Section icon="🏷️" label="Complaint Type" done={step4Done} delay="0.12s" hasError={!!errors.complaint_type}>
+        <Section icon="🏷️" label={t('type')} done={step4Done} delay="0.12s" hasError={!!errors.complaint_type}>
           <div style={{
             display: 'grid',
             gridTemplateColumns: compact ? 'repeat(2,1fr)' : 'repeat(auto-fill, minmax(138px, 1fr))',
             gap: 8, marginBottom: errors.complaint_type ? 8 : 0,
           }}>
-            {(Object.entries(COMPLAINT_TYPE_LABELS) as [ComplaintType, string][]).map(([val, label]) => {
+            {(Object.keys(COMPLAINT_TYPE_LABELS) as ComplaintType[]).map(val => {
+              const label = tc(`types.${val}`)
               const sel = complaintType === val
               return (
                 <button
@@ -721,6 +728,7 @@ const scrollToFirstError = () => {
                     setErrors(p => { const n = { ...p }; delete n.complaint_type; return n })
                   }}
                   className="ct-chip"
+                  aria-pressed={sel}
                   style={{
                     padding: '11px 13px', borderRadius: 11, cursor: 'pointer',
                     background: sel ? RED_LIGHT : '#f8fafc',
@@ -728,7 +736,7 @@ const scrollToFirstError = () => {
                     color: sel ? RED : TEXT_SEC,
                     fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
                     display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6,
-                    textAlign: 'left',
+                    textAlign: 'start',
                     boxShadow: sel ? `0 0 0 1px ${RED}, 0 4px 16px rgba(219,20,46,0.12)` : '0 1px 3px rgba(0,0,0,0.04)',
                     transition: 'all 0.18s ease',
                   }}>
@@ -743,14 +751,15 @@ const scrollToFirstError = () => {
           )}
           {complaintType === 'other' && (
             <div style={{ marginTop: 12, animation: 'fadeSlideIn 0.2s ease' }}>
-              <Field label="Specify your reason" error={errors.other_reason} required>
+              <Field label={t('specifyReason')} error={errors.other_reason} required>
                 <input
                   type="text"
                   value={otherReason}
                   onChange={e => setOtherReason(e.target.value)}
                   onFocus={() => setFocusedField('other_reason')}
                   onBlur={() => setFocusedField(null)}
-                  placeholder="e.g. Item arrived in wrong packaging"
+                  placeholder={t('otherPlaceholder')}
+                  aria-label={t('specifyReason')}
                   style={iStyle('other_reason', !!errors.other_reason)}
                 />
               </Field>
@@ -759,15 +768,16 @@ const scrollToFirstError = () => {
         </Section>
 
         {/* ═══ 5 — DESCRIPTION + PHOTO ════════════════════════════════════════ */}
-        <Section icon="✏️" label="Describe the Issue" done={step5Done} delay="0.16s" hasError={!!errors.description || !!errors.image}>
-          <Field label="Description" error={errors.description} hint={`${description.length} / 2000`} required>
+        <Section icon="✏️" label={t('describe')} done={step5Done} delay="0.16s" hasError={!!errors.description || !!errors.image}>
+          <Field label={t('description')} error={errors.description} hint={`${description.length} / 2000`} required>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               onFocus={() => setFocusedField('description')}
               onBlur={() => setFocusedField(null)}
               rows={compact ? 3 : 5}
-              placeholder="What happened? What did you receive vs. what was expected? The more detail, the faster we can resolve this…"
+              placeholder={t('descriptionPlaceholder')}
+              aria-label={t('description')}
               style={{
                 ...iStyle('description', !!errors.description),
                 resize: 'vertical', lineHeight: 1.7, minHeight: compact ? 80 : 120,
@@ -786,22 +796,22 @@ const scrollToFirstError = () => {
             </div>
             <span style={{ fontSize: 11, fontWeight: 600, color: description.length >= 20 ? GREEN : '#d97706' }}>
               {description.length >= 20
-                ? '✓ Great detail — this strengthens your case'
-                : `${20 - description.length} more characters needed`}
+                ? t('charsOk')
+                : t('charsNeeded', { count: 20 - description.length })}
             </span>
           </Field>
 
           {/* Photo upload */}
           <div style={{ marginTop: 18 }}>
-              <Field label="Proof Photo" error={errors.image} hint="Required · max 5 MB">
+              <Field label={t('proofPhoto')} error={errors.image} hint={t('proofHint')}>
               {imagePreview ? (
                 <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: `1.5px solid ${BORDER}` }}>
                   <img
-                    src={imagePreview} alt="Preview"
+                    src={imagePreview} alt={t('preview')}
                     style={{ width: '100%', maxHeight: 180, objectFit: 'cover', display: 'block' }}
                   />
                   <div style={{
-                    position: 'absolute', bottom: 0, left: 0, right: 0, padding: '10px 14px',
+                    position: 'absolute', bottom: 0, insetInline: 0, padding: '10px 14px',
                     background: 'linear-gradient(transparent, rgba(0,0,0,0.65))',
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   }}>
@@ -812,7 +822,7 @@ const scrollToFirstError = () => {
                       padding: '3px 10px', borderRadius: 6, background: RED,
                       color: '#fff', border: 'none', cursor: 'pointer', fontSize: 11,
                       fontWeight: 800, fontFamily: 'inherit',
-                    }}>Remove</button>
+                    }}>{t('remove')}</button>
                   </div>
                 </div>
               ) : (
@@ -830,7 +840,7 @@ const scrollToFirstError = () => {
                       }}>
                   <div style={{ fontSize: 30, marginBottom: 8 }}>📷</div>
                   <p style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, margin: '0 0 4px' }}>
-                    Drop photo here or <span style={{ color: RED }}>click to browse</span>
+                    {t.rich('drop', { b: c => <span style={{ color: RED }}>{c}</span> })}
                   </p>
                   <p style={{ fontSize: 11, color: MUTED, margin: 0 }}>JPEG · PNG · WEBP</p>
                 </div>
@@ -857,7 +867,7 @@ const scrollToFirstError = () => {
               background: '#fff', color: TEXT_SEC, fontSize: 13, fontWeight: 700,
               cursor: submitting ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
               opacity: submitting ? 0.5 : 1, transition: 'all 0.2s',
-            }}>Cancel</button>
+            }}>{t('cancel')}</button>
           )}
 
           <button
@@ -882,17 +892,17 @@ const scrollToFirstError = () => {
                   border: '2.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff',
                   borderRadius: '50%', animation: 'spin 0.7s linear infinite',
                 }} />
-                Submitting your complaint…
+                {t('submitting')}
               </>
             ) : (
               <>
                 <span>🚨</span>
-                Submit Complaint
+                {t('submit')}
                 {allDone && (
                   <span style={{
                     fontSize: 11, padding: '2px 8px', borderRadius: 99,
                     background: 'rgba(255,255,255,0.22)', fontWeight: 800,
-                  }}>Ready ✓</span>
+                  }}>{t('ready')}</span>
                 )}
               </>
             )}
@@ -901,7 +911,7 @@ const scrollToFirstError = () => {
 
         {!compact && (
           <p style={{ fontSize: 11, color: MUTED, textAlign: 'center', margin: '10px 0 0', lineHeight: 1.6 }}>
-            By submitting, you confirm this report is accurate. False complaints may result in account restrictions.
+            {t('disclaimer')}
           </p>
         )}
       </div>

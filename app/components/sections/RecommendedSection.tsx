@@ -16,6 +16,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
+import type { PriceOptions } from '@/lib/i18n/format'
 
 const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API    = `${ORIGIN}/api`
@@ -69,11 +72,9 @@ function getToken(): string | null {
 
 // ── Price helpers ─────────────────────────────────────────────────────────────
 
-function money(v: number | string) {
-  return `${Number(v).toFixed(2)} DT`
-}
+type PriceFn = (v: number | string, o?: PriceOptions) => string
 
-function getDisplayPrice(p: RecommendedProduct): {
+function getDisplayPrice(p: RecommendedProduct, price: PriceFn): {
   display: number
   original: number | null
   badge: string | null
@@ -93,7 +94,7 @@ function getDisplayPrice(p: RecommendedProduct): {
     if (pct > 0) badge = `-${pct}%`
   } else {
     const saved = base - effective
-    if (saved > 0) badge = `-${saved.toFixed(0)} DT`
+    if (saved > 0) badge = `-${price(saved, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
   }
 
   return {
@@ -107,6 +108,8 @@ function getDisplayPrice(p: RecommendedProduct): {
 // ── Card ──────────────────────────────────────────────────────────────────────
 
 function RecommendedCard({ product, index }: { product: RecommendedProduct; index: number }) {
+  const t   = useTranslations('productCard')
+  const fmt = useFormat()
   const [hovered,  setHovered]  = useState(false)
   const [imgErr,   setImgErr]   = useState(false)
   const [imgIndex, setImgIndex] = useState(0)        // ← NEW
@@ -141,7 +144,7 @@ function RecommendedCard({ product, index }: { product: RecommendedProduct; inde
 
   const currentImage = allImages[imgIndex] ?? null  // ← NEW: replaces product.primary_image_url
 
-  const { display, original, badge, isFlash } = getDisplayPrice(product)
+  const { display, original, badge, isFlash } = getDisplayPrice(product, fmt.price)
   const oos = product.stock <= 0
 
   return (
@@ -190,7 +193,7 @@ function RecommendedCard({ product, index }: { product: RecommendedProduct; inde
         )}
 
         {/* Badges */}
-        <div style={{ position: 'absolute', top: 7, left: 7, display: 'flex', flexDirection: 'column', gap: 4, zIndex: 3 }}>
+        <div style={{ position: 'absolute', top: 7, insetInlineStart: 7, display: 'flex', flexDirection: 'column', gap: 4, zIndex: 3 }}>
           {/* Smart badge — never reveals "Sponsored" to customers */}
 {(() => {
   if (product.stock > 0 && product.stock <= 5) return null // low stock shown below already
@@ -202,7 +205,7 @@ if (product.is_sponsored && (product.sponsored_priority ?? 0) >= 70) {
         fontSize: 8, fontWeight: 900,
         padding: '2px 7px', borderRadius: 999,
         textTransform: 'uppercase', letterSpacing: '0.06em',
-      }}>🔥 Hot</span>
+      }}>{t('hot')}</span>
     )
   }
 if (product.is_sponsored && (product.sponsored_priority ?? 0) >= 30) {
@@ -212,7 +215,7 @@ if (product.is_sponsored && (product.sponsored_priority ?? 0) >= 30) {
         fontSize: 8, fontWeight: 900,
         padding: '2px 7px', borderRadius: 999,
         textTransform: 'uppercase', letterSpacing: '0.06em',
-      }}>⚡ Trending</span>
+      }}>{t('trending')}</span>
     )
   }
   if (product.is_sponsored) {
@@ -222,7 +225,7 @@ if (product.is_sponsored && (product.sponsored_priority ?? 0) >= 30) {
         fontSize: 8, fontWeight: 900,
         padding: '2px 7px', borderRadius: 999,
         textTransform: 'uppercase', letterSpacing: '0.06em',
-      }}>✨ Popular</span>
+      }}>{t('popular')}</span>
     )
   }
   return null
@@ -254,7 +257,7 @@ if (product.is_sponsored && (product.sponsored_priority ?? 0) >= 30) {
               fontSize: 8, fontWeight: 900,
               padding: '4px 10px', borderRadius: 999,
               letterSpacing: '0.1em', textTransform: 'uppercase',
-            }}>SOLD OUT</span>
+            }}>{t('soldOut')}</span>
           </div>
         )}
        
@@ -297,17 +300,17 @@ if (product.is_sponsored && (product.sponsored_priority ?? 0) >= 30) {
         </p>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
           <span style={{ fontSize: 13.5, fontWeight: 900, color: '#db142e' }}>
-            {money(display)}
+            {fmt.price(display)}
           </span>
           {original !== null && (
             <span style={{ fontSize: 10, color: '#bbb', textDecoration: 'line-through' }}>
-              {money(original)}
+              {fmt.price(original)}
             </span>
           )}
         </div>
         {product.stock > 0 && product.stock <= 5 && (
           <p style={{ fontSize: 9.5, color: '#f97316', fontWeight: 700, margin: '4px 0 0' }}>
-            Only {product.stock} left!
+            {t('onlyLeft', { count: product.stock })}
           </p>
         )}
       </div>
@@ -338,6 +341,7 @@ interface Props {
 }
 
 export default function RecommendedSection({ limit = 16, title }: Props) {
+  const t = useTranslations('home')
   const [products,     setProducts]     = useState<RecommendedProduct[]>([])
   const [loading,      setLoading]      = useState(true)
   const [personalized, setPersonalized] = useState(false)
@@ -368,10 +372,8 @@ export default function RecommendedSection({ limit = 16, title }: Props) {
   // Don't render the section at all if there's nothing to show
   if (!loading && products.length === 0) return null
 
-  const sectionTitle = title ?? (personalized ? '✨ Recommended for You' : '🔥 Popular Right Now')
-  const subtitle     = personalized
-    ? 'Based on your interests and browsing history'
-    : 'Trending across ChooseTounsi'
+  const sectionTitle = title ?? (personalized ? t('recommendedForYou') : t('popularNow'))
+  const subtitle     = personalized ? t('recommendedSubtitle') : t('popularSubtitle')
 
   return (
     <>
@@ -399,8 +401,8 @@ export default function RecommendedSection({ limit = 16, title }: Props) {
               textTransform: 'uppercase', letterSpacing: '0.07em',
               opacity: 0.8,
             }}>
-              View All
-              <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              {t('viewAll')}
+              <svg className="rtl-flip" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </Link>

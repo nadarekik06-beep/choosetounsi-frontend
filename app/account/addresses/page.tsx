@@ -15,6 +15,7 @@
  *  - Max 10 addresses enforced (backend also enforces this)
  */
 
+import { fallbackError } from '@/lib/i18n/clientLocale'
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -23,6 +24,8 @@ import {
   Loader2, CheckCircle, X, Phone, FileText, Home, Briefcase,
 } from 'lucide-react'
 import { isAuthenticated } from '@/lib/auth'
+import { useTranslations } from 'next-intl'
+import { WILAYAS, useWilayaLabel } from '@/lib/i18n/wilayas'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 
@@ -31,14 +34,13 @@ function getToken(): string | null {
   return localStorage.getItem('ct_auth_token')
 }
 
-const WILAYAS = [
-  'Ariana', 'Béja', 'Ben Arous', 'Bizerte', 'Gabès', 'Gafsa',
-  'Jendouba', 'Kairouan', 'Kasserine', 'Kébili', 'Le Kef', 'Mahdia',
-  'La Manouba', 'Médenine', 'Monastir', 'Nabeul', 'Sfax', 'Sidi Bouzid',
-  'Siliana', 'Sousse', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan',
-]
-
+// Stored values stay in English; only their display label is translated.
 const LABEL_SUGGESTIONS = ['Home', 'Work', 'Parents', 'Other']
+
+function useAddressLabel() {
+  const t = useTranslations('addresses.labels')
+  return (value: string) => (LABEL_SUGGESTIONS.includes(value) ? t(value.toLowerCase()) : value)
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -79,7 +81,7 @@ async function apiRequest(method: string, path: string, body?: object) {
     body: body ? JSON.stringify(body) : undefined,
   })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.message ?? 'Request failed')
+  if (!res.ok) throw new Error(json.message ?? fallbackError('request'))  // backend message is localized
   return json
 }
 
@@ -100,6 +102,9 @@ function AddressCard({
   deleting: number | null
   settingDefault: number | null
 }) {
+  const t = useTranslations('addresses')
+  const labelText = useAddressLabel()
+  const wilayaLabel = useWilayaLabel()
   const labelIcon = addr.label.toLowerCase().includes('work')
     ? <Briefcase size={13} />
     : <Home size={13} />
@@ -118,14 +123,14 @@ function AddressCard({
       {/* Default badge */}
       {addr.is_default && (
         <div style={{
-          position: 'absolute', top: -1, right: 16,
+          position: 'absolute', top: -1, insetInlineEnd: 16,
           background: '#db142e', color: '#fff',
           fontSize: 9, fontWeight: 800,
           padding: '2px 10px', borderRadius: '0 0 8px 8px',
           letterSpacing: '0.08em', textTransform: 'uppercase',
           display: 'flex', alignItems: 'center', gap: 4,
         }}>
-          <Star size={8} fill="currentColor" /> Default
+          <Star size={8} fill="currentColor" /> {t('default')}
         </div>
       )}
 
@@ -138,23 +143,23 @@ function AddressCard({
           padding: '3px 10px', borderRadius: 6,
           textTransform: 'uppercase', letterSpacing: '0.06em',
         }}>
-          {labelIcon} {addr.label}
+          {labelIcon} {labelText(addr.label)}
         </span>
       </div>
 
       {/* Info */}
       <p style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>
-        {addr.wilaya}
+        {wilayaLabel(addr.wilaya)}
       </p>
       <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 4px', lineHeight: 1.5 }}>
         {addr.address}
       </p>
       <p style={{ fontSize: 12, color: '#94a3b8', margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-        <Phone size={11} /> {addr.phone}
+        <Phone size={11} /> <span dir="ltr">{addr.phone}</span>
       </p>
       {addr.notes && (
         <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0', fontStyle: 'italic' }}>
-          "{addr.notes}"
+          {addr.notes}
         </p>
       )}
 
@@ -176,7 +181,7 @@ function AddressCard({
             {settingDefault === addr.id
               ? <Loader2 size={11} style={{ animation: 'spin 0.7s linear infinite' }} />
               : <Star size={11} />}
-            Set as Default
+            {t('setDefault')}
           </button>
         )}
 
@@ -190,7 +195,7 @@ function AddressCard({
             borderRadius: 8, padding: '5px 12px', cursor: 'pointer',
           }}
         >
-          <Edit2 size={11} /> Edit
+          <Edit2 size={11} /> {t('edit')}
         </button>
 
         <button
@@ -208,7 +213,7 @@ function AddressCard({
           {deleting === addr.id
             ? <Loader2 size={11} style={{ animation: 'spin 0.7s linear infinite' }} />
             : <Trash2 size={11} />}
-          Delete
+          {t('delete')}
         </button>
       </div>
     </div>
@@ -230,6 +235,10 @@ function AddressForm({
   saving: boolean
   error: string
 }) {
+  const t  = useTranslations('addresses')
+  const tc = useTranslations('common')
+  const labelText = useAddressLabel()
+  const wilayaLabel = useWilayaLabel()
   const [form, setForm] = useState<FormState>(initial)
   const [errs, setErrs] = useState<Record<string, string>>({})
 
@@ -238,9 +247,9 @@ function AddressForm({
 
   const validate = () => {
     const e: Record<string, string> = {}
-    if (!form.wilaya.trim())  e.wilaya  = 'Please select a wilaya.'
-    if (!form.address.trim()) e.address = 'Please enter the address.'
-    if (!form.phone.trim())   e.phone   = 'Please enter a phone number.'
+    if (!form.wilaya.trim())  e.wilaya  = t('errors.wilaya')
+    if (!form.address.trim()) e.address = t('errors.address')
+    if (!form.phone.trim())   e.phone   = t('errors.phone')
     setErrs(e)
     return Object.keys(e).length === 0
   }
@@ -279,11 +288,11 @@ function AddressForm({
         {/* Label row */}
         <div>
           <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 6 }}>
-            Label
+            {t('label')}
           </label>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {LABEL_SUGGESTIONS.map(l => (
-              <button key={l} onClick={() => set('label', l)}
+              <button key={l} type="button" onClick={() => set('label', l)} aria-pressed={form.label === l}
                 style={{
                   fontSize: 12, fontWeight: 700, padding: '5px 14px', borderRadius: 8,
                   border: `1.5px solid ${form.label === l ? '#db142e' : '#e5e7eb'}`,
@@ -291,12 +300,12 @@ function AddressForm({
                   color: form.label === l ? '#db142e' : '#64748b',
                   cursor: 'pointer',
                 }}>
-                {l}
+                {labelText(l)}
               </button>
             ))}
             {!LABEL_SUGGESTIONS.includes(form.label) && (
               <input value={form.label} onChange={e => set('label', e.target.value)}
-                style={{ ...inputStyle(), width: 100 }} placeholder="Custom…" />
+                style={{ ...inputStyle(), width: 100 }} placeholder={t('custom')} aria-label={t('label')} />
             )}
           </div>
         </div>
@@ -304,12 +313,12 @@ function AddressForm({
         {/* Wilaya */}
         <div>
           <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 6 }}>
-            Wilaya <span style={{ color: '#ef4444' }}>*</span>
+            {t('wilaya')} <span style={{ color: '#ef4444' }}>*</span>
           </label>
-          <select value={form.wilaya} onChange={e => set('wilaya', e.target.value)}
+          <select value={form.wilaya} onChange={e => set('wilaya', e.target.value)} aria-label={t('wilaya')}
             style={{ ...inputStyle(errs.wilaya), color: form.wilaya ? '#0f172a' : '#94a3b8' }}>
-            <option value="">— Select wilaya —</option>
-            {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
+            <option value="">{t('selectWilaya')}</option>
+            {WILAYAS.map(w => <option key={w} value={w}>{wilayaLabel(w)}</option>)}
           </select>
           {errs.wilaya && <p style={{ fontSize: 11, color: '#ef4444', margin: '3px 0 0' }}>{errs.wilaya}</p>}
         </div>
@@ -317,11 +326,12 @@ function AddressForm({
         {/* Address */}
         <div>
           <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 6 }}>
-            Full Address <span style={{ color: '#ef4444' }}>*</span>
+            {t('fullAddress')} <span style={{ color: '#ef4444' }}>*</span>
           </label>
           <textarea rows={2} value={form.address}
             onChange={e => set('address', e.target.value)}
-            placeholder="Street, building, floor, apartment…"
+            aria-label={t('fullAddress')}
+            placeholder={t('addressPlaceholder')}
             style={{ ...inputStyle(errs.address), resize: 'none' }} />
           {errs.address && <p style={{ fontSize: 11, color: '#ef4444', margin: '3px 0 0' }}>{errs.address}</p>}
         </div>
@@ -329,11 +339,12 @@ function AddressForm({
         {/* Phone */}
         <div>
           <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 6 }}>
-            Phone <span style={{ color: '#ef4444' }}>*</span>
+            {t('phone')} <span style={{ color: '#ef4444' }}>*</span>
           </label>
-          <input type="tel" value={form.phone}
+          <input type="tel" dir="ltr" value={form.phone}
             onChange={e => set('phone', e.target.value)}
-            placeholder="e.g. 20 123 456"
+            aria-label={t('phone')}
+            placeholder={t('phonePlaceholder')}
             style={inputStyle(errs.phone)} />
           {errs.phone && <p style={{ fontSize: 11, color: '#ef4444', margin: '3px 0 0' }}>{errs.phone}</p>}
         </div>
@@ -341,10 +352,11 @@ function AddressForm({
         {/* Notes */}
         <div>
           <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 6 }}>
-            Notes <span style={{ fontSize: 9, fontWeight: 500, textTransform: 'none' }}>(optional)</span>
+            {t('notes')} <span style={{ fontSize: 9, fontWeight: 500, textTransform: 'none' }}>({tc('optional')})</span>
           </label>
           <input value={form.notes} onChange={e => set('notes', e.target.value)}
-            placeholder="Landmark, instructions…"
+            aria-label={t('notes')}
+            placeholder={t('notesPlaceholder')}
             style={inputStyle()} />
         </div>
 
@@ -354,7 +366,7 @@ function AddressForm({
             onChange={e => set('is_default', e.target.checked)}
             style={{ width: 15, height: 15, accentColor: '#db142e', cursor: 'pointer' }} />
           <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>
-            Set as my default address
+            {t('makeDefault')}
           </span>
         </label>
 
@@ -362,13 +374,13 @@ function AddressForm({
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onCancel}
             style={{ fontSize: 13, fontWeight: 700, color: '#64748b', background: '#f1f5f9', border: '1.5px solid #e5e7eb', borderRadius: 10, padding: '8px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <X size={13} /> Cancel
+            <X size={13} /> {tc('cancel')}
           </button>
           <button onClick={handleSubmit} disabled={saving}
             style={{ fontSize: 13, fontWeight: 800, color: '#fff', background: 'linear-gradient(135deg,#db142e,#b91c1c)', border: 'none', borderRadius: 10, padding: '8px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, opacity: saving ? 0.7 : 1 }}>
             {saving
-              ? <><Loader2 size={13} style={{ animation: 'spin 0.7s linear infinite' }} /> Saving…</>
-              : <><CheckCircle size={13} /> Save Address</>}
+              ? <><Loader2 size={13} style={{ animation: 'spin 0.7s linear infinite' }} /> {tc('saving')}</>
+              : <><CheckCircle size={13} /> {t('save')}</>}
           </button>
         </div>
 
@@ -380,6 +392,8 @@ function AddressForm({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AddressesPage() {
+  const t      = useTranslations('addresses')
+  const tc     = useTranslations('common')
   const router = useRouter()
   const [addresses,      setAddresses]      = useState<UserAddress[]>([])
   const [loading,        setLoading]        = useState(true)
@@ -423,30 +437,30 @@ export default function AddressesPage() {
         if (data.is_default && !editingAddress.is_default) {
           await apiRequest('PATCH', `/addresses/${editingAddress.id}/default`)
         }
-        showToast('Address updated successfully.')
+        showToast(t('toast.updated'))
       } else {
         await apiRequest('POST', '/addresses', data)
-        showToast('Address saved successfully.')
+        showToast(t('toast.saved'))
       }
       setShowForm(false)
       setEditingAddress(null)
       await fetchAddresses()
     } catch (e: any) {
-      setFormError(e.message ?? 'Failed to save address.')
+      setFormError(e.message ?? t('toast.saveFailed'))
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete this address?')) return
+    if (!confirm(t('confirmDelete'))) return
     setDeleting(id)
     try {
       await apiRequest('DELETE', `/addresses/${id}`)
-      showToast('Address deleted.')
+      showToast(t('toast.deleted'))
       await fetchAddresses()
     } catch {
-      showToast('Failed to delete address.')
+      showToast(t('toast.deleteFailed'))
     } finally {
       setDeleting(null)
     }
@@ -456,10 +470,10 @@ export default function AddressesPage() {
     setSettingDefault(id)
     try {
       await apiRequest('PATCH', `/addresses/${id}/default`)
-      showToast('Default address updated.')
+      showToast(t('toast.defaultUpdated'))
       await fetchAddresses()
     } catch {
-      showToast('Failed to update default.')
+      showToast(t('toast.defaultFailed'))
     } finally {
       setSettingDefault(null)
     }
@@ -496,13 +510,13 @@ export default function AddressesPage() {
 
         {/* Header */}
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
-          <div style={{ maxWidth: 680, margin: '0 auto', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
-            <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Home</Link>
+          <nav aria-label={t('breadcrumb')} style={{ maxWidth: 680, margin: '0 auto', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
+            <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>{tc('home')}</Link>
             <ChevronRight size={11} />
-            <Link href="/profile" style={{ color: '#94a3b8', textDecoration: 'none' }}>Account</Link>
+            <Link href="/profile" style={{ color: '#94a3b8', textDecoration: 'none' }}>{t('account')}</Link>
             <ChevronRight size={11} />
-            <span style={{ color: '#374151', fontWeight: 600 }}>Address Book</span>
-          </div>
+            <span style={{ color: '#374151', fontWeight: 600 }}>{t('title')}</span>
+          </nav>
         </div>
 
         <div style={{ maxWidth: 680, margin: '0 auto', padding: '24px 20px 60px', animation: 'fadeUp 0.35s ease both' }}>
@@ -514,9 +528,9 @@ export default function AddressesPage() {
                 <MapPin size={18} color="#db142e" />
               </div>
               <div>
-                <h1 style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', margin: 0 }}>Address Book</h1>
+                <h1 style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', margin: 0 }}>{t('title')}</h1>
                 <p style={{ fontSize: 12, color: '#94a3b8', margin: 0, fontWeight: 500 }}>
-                  {addresses.length} saved address{addresses.length !== 1 ? 'es' : ''}
+                  {t('count', { count: addresses.length })}
                 </p>
               </div>
             </div>
@@ -524,7 +538,7 @@ export default function AddressesPage() {
             {addresses.length < 10 && !showForm && !editingAddress && (
               <button onClick={openNew}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 800, color: '#fff', background: 'linear-gradient(135deg,#db142e,#b91c1c)', border: 'none', borderRadius: 10, padding: '9px 16px', cursor: 'pointer', boxShadow: '0 4px 14px rgba(219,20,46,0.25)' }}>
-                <Plus size={14} /> Add Address
+                <Plus size={14} /> {t('add')}
               </button>
             )}
           </div>
@@ -546,7 +560,7 @@ export default function AddressesPage() {
           {loading && (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
               <Loader2 size={26} style={{ animation: 'spin 0.7s linear infinite', color: '#db142e', margin: '0 auto 10px' }} />
-              <p style={{ color: '#94a3b8', fontSize: 13 }}>Loading addresses…</p>
+              <p style={{ color: '#94a3b8', fontSize: 13 }}>{t('loading')}</p>
             </div>
           )}
 
@@ -554,11 +568,11 @@ export default function AddressesPage() {
           {!loading && addresses.length === 0 && !showForm && (
             <div style={{ textAlign: 'center', padding: '60px 20px', background: '#fff', borderRadius: 20, border: '2px dashed #e5e7eb' }}>
               <MapPin size={40} color="#e2e8f0" style={{ margin: '0 auto 14px' }} />
-              <p style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>No saved addresses</p>
-              <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px' }}>Save your delivery addresses for faster checkout.</p>
+              <p style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>{t('emptyTitle')}</p>
+              <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px' }}>{t('emptyBody')}</p>
               <button onClick={openNew}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 800, color: '#fff', background: 'linear-gradient(135deg,#db142e,#b91c1c)', border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer' }}>
-                <Plus size={14} /> Add Your First Address
+                <Plus size={14} /> {t('addFirst')}
               </button>
             </div>
           )}
@@ -603,7 +617,7 @@ export default function AddressesPage() {
           {/* Limit notice */}
           {addresses.length >= 10 && (
             <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', marginTop: 16 }}>
-              Maximum of 10 addresses reached. Delete one to add a new address.
+              {t('limit')}
             </p>
           )}
         </div>

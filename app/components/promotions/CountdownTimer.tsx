@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 
 interface Props {
   endsAt: string       // ISO string
@@ -21,6 +22,7 @@ function calcTimeLeft(endsAt: string): TimeLeft | null {
 }
 
 export default function CountdownTimer({ endsAt, compact = false, onExpire }: Props) {
+  const t = useTranslations('countdown')
   const [tl, setTl] = useState<TimeLeft | null>(() => calcTimeLeft(endsAt))
 
   useEffect(() => {
@@ -33,7 +35,7 @@ export default function CountdownTimer({ endsAt, compact = false, onExpire }: Pr
   }, [endsAt, onExpire])
 
   if (!tl) return (
-    <span style={{ fontSize: 10, fontWeight: 800, color: '#9ca3af' }}>Ended</span>
+    <span style={{ fontSize: 10, fontWeight: 800, color: '#9ca3af' }}>{t('ended')}</span>
   )
 
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -44,7 +46,7 @@ export default function CountdownTimer({ endsAt, compact = false, onExpire }: Pr
         fontSize: 11, fontWeight: 800, color: '#dc2626',
         fontVariantNumeric: 'tabular-nums',
       }}>
-        ⏱ {tl.hours > 0 ? `${tl.hours}h ` : ''}{pad(tl.minutes)}m {pad(tl.seconds)}s
+        ⏱ {tl.hours > 0 ? `${tl.hours}${t('h')} ` : ''}{pad(tl.minutes)}{t('m')} {pad(tl.seconds)}{t('s')}
       </span>
     )
   }
@@ -64,11 +66,11 @@ export default function CountdownTimer({ endsAt, compact = false, onExpire }: Pr
   )
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-      {tl.hours > 0 && <><Box val={tl.hours} label="hr" /><span style={{ color: '#dc2626', fontWeight: 900, fontSize: 13 }}>:</span></>}
-      <Box val={tl.minutes} label="min" />
+    <div dir="ltr" style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+      {tl.hours > 0 && <><Box val={tl.hours} label={t('hr')} /><span style={{ color: '#dc2626', fontWeight: 900, fontSize: 13 }}>:</span></>}
+      <Box val={tl.minutes} label={t('min')} />
       <span style={{ color: '#dc2626', fontWeight: 900, fontSize: 13 }}>:</span>
-      <Box val={tl.seconds} label="sec" />
+      <Box val={tl.seconds} label={t('sec')} />
     </div>
   )
 }

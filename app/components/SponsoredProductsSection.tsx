@@ -4,6 +4,8 @@ import { useState, useEffect, useRef,useMemo } from 'react';
 import Link from 'next/link';
 import { sponsorshipApi, SponsoredProduct } from '@/lib/sponsorshipApi';
 import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
 interface Props {
   title?:        string;
@@ -22,6 +24,8 @@ function SponsoredCard({
   showBadge: boolean;
   index: number;
 }) {
+  const t   = useTranslations('productCard');
+  const fmt = useFormat();
   const [imgErr, setImgErr]   = useState(false);
   const [hovered, setHovered] = useState(false);
   const tracked = useRef(false);
@@ -116,7 +120,7 @@ useEffect(() => () => {
         {/* Thin top glowing line */}
         <div style={{
           position: 'absolute',
-          top: 0, left: 0, right: 0,
+          top: 0, insetInline: 0,
           height: 2,
           background: topLineGrad,
           opacity: hovered ? 1 : 0,
@@ -146,7 +150,7 @@ useEffect(() => () => {
           )}
 
           {/* HOT badge */}
-          <div style={{ position: 'absolute', top: 7, left: 7, display: 'flex', flexDirection: 'column', gap: 4, zIndex: 2 }}>
+          <div style={{ position: 'absolute', top: 7, insetInlineStart: 7, display: 'flex', flexDirection: 'column', gap: 4, zIndex: 2 }}>
             {/* Flash sale badge — shown when product has an active flash promotion */}
             {product.promotion?.is_flash_sale && (
               <span style={{
@@ -168,7 +172,7 @@ useEffect(() => () => {
                 letterSpacing: '0.07em', textTransform: 'uppercase',
                 boxShadow: '0 2px 8px rgba(219,20,46,0.38)',
               }}>
-                🔥 HOT
+                {t('hot')}
               </span>
             )}
           </div>
@@ -187,7 +191,7 @@ useEffect(() => () => {
                 padding: '4px 10px', borderRadius: 999,
                 letterSpacing: '0.1em', textTransform: 'uppercase',
                 fontFamily: "'Barlow', sans-serif",
-              }}>SOLD OUT</span>
+              }}>{t('soldOut')}</span>
             </div>
           )}
 
@@ -212,7 +216,7 @@ useEffect(() => () => {
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
               <circle cx="12" cy="12" r="3"/>
             </svg>
-            Quick View
+            {t('quickView')}
           </div>
         </div>
 
@@ -275,14 +279,14 @@ useEffect(() => () => {
               margin: 0,
               transition: 'color 0.2s ease',
             }}>
-              {effective.toFixed(2)} DT
+              {fmt.price(effective)}
             </p>
             {hasDiscount && (
               <span style={{
                 fontSize: 10, color: '#9ca3af',
                 textDecoration: 'line-through', fontWeight: 500,
               }}>
-                {original.toFixed(2)} DT
+                {fmt.price(original)}
               </span>
             )}
           </>
@@ -300,7 +304,7 @@ useEffect(() => () => {
       boxShadow: hovered ? arrowShadow : 'none',
       flexShrink: 0,
     }}>
-      <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+      <svg className="rtl-flip" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
         <path d="M5 12h14M12 5l7 7-7 7"/>
       </svg>
     </div>
@@ -312,12 +316,13 @@ useEffect(() => () => {
 }
 
 export default function SponsoredProductsSection({
-  title        = '🔥 Trending Now',
+  title,
   categorySlug,
   limit        = 8,
   layout       = 'row',
   showBadge    = true,
 }: Props) {
+  const t = useTranslations('home');
   const [products, setProducts] = useState<SponsoredProduct[]>([]);
   const [loading,  setLoading]  = useState(true);
 
@@ -402,7 +407,7 @@ export default function SponsoredProductsSection({
         /* ── TOP BORDER — same as bottom ── */
         .sp-top-line {
           position: absolute;
-          top: 0; left: 0; right: 0;
+          top: 0; inset-inline: 0;
           height: 3px;
           overflow: hidden;
           pointer-events: none;
@@ -475,7 +480,7 @@ export default function SponsoredProductsSection({
         /* ── BOTTOM BORDER ── */
         .sp-bottom-line {
           position: absolute;
-          bottom: 0; left: 0; right: 0;
+          bottom: 0; inset-inline: 0;
           height: 3px;
           overflow: hidden;
           pointer-events: none;
@@ -662,12 +667,12 @@ export default function SponsoredProductsSection({
           <div className="sp-header">
             <div className="sp-header-left">
               <div className="sp-icon-box">🔥</div>
-              <h2 className="sp-title">{title}</h2>
-              <span className="sp-pill">Popular Choice</span>
+              <h2 className="sp-title">{title ?? t('trendingNow')}</h2>
+              <span className="sp-pill">{t('popularChoice')}</span>
             </div>
             <Link href="/shop" className="sp-view-all">
-              View All
-              <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              {t('viewAll')}
+              <svg className="rtl-flip" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </Link>

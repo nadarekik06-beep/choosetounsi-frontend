@@ -15,6 +15,8 @@ import ProductRecommendations from 'app/components/ProductRecommendations'
 import CountdownTimer from '@/app/components/promotions/CountdownTimer'
 import PromotionBadge from '@/app/components/promotions/PromotionBadge'
 import ProductReviewsSection from '@/app/components/reviews/ProductReviewsSection';
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL      = `${STORAGE_BASE}/api`
 
@@ -23,9 +25,6 @@ function resolveImg(path: string | null | undefined): string | null {
   if (path.startsWith('http')) return path
   return `${STORAGE_BASE}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
 }
-
-const fmt = (n: number | string) =>
-  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 2, maximumFractionDigits: 3 }).format(Number(n)) + ' DT'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -96,6 +95,7 @@ interface Product {
 // ─── Attribute Display ────────────────────────────────────────────────────────
 
 function AttributeRow({ attr }: { attr: AttributeData }) {
+  const tc = useTranslations('common')
   if (attr.type === 'color') {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid #f8fafc' }}>
@@ -113,7 +113,7 @@ function AttributeRow({ attr }: { attr: AttributeData }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f8fafc' }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{attr.name}</span>
         <span style={{ fontSize: 11, fontWeight: 800, padding: '2px 9px', borderRadius: 999, background: attr.value ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: attr.value ? '#10b981' : '#ef4444' }}>
-          {attr.value ? 'Yes' : 'No'}
+          {attr.value ? tc('yes') : tc('no')}
         </span>
       </div>
     )
@@ -137,6 +137,8 @@ function VariantSelector({
   isOptionAvailable: (axisSlug: string, value: string) => boolean
   selectorError: boolean
 }) {
+  const t = useTranslations('product')
+  const { locale } = useFormat()
   if (axes.length === 0) return null
 
   return (
@@ -146,7 +148,7 @@ function VariantSelector({
           <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 8 }}>
             {axis.name}
             {selectedOptions[axis.slug] !== undefined && (
-              <span style={{ color: '#374151', marginLeft: 6, textTransform: 'none', fontWeight: 600 }}>
+              <span style={{ color: '#374151', marginInlineStart: 6, textTransform: 'none', fontWeight: 600 }}>
                 {axis.type === 'color'
                   ? `— ${(axis.options as ColorOption[]).find(o => (o.group_key ?? String(o.id)) === selectedOptions[axis.slug])?.value ?? ''}`
                   : `— ${axis.options.find(o => String(o.id) === selectedOptions[axis.slug])?.value ?? ''}`
@@ -276,7 +278,7 @@ function VariantSelector({
 
       {selectorError && (
         <p style={{ fontSize: 12, color: '#dc2626', fontWeight: 700, background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 8, padding: '8px 12px', margin: 0 }}>
-          Please select {axes.filter(a => selectedOptions[a.slug] === undefined).map(a => a.name).join(' and ')} before proceeding.
+          {t('selectOptions', { options: new Intl.ListFormat(locale, { type: 'conjunction' }).format(axes.filter(a => selectedOptions[a.slug] === undefined).map(a => a.name)) })}
         </p>
       )}
     </div>
@@ -286,6 +288,7 @@ function VariantSelector({
 // ─── Gallery ─────────────────────────────────────────────────────────────────
 
 function Gallery({ images, productName }: { images: string[]; productName: string }) {
+  const t = useTranslations('product')
   const [active, setActive]   = useState(0)
   const [zoom, setZoom]       = useState(false)
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 })
@@ -300,7 +303,7 @@ function Gallery({ images, productName }: { images: string[]; productName: strin
         {images.length > 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: 72 }}>
             {images.map((img, i) => (
-              <button key={i} onClick={() => setActive(i)} className="thumb"
+              <button key={i} onClick={() => setActive(i)} className="thumb" aria-label={t('imageN', { n: i + 1 })} aria-current={active === i}
                 style={{ width: 72, height: 72, borderRadius: 8, overflow: 'hidden', border: `2px solid ${active === i ? '#dc2626' : '#e5e7eb'}`, background: '#f8fafc', cursor: 'pointer', padding: 0, transition: 'border-color 0.15s', flexShrink: 0 }}>
                 {img ? <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', background: '#f1f5f9' }} />}
               </button>
@@ -322,20 +325,20 @@ function Gallery({ images, productName }: { images: string[]; productName: strin
                 </div>
             }
             {!zoom && cur && (
-              <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(0,0,0,0.45)', color: '#fff', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
-                <ZoomIn size={13} /> Hover to zoom
+              <div style={{ position: 'absolute', bottom: 12, insetInlineEnd: 12, background: 'rgba(0,0,0,0.45)', color: '#fff', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
+                <ZoomIn size={13} /> {t('hoverZoom')}
               </div>
             )}
           </div>
 
           {images.length > 1 && (
             <>
-              <button onClick={() => setActive(i => (i - 1 + images.length) % images.length)}
-                style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: '1px solid #e5e7eb', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <button onClick={() => setActive(i => (i - 1 + images.length) % images.length)} aria-label={t('prevImage')}
+                style={{ position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)', width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: '1px solid #e5e7eb', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                 <ChevronLeft size={16} color="#374151" />
               </button>
-              <button onClick={() => setActive(i => (i + 1) % images.length)}
-                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: '1px solid #e5e7eb', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <button onClick={() => setActive(i => (i + 1) % images.length)} aria-label={t('nextImage')}
+                style={{ position: 'absolute', insetInlineEnd: 10, top: '50%', transform: 'translateY(-50%)', width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: '1px solid #e5e7eb', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                 <ChevronRight size={16} color="#374151" />
               </button>
             </>
@@ -346,7 +349,7 @@ function Gallery({ images, productName }: { images: string[]; productName: strin
       {images.length > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 12 }}>
           {images.map((_, i) => (
-            <button key={i} onClick={() => setActive(i)}
+            <button key={i} onClick={() => setActive(i)} aria-label={t('imageN', { n: i + 1 })}
               style={{ width: i === active ? 20 : 7, height: 7, borderRadius: 999, background: i === active ? '#dc2626' : '#e5e7eb', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.25s ease' }} />
           ))}
         </div>
@@ -358,6 +361,10 @@ function Gallery({ images, productName }: { images: string[]; productName: strin
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ProductDetailPage() {
+  const t      = useTranslations('product')
+  const tc     = useTranslations('common')
+  const format = useFormat()
+  const fmt    = (n: number | string) => format.price(n, { maximumFractionDigits: 3 })
   const params = useParams()
   const router = useRouter()
   const slug   = params?.slug as string
@@ -528,7 +535,7 @@ export default function ProductDetailPage() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ width: 40, height: 40, border: '3px solid #eee', borderTopColor: '#dc2626', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 16px' }} />
-        <p style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>Loading product…</p>
+        <p style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>{t('loading')}</p>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
@@ -537,8 +544,8 @@ export default function ProductDetailPage() {
   if (error || !product) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
       <div style={{ textAlign: 'center' }}>
-        <p style={{ fontSize: 18, fontWeight: 800, color: '#111', margin: '0 0 8px' }}>Product not found</p>
-        <Link href="/shop" style={{ color: '#dc2626', fontWeight: 700, fontSize: 14 }}>← Back to Shop</Link>
+        <p style={{ fontSize: 18, fontWeight: 800, color: '#111', margin: '0 0 8px' }}>{t('notFound')}</p>
+        <Link href="/shop" style={{ color: '#dc2626', fontWeight: 700, fontSize: 14 }}>{t('backToShop')}</Link>
       </div>
     </div>
   )
@@ -560,10 +567,10 @@ export default function ProductDetailPage() {
 
       <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Barlow', sans-serif" }}>
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
-          <div style={{ maxWidth: 1280, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8', flexWrap: 'wrap' }}>
-            <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Home</Link>
+          <nav aria-label={t('breadcrumb')} style={{ maxWidth: 1280, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8', flexWrap: 'wrap' }}>
+            <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>{tc('home')}</Link>
             <ChevronRight size={11} />
-            <Link href="/shop" style={{ color: '#94a3b8', textDecoration: 'none' }}>Shop</Link>
+            <Link href="/shop" style={{ color: '#94a3b8', textDecoration: 'none' }}>{t('shop')}</Link>
             {product.category && (
               <>
                 <ChevronRight size={11} />
@@ -572,7 +579,7 @@ export default function ProductDetailPage() {
             )}
             <ChevronRight size={11} />
             <span style={{ color: '#374151', fontWeight: 600 }}>{product.name}</span>
-          </div>
+          </nav>
         </div>
 
         <div className="pd-grid" style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 24px 48px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
@@ -591,11 +598,11 @@ export default function ProductDetailPage() {
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
               <h1 style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', margin: 0, lineHeight: 1.25, flex: 1 }}>{product.name}</h1>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                <button onClick={() => navigator.share?.({ title: product.name, url: window.location.href })}
+                <button onClick={() => navigator.share?.({ title: product.name, url: window.location.href })} aria-label={tc('share')} title={tc('share')}
                   style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
                   <Share2 size={15} />
                 </button>
-                <button onClick={handleToggleFavorite}
+                <button onClick={handleToggleFavorite} aria-label={favorited ? t('removeFavorite') : t('addFavorite')} aria-pressed={favorited}
                   style={{ width: 36, height: 36, borderRadius: '50%', border: `1.5px solid ${favorited ? '#dc2626' : '#e5e7eb'}`, background: favorited ? 'rgba(220,38,38,0.06)' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                   <Heart size={15} fill={favorited ? '#dc2626' : 'none'} stroke={favorited ? '#dc2626' : '#94a3b8'} strokeWidth={2} />
                 </button>
@@ -604,20 +611,20 @@ export default function ProductDetailPage() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 14 }}>
               {[1,2,3,4,5].map(i => <Star key={i} size={13} fill={i <= 4 ? '#f59e0b' : 'none'} stroke="#f59e0b" strokeWidth={1.5} />)}
-              <span style={{ fontSize: 12, color: '#64748b', marginLeft: 4 }}>4.0 ({product.views} views)</span>
+              <span style={{ fontSize: 12, color: '#64748b', marginInlineStart: 4 }}>{t('ratingViews', { rating: format.number(4, { minimumFractionDigits: 1 }), views: product.views })}</span>
             </div>
 
             {product.is_platform_product ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <img
                   src="/logo.png"
-                  alt="ChooseTounsi"
+                  alt={tc('logoAlt')}
                   style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(219,20,46,0.3)' }}
                   onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>Sold by</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>{t('soldBy')}</span>
                 <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>CHOOSE'Tounsi</span>
-                <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>Official</span>
+                <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>{t('official')}</span>
               </div>
             ) : product.seller && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -627,11 +634,11 @@ export default function ProductDetailPage() {
                     : (product.seller.business_name ?? product.seller.name).charAt(0).toUpperCase()
                   }
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>Sold by</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>{t('soldBy')}</span>
                 <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>{product.seller.business_name ?? product.seller.name}</span>
-                <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>Verified</span>
-                <Link href={`/sellers/${product.seller.id}`} style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11, fontWeight: 800, color: '#dc2626', textDecoration: 'none', marginLeft: 'auto' }}>
-                  Visit Store <ChevronRight size={12} />
+                <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>{t('verified')}</span>
+                <Link href={`/sellers/${product.seller.id}`} style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11, fontWeight: 800, color: '#dc2626', textDecoration: 'none', marginInlineStart: 'auto' }}>
+                  {t('visitStore')} <ChevronRight size={12} />
                 </Link>
               </div>
             )}
@@ -652,13 +659,13 @@ export default function ProductDetailPage() {
                 <PromotionBadge promotion={activePromotion} size="md" />
                 {activePromotion.is_flash_sale && (
                   <>
-                    <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>Ends in</span>
+                    <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{t('endsIn')}</span>
                     <CountdownTimer endsAt={activePromotion.ends_at} compact onExpire={() => setActivePromotion(null)} />
                   </>
                 )}
                 {activePromotion.flash_stock_remaining !== null && (
-                  <span style={{ fontSize: 11, color: '#dc2626', fontWeight: 700, marginLeft: 'auto' }}>
-                    Only {activePromotion.flash_stock_remaining} left at this price!
+                  <span style={{ fontSize: 11, color: '#dc2626', fontWeight: 700, marginInlineStart: 'auto' }}>
+                    {t('flashStockLeft', { count: activePromotion.flash_stock_remaining })}
                   </span>
                 )}
               </div>
@@ -676,7 +683,7 @@ export default function ProductDetailPage() {
                   </span>
                 )}
                 {selectedVariant?.price_override && !activePromotion && (
-                  <span style={{ fontSize: 12, color: '#94a3b8' }}>variant price</span>
+                  <span style={{ fontSize: 12, color: '#94a3b8' }}>{t('variantPrice')}</span>
                 )}
               </div>
               {(product as any).is_free_delivery && (
@@ -694,13 +701,13 @@ export default function ProductDetailPage() {
                     <circle cx="18.5" cy="18.5" r="2.5"/>
                   </svg>
                   <span style={{ fontSize: 12, fontWeight: 800, color: '#059669' }}>
-                    Free Delivery
+                    {t('freeDelivery')}
                   </span>
                 </div>
               )}
               {product.sku && (
                 <p style={{ fontSize: 11, color: '#94a3b8', margin: '6px 0 0', fontFamily: 'monospace' }}>
-                  SKU: {selectedVariant?.sku ?? product.sku}
+                  {t('sku', { sku: selectedVariant?.sku ?? product.sku })}
                 </p>
               )}
             </div>
@@ -725,20 +732,20 @@ export default function ProductDetailPage() {
             )}
 
             <div style={{ marginBottom: 20 }}>
-              <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 10 }}>Quantity</p>
+              <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 10 }}>{tc('quantity')}</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 0, width: 'fit-content', border: '1.5px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
-                <button className="qty-btn" onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                <button className="qty-btn" onClick={() => setQuantity(q => Math.max(1, q - 1))} aria-label={t('decrease')}
                   style={{ width: 40, height: 40, border: 'none', background: '#f8fafc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#374151', transition: 'all 0.15s' }}>
                   <Minus size={14} />
                 </button>
-                <span style={{ width: 48, textAlign: 'center', fontWeight: 800, fontSize: 16, color: '#111', borderLeft: '1px solid #e5e7eb', borderRight: '1px solid #e5e7eb', lineHeight: '40px' }}>{quantity}</span>
-                <button className="qty-btn" onClick={() => setQuantity(q => Math.min(effectiveStock, q + 1))} disabled={quantity >= effectiveStock}
+                <span style={{ width: 48, textAlign: 'center', fontWeight: 800, fontSize: 16, color: '#111', borderInlineStart: '1px solid #e5e7eb', borderInlineEnd: '1px solid #e5e7eb', lineHeight: '40px' }} aria-live="polite">{quantity}</span>
+                <button className="qty-btn" onClick={() => setQuantity(q => Math.min(effectiveStock, q + 1))} disabled={quantity >= effectiveStock} aria-label={t('increase')}
                   style={{ width: 40, height: 40, border: 'none', background: '#f8fafc', cursor: quantity >= effectiveStock ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: quantity >= effectiveStock ? '#e5e7eb' : '#374151', transition: 'all 0.15s' }}>
                   <Plus size={14} />
                 </button>
               </div>
               <p style={{ fontSize: 11, color: outOfStock ? '#ef4444' : lowStock ? '#f59e0b' : '#10b981', marginTop: 8, fontWeight: 700 }}>
-                {outOfStock ? 'Out of stock' : lowStock ? `Only ${effectiveStock} items left` : `${effectiveStock} in stock`}
+                {outOfStock ? tc('outOfStock') : lowStock ? t('lowStock', { count: effectiveStock }) : t('inStock', { count: effectiveStock })}
               </p>
             </div>
 
@@ -746,19 +753,19 @@ export default function ProductDetailPage() {
               {isOwnProduct ? (
                 <div style={{ flex: 1, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'rgba(99,102,241,0.06)', border: '2px dashed rgba(99,102,241,0.35)', borderRadius: 12, color: '#6366f1', fontWeight: 800, fontSize: 13 }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                  This is your product
+                  {t('ownProduct')}
                 </div>
               ) : (
                 <>
                   <button className="buy-now-btn" onClick={handleBuyNow} disabled={outOfStock || buyNowLoading}
                     style={{ flex: 1, height: 52, background: '#fff', color: outOfStock ? '#9ca3af' : '#dc2626', border: `2px solid ${outOfStock ? '#e5e7eb' : '#dc2626'}`, borderRadius: 12, cursor: outOfStock || buyNowLoading ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.2s', fontFamily: 'inherit', opacity: outOfStock ? 0.6 : 1 }}>
-                    {buyNowLoading ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} /> : <><Zap size={16} />{outOfStock ? 'Out of Stock' : 'Buy Now'}</>}
+                    {buyNowLoading ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} /> : <><Zap size={16} />{outOfStock ? tc('outOfStock') : tc('buyNow')}</>}
                   </button>
                   <button onClick={handleAddToCart} disabled={outOfStock || cartLoading}
                     style={{ flex: 1, height: 52, background: outOfStock ? '#e5e7eb' : addedToCart ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#dc2626,#b91c1c)', color: outOfStock ? '#9ca3af' : '#fff', border: 'none', borderRadius: 12, cursor: outOfStock ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: outOfStock ? 'none' : addedToCart ? '0 8px 24px rgba(16,185,129,0.3)' : '0 8px 24px rgba(220,38,38,0.3)', transition: 'all 0.2s', fontFamily: 'inherit' }}>
-                    {cartLoading ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} /> : addedToCart ? <><CheckCircle size={18} />Added!</> : <><ShoppingCart size={18} />{outOfStock ? 'Out of Stock' : 'Add to Cart'}</>}
+                    {cartLoading ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} /> : addedToCart ? <><CheckCircle size={18} />{tc('added')}</> : <><ShoppingCart size={18} />{outOfStock ? tc('outOfStock') : tc('addToCart')}</>}
                   </button>
-                  <button onClick={handleToggleFavorite}
+                  <button onClick={handleToggleFavorite} aria-label={favorited ? t('removeFavorite') : t('addFavorite')} aria-pressed={favorited}
                     style={{ width: 52, height: 52, flexShrink: 0, borderRadius: '50%', border: `2px solid ${favorited ? '#dc2626' : '#e5e7eb'}`, background: favorited ? 'rgba(220,38,38,0.06)' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                     <Heart size={20} fill={favorited ? '#dc2626' : 'none'} stroke={favorited ? '#dc2626' : '#94a3b8'} strokeWidth={2} />
                   </button>
@@ -770,14 +777,14 @@ export default function ProductDetailPage() {
               {[
                 {
                   icon: <Truck size={18} color="#10b981" />,
-                  title: product.is_free_delivery ? 'Free Delivery' : 'Delivery',
+                  title: product.is_free_delivery ? t('freeDelivery') : t('trustDelivery'),
                   desc: product.is_free_delivery
-                    ? 'This product ships for free — no delivery fee at checkout!'
-                    : 'On orders over 50 DT across Tunisia',
+                    ? t('trustFreeDeliveryDesc')
+                    : t('trustDeliveryDesc', { amount: format.price(50, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }),
                 },
-                { icon: <RotateCcw size={18} color="#3b82f6" />,   title: 'Easy Returns',    desc: '30-day hassle-free return policy' },
-                { icon: <Shield size={18} color="#f59e0b" />,      title: 'Secure Payment',  desc: 'Your transaction is fully protected' },
-                { icon: <CheckCircle size={18} color="#dc2626" />, title: 'Verified Seller', desc: 'All sellers are reviewed by our team' },
+                { icon: <RotateCcw size={18} color="#3b82f6" />,   title: t('trustReturns'),  desc: t('trustReturnsDesc') },
+                { icon: <Shield size={18} color="#f59e0b" />,      title: t('trustPayment'),  desc: t('trustPaymentDesc') },
+                { icon: <CheckCircle size={18} color="#dc2626" />, title: t('trustSeller'),   desc: t('trustSellerDesc') },
               ].map(({ icon, title, desc }) => (
                 <div key={title} className="trust-item">
                   <div style={{ flexShrink: 0, marginTop: 1 }}>{icon}</div>
@@ -790,24 +797,24 @@ export default function ProductDetailPage() {
             </div>
 
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
-              <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9' }}>
+              <div role="tablist" style={{ display: 'flex', borderBottom: '1px solid #f1f5f9' }}>
                 {([
-                  { key: 'description', label: 'Description' },
-                  { key: 'attributes',  label: 'Specifications', hidden: !hasAttributes },
-                  { key: 'details',     label: 'Details' },
+                  { key: 'description', label: t('tabDescription') },
+                  { key: 'attributes',  label: t('tabSpecs'), hidden: !hasAttributes },
+                  { key: 'details',     label: t('tabDetails') },
                 ] as { key: string; label: string; hidden?: boolean }[])
-                  .filter(t => !t.hidden)
-                  .map(t => (
-                    <button key={t.key} className="tab-btn" onClick={() => setTab(t.key as any)}
-                      style={{ flex: 1, height: 44, border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 700, fontSize: 13, color: tab === t.key ? '#dc2626' : '#94a3b8', borderBottom: `2px solid ${tab === t.key ? '#dc2626' : 'transparent'}`, textTransform: 'capitalize', transition: 'color 0.15s', fontFamily: 'inherit' }}>
-                      {t.label}
+                  .filter(tb => !tb.hidden)
+                  .map(tb => (
+                    <button key={tb.key} role="tab" aria-selected={tab === tb.key} className="tab-btn" onClick={() => setTab(tb.key as any)}
+                      style={{ flex: 1, height: 44, border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 700, fontSize: 13, color: tab === tb.key ? '#dc2626' : '#94a3b8', borderBottom: `2px solid ${tab === tb.key ? '#dc2626' : 'transparent'}`, transition: 'color 0.15s', fontFamily: 'inherit' }}>
+                      {tb.label}
                     </button>
                   ))}
               </div>
               <div style={{ padding: '16px 20px' }}>
                 {tab === 'description' && (
                   <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.7, margin: 0, fontWeight: 500, whiteSpace: 'pre-line' }}>
-                    {product.description ?? product.short_description ?? 'No description available.'}
+                    {product.description ?? product.short_description ?? t('noDescription')}
                   </p>
                 )}
                 {tab === 'attributes' && hasAttributes && (
@@ -816,12 +823,12 @@ export default function ProductDetailPage() {
                 {tab === 'details' && (
                   <div>
                     {[
-                      { label: 'Category',    value: product.category?.name ?? '—' },
-                      { label: 'Subcategory', value: product.subcategory?.name ?? '—' },
-                      { label: 'SKU',         value: selectedVariant?.sku ?? product.sku ?? 'N/A' },
-                      { label: 'Stock',       value: `${effectiveStock} units` },
-                      { label: 'Seller',      value: product.is_platform_product ? "CHOOSE'Tounsi Official" : (product.seller?.business_name ?? product.seller?.name ?? '—') },
-                      { label: 'Views',       value: String(product.views ?? 0) },
+                      { label: t('detailCategory'),    value: product.category?.name ?? '—' },
+                      { label: t('detailSubcategory'), value: product.subcategory?.name ?? '—' },
+                      { label: t('detailSku'),         value: selectedVariant?.sku ?? product.sku ?? t('na') },
+                      { label: t('detailStock'),       value: t('units', { count: effectiveStock }) },
+                      { label: t('detailSeller'),      value: product.is_platform_product ? t('platformSeller') : (product.seller?.business_name ?? product.seller?.name ?? '—') },
+                      { label: t('detailViews'),       value: format.number(product.views ?? 0) },
                     ].map(({ label, value }) => (
                       <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
                         <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 700 }}>{label}</span>

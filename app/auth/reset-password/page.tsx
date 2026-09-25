@@ -8,8 +8,10 @@ import {
   Lock, Eye, EyeOff, AlertCircle, CheckCircle2,
   Loader2, ShoppingBag, ArrowLeft,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 function ResetPasswordForm() {
+  const t            = useTranslations('auth');
   const router       = useRouter();
   const searchParams = useSearchParams();
 
@@ -36,10 +38,10 @@ function ResetPasswordForm() {
     setError('');
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.'); return;
+      setError(t('errors.minLength')); return;
     }
     if (password !== confirmation) {
-      setError('Passwords do not match.'); return;
+      setError(t('errors.mismatch')); return;
     }
 
     setLoading(true);
@@ -54,7 +56,7 @@ function ResetPasswordForm() {
       // Redirect to login after 2.5 seconds
       setTimeout(() => router.push('/auth/login?reset=success'), 2500);
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Something went wrong. Please try again.');
+      setError(err?.response?.data?.message ?? t('errors.generic'));
       setLoading(false);
     }
   };
@@ -70,7 +72,7 @@ function ResetPasswordForm() {
 
           {/* Brand */}
           <div className="flex items-center gap-2.5 mb-8">
-            <img src="/images/logo-chili.png" alt="ChooseTounsi" className="h-9 w-9 object-contain" />
+            <img src="/images/logo-chili.png" alt={t('logoAlt')} className="h-9 w-9 object-contain" />
             <span className="text-xl font-black text-slate-900 tracking-tight">
               Choose<span className="text-[#E63946]">Tounsi</span>
             </span>
@@ -80,12 +82,12 @@ function ResetPasswordForm() {
             <>
               <div className="mb-7">
                 <h1 className="text-3xl font-black text-slate-900 leading-tight">
-                  Create new<br /><span className="text-[#E63946]">Password</span>
+                  {t('reset.title1')}<br /><span className="text-[#E63946]">{t('reset.title2')}</span>
                 </h1>
                 <div className="w-10 h-1 bg-[#E63946] rounded-full mt-3" />
                 {email && (
                   <p className="mt-4 text-sm text-slate-500">
-                    Resetting password for <span className="font-semibold text-slate-700">{email}</span>
+                    {t.rich('reset.for', { email, b: c => <span className="font-semibold text-slate-700">{c}</span> })}
                   </p>
                 )}
               </div>
@@ -100,20 +102,22 @@ function ResetPasswordForm() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* New password */}
                 <div className="relative group">
-                  <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
+                  <Lock size={16} className="absolute start-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
                   <input
                     type={showPass ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                    placeholder="New password (min. 8 characters)"
+                    placeholder={t('reset.newPassword')}
+                    aria-label={t('reset.newPassword')}
                     autoComplete="new-password"
                     required
-                    className="w-full pl-11 pr-12 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150"
+                    className="w-full ps-11 pe-12 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPass(!showPass)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+                    aria-label={showPass ? t('hidePassword') : t('showPassword')}
+                    className="absolute end-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
                     tabIndex={-1}
                   >
                     {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -122,33 +126,35 @@ function ResetPasswordForm() {
 
                 {/* Confirm password */}
                 <div className="relative group">
-                  <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
+                  <Lock size={16} className="absolute start-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
                   <input
                     type={showConfirm ? 'text' : 'password'}
                     value={confirmation}
                     onChange={(e) => { setConfirmation(e.target.value); setError(''); }}
-                    placeholder="Confirm new password"
+                    placeholder={t('reset.confirmNew')}
+                    aria-label={t('reset.confirmNew')}
                     autoComplete="new-password"
                     required
-                    className="w-full pl-11 pr-12 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150"
+                    className="w-full ps-11 pe-12 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+                    aria-label={showConfirm ? t('hidePassword') : t('showPassword')}
+                    className="absolute end-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
                     tabIndex={-1}
                   >
                     {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                   {passwordsMatch && (
-                    <CheckCircle2 size={16} className="absolute right-10 top-1/2 -translate-y-1/2 text-[#198f41]" />
+                    <CheckCircle2 size={16} className="absolute end-10 top-1/2 -translate-y-1/2 text-[#198f41]" />
                   )}
                 </div>
 
                 {/* Password strength hint */}
                 {password.length > 0 && password.length < 8 && (
                   <p className="text-xs text-orange-500 font-medium">
-                    Password must be at least 8 characters
+                    {t('errors.minLength')}
                   </p>
                 )}
 
@@ -158,8 +164,8 @@ function ResetPasswordForm() {
                   className="w-full py-3.5 mt-2 rounded-2xl bg-[#E63946] hover:bg-[#c1121f] active:scale-[0.98] text-white text-sm font-bold tracking-wide transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-500/25"
                 >
                   {loading
-                    ? <><Loader2 size={16} className="animate-spin" /> Resetting…</>
-                    : 'Reset Password'}
+                    ? <><Loader2 size={16} className="animate-spin" /> {t('reset.submitting')}</>
+                    : t('reset.submit')}
                 </button>
               </form>
             </>
@@ -169,11 +175,11 @@ function ResetPasswordForm() {
               <div className="w-16 h-16 rounded-2xl bg-green-50 border border-green-200 flex items-center justify-center mx-auto mb-6">
                 <CheckCircle2 size={32} className="text-[#198f41]" />
               </div>
-              <h2 className="text-2xl font-black text-slate-900 mb-3">Password Reset!</h2>
+              <h2 className="text-2xl font-black text-slate-900 mb-3">{t('reset.doneTitle')}</h2>
               <p className="text-sm text-slate-500 leading-relaxed mb-2">
-                Your password has been successfully updated.
+                {t('reset.doneBody')}
               </p>
-              <p className="text-xs text-slate-400">Redirecting you to sign in…</p>
+              <p className="text-xs text-slate-400">{t('reset.redirecting')}</p>
             </div>
           )}
 
@@ -183,23 +189,23 @@ function ResetPasswordForm() {
               className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-slate-600 font-medium transition"
             >
               <ArrowLeft size={13} />
-              Back to Sign In
+              {t('backToSignIn')}
             </Link>
           </div>
         </div>
 
         {/* ══ RIGHT — brand panel ══ */}
         <div className="hidden lg:flex w-[42%] bg-[#E63946] flex-col items-center justify-center px-10 py-12 relative overflow-hidden">
-          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/[0.06]" />
-          <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-white/[0.06]" />
+          <div className="absolute -top-16 -end-16 w-64 h-64 rounded-full bg-white/[0.06]" />
+          <div className="absolute -bottom-20 -start-20 w-72 h-72 rounded-full bg-white/[0.06]" />
           <div className="relative z-10 text-center">
             <div className="text-6xl mb-6">🔒</div>
             <h2 className="text-3xl font-black text-white leading-tight mb-4">
-              Secure your<br />Account
+              {t('reset.panelTitle1')}<br />{t('reset.panelTitle2')}
             </h2>
             <div className="w-10 h-1 bg-white/60 rounded-full mx-auto mb-6" />
             <p className="text-white/80 text-sm leading-relaxed font-medium">
-              Choose a strong password<br />to keep your account safe.
+              {t('reset.panelBody')}
             </p>
           </div>
         </div>

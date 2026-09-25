@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef, Suspense, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/i18n/useFormat";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -38,6 +40,7 @@ function PlaceholderImg({ size = 64 }: { size?: number }) {
 function DidYouMeanBanner({ original, corrected, onAccept, onDismiss }: {
   original: string; corrected: string; onAccept: () => void; onDismiss: () => void;
 }) {
+  const t = useTranslations("search");
   return (
     <div style={{
       display:"flex", alignItems:"center", gap:12,
@@ -53,19 +56,19 @@ function DidYouMeanBanner({ original, corrected, onAccept, onDismiss }: {
         </svg>
       </div>
       <div style={{ flex:1, minWidth:200 }}>
-        <p style={{ margin:"0 0 3px", fontSize:11, fontWeight:800, color:"#92400e", textTransform:"uppercase", letterSpacing:"0.07em" }}>Did you mean?</p>
+        <p style={{ margin:"0 0 3px", fontSize:11, fontWeight:800, color:"#92400e", textTransform:"uppercase", letterSpacing:"0.07em" }}>{t("didYouMean")}</p>
         <p style={{ margin:0, fontSize:14, color:"#78350f" }}>
-          Showing results for{" "}
+          {t("showingFor")}{" "}
           <button onClick={onAccept} style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontFamily:"inherit", fontSize:15, fontWeight:900, color:"#db142e", textDecoration:"underline", textDecorationStyle:"dotted", textUnderlineOffset:3 }}>
             {corrected}
           </button>
-          {" "}instead of <span style={{ fontStyle:"italic", color:"#92400e", fontWeight:600 }}>"{original}"</span>
+          {" "}{t("insteadOf")} <span style={{ fontStyle:"italic", color:"#92400e", fontWeight:600 }}>{t("quoted", { query: original })}</span>
         </p>
       </div>
       <button onClick={onDismiss} style={{ background:"transparent", border:"1.5px solid #d97706", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:700, color:"#92400e", cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>
-        Search "{original}"
+        {t("searchInstead", { query: original })}
       </button>
-      <button onClick={onDismiss} aria-label="Dismiss" style={{ background:"transparent", border:"none", cursor:"pointer", padding:4, color:"#d97706", lineHeight:1, flexShrink:0 }}>
+      <button onClick={onDismiss} aria-label={t("dismiss")} style={{ background:"transparent", border:"none", cursor:"pointer", padding:4, color:"#d97706", lineHeight:1, flexShrink:0 }}>
         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </div>
@@ -74,6 +77,7 @@ function DidYouMeanBanner({ original, corrected, onAccept, onDismiss }: {
 
 // ─── Inline Search Bar ────────────────────────────────────────────────────────
 function InlineSearchBar({ initialQuery }: { initialQuery: string }) {
+  const t         = useTranslations("search");
   const router    = useRouter();
   const [q, setQ] = useState(initialQuery);
   const [suggs, setSuggs]     = useState<string[]>([]);
@@ -105,7 +109,7 @@ function InlineSearchBar({ initialQuery }: { initialQuery: string }) {
   return (
     <div style={{ position:"relative", maxWidth:580, width:"100%" }}>
       <div style={{ display:"flex", alignItems:"center", background:"#f8fafc", border:`2px solid ${focused ? "#db142e" : "#e5e7eb"}`, borderRadius:14, overflow:"hidden", transition:"border-color 0.2s" }}>
-        <svg style={{ marginLeft:14, flexShrink:0 }} width="18" height="18" fill="none" stroke="#94a3b8" strokeWidth="2" viewBox="0 0 24 24">
+        <svg style={{ marginInlineStart:14, flexShrink:0 }} width="18" height="18" fill="none" stroke="#94a3b8" strokeWidth="2" viewBox="0 0 24 24">
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
         <input ref={inputRef} value={q}
@@ -113,20 +117,21 @@ function InlineSearchBar({ initialQuery }: { initialQuery: string }) {
           onKeyDown={e => { if (e.key === "Enter" && q.trim()) doSearch(q); if (e.key === "Escape") setShowDrop(false); }}
           onFocus={() => { setFocused(true); setShowDrop(true); }}
           onBlur={() => { setFocused(false); setTimeout(() => setShowDrop(false), 150); }}
-          placeholder="Search products, brands..."
+          placeholder={t("placeholder")}
+          aria-label={t("placeholder")}
           style={{ flex:1, border:"none", background:"transparent", padding:"12px 14px", fontSize:14, fontFamily:"inherit", color:"#111", outline:"none" }}
         />
-        {q && <button onClick={() => { setQ(""); setSuggs([]); inputRef.current?.focus(); }} style={{ background:"none", border:"none", cursor:"pointer", padding:"0 8px", color:"#94a3b8" }}>
+        {q && <button onClick={() => { setQ(""); setSuggs([]); inputRef.current?.focus(); }} aria-label={t("clear")} style={{ background:"none", border:"none", cursor:"pointer", padding:"0 8px", color:"#94a3b8" }}>
           <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>}
-        <button onClick={() => q.trim() && doSearch(q)} style={{ background:"#db142e", border:"none", cursor:"pointer", padding:"0 18px", height:"100%", minHeight:46, color:"#fff", display:"flex", alignItems:"center" }}>
+        <button onClick={() => q.trim() && doSearch(q)} aria-label={t("submit")} style={{ background:"#db142e", border:"none", cursor:"pointer", padding:"0 18px", height:"100%", minHeight:46, color:"#fff", display:"flex", alignItems:"center" }}>
           <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         </button>
       </div>
       {showDrop && suggs.length > 0 && (
-        <div style={{ position:"absolute", top:"calc(100% + 6px)", left:0, right:0, background:"#fff", border:"1.5px solid #f1f5f9", borderRadius:12, boxShadow:"0 8px 30px rgba(0,0,0,0.10)", zIndex:999, overflow:"hidden", animation:"slideDown 0.15s ease" }}>
+        <div style={{ position:"absolute", top:"calc(100% + 6px)", insetInline:0, background:"#fff", border:"1.5px solid #f1f5f9", borderRadius:12, boxShadow:"0 8px 30px rgba(0,0,0,0.10)", zIndex:999, overflow:"hidden", animation:"slideDown 0.15s ease" }}>
           {suggs.map((s, i) => (
-            <button key={i} onMouseDown={() => doSearch(s)} style={{ display:"flex", alignItems:"center", gap:10, width:"100%", background:"none", border:"none", borderBottom: i < suggs.length-1 ? "1px solid #f8fafc" : "none", padding:"11px 16px", cursor:"pointer", textAlign:"left", fontFamily:"inherit" }}
+            <button key={i} onMouseDown={() => doSearch(s)} style={{ display:"flex", alignItems:"center", gap:10, width:"100%", background:"none", border:"none", borderBottom: i < suggs.length-1 ? "1px solid #f8fafc" : "none", padding:"11px 16px", cursor:"pointer", textAlign:"start", fontFamily:"inherit" }}
               onMouseEnter={e => (e.currentTarget.style.background = "#fef2f2")}
               onMouseLeave={e => (e.currentTarget.style.background = "none")}>
               <svg width="14" height="14" fill="none" stroke="#94a3b8" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -143,6 +148,9 @@ function InlineSearchBar({ initialQuery }: { initialQuery: string }) {
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
 function ProductCard({ product, rank }: { product: SearchProduct; rank?: number }) {
+  const t   = useTranslations("search");
+  const tc  = useTranslations("common");
+  const fmt = useFormat();
   const [imgErr, setImgErr] = useState(false);
   const imageUrl = product.primary_image && !imgErr ? product.primary_image : null;
   const label    = product.subcategory_name ?? product.category_name;
@@ -154,13 +162,13 @@ function ProductCard({ product, rank }: { product: SearchProduct; rank?: number 
             ? <img src={imageUrl} alt={product.name} className="pcard-img" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", transition:"transform 0.4s ease" }} onError={() => setImgErr(true)}/>
             : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center" }}><PlaceholderImg/></div>
           }
-          <div style={{ position:"absolute", top:10, left:10, display:"flex", flexDirection:"column", gap:5 }}>
-            {product.featured && <span style={{ background:"#dc2626", color:"#fff", fontSize:9, fontWeight:800, padding:"3px 8px", borderRadius:999, letterSpacing:"0.06em", textTransform:"uppercase" }}>Featured</span>}
-            {rank && rank <= 3 && <span style={{ background:"#0f172a", color:"#fbbf24", fontSize:9, fontWeight:800, padding:"3px 8px", borderRadius:999, letterSpacing:"0.06em", textTransform:"uppercase" }}>Top {rank}</span>}
+          <div style={{ position:"absolute", top:10, insetInlineStart:10, display:"flex", flexDirection:"column", gap:5 }}>
+            {product.featured && <span style={{ background:"#dc2626", color:"#fff", fontSize:9, fontWeight:800, padding:"3px 8px", borderRadius:999, letterSpacing:"0.06em", textTransform:"uppercase" }}>{t("featured")}</span>}
+            {rank && rank <= 3 && <span style={{ background:"#0f172a", color:"#fbbf24", fontSize:9, fontWeight:800, padding:"3px 8px", borderRadius:999, letterSpacing:"0.06em", textTransform:"uppercase" }}>{t("topN", { n: rank })}</span>}
           </div>
           {product.stock === 0 && (
             <div style={{ position:"absolute", inset:0, background:"rgba(255,255,255,0.7)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <span style={{ background:"#0f172a", color:"#fff", fontSize:11, fontWeight:800, padding:"5px 14px", borderRadius:999 }}>Sold Out</span>
+              <span style={{ background:"#0f172a", color:"#fff", fontSize:11, fontWeight:800, padding:"5px 14px", borderRadius:999 }}>{t("soldOut")}</span>
             </div>
           )}
         </div>
@@ -171,10 +179,10 @@ function ProductCard({ product, rank }: { product: SearchProduct; rank?: number 
           </h3>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <span style={{ fontSize:16, fontWeight:900, color:"#dc2626", letterSpacing:"-0.02em" }}>
-              {Number(product.price).toFixed(2)} <span style={{ fontSize:11, fontWeight:700 }}>DT</span>
+              {fmt.price(product.price, { bare: true })} <span style={{ fontSize:11, fontWeight:700 }}>{fmt.currency}</span>
             </span>
             <span style={{ fontSize:10, fontWeight:700, color: product.stock===0 ? "#94a3b8":"#16a34a", background: product.stock===0 ? "#f1f5f9":"rgba(22,163,74,0.08)", padding:"2px 8px", borderRadius:999 }}>
-              {product.stock === 0 ? "Out of stock" : "In stock"}
+              {product.stock === 0 ? tc("outOfStock") : tc("inStock")}
             </span>
           </div>
         </div>
@@ -242,18 +250,20 @@ function SkeletonCard() {
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 function EmptyState({ isImage, query }: { isImage: boolean; query: string }) {
+  const t  = useTranslations("search");
+  const tc = useTranslations("common");
   return (
     <div style={{ textAlign:"center", padding:"80px 24px" }}>
       <div style={{ width:80, height:80, borderRadius:"50%", background:"#f8fafc", border:"2px solid #f1f5f9", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
         <svg width="32" height="32" fill="none" stroke="#cbd5e1" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       </div>
-      <h2 style={{ fontSize:18, fontWeight:800, color:"#374151", margin:"0 0 8px" }}>No results found</h2>
+      <h2 style={{ fontSize:18, fontWeight:800, color:"#374151", margin:"0 0 8px" }}>{t("emptyTitle")}</h2>
       <p style={{ fontSize:13, color:"#94a3b8", margin:"0 0 28px", lineHeight:1.6 }}>
-        {isImage ? "No visually similar products found. Try a clearer photo." : `No products matched "${query}". Try different keywords.`}
+        {isImage ? t("emptyImage") : t("emptyText", { query })}
       </p>
       <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
-        <Link href="/shop" style={{ padding:"10px 22px", background:"#dc2626", color:"#fff", borderRadius:10, fontWeight:700, fontSize:13, textDecoration:"none" }}>Browse Shop</Link>
-        <Link href="/"    style={{ padding:"10px 22px", background:"#f8fafc", color:"#374151", border:"1px solid #e5e7eb", borderRadius:10, fontWeight:700, fontSize:13, textDecoration:"none" }}>Back to Home</Link>
+        <Link href="/shop" style={{ padding:"10px 22px", background:"#dc2626", color:"#fff", borderRadius:10, fontWeight:700, fontSize:13, textDecoration:"none" }}>{t("browseShop")}</Link>
+        <Link href="/"    style={{ padding:"10px 22px", background:"#f8fafc", color:"#374151", border:"1px solid #e5e7eb", borderRadius:10, fontWeight:700, fontSize:13, textDecoration:"none" }}>{tc("backHome")}</Link>
       </div>
     </div>
   );
@@ -271,6 +281,8 @@ function applySort(products: SearchProduct[], sort: SortKey): SearchProduct[] {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 function SearchPageContent() {
+  const t            = useTranslations("search");
+  const tc           = useTranslations("common");
   const router       = useRouter();
   const searchParams = useSearchParams();
   const queryParam   = searchParams.get("q")    ?? "";
@@ -365,7 +377,7 @@ function SearchPageContent() {
         setDidYouMean(null);
       }
     } catch {
-      setError("Search failed. Please try again.");
+      setError(t("errorText"));
     } finally {
       setLoading(false); setSearched(true);
     }
@@ -385,7 +397,7 @@ function SearchPageContent() {
       setDirectHits([]); setSameCategory([]); setRelated([]);
       setSource("ai");
     } catch {
-      setError("Failed to load image search results.");
+      setError(t("errorImage"));
     } finally {
       setLoading(false); setSearched(true);
     }
@@ -395,11 +407,11 @@ function SearchPageContent() {
   const hasAnySections = directHits.length > 0 || sameCategory.length > 0 || related.length > 0;
   const totalCount     = directHits.length + sameCategory.length + related.length + flatProducts.length;
   const showBanner     = !!didYouMean && !bannerDismissed && searched && !loading;
-  const catLabel       = sameCategory[0]?.category_name ?? directHits[0]?.category_name ?? "Category";
+  const catLabel       = sameCategory[0]?.category_name ?? directHits[0]?.category_name ?? tc("category");
 
-  const title = isImageSearch ? "Visual Search Results"
-              : queryParam    ? `"${queryParam}"`
-              :                 "Search Results";
+  const title = isImageSearch ? t("visualTitle")
+              : queryParam    ? t("quoted", { query: queryParam })
+              :                 t("resultsTitle");
 
   return (
     <>
@@ -421,16 +433,16 @@ function SearchPageContent() {
           <div style={{ maxWidth:1400, margin:"0 auto", padding:"0 24px" }}>
 
             <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:"#94a3b8", marginBottom:14 }}>
-              <Link href="/" style={{ color:"#94a3b8", textDecoration:"none" }}>Home</Link>
+              <Link href="/" style={{ color:"#94a3b8", textDecoration:"none" }}>{tc("home")}</Link>
               <span>/</span>
-              <span style={{ color:"#374151", fontWeight:600 }}>{isImageSearch ? "Visual Search" : "Search"}</span>
+              <span style={{ color:"#374151", fontWeight:600 }}>{isImageSearch ? t("visualCrumb") : t("crumb")}</span>
             </div>
 
             <div style={{ display:"flex", alignItems:"flex-start", gap:20, flexWrap:"wrap", paddingBottom:20 }}>
               {imagePreview && (
                 <div style={{ position:"relative", flexShrink:0 }}>
-                  <img src={imagePreview} alt="Query" style={{ width:72, height:72, objectFit:"cover", borderRadius:12, border:"2.5px solid #dc2626", display:"block" }}/>
-                  <div style={{ position:"absolute", bottom:-6, right:-6, width:22, height:22, background:"#dc2626", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid #fff" }}>
+                  <img src={imagePreview} alt={t("queryImage")} style={{ width:72, height:72, objectFit:"cover", borderRadius:12, border:"2.5px solid #dc2626", display:"block" }}/>
+                  <div style={{ position:"absolute", bottom:-6, insetInlineEnd:-6, width:22, height:22, background:"#dc2626", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid #fff" }}>
                     <svg width="10" height="10" fill="none" stroke="#fff" strokeWidth="2.2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                   </div>
                 </div>
@@ -444,15 +456,15 @@ function SearchPageContent() {
                 {searched && !loading && (
                   <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginTop:12 }}>
                     <span style={{ fontSize:13, color:"#64748b" }}>
-                      <strong style={{ color:"#0f172a" }}>{totalCount}</strong> product{totalCount !== 1 ? "s" : ""} found
+                      {t.rich("found", { count: totalCount, b: c => <strong style={{ color:"#0f172a" }}>{c}</strong> })}
                     </span>
                     {source === "ai" && (
                       <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:700, color:"#198f41", background:"rgba(25,143,65,0.08)", padding:"2px 10px", borderRadius:999, border:"1px solid rgba(25,143,65,0.2)" }}>
                         <svg width="9" height="9" viewBox="0 0 10 10" fill="#198f41"><circle cx="5" cy="5" r="5"/></svg>
-                        {isImageSearch ? "AI visual match" : "AI semantic match"}
+                        {isImageSearch ? t("aiVisual") : t("aiSemantic")}
                       </span>
                     )}
-                    {source === "fallback" && <span style={{ fontSize:11, color:"#94a3b8", fontStyle:"italic" }}>keyword search</span>}
+                    {source === "fallback" && <span style={{ fontSize:11, color:"#94a3b8", fontStyle:"italic" }}>{t("keyword")}</span>}
                   </div>
                 )}
               </div>
@@ -461,8 +473,8 @@ function SearchPageContent() {
             {/* Sort */}
             {(hasAnySections || flatProducts.length > 0) && (
               <div style={{ display:"flex", alignItems:"center", gap:8, paddingBottom:16, overflowX:"auto" }}>
-                <span style={{ fontSize:11, fontWeight:800, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.07em", flexShrink:0 }}>Sort</span>
-                {([ {key:"relevance",label:"Best Match"},{key:"popular",label:"Most Popular"},{key:"price_asc",label:"Price ↑"},{key:"price_desc",label:"Price ↓"} ] as {key:SortKey;label:string}[]).map(s => (
+                <span style={{ fontSize:11, fontWeight:800, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.07em", flexShrink:0 }}>{t("sort")}</span>
+                {([ {key:"relevance",label:t("sortRelevance")},{key:"popular",label:t("sortPopular")},{key:"price_asc",label:t("sortPriceAsc")},{key:"price_desc",label:t("sortPriceDesc")} ] as {key:SortKey;label:string}[]).map(s => (
                   <button key={s.key} onClick={() => setSort(s.key)} className={`sort-btn ${sort===s.key?"active":""}`}>{s.label}</button>
                 ))}
               </div>
@@ -494,7 +506,7 @@ function SearchPageContent() {
             <div style={{ textAlign:"center", padding:"80px 24px" }}>
               <div style={{ fontSize:40, marginBottom:16 }}>⚠️</div>
               <p style={{ fontSize:16, fontWeight:700, color:"#ef4444", marginBottom:16 }}>{error}</p>
-              <button onClick={() => queryParam ? doTextSearch(queryParam) : window.history.back()} style={{ padding:"10px 24px", background:"#dc2626", color:"#fff", border:"none", borderRadius:10, fontWeight:700, cursor:"pointer", fontSize:14, fontFamily:"inherit" }}>Try again</button>
+              <button onClick={() => queryParam ? doTextSearch(queryParam) : window.history.back()} style={{ padding:"10px 24px", background:"#dc2626", color:"#fff", border:"none", borderRadius:10, fontWeight:700, cursor:"pointer", fontSize:14, fontFamily:"inherit" }}>{tc("retry")}</button>
             </div>
           )}
 
@@ -517,10 +529,10 @@ function SearchPageContent() {
                 <section>
                   <SectionHeader
                     icon={<svg width="20" height="20" fill="none" stroke="#db142e" strokeWidth="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>}
-                    title="Best Matches"
+                    title={t("bestMatches")}
                     count={directHits.length}
                     accentColor="#db142e"
-                    subtitle={`Most relevant results for "${queryParam}"`}
+                    subtitle={t("bestMatchesSub", { query: queryParam })}
                   />
                   <ProductGrid products={applySort(directHits, sort)} showRank={sort==="relevance"} rankOffset={0}/>
                 </section>
@@ -529,14 +541,14 @@ function SearchPageContent() {
               {/* Section 2 — Same category */}
               {sameCategory.length > 0 && (
                 <>
-                  <Divider label="More in this category"/>
+                  <Divider label={t("moreInCategoryDivider")}/>
                   <section>
                     <SectionHeader
                       icon={<svg width="20" height="20" fill="none" stroke="#198f41" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>}
-                      title={`More in ${catLabel}`}
+                      title={t("moreIn", { name: catLabel })}
                       count={sameCategory.length}
                       accentColor="#198f41"
-                      subtitle="Other products from the same category"
+                      subtitle={t("moreInSub")}
                     />
                     <ProductGrid products={applySort(sameCategory, sort)}/>
                   </section>
@@ -546,14 +558,14 @@ function SearchPageContent() {
               {/* Section 3 — Related */}
               {related.length > 0 && (
                 <>
-                  <Divider label="You might also like"/>
+                  <Divider label={t("alsoLike")}/>
                   <section>
                     <SectionHeader
                       icon={<svg width="20" height="20" fill="none" stroke="#6366f1" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>}
-                      title="You Might Also Like"
+                      title={t("alsoLike")}
                       count={related.length}
                       accentColor="#6366f1"
-                      subtitle="Other products you may find interesting"
+                      subtitle={t("alsoLikeSub")}
                     />
                     <ProductGrid products={applySort(related, sort)}/>
                   </section>
@@ -569,7 +581,7 @@ function SearchPageContent() {
                 <div style={{ flex:1, height:1, background:"#f1f5f9" }}/>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                   <div style={{ width:6, height:6, borderRadius:"50%", background:"#dc2626" }}/>
-                  <span style={{ fontSize:12, fontWeight:800, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.1em" }}>Trending Now</span>
+                  <span style={{ fontSize:12, fontWeight:800, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.1em" }}>{t("trending")}</span>
                   <div style={{ width:6, height:6, borderRadius:"50%", background:"#dc2626" }}/>
                 </div>
                 <div style={{ flex:1, height:1, background:"#f1f5f9" }}/>

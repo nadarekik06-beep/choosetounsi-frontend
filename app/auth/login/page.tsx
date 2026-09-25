@@ -8,6 +8,7 @@ import {
   Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle2,
   Loader2, ShoppingBag, Store, TrendingUp, Shield,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 function GoogleIcon() {
   return (
@@ -21,6 +22,7 @@ function GoogleIcon() {
 }
 
 function LoginForm() {
+  const t            = useTranslations('auth');
   const router       = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl  = useRef(searchParams.get('callbackUrl')).current;
@@ -46,17 +48,17 @@ function LoginForm() {
 
     // ── URL-based feedback messages ────────────────────────────────────────
     const urlError = searchParams.get('error');
-    if (urlError === 'google_failed')       setError('Google sign-in failed. Please try again.');
-    if (urlError === 'account_deactivated') setError('Your account has been deactivated. Contact support.');
+    if (urlError === 'google_failed')       setError(t('errors.googleFailed'));
+    if (urlError === 'account_deactivated') setError(t('errors.deactivated'));
 
     if (searchParams.get('reset') === 'success') {
-      setSuccess('Password reset successfully! You can now sign in with your new password.');
+      setSuccess(t('login.resetSuccess'));
     }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) { setError('Please fill in all fields.'); return; }
+    if (!email.trim() || !password.trim()) { setError(t('errors.fillAll')); return; }
     setLoading(true);
     setError('');
     setSuccess('');
@@ -68,7 +70,7 @@ function LoginForm() {
         router.push(`/auth/verify-email?email=${encodeURIComponent(err.email)}`);
         return;
       }
-      setError(err?.message ?? 'Something went wrong. Please try again.');
+      setError(err?.message ?? t('errors.generic'));
       setLoading(false);
     }
   };
@@ -80,7 +82,7 @@ function LoginForm() {
     try {
       await loginWithGoogle();
     } catch {
-      setError('Could not connect to Google. Please try again.');
+      setError(t('errors.googleConnect'));
       setGoogleLoading(false);
     }
   };
@@ -102,7 +104,7 @@ function LoginForm() {
 
           {/* Brand */}
           <div className="flex items-center gap-2.5 mb-10">
-  <img src="/images/logo-chili.png" alt="ChooseTounsi" className="h-9 w-9 object-contain" />
+  <img src="/images/logo-chili.png" alt={t('logoAlt')} className="h-9 w-9 object-contain" />
   <span className="text-xl font-black text-slate-900 tracking-tight">
     Choose<span className="text-[#E63946]">Tounsi</span>
   </span>
@@ -111,8 +113,8 @@ function LoginForm() {
           {/* Title */}
           <div className="mb-8">
             <h1 className="text-3xl font-black text-slate-900 leading-tight">
-              Sign in to your<br />
-              <span className="text-[#E63946]">Account</span>
+              {t('login.title1')}<br />
+              <span className="text-[#E63946]">{t('login.title2')}</span>
             </h1>
             <div className="w-10 h-1 bg-[#E63946] rounded-full mt-3" />
           </div>
@@ -140,13 +142,13 @@ function LoginForm() {
             className="w-full flex items-center justify-center gap-3 py-3 rounded-2xl border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all duration-150 text-sm font-semibold text-slate-700 mb-5 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {googleLoading ? <Loader2 size={18} className="animate-spin" /> : <GoogleIcon />}
-            Continue with Google
+            {t('continueGoogle')}
           </button>
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-5">
             <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs text-slate-400 font-medium">or sign in with email</span>
+            <span className="text-xs text-slate-400 font-medium">{t('login.orEmail')}</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
 
@@ -155,34 +157,37 @@ function LoginForm() {
 
             {/* Email */}
             <div className="relative group">
-              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
+              <Mail size={16} className="absolute start-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                placeholder="Email address"
+                placeholder={t('email')}
+                aria-label={t('email')}
                 autoComplete="email"
                 required
-                className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150"
+                className="w-full ps-11 pe-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150"
               />
             </div>
 
             {/* Password */}
             <div className="relative group">
-              <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
+              <Lock size={16} className="absolute start-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
               <input
                 type={showPass ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                placeholder="Password"
+                placeholder={t('password')}
+                aria-label={t('password')}
                 autoComplete="current-password"
                 required
-                className="w-full pl-11 pr-12 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150"
+                className="w-full ps-11 pe-12 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150"
               />
               <button
                 type="button"
                 onClick={() => setShowPass(!showPass)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+                aria-label={showPass ? t('hidePassword') : t('showPassword')}
+                className="absolute end-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
                 tabIndex={-1}
               >
                 {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -197,14 +202,14 @@ function LoginForm() {
                   className="w-4 h-4 rounded border-slate-300 accent-[#E63946] cursor-pointer"
                 />
                 <span className="text-xs text-slate-500 group-hover:text-slate-700 transition font-medium">
-                  Remember me
+                  {t('login.remember')}
                 </span>
               </label>
               <Link
                 href="/auth/forgot-password"
                 className="text-xs font-semibold text-[#E63946] hover:text-red-700 transition"
               >
-                Forgot Password?
+                {t('login.forgot')}
               </Link>
             </div>
 
@@ -215,21 +220,21 @@ function LoginForm() {
               className="w-full py-3.5 mt-2 rounded-2xl bg-[#E63946] hover:bg-[#c1121f] active:scale-[0.98] text-white text-sm font-bold tracking-wide transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-500/25"
             >
               {loading
-                ? <><Loader2 size={16} className="animate-spin" /> Signing in…</>
-                : 'Sign In'}
+                ? <><Loader2 size={16} className="animate-spin" /> {t('login.submitting')}</>
+                : t('login.submit')}
             </button>
 
           </form>
 
           {/* Footer links */}
           <p className="mt-6 text-xs text-center text-slate-400">
-            Don&apos;t have an account?{' '}
+            {t('login.noAccount')}{' '}
             <Link href="/auth/register" className="text-[#E63946] font-semibold hover:text-red-700 transition">
-              Create one
+              {t('login.createOne')}
             </Link>
             {' · '}
             <Link href="/" className="text-[#E63946] font-semibold hover:text-red-700 transition">
-              Browse as guest
+              {t('login.guest')}
             </Link>
           </p>
 
@@ -237,25 +242,25 @@ function LoginForm() {
 
         {/* ══ RIGHT — brand panel ══ */}
         <div className="hidden lg:flex w-[42%] bg-[#E63946] flex-col items-center justify-center px-10 py-12 relative overflow-hidden">
-          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/[0.06]" />
-          <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-white/[0.06]" />
+          <div className="absolute -top-16 -end-16 w-64 h-64 rounded-full bg-white/[0.06]" />
+          <div className="absolute -bottom-20 -start-20 w-72 h-72 rounded-full bg-white/[0.06]" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-white/[0.04]" />
           <div className="relative z-10 text-center">
             <div className="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur flex items-center justify-center mx-auto mb-8 shadow-xl">
               <Store size={36} className="text-white" />
             </div>
             <h2 className="text-3xl font-black text-white leading-tight mb-4">
-              Welcome to<br />ChooseTounsi
+              {t('login.panelTitle')}<br />ChooseTounsi
             </h2>
             <div className="w-10 h-1 bg-white/60 rounded-full mx-auto mb-6" />
             <p className="text-white/80 text-sm leading-relaxed mb-10 font-medium">
-              Tunisia&apos;s marketplace for<br />authentic local products.
+              {t('panelTagline')}
             </p>
-            <div className="space-y-3 text-left">
+            <div className="space-y-3 text-start">
               {[
-                { icon: Store,      text: 'Manage your store' },
-                { icon: TrendingUp, text: 'Track your sales'  },
-                { icon: Shield,     text: 'Secure & verified' },
+                { icon: Store,      text: t('login.perk1') },
+                { icon: TrendingUp, text: t('login.perk2') },
+                { icon: Shield,     text: t('perkSecure') },
               ].map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">

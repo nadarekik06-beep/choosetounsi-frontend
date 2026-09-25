@@ -8,14 +8,18 @@
 
 import { useCart } from '@/context/CartContext'
 import { CheckCircle, X } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 export default function FlashToast() {
+  const t = useTranslations('common')
   const { flash, clearFlash } = useCart()
 
   if (!flash) return null
 
   return (
     <div
+      role="status"
+      aria-live="polite"
       style={{
         position: 'fixed', bottom: 28, left: '50%',
         transform: 'translateX(-50%)',
@@ -33,6 +37,7 @@ export default function FlashToast() {
       {flash}
       <button
         onClick={clearFlash}
+        aria-label={t('close')}
         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', padding: 2 }}
       >
         <X size={13} />

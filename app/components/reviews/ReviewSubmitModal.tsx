@@ -11,6 +11,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Star, X, Upload, CheckCircle, Loader2, Eye, EyeOff } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
 
@@ -42,7 +43,7 @@ interface Props {
   onSuccess: () => void;
 }
 
-const HOVER_LABELS = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+// Labels: reviewForm.ratingLabels.1 … 5
 const HOVER_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#16a34a'];
 
 export default function ReviewSubmitModal({
@@ -53,6 +54,7 @@ export default function ReviewSubmitModal({
   onClose,
   onSuccess,
 }: Props) {
+  const t = useTranslations('reviewForm');
   const [rating,       setRating]      = useState(0);
   const [hoverRating,  setHoverRating] = useState(0);
   const [tags,         setTags]        = useState<ReviewTag[]>([]);
@@ -119,17 +121,17 @@ export default function ReviewSubmitModal({
   // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!rating) {
-      setError('Please select a star rating.');
+      setError(t('errors.rating'));
       return;
     }
     if (body && body.length > 0 && body.length < 10) {
-      setError('Review text must be at least 10 characters (or leave it empty).');
+      setError(t('errors.minLength'));
       return;
     }
 
     const token = getToken();
     if (!token) {
-      setError('You must be logged in to submit a review.');
+      setError(t('errors.login'));
       return;
     }
 
@@ -162,13 +164,13 @@ export default function ReviewSubmitModal({
         // Show validation errors if any
         if (json.errors) {
           const msgs = Object.values(json.errors as Record<string, string[]>).flat();
-          setError(msgs[0] ?? json.message ?? 'Validation failed.');
+          setError(msgs[0] ?? json.message ?? t('errors.validation'));
         } else {
-          setError(json.message ?? 'Failed to submit review. Please try again.');
+          setError(json.message ?? t('errors.submit'));
         }
       }
     } catch {
-      setError('Network error. Please check your connection and try again.');
+      setError(t('errors.network'));
     } finally {
       setSubmitting(false);
     }
@@ -199,6 +201,7 @@ export default function ReviewSubmitModal({
       >
         <div
           onClick={e => e.stopPropagation()}
+          role="dialog" aria-modal="true" aria-label={t('title')}
           style={{
             background: '#fff', borderRadius: 24, padding: 0,
             maxWidth: 520, width: '100%', maxHeight: '92vh', overflowY: 'auto',
@@ -218,10 +221,10 @@ export default function ReviewSubmitModal({
                 <CheckCircle size={32} color="#10b981" />
               </div>
               <h3 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: '0 0 8px' }}>
-                Review Submitted!
+                {t('successTitle')}
               </h3>
               <p style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>
-                Thank you for your feedback 🎉
+                {t('successBody')}
               </p>
             </div>
           ) : (
@@ -232,10 +235,11 @@ export default function ReviewSubmitModal({
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}>
                 <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', margin: 0 }}>
-                  Leave a Review
+                  {t('title')}
                 </h2>
                 <button
                   onClick={onClose}
+                  aria-label={t('close')}
                   style={{
                     width: 32, height: 32, borderRadius: '50%',
                     border: '1.5px solid #e5e7eb', background: '#f8fafc',
@@ -280,7 +284,7 @@ export default function ReviewSubmitModal({
                     fontSize: 12, fontWeight: 800, color: '#64748b', margin: '0 0 10px',
                     textTransform: 'uppercase', letterSpacing: '0.07em',
                   }}>
-                    Overall Rating <span style={{ color: '#ef4444' }}>*</span>
+                    {t('overall')} <span style={{ color: '#ef4444' }}>*</span>
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ display: 'flex', gap: 6 }}>
@@ -292,6 +296,8 @@ export default function ReviewSubmitModal({
                           onMouseEnter={() => setHoverRating(i)}
                           onMouseLeave={() => setHoverRating(0)}
                           onClick={() => setRating(i)}
+                          aria-label={t('starN', { count: i })}
+                          aria-pressed={rating === i}
                           style={{
                             background: 'none', border: 'none', cursor: 'pointer', padding: 2,
                             transition: 'transform 0.1s',
@@ -312,7 +318,7 @@ export default function ReviewSubmitModal({
                         color: HOVER_COLORS[displayRating - 1],
                         transition: 'color 0.15s',
                       }}>
-                        {HOVER_LABELS[displayRating - 1]}
+                        {t(`ratingLabels.${displayRating}`)}
                       </span>
                     )}
                   </div>
@@ -325,7 +331,7 @@ export default function ReviewSubmitModal({
                       fontSize: 12, fontWeight: 800, color: '#64748b', margin: '0 0 10px',
                       textTransform: 'uppercase', letterSpacing: '0.07em',
                     }}>
-                      Quick Tags (select up to 6)
+                      {t('tags')}
                     </p>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {tags.map(tag => {
@@ -362,15 +368,16 @@ export default function ReviewSubmitModal({
                     fontSize: 12, fontWeight: 800, color: '#64748b', margin: '0 0 8px',
                     textTransform: 'uppercase', letterSpacing: '0.07em',
                   }}>
-                    Your Review{' '}
+                    {t('yourReview')}{' '}
                     <span style={{ fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>
-                      (optional, min 10 chars)
+                      {t('yourReviewHint')}
                     </span>
                   </p>
                   <textarea
                     value={body}
                     onChange={e => setBody(e.target.value)}
-                    placeholder="Tell others about your experience with this product…"
+                    placeholder={t('placeholder')}
+                    aria-label={t('yourReview')}
                     rows={4}
                     maxLength={2000}
                     style={{
@@ -380,7 +387,7 @@ export default function ReviewSubmitModal({
                       boxSizing: 'border-box', lineHeight: 1.6,
                     }}
                   />
-                  <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'right', margin: '4px 0 0' }}>
+                  <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'end', margin: '4px 0 0' }}>
                     {body.length}/2000
                   </p>
                 </div>
@@ -391,7 +398,7 @@ export default function ReviewSubmitModal({
                     fontSize: 12, fontWeight: 800, color: '#64748b', margin: '0 0 8px',
                     textTransform: 'uppercase', letterSpacing: '0.07em',
                   }}>
-                    Add Photos (up to 6, max 5MB each)
+                    {t('photos')}
                   </p>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {previews.map((src, i) => (
@@ -402,11 +409,12 @@ export default function ReviewSubmitModal({
                           borderRadius: 10, overflow: 'hidden', border: '1.5px solid #e5e7eb',
                         }}
                       >
-                        <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={src} alt={t('photoN', { n: i + 1 })} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <button
                           onClick={() => removeImage(i)}
+                          aria-label={t('removePhoto')}
                           style={{
-                            position: 'absolute', top: 3, right: 3,
+                            position: 'absolute', top: 3, insetInlineEnd: 3,
                             width: 20, height: 20, borderRadius: '50%',
                             background: 'rgba(0,0,0,0.65)', border: 'none',
                             cursor: 'pointer', display: 'flex',
@@ -430,7 +438,7 @@ export default function ReviewSubmitModal({
                         }}
                       >
                         <Upload size={18} />
-                        Add Photo
+                        {t('addPhoto')}
                       </button>
                     )}
                     <input
@@ -453,16 +461,17 @@ export default function ReviewSubmitModal({
                     {isAnon ? <EyeOff size={16} color="#64748b" /> : <Eye size={16} color="#64748b" />}
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0 }}>
-                        Post anonymously
+                        {t('anonymous')}
                       </p>
                       <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
-                        Your name will appear as "A***a"
+                        {t('anonymousHint')}
                       </p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsAnon(a => !a)}
+                    role="switch" aria-checked={isAnon} aria-label={t('anonymous')}
                     style={{
                       width: 44, height: 24, borderRadius: 999, border: 'none',
                       cursor: 'pointer', transition: 'all 0.2s',
@@ -470,9 +479,9 @@ export default function ReviewSubmitModal({
                     }}
                   >
                     <span style={{
-                      position: 'absolute', top: 2, left: isAnon ? 22 : 2,
+                      position: 'absolute', top: 2, insetInlineStart: isAnon ? 22 : 2,
                       width: 20, height: 20, borderRadius: '50%',
-                      background: '#fff', transition: 'left 0.2s',
+                      background: '#fff', transition: 'inset-inline-start 0.2s',
                       boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
                     }} />
                   </button>
@@ -506,7 +515,7 @@ export default function ReviewSubmitModal({
                 >
                   {submitting
                     ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} />
-                    : '⭐ Submit Review'
+                    : t('submit')
                   }
                 </button>
               </div>

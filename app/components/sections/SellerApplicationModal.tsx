@@ -57,7 +57,7 @@ function ModalShell({ children, onClose }: { children: React.ReactNode; onClose:
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+          className="absolute top-4 end-4 z-10 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
         >
           <X size={14} className="text-gray-600" />
         </button>
@@ -264,7 +264,7 @@ export default function SellerApplicationModal({ onClose }: Props) {
               {s < 3 && <div className={`h-px w-8 transition-all ${step > s ? 'bg-green-400' : 'bg-gray-200'}`} />}
             </div>
           ))}
-          <span className="ml-2 text-xs text-gray-400 font-medium">
+          <span className="ms-2 text-xs text-gray-400 font-medium">
             {step === 1 ? 'Business Info' : step === 2 ? 'Location' : 'Media & Socials'}
           </span>
         </div>
@@ -288,7 +288,7 @@ export default function SellerApplicationModal({ onClose }: Props) {
                   />
                   {namePrefilled && (
                     <div
-                      className="absolute right-3 top-1/2 -translate-y-1/2"
+                      className="absolute end-3 top-1/2 -translate-y-1/2"
                       title="Auto-filled from your account"
                     >
                       <div className="flex items-center gap-1 bg-green-50 border border-green-200 rounded-full px-1.5 py-0.5">
@@ -328,7 +328,7 @@ export default function SellerApplicationModal({ onClose }: Props) {
                   <option value="">Select a category…</option>
                   {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
-                <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <ChevronDown size={15} className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
             </Field>
 
@@ -340,7 +340,7 @@ export default function SellerApplicationModal({ onClose }: Props) {
                 onChange={handleChange('business_description')}
                 className={inputCls(errors.business_description) + ' resize-none'}
               />
-              <span className="text-xs text-gray-400 text-right">
+              <span className="text-xs text-gray-400 text-end">
                 {form.business_description.length} / 2000
               </span>
             </Field>
@@ -364,7 +364,7 @@ export default function SellerApplicationModal({ onClose }: Props) {
                   <option value="">Select your wilaya…</option>
                   {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
                 </select>
-                <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <ChevronDown size={15} className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
             </Field>
             <Field label="City / Delegation" id="city" error={errors.city}>

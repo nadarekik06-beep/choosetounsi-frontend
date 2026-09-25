@@ -8,6 +8,7 @@ import {
   Eye, EyeOff, Mail, Lock, User, AlertCircle,
   Loader2, ShoppingBag, Store, TrendingUp, Shield, CheckCircle2,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 function GoogleIcon() {
   return (
@@ -21,6 +22,7 @@ function GoogleIcon() {
 }
 
 function RegisterForm() {
+  const t      = useTranslations('auth');
   const router = useRouter();
 
   const [name,          setName]          = useState('');
@@ -46,10 +48,10 @@ useEffect(() => {
     e.preventDefault();
     setError('');
     if (!name.trim() || !email.trim() || !password.trim() || !confirm.trim()) {
-      setError('Please fill in all fields.'); return;
+      setError(t('errors.fillAll')); return;
     }
-    if (password !== confirm) { setError('Passwords do not match.'); return; }
-    if (password.length < 8)  { setError('Password must be at least 8 characters.'); return; }
+    if (password !== confirm) { setError(t('errors.mismatch')); return; }
+    if (password.length < 8)  { setError(t('errors.minLength')); return; }
 
     setLoading(true);
     try {
@@ -62,7 +64,7 @@ useEffect(() => {
       // Server no longer returns a token — redirect to verification page
       router.push(`/auth/verify-email?email=${encodeURIComponent(result.email)}`);
     } catch (err: any) {
-      setError(err?.message ?? 'Something went wrong. Please try again.');
+      setError(err?.message ?? t('errors.generic'));
       setLoading(false);
     }
   };
@@ -73,7 +75,7 @@ useEffect(() => {
     try {
       await loginWithGoogle();
     } catch {
-      setError('Could not connect to Google. Please try again.');
+      setError(t('errors.googleConnect'));
       setGoogleLoading(false);
     }
   };
@@ -93,7 +95,7 @@ useEffect(() => {
         {/* ══ LEFT — form ══ */}
         <div className="flex-1 flex flex-col justify-center px-10 py-12 lg:px-14">
           <div className="flex items-center gap-2.5 mb-8">
-              <img src="/images/logo-chili.png" alt="ChooseTounsi" className="h-9 w-9 object-contain" />
+              <img src="/images/logo-chili.png" alt={t('logoAlt')} className="h-9 w-9 object-contain" />
               <span className="text-xl font-black text-slate-900 tracking-tight">
                 Choose<span className="text-[#E63946]">Tounsi</span>
               </span>
@@ -101,7 +103,7 @@ useEffect(() => {
 
           <div className="mb-7">
             <h1 className="text-3xl font-black text-slate-900 leading-tight">
-              Create your<br /><span className="text-[#E63946]">Account</span>
+              {t('register.title1')}<br /><span className="text-[#E63946]">{t('register.title2')}</span>
             </h1>
             <div className="w-10 h-1 bg-[#E63946] rounded-full mt-3" />
           </div>
@@ -119,86 +121,86 @@ useEffect(() => {
             className="w-full flex items-center justify-center gap-3 py-3 rounded-2xl border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all duration-150 text-sm font-semibold text-slate-700 mb-5 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {googleLoading ? <Loader2 size={18} className="animate-spin" /> : <GoogleIcon />}
-            Continue with Google
+            {t('continueGoogle')}
           </button>
 
           <div className="flex items-center gap-3 mb-5">
             <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs text-slate-400 font-medium">or register with email</span>
+            <span className="text-xs text-slate-400 font-medium">{t('register.orEmail')}</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative group">
-              <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
+              <User size={16} className="absolute start-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
               <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-                placeholder="Full name" autoComplete="name" required
-                className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150" />
+                placeholder={t('fullName')} aria-label={t('fullName')} autoComplete="name" required
+                className="w-full ps-11 pe-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150" />
             </div>
 
             <div className="relative group">
-              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
+              <Mail size={16} className="absolute start-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address" autoComplete="email" required
-                className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150" />
+                placeholder={t('email')} aria-label={t('email')} autoComplete="email" required
+                className="w-full ps-11 pe-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150" />
             </div>
 
             <div className="relative group">
-              <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
+              <Lock size={16} className="absolute start-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
               <input type={showPass ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password (min. 8 characters)" autoComplete="new-password" required
-                className="w-full pl-11 pr-12 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150" />
-              <button type="button" onClick={() => setShowPass(!showPass)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition" tabIndex={-1}>
+                placeholder={t('register.passwordHint')} aria-label={t('password')} autoComplete="new-password" required
+                className="w-full ps-11 pe-12 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150" />
+              <button type="button" onClick={() => setShowPass(!showPass)} aria-label={showPass ? t('hidePassword') : t('showPassword')}
+                className="absolute end-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition" tabIndex={-1}>
                 {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
 
             <div className="relative group">
-              <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
+              <Lock size={16} className="absolute start-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E63946] transition-colors pointer-events-none" />
               <input type={showConfirm ? 'text' : 'password'} value={confirm} onChange={(e) => setConfirm(e.target.value)}
-                placeholder="Confirm password" autoComplete="new-password" required
-                className="w-full pl-11 pr-12 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150" />
-              <button type="button" onClick={() => setShowConfirm(!showConfirm)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition" tabIndex={-1}>
+                placeholder={t('confirmPassword')} aria-label={t('confirmPassword')} autoComplete="new-password" required
+                className="w-full ps-11 pe-12 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E63946]/25 focus:border-[#E63946] focus:bg-white transition-all duration-150" />
+              <button type="button" onClick={() => setShowConfirm(!showConfirm)} aria-label={showConfirm ? t('hidePassword') : t('showPassword')}
+                className="absolute end-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition" tabIndex={-1}>
                 {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                 {confirm && password === confirm && (
-                  <CheckCircle2 size={16} className="absolute -top-2 -right-2 text-green-500" />
+                  <CheckCircle2 size={16} className="absolute -top-2 -end-2 text-green-500" />
                 )}
               </button>
             </div>
 
             <button type="submit" disabled={loading || googleLoading}
               className="w-full py-3.5 mt-2 rounded-2xl bg-[#E63946] hover:bg-[#c1121f] active:scale-[0.98] text-white text-sm font-bold tracking-wide transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-500/25">
-              {loading ? <><Loader2 size={16} className="animate-spin" /> Creating account…</> : 'Create Account'}
+              {loading ? <><Loader2 size={16} className="animate-spin" /> {t('register.submitting')}</> : t('register.submit')}
             </button>
           </form>
 
           <p className="mt-6 text-xs text-center text-slate-400">
-            Already have an account?{' '}
-            <Link href="/auth/login" className="text-[#E63946] font-semibold hover:text-red-700 transition">Sign in</Link>
+            {t('register.haveAccount')}{' '}
+            <Link href="/auth/login" className="text-[#E63946] font-semibold hover:text-red-700 transition">{t('register.signIn')}</Link>
           </p>
         </div>
 
         {/* ══ RIGHT — brand ══ */}
         <div className="hidden lg:flex w-[42%] bg-[#E63946] flex-col items-center justify-center px-10 py-12 relative overflow-hidden">
-          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/[0.06]" />
-          <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-white/[0.06]" />
+          <div className="absolute -top-16 -end-16 w-64 h-64 rounded-full bg-white/[0.06]" />
+          <div className="absolute -bottom-20 -start-20 w-72 h-72 rounded-full bg-white/[0.06]" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-white/[0.04]" />
           <div className="relative z-10 text-center">
             <div className="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur flex items-center justify-center mx-auto mb-8 shadow-xl">
   <Store size={36} className="text-white" />
 </div>
-            <h2 className="text-3xl font-black text-white leading-tight mb-4">Join<br />ChooseTounsi</h2>
+            <h2 className="text-3xl font-black text-white leading-tight mb-4">{t('register.panelTitle')}<br />ChooseTounsi</h2>
             <div className="w-10 h-1 bg-white/60 rounded-full mx-auto mb-6" />
             <p className="text-white/80 text-sm leading-relaxed mb-10 font-medium">
-              Tunisia&apos;s marketplace for<br />authentic local products.
+              {t('panelTagline')}
             </p>
-            <div className="space-y-3 text-left">
+            <div className="space-y-3 text-start">
               {[
-                { icon: Store,      text: 'Shop local vendors' },
-                { icon: TrendingUp, text: 'Exclusive deals'     },
-                { icon: Shield,     text: 'Secure & verified'   },
+                { icon: Store,      text: t('register.perk1') },
+                { icon: TrendingUp, text: t('register.perk2') },
+                { icon: Shield,     text: t('perkSecure') },
               ].map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">

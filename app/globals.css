@@ -49,3 +49,33 @@ pre, table {
     touch-action: manipulation;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   i18n / RTL
+   ───────────────────────────────────────────────────────────── */
+html[lang="ar"] body {
+  font-family: var(--font-cairo), system-ui, sans-serif;
+}
+/* Arabic: one typeface everywhere (inline Latin display fonts have no Arabic glyphs),
+   except code-like elements that deliberately use monospace. */
+html[lang="ar"] body *:not(svg):not(svg *):not(code):not(pre):not(kbd):not([style*="monospace"]):not(.keep-font) {
+  font-family: var(--font-cairo), system-ui, sans-serif !important;
+  letter-spacing: normal !important;
+}
+/* Directional icons (lucide + inline SVG marked .rtl-flip) point the other way in RTL */
+[dir="rtl"] :is(
+  .lucide-chevron-right, .lucide-chevron-left,
+  .lucide-arrow-right, .lucide-arrow-left,
+  .lucide-chevrons-right, .lucide-chevrons-left,
+  .lucide-arrow-up-right, .lucide-arrow-up-left,
+  .lucide-move-right, .lucide-move-left,
+  .lucide-log-out, .lucide-log-in, .lucide-undo-2, .lucide-send,
+  .rtl-flip
+) {
+  transform: scaleX(-1);
+}
+/* Numbers, phone numbers, prices etc. that must stay left-to-right inside Arabic text */
+.ltr-iso {
+  direction: ltr;
+  unicode-bidi: isolate;
+}

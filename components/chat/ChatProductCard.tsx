@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useFlashTimeLeft } from '@/app/components/promotions/FlashCountdownBadge'
+import { formatPrice as formatLocalePrice } from '@/lib/i18n/format'
 
 const RED   = '#db142e'
 const GREEN = '#198f41'
@@ -42,10 +43,10 @@ const LABELS: Record<ChatLang, { from: string; currency: string; flash: string; 
   ar: { from: 'ابتداءً من', currency: 'د.ت', flash: 'تخفيض سريع', by: '' },
 }
 
+/** Whole amounts without decimals, otherwise millimes — in the reply's language. */
 export function formatPrice(value: number, lang: ChatLang): string {
-  const isWhole = Math.abs(value - Math.round(value)) < 0.0005
-  const number  = isWhole ? String(Math.round(value)) : value.toFixed(3)
-  return `${number} ${LABELS[lang].currency}`
+  const digits = Math.abs(value - Math.round(value)) < 0.0005 ? 0 : 3
+  return formatLocalePrice(value, lang, { minimumFractionDigits: digits, maximumFractionDigits: digits })
 }
 
 function Placeholder() {

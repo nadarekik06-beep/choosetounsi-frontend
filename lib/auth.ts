@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { currentLocale, fallbackError } from '@/lib/i18n/clientLocale';
 export interface AuthUser {
   id: number;
   name: string;
@@ -57,6 +58,7 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = getToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (typeof window !== 'undefined') config.headers['Accept-Language'] = currentLocale();
   return config;
 });
 
@@ -128,7 +130,7 @@ export async function login(credentials: LoginCredentials): Promise<{ user: Auth
     return { user: data.user, redirectTo: resolveRedirectPath(data.user) };
   } catch (err: any) {
     throw {
-      message:            err?.response?.data?.message ?? 'Unable to connect.',
+      message:            err?.response?.data?.message ?? fallbackError('network'),
       status:             err?.response?.status ?? 500,
       needs_verification: err?.response?.data?.needs_verification ?? false,
       email:              err?.response?.data?.email ?? null,
@@ -152,7 +154,7 @@ export async function register(credentials: RegisterCredentials): Promise<Verifi
       ? Object.values(validationErrors as Record<string, string[]>)[0]?.[0]
       : null;
     throw {
-      message: firstError ?? err?.response?.data?.message ?? 'Unable to connect.',
+      message: firstError ?? err?.response?.data?.message ?? fallbackError('network'),
       status:  err?.response?.status ?? 500,
     } as AuthError;
   }
@@ -172,7 +174,7 @@ export async function verifyEmail(
     return { user: data.user, redirectTo: resolveRedirectPath(data.user) };
   } catch (err: any) {
     throw {
-      message:      err?.response?.data?.message ?? 'Unable to connect.',
+      message:      err?.response?.data?.message ?? fallbackError('network'),
       status:       err?.response?.status ?? 500,
       needs_resend: err?.response?.data?.needs_resend ?? false,
     } as AuthError;
@@ -188,7 +190,7 @@ export async function resendVerification(email: string): Promise<void> {
     await api.post('/auth/resend-verification', { email });
   } catch (err: any) {
     throw {
-      message: err?.response?.data?.message ?? 'Unable to connect.',
+      message: err?.response?.data?.message ?? fallbackError('network'),
       status:  err?.response?.status ?? 500,
     } as AuthError;
   }

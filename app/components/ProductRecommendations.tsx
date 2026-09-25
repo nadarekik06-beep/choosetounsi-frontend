@@ -14,6 +14,8 @@ import Link from 'next/link'
 import { ChevronRight, Loader2, Store, Star, Zap, Heart } from 'lucide-react'
 import { getToken } from '@/lib/auth'
 import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 const API_URL      = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const STORAGE_BASE = API_URL.replace(/\/api\/?$/, '')
@@ -23,9 +25,6 @@ function resolveImg(url: string | null | undefined): string | null {
   if (url.startsWith('http')) return url
   return `${STORAGE_BASE}/storage/${url.replace(/^\/storage\//, '')}`
 }
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' DT'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,6 +70,9 @@ interface SellerInfo {
 // ─── Mini product card ────────────────────────────────────────────────────────
 
 function MiniCard({ product }: { product: RecProduct }) {
+  const t  = useTranslations('recommendations')
+  const tc = useTranslations('productCard')
+  const { price: fmt } = useFormat()
   const [imgErr, setImgErr] = useState(false)
   const img        = resolveImg(product.primary_image_url)
   const outOfStock = product.stock <= 0
@@ -88,7 +90,7 @@ function MiniCard({ product }: { product: RecProduct }) {
       return pct > 0 ? `-${pct}%` : null
     }
     const saved = originalPrice - effectivePrice
-    return saved > 0 ? `-${saved.toFixed(2)} DT` : null
+    return saved > 0 ? `-${fmt(saved)}` : null
   })()
 
   return (
@@ -118,7 +120,7 @@ function MiniCard({ product }: { product: RecProduct }) {
           {/* Discount badge — top left */}
           {hasDiscount && badgeLabel && (
             <span style={{
-              position: 'absolute', top: 6, left: 6,
+              position: 'absolute', top: 6, insetInlineStart: 6,
               fontSize: 8, fontWeight: 900,
               background: product.promotion?.is_flash_sale
                 ? 'linear-gradient(135deg,#dc2626,#f97316)'
@@ -134,32 +136,32 @@ function MiniCard({ product }: { product: RecProduct }) {
           {/* Flash badge */}
           {product.promotion?.is_flash_sale && (
             <span style={{
-              position: 'absolute', top: hasDiscount ? 22 : 6, left: 6,
+              position: 'absolute', top: hasDiscount ? 22 : 6, insetInlineStart: 6,
               fontSize: 7, fontWeight: 900,
               background: 'rgba(0,0,0,0.7)', color: '#fbbf24',
               padding: '2px 5px', borderRadius: 999,
               letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 2,
             }}>
-              ⚡ FLASH
+              ⚡ {t('flash')}
             </span>
           )}
           <FlashCountdownBadge promotion={product.promotion} />
 
           {product.is_sponsored && (
-            <span style={{ position: 'absolute', top: 6, left: 6, fontSize: 8, fontWeight: 800, background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', color: '#f59e0b', padding: '2px 6px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              ⭐ Trending
+            <span style={{ position: 'absolute', top: 6, insetInlineStart: 6, fontSize: 8, fontWeight: 800, background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', color: '#f59e0b', padding: '2px 6px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              ⭐ {tc('trendingPlain')}
             </span>
           )}
 
           {product.featured && !product.is_sponsored && (
-            <span style={{ position: 'absolute', top: 6, left: hasDiscount ? 'auto' : 6, right: hasDiscount ? 'auto' : 'auto', fontSize: 8, fontWeight: 800, background: '#198f41', color: '#fff', padding: '2px 6px', borderRadius: 999, textTransform: 'uppercase' }}>
-              TOP
+            <span style={{ position: 'absolute', top: 6, insetInlineStart: hasDiscount ? 'auto' : 6, fontSize: 8, fontWeight: 800, background: '#198f41', color: '#fff', padding: '2px 6px', borderRadius: 999, textTransform: 'uppercase' }}>
+              {t('top')}
             </span>
           )}
 
           {outOfStock && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 9, fontWeight: 900, background: '#111', color: '#fff', padding: '3px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Sold Out</span>
+              <span style={{ fontSize: 9, fontWeight: 900, background: '#111', color: '#fff', padding: '3px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{tc('soldOut')}</span>
             </div>
           )}
         </div>
@@ -194,7 +196,7 @@ function MiniCard({ product }: { product: RecProduct }) {
               background: '#f0fdf4', padding: '1px 5px',
               borderRadius: 999, display: 'inline-block', marginTop: 3,
             }}>
-              Save {fmt(originalPrice - effectivePrice)}
+              {t('save', { amount: fmt(originalPrice - effectivePrice) })}
             </p>
           )}
         </div>
@@ -264,6 +266,7 @@ function RecommendationSection({
 // ─── From-seller section ──────────────────────────────────────────────────────
 
 function FromSellerSection({ slug }: { slug: string }) {
+  const t = useTranslations('recommendations')
   const [products, setProducts] = useState<RecProduct[]>([])
   const [seller,   setSeller]   = useState<SellerInfo | null>(null)
   const [loading,  setLoading]  = useState(true)
@@ -290,7 +293,7 @@ function FromSellerSection({ slug }: { slug: string }) {
   if (!loading && products.length === 0) return null
 
   const planBadgeColor = seller?.plan === 'black' ? '#f59e0b' : seller?.plan === 'red' ? '#dc2626' : '#198f41'
-  const planLabel      = seller?.plan === 'black' ? 'Black Pepper' : seller?.plan === 'red' ? 'Red Pepper' : 'Green Pepper'
+  const planLabel      = seller?.plan === 'black' ? 'Black Pepper' : seller?.plan === 'red' ? 'Red Pepper' : 'Green Pepper'  // plan names are brand names
 
   return (
     <div style={{ marginBottom: 48 }}>
@@ -313,13 +316,13 @@ function FromSellerSection({ slug }: { slug: string }) {
                 </span>
               </div>
               <p style={{ fontSize: 11, color: '#94a3b8', margin: 0, fontWeight: 500 }}>
-                {seller.total_products} products
+                {t('productsCount', { count: seller.total_products })}
                 {seller.wilaya && ` · ${seller.wilaya}`}
               </p>
             </div>
           </div>
           <Link href={`/sellers/${seller.id}`} style={{ fontSize: 12, fontWeight: 700, color: '#dc2626', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
-            View Shop <ChevronRight size={13} />
+            {t('viewShop')} <ChevronRight size={13} />
           </Link>
         </div>
       )}
@@ -329,7 +332,7 @@ function FromSellerSection({ slug }: { slug: string }) {
           <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(220,38,38,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Store size={16} color="#dc2626" />
           </div>
-          <h3 style={{ fontSize: 17, fontWeight: 900, color: '#0f172a', margin: 0 }}>From This Seller</h3>
+          <h3 style={{ fontSize: 17, fontWeight: 900, color: '#0f172a', margin: 0 }}>{t('fromSeller')}</h3>
         </div>
       )}
 
@@ -356,6 +359,7 @@ interface Props {
 }
 
 export default function ProductRecommendations({ slug, sellerId }: Props) {
+  const t = useTranslations('recommendations')
   return (
     <>
       <style>{`
@@ -369,29 +373,29 @@ export default function ProductRecommendations({ slug, sellerId }: Props) {
         <div style={{ height: 1, background: '#f1f5f9', margin: '48px 0' }} />
 
         <RecommendationSection
-          title="Similar Items"
+          title={t('similar')}
           icon={<Star size={16} />}
           endpoint="similar"
           slug={slug}
-          emptyMsg="No similar products found."
+          emptyMsg={t('similarEmpty')}
         />
 
         <RecommendationSection
-          title="Complete the Look"
+          title={t('completeLook')}
           icon={<Zap size={16} />}
           endpoint="complementary"
           slug={slug}
-          emptyMsg="No complementary products yet."
+          emptyMsg={t('completeLookEmpty')}
         />
 
         <FromSellerSection slug={slug} />
 
         <RecommendationSection
-          title="You Might Also Like"
+          title={t('alsoLike')}
           icon={<Heart size={16} />}
           endpoint="recommended"
           slug={slug}
-          emptyMsg="No recommendations yet."
+          emptyMsg={t('alsoLikeEmpty')}
         />
       </div>
     </>

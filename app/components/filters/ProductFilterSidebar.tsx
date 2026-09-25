@@ -20,6 +20,8 @@
  */
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API    = `${ORIGIN}/api`
@@ -36,19 +38,20 @@ export interface Attr { id: number; slug: string; name: string; type: string; op
 
 export const DEFAULT_FILTERS: F = { q: '', pMin: '', pMax: '', inStock: false, isPack: false, sort: 'created_at', attrs: {} }
 
+// `l` is a message key in the `filters` namespace.
 export const SORTS: { k: Sort; l: string }[] = [
-  { k: 'created_at', l: 'Newest First' },
-  { k: 'views',      l: 'Most Popular' },
-  { k: 'price_asc',  l: 'Price: Low → High' },
-  { k: 'price_desc', l: 'Price: High → Low' },
+  { k: 'created_at', l: 'sortNewest' },
+  { k: 'views',      l: 'sortPopular' },
+  { k: 'price_asc',  l: 'sortPriceAsc' },
+  { k: 'price_desc', l: 'sortPriceDesc' },
 ]
 
 export const PRANGES = [
-  { l: 'Under 50 DT',  mn: '0',   mx: '50' },
-  { l: '50 – 100 DT',  mn: '50',  mx: '100' },
-  { l: '100 – 200 DT', mn: '100', mx: '200' },
-  { l: '200 – 500 DT', mn: '200', mx: '500' },
-  { l: 'Over 500 DT',  mn: '500', mx: '' },
+  { mn: '0',   mx: '50' },
+  { mn: '50',  mx: '100' },
+  { mn: '100', mx: '200' },
+  { mn: '200', mx: '500' },
+  { mn: '500', mx: '' },
 ]
 
 interface Props {
@@ -65,8 +68,15 @@ interface Props {
 }
 
 export default function ProductFilterSidebar({
-  f, setF, total, catSlug = '', subSlug = '', sellerId, searchPlaceholder = 'Search…', hideSearch = false, mOpen, setMOpen,
+  f, setF, total, catSlug = '', subSlug = '', sellerId, searchPlaceholder, hideSearch = false, mOpen, setMOpen,
 }: Props) {
+  const t   = useTranslations('filters')
+  const fmt = useFormat()
+  const whole = (v: string) => fmt.price(v, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  const rangeLabel = (mn: string, mx: string) =>
+    !mx ? t('rangeOver', { amount: whole(mn) })
+    : mn === '0' ? t('rangeUnder', { amount: whole(mx) })
+    : t('rangeBetween', { min: fmt.number(mn), max: whole(mx) })
   const [attrs, setAttrs] = useState<Attr[]>([])
   const [aLoad, setALoad] = useState(false)
   const [open, setOpen]   = useState(new Set<string>(['sort', 'price', 'avail']))
@@ -104,7 +114,7 @@ export default function ProductFilterSidebar({
   const hasAny = !!(f.q || f.inStock || f.pMin || f.pMax || Object.values(f.attrs).some(v => v.length))
 
   const Acc = ({ k, label }: { k: string; label: string }) => (
-    <button className="pfs-head" onClick={() => tog(k)}>
+    <button className="pfs-head" onClick={() => tog(k)} aria-expanded={open.has(k)}>
       <span>{label}</span>
       <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
         style={{ transform: open.has(k) ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
@@ -116,46 +126,46 @@ export default function ProductFilterSidebar({
   const inner = (
     <aside className="pfs">
       <div className="pfs-hd">
-        <div><p className="pfs-title">Filters</p><p className="pfs-count">{total.toLocaleString()} products</p></div>
-        {hasAny && <button className="pfs-clear" onClick={() => setF({ ...DEFAULT_FILTERS, sort: f.sort })}>✕ Clear</button>}
+        <div><p className="pfs-title">{t('title')}</p><p className="pfs-count">{t('productCount', { count: total })}</p></div>
+        {hasAny && <button className="pfs-clear" onClick={() => setF({ ...DEFAULT_FILTERS, sort: f.sort })}>{t('clear')}</button>}
       </div>
       {!hideSearch && (
         <div className="pfs-blk">
           <div className="pfs-search">
             <svg width="12" height="12" fill="none" stroke="#bbb" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-            <input placeholder={searchPlaceholder} value={f.q} onChange={e => upd({ q: e.target.value })} />
-            {f.q && <button onClick={() => upd({ q: '' })} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', display: 'flex', padding: 0 }}>
+            <input placeholder={searchPlaceholder ?? t('searchPlaceholder')} aria-label={searchPlaceholder ?? t('searchPlaceholder')} value={f.q} onChange={e => upd({ q: e.target.value })} />
+            {f.q && <button onClick={() => upd({ q: '' })} aria-label={t('clearSearch')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', display: 'flex', padding: 0 }}>
               <svg width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></svg>
             </button>}
           </div>
         </div>
       )}
-      <div className="pfs-acc"><Acc k="sort" label="Sort By" />
+      <div className="pfs-acc"><Acc k="sort" label={t('sortBy')} />
         {open.has('sort') && <div className="pfs-body">{SORTS.map(s => (
           <button key={s.k} className={`pfs-sort${f.sort === s.k ? ' on' : ''}`} onClick={() => upd({ sort: s.k })}>
-            <span className="pfs-dot" />{s.l}
-            {f.sort === s.k && <svg width="9" height="9" fill="none" stroke="#db142e" strokeWidth="2.5" viewBox="0 0 24 24" style={{ marginLeft: 'auto' }}><path d="M20 6L9 17l-5-5" /></svg>}
+            <span className="pfs-dot" />{t(s.l)}
+            {f.sort === s.k && <svg width="9" height="9" fill="none" stroke="#db142e" strokeWidth="2.5" viewBox="0 0 24 24" style={{ marginInlineStart: 'auto' }}><path d="M20 6L9 17l-5-5" /></svg>}
           </button>
         ))}</div>}
       </div>
-      <div className="pfs-acc"><Acc k="price" label="Price Range" />
+      <div className="pfs-acc"><Acc k="price" label={t('priceRange')} />
         {open.has('price') && <div className="pfs-body">
           <div className="pfs-pr-row">
-            <input type="number" placeholder="Min" value={f.pMin} onChange={e => upd({ pMin: e.target.value })} className="pfs-pin" />
+            <input type="number" placeholder={t('min')} aria-label={t('minPrice')} value={f.pMin} onChange={e => upd({ pMin: e.target.value })} className="pfs-pin" />
             <span style={{ color: '#bbb', fontSize: 12 }}>–</span>
-            <input type="number" placeholder="Max" value={f.pMax} onChange={e => upd({ pMax: e.target.value })} className="pfs-pin" />
+            <input type="number" placeholder={t('max')} aria-label={t('maxPrice')} value={f.pMax} onChange={e => upd({ pMax: e.target.value })} className="pfs-pin" />
           </div>
-          {PRANGES.map(r => <button key={r.l} className={`pfs-pr${isR(r.mn, r.mx) ? ' on' : ''}`} onClick={() => applyR(r.mn, r.mx)}>{r.l}</button>)}
+          {PRANGES.map(r => <button key={`${r.mn}-${r.mx}`} className={`pfs-pr${isR(r.mn, r.mx) ? ' on' : ''}`} onClick={() => applyR(r.mn, r.mx)}>{rangeLabel(r.mn, r.mx)}</button>)}
         </div>}
       </div>
-      <div className="pfs-acc"><Acc k="avail" label="Availability" />
+      <div className="pfs-acc"><Acc k="avail" label={t('availability')} />
         {open.has('avail') && <div className="pfs-body" style={{ padding: '6px 16px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <label className="pfs-trow">
-            <span>In stock only</span>
+            <span>{t('inStockOnly')}</span>
             <div className={`pfs-tgl${f.inStock ? ' on' : ''}`} onClick={() => upd({ inStock: !f.inStock })}><div className="pfs-tgl-k" /></div>
           </label>
           <label className="pfs-trow">
-            <span>Packs only</span>
+            <span>{t('packsOnly')}</span>
             <div className={`pfs-tgl${f.isPack ? ' on' : ''}`} onClick={() => upd({ isPack: !f.isPack })}><div className="pfs-tgl-k" /></div>
           </label>
         </div>}
@@ -170,7 +180,7 @@ export default function ProductFilterSidebar({
         const isOpen = open.has(a.slug); const sel = f.attrs[a.slug] ?? []
         return (
           <div key={a.id} className="pfs-acc">
-            <button className="pfs-head" onClick={() => tog(a.slug)}>
+            <button className="pfs-head" onClick={() => tog(a.slug)} aria-expanded={isOpen}>
               <span>{a.name}{sel.length > 0 && <span className="pfs-badge">{sel.length}</span>}</span>
               <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
                 style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s', flexShrink: 0 }}>
@@ -201,7 +211,7 @@ export default function ProductFilterSidebar({
           </div>
         )
       })}
-      <button className="pfs-apply" onClick={() => setMOpen(false)}>Apply Filters</button>
+      <button className="pfs-apply" onClick={() => setMOpen(false)}>{t('apply')}</button>
     </aside>
   )
 
@@ -210,6 +220,7 @@ export default function ProductFilterSidebar({
       <style>{`
         @keyframes pfsFadeIn { from{opacity:0} to{opacity:1} }
         @keyframes pfsSlideIn { from{transform:translateX(-100%);opacity:0} to{transform:translateX(0);opacity:1} }
+        @keyframes pfsSlideInRtl { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
         @keyframes pfsShimmer { 0%{background-position:-700px 0} 100%{background-position:700px 0} }
 
         .pfs-desk{display:block}
@@ -229,7 +240,7 @@ export default function ProductFilterSidebar({
         .pfs-head{width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:#444;transition:color .12s}
         .pfs-head:hover{color:#db142e}
         .pfs-body{padding:3px 15px 10px}
-        .pfs-sort{display:flex;align-items:center;gap:7px;width:100%;padding:7px 7px;border-radius:6px;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:500;color:#555;text-align:left;transition:all .11s}
+        .pfs-sort{display:flex;align-items:center;gap:7px;width:100%;padding:7px 7px;border-radius:6px;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:500;color:#555;text-align:start;transition:all .11s}
         .pfs-sort:hover{background:#f8f8f8;color:#db142e}
         .pfs-sort.on{background:rgba(219,20,46,.05);color:#db142e;font-weight:700}
         .pfs-dot{width:5px;height:5px;border-radius:50%;border:1.5px solid currentColor;flex-shrink:0;transition:background .11s}
@@ -238,16 +249,17 @@ export default function ProductFilterSidebar({
         .pfs-pin{flex:1;min-width:0;padding:6px 8px;border:1.5px solid #e5e7eb;border-radius:7px;font-size:12px;font-family:'Outfit',sans-serif;color:#111;background:#f8f8f8;outline:none;-moz-appearance:textfield;transition:border-color .12s}
         .pfs-pin::-webkit-outer-spin-button,.pfs-pin::-webkit-inner-spin-button{-webkit-appearance:none}
         .pfs-pin:focus{border-color:#db142e;background:#fff}.pfs-pin::placeholder{color:#ccc}
-        .pfs-pr{display:flex;align-items:center;gap:7px;width:100%;padding:7px 7px;border-radius:6px;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;color:#555;text-align:left;transition:all .11s}
+        .pfs-pr{display:flex;align-items:center;gap:7px;width:100%;padding:7px 7px;border-radius:6px;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;color:#555;text-align:start;transition:all .11s}
         .pfs-pr::before{content:'';display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid #d1d5db;flex-shrink:0;background:#fff;transition:all .11s}
         .pfs-pr:hover{background:#f8f8f8;color:#db142e}.pfs-pr:hover::before{border-color:#db142e}
         .pfs-pr.on{color:#db142e;font-weight:700}.pfs-pr.on::before{background:#db142e;border-color:#db142e;box-shadow:inset 0 0 0 3px #fff}
         .pfs-trow{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:500;color:#374151;cursor:pointer}
         .pfs-tgl{width:35px;height:19px;border-radius:999px;background:#e5e7eb;position:relative;cursor:pointer;flex-shrink:0;transition:background .19s}
         .pfs-tgl.on{background:#db142e}
-        .pfs-tgl-k{position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.14);transition:transform .19s}
+        .pfs-tgl-k{position:absolute;top:2px;inset-inline-start:2px;width:15px;height:15px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.14);transition:transform .19s}
         .pfs-tgl.on .pfs-tgl-k{transform:translateX(16px)}
-        .pfs-badge{display:inline-flex;align-items:center;justify-content:center;background:#db142e;color:#fff;font-size:9px;font-weight:900;border-radius:999px;min-width:14px;height:14px;margin-left:5px;padding:0 3px}
+        [dir=rtl] .pfs-tgl.on .pfs-tgl-k{transform:translateX(-16px)}
+        .pfs-badge{display:inline-flex;align-items:center;justify-content:center;background:#db142e;color:#fff;font-size:9px;font-weight:900;border-radius:999px;min-width:14px;height:14px;margin-inline-start:5px;padding:0 3px}
         .pfs-sw-row{display:flex;flex-wrap:wrap;gap:7px;padding:4px 0}
         .pfs-sw{width:24px;height:24px;border-radius:50%;background:var(--c,#ccc);border:2px solid #e5e7eb;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:transform .11s,border-color .11s,box-shadow .11s}
         .pfs-sw:hover{transform:scale(1.1)}.pfs-sw.on{border-color:#db142e;transform:scale(1.15);box-shadow:0 0 0 3px rgba(219,20,46,.17)}
@@ -261,7 +273,8 @@ export default function ProductFilterSidebar({
         .pfs-pill:hover{border-color:#db142e;color:#db142e}.pfs-pill.on{background:#db142e;border-color:#db142e;color:#fff}
         .pfs-apply{display:none;width:calc(100% - 30px);margin:11px 15px 15px;padding:10px;background:#db142e;color:#fff;font-weight:800;font-size:12.5px;border:none;border-radius:9px;cursor:pointer;font-family:'Outfit',sans-serif;align-items:center;justify-content:center}
         .pfs-bd{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:200;animation:pfsFadeIn .17s ease;backdrop-filter:blur(2px)}
-        .pfs-drawer{position:fixed;left:0;top:0;bottom:0;z-index:201;width:282px;max-width:90vw;overflow-y:auto;background:#fff;box-shadow:4px 0 24px rgba(0,0,0,.12);animation:pfsSlideIn .22s ease}
+        .pfs-drawer{position:fixed;inset-inline-start:0;top:0;bottom:0;z-index:201;width:282px;max-width:90vw;overflow-y:auto;background:#fff;box-shadow:4px 0 24px rgba(0,0,0,.12);animation:pfsSlideIn .22s ease}
+        [dir=rtl] .pfs-drawer{box-shadow:-4px 0 24px rgba(0,0,0,.12);animation-name:pfsSlideInRtl}
         .pfs-drawer .pfs{border-radius:0;position:static;box-shadow:none;border:none;max-height:none}
         .pfs-drawer .pfs-apply{display:flex}
         .pfs-skln{border-radius:4px;background:linear-gradient(90deg,#f2f2f2 25%,#fafafa 50%,#f2f2f2 75%);background-size:700px 100%;animation:pfsShimmer 1.3s infinite linear}

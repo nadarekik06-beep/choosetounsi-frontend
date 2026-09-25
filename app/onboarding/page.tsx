@@ -14,6 +14,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getToken, getUser, refreshUser } from '@/lib/auth'
 import { Loader2, ChevronRight, ChevronLeft, Check, X, ShoppingBag, Sparkles } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 
@@ -39,6 +40,7 @@ type Step = typeof STEPS[number]
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function OnboardingPage() {
+  const t            = useTranslations('onboarding')
   const router       = useRouter()
   const searchParams = useSearchParams()
   const redirect     = searchParams.get('redirect') ?? '/'
@@ -197,10 +199,10 @@ export default function OnboardingPage() {
             </div>
           </div>
           <h1 style={{ fontSize: 26, fontWeight: 900, color: '#0f172a', margin: '0 0 6px', letterSpacing: '-0.02em' }}>
-            Personalize Your Experience
+            {t('title')}
           </h1>
           <p style={{ fontSize: 14, color: '#64748b', margin: 0, fontWeight: 500 }}>
-            Help us show you the products you'll love most
+            {t('subtitle')}
           </p>
         </div>
 
@@ -234,9 +236,9 @@ export default function OnboardingPage() {
           {step === 'gender' && (
             <div>
               <div style={{ marginBottom: 24 }}>
-                <p style={{ fontSize: 11, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>Step 1 of 4</p>
-                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>Who do you shop for?</h2>
-                <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0', fontWeight: 500 }}>We'll prioritize products that match your preference. Optional.</p>
+                <p style={{ fontSize: 11, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>{t('stepOf', { n: 1, total: 4 })}</p>
+                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>{t('genderTitle')}</h2>
+                <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0', fontWeight: 500 }}>{t('genderHint')}</p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
                 {(data?.genders ?? []).map(g => (
@@ -244,6 +246,7 @@ export default function OnboardingPage() {
                     key={g.value}
                     className={`ob-gender${selectedGender === g.value ? ' selected' : ''}`}
                     onClick={() => setSelectedGender(prev => prev === g.value ? null : g.value)}
+                    aria-pressed={selectedGender === g.value}
                     style={{ padding: '20px 12px', borderRadius: 14, border: `2px solid ${selectedGender === g.value ? '#dc2626' : '#e5e7eb'}`, background: '#fff', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', textAlign: 'center' }}
                   >
                     <div style={{ fontSize: 28, marginBottom: 6 }}>
@@ -260,9 +263,9 @@ export default function OnboardingPage() {
           {step === 'categories' && (
             <div>
               <div style={{ marginBottom: 20 }}>
-                <p style={{ fontSize: 11, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>Step 2 of 4</p>
-                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>What do you shop for?</h2>
-                <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0', fontWeight: 500 }}>Pick all that apply.</p>
+                <p style={{ fontSize: 11, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>{t('stepOf', { n: 2, total: 4 })}</p>
+                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>{t('categoriesTitle')}</h2>
+                <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0', fontWeight: 500 }}>{t('categoriesHint')}</p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, maxHeight: 320, overflowY: 'auto', marginBottom: 20 }}>
                 {(data?.categories ?? []).map(cat => {
@@ -272,18 +275,19 @@ export default function OnboardingPage() {
                       key={cat.id}
                       className={`ob-card${selected ? ' selected' : ''}`}
                       onClick={() => toggleCategory(cat.id)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${selected ? '#dc2626' : '#e5e7eb'}`, background: selected ? 'rgba(220,38,38,0.05)' : '#fff', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', textAlign: 'left' }}
+                      aria-pressed={selected}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${selected ? '#dc2626' : '#e5e7eb'}`, background: selected ? 'rgba(220,38,38,0.05)' : '#fff', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', textAlign: 'start' }}
                     >
                       <span style={{ fontSize: 20 }}>{cat.icon ?? '📦'}</span>
                       <span style={{ fontSize: 13, fontWeight: 700, color: selected ? '#dc2626' : '#374151' }}>{cat.name}</span>
-                      {selected && <Check size={13} color="#dc2626" style={{ marginLeft: 'auto', flexShrink: 0 }} />}
+                      {selected && <Check size={13} color="#dc2626" style={{ marginInlineStart: 'auto', flexShrink: 0 }} />}
                     </button>
                   )
                 })}
               </div>
               {selectedCategories.length > 0 && (
                 <p style={{ fontSize: 11, color: '#dc2626', fontWeight: 700, margin: 0 }}>
-                  ✓ {selectedCategories.length} selected
+                  ✓ {t('selected', { count: selectedCategories.length })}
                 </p>
               )}
             </div>
@@ -293,14 +297,14 @@ export default function OnboardingPage() {
           {step === 'brands' && (
             <div>
               <div style={{ marginBottom: 20 }}>
-                <p style={{ fontSize: 11, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>Step 3 of 4</p>
-                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>Any favorite brands?</h2>
-                <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0', fontWeight: 500 }}>Optional. You can always change this later.</p>
+                <p style={{ fontSize: 11, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>{t('stepOf', { n: 3, total: 4 })}</p>
+                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>{t('brandsTitle')}</h2>
+                <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0', fontWeight: 500 }}>{t('brandsHint')}</p>
               </div>
               {(data?.brands ?? []).length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '32px 0', color: '#94a3b8' }}>
-                  <p style={{ fontSize: 14, fontWeight: 600 }}>No brands available yet.</p>
-                  <p style={{ fontSize: 12 }}>Skip to continue.</p>
+                  <p style={{ fontSize: 14, fontWeight: 600 }}>{t('noBrands')}</p>
+                  <p style={{ fontSize: 12 }}>{t('skipToContinue')}</p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20, maxHeight: 280, overflowY: 'auto' }}>
@@ -310,6 +314,7 @@ export default function OnboardingPage() {
                       <button
                         key={brand.id}
                         onClick={() => toggleBrand(brand.id)}
+                        aria-pressed={selected}
                         style={{ padding: '8px 16px', borderRadius: 999, border: `1.5px solid ${selected ? '#dc2626' : '#e5e7eb'}`, background: selected ? '#dc2626' : '#fff', color: selected ? '#fff' : '#374151', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}
                       >
                         {brand.name}
@@ -325,9 +330,9 @@ export default function OnboardingPage() {
           {step === 'price' && (
             <div>
               <div style={{ marginBottom: 20 }}>
-                <p style={{ fontSize: 11, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>Step 4 of 4</p>
-                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>What's your budget?</h2>
-                <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0', fontWeight: 500 }}>Optional. We'll prioritize products in this range.</p>
+                <p style={{ fontSize: 11, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>{t('stepOf', { n: 4, total: 4 })}</p>
+                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>{t('budgetTitle')}</h2>
+                <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0', fontWeight: 500 }}>{t('budgetHint')}</p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
                 {(data?.price_ranges ?? []).map(range => {
@@ -337,6 +342,7 @@ export default function OnboardingPage() {
                       key={range.label}
                       className={`ob-card${selected ? ' selected' : ''}`}
                       onClick={() => setSelectedPriceRange(prev => prev?.label === range.label ? null : range)}
+                      aria-pressed={selected}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderRadius: 12, border: `1.5px solid ${selected ? '#dc2626' : '#e5e7eb'}`, background: selected ? 'rgba(220,38,38,0.05)' : '#fff', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}
                     >
                       <span style={{ fontSize: 14, fontWeight: 700, color: selected ? '#dc2626' : '#374151' }}>{range.label}</span>
@@ -354,7 +360,7 @@ export default function OnboardingPage() {
               onClick={stepIndex === 0 ? handleSkip : goBack}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#fff', color: '#64748b', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
             >
-              {stepIndex === 0 ? <><X size={14} /> Skip</> : <><ChevronLeft size={14} /> Back</>}
+              {stepIndex === 0 ? <><X size={14} /> {t('skip')}</> : <><ChevronLeft size={14} /> {t('back')}</>}
             </button>
 
             {stepIndex < STEPS.length - 1 ? (
@@ -362,7 +368,7 @@ export default function OnboardingPage() {
                 onClick={goNext}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #dc2626, #b91c1c)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 14px rgba(220,38,38,0.3)' }}
               >
-                Next <ChevronRight size={14} />
+                {t('next')} <ChevronRight size={14} />
               </button>
             ) : (
               <button
@@ -371,8 +377,8 @@ export default function OnboardingPage() {
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 22px', borderRadius: 10, border: 'none', background: saving ? '#e5e7eb' : 'linear-gradient(135deg, #dc2626, #b91c1c)', color: saving ? '#9ca3af' : '#fff', fontSize: 13, fontWeight: 800, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', boxShadow: saving ? 'none' : '0 4px 14px rgba(220,38,38,0.3)' }}
               >
                 {saving
-                  ? <><Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} /> Saving…</>
-                  : <><Sparkles size={14} /> Finish Setup</>
+                  ? <><Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} /> {t('saving')}</>
+                  : <><Sparkles size={14} /> {t('finish')}</>
                 }
               </button>
             )}
@@ -381,7 +387,7 @@ export default function OnboardingPage() {
 
         {/* Footer note */}
         <p style={{ marginTop: 20, fontSize: 12, color: '#94a3b8', fontWeight: 500, textAlign: 'center' }}>
-          You can always update these preferences from your profile settings.
+          {t('footer')}
         </p>
       </div>
     </>

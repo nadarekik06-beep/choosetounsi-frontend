@@ -4,8 +4,10 @@ import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { saveSession, AuthUser } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 function GoogleCallbackHandler() {
+  const t            = useTranslations('auth');
   const router       = useRouter();
   const searchParams = useSearchParams();
 
@@ -43,7 +45,7 @@ function GoogleCallbackHandler() {
   return (
     <div className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center gap-4">
       <Loader2 size={28} className="animate-spin text-[#E63946]" />
-      <p className="text-sm text-slate-500 font-medium">Completing sign-in…</p>
+      <p className="text-sm text-slate-500 font-medium">{t('completingSignIn')}</p>
     </div>
   );
 

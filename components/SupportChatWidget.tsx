@@ -7,6 +7,8 @@ import { useCart } from '@/context/CartContext'
 import ChatProductCard, { CHAT_PRODUCT_CARD_CSS, type ChatLang, type ChatProduct } from './chat/ChatProductCard'
 import ChatStepsCard, { type ChatStep } from './chat/ChatStepsCard'
 import ChatActions, { CHAT_ACTIONS_CSS, sanitizeActions, type ChatAction } from './chat/ChatActions'
+import { useLocale, useTranslations } from 'next-intl'
+import { isLocale } from '@/i18n/config'
 
 const RED   = '#db142e'
 const GREEN = '#198f41'
@@ -130,7 +132,7 @@ class ChatRequestError extends Error {
   }
 }
 
-async function aiChatApi(userMessage: string, sessionId: string): Promise<AiChatApiResult> {
+async function aiChatApi(userMessage: string, sessionId: string, locale: ChatLang): Promise<AiChatApiResult> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('ct_auth_token') : null
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS)
@@ -146,7 +148,8 @@ async function aiChatApi(userMessage: string, sessionId: string): Promise<AiChat
         // Optional: lets the assistant show *your* orders. Never required.
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ message: userMessage, session_id: sessionId }),
+      // `locale` = the site language picked by the shopper; the assistant answers in it.
+      body: JSON.stringify({ message: userMessage, session_id: sessionId, locale }),
     })
   } catch (e) {
     throw new ChatRequestError(e instanceof DOMException && e.name === 'AbortError' ? 'timeout' : 'network')
@@ -228,15 +231,6 @@ const WELCOME_TEXT: Record<ChatLang, string> = {
   ar: '🛍️ أهلا! أنا مساعد Choose\'Tounsi.\n\nنلقالك منتجات حقيقية، نفسّرلك كيفاش تكوموندي، نتبّع طلبياتك، ولا نعاونك تحل بوتيك. مثلاً:\n• «نحب عسل بأقل من 40 دينار»\n• «كيفاش نخلص؟»',
 }
 
-/** Starter language from the page / browser (the backend decides after the first message). */
-function guessUiLang(): ChatLang {
-  if (typeof window === 'undefined') return 'en'
-  const lang = (document.documentElement.lang || navigator.language || 'en').toLowerCase()
-  if (lang.startsWith('ar')) return 'ar'
-  if (lang.startsWith('fr')) return 'fr'
-  return 'en'
-}
-
 function aiWelcome(lang: ChatLang): ChatMessage {
   return { id: 'ai-welcome', role: 'bot', text: WELCOME_TEXT[lang], lang, chatActions: STARTERS[lang] }
 }
@@ -245,126 +239,53 @@ function aiWelcome(lang: ChatLang): ChatMessage {
    FAQ QUESTION TREE
    Texts checked against the backend rules (complaint window =
    Complaint::COMPLAINT_WINDOW_HOURS, payment methods = checkout).
+   Structure only — every label/response comes from messages
+   (chat.faq.groups.<group>, chat.faq.q.<id>.{label,response}, chat.faq.a.<key>).
 ───────────────────────────────────────────────────────────── */
-const QUESTION_GROUPS: QuestionGroup[] = [
-  {
-    title: 'Orders & Tracking',
-    questions: [
-      {
-        id: 'where-order',
-        label: 'Where is my order?',
-        response: "You can follow your order from your orders page — each order shows its current status (Pending, Processing, Out for Delivery, Delivered…). You can also ask the AI assistant \"Track my order\" while logged in.",
-        actions: [{ label: '📦 View My Orders', href: '/orders' }],
-      },
-      {
-        id: 'track-order',
-        label: 'I want to track my order',
-        response: "Head to your orders page — each order shows its current status and delivery progress. D17 orders stay Pending until our team confirms your transfer.",
-        actions: [{ label: '🔍 Track Now', href: '/orders' }],
-      },
-      {
-        id: 'delayed-order',
-        label: 'My order is delayed',
-        response: "We're sorry! Please check your order status first. Complaints can only be filed once an order is delivered, so if your order is taking too long, contact our support team with your order number.",
-        actions: [
-          { label: '📋 Check Order Status', href: '/orders' },
-          { label: '✉️ Contact Support',   href: 'mailto:support@choosetounsi.tn' },
-        ],
-      },
-    ],
-  },
-  {
-    title: 'Delivery Issues',
-    questions: [
-      {
-        id: 'wrong-person',
-        label: 'Delivered to the wrong person',
-        response: "That shouldn't happen! If your order shows as Delivered, file a complaint within 48 hours of delivery with a description of the situation. Otherwise, contact our support team with your order number.",
-        actions: [
-          { label: '🚨 File a Complaint', href: '/complaints/new' },
-          { label: '✉️ Contact Support',  href: 'mailto:support@choosetounsi.tn' },
-        ],
-      },
-      {
-        id: 'missing-damaged',
-        label: 'Order missing / damaged / incorrect',
-        response: "We sincerely apologise. File a complaint within 48 hours of delivery: choose the reason (wrong product, size, color, damaged…), describe the problem, attach a photo if possible, and ask for an exchange or a return & refund.",
-        actions: [
-          { label: '📸 Report Issue', href: '/complaints/new' },
-          { label: '📦 My Orders',   href: '/orders' },
-        ],
-      },
-    ],
-  },
-  {
-    title: 'Returns & Refunds',
-    questions: [
-      {
-        id: 'return-order',
-        label: 'How can I return my order?',
-        response: "You can request a return within 48 hours of delivery, one complaint per order. Go to Complaints → New complaint, select the order and items, describe the problem and choose \"Return & refund\" or \"Exchange\".",
-        actions: [{ label: '🔄 Start a Return', href: '/complaints/new' }],
-      },
-      {
-        id: 'return-status',
-        label: 'Check the status of my return',
-        response: "Return status is visible under My Complaints: Pending → Reviewing → Approved or Rejected. If the seller rejects it, our admin team reviews it.",
-        actions: [{ label: '🚨 My Complaints', href: '/complaints' }],
-      },
-      {
-        id: 'refund',
-        label: 'When will I receive my refund?',
-        response: "Once your return is approved, a courier picks up the item and your refund is processed. You can follow each step under My Complaints.",
-        actions: [{ label: '🚨 Check Complaint Status', href: '/complaints' }],
-      },
-    ],
-  },
-  {
-    title: 'Account & Payment',
-    questions: [
-      {
-        id: 'payment-issue',
-        label: 'Problem with my payment',
-        response: "At checkout you can pay by Cash on Delivery, Wallet, D17 or Bank Card (Visa / Mastercard via Stripe). If you encountered an unexpected charge, please contact us directly.",
-        actions: [{ label: '✉️ Contact Support', href: 'mailto:support@choosetounsi.tn' }],
-      },
-      {
-        id: 'update-account',
-        label: 'Update my account information',
-        response: "You can see your account details on your profile page and manage your delivery addresses in Account → Addresses. Forgot your password? Use \"Forgot Password?\" on the login page.",
-        actions: [
-          { label: '👤 My Profile',   href: '/profile' },
-          { label: '🔑 Reset Password', href: '/auth/forgot-password' },
-        ],
-      },
-    ],
-  },
-  {
-    title: 'General',
-    questions: [
-      {
-        id: 'contact',
-        label: 'Contact support',
-        response: "Our support team is available Saturday–Thursday, 9 AM – 6 PM (Tunisia time). You can reach us at support@choosetounsi.tn or via the form below.",
-        actions: [{ label: '✉️ Email Support', href: 'mailto:support@choosetounsi.tn' }],
-      },
-      {
-        id: 'other',
-        label: 'Something else',
-        response: "No problem! Please email us at support@choosetounsi.tn and describe your issue in detail. We typically respond within 4 business hours.",
-        actions: [{ label: '✉️ Email Us', href: 'mailto:support@choosetounsi.tn' }],
-      },
-    ],
-  },
+type FaqTranslator = ReturnType<typeof useTranslations>
+
+const FAQ_TREE: { group: string; questions: { id: string; actions: { key: string; href: string }[] }[] }[] = [
+  { group: 'orders', questions: [
+    { id: 'where-order',   actions: [{ key: 'viewOrders', href: '/orders' }] },
+    { id: 'track-order',   actions: [{ key: 'trackNow', href: '/orders' }] },
+    { id: 'delayed-order', actions: [{ key: 'checkStatus', href: '/orders' }, { key: 'contactSupport', href: 'mailto:support@choosetounsi.tn' }] },
+  ] },
+  { group: 'delivery', questions: [
+    { id: 'wrong-person',    actions: [{ key: 'fileComplaint', href: '/complaints/new' }, { key: 'contactSupport', href: 'mailto:support@choosetounsi.tn' }] },
+    { id: 'missing-damaged', actions: [{ key: 'reportIssue', href: '/complaints/new' }, { key: 'myOrders', href: '/orders' }] },
+  ] },
+  { group: 'returns', questions: [
+    { id: 'return-order',  actions: [{ key: 'startReturn', href: '/complaints/new' }] },
+    { id: 'return-status', actions: [{ key: 'myComplaints', href: '/complaints' }] },
+    { id: 'refund',        actions: [{ key: 'checkComplaint', href: '/complaints' }] },
+  ] },
+  { group: 'account', questions: [
+    { id: 'payment-issue',  actions: [{ key: 'contactSupport', href: 'mailto:support@choosetounsi.tn' }] },
+    { id: 'update-account', actions: [{ key: 'myProfile', href: '/profile' }, { key: 'resetPassword', href: '/auth/forgot-password' }] },
+  ] },
+  { group: 'general', questions: [
+    { id: 'contact', actions: [{ key: 'emailSupport', href: 'mailto:support@choosetounsi.tn' }] },
+    { id: 'other',   actions: [{ key: 'emailUs', href: 'mailto:support@choosetounsi.tn' }] },
+  ] },
 ]
+
+function buildQuestionGroups(t: FaqTranslator): QuestionGroup[] {
+  return FAQ_TREE.map(g => ({
+    title: t(`groups.${g.group}`),
+    questions: g.questions.map(q => ({
+      id:       q.id,
+      label:    t(`q.${q.id}.label`),
+      response: t(`q.${q.id}.response`),
+      actions:  q.actions.map(a => ({ label: t(`a.${a.key}`), href: a.href })),
+    })),
+  }))
+}
 
 /* ─────────────────────────────────────────────────────────────
    WELCOME MESSAGES
 ───────────────────────────────────────────────────────────── */
-const FAQ_WELCOME: ChatMessage = {
-  id: 'faq-welcome',
-  role: 'bot',
-  text: 'Hello! 👋 Welcome to ChooseTounsi Support.\n\nHow can I assist you today? Please choose a topic below, or pick a specific question.',
+function faqWelcome(text: string): ChatMessage {
+  return { id: 'faq-welcome', role: 'bot', text }
 }
 
 function uid(): string {
@@ -384,6 +305,7 @@ function PepperFAB({
   showBadge: boolean
   hasNewMessage: boolean
 }) {
+  const t = useTranslations('chat')
   const [hovered, setHovered] = useState(false)
   const [pulse,   setPulse]   = useState(false)
 
@@ -415,7 +337,7 @@ function PepperFAB({
         <div style={{
           position: 'absolute',
           bottom: '110%',
-          right: 0,
+          insetInlineEnd: 0,
           background: '#1a1a2e',
           color: '#fff',
           fontSize: 12,
@@ -427,11 +349,11 @@ function PepperFAB({
           animation: 'ct-fadein 0.15s ease both',
           boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
         }}>
-          🛍️ Ask AI Assistant
+          🛍️ {t('fabTooltip')}
           <div style={{
             position: 'absolute',
             top: '100%',
-            right: 18,
+            insetInlineEnd: 18,
             width: 0, height: 0,
             borderLeft: '5px solid transparent',
             borderRight: '5px solid transparent',
@@ -445,7 +367,7 @@ function PepperFAB({
         <div style={{
           position: 'absolute',
           top: -3,
-          right: -3,
+          insetInlineEnd: -3,
           width: 18,
           height: 18,
           borderRadius: '50%',
@@ -469,7 +391,7 @@ function PepperFAB({
         onClick={onClick}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        aria-label="Open AI Shopping Assistant"
+        aria-label={t('openAssistant')}
         style={{
           width: 60,
           height: 60,
@@ -493,7 +415,7 @@ function PepperFAB({
         {/* Chili image — uses logo-chili.png from public/images/ */}
         <Image
           src="/images/logo-chili.png"
-          alt="AI Assistant"
+          alt={t('assistantAlt')}
           width={36}
           height={36}
           style={{
@@ -594,7 +516,8 @@ function Bubble({ msg, onRetry, onQuickReply, onNavigate, onOpenCart, busy }: { 
               background: isError ? '#fef2f2' : isBot ? '#f4f4f5' : `linear-gradient(135deg, ${RED}, ${DARK})`,
               color: isError ? '#991b1b' : isBot ? '#1a1a2e' : '#fff',
               border: isError ? '1px solid #fecaca' : 'none',
-              borderRadius: isBot ? '16px 16px 16px 4px' : '16px 16px 4px 16px',
+              borderRadius: 16,
+              ...(isBot ? { borderEndStartRadius: 4 } : { borderEndEndRadius: 4 }),
               fontSize: 14, lineHeight: 1.6, fontWeight: 500,
               whiteSpace: 'pre-line', overflowWrap: 'anywhere',
               textAlign: 'start',
@@ -681,6 +604,8 @@ function Bubble({ msg, onRetry, onQuickReply, onNavigate, onOpenCart, busy }: { 
    QUESTION MENU  (unchanged)
 ───────────────────────────────────────────────────────────── */
 function QuestionMenu({ onSelect }: { onSelect: (q: Question) => void }) {
+  const t = useTranslations('chat.faq')
+  const QUESTION_GROUPS = buildQuestionGroups(t)
   const [openGroup, setOpenGroup] = useState<string | null>(null)
 
   return (
@@ -693,6 +618,7 @@ function QuestionMenu({ onSelect }: { onSelect: (q: Question) => void }) {
         }}>
           <button
             onClick={() => setOpenGroup(o => o === group.title ? null : group.title)}
+            aria-expanded={openGroup === group.title}
             style={{
               width: '100%', display: 'flex', alignItems: 'center',
               justifyContent: 'space-between',
@@ -720,7 +646,7 @@ function QuestionMenu({ onSelect }: { onSelect: (q: Question) => void }) {
               {group.questions.map(q => (
                 <button key={q.id} onClick={() => onSelect(q)}
                   style={{
-                    textAlign: 'left', padding: '8px 12px',
+                    textAlign: 'start', padding: '8px 12px',
                     background: '#fff', border: '1.5px solid #e5e7eb',
                     borderRadius: 8, cursor: 'pointer',
                     fontSize: 13, fontWeight: 600, color: '#374151',
@@ -748,16 +674,9 @@ function QuestionMenu({ onSelect }: { onSelect: (q: Question) => void }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   ROTATING HINTS  (unchanged)
+   ROTATING HINTS — localized in messages (chat.hints); the examples
+   deliberately mix languages to show the assistant understands them all.
 ───────────────────────────────────────────────────────────── */
-const HINTS = [
-  'Search for a product…',
-  'e.g. "shoes under 100 DT"',
-  'e.g. "sac entre 30 et 60 dinars"',
-  'e.g. "أبحث عن ساعة رخيصة"',
-  'e.g. "show me cheaper ones"',
-  'e.g. "n7eb sabbat rkhis"',
-]
 
 /* ─────────────────────────────────────────────────────────────
    AI TEXT INPUT BAR  (unchanged)
@@ -769,6 +688,8 @@ function AiInputBar({
   onSend: (text: string) => void
   disabled: boolean
 }) {
+  const t = useTranslations('chat')
+  const HINTS = t.raw('hints') as string[]
   const [value,   setValue]   = useState('')
   const [hintIdx, setHintIdx] = useState(0)
 
@@ -778,7 +699,7 @@ function AiInputBar({
       setHintIdx(i => (i + 1) % HINTS.length)
     }, 3000)
     return () => clearInterval(id)
-  }, [value])
+  }, [value, HINTS.length])
 
   const submit = () => {
     const trimmed = value.trim()
@@ -802,8 +723,8 @@ function AiInputBar({
         onChange={e => setValue(e.target.value)}
         onKeyDown={handleKey}
         disabled={disabled}
-        placeholder={HINTS[hintIdx]}
-        aria-label="Message the shopping assistant"
+        placeholder={HINTS[hintIdx % HINTS.length]}
+        aria-label={t('inputAria')}
         dir="auto"
         maxLength={500}
         enterKeyHint="send"
@@ -821,7 +742,7 @@ function AiInputBar({
       <button
         onClick={submit}
         disabled={disabled || !value.trim()}
-        aria-label="Send"
+        aria-label={t('send')}
         style={{
           width: 38, height: 38, borderRadius: 10, flexShrink: 0,
           background: disabled || !value.trim()
@@ -834,7 +755,7 @@ function AiInputBar({
             : `0 4px 12px ${RED}40`,
         }}
       >
-        <svg width="16" height="16" fill="none"
+        <svg className="rtl-flip" width="16" height="16" fill="none"
           stroke={disabled || !value.trim() ? '#94a3b8' : '#fff'}
           strokeWidth="2.5" viewBox="0 0 24 24">
           <path d="M22 2L11 13" />
@@ -857,6 +778,7 @@ function PanelHeader({
   onReset: () => void
   onClose: () => void
 }) {
+  const t = useTranslations('chat')
   return (
     <div style={{
       background: `linear-gradient(135deg, ${RED} 0%, ${DARK} 100%)`,
@@ -874,7 +796,7 @@ function PanelHeader({
       }}>
         <Image
           src="/images/logo-chili.png"
-          alt="Assistant"
+          alt={t('assistantAlt')}
           width={28}
           height={28}
           style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))' }}
@@ -883,7 +805,7 @@ function PanelHeader({
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: 14, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.01em' }}>
-          ChooseTounsi Assistant
+          {t('title')}
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
           {/* Live green dot */}
@@ -893,13 +815,13 @@ function PanelHeader({
             display: 'inline-block',
           }} />
           <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.82)', fontWeight: 600 }}>
-            {activeTab === 'ai' ? 'AI Assistant · Online' : 'Support · Replies instantly'}
+            {activeTab === 'ai' ? t('statusAi') : t('statusFaq')}
           </span>
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: 5 }}>
-        <button onClick={onReset} title={activeTab === 'ai' ? 'Clear chat' : 'Back to topics'} aria-label={activeTab === 'ai' ? 'Clear chat' : 'Restart'}
+        <button onClick={onReset} title={activeTab === 'ai' ? t('clearChat') : t('backToTopics')} aria-label={activeTab === 'ai' ? t('clearChat') : t('restart')}
           style={{
             width: 30, height: 30, borderRadius: 8,
             background: 'rgba(255,255,255,0.12)',
@@ -921,7 +843,7 @@ function PanelHeader({
             </svg>
           )}
         </button>
-        <button onClick={onClose} title="Close" aria-label="Close"
+        <button onClick={onClose} title={t('close')} aria-label={t('close')}
           style={{
             width: 30, height: 30, borderRadius: 8,
             background: 'rgba(255,255,255,0.12)',
@@ -944,10 +866,13 @@ function PanelHeader({
    MAIN WIDGET
 ───────────────────────────────────────────────────────────── */
 export default function SupportChatWidget() {
+  const t       = useTranslations('chat')
+  const rawLocale = useLocale()
+  const uiLang: ChatLang = isLocale(rawLocale) ? rawLocale : 'fr'
   const [open,      setOpen]      = useState(false)
   const [activeTab, setActiveTab] = useState<ActiveTab>('ai')
 
-  const [faqMessages, setFaqMessages] = useState<ChatMessage[]>([FAQ_WELCOME])
+  const [faqMessages, setFaqMessages] = useState<ChatMessage[]>(() => [faqWelcome(t('faqWelcome'))])
   // Same initial state on server and client; the real welcome / stored chat is set after mount.
   const [aiMessages,  setAiMessages]  = useState<ChatMessage[]>(() => [aiWelcome('en')])
   const [restored,    setRestored]    = useState(false)
@@ -966,11 +891,18 @@ export default function SupportChatWidget() {
   // Restore this tab's conversation (kept across page navigations / reloads).
   useEffect(() => {
     const stored = loadStoredMessages()
-    const lang   = guessUiLang()
-    lastLang.current = lang
-    setAiMessages(stored && stored.length > 0 ? stored : [aiWelcome(lang)])
+    lastLang.current = uiLang
+    setAiMessages(stored && stored.length > 0 ? stored : [aiWelcome(uiLang)])
     setRestored(true)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Site language switched: re-greet in the new language if the chat hasn't started yet.
+  useEffect(() => {
+    lastLang.current = uiLang
+    setAiMessages(prev => (prev.length === 1 && prev[0].id === 'ai-welcome' ? [aiWelcome(uiLang)] : prev))
+    setFaqMessages(prev => (prev.length === 1 && prev[0].id === 'faq-welcome' ? [faqWelcome(t('faqWelcome'))] : prev))
+  }, [uiLang, t])
 
   useEffect(() => {
     if (restored) storeMessages(aiMessages)
@@ -1032,13 +964,13 @@ export default function SupportChatWidget() {
         const askMore: ChatMessage = {
           id: uid(),
           role: 'bot',
-          text: 'Is there anything else I can help you with?',
-          actions: [{ label: '← Back to topics', onClick: () => setShowMenu(true) }],
+          text: t('anythingElse'),
+          actions: [{ label: t('backToTopicsArrow'), onClick: () => setShowMenu(true) }],
         }
         setFaqMessages(prev => [...prev, askMore])
       }, 400)
     }, 900)
-  }, [])
+  }, [t])
 
   /* ── AI tab ───────────────────────────────────────────────────────────── */
   // The backend owns the conversation history (per session_id) and decides the
@@ -1059,7 +991,7 @@ export default function SupportChatWidget() {
     setAiLoading(true)
 
     try {
-      const result = await aiChatApi(text, sessionId.current)
+      const result = await aiChatApi(text, sessionId.current, uiLang)
       lastLang.current = result.language
 
       setAiMessages(prev =>
@@ -1090,7 +1022,7 @@ export default function SupportChatWidget() {
     } finally {
       setAiLoading(false)
     }
-  }, [aiLoading])
+  }, [aiLoading, uiLang])
 
   const handleAiRetry  = useCallback((text: string) => { handleAiSend(text, true) }, [handleAiSend])
   const handleQuickReply = useCallback((message: string) => { handleAiSend(message) }, [handleAiSend])
@@ -1103,12 +1035,12 @@ export default function SupportChatWidget() {
   /* ── Reset ──────────────────────────────────────────────────────────── */
   const handleReset = () => {
     if (activeTab === 'faq') {
-      setFaqMessages([FAQ_WELCOME])
+      setFaqMessages([faqWelcome(t('faqWelcome'))])
       setShowMenu(true)
     } else {
       // Clear chat: new server-side session (fresh memory) + forget the stored conversation.
       clearStoredMessages()
-      setAiMessages([aiWelcome(lastLang.current)])
+      setAiMessages([aiWelcome(uiLang)])
       sessionId.current = createFreshSessionId()
       setAiLoading(false)
     }
@@ -1130,15 +1062,14 @@ export default function SupportChatWidget() {
           .ct-panel {
             top: 0 !important;
             bottom: 0 !important;
-            right: 0 !important;
-            left: 0 !important;
+            inset-inline: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
             height: 100dvh !important;
             max-height: 100dvh !important;
             border-radius: 0 !important;
           }
-          .ct-fab { bottom: 16px !important; right: 16px !important; }
+          .ct-fab { bottom: 16px !important; inset-inline-end: 16px !important; }
         }
         ${CHAT_PRODUCT_CARD_CSS}
         ${CHAT_ACTIONS_CSS}
@@ -1149,7 +1080,7 @@ export default function SupportChatWidget() {
         <div className="ct-fab" style={{
           position: 'fixed',
           bottom: 28,
-          right: 28,
+          insetInlineEnd: 28,
           zIndex: 10002,
           animation: 'ct-fab-in 0.5s cubic-bezier(0.34,1.56,0.64,1) both',
         }}>
@@ -1179,11 +1110,11 @@ export default function SupportChatWidget() {
           <div
             className="ct-panel"
             role="dialog"
-            aria-label="ChooseTounsi Assistant"
+            aria-label={t('title')}
             style={{
               position: 'fixed',
               bottom: 24,
-              right: 24,
+              insetInlineEnd: 24,
               width: 385,
               maxWidth: 'calc(100vw - 32px)',
               maxHeight: 'calc(100vh - 48px)',
@@ -1214,6 +1145,8 @@ export default function SupportChatWidget() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
+                  role="tab"
+                  aria-selected={activeTab === tab}
                   style={{
                     flex: 1, padding: '10px 0',
                     background: 'none', border: 'none', cursor: 'pointer',
@@ -1224,7 +1157,7 @@ export default function SupportChatWidget() {
                     transition: 'all 0.15s',
                   }}
                 >
-                  {tab === 'ai' ? '🛍️ Shop with AI' : '❓ Support FAQ'}
+                  {tab === 'ai' ? t('tabAi') : t('tabFaq')}
                 </button>
               ))}
             </div>
@@ -1259,9 +1192,9 @@ export default function SupportChatWidget() {
                   <p style={{
                     fontSize: 11, fontWeight: 800, color: '#94a3b8',
                     textTransform: 'uppercase', letterSpacing: '0.07em',
-                    marginBottom: 8, paddingLeft: 2,
+                    marginBottom: 8, paddingInlineStart: 2,
                   }}>
-                    Choose a topic
+                    {t('chooseTopic')}
                   </p>
                   <QuestionMenu onSelect={handleFaqQuestion} />
                 </div>
@@ -1280,7 +1213,7 @@ export default function SupportChatWidget() {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
               }}>
                 <p style={{ fontSize: 11, color: '#cbd5e1', fontWeight: 600, margin: 0 }}>
-                  Powered by ChooseTounsi
+                  {t('poweredBy')}
                 </p>
                 <Link href="/complaints/new" style={{
                   fontSize: 11, fontWeight: 700, color: RED,
@@ -1288,7 +1221,7 @@ export default function SupportChatWidget() {
                   borderRadius: 6, border: `1px solid ${RED}30`,
                   background: `${RED}06`, whiteSpace: 'nowrap',
                 }}>
-                  🚨 File a Complaint
+                  🚨 {t('fileComplaint')}
                 </Link>
               </div>
             )}

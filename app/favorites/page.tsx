@@ -17,6 +17,8 @@ import {
 import { useCart } from '@/context/CartContext'
 import { isAuthenticated } from '@/lib/auth'
 import type { FavoriteItem } from '@/lib/shopApi'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api$/, '')
 
@@ -26,12 +28,13 @@ function resolveImg(path: string | null | undefined): string | null {
   return `${STORAGE_BASE}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
 }
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 2, maximumFractionDigits: 3 }).format(n) + ' DT'
-
 // ─── Favorite Card ────────────────────────────────────────────────────────────
 
 function FavoriteCard({ item, onRemove }: { item: FavoriteItem; onRemove: () => void }) {
+  const t  = useTranslations('favorites')
+  const tc = useTranslations('common')
+  const { price } = useFormat()
+  const fmt = (n: number) => price(n, { maximumFractionDigits: 3 })
   const { addToCart, cartLoading } = useCart()
   const [adding, setAdding] = useState(false)
 
@@ -65,8 +68,8 @@ function FavoriteCard({ item, onRemove }: { item: FavoriteItem; onRemove: () => 
             </div>
         }
         {item.stock <= 0 && (
-          <div style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999 }}>
-            Out of stock
+          <div style={{ position: 'absolute', top: 8, insetInlineStart: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999 }}>
+            {tc('outOfStock')}
           </div>
         )}
       </Link>
@@ -109,7 +112,7 @@ function FavoriteCard({ item, onRemove }: { item: FavoriteItem; onRemove: () => 
         {/* Low stock */}
         {item.stock > 0 && item.stock <= 10 && (
           <p style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700, margin: 0 }}>
-            Only {item.stock} left
+            {t('onlyLeft', { count: item.stock })}
           </p>
         )}
 
@@ -134,7 +137,7 @@ function FavoriteCard({ item, onRemove }: { item: FavoriteItem; onRemove: () => 
               ? <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />
               : <ShoppingCart size={13} />
             }
-            {item.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+            {item.stock <= 0 ? tc('outOfStock') : tc('addToCart')}
           </button>
 
           <button
@@ -145,7 +148,8 @@ function FavoriteCard({ item, onRemove }: { item: FavoriteItem; onRemove: () => 
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#ef4444', transition: 'background 0.15s',
             }}
-            title="Remove from favorites"
+            title={t('remove')}
+            aria-label={t('remove')}
           >
             <Trash2 size={14} />
           </button>
@@ -158,6 +162,8 @@ function FavoriteCard({ item, onRemove }: { item: FavoriteItem; onRemove: () => 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function FavoritesPage() {
+  const t      = useTranslations('favorites')
+  const tc     = useTranslations('common')
   const router = useRouter()
   const { favorites, toggleFavorite, favLoading } = useCart()
   const [mounted, setMounted] = useState(false)
@@ -183,11 +189,11 @@ export default function FavoritesPage() {
 
         {/* Breadcrumb */}
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
-            <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Home</Link>
+          <nav aria-label={t('breadcrumb')} style={{ maxWidth: 1200, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
+            <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>{tc('home')}</Link>
             <ChevronRight size={11} />
-            <span style={{ color: '#374151', fontWeight: 600 }}>My Favorites</span>
-          </div>
+            <span style={{ color: '#374151', fontWeight: 600 }}>{t('title')}</span>
+          </nav>
         </div>
 
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 24px 60px', animation: 'fadeUp 0.4s ease both' }}>
@@ -198,10 +204,10 @@ export default function FavoritesPage() {
               <Heart size={18} color="#dc2626" fill="rgba(220,38,38,0.2)" />
             </div>
             <div>
-              <h1 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>My Favorites</h1>
+              <h1 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>{t('title')}</h1>
               {mounted && (
                 <p style={{ fontSize: 12, color: '#94a3b8', margin: 0, fontWeight: 500 }}>
-                  {items.length} saved item{items.length !== 1 ? 's' : ''}
+                  {t('count', { count: items.length })}
                 </p>
               )}
             </div>
@@ -211,7 +217,7 @@ export default function FavoritesPage() {
           {favLoading && items.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
               <Loader2 size={28} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626', margin: '0 auto 12px' }} />
-              <p style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>Loading favorites…</p>
+              <p style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>{t('loading')}</p>
             </div>
           )}
 
@@ -219,13 +225,13 @@ export default function FavoritesPage() {
           {mounted && !favLoading && items.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
               <Heart size={48} color="#e2e8f0" style={{ margin: '0 auto 16px' }} />
-              <p style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>No favorites yet</p>
+              <p style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>{t('emptyTitle')}</p>
               <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 24px' }}>
-                Browse products and tap ♡ to save them here.
+                {t('emptyBody')}
               </p>
               <Link href="/shop"
                 style={{ padding: '11px 28px', background: 'linear-gradient(135deg,#dc2626,#b91c1c)', color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 10, textDecoration: 'none', boxShadow: '0 4px 14px rgba(220,38,38,0.3)' }}>
-                Browse Products
+                {t('browse')}
               </Link>
             </div>
           )}

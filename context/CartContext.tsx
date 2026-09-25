@@ -6,6 +6,7 @@ import {
 } from 'react'
 import { cartApi, favoritesApi, type CartItem, type FavoriteItem } from '@/lib/shopApi'
 import { isAuthenticated } from '@/lib/auth'
+import { useLocale, useTranslations } from 'next-intl'
 
 // ─── Pack selection type ──────────────────────────────────────────────────────
 export interface PackSelection {
@@ -50,6 +51,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [flash,         setFlash]         = useState<string | null>(null)
   const [drawerOpen,    setDrawerOpen]    = useState(false)
 
+  const t      = useTranslations('cart.flash')
+  const locale = useLocale()
+
   const pendingRef = useRef<Set<string>>(new Set())
   const isLocked  = (key: string) => pendingRef.current.has(key)
   const lock      = (key: string) => pendingRef.current.add(key)
@@ -86,10 +90,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, [])
 
+  // Also re-runs on language switch so product names come back translated.
   useEffect(() => {
     refreshCart()
     refreshFavorites()
-  }, [refreshCart, refreshFavorites])
+  }, [refreshCart, refreshFavorites, locale])
 
   // ── addToCart — original, completely unchanged ────────────────────────────
   const addToCart = useCallback(async (
@@ -106,12 +111,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       await refreshCart()
       openDrawer()
     } catch (err: any) {
-      showFlash(err.message ?? 'Failed to add to cart.')
+      showFlash(err.message ?? t('addFailed'))
     } finally {
       unlock(lockKey)
       setCartLoading(false)
     }
-  }, [refreshCart, openDrawer, showFlash])
+  }, [refreshCart, openDrawer, showFlash, t])
 
   // ── addPackToCart — NEW: single cart entry at pack_price ─────────────────
   const addPackToCart = useCallback(async (
@@ -127,12 +132,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       await refreshCart()
       openDrawer()
     } catch (err: any) {
-      showFlash(err.message ?? 'Failed to add bundle to cart.')
+      showFlash(err.message ?? t('addPackFailed'))
     } finally {
       unlock(lockKey)
       setCartLoading(false)
     }
-  }, [refreshCart, openDrawer, showFlash])
+  }, [refreshCart, openDrawer, showFlash, t])
 
   // ── updateItem ────────────────────────────────────────────────────────────
   const updateItem = useCallback(async (cartItemId: number, qty: number) => {
@@ -144,13 +149,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       await cartApi.update(cartItemId, qty)
       await refreshCart()
     } catch (err: any) {
-      showFlash(err.message ?? 'Failed to update.')
+      showFlash(err.message ?? t('updateFailed'))
       await refreshCart()
     } finally {
       unlock(lockKey)
       setLoadingItemId(null)
     }
-  }, [refreshCart, showFlash])
+  }, [refreshCart, showFlash, t])
 
   // ── removeItem ────────────────────────────────────────────────────────────
   const removeItem = useCallback(async (cartItemId: number) => {
@@ -185,7 +190,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [favorites])
 
   const toggleFavorite = useCallback(async (productId: number, variantId?: number | null) => {
-    if (!isAuthenticated()) { showFlash('Please log in to save favorites.'); return }
+    if (!isAuthenticated()) { showFlash(t('loginForFavorites')); return }
     setFavLoading(true)
     try {
       if (isFavorited(productId, variantId ?? undefined)) {
@@ -197,14 +202,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       } else {
         const res = await favoritesApi.add(productId, variantId)
         setFavorites(prev => [...prev, res.data])
-        showFlash('Saved to favorites! ❤️')
+        showFlash(t('savedToFavorites'))
       }
     } catch (err: any) {
-      showFlash(err.message ?? 'Error updating favorites.')
+      showFlash(err.message ?? t('favoritesFailed'))
     } finally {
       setFavLoading(false)
     }
-  }, [isFavorited, showFlash])
+  }, [isFavorited, showFlash, t])
 
   return (
     <CartContext.Provider value={{

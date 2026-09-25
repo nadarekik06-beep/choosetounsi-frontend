@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getUser, isAuthenticated, logout, AuthUser } from '@/lib/auth';
+import { useTranslations } from 'next-intl';
 
 /* ── palette ──────────────────────────────────────────────── */
 const RED   = '#db142e';
@@ -25,6 +26,7 @@ function fixGoogle(url: string) { return url.replace(/=s\d+-?c?$/,'=s200-c'); }
 
 /* ── Clickable avatar with upload overlay ─────────────────── */
 function BigAvatar({ user, onUpload }: { user: AuthUser; onUpload: (file: File) => void }) {
+  const t = useTranslations('profile');
   const [err,       setErr]      = useState(false);
   const [preview,   setPreview]  = useState<string | null>(null);
   const [uploading, setUploading]= useState(false);
@@ -44,7 +46,7 @@ function BigAvatar({ user, onUpload }: { user: AuthUser; onUpload: (file: File) 
   };
 
   return (
-    <div className="avatar-wrap" onClick={() => inputRef.current?.click()} title="Change profile photo">
+    <div className="avatar-wrap" onClick={() => inputRef.current?.click()} title={t('changePhoto')} role="button" aria-label={t('changePhoto')}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt={user.name} referrerPolicy="no-referrer"
@@ -57,7 +59,7 @@ function BigAvatar({ user, onUpload }: { user: AuthUser; onUpload: (file: File) 
       <div className="avatar-overlay">
         {uploading
           ? <div className="upload-spinner" />
-          : <><CameraIcon /><span>Change</span></>
+          : <><CameraIcon /><span>{t('change')}</span></>
         }
       </div>
       <input ref={inputRef} type="file" accept="image/*"
@@ -100,6 +102,8 @@ function MenuItem({ icon, label, badge, href, danger, onClick }: {
 
 /* ═══════════════════════════════════════════════════════════ */
 export default function ProfilePage() {
+  const t      = useTranslations('profile');
+  const tRole  = useTranslations('common.role');
   const router = useRouter();
   const [user,    setUser]    = useState<AuthUser | null>(null);
   const [visible, setVisible] = useState(false);
@@ -118,7 +122,7 @@ export default function ProfilePage() {
   };
 
   const handleUpload = (_file: File) => {
-    setToast('Profile photo updated!');
+    setToast(t('photoUpdated'));
     setTimeout(() => setToast(''), 3000);
   };
 
@@ -132,44 +136,43 @@ export default function ProfilePage() {
 
   const MENU_SECTIONS = [
     {
-      title: 'My Orders',
+      title: t('sections.orders'),
       items: [
-        { icon: <OrderIcon />,     label: 'My Orders',          href: '/orders'              },
-        { icon: <ComplaintIcon />, label: 'My Complaints',      href: '/complaints'          },
-        { icon: <HeartIcon />,     label: 'Wishlist',           href: '/wishlist'            },
-        { icon: <ReturnIcon />,    label: 'Returns & Refunds',  href: '/returns'             },
-        { icon: <ReviewIcon />,    label: 'My Reviews',         href: '/reviews'             },
+        { icon: <OrderIcon />,     label: t('menu.orders'),      href: '/orders'              },
+        { icon: <ComplaintIcon />, label: t('menu.complaints'),  href: '/complaints'          },
+        { icon: <HeartIcon />,     label: t('menu.wishlist'),    href: '/wishlist'            },
+        { icon: <ReturnIcon />,    label: t('menu.returns'),     href: '/returns'             },
+        { icon: <ReviewIcon />,    label: t('menu.reviews'),     href: '/reviews'             },
       ],
     },
     {
-      title: 'Account',
+      title: t('sections.account'),
       items: [
-        { icon: <EditIcon />,      label: 'Edit Profile',       href: '/profile/edit'        },
-        { icon: <LockIcon />,      label: 'Change Password',    href: '/profile/password'    },
-        // ── NEW: Address Book entry ────────────────────────────────────────────
-        { icon: <AddressIcon />,   label: 'Address Book',       href: '/account/addresses'   },
-        { icon: <BellIcon />,      label: 'Notifications',      href: '/notifications', badge: '3' },
-        { icon: <ShieldIcon />,    label: 'Privacy & Security', href: '/profile/security'    },
+        { icon: <EditIcon />,      label: t('menu.editProfile'), href: '/profile/edit'        },
+        { icon: <LockIcon />,      label: t('menu.password'),    href: '/profile/password'    },
+        { icon: <AddressIcon />,   label: t('menu.addresses'),   href: '/account/addresses'   },
+        { icon: <BellIcon />,      label: t('menu.notifications'), href: '/notifications', badge: '3' },
+        { icon: <ShieldIcon />,    label: t('menu.privacy'),     href: '/profile/security'    },
       ],
     },
     ...(isSeller ? [{
-      title: 'Seller Hub',
+      title: t('sections.sellerHub'),
       items: [
-        { icon: <StoreIcon />,   label: 'My Store',       href: '/seller'            },
-        { icon: <ProductIcon />, label: 'My Products',        href: '/seller/products'   },
-        { icon: <SalesIcon />,   label: 'Sales & Orders',     href: '/seller/orders'     },
+        { icon: <StoreIcon />,   label: t('menu.myStore'),     href: '/seller'            },
+        { icon: <ProductIcon />, label: t('menu.myProducts'),  href: '/seller/products'   },
+        { icon: <SalesIcon />,   label: t('menu.sales'),       href: '/seller/orders'     },
       ],
     }] : [{
-      title: 'Become a Seller',
+      title: t('sections.becomeSeller'),
       items: [
-        { icon: <StoreIcon />,   label: 'Open Your Store',    href: '/?vendor=1'         },
+        { icon: <StoreIcon />,   label: t('menu.openStore'),   href: '/?vendor=1'         },
       ],
     }]),
     {
       title: '',
       items: [
-        { icon: <SupportIcon />,   label: 'Help & Support',   href: '/support'           },
-        { icon: <LogoutIconSVG />, label: 'Sign Out', danger: true, onClick: handleLogout },
+        { icon: <SupportIcon />,   label: t('menu.help'),      href: '/support'           },
+        { icon: <LogoutIconSVG />, label: t('menu.signOut'), danger: true, onClick: handleLogout },
       ],
     },
   ];
@@ -202,7 +205,7 @@ export default function ProfilePage() {
         .hero::after {
           content: '';
           position: absolute;
-          bottom: -1px; left: 0; right: 0;
+          bottom: -1px; inset-inline: 0;
           height: 60px;
           background: #f0f0f0;
           clip-path: ellipse(55% 100% at 50% 100%);
@@ -317,7 +320,7 @@ export default function ProfilePage() {
         .stat-value { font-size: 1.35rem; font-weight: 800; color: #111; line-height: 1; margin-bottom: 4px; }
         .stat-label { font-size: 0.68rem; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; }
         .stat-bar {
-          position: absolute; bottom: 0; left: 0; right: 0; height: 3px; opacity: 0.7;
+          position: absolute; bottom: 0; inset-inline: 0; height: 3px; opacity: 0.7;
           transform: scaleX(0); transform-origin: left;
           transition: transform 0.5s ease 0.2s;
         }
@@ -336,16 +339,16 @@ export default function ProfilePage() {
 
         .menu-item {
           width: 100%; display: flex; align-items: center; gap: 14px;
-          padding: 15px 20px; text-align: left;
+          padding: 15px 20px; text-align: start;
           border: none; background: transparent; cursor: pointer;
           text-decoration: none; color: #1a1a1a;
           font-family: 'DM Sans', sans-serif;
           font-size: 0.88rem; font-weight: 600;
           border-bottom: 1px solid #f7f7f7;
-          transition: background 0.15s ease, padding-left 0.18s ease;
+          transition: background 0.15s ease, padding-inline-start 0.18s ease;
         }
         .menu-item:last-child  { border-bottom: none; }
-        .menu-item:hover       { background: #fafafa; padding-left: 26px; }
+        .menu-item:hover       { background: #fafafa; padding-inline-start: 26px; }
         .menu-item.danger      { color: var(--red); }
         .menu-item.danger:hover{ background: #fff5f6; }
 
@@ -370,6 +373,9 @@ export default function ProfilePage() {
           transition: color 0.15s ease, transform 0.18s ease;
         }
         .menu-item:hover .menu-arrow { color: var(--red); transform: translateX(3px); }
+        [dir=rtl] .menu-arrow { transform: scaleX(-1); }
+        [dir=rtl] .menu-item:hover .menu-arrow { transform: scaleX(-1) translateX(3px); }
+        [dir=rtl] .stat-bar { transform-origin: right; }
 
         .verified-bar {
           background: linear-gradient(135deg,#e6f9ee,#f0fff6);
@@ -425,14 +431,14 @@ export default function ProfilePage() {
         {/* ── HERO ── */}
         <div className="hero">
           <div className="hero-inner">
-            <Link href="/" className="back-link">← Back to Homepage</Link>
+            <Link href="/" className="back-link">{t('backHome')}</Link>
             <div className="hero-profile">
               <BigAvatar user={user} onUpload={handleUpload} />
               <div className="hero-text">
                 <h1>{user.name}</h1>
-                <p>{user.email}</p>
+                <p dir="ltr" style={{ textAlign: 'start' }}>{user.email}</p>
                 <span className={`role-chip ${user.role}`}>
-                  {user.role === 'seller' ? '🏪' : user.role === 'admin' ? '🛡️' : '🛍️'} {user.role}
+                  {user.role === 'seller' ? '🏪' : user.role === 'admin' ? '🛡️' : '🛍️'} {tRole(user.role)}
                 </span>
               </div>
             </div>
@@ -443,9 +449,9 @@ export default function ProfilePage() {
         <div className="body">
 
           <div className={`stats-row fade-in ${visible ? 'show' : ''}`}>
-            <StatCard icon="🛍️" label="Orders"   value="0" color={RED}     />
-            <StatCard icon="⭐"  label="Reviews"  value="0" color="#f59e0b" />
-            <StatCard icon="❤️"  label="Wishlist" value="0" color="#ec4899" />
+            <StatCard icon="🛍️" label={t('stats.orders')}   value="0" color={RED}     />
+            <StatCard icon="⭐"  label={t('stats.reviews')}  value="0" color="#f59e0b" />
+            <StatCard icon="❤️"  label={t('stats.wishlist')} value="0" color="#ec4899" />
           </div>
 
           <div className={`verified-bar fade-in ${visible ? 'show' : ''}`}>
@@ -455,8 +461,8 @@ export default function ProfilePage() {
               </svg>
             </div>
             <div>
-              <h4>Verified Account</h4>
-              <p>Your identity has been confirmed</p>
+              <h4>{t('verifiedTitle')}</h4>
+              <p>{t('verifiedBody')}</p>
             </div>
           </div>
 

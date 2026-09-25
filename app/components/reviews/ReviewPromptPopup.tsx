@@ -15,6 +15,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Star, Mail } from 'lucide-react';
 import ReviewSubmitModal from './ReviewSubmitModal';
 import { isAuthenticated } from '@/lib/auth';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
 
@@ -42,6 +43,7 @@ interface Prompt {
 const AUTO_DISMISS_SEC = 12;
 
 export default function ReviewPromptPopup() {
+  const t = useTranslations('reviewPrompt');
   const [prompt,    setPrompt]    = useState<Prompt | null>(null);
   const [visible,   setVisible]   = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -142,6 +144,11 @@ export default function ReviewPromptPopup() {
           from { opacity: 0; transform: translateX(100%) scale(0.9); }
           to   { opacity: 1; transform: translateX(0) scale(1); }
         }
+        @keyframes popupSlideInRtl {
+          from { opacity: 0; transform: translateX(-100%) scale(0.9); }
+          to   { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        [dir=rtl] .ct-review-popup { animation-name: popupSlideInRtl !important; }
         @keyframes progressShrink {
           from { width: 100%; }
           to   { width: 0%; }
@@ -156,8 +163,8 @@ export default function ReviewPromptPopup() {
 
       {/* ── Main Popup ─────────────────────────────────────────────────────── */}
       {visible && (
-        <div style={{
-          position: 'fixed', bottom: 24, right: 24, zIndex: 9000,
+        <div className="ct-review-popup" role="dialog" aria-label={t('title')} style={{
+          position: 'fixed', bottom: 24, insetInlineEnd: 24, zIndex: 9000,
           animation: 'popupSlideIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both',
           maxWidth: 340, width: '100%',
           fontFamily: "'Barlow', 'Inter', sans-serif",
@@ -189,14 +196,15 @@ export default function ReviewPromptPopup() {
                   ))}
                 </div>
                 <h3 style={{ fontSize: 15, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.01em' }}>
-                  How was your order?
+                  {t('title')}
                 </h3>
                 <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', margin: '3px 0 0', fontWeight: 500 }}>
-                  Share your experience
+                  {t('subtitle')}
                 </p>
               </div>
               <button
                 onClick={handleDismiss}
+                aria-label={t('close')}
                 style={{
                   width: 28, height: 28, borderRadius: '50%', border: 'none',
                   background: 'rgba(255,255,255,0.2)', cursor: 'pointer',
@@ -237,7 +245,7 @@ export default function ReviewPromptPopup() {
                     {prompt.product_name}
                   </p>
                   <p style={{ fontSize: 11, color: '#64748b', margin: 0, fontWeight: 500 }}>
-                    ✅ Order delivered
+                    {t('delivered')}
                   </p>
                 </div>
               </div>
@@ -257,7 +265,7 @@ export default function ReviewPromptPopup() {
                   fontFamily: 'inherit',
                 }}
               >
-                <Star size={15} fill="#fff" stroke="none" /> Leave a Review
+                <Star size={15} fill="#fff" stroke="none" /> {t('leaveReview')}
               </button>
 
               <button
@@ -271,7 +279,7 @@ export default function ReviewPromptPopup() {
                   transition: 'background 0.15s', fontFamily: 'inherit',
                 }}
               >
-                <Mail size={14} color="#64748b" /> Check My Email
+                <Mail size={14} color="#64748b" /> {t('checkEmail')}
               </button>
 
               <button
@@ -283,8 +291,8 @@ export default function ReviewPromptPopup() {
                   fontFamily: 'inherit',
                 }}
               >
-                Maybe Later{' '}
-                <span style={{ fontSize: 11, color: '#cbd5e1' }}>({countdown}s)</span>
+                {t('later')}{' '}
+                <span style={{ fontSize: 11, color: '#cbd5e1' }}>({t('seconds', { count: countdown })})</span>
               </button>
             </div>
           </div>

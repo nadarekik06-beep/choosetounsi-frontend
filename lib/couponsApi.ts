@@ -1,5 +1,6 @@
 // lib/couponsApi.ts
 
+import { fallbackError } from '@/lib/i18n/clientLocale'
 const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const BASE_URL = RAW_URL.replace(/\/api\/?$/, '')
 const API_URL  = `${BASE_URL}/api`
@@ -21,7 +22,7 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
     body: body != null ? JSON.stringify(body) : undefined,
   })
   const json = await res.json()
-  if (!res.ok) throw Object.assign(new Error(json.message ?? 'Request failed'), { response: json })
+  if (!res.ok) throw Object.assign(new Error(json.message ?? fallbackError('request')), { response: json })
   return json
 }
 

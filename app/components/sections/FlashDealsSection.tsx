@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import PriceDisplay from '@/app/components/promotions/PriceDisplay'
+import { useTranslations } from 'next-intl'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -50,13 +51,14 @@ function MiniCountdown({ endsAt }: { endsAt: string }) {
   const { h, m, s, expired } = useCountdown(endsAt)
   if (expired) return null
   return (
-    <span className="fds-timer">
+    <span className="fds-timer" dir="ltr">
       {String(h).padStart(2,'0')}:{String(m).padStart(2,'0')}:{String(s).padStart(2,'0')}
     </span>
   )
 }
 
 function FlashDealCard({ product, promo }: { product: FlashProduct; promo: FlashPromotion }) {
+  const t = useTranslations('home')
   const [imgErr, setImgErr] = useState(false)
   const [imgIndex, setImgIndex] = useState(0)          // ← NEW
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null) // ← NEW
@@ -110,7 +112,7 @@ function FlashDealCard({ product, promo }: { product: FlashProduct; promo: Flash
           <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
           </svg>
-          FLASH
+          {t('flashBadge')}
         </div>
         <MiniCountdown endsAt={promo.ends_at} />
       </div>
@@ -131,6 +133,7 @@ function FlashDealCard({ product, promo }: { product: FlashProduct; promo: Flash
   )
 }
 export default function FlashDealsSection() {
+  const t = useTranslations('home')
   const [promotions, setPromotions] = useState<FlashPromotion[]>([])
   const [loading,    setLoading]    = useState(true)
 
@@ -182,9 +185,9 @@ export default function FlashDealsSection() {
         .fds-img     { width:100%; height:100%; object-fit:cover; display:block; transition:transform .35s ease; }
         .fds-card:hover .fds-img { transform:scale(1.05); }
         .fds-img-placeholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:1.8rem; }
-        .fds-discount{ position:absolute; top:6px; left:6px; background:#db142e; color:#fff; font-size:8px; font-weight:800; padding:2px 5px; border-radius:999px; letter-spacing:.04em; }
-        .fds-flash-badge { position:absolute; top:6px; right:6px; display:flex; align-items:center; gap:2px; background:rgba(0,0,0,.6); color:#fbbf24; font-family:'Barlow',sans-serif; font-size:7px; font-weight:900; padding:2px 6px; border-radius:999px; backdrop-filter:blur(4px); letter-spacing:.06em; }
-        .fds-timer   { position:absolute; bottom:6px; left:6px; right:6px; background:rgba(0,0,0,.65); color:rgba(255,255,255,.9); font-family:'Barlow Condensed',sans-serif; font-size:10px; font-weight:800; letter-spacing:.03em; padding:2px 6px; border-radius:999px; text-align:center; backdrop-filter:blur(4px); }
+        .fds-discount{ position:absolute; top:6px; inset-inline-start:6px; background:#db142e; color:#fff; font-size:8px; font-weight:800; padding:2px 5px; border-radius:999px; letter-spacing:.04em; }
+        .fds-flash-badge { position:absolute; top:6px; inset-inline-end:6px; display:flex; align-items:center; gap:2px; background:rgba(0,0,0,.6); color:#fbbf24; font-family:'Barlow',sans-serif; font-size:7px; font-weight:900; padding:2px 6px; border-radius:999px; backdrop-filter:blur(4px); letter-spacing:.06em; }
+        .fds-timer   { position:absolute; bottom:6px; inset-inline:6px; background:rgba(0,0,0,.65); color:rgba(255,255,255,.9); font-family:'Barlow Condensed',sans-serif; font-size:10px; font-weight:800; letter-spacing:.03em; padding:2px 6px; border-radius:999px; text-align:center; backdrop-filter:blur(4px); }
         .fds-info    { padding:7px 2px 0; }
         .fds-name    { font-family:'Barlow',sans-serif; font-size:11.5px; font-weight:700; color:#111; margin:0 0 4px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
         .fds-stock-bar  { height:3px; background:#f3f4f6; border-radius:2px; margin-top:6px; overflow:hidden; }
@@ -205,11 +208,11 @@ export default function FlashDealsSection() {
                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
                   </svg>
                 </span>
-                Flash Sales
+                {t('flashSales')}
               </h2>
               {!loading && soonestPromo && <FlashCountdown endsAt={soonestPromo.ends_at} />}
             </div>
-            <Link href="/deals" className="fds-view-all">See All Deals →</Link>
+            <Link href="/deals" className="fds-view-all">{t('seeAllDeals')}</Link>
           </div>
 
           <div className="fds-row">
@@ -233,13 +236,14 @@ export default function FlashDealsSection() {
 }
 
 function FlashCountdown({ endsAt }: { endsAt: string }) {
+  const t = useTranslations('home')
   const { h, m, s, expired } = useCountdown(endsAt)
   if (expired) return null
   return (
     <div className="fds-cd">
       <span className="fds-cd-dot" />
-      <span className="fds-cd-label">Ends in</span>
-      <span className="fds-cd-text">
+      <span className="fds-cd-label">{t('endsIn')}</span>
+      <span className="fds-cd-text" dir="ltr">
         {String(h).padStart(2,'0')}:{String(m).padStart(2,'0')}:{String(s).padStart(2,'0')}
       </span>
     </div>

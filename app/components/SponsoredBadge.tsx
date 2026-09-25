@@ -15,12 +15,15 @@
  *   <SponsoredBadge compact />   → tiny, for grid cards
  */
 
+import { useTranslations } from 'next-intl';
+
 interface SponsoredBadgeProps {
   compact?: boolean;
   className?: string;
 }
 
 export default function SponsoredBadge({ compact = false, className }: SponsoredBadgeProps) {
+  const t = useTranslations('productCard');
   if (compact) {
     return (
       <span
@@ -42,7 +45,7 @@ export default function SponsoredBadge({ compact = false, className }: Sponsored
           pointerEvents:  'none',
         }}
       >
-        ⭐ Trending 
+        ⭐ {t('trendingPlain')}
       </span>
     );
   }
@@ -68,7 +71,7 @@ export default function SponsoredBadge({ compact = false, className }: Sponsored
         boxShadow:     '0 2px 8px rgba(245,158,11,0.2)',
       }}
     >
-      ⭐ Trending
+      ⭐ {t('trendingPlain')}
     </span>
   );
 }

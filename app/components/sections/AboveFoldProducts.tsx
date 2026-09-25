@@ -7,6 +7,7 @@ import { isAuthenticated } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import PriceDisplay from '@/app/components/promotions/PriceDisplay'
 import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
+import { useTranslations } from 'next-intl'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -38,6 +39,7 @@ interface Product {
 
 }
 function CompactProductCard({ product }: { product: Product }) {
+  const t = useTranslations('productCard')
   const { addToCart, isFavorited, toggleFavorite } = useCart()
   const router = useRouter()
   const [imgErr, setImgErr] = useState(false)
@@ -109,14 +111,14 @@ function CompactProductCard({ product }: { product: Product }) {
           </span>
         )}
         <FlashCountdownBadge promotion={product.promotion} />
-        {outOfStock && <div className="cpc-sold-overlay"><span>Sold Out</span></div>}
+        {outOfStock && <div className="cpc-sold-overlay"><span>{t('soldOut')}</span></div>}
         <div className="cpc-hover-actions">
-          <button className="cpc-btn" onClick={handleFav} title="Wishlist">
+          <button className="cpc-btn" onClick={handleFav} title={t('wishlist')} aria-label={t('wishlist')} aria-pressed={favorited}>
             <svg width="13" height="13" fill={favorited ? '#dc2626' : 'none'} stroke={favorited ? '#dc2626' : 'currentColor'} strokeWidth="2" viewBox="0 0 24 24">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
           </button>
-          <button className={`cpc-btn ${added ? 'cpc-btn--added' : ''}`} onClick={handleCart} disabled={outOfStock} title="Add to cart">
+          <button className={`cpc-btn ${added ? 'cpc-btn--added' : ''}`} onClick={handleCart} disabled={outOfStock} title={t('addToCart')} aria-label={t('addToCart')}>
             {added
               ? <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
               : <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
@@ -133,6 +135,7 @@ function CompactProductCard({ product }: { product: Product }) {
 }
 
 export default function AboveFoldProducts() {
+  const t = useTranslations('home')
   const [products, setProducts] = useState<Product[]>([])
   const [loading,  setLoading]  = useState(true)
 
@@ -166,10 +169,10 @@ export default function AboveFoldProducts() {
         .cpc-img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
         .cpc-card:hover .cpc-img{transform:scale(1.05)}
         .cpc-img-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.4rem}
-        .cpc-discount{position:absolute;top:6px;left:6px;background:#dc2626;color:#fff;font-size:8px;font-weight:800;padding:2px 5px;border-radius:999px;letter-spacing:.05em;text-transform:uppercase}
+        .cpc-discount{position:absolute;top:6px;inset-inline-start:6px;background:#dc2626;color:#fff;font-size:8px;font-weight:800;padding:2px 5px;border-radius:999px;letter-spacing:.05em;text-transform:uppercase}
         .cpc-sold-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center}
         .cpc-sold-overlay span{background:#111;color:#fff;font-size:8px;font-weight:900;padding:3px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.08em}
-        .cpc-hover-actions{position:absolute;bottom:6px;right:5px;display:flex;flex-direction:column;gap:4px;opacity:0;transform:translateX(4px);transition:opacity .2s ease,transform .2s ease;z-index:2}
+        .cpc-hover-actions{position:absolute;bottom:6px;inset-inline-end:5px;display:flex;flex-direction:column;gap:4px;opacity:0;transform:translateX(4px);transition:opacity .2s ease,transform .2s ease;z-index:2}
         .cpc-card:hover .cpc-hover-actions{opacity:1;transform:translateX(0)}
         .cpc-btn{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.9);border:1px solid rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#444;box-shadow:0 2px 6px rgba(0,0,0,0.10);transition:background .15s,color .15s}
         .cpc-btn:hover{background:#dc2626;color:#fff}
@@ -185,8 +188,8 @@ export default function AboveFoldProducts() {
       <section className="cpc-section">
         <div className="cpc-inner">
           <div className="cpc-header">
-            <h2 className="cpc-title">New Arrivals</h2>
-            <Link href="/shop" className="cpc-view-all">See All →</Link>
+            <h2 className="cpc-title">{t('newArrivals')}</h2>
+            <Link href="/shop" className="cpc-view-all">{t('seeAllArrow')}</Link>
           </div>
           <div className="cpc-row">
             {loading

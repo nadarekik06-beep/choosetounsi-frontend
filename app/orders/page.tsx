@@ -35,6 +35,9 @@ import { isAuthenticated } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import ComplaintModal from '@/app/components/ComplaintModal'
 import ReviewSubmitModal from '@/app/components/reviews/ReviewSubmitModal'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
+import { useWilayaLabel } from '@/lib/i18n/wilayas'
 
 const API_URL      = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api$/, '')
@@ -116,8 +119,14 @@ interface ReviewPrompt {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 2, maximumFractionDigits: 3 }).format(n) + ' DT'
+function useOrderFormat() {
+  const f = useFormat()
+  return {
+    ...f,
+    fmt:     (n: number) => f.price(n, { maximumFractionDigits: 3 }),
+    fmtDate: (iso: string | null | undefined) => (iso ? f.date(iso, 'datetime') : ''),
+  }
+}
 
 function resolveImg(path: string | null | undefined): string | null {
   if (!path) return null
@@ -125,35 +134,28 @@ function resolveImg(path: string | null | undefined): string | null {
   return `${STORAGE_BASE}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
 }
 
-function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  }) + ' · ' + new Date(iso).toLocaleTimeString('en-GB', {
-    hour: '2-digit', minute: '2-digit',
-  })
-}
-
 // ─── Status config ────────────────────────────────────────────────────────────
+// Labels come from messages: orderStatus.<status>
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
-  pending:          { label: 'Pending',          color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  icon: <Clock size={11} /> },
-  processing:       { label: 'Processing',       color: '#3b82f6', bg: 'rgba(59,130,246,0.1)',  icon: <RotateCcw size={11} /> },
-  out_for_delivery: { label: 'Out for Delivery', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)',  icon: <Truck size={11} /> },
-  completed:        { label: 'Completed',        color: '#10b981', bg: 'rgba(16,185,129,0.1)',  icon: <CheckCircle size={11} /> },
-  delivered:        { label: 'Delivered',        color: '#14b8a6', bg: 'rgba(20,184,166,0.1)',  icon: <Truck size={11} /> },
-  cancelled:        { label: 'Cancelled',        color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   icon: <XCircle size={11} /> },
-  refunded:         { label: 'Refunded',         color: '#a855f7', bg: 'rgba(168,85,247,0.1)',  icon: <RotateCcw size={11} /> },
+const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
+  pending:          { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  icon: <Clock size={11} /> },
+  processing:       { color: '#3b82f6', bg: 'rgba(59,130,246,0.1)',  icon: <RotateCcw size={11} /> },
+  out_for_delivery: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)',  icon: <Truck size={11} /> },
+  completed:        { color: '#10b981', bg: 'rgba(16,185,129,0.1)',  icon: <CheckCircle size={11} /> },
+  delivered:        { color: '#14b8a6', bg: 'rgba(20,184,166,0.1)',  icon: <Truck size={11} /> },
+  cancelled:        { color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   icon: <XCircle size={11} /> },
+  refunded:         { color: '#a855f7', bg: 'rgba(168,85,247,0.1)',  icon: <RotateCcw size={11} /> },
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? { label: status, color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', icon: null }
+  const tStatus = useTranslations('orderStatus')
+  const known = status in STATUS_CONFIG
+  const cfg = { label: known ? tStatus(status) : status, ...(STATUS_CONFIG[status] ?? { color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', icon: null }) }
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
       fontSize: 11, fontWeight: 800, padding: '3px 10px', borderRadius: 999,
       background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}30`,
-      textTransform: 'capitalize',
     }}>
       {cfg.icon} {cfg.label}
     </span>
@@ -163,6 +165,9 @@ function StatusBadge({ status }: { status: string }) {
 // ─── Order Tracker ────────────────────────────────────────────────────────────
 
 function OrderTracker({ order, group }: { order: Order; group: SellerGroup }) {
+  const t = useTranslations('orders')
+  const { fmtDate, isRtl } = useOrderFormat()
+  const wilayaLabel = useWilayaLabel()
   const status   = group.status
   const tracking = group.tracking
 
@@ -176,28 +181,28 @@ function OrderTracker({ order, group }: { order: Order; group: SellerGroup }) {
 
   const steps = [
     {
-      key: 'placed', label: 'Order Placed',
+      key: 'placed', label: t('track.placed'),
       sublabel: fmtDate(order.created_at),
       icon: <ShoppingBag size={16} />,
       isCompleted: true, isActive: currentRank === 0,
     },
     {
-      key: 'processing', label: 'Accepted',
-      sublabel: currentRank >= 1 ? 'Seller confirmed' : 'Waiting for seller',
+      key: 'processing', label: t('track.accepted'),
+      sublabel: currentRank >= 1 ? t('track.sellerConfirmed') : t('track.waitingSeller'),
       icon: <Package size={16} />,
       isCompleted: currentRank >= 1, isActive: currentRank === 1,
     },
     {
-      key: 'out_for_delivery', label: 'On the Way',
+      key: 'out_for_delivery', label: t('track.onTheWay'),
       sublabel: tracking?.picked_up_at
         ? fmtDate(tracking.picked_up_at) + (tracking.delivery_guy ? ` · ${tracking.delivery_guy}` : '')
-        : currentRank >= 2 ? 'In transit' : 'Expected',
+        : currentRank >= 2 ? t('track.inTransit') : t('track.expected'),
       icon: <Truck size={16} />,
       isCompleted: currentRank >= 2, isActive: currentRank === 2,
     },
     {
-      key: 'delivered', label: 'Delivered',
-      sublabel: tracking?.delivered_at ? fmtDate(tracking.delivered_at) : currentRank >= 3 ? 'Confirmed' : 'Expected',
+      key: 'delivered', label: t('track.delivered'),
+      sublabel: tracking?.delivered_at ? fmtDate(tracking.delivered_at) : currentRank >= 3 ? t('track.confirmed') : t('track.expected'),
       icon: <CheckCircle size={16} />,
       isCompleted: currentRank >= 3, isActive: status === 'delivered',
     },
@@ -222,10 +227,10 @@ function OrderTracker({ order, group }: { order: Order; group: SellerGroup }) {
         </div>
         <div>
           <p style={{ fontSize: 13, fontWeight: 800, color: isCancelled ? '#ef4444' : '#a855f7', margin: 0 }}>
-            {isCancelled ? 'Order Cancelled' : 'Order Refunded'}
+            {isCancelled ? t('track.cancelledTitle') : t('track.refundedTitle')}
           </p>
           <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>
-            {isCancelled ? 'This order has been cancelled.' : 'Your refund has been processed.'}
+            {isCancelled ? t('track.cancelledBody') : t('track.refundedBody')}
           </p>
         </div>
       </div>
@@ -236,11 +241,11 @@ function OrderTracker({ order, group }: { order: Order; group: SellerGroup }) {
     <div style={{ margin: '12px 20px 16px' }}>
       <div style={{ background: '#fafafa', border: '1px solid #f1f5f9', borderRadius: 14, padding: '20px 16px 16px', position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', position: 'relative' }}>
-          <div style={{ position: 'absolute', top: 20, left: '12.5%', right: '12.5%', height: 2, background: '#e5e7eb', zIndex: 0 }} />
+          <div style={{ position: 'absolute', top: 20, insetInline: '12.5%', height: 2, background: '#e5e7eb', zIndex: 0 }} />
           <div style={{
-            position: 'absolute', top: 20, left: '12.5%',
+            position: 'absolute', top: 20, insetInlineStart: '12.5%',
             width: `${Math.min(100, (currentRank / (steps.length - 1)) * 100)}%`,
-            height: 2, background: `linear-gradient(90deg, ${GREEN}, ${RED})`, zIndex: 1, transition: 'width 0.5s ease',
+            height: 2, background: `linear-gradient(${isRtl ? 270 : 90}deg, ${GREEN}, ${RED})`, zIndex: 1, transition: 'width 0.5s ease',
           }} />
           {steps.map((step) => (
             <div key={step.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
@@ -271,8 +276,8 @@ function OrderTracker({ order, group }: { order: Order; group: SellerGroup }) {
               <Truck size={13} />
             </div>
             <div>
-              <p style={{ fontSize: 11, fontWeight: 800, color: '#8b5cf6', margin: 0 }}>🚴 {tracking.delivery_guy} is on the way</p>
-              {tracking.picked_up_at && <p style={{ fontSize: 10, color: '#94a3b8', margin: '2px 0 0' }}>Picked up · {fmtDate(tracking.picked_up_at)}</p>}
+              <p style={{ fontSize: 11, fontWeight: 800, color: '#8b5cf6', margin: 0 }}>🚴 {t('track.driverOnWay', { name: tracking.delivery_guy })}</p>
+              {tracking.picked_up_at && <p style={{ fontSize: 10, color: '#94a3b8', margin: '2px 0 0' }}>{t('track.pickedUp', { date: fmtDate(tracking.picked_up_at) })}</p>}
             </div>
           </div>
         )}
@@ -280,7 +285,7 @@ function OrderTracker({ order, group }: { order: Order; group: SellerGroup }) {
         {(order.wilaya || order.address) && (
           <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#64748b' }}>
             <MapPin size={12} color="#94a3b8" />
-            <span>{[order.wilaya, order.address].filter(Boolean).join(' — ')}</span>
+            <span>{[order.wilaya ? wilayaLabel(order.wilaya) : null, order.address].filter(Boolean).join(' — ')}</span>
           </div>
         )}
       </div>
@@ -293,6 +298,8 @@ function OrderTracker({ order, group }: { order: Order; group: SellerGroup }) {
 function ItemRow({ item, groupStatus, reviewed, onRate }: {
   item: OrderItem; groupStatus: string; reviewed: boolean; onRate: (item: OrderItem) => void
 }) {
+  const t = useTranslations('orders')
+  const { fmt } = useOrderFormat()
   const img         = item.resolved_image_url ?? resolveImg(item.product?.primary_image_url)
   const isDelivered = groupStatus === 'delivered'
   const isReturned  = !!item.is_returned   // ← NEW
@@ -306,12 +313,10 @@ function ItemRow({ item, groupStatus, reviewed, onRate }: {
       flexWrap: 'wrap',
       // ← NEW: red tint for returned items
       background: isReturned ? 'rgba(219,20,46,0.03)' : 'transparent',
-      marginLeft: isReturned ? -8 : 0,
-      marginRight: isReturned ? -8 : 0,
-      paddingLeft: isReturned ? 8 : 0,
-      paddingRight: isReturned ? 8 : 0,
+      marginInline: isReturned ? -8 : 0,
+      paddingInline: isReturned ? 8 : 0,
       borderRadius: isReturned ? 8 : 0,
-      borderLeft: isReturned ? '3px solid #db142e' : 'none',
+      borderInlineStart: isReturned ? '3px solid #db142e' : 'none',
     }}>
       {/* Product image */}
       <div style={{
@@ -373,7 +378,7 @@ function ItemRow({ item, groupStatus, reviewed, onRate }: {
             border: '1px solid rgba(219,20,46,0.25)',
             padding: '4px 10px', borderRadius: 999,
           }}>
-            ↩ Returned
+            ↩ {t('returned')}
           </span>
         ) : isDelivered ? (
           reviewed ? (
@@ -383,7 +388,7 @@ function ItemRow({ item, groupStatus, reviewed, onRate }: {
               background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
               padding: '4px 10px', borderRadius: 999,
             }}>
-              <CheckCircle size={11} /> Reviewed
+              <CheckCircle size={11} /> {t('reviewed')}
             </span>
           ) : (
             <button
@@ -399,7 +404,7 @@ function ItemRow({ item, groupStatus, reviewed, onRate }: {
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(245,158,11,0.45)' }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(245,158,11,0.35)' }}
             >
-              <Star size={12} fill="#fff" stroke="none" /> Rate Product
+              <Star size={12} fill="#fff" stroke="none" /> {t('rateProduct')}
             </button>
           )
         ) : null}
@@ -412,19 +417,21 @@ function ItemRow({ item, groupStatus, reviewed, onRate }: {
 function SellerGroupSection({ group, showSeparator, reviewedMap, onRate, order }: {
   group: SellerGroup; showSeparator: boolean; reviewedMap: ReviewedMap; onRate: (item: OrderItem) => void; order: Order
 }) {
+  const t = useTranslations('orders')
+  const { fmt, isRtl } = useOrderFormat()
   const pendingReviews = group.items.filter(i => group.status === 'delivered' && !reviewedMap[i.id]).length
   return (
     <div style={{ borderTop: showSeparator ? '1px dashed #e5e7eb' : '1px solid #f1f5f9' }}>
       {showSeparator && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', background: 'linear-gradient(90deg,#fafafa,#f1f5f9)', borderBottom: '1px solid #f1f5f9' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', background: `linear-gradient(${isRtl ? 270 : 90}deg,#fafafa,#f1f5f9)`, borderBottom: '1px solid #f1f5f9' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Store size={12} color="#64748b" />
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>Seller #{group.seller_order_id}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>{t('sellerN', { id: group.seller_order_id })}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {pendingReviews > 0 && (
               <span style={{ fontSize: 10, fontWeight: 800, color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', padding: '2px 8px', borderRadius: 999 }}>
-                ⭐ {pendingReviews} to review
+                ⭐ {t('toReview', { count: pendingReviews })}
               </span>
             )}
             <StatusBadge status={group.status} />
@@ -454,10 +461,14 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed }: {
   onRate: (item: OrderItem, orderItemId: number) => void
   onReviewed: (orderItemId: number) => void
 }) {
+  const t  = useTranslations('orders')
+  const tc = useTranslations('common')
+  const format = useOrderFormat()
+  const { fmt } = format
   const [expanded,      setExpanded]      = useState(false)
   const [complaintOpen, setComplaintOpen] = useState(false)
 
-  const date = new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  const date = format.date(order.created_at, 'medium')
 
   const sellerGroups: SellerGroup[] = (order.seller_groups && order.seller_groups.length > 0)
     ? order.seller_groups
@@ -490,11 +501,11 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed }: {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 16 }}>⭐</span>
               <span style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>
-                {totalPendingReviews === 1 ? 'You have 1 product to review!' : `You have ${totalPendingReviews} products to review!`}
+                {t('pendingReviews', { count: totalPendingReviews })}
               </span>
             </div>
             <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', background: 'linear-gradient(135deg,#f59e0b,#d97706)', padding: '4px 12px', borderRadius: 999, boxShadow: '0 2px 6px rgba(245,158,11,0.3)' }}>
-              Rate Now →
+              {t('rateNow')}
             </span>
           </div>
         )}
@@ -502,20 +513,20 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed }: {
         <div style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <div>
-              <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, margin: '0 0 2px' }}>Order</p>
+              <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, margin: '0 0 2px' }}>{t('order')}</p>
               <p style={{ fontSize: 14, fontWeight: 900, color: '#0f172a', margin: 0, fontFamily: 'monospace' }}>{order.order_number}</p>
             </div>
             <div>
-              <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, margin: '0 0 2px' }}>Date</p>
+              <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, margin: '0 0 2px' }}>{t('date')}</p>
               <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0 }}>{date}</p>
             </div>
             <div>
-              <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, margin: '0 0 2px' }}>Total</p>
+              <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, margin: '0 0 2px' }}>{tc('total')}</p>
               <p style={{ fontSize: 15, fontWeight: 900, color: RED, margin: 0 }}>{fmt(order.total_amount)}</p>
             </div>
             {headerStatus === 'mixed' ? (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 800, padding: '3px 10px', borderRadius: 999, background: 'rgba(99,102,241,0.08)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.25)' }}>
-                <Store size={10} /> Multiple Statuses
+                <Store size={10} /> {t('multipleStatuses')}
               </span>
             ) : <StatusBadge status={headerStatus} />}
           </div>
@@ -525,11 +536,11 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed }: {
               <button onClick={() => setComplaintOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: RED, background: 'rgba(220,38,38,0.06)', border: '1.5px solid rgba(220,38,38,0.25)', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.15s' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.12)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.06)')}>
-                🚨 Report Issue
+                🚨 {t('reportIssue')}
               </button>
             )}
             <button onClick={() => setExpanded(e => !e)} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#64748b', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
-              {expanded ? <><ChevronUp size={13} /> Hide</> : <><ChevronDown size={13} /> Details</>}
+              {expanded ? <><ChevronUp size={13} /> {t('hide')}</> : <><ChevronDown size={13} /> {t('details')}</>}
             </button>
           </div>
         </div>
@@ -543,21 +554,21 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed }: {
               {order.subtotal !== undefined && (
                 <>
                   <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#64748b', fontWeight: 600 }}>
-                    <span>Subtotal:</span><span>{fmt(Number(order.subtotal))}</span>
+                    <span>{t('subtotal')}</span><span>{fmt(Number(order.subtotal))}</span>
                   </div>
                   {Number(order.discount_amount ?? 0) > 0 && (
                     <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#16a34a', fontWeight: 700 }}>
-                      <span>Coupon{order.coupon_codes?.length ? ` (${order.coupon_codes.join(', ')})` : ''}:</span>
+                      <span>{t('coupon', { codes: order.coupon_codes?.length ? ` (${order.coupon_codes.join(', ')})` : '' })}</span>
                       <span>−{fmt(Number(order.discount_amount))}</span>
                     </div>
                   )}
                   <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#64748b', fontWeight: 600 }}>
-                    <span>Shipping:</span><span>{Number(order.shipping_fee ?? 0) > 0 ? fmt(Number(order.shipping_fee)) : 'Free'}</span>
+                    <span>{t('shipping')}</span><span>{Number(order.shipping_fee ?? 0) > 0 ? fmt(Number(order.shipping_fee)) : tc('free')}</span>
                   </div>
                 </>
               )}
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>Order Total:</span>
+                <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>{t('orderTotal')}</span>
                 <span style={{ fontSize: 18, fontWeight: 900, color: RED }}>{fmt(order.total_amount)}</span>
               </div>
             </div>
@@ -578,6 +589,8 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed }: {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function OrdersPage() {
+  const t       = useTranslations('orders')
+  const tc      = useTranslations('common')
   const router  = useRouter()
   const [orders,      setOrders]      = useState<Order[]>([])
   const [loading,     setLoading]     = useState(true)
@@ -750,13 +763,13 @@ export default function OrdersPage() {
 
       <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Barlow', sans-serif" }}>
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
-          <div style={{ maxWidth: 860, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
-            <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Home</Link>
+          <nav aria-label={t('breadcrumb')} style={{ maxWidth: 860, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
+            <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>{tc('home')}</Link>
             <ChevronRight size={11} />
-            <Link href="/account" style={{ color: '#94a3b8', textDecoration: 'none' }}>Account</Link>
+            <Link href="/profile" style={{ color: '#94a3b8', textDecoration: 'none' }}>{t('account')}</Link>
             <ChevronRight size={11} />
-            <span style={{ color: '#374151', fontWeight: 600 }}>Orders</span>
-          </div>
+            <span style={{ color: '#374151', fontWeight: 600 }}>{t('breadcrumbOrders')}</span>
+          </nav>
         </div>
 
         <div style={{ maxWidth: 860, margin: '0 auto', padding: '28px 24px 60px', animation: 'fadeUp 0.4s ease both' }}>
@@ -765,9 +778,9 @@ export default function OrdersPage() {
               <ShoppingBag size={18} color={RED} />
             </div>
             <div>
-              <h1 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>My Orders</h1>
+              <h1 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>{t('title')}</h1>
               {!loading && !error && (
-                <p style={{ fontSize: 12, color: '#94a3b8', margin: 0, fontWeight: 500 }}>{orders.length} order{orders.length !== 1 ? 's' : ''}</p>
+                <p style={{ fontSize: 12, color: '#94a3b8', margin: 0, fontWeight: 500 }}>{t('count', { count: orders.length })}</p>
               )}
             </div>
           </div>
@@ -775,23 +788,23 @@ export default function OrdersPage() {
           {loading && (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
               <Loader2 size={28} style={{ animation: 'spin 0.8s linear infinite', color: RED, margin: '0 auto 12px' }} />
-              <p style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>Loading your orders…</p>
+              <p style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>{t('loading')}</p>
             </div>
           )}
 
           {error && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '16px 20px', color: RED, fontSize: 13, fontWeight: 600 }}>
-              Failed to load orders. Please refresh the page.
+              {t('loadFailed')}
             </div>
           )}
 
           {!loading && !error && orders.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
               <ShoppingBag size={40} color="#e2e8f0" style={{ margin: '0 auto 16px' }} />
-              <p style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>No orders yet</p>
-              <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px' }}>Your order history will appear here.</p>
+              <p style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>{t('emptyTitle')}</p>
+              <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px' }}>{t('emptyBody')}</p>
               <Link href="/shop" style={{ padding: '10px 24px', background: `linear-gradient(135deg,${RED},#b91c1c)`, color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 10, textDecoration: 'none', boxShadow: '0 4px 14px rgba(220,38,38,0.3)' }}>
-                Start Shopping
+                {t('startShopping')}
               </Link>
             </div>
           )}

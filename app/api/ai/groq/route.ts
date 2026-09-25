@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       'Content-Type':  'application/json',
       'Accept':        'application/json',
       'Authorization': `Bearer ${token}`,
+      'Accept-Language': req.headers.get('accept-language') ?? 'fr',
     },
     body: JSON.stringify({
       systemPrompt: body.systemPrompt,

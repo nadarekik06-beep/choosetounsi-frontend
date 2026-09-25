@@ -17,6 +17,9 @@ import { useCart } from '@/context/CartContext'
 import Navbar from '@/app/components/layout/Navbar'
 import SponsoredProductsSection from '@/app/components/SponsoredProductsSection'
 import ProductFilterSidebar, { type F } from '@/app/components/filters/ProductFilterSidebar'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
+import { canScrollNext, canScrollPrev, scrollCarousel } from '@/lib/i18n/rtlScroll'
 
 const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API    = `${ORIGIN}/api`
@@ -83,8 +86,6 @@ function galleryImgs(p: Product): string[] {
   return out.filter(Boolean)
 }
 
-const money = (v: string | number) => `${Number(v).toFixed(2)} DT`
-
 /**
  * getDisplayPrices — resolves what to show on the card
  *
@@ -93,7 +94,7 @@ const money = (v: string | number) => `${Number(v).toFixed(2)} DT`
  *   originalPrice  → shown crossed-out (only when truly discounted)
  *   discountBadge  → "-20%" label or null
  */
-function getDisplayPrices(p: Product): {
+function getDisplayPrices(p: Product, money: (v: number) => string): {
   displayPrice: number
   originalPrice: number | null
   discountBadge: string | null
@@ -117,7 +118,7 @@ function getDisplayPrices(p: Product): {
     if (pct > 0) badge = `-${pct}%`
   } else {
     const saved = base - effective
-    if (saved > 0) badge = `-${saved.toFixed(2)} DT`
+    if (saved > 0) badge = `-${money(saved)}`
   }
 
   return {
@@ -132,6 +133,9 @@ function getDisplayPrices(p: Product): {
 //  PRODUCT CARD
 // ══════════════════════════════════════════════════════════════════════════════
 function Card({ p, idx }: { p: Product; idx: number }) {
+  const t   = useTranslations('category')
+  const tc  = useTranslations('productCard')
+  const { price: money } = useFormat()
   const { addToCart } = useCart()
   const gallery = useMemo(() => galleryImgs(p), [p])
 
@@ -149,7 +153,7 @@ function Card({ p, idx }: { p: Product; idx: number }) {
   const oos = p.stock <= 0
 
   // ── FIXED: use promotion-aware price helper ────────────────────────────────
-  const { displayPrice, originalPrice, discountBadge, isFlashSale } = getDisplayPrices(p)
+  const { displayPrice, originalPrice, discountBadge, isFlashSale } = getDisplayPrices(p, money)
 
   const swatches    = p.color_swatches ?? []
   const maxSwatches = 5
@@ -233,7 +237,7 @@ function Card({ p, idx }: { p: Product; idx: number }) {
               border: '1px solid rgba(245,158,11,0.4)',
               color: '#f59e0b',
             }}>
-              ⭐ Sponsored
+              ⭐ {t('sponsored')}
             </span>
           )}
 
@@ -249,8 +253,8 @@ function Card({ p, idx }: { p: Product; idx: number }) {
             </span>
           )}
 
-          {p.is_new        && <span className="shc-badge shc-new">NEW</span>}
-          {p.is_bestseller && <span className="shc-badge shc-hot">TOP</span>}
+          {p.is_new        && <span className="shc-badge shc-new">{t('badgeNew')}</span>}
+          {p.is_bestseller && <span className="shc-badge shc-hot">{t('badgeTop')}</span>}
 
           {/* ── Flash sale indicator ── */}
           {p.promotion?.is_flash_sale && (
@@ -267,18 +271,18 @@ function Card({ p, idx }: { p: Product; idx: number }) {
                 background: '#fbbf24', display: 'inline-block',
                 animation: 'shcPulse 1.4s ease-in-out infinite',
               }} />
-              ⚡ FLASH
+              ⚡ {t('badgeFlash')}
             </span>
           )}
         </div>
 
         <FlashCountdownBadge promotion={p.promotion} />
 
-        {oos && <div className="shc-oos"><span>Sold Out</span></div>}
+        {oos && <div className="shc-oos"><span>{tc('soldOut')}</span></div>}
 
         <button className={`shc-wish${wish ? ' on' : ''}`}
           onClick={e => { e.preventDefault(); e.stopPropagation(); setWish(v => !v) }}
-          aria-label="Wishlist">
+          aria-label={tc('wishlist')} aria-pressed={wish}>
           <svg width="14" height="14" fill={wish ? '#db142e' : 'none'} stroke={wish ? '#db142e' : '#666'} strokeWidth="2.1" viewBox="0 0 24 24">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
           </svg>
@@ -300,7 +304,7 @@ function Card({ p, idx }: { p: Product; idx: number }) {
                 <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
               </svg>
             )}
-            <span>{oos ? 'Sold Out' : cs === 'done' ? 'Added!' : cs === 'busy' ? '' : 'Add to Cart'}</span>
+            <span>{oos ? tc('soldOut') : cs === 'done' ? t('added') : cs === 'busy' ? '' : tc('addToCart')}</span>
           </button>
         </div>
       </div>
@@ -343,7 +347,7 @@ function Card({ p, idx }: { p: Product; idx: number }) {
           </div>
         )}
 
-        {p.stock > 0 && p.stock <= 5 && <p className="shc-low">Only {p.stock} left!</p>}
+        {p.stock > 0 && p.stock <= 5 && <p className="shc-low">{tc('onlyLeft', { count: p.stock })}</p>}
       </div>
     </Link>
   )
@@ -351,13 +355,16 @@ function Card({ p, idx }: { p: Product; idx: number }) {
 
 // ─── List card — same price fix applied ───────────────────────────────────────
 function ListCard({ p, idx }: { p: Product; idx: number }) {
+  const t   = useTranslations('category')
+  const tc  = useTranslations('productCard')
+  const { price: money } = useFormat()
   const { addToCart } = useCart()
   const [cs, setCs] = useState<'idle' | 'busy' | 'done'>('idle')
   const [err, setErr] = useState(false)
   const pri = primaryImg(p)
 
   // ── FIXED ───────────────────────────────────────────────────────────────────
-  const { displayPrice, originalPrice, discountBadge, isFlashSale } = getDisplayPrices(p)
+  const { displayPrice, originalPrice, discountBadge, isFlashSale } = getDisplayPrices(p, money)
 
   const handle = async (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation()
@@ -385,7 +392,7 @@ function ListCard({ p, idx }: { p: Product; idx: number }) {
           <span
             className="shc-badge shc-disc"
             style={{
-              position:'absolute', top:8, left:8, zIndex:2,
+              position:'absolute', top:8, insetInlineStart:8, zIndex:2,
               ...(isFlashSale ? { background: 'linear-gradient(135deg,#dc2626,#f97316)' } : {}),
             }}
           >
@@ -411,7 +418,7 @@ function ListCard({ p, idx }: { p: Product; idx: number }) {
             onClick={handle}
             disabled={p.stock <= 0 || cs === 'busy'}
           >
-            {cs === 'done' ? '✓ Added' : p.stock <= 0 ? 'Sold Out' : '+ Add'}
+            {cs === 'done' ? `✓ ${t('added')}` : p.stock <= 0 ? tc('soldOut') : `+ ${t('add')}`}
           </button>
         </div>
       </div>
@@ -435,17 +442,19 @@ function CatBar({ cats, active, view, setView, mOpen, setMOpen, fCount, shown, t
   cats: Category[]; active: string; view: View; setView:(v:View)=>void
   mOpen:boolean; setMOpen:(v:boolean)=>void; fCount:number; shown:number; total:number
 }) {
+  const t=useTranslations('category')
+  const tc=useTranslations('common')
   const ref=useRef<HTMLDivElement>(null)
   const [cl,setCl]=useState(false); const [cr,setCr]=useState(false)
   const [drag,setDrag]=useState(false); const dx=useRef(0); const ds=useRef(0)
-  const check=useCallback(()=>{ const el=ref.current; if(!el) return; setCl(el.scrollLeft>6); setCr(el.scrollLeft+el.clientWidth<el.scrollWidth-6) },[])
+  const check=useCallback(()=>{ const el=ref.current; if(!el) return; setCl(canScrollPrev(el,6)); setCr(canScrollNext(el,6)) },[])
   useEffect(()=>{ const el=ref.current; if(!el) return; check(); el.addEventListener('scroll',check,{passive:true}); const ro=new ResizeObserver(check); ro.observe(el); return()=>{ el.removeEventListener('scroll',check); ro.disconnect() } },[cats,check])
   useEffect(()=>{ const el=ref.current; if(!el||!active) return; const nd=el.querySelector(`[data-slug="${active}"]`) as HTMLElement|null; if(nd){ const cr2=el.getBoundingClientRect(); const nr=nd.getBoundingClientRect(); el.scrollBy({left:nr.left-cr2.left-cr2.width/2+nr.width/2,behavior:'smooth'}) } },[active,cats])
-  const sb=(d:'l'|'r')=>ref.current?.scrollBy({left:d==='l'?-240:240,behavior:'smooth'})
+  const sb=(d:'prev'|'next')=>{ if(ref.current) scrollCarousel(ref.current,d,240) }
   return (
     <div className="catbar">
       <div className="catbar-w">
-        <button className={`catbar-arr${cl?' show':''}`} onClick={()=>sb('l')} style={{left:0}}><svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <button className={`catbar-arr${cl?' show':''}`} onClick={()=>sb('prev')} aria-label={tc('scrollPrev')}><svg className="rtl-flip" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
         <div className={`catbar-fade catbar-fl${cl?' show':''}`}/>
         <div ref={ref} className="catbar-list" style={{cursor:drag?'grabbing':'grab'}}
           onMouseDown={e=>{setDrag(true);dx.current=e.clientX;ds.current=ref.current?.scrollLeft??0}}
@@ -457,17 +466,17 @@ function CatBar({ cats, active, view, setView, mOpen, setMOpen, fCount, shown, t
           ))}
         </div>
         <div className={`catbar-fade catbar-fr${cr?' show':''}`}/>
-        <button className={`catbar-arr${cr?' show':''}`} onClick={()=>sb('r')} style={{right:0}}><svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+        <button className={`catbar-arr${cr?' show':''}`} onClick={()=>sb('next')} aria-label={tc('scrollNext')}><svg className="rtl-flip" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
         <div className="catbar-ctrl">
           <button className="catbar-fb" onClick={()=>setMOpen(!mOpen)}>
             <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
-            Filters{fCount>0&&<span className="catbar-fbdg">{fCount}</span>}
+            {t('filters')}{fCount>0&&<span className="catbar-fbdg">{fCount}</span>}
           </button>
           {total>0&&<span className="catbar-cnt">{shown}/{total}</span>}
-          <button className={`catbar-vb${view==='grid'?' on':''}`} onClick={()=>setView('grid')}>
+          <button className={`catbar-vb${view==='grid'?' on':''}`} onClick={()=>setView('grid')} aria-label={t('gridView')} aria-pressed={view==='grid'}>
             <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
           </button>
-          <button className={`catbar-vb${view==='list'?' on':''}`} onClick={()=>setView('list')}>
+          <button className={`catbar-vb${view==='list'?' on':''}`} onClick={()=>setView('list')} aria-label={t('listView')} aria-pressed={view==='list'}>
             <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
         </div>
@@ -478,14 +487,15 @@ function CatBar({ cats, active, view, setView, mOpen, setMOpen, fCount, shown, t
 
 // ─── Pagination — UNCHANGED ───────────────────────────────────────────────────
 function Pages({ cur, total, go }: { cur:number; total:number; go:(p:number)=>void }) {
+  const t=useTranslations('common')
   if (total<=1) return null
   const ps=Array.from({length:total},(_,i)=>i+1).filter(p=>p===1||p===total||Math.abs(p-cur)<=1)
     .reduce<(number|'…')[]>((acc,p,i,arr)=>{if(i>0&&(p as number)-(arr[i-1] as number)>1)acc.push('…');acc.push(p);return acc},[])
   return (
     <div className="pages">
-      <button className="pgb" onClick={()=>go(Math.max(1,cur-1))} disabled={cur===1}><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button className="pgb" onClick={()=>go(Math.max(1,cur-1))} disabled={cur===1} aria-label={t('previous')}><svg className="rtl-flip" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
       {ps.map((p,i)=>p==='…'?<span key={`e${i}`} className="pg-sep">…</span>:<button key={p} className={`pgb${cur===p?' on':''}`} onClick={()=>go(p as number)}>{p}</button>)}
-      <button className="pgb" onClick={()=>go(Math.min(total,cur+1))} disabled={cur===total}><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+      <button className="pgb" onClick={()=>go(Math.min(total,cur+1))} disabled={cur===total} aria-label={t('next')}><svg className="rtl-flip" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
     </div>
   )
 }
@@ -494,6 +504,8 @@ function Pages({ cur, total, go }: { cur:number; total:number; go:(p:number)=>vo
 //  PAGE INNER
 // ══════════════════════════════════════════════════════════════════════════════
 function Inner() {
+  const t       = useTranslations('category')
+  const tMega   = useTranslations('mega')
   const params  = useParams()
   const sp      = useSearchParams()
   const slug    = params?.slug as string
@@ -557,7 +569,7 @@ function Inner() {
     const q=f.q.toLowerCase(); return prods.data.filter(p=>p.name.toLowerCase().includes(q))
   },[prods,f.q])
 
-  const subLabel=subSlug.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
+  const subLabel=tMega.has(`items.${subSlug}`)?tMega(`items.${subSlug}`):subSlug.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
   const fCount=[f.q!=='',f.inStock,f.isPack,f.pMin!==''||f.pMax!=='',subSlug!=='',Object.values(f.attrs).some(v=>v.length)].filter(Boolean).length
 
   return (
@@ -572,6 +584,8 @@ function Inner() {
         @keyframes shSpin   {to{transform:rotate(360deg)}}
         @keyframes shSlideL {from{transform:translateX(0%)}to{transform:translateX(-100%)}}
         @keyframes shSlideR {from{transform:translateX(100%)}to{transform:translateX(0%)}}
+        @keyframes shSlideLRtl {from{transform:translateX(0%)}to{transform:translateX(100%)}}
+        @keyframes shSlideRRtl {from{transform:translateX(-100%)}to{transform:translateX(0%)}}
         @keyframes shSlideIn{from{transform:translateX(-100%);opacity:0}to{transform:translateX(0);opacity:1}}
         @keyframes shPop    {0%{transform:scale(1)}50%{transform:scale(1.22)}100%{transform:scale(1)}}
         @keyframes shcPulse {0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
@@ -583,14 +597,15 @@ function Inner() {
         .catbar-arr{position:relative;display:flex;align-items:center;justify-content:center;width:24px;min-height:48px;flex-shrink:0;background:transparent;border:none;cursor:pointer;color:#ccc;opacity:0;pointer-events:none;transition:opacity .2s,color .14s}
         .catbar-arr.show{opacity:1;pointer-events:auto}.catbar-arr:hover{color:#db142e}
         .catbar-fade{position:absolute;top:0;bottom:0;width:40px;pointer-events:none;z-index:2;opacity:0;transition:opacity .2s}
-        .catbar-fl{left:30px;background:linear-gradient(to right,#fff,transparent)}.catbar-fr{right:30px;background:linear-gradient(to left,#fff,transparent)}
+        .catbar-fl{inset-inline-start:30px;background:linear-gradient(to right,#fff,transparent)}.catbar-fr{inset-inline-end:30px;background:linear-gradient(to left,#fff,transparent)}
+        [dir=rtl] .catbar-fl{background:linear-gradient(to left,#fff,transparent)}[dir=rtl] .catbar-fr{background:linear-gradient(to right,#fff,transparent)}
         .catbar-fade.show{opacity:1}
         .catbar-list{display:flex;align-items:center;gap:2px;flex:1;overflow-x:auto;scrollbar-width:none;padding:5px 2px;user-select:none}
         .catbar-list::-webkit-scrollbar{display:none}
         .catbar-chip{display:flex;align-items:center;padding:6px 13px;border-radius:7px;border:1.5px solid transparent;background:transparent;font-size:12.5px;font-weight:600;color:#555;text-decoration:none;white-space:nowrap;flex-shrink:0;font-family:'Outfit',sans-serif;transition:all .15s;cursor:pointer}
         .catbar-chip:hover{background:#f8f8f8;border-color:#eee;color:#111;transform:translateY(-1px)}
         .catbar-chip.on{background:#db142e;color:#fff;border-color:transparent;box-shadow:0 3px 10px rgba(219,20,46,.24);transform:translateY(-1px)}
-        .catbar-ctrl{display:flex;align-items:center;gap:6px;flex-shrink:0;border-left:1px solid #f0f0f0;padding:5px 6px 5px 11px;margin-left:3px}
+        .catbar-ctrl{display:flex;align-items:center;gap:6px;flex-shrink:0;border-inline-start:1px solid #f0f0f0;padding-block:5px;padding-inline:11px 6px;margin-inline-start:3px}
         .catbar-fb{display:none;align-items:center;gap:6px;padding:6px 11px;background:#fff;border:1.5px solid #e5e7eb;border-radius:7px;font-size:12px;font-weight:700;color:#374151;cursor:pointer;white-space:nowrap;font-family:'Outfit',sans-serif;transition:all .13s}
         .catbar-fb:hover{border-color:#db142e;color:#db142e}
         .catbar-fbdg{background:#db142e;color:#fff;font-size:9px;font-weight:900;border-radius:999px;min-width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;padding:0 3px}
@@ -662,17 +677,17 @@ function Inner() {
         .shc-layer-zoom{transform:scale(1.055);transition:transform .55s cubic-bezier(.25,.46,.45,.94)}
         .shc-img{width:100%;height:100%;object-fit:cover;display:block}
         .shc-noimg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f4f4f6}
-        .shc-badges{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;z-index:5}
+        .shc-badges{position:absolute;top:8px;inset-inline-start:8px;display:flex;flex-direction:column;gap:4px;z-index:5}
         .shc-badge{font-size:8px;font-weight:900;padding:2px 6px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
         .shc-disc{background:#db142e;color:#fff}.shc-new{background:#198f41;color:#fff}.shc-hot{background:#111;color:#fbbf24}
         .shc-oos{position:absolute;inset:0;z-index:6;background:rgba(255,255,255,.62);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center}
         .shc-oos span{background:#111;color:#fff;font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;padding:5px 13px;border-radius:999px}
-        .shc-wish{position:absolute;top:8px;right:8px;z-index:7;width:28px;height:28px;background:rgba(255,255,255,.88);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.09);backdrop-filter:blur(4px);transition:transform .16s,background .16s}
+        .shc-wish{position:absolute;top:8px;inset-inline-end:8px;z-index:7;width:28px;height:28px;background:rgba(255,255,255,.88);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.09);backdrop-filter:blur(4px);transition:transform .16s,background .16s}
         .shc-wish:hover{transform:scale(1.14);background:#fff}.shc-wish.on{animation:shPop .3s ease}
         .shc-dots{position:absolute;bottom:48px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:5}
         .shc-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.6);transition:all .22s}
         .shc-dot.on{background:#fff;width:15px;border-radius:3px}
-        .shc-cta{position:absolute;bottom:0;left:0;right:0;padding:0 9px 9px;z-index:6;transform:translateY(110%);opacity:0;transition:transform .3s cubic-bezier(.34,1.48,.64,1),opacity .22s}
+        .shc-cta{position:absolute;bottom:0;inset-inline:0;padding:0 9px 9px;z-index:6;transform:translateY(110%);opacity:0;transition:transform .3s cubic-bezier(.34,1.48,.64,1),opacity .22s}
         .shc-cta.show{transform:translateY(0);opacity:1}
         .shc-add{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px 10px;background:#db142e;color:#fff;font-size:12px;font-weight:800;border:none;border-radius:8px;cursor:pointer;font-family:'Outfit',sans-serif;box-shadow:0 4px 14px rgba(219,20,46,.38);transition:background .13s,transform .11s;letter-spacing:.01em}
         .shc-add:hover:not(:disabled){background:#b91c1c;transform:scale(1.01)}.shc-add:disabled{cursor:not-allowed}
@@ -694,6 +709,8 @@ function Inner() {
         .shc-low{font-size:9.5px;font-weight:700;color:#f97316;background:#fff7ed;padding:1px 7px;border-radius:999px;display:inline-block;margin-top:2px}
         .shlc{background:#fff;border-radius:11px;border:1px solid #eee;overflow:hidden;display:flex;text-decoration:none;animation:shFadeUp .42s ease both;animation-delay:var(--d,0s);transition:box-shadow .2s,transform .2s}
         .shlc:hover{box-shadow:0 6px 22px rgba(0,0,0,.08);transform:translateX(3px)}
+        [dir=rtl] .shlc:hover{transform:translateX(-3px)}
+        [dir=rtl] .shc-layer-out{animation-name:shSlideLRtl}[dir=rtl] .shc-layer-in{animation-name:shSlideRRtl}
         .shlc-img{position:relative;width:138px;flex-shrink:0}
         .shlc-body{padding:15px 18px;display:flex;flex-direction:column;gap:5px;flex:1}
         .shlc-name{font-size:15px;font-weight:700;color:#1f2937;line-height:1.4}
@@ -734,12 +751,12 @@ function Inner() {
 
         <div className="shlayout">
           <ProductFilterSidebar f={f} setF={setF} total={prods?.total??0} catSlug={slug} subSlug={subSlug}
-            searchPlaceholder="Search in category…" mOpen={mOpen} setMOpen={setMOpen}/>
+            searchPlaceholder={t('searchInCategory')} mOpen={mOpen} setMOpen={setMOpen}/>
 
           <div>
             {!load && (
               <SponsoredProductsSection
-                title="🔥 Trending in this Category"
+                title={t('trendingInCategory')}
                 categorySlug={slug}
                 limit={4}
                 layout="row"
@@ -751,9 +768,9 @@ function Inner() {
             {!load&&displayed.length===0&&(
               <div className="shempty">
                 <span className="shempty-ico">🛍️</span>
-                <p className="shempty-ttl">{Object.values(f.attrs).some(v=>v.length)||f.inStock||f.pMin||f.pMax?'No products match your filters':subSlug?`No products in "${subLabel}" yet`:'No products yet'}</p>
-                <p className="shempty-sub">Try adjusting your filters or exploring other categories.</p>
-                <Link href="/shop" className="shempty-cta">Browse All<svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></Link>
+                <p className="shempty-ttl">{Object.values(f.attrs).some(v=>v.length)||f.inStock||f.pMin||f.pMax?t('emptyFiltered'):subSlug?t('emptySub',{name:subLabel}):t('empty')}</p>
+                <p className="shempty-sub">{t('emptyHint')}</p>
+                <Link href="/shop" className="shempty-cta">{t('browseAll')}<svg className="rtl-flip" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></Link>
               </div>
             )}
             {!load&&displayed.length>0&&(

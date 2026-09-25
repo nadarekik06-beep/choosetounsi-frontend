@@ -12,6 +12,9 @@ import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge
 import type { ActivePromotion } from '@/lib/promotionsApi'
 import { getToken, isAuthenticated } from '@/lib/auth'
 import ProductFilterSidebar, { DEFAULT_FILTERS, type F } from '@/app/components/filters/ProductFilterSidebar'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
+import { useWilayaLabel } from '@/lib/i18n/wilayas'
 
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL      = `${STORAGE_BASE}/api`
@@ -114,6 +117,8 @@ function promoProductsToGrid(promo: SellerPromotion): GridProduct[] {
 // ─── Product card — one shared design everywhere on this page ─────────────────
 
 function ProductCard({ product }: { product: GridProduct }) {
+  const t  = useTranslations('storefront')
+  const tc = useTranslations('productCard')
   const [imgErr, setImgErr] = useState(false)
   const img = resolveImg(product.primary_image_url)
   const outOfStock = product.stock <= 0
@@ -135,17 +140,17 @@ function ProductCard({ product }: { product: GridProduct }) {
           }
           {product.promotion?.is_flash_sale && (
             <span style={{
-              position: 'absolute', top: 10, left: 10, fontSize: 9, fontWeight: 800,
+              position: 'absolute', top: 10, insetInlineStart: 10, fontSize: 9, fontWeight: 800,
               background: 'rgba(17,17,17,0.75)', color: '#fff', padding: '3px 8px', borderRadius: 999,
               letterSpacing: '0.05em', backdropFilter: 'blur(2px)',
             }}>
-              ⚡ FLASH
+              ⚡ {t('flash')}
             </span>
           )}
           <FlashCountdownBadge promotion={product.promotion} />
           {outOfStock && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 10, fontWeight: 800, background: '#111', color: '#fff', padding: '4px 10px', borderRadius: 999, letterSpacing: '0.05em' }}>Sold Out</span>
+              <span style={{ fontSize: 10, fontWeight: 800, background: '#111', color: '#fff', padding: '4px 10px', borderRadius: 999, letterSpacing: '0.05em' }}>{tc('soldOut')}</span>
             </div>
           )}
         </div>
@@ -178,6 +183,8 @@ function ProductRow({ products }: { products: GridProduct[] }) {
 // ─── Pack card — static, no detail page exists yet to link to ─────────────────
 
 function PackCard({ pack }: { pack: Pack }) {
+  const t = useTranslations('storefront')
+  const { price } = useFormat()
   const img = resolveImg(pack.image_url)
   return (
     <div style={{ flex: '0 0 auto', width: 180 }}>
@@ -187,10 +194,10 @@ function PackCard({ pack }: { pack: Pack }) {
           : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, opacity: 0.4 }}>🎁</div>
         }
         <span style={{
-          position: 'absolute', top: 10, left: 10, fontSize: 9, fontWeight: 800,
+          position: 'absolute', top: 10, insetInlineStart: 10, fontSize: 9, fontWeight: 800,
           background: GREEN, color: '#fff', padding: '3px 8px', borderRadius: 999, letterSpacing: '0.05em',
         }}>
-          {pack.items_count} ITEMS
+          {t('packItems', { count: pack.items_count })}
         </span>
       </div>
       <div style={{ padding: '10px 2px 0' }}>
@@ -198,12 +205,12 @@ function PackCard({ pack }: { pack: Pack }) {
           {pack.name}
         </p>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-          <span style={{ fontSize: 14, fontWeight: 900, color: RED }}>{Number(pack.pack_price).toFixed(2)} DT</span>
-          <span style={{ fontSize: 10, fontWeight: 500, color: '#9ca3af', textDecoration: 'line-through' }}>{Number(pack.original_price).toFixed(2)} DT</span>
+          <span style={{ fontSize: 14, fontWeight: 900, color: RED }}>{price(pack.pack_price)}</span>
+          <span style={{ fontSize: 10, fontWeight: 500, color: '#9ca3af', textDecoration: 'line-through' }}>{price(pack.original_price)}</span>
         </div>
         {pack.savings > 0 && (
           <p style={{ fontSize: 10, fontWeight: 700, color: GREEN, background: '#f0fdf4', padding: '2px 6px', borderRadius: 999, display: 'inline-block', marginTop: 4 }}>
-            Save {Number(pack.savings).toFixed(2)} DT
+            {t('save', { amount: price(pack.savings) })}
           </p>
         )}
       </div>
@@ -214,6 +221,8 @@ function PackCard({ pack }: { pack: Pack }) {
 // ─── Coupon chip — copy-to-clipboard ───────────────────────────────────────────
 
 function CouponChip({ coupon }: { coupon: CouponSummary }) {
+  const t = useTranslations('storefront')
+  const { price } = useFormat()
   const [copied, setCopied] = useState(false)
   const copy = async () => {
     try {
@@ -225,19 +234,20 @@ function CouponChip({ coupon }: { coupon: CouponSummary }) {
   return (
     <button
       onClick={copy}
+      aria-label={t('copyCode', { code: coupon.code })}
       style={{
         display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
         border: `1.5px dashed ${RED}55`, borderRadius: 12, background: '#fff8f8', cursor: 'pointer',
-        textAlign: 'left', minWidth: 220,
+        textAlign: 'start', minWidth: 220,
       }}
     >
       <Tag size={16} color={RED} style={{ flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 13, fontWeight: 900, color: '#111', margin: 0, letterSpacing: '0.03em' }}>{coupon.code}</p>
+        <p dir="ltr" style={{ fontSize: 13, fontWeight: 900, color: '#111', margin: 0, letterSpacing: '0.03em', textAlign: 'start' }}>{coupon.code}</p>
         <p style={{ fontSize: 11, color: '#6b7280', margin: '2px 0 0' }}>
           {coupon.discount_label}
-          {coupon.min_order_amount != null && ` · min ${Number(coupon.min_order_amount).toFixed(0)} DT`}
-          {` · ${coupon.product_count} item${coupon.product_count === 1 ? '' : 's'}`}
+          {coupon.min_order_amount != null && ` · ${t('minOrder', { amount: price(coupon.min_order_amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) })}`}
+          {` · ${t('couponItems', { count: coupon.product_count })}`}
         </p>
       </div>
       {copied ? <Check size={15} color={GREEN} /> : <Copy size={15} color="#9ca3af" />}
@@ -248,26 +258,29 @@ function CouponChip({ coupon }: { coupon: CouponSummary }) {
 // ─── Top nav tabs ───────────────────────────────────────────────────────────────
 
 function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
+  const t = useTranslations('storefront')
   const tabs: { key: Tab; label: string; Icon: React.ElementType }[] = [
-    { key: 'home',     label: 'Home',           Icon: HomeIcon },
-    { key: 'products', label: 'All Products',   Icon: Package },
-    { key: 'offers',   label: 'Special Offers', Icon: Tag },
+    { key: 'home',     label: t('tabs.home'),     Icon: HomeIcon },
+    { key: 'products', label: t('tabs.products'), Icon: Package },
+    { key: 'offers',   label: t('tabs.offers'),   Icon: Tag },
   ]
   return (
-    <div style={{ display: 'flex', gap: 28, borderBottom: '1px solid #f3f4f6' }}>
-      {tabs.map(t => (
+    <div role="tablist" style={{ display: 'flex', gap: 28, borderBottom: '1px solid #f3f4f6' }}>
+      {tabs.map(tb => (
         <button
-          key={t.key}
-          onClick={() => onChange(t.key)}
+          key={tb.key}
+          role="tab"
+          aria-selected={active === tb.key}
+          onClick={() => onChange(tb.key)}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             fontSize: 13, fontWeight: 700, padding: '14px 2px', background: 'none', border: 'none',
-            borderBottom: active === t.key ? `2.5px solid ${RED}` : '2.5px solid transparent',
-            color: active === t.key ? '#111' : '#9ca3af', cursor: 'pointer', transition: 'color 0.15s',
+            borderBottom: active === tb.key ? `2.5px solid ${RED}` : '2.5px solid transparent',
+            color: active === tb.key ? '#111' : '#9ca3af', cursor: 'pointer', transition: 'color 0.15s',
           }}
         >
-          <t.Icon size={14} />
-          {t.label}
+          <tb.Icon size={14} />
+          {tb.label}
         </button>
       ))}
     </div>
@@ -281,10 +294,11 @@ interface ChipFilters { topRated: boolean; freeShipping: boolean; couponDeals: b
 function FilterChipsRow({ chips, setChips, hasCoupons }: {
   chips: ChipFilters; setChips: (c: ChipFilters) => void; hasCoupons: boolean
 }) {
+  const t = useTranslations('storefront')
   const items: { key: keyof ChipFilters; label: string; Icon: React.ElementType; show: boolean }[] = [
-    { key: 'topRated',     label: 'Top-rated products', Icon: Star,  show: true },
-    { key: 'freeShipping', label: 'Free shipping',      Icon: Truck, show: true },
-    { key: 'couponDeals',  label: 'Coupon deals',       Icon: Tag,   show: hasCoupons },
+    { key: 'topRated',     label: t('chips.topRated'),     Icon: Star,  show: true },
+    { key: 'freeShipping', label: t('chips.freeShipping'), Icon: Truck, show: true },
+    { key: 'couponDeals',  label: t('chips.couponDeals'),  Icon: Tag,   show: hasCoupons },
   ]
   return (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
@@ -292,6 +306,7 @@ function FilterChipsRow({ chips, setChips, hasCoupons }: {
         <button
           key={i.key}
           onClick={() => setChips({ ...chips, [i.key]: !chips[i.key] })}
+          aria-pressed={chips[i.key]}
           style={{
             display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700,
             padding: '7px 14px', borderRadius: 999, cursor: 'pointer',
@@ -311,6 +326,9 @@ function FilterChipsRow({ chips, setChips, hasCoupons }: {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SellerStorefrontPage() {
+  const t   = useTranslations('storefront')
+  const tc  = useTranslations('common')
+  const wilayaLabel = useWilayaLabel()
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
 
@@ -390,8 +408,8 @@ export default function SellerStorefrontPage() {
 
   // Debounce the sidebar's search field before it hits the server
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(f.q), 400)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setDebouncedSearch(f.q), 400)
+    return () => clearTimeout(timer)
   }, [f.q])
 
   const attrQP = useMemo(
@@ -461,8 +479,8 @@ export default function SellerStorefrontPage() {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, fontFamily: "'Barlow', sans-serif" }}>
         <Store size={40} color="#cbd5e1" />
-        <p style={{ fontSize: 15, fontWeight: 700, color: '#64748b' }}>This seller isn't available.</p>
-        <Link href="/" style={{ fontSize: 13, fontWeight: 700, color: RED, textDecoration: 'none' }}>Back to Home</Link>
+        <p style={{ fontSize: 15, fontWeight: 700, color: '#64748b' }}>{t('unavailable')}</p>
+        <Link href="/" style={{ fontSize: 13, fontWeight: 700, color: RED, textDecoration: 'none' }}>{tc('backHome')}</Link>
       </div>
     )
   }
@@ -481,7 +499,7 @@ export default function SellerStorefrontPage() {
 
       <div style={{ borderBottom: '1px solid #f3f4f6' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#9ca3af' }}>
-          <Link href="/" style={{ color: '#9ca3af', textDecoration: 'none' }}>Home</Link>
+          <Link href="/" style={{ color: '#9ca3af', textDecoration: 'none' }}>{tc('home')}</Link>
           <ChevronRight size={11} />
           <span style={{ color: '#374151', fontWeight: 600 }}>{seller.business_name}</span>
         </div>
@@ -511,14 +529,14 @@ export default function SellerStorefrontPage() {
             <h1 style={{ fontSize: 23, fontWeight: 800, color: '#fff', margin: '0 0 6px', letterSpacing: '-0.01em' }}>{seller.business_name}</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>
-                <Package size={13} /> {seller.total_products} products
+                <Package size={13} /> {tc('products', { count: seller.total_products })}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>
-                <Users size={13} /> {followersCount.toLocaleString()} followers
+                <Users size={13} /> {t('followers', { count: followersCount })}
               </span>
               {seller.wilaya && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>
-                  <MapPin size={13} /> {seller.wilaya}
+                  <MapPin size={13} /> {wilayaLabel(seller.wilaya)}
                 </span>
               )}
             </div>
@@ -527,6 +545,7 @@ export default function SellerStorefrontPage() {
           <button
             onClick={handleFollow}
             disabled={followLoading}
+            aria-pressed={following}
             style={{
               display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
               fontSize: 13, fontWeight: 700, padding: '9px 20px', borderRadius: 999,
@@ -538,7 +557,7 @@ export default function SellerStorefrontPage() {
             }}
           >
             <Heart size={14} fill={following ? '#fff' : 'none'} />
-            {following ? 'Following' : 'Follow'}
+            {following ? t('following') : t('follow')}
           </button>
         </div>
 
@@ -598,10 +617,10 @@ export default function SellerStorefrontPage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Zap size={16} color={RED} fill={RED} />
-                  <h2 style={{ fontSize: 15, fontWeight: 800, color: '#111', margin: 0 }}>Flash Sale Highlights</h2>
+                  <h2 style={{ fontSize: 15, fontWeight: 800, color: '#111', margin: 0 }}>{t('flashHighlights')}</h2>
                 </div>
                 <button onClick={() => setTab('offers')} style={{ background: 'none', border: 'none', color: RED, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2 }}>
-                  View All <ChevronRight size={13} />
+                  {tc('viewAll')} <ChevronRight size={13} />
                 </button>
               </div>
               <ProductRow products={flashPromos.flatMap(promoProductsToGrid).slice(0, 8)} />
@@ -610,15 +629,15 @@ export default function SellerStorefrontPage() {
 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 800, color: '#111', margin: 0 }}>Recently Added</h2>
+              <h2 style={{ fontSize: 15, fontWeight: 800, color: '#111', margin: 0 }}>{t('recentlyAdded')}</h2>
               <button onClick={() => setTab('products')} style={{ background: 'none', border: 'none', color: RED, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2 }}>
-                View All Products <ChevronRight size={13} />
+                {t('viewAllProducts')} <ChevronRight size={13} />
               </button>
             </div>
             {recentLoading ? (
-              <p style={{ fontSize: 13, color: '#9ca3af' }}>Loading…</p>
+              <p style={{ fontSize: 13, color: '#9ca3af' }}>{tc('loading')}</p>
             ) : recent.length === 0 ? (
-              <p style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>This seller has no products yet.</p>
+              <p style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>{t('noProducts')}</p>
             ) : (
               <div className="seller-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 22 }}>
                 {recent.map(p => <ProductCard key={p.id} product={p} />)}
@@ -646,7 +665,8 @@ export default function SellerStorefrontPage() {
                 <input
                   value={f.q}
                   onChange={e => setF({ ...f, q: e.target.value })}
-                  placeholder="Search in store…"
+                  placeholder={t('searchStore')}
+                  aria-label={t('searchStore')}
                   style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 13, flex: 1, fontFamily: 'inherit' }}
                 />
               </div>
@@ -655,14 +675,14 @@ export default function SellerStorefrontPage() {
                 className="seller-mobile-filters-btn"
                 style={{ display: 'none', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, padding: '9px 14px', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#fff', color: '#374151', cursor: 'pointer', flexShrink: 0 }}
               >
-                Filters
+                {t('filters')}
               </button>
             </div>
 
             <FilterChipsRow chips={chips} setChips={setChips} hasCoupons={hasCoupons} />
 
             {products.length === 0 && !productsLoading ? (
-              <p style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>No products match these filters.</p>
+              <p style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>{t('noMatch')}</p>
             ) : (
               <div className="seller-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 22 }}>
                 {products.map(p => <ProductCard key={p.id} product={p} />)}
@@ -680,7 +700,7 @@ export default function SellerStorefrontPage() {
                     cursor: productsLoading ? 'default' : 'pointer', opacity: productsLoading ? 0.6 : 1,
                   }}
                 >
-                  {productsLoading ? 'Loading…' : 'Load More'}
+                  {productsLoading ? tc('loading') : t('loadMore')}
                 </button>
               </div>
             )}
@@ -692,7 +712,7 @@ export default function SellerStorefrontPage() {
       {tab === 'offers' && (
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 24px 56px' }}>
           {flashPromos.length === 0 && discountPromos.length === 0 && packs.length === 0 && seller.coupons.length === 0 && !packsLoading ? (
-            <p style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>No special offers right now — check back soon.</p>
+            <p style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>{t('noOffers')}</p>
           ) : (
             <>
               {flashPromos.map(promo => (
@@ -719,7 +739,7 @@ export default function SellerStorefrontPage() {
 
               {packs.length > 0 && (
                 <div style={{ marginBottom: 36 }}>
-                  <h2 style={{ fontSize: 15, fontWeight: 800, color: '#111', margin: '0 0 14px' }}>Bundles &amp; Packs</h2>
+                  <h2 style={{ fontSize: 15, fontWeight: 800, color: '#111', margin: '0 0 14px' }}>{t('bundles')}</h2>
                   <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 6 }}>
                     {packs.map(p => <PackCard key={p.id} pack={p} />)}
                   </div>
@@ -728,7 +748,7 @@ export default function SellerStorefrontPage() {
 
               {seller.coupons.length > 0 && (
                 <div>
-                  <h2 style={{ fontSize: 15, fontWeight: 800, color: '#111', margin: '0 0 14px' }}>Coupon Codes</h2>
+                  <h2 style={{ fontSize: 15, fontWeight: 800, color: '#111', margin: '0 0 14px' }}>{t('coupons')}</h2>
                   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                     {seller.coupons.map(c => <CouponChip key={c.code} coupon={c} />)}
                   </div>

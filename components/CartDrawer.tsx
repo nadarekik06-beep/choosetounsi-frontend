@@ -20,6 +20,8 @@ import {
 import { useCart } from '@/context/CartContext'
 import type { CartItem as BaseCartItem } from '@/lib/shopApi'
 import SponsoredBadge from '@/app/components/SponsoredBadge'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 // ─── Extend CartItem with sponsored + pack fields ─────────────────────────────
 type CartItem = BaseCartItem & {
@@ -42,11 +44,10 @@ function resolveImg(path: string | null | undefined): string | null {
   return `${STORAGE_BASE}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
 }
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-TN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 3,
-  }).format(n) + ' DT'
+function usePrice() {
+  const { price } = useFormat()
+  return (n: number) => price(n, { maximumFractionDigits: 3 })
+}
 
 // ─── Regular product row (COMPLETELY UNCHANGED) ───────────────────────────────
 
@@ -59,6 +60,8 @@ function CartRow({
   isSelected: boolean
   onToggle: (id: number) => void
 }) {
+  const t   = useTranslations('cartDrawer')
+  const fmt = usePrice()
   const { updateItem, removeItem, cartLoading, loadingItemId } = useCart()
   const imgSrc = resolveImg(item.image_url)
   const itemBusy = loadingItemId === item.id
@@ -74,7 +77,9 @@ function CartRow({
     }}>
       <button
         onClick={() => onToggle(item.id)}
-        title={isSelected ? 'Deselect item' : 'Select item'}
+        title={isSelected ? t('deselectItem') : t('selectItem')}
+        aria-label={isSelected ? t('deselectItem') : t('selectItem')}
+        aria-pressed={isSelected}
         style={{
           background: 'none', border: 'none', padding: '0 2px',
           cursor: 'pointer', flexShrink: 0, alignSelf: 'flex-start',
@@ -99,7 +104,7 @@ function CartRow({
             </div>
         }
         {item.is_sponsored && (
-          <div style={{ position: 'absolute', bottom: 3, left: 3, pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', bottom: 3, insetInlineStart: 3, pointerEvents: 'none' }}>
             <SponsoredBadge compact />
           </div>
         )}
@@ -137,7 +142,7 @@ function CartRow({
                     padding: '2px 8px', borderRadius: 999,
                     margin: '4px 0 0',
                   }}>
-                    🚚 Free Delivery
+                    {t('freeDelivery')}
                   </p>
                 )}
 
@@ -164,7 +169,7 @@ function CartRow({
 
         {atStockLimit && (
           <p style={{ fontSize: 10, color: '#d97706', fontWeight: 700, margin: '4px 0 0', display: 'flex', alignItems: 'center', gap: 3 }}>
-            Max quantity reached ({item.stock} available)
+            {t('maxQuantity', { count: item.stock })}
           </p>
         )}
 
@@ -179,11 +184,12 @@ function CartRow({
             <button
               onClick={() => item.quantity > 1 ? updateItem(item.id, item.quantity - 1) : removeItem(item.id)}
               disabled={itemBusy}
+              aria-label={t('decrease')}
               style={{ width: 28, height: 28, border: 'none', background: '#f8fafc', cursor: itemBusy ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: itemBusy ? '#cbd5e1' : '#374151', transition: 'background 0.15s' }}
             >
               <Minus size={11} />
             </button>
-            <span style={{ width: 32, textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#111', borderLeft: '1px solid #e5e7eb', borderRight: '1px solid #e5e7eb', lineHeight: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 28 }}>
+            <span style={{ width: 32, textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#111', borderInlineStart: '1px solid #e5e7eb', borderInlineEnd: '1px solid #e5e7eb', lineHeight: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 28 }}>
               {itemBusy
                 ? <Loader2 size={12} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} />
                 : item.quantity
@@ -192,7 +198,8 @@ function CartRow({
             <button
               onClick={() => updateItem(item.id, item.quantity + 1)}
               disabled={itemBusy || atStockLimit}
-              title={atStockLimit ? `Only ${item.stock} in stock` : 'Increase quantity'}
+              title={atStockLimit ? t('onlyInStock', { count: item.stock }) : t('increase')}
+              aria-label={t('increase')}
               style={{ width: 28, height: 28, border: 'none', background: '#f8fafc', cursor: (itemBusy || atStockLimit) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: (itemBusy || atStockLimit) ? '#e5e7eb' : '#374151', transition: 'background 0.15s' }}
             >
               <Plus size={11} />
@@ -207,6 +214,8 @@ function CartRow({
           <button
             onClick={() => removeItem(item.id)}
             disabled={itemBusy}
+            aria-label={t('removeItem')}
+            title={t('removeItem')}
             style={{ background: 'none', border: 'none', cursor: itemBusy ? 'not-allowed' : 'pointer', color: '#ef4444', padding: '2px 4px', borderRadius: 4, opacity: itemBusy ? 0.3 : 0.7, transition: 'opacity 0.15s' }}
           >
             <Trash2 size={12} />
@@ -228,6 +237,8 @@ function PackCartRow({
   isSelected: boolean
   onToggle: (id: number) => void
 }) {
+  const t   = useTranslations('cartDrawer')
+  const fmt = usePrice()
   const { removeItem, loadingItemId } = useCart()
   const imgSrc   = resolveImg(item.image_url)
   const itemBusy = loadingItemId === item.id
@@ -242,6 +253,8 @@ function PackCartRow({
       {/* Checkbox */}
       <button
         onClick={() => onToggle(item.id)}
+        aria-label={isSelected ? t('deselectItem') : t('selectItem')}
+        aria-pressed={isSelected}
         style={{
           background: 'none', border: 'none', padding: '0 2px',
           cursor: 'pointer', flexShrink: 0, alignSelf: 'flex-start',
@@ -268,13 +281,13 @@ function PackCartRow({
         }
         {/* Bundle badge on thumbnail */}
         <div style={{
-          position: 'absolute', bottom: 3, left: 3,
+          position: 'absolute', bottom: 3, insetInlineStart: 3,
           background: '#db142e', borderRadius: 4,
           padding: '1px 4px',
           display: 'flex', alignItems: 'center', gap: 2,
         }}>
           <Tag size={7} color="#fff" />
-          <span style={{ fontSize: 7, fontWeight: 900, color: '#fff', lineHeight: 1 }}>BUNDLE</span>
+          <span style={{ fontSize: 7, fontWeight: 900, color: '#fff', lineHeight: 1 }}>{t('bundleBadge')}</span>
         </div>
       </div>
 
@@ -303,7 +316,7 @@ function PackCartRow({
           padding: '1px 7px', borderRadius: 999,
           margin: '0 0 6px',
         }}>
-          <Package2 size={9} /> Bundle Deal
+          <Package2 size={9} /> {t('bundleDeal')}
         </p>
 
         {/* Price row */}
@@ -324,11 +337,13 @@ function PackCartRow({
         {/* Total + remove */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
           <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
-            Bundle price: <strong style={{ color: '#374151' }}>{fmt(item.line_total)}</strong>
+            {t.rich('bundlePrice', { amount: fmt(item.line_total), b: chunks => <strong style={{ color: '#374151' }}>{chunks}</strong> })}
           </span>
           <button
             onClick={() => removeItem(item.id)}
             disabled={itemBusy}
+            aria-label={t('removeItem')}
+            title={t('removeItem')}
             style={{
               background: 'none', border: 'none',
               cursor: itemBusy ? 'not-allowed' : 'pointer',
@@ -348,6 +363,11 @@ function PackCartRow({
 
 export default function CartDrawer() {
   const router = useRouter()
+  const t      = useTranslations('cartDrawer')
+  const format = useFormat()
+  const fmt    = usePrice()
+  // Drawer lives on the inline-end edge: right in LTR, left in RTL.
+  const hidden = format.isRtl ? 'translateX(-100%)' : 'translateX(100%)'
   const { items, count, subtotal, drawerOpen, closeDrawer, clearCart, cartLoading } = useCart()
   const overlayRef = useRef<HTMLDivElement>(null)
 
@@ -406,7 +426,6 @@ export default function CartDrawer() {
   return (
     <>
       <style>{`
-        @keyframes slideIn { from { transform: translateX(100%) } to { transform: translateX(0) } }
         @keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
         @keyframes spin    { to   { transform: rotate(360deg) } }
         .cb-btn:hover { color: #dc2626 !important; }
@@ -424,16 +443,17 @@ export default function CartDrawer() {
       )}
 
       <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0,
+        position: 'fixed', top: 0, insetInlineEnd: 0, bottom: 0,
         width: '100%', maxWidth: 420,
         background: '#fff',
-        boxShadow: '-8px 0 32px rgba(0,0,0,0.12)',
+        boxShadow: `${format.isRtl ? 8 : -8}px 0 32px rgba(0,0,0,0.12)`,
         zIndex: 9999,
         display: 'flex', flexDirection: 'column',
-        transform: drawerOpen ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transform: drawerOpen ? 'translateX(0)' : hidden,
+        visibility: drawerOpen ? 'visible' : 'hidden',
+        transition: `transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear ${drawerOpen ? '0s' : '0.3s'}`,
         fontFamily: "'Barlow', sans-serif",
-      }}>
+      }} role="dialog" aria-modal="true" aria-label={t('title')} aria-hidden={!drawerOpen}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
@@ -442,14 +462,15 @@ export default function CartDrawer() {
               <ShoppingCart size={16} color="#dc2626" />
             </div>
             <div>
-              <h2 style={{ fontSize: 15, fontWeight: 900, color: '#0f172a', margin: 0 }}>Your Cart</h2>
+              <h2 style={{ fontSize: 15, fontWeight: 900, color: '#0f172a', margin: 0 }}>{t('title')}</h2>
               <p style={{ fontSize: 11, color: '#94a3b8', margin: 0, fontWeight: 500 }}>
-                {count} {count === 1 ? 'item' : 'items'}
+                {t('itemCount', { count })}
               </p>
             </div>
           </div>
           <button
             onClick={closeDrawer}
+            aria-label={t('close')}
             style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid #f1f5f9', background: '#f8fafc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}
           >
             <X size={15} />
@@ -465,10 +486,10 @@ export default function CartDrawer() {
               style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', color: allSelected ? '#dc2626' : '#64748b', fontSize: 12, fontWeight: 700, transition: 'color 0.15s' }}
             >
               {allSelected ? <CheckSquare size={16} /> : <Square size={16} />}
-              {allSelected ? 'Deselect all' : 'Select all'}
+              {allSelected ? t('deselectAll') : t('selectAll')}
             </button>
             <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>
-              {noneSelected ? 'None selected' : selectedIds.size === items.length ? 'All selected' : `${selectedIds.size} of ${items.length} selected`}
+              {noneSelected ? t('noneSelected') : selectedIds.size === items.length ? t('allSelected') : t('someSelected', { selected: selectedIds.size, total: items.length })}
             </span>
           </div>
         )}
@@ -478,13 +499,13 @@ export default function CartDrawer() {
           {items.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
               <ShoppingCart size={40} color="#e2e8f0" style={{ margin: '0 auto 16px' }} />
-              <p style={{ fontSize: 14, fontWeight: 700, color: '#94a3b8', margin: '0 0 6px' }}>Your cart is empty</p>
-              <p style={{ fontSize: 12, color: '#cbd5e1', margin: '0 0 20px' }}>Add some products to get started</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#94a3b8', margin: '0 0 6px' }}>{t('emptyTitle')}</p>
+              <p style={{ fontSize: 12, color: '#cbd5e1', margin: '0 0 20px' }}>{t('emptySubtitle')}</p>
               <button
                 onClick={closeDrawer}
                 style={{ fontSize: 13, fontWeight: 700, color: '#dc2626', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontFamily: 'inherit' }}
               >
-                Continue Shopping
+                {t('continueShopping')}
               </button>
             </div>
           ) : (
@@ -515,7 +536,7 @@ export default function CartDrawer() {
                   disabled={cartLoading}
                   style={{ width: '100%', marginTop: 8, marginBottom: 4, padding: '8px', border: '1px solid #fee2e2', background: '#fff', color: '#ef4444', fontSize: 12, fontWeight: 700, borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', opacity: cartLoading ? 0.5 : 1 }}
                 >
-                  Clear all items
+                  {t('clearAll')}
                 </button>
               )}
             </>
@@ -528,8 +549,8 @@ export default function CartDrawer() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
               <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>
                 {selectedIds.size > 0 && selectedIds.size < items.length
-                  ? `Selected (${selectedCount} of ${count} items)`
-                  : `Subtotal (${count} items)`
+                  ? t('selectedSubtotal', { selected: selectedCount, count })
+                  : t('subtotal', { count })
                 }
               </span>
               <span style={{ fontSize: 18, fontWeight: 900, color: '#dc2626' }}>
@@ -550,13 +571,13 @@ export default function CartDrawer() {
                         margin: '0 0 10px',
                         display: 'flex', alignItems: 'center', gap: 5,
                       }}>
-                        🚚 All items have free delivery!
+                        {t('allFreeDelivery')}
                       </p>
                     )
                   }
                   return (
                     <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 10px', fontWeight: 500 }}>
-                      Shipping calculated at checkout
+                      {t('shippingAtCheckout')}
                     </p>
                   )
                 })()}
@@ -565,7 +586,7 @@ export default function CartDrawer() {
             {selectedIds.size > 0 && selectedIds.size < items.length && (
               <div style={{ marginBottom: 12, padding: '8px 12px', background: 'rgba(220,38,38,0.05)', border: '1px solid rgba(220,38,38,0.15)', borderRadius: 8, fontSize: 11, color: '#b91c1c', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <CheckSquare size={12} />
-                Only {selectedIds.size} selected item{selectedIds.size > 1 ? 's' : ''} will be checked out.
+                {t('onlySelectedCheckout', { count: selectedIds.size })}
               </div>
             )}
 
@@ -584,14 +605,14 @@ export default function CartDrawer() {
                 transition: 'all 0.2s',
               }}
             >
-              {noneSelected ? 'Select items to checkout' : <>Proceed to Checkout <ArrowRight size={16} /></>}
+              {noneSelected ? t('selectToCheckout') : <>{t('checkout')} <ArrowRight size={16} /></>}
             </button>
 
             <button
               onClick={closeDrawer}
               style={{ width: '100%', marginTop: 10, padding: '10px 0', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', fontSize: 13, fontWeight: 700, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit' }}
             >
-              Continue Shopping
+              {t('continueShopping')}
             </button>
           </div>
         )}

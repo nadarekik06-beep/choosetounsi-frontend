@@ -19,7 +19,6 @@ export default function HomePage() {
 
       {/* Sponsored trending products — global, no category filter */}
       <SponsoredProductsSection
-        title="🔥 Trending Now"
         limit={8}
         layout="row"
         showBadge={true}

@@ -19,6 +19,8 @@
  *   className        — extra wrapper class
  */
 
+import { useFormat } from '@/lib/i18n/useFormat'
+
 export interface ActivePromotion {
   id: number
   type: 'flash_sale' | 'discount'
@@ -39,9 +41,6 @@ interface PriceDisplayProps {
   className?: string
 }
 
-const money = (n: number | string) =>
-  `${Number(n).toFixed(2)} DT`
-
 const SIZE = {
   sm: { current: 13, original: 10, badge: 8  },
   md: { current: 14, original: 11, badge: 9  },
@@ -55,6 +54,8 @@ export default function PriceDisplay({
   size = 'md',
   className,
 }: PriceDisplayProps) {
+  const fmt = useFormat()
+  const money = (n: number | string) => fmt.price(n)
   const original  = Number(price)
   const effective = effectivePrice != null ? Number(effectivePrice) : original
   const hasDiscount = effective < original - 0.001   // float-safe comparison
@@ -70,7 +71,7 @@ export default function PriceDisplay({
     }
     // fixed
     const saved = original - effective
-    return saved > 0 ? `-${saved.toFixed(2)} DT` : null
+    return saved > 0 ? `-${fmt.price(saved)}` : null
   })()
 
   return (

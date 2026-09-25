@@ -21,6 +21,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Star, Camera, ThumbsUp, ThumbsDown, Flag, ChevronDown, ShieldCheck, BadgeCheck } from 'lucide-react';
 import { isAuthenticated } from '@/lib/auth';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api');
 const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null);
@@ -51,8 +53,9 @@ interface ReviewSummary {
 // ── Star Row ──────────────────────────────────────────────────────────────────
 
 function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
+  const t = useTranslations('reviews');
   return (
-    <div style={{ display: 'flex', gap: 2 }}>
+    <div style={{ display: 'flex', gap: 2 }} role="img" aria-label={t('starsAria', { rating })}>
       {[1, 2, 3, 4, 5].map(i => (
         <Star key={i} size={size}
           fill={i <= rating ? '#f59e0b' : 'none'}
@@ -69,6 +72,7 @@ function ReviewCard({ review, onVote, onReport }: {
   onVote: (id: number, type: 'helpful' | 'not_helpful') => void;
   onReport: (id: number) => void;
 }) {
+  const t = useTranslations('reviews');
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   return (
@@ -98,7 +102,7 @@ function ReviewCard({ review, onVote, onReport }: {
                   background: 'rgba(5,150,105,0.1)', border: '1px solid rgba(5,150,105,0.2)',
                   padding: '2px 7px', borderRadius: 999,
                 }}>
-                  <BadgeCheck size={10} /> Verified Purchase
+                  <BadgeCheck size={10} /> {t('verifiedPurchase')}
                 </span>
               )}
             </div>
@@ -136,9 +140,9 @@ function ReviewCard({ review, onVote, onReport }: {
       {review.media.length > 0 && (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {review.media.map(m => (
-            <button key={m.id} onClick={() => setLightbox(m.url)}
+            <button key={m.id} onClick={() => setLightbox(m.url)} aria-label={t('enlargePhoto')}
               style={{ width: 80, height: 80, borderRadius: 10, overflow: 'hidden', border: '1.5px solid #e5e7eb', padding: 0, cursor: 'zoom-in', background: '#f8fafc', transition: 'border-color 0.15s' }}>
-              <img src={m.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={m.url} alt={t('reviewPhotoAlt')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </button>
           ))}
         </div>
@@ -146,9 +150,9 @@ function ReviewCard({ review, onVote, onReport }: {
 
       {/* Seller reply */}
       {review.reply && (
-        <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', borderLeft: '3px solid #db142e' }}>
+        <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', borderInlineStart: '3px solid #db142e' }}>
           <p style={{ fontSize: 11, fontWeight: 800, color: '#db142e', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            🏪 Seller's Reply — {review.reply.seller_name}
+            {t('sellerReply', { name: review.reply.seller_name })}
           </p>
           <p style={{ fontSize: 13, color: '#374151', margin: 0, lineHeight: 1.6 }}>{review.reply.body}</p>
         </div>
@@ -166,12 +170,12 @@ function ReviewCard({ review, onVote, onReport }: {
               color: review.user_vote === 'helpful' ? '#db142e' : '#64748b',
               fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
             }}>
-            <ThumbsUp size={12} /> {review.helpful_count > 0 ? review.helpful_count : 'Helpful'}
+            <ThumbsUp size={12} /> {review.helpful_count > 0 ? review.helpful_count : t('helpful')}
           </button>
         </div>
         <button onClick={() => onReport(review.id)}
           style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>
-          <Flag size={11} /> Report
+          <Flag size={11} /> {t('report')}
         </button>
       </div>
 
@@ -181,7 +185,7 @@ function ReviewCard({ review, onVote, onReport }: {
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out',
         }}>
-          <img src={lightbox} alt="" style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 12 }} />
+          <img src={lightbox} alt={t('reviewPhotoAlt')} style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 12 }} />
         </div>
       )}
     </div>
@@ -191,6 +195,9 @@ function ReviewCard({ review, onVote, onReport }: {
 // ── Main Section ───────────────────────────────────────────────────────────────
 
 export default function ProductReviewsSection({ slug }: { slug: string }) {
+  const t   = useTranslations('reviews');
+  const tc  = useTranslations('common');
+  const fmt = useFormat();
   const [summary, setSummary]   = useState<ReviewSummary | null>(null);
   const [reviews, setReviews]   = useState<Review[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -282,19 +289,19 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
 
       <section style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px', fontFamily: "'Barlow', sans-serif" }}>
         <h2 style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', margin: '0 0 28px', letterSpacing: '-0.02em' }}>
-          Customer Reviews ({summary.total.toLocaleString()})
+          {t('title', { count: fmt.number(summary.total) })}
         </h2>
 
         {/* ── Summary Block ─────────────────────────────────────────── */}
         <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 24, marginBottom: 28, background: '#fff', borderRadius: 20, border: '1px solid #f1f5f9', padding: 24 }}>
           {/* Left: Score */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, borderRight: '1px solid #f1f5f9', paddingRight: 24 }}>
-            <span style={{ fontSize: 64, fontWeight: 900, color: '#0f172a', lineHeight: 1, letterSpacing: '-0.04em' }}>{summary.average}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, borderInlineEnd: '1px solid #f1f5f9', paddingInlineEnd: 24 }}>
+            <span style={{ fontSize: 64, fontWeight: 900, color: '#0f172a', lineHeight: 1, letterSpacing: '-0.04em' }}>{fmt.number(summary.average, { maximumFractionDigits: 1 })}</span>
             <StarRow rating={Math.round(summary.average)} size={22} />
-            <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>{summary.total.toLocaleString()} reviews</span>
+            <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>{tc('reviews', { count: summary.total })}</span>
             <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#64748b', marginTop: 8 }}>
-              <span>📸 {summary.photo_count} photos</span>
-              <span>✅ {summary.verified_count} verified</span>
+              <span>📸 {t('photosCount', { count: summary.photo_count })}</span>
+              <span>✅ {t('verifiedCount', { count: summary.verified_count })}</span>
             </div>
           </div>
 
@@ -305,6 +312,8 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
               return (
             <button key={star} className="rev-chip"
   onClick={() => setRating(ratingFilter === star ? null : star)}
+  aria-pressed={ratingFilter === star}
+  aria-label={t('filterStars', { count: star })}
   style={{
     display: 'flex', alignItems: 'center', gap: 10, border: 'none',
     cursor: 'pointer', padding: '3px 8px', borderRadius: 8,
@@ -315,7 +324,7 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
                   <div style={{ flex: 1, height: 6, background: '#f1f5f9', borderRadius: 999, overflow: 'hidden' }}>
                     <div style={{ height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#f59e0b,#fbbf24)', width: `${d.percent}%`, transition: 'width 0.6s ease' }} />
                   </div>
-                  <span style={{ fontSize: 12, color: '#94a3b8', minWidth: 36, textAlign: 'right' }}>{d.count}</span>
+                  <span style={{ fontSize: 12, color: '#94a3b8', minWidth: 36, textAlign: 'end' }}>{d.count}</span>
                 </button>
               );
             })}
@@ -326,12 +335,12 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
         {summary.recent_photos.length > 0 && (
           <div style={{ marginBottom: 24 }}>
             <p style={{ fontSize: 13, fontWeight: 800, color: '#64748b', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              📸 Customer Photos ({summary.photo_count})
+              {t('customerPhotos', { count: summary.photo_count })}
             </p>
             <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
               {summary.recent_photos.map(photo => (
                 <div key={photo.id} style={{ width: 80, height: 80, borderRadius: 10, overflow: 'hidden', flexShrink: 0, border: '1.5px solid #e5e7eb', cursor: 'pointer' }}>
-                  <img src={photo.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={photo.url} alt={t('reviewPhotoAlt')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ))}
             </div>
@@ -360,10 +369,10 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
         {/* ── Filter Bar ───────────────────────────────────────────── */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
           {[
-            { key: '', label: 'All Reviews' },
-            { key: 'with_photos', label: `📸 With Photos (${summary.with_photos_count})` },
-            { key: 'verified', label: `✅ Verified (${summary.verified_count})` },
-            { key: 'helpful', label: '👍 Most Helpful' },
+            { key: '', label: t('filterAll') },
+            { key: 'with_photos', label: t('filterPhotos', { count: summary.with_photos_count }) },
+            { key: 'verified', label: t('filterVerified', { count: summary.verified_count }) },
+            { key: 'helpful', label: t('filterHelpful') },
           ].map(f => (
             <button key={f.key} className="rev-chip"
               onClick={() => setFilter(filter === f.key ? '' : f.key)}
@@ -380,7 +389,7 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
           {ratingFilter && (
             <button className="rev-chip" onClick={() => setRating(null)}
               style={{ padding: '8px 16px', borderRadius: 999, fontSize: 12, fontWeight: 700, border: '1.5px solid #db142e', background: 'rgba(219,20,46,0.06)', color: '#db142e', cursor: 'pointer' }}>
-              ★ {ratingFilter} Stars ✕
+              {t('starsChip', { count: ratingFilter })}
             </button>
           )}
         </div>
@@ -389,7 +398,7 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
         {reviews.length === 0 && !loading ? (
           <div style={{ textAlign: 'center', padding: '48px 0', color: '#94a3b8' }}>
             <Star size={32} style={{ opacity: 0.3, margin: '0 auto 12px', display: 'block' }} />
-            <p style={{ fontWeight: 700, fontSize: 14 }}>No reviews match your filters</p>
+            <p style={{ fontWeight: 700, fontSize: 14 }}>{t('noMatch')}</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -417,7 +426,7 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
                 cursor: loading ? 'wait' : 'pointer', transition: 'all 0.2s',
                 display: 'inline-flex', alignItems: 'center', gap: 6,
               }}>
-              <ChevronDown size={16} /> {loading ? 'Loading…' : 'Load More Reviews'}
+              <ChevronDown size={16} /> {loading ? tc('loading') : t('loadMore')}
             </button>
           </div>
         )}
@@ -427,19 +436,19 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
       {reportModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setReportModal(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 20, padding: 28, maxWidth: 360, width: '100%', margin: '0 16px' }}>
-            <h3 style={{ fontSize: 17, fontWeight: 900, color: '#0f172a', margin: '0 0 16px' }}>Report Review</h3>
+          <div onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t('reportTitle')} style={{ background: '#fff', borderRadius: 20, padding: 28, maxWidth: 360, width: '100%', margin: '0 16px' }}>
+            <h3 style={{ fontSize: 17, fontWeight: 900, color: '#0f172a', margin: '0 0 16px' }}>{t('reportTitle')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {['spam', 'fake', 'inappropriate', 'offensive', 'other'].map(r => (
                 <button key={r} onClick={() => handleReport(reportModal.id, r)}
-                  style={{ padding: '10px 16px', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#f8fafc', textAlign: 'left', fontWeight: 700, fontSize: 13, color: '#374151', cursor: 'pointer', textTransform: 'capitalize' }}>
-                  {r.replace('_', ' ')}
+                  style={{ padding: '10px 16px', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#f8fafc', textAlign: 'start', fontWeight: 700, fontSize: 13, color: '#374151', cursor: 'pointer' }}>
+                  {t(`reportReasons.${r}`)}
                 </button>
               ))}
             </div>
             <button onClick={() => setReportModal(null)}
               style={{ marginTop: 16, width: '100%', padding: '10px', borderRadius: 10, border: 'none', background: '#f1f5f9', fontWeight: 700, fontSize: 13, color: '#64748b', cursor: 'pointer' }}>
-              Cancel
+              {tc('cancel')}
             </button>
           </div>
         </div>
