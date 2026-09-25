@@ -15,6 +15,9 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { ordersApi } from '@/lib/sellerApi'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
+import { useStatusLabel } from '@/lib/i18n/useStatusLabel'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,6 +44,7 @@ interface InvoiceData {
   invoice_number: string
   order_number: string
   order_date: string
+  order_date_iso?: string
   status: string
   payment_method: string | null
   payment_status: string
@@ -68,32 +72,18 @@ interface InvoiceData {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-TN', {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-  }).format(n) + ' TND'
-
-const PAYMENT_LABELS: Record<string, string> = {
-  cod:    'Cash on Delivery (COD)',
-  card:   'Bank Card (Stripe)',
-  d17:    'D17 Mobile Payment',
-  wallet: 'Wallet',
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  pending:    'Pending',
-  processing: 'Processing',
-  completed:  'Completed',
-  delivered:  'Delivered',
-  cancelled:  'Cancelled',
-}
+// Payment method labels: invoice.methods.<code>; statuses: orderStatus namespace
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function InvoicePage() {
   const params = useParams()
   const id = Number(params?.id)
+  const t = useTranslations('invoice')
+  const { price, date } = useFormat()
+  const statusLabel = useStatusLabel()
+  const fmt = (n: number) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+  const orderDate = (d: InvoiceData) => d.order_date_iso ? date(d.order_date_iso, 'medium') : d.order_date
 
   const [data,    setData]    = useState<InvoiceData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -135,13 +125,13 @@ export default function InvoicePage() {
   if (loading) return (
     <div style={styles.loadingWrap}>
       <div style={styles.spinner} />
-      <p style={styles.loadingText}>Preparing invoice…</p>
+      <p style={styles.loadingText}>{t('preparing')}</p>
     </div>
   )
 
   if (error || !data) return (
     <div style={styles.loadingWrap}>
-      <p style={{ color: '#dc2626', fontWeight: 700 }}>Failed to load invoice. Please close this tab and try again.</p>
+      <p style={{ color: '#dc2626', fontWeight: 700 }}>{t('loadFailed')}</p>
     </div>
   )
 
@@ -243,7 +233,7 @@ export default function InvoicePage() {
               fontSize: 18, fontWeight: 800, color: '#db142e',
               letterSpacing: '-0.01em',
             }}>
-              Invoice Preview
+              {t('preview')}
             </span>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -251,13 +241,13 @@ export default function InvoicePage() {
               onClick={() => window.print()}
               style={btnStyle('#db142e')}
             >
-              🖨 Print / Save PDF
+              {t('print')}
             </button>
             <button
               onClick={() => window.close()}
               style={btnStyle('#64748b')}
             >
-              ✕ Close
+              {t('close')}
             </button>
           </div>
         </div>
@@ -294,7 +284,7 @@ export default function InvoicePage() {
                   ChooseTounsi
                 </p>
                 <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 500, marginTop: 3 }}>
-                  Marketplace Tunisien · choosetounsi.tn
+                  {t('tagline')}
                 </p>
               </div>
             </div>
@@ -307,19 +297,19 @@ export default function InvoicePage() {
                 letterSpacing: '0.05em', lineHeight: 1,
                 textTransform: 'uppercase',
               }}>
-                Facture
+                {t('title')}
               </p>
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: 700, marginTop: 4 }}>
                 {data.invoice_number}
               </p>
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>
-                {data.order_date}
+                {orderDate(data)}
               </p>
             </div>
           </div>
 
           {/* ── Green accent strip ── */}
-          <div style={{ height: 4, background: 'linear-gradient(90deg, #198f41, #12b34a)' }} />
+          <div className="rtl-flip" style={{ height: 4, background: 'linear-gradient(90deg, #198f41, #12b34a)' }} />
 
           {/* ── Body ── */}
           <div style={{ padding: '32px 40px' }}>
@@ -334,7 +324,7 @@ export default function InvoicePage() {
 
               {/* Seller info */}
               <div style={partyCardStyle}>
-                <p style={partyLabelStyle}>DE (Vendeur)</p>
+                <p style={partyLabelStyle}>{t('from')}</p>
                 <p style={partyNameStyle}>{data.seller.business_name}</p>
                 
                 {(data.seller.city || data.seller.wilaya) && (
@@ -355,16 +345,16 @@ export default function InvoicePage() {
                   padding: '2px 7px',
                   display: 'inline-block',
                 }}>
-                  Vendeur ChooseTounsi
+                  {t('sellerBadge')}
                 </p>
               </div>
 
               {/* Customer info — name only (privacy) */}
               <div style={partyCardStyle}>
-                <p style={partyLabelStyle}>À (Client)</p>
+                <p style={partyLabelStyle}>{t('to')}</p>
                 <p style={partyNameStyle}>{data.customer.name}</p>
                 <p style={{ ...partyLineStyle, fontSize: 10, color: '#94a3b8', fontStyle: 'italic', marginTop: 6 }}>
-                  Informations confidentielles
+                  {t('confidential')}
                 </p>
               </div>
             </div>
@@ -380,10 +370,10 @@ export default function InvoicePage() {
               marginBottom: 28,
             }}>
               {[
-                { label: 'N° Commande',  value: data.order_number },
-                { label: 'Date',         value: data.order_date },
-                { label: 'Paiement',     value: PAYMENT_LABELS[data.payment_method ?? ''] ?? data.payment_method ?? '—' },
-                { label: 'Statut',       value: STATUS_LABELS[data.status] ?? data.status },
+                { label: t('orderNumber'), value: data.order_number },
+                { label: t('date'),        value: orderDate(data) },
+                { label: t('payment'),     value: data.payment_method ? (t.has(`methods.${data.payment_method}`) ? t(`methods.${data.payment_method}`) : data.payment_method) : '—' },
+                { label: t('status'),      value: statusLabel(data.status) },
               ].map(({ label, value }) => (
                 <div key={label} style={{
                   background: '#f8fafc',
@@ -409,10 +399,10 @@ export default function InvoicePage() {
               <thead>
                 <tr style={{ background: '#1e293b' }}>
                   <th style={{ ...thStyle, width: hasVariantItems ? 48 : 0, padding: hasVariantItems ? '10px 8px' : 0 }} />
-                  <th style={{ ...thStyle, textAlign: 'start' }}>Produit</th>
-                  <th style={{ ...thStyle, width: 60 }}>Qté</th>
-                  <th style={{ ...thStyle, width: 110, textAlign: 'end' }}>Prix unitaire</th>
-                  <th style={{ ...thStyle, width: 110, textAlign: 'end' }}>Total</th>
+                  <th style={{ ...thStyle, textAlign: 'start' }}>{t('cols.product')}</th>
+                  <th style={{ ...thStyle, width: 60 }}>{t('cols.qty')}</th>
+                  <th style={{ ...thStyle, width: 110, textAlign: 'end' }}>{t('cols.unitPrice')}</th>
+                  <th style={{ ...thStyle, width: 110, textAlign: 'end' }}>{t('cols.total')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -466,7 +456,7 @@ export default function InvoicePage() {
                                 {colors.length > 0 && (
                                   <span style={attrPillStyle}>
                                     <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748b', marginInlineEnd: 4 }}>
-                                      Couleur
+                                      {t('color')}
                                     </span>
                                     {colors.map((c, ci) =>
                                       c.color_hex ? (
@@ -544,21 +534,21 @@ export default function InvoicePage() {
                 overflow: 'hidden',
               }}>
                 <div style={totalRowStyle(false)}>
-                  <span>Sous-total</span>
+                  <span>{t('subtotal')}</span>
                   <span>{fmt(data.subtotal)}</span>
                 </div>
                 {Number(data.discount_amount ?? 0) > 0 && (
                   <div style={{ ...totalRowStyle(false), color: '#b45309' }}>
-                    <span>Remise{data.coupon_code ? ` (${data.coupon_code})` : ''}</span>
+                    <span>{t('discount')}{data.coupon_code ? ` (${data.coupon_code})` : ''}</span>
                     <span>−{fmt(Number(data.discount_amount))}</span>
                   </div>
                 )}
                 <div style={totalRowStyle(false)}>
-                  <span>Frais de livraison</span>
+                  <span>{t('shipping')}</span>
                   <span>{fmt(data.shipping_fee)}</span>
                 </div>
                 <div style={totalRowStyle(true)}>
-                  <span>TOTAL</span>
+                  <span>{t('grandTotal')}</span>
                   <span>{fmt(data.grand_total)}</span>
                 </div>
               </div>
@@ -576,15 +566,15 @@ export default function InvoicePage() {
             }}>
               <div>
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 3 }}>
-                  Merci pour votre commande sur ChooseTounsi !
+                  {t('thanks')}
                 </p>
                 <p style={{ fontSize: 10, color: '#94a3b8' }}>
-                  Pour toute question, contactez le vendeur ou visitez choosetounsi.tn
+                  {t('questions')}
                 </p>
               </div>
               <div style={{ textAlign: 'end', flexShrink: 0 }}>
                 <p style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 600 }}>
-                  Document généré le {new Date().toLocaleDateString('fr-TN')}
+                  {t('generatedOn', { date: date(new Date(), 'medium') })}
                 </p>
                 <p style={{ fontSize: 10, color: '#e2e8f0' }}>
                   {data.invoice_number}
@@ -595,7 +585,7 @@ export default function InvoicePage() {
           </div>
 
           {/* ── Bottom accent bar ── */}
-          <div style={{ height: 6, background: 'linear-gradient(90deg, #db142e 0%, #198f41 100%)' }} />
+          <div className="rtl-flip" style={{ height: 6, background: 'linear-gradient(90deg, #db142e 0%, #198f41 100%)' }} />
         </div>
 
       </div>

@@ -9,6 +9,19 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../SellerShell';
 import type { Order, OrderDetail, OrderItem, VariantAttribute, PaginatedResponse, OrderCommissionSummary } from '@/types/seller';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
+import { useStatusLabel } from '@/lib/i18n/useStatusLabel';
+import { useWilayaLabel } from '@/lib/i18n/wilayas';
+
+/** 3-decimal DT amounts, as on invoices */
+function useDt() {
+  const { price } = useFormat();
+  return {
+    dt:   (n: number | string | null | undefined) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 }),
+    bare: (n: number | string | null | undefined) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3, bare: true }),
+  };
+}
 
 // ─── Status colors ────────────────────────────────────────────────────────────
 
@@ -23,6 +36,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function StatusBadge({ status, dark }: { status: string; dark: boolean }) {
+  const label = useStatusLabel();
   const color = STATUS_COLORS[status] ?? '#94a3b8';
   return (
     <span style={{
@@ -32,7 +46,7 @@ function StatusBadge({ status, dark }: { status: string; dark: boolean }) {
       textTransform: 'capitalize',
     }}>
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
-      {status.replace(/_/g, ' ')}
+      {label(status)}
     </span>
   );
 }
@@ -44,17 +58,19 @@ const PAYMENT_COLORS: Record<string, string> = {
 };
 
 function PaymentBadge({ status }: { status: string }) {
+  const label = useStatusLabel('paymentStatus');
   const color = PAYMENT_COLORS[status] ?? '#94a3b8';
   return (
     <span style={{
       display: 'inline-flex', fontSize: 10, fontWeight: 800,
       padding: '3px 9px', borderRadius: 999, textTransform: 'capitalize',
       background: `${color}18`, color, border: `1px solid ${color}30`,
-    }}>{status}</span>
+    }}>{label(status)}</span>
   );
 }
 
 function MethodBadge({ method }: { method: string | null }) {
+  const t = useTranslations('seller.orders.methods');
   if (!method) return <span style={{ color: '#94a3b8', fontSize: 11 }}>—</span>;
   return (
     <span style={{
@@ -63,7 +79,7 @@ function MethodBadge({ method }: { method: string | null }) {
       background: 'rgba(99,102,241,0.1)', color: '#6366f1',
       border: '1px solid rgba(99,102,241,0.25)',
     }}>
-      {method}
+      {t.has(method) ? t(method) : method}
     </span>
   );
 }
@@ -95,34 +111,36 @@ function VariantPill({ attr }: { attr: VariantAttribute }) {
 
 // ─── Commission ───────────────────────────────────────────────────────────────
 
-const PLAN_LABELS: Record<string, string> = { free: 'Green', red: 'Red', black: 'Black' };
 const PLAN_COLORS: Record<string, string> = { free: '#198f41', red: '#db142e', black: '#f59e0b' };
 
 function CommissionItemBadge({ item }: { item: OrderItem; dark: boolean }) {
+  const t = useTranslations('seller.orders');
+  const { dt } = useDt();
+  const { number } = useFormat();
   if (!item.has_commission || item.commission_percentage === null) return null;
   const planColor = PLAN_COLORS[item.plan_used ?? 'free'] ?? '#198f41';
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 6 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 9, fontWeight: 800, color: '#ef4444', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)', padding: '1px 6px', borderRadius: 4 }}>
-          Fee {item.commission_percentage}%
+          {t('fee', { pct: number(item.commission_percentage) })}
         </span>
         <span style={{ fontSize: 10, color: '#ef4444', fontWeight: 700 }}>
-          −{Number(item.commission_amount).toFixed(3)} TND
+          −{dt(item.commission_amount)}
         </span>
         <span style={{ fontSize: 9, fontWeight: 700, color: planColor, background: `${planColor}10`, border: `1px solid ${planColor}25`, padding: '1px 6px', borderRadius: 4 }}>
-          {PLAN_LABELS[item.plan_used ?? 'free']} plan
+          {t(`plan.${item.plan_used === 'red' || item.plan_used === 'black' ? item.plan_used : 'free'}`)}
         </span>
       </div>
       {Number(item.discount_amount ?? 0) > 0 && (
         <span style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700 }}>
-          Coupon −{Number(item.discount_amount).toFixed(3)} TND · fee on {Number(item.net_total).toFixed(3)} TND
+          {t('couponLine', { discount: dt(item.discount_amount), net: dt(item.net_total) })}
         </span>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <span style={{ fontSize: 9, fontWeight: 800, color: '#10b981' }}>YOU RECEIVE</span>
+        <span style={{ fontSize: 9, fontWeight: 800, color: '#10b981', textTransform: 'uppercase' }}>{t('youReceive')}</span>
         <span style={{ fontSize: 11, fontWeight: 900, color: '#10b981' }}>
-          {Number(item.seller_amount).toFixed(3)} TND
+          {dt(item.seller_amount)}
         </span>
       </div>
     </div>
@@ -132,30 +150,33 @@ function CommissionItemBadge({ item }: { item: OrderItem; dark: boolean }) {
 function CommissionSummaryCard({ commission, dark, border, bgSub }: {
   commission: OrderCommissionSummary; dark: boolean; border: string; bgSub: string;
 }) {
+  const t = useTranslations('seller.orders');
+  const { bare, dt } = useDt();
+  const { currency } = useFormat();
   if (!commission.has_commission) return null;
   const discount = Number(commission.total_discount ?? 0);
   const net      = Number(commission.total_net ?? commission.total_gross);
   // Coupon is seller-funded; the platform fee is charged on the price after it.
   const columns = [
-    { label: 'Gross Total',  value: Number(commission.total_gross).toFixed(3),             color: dark ? '#93c5fd' : '#1e40af', bg: dark ? 'rgba(59,130,246,0.08)' : '#eff6ff', bd: dark ? 'rgba(59,130,246,0.15)' : '#bfdbfe', note: discount > 0 ? 'Before coupon' : 'Customer paid' },
+    { label: t('summary.gross'),    value: bare(commission.total_gross),             color: dark ? '#93c5fd' : '#1e40af', bg: dark ? 'rgba(59,130,246,0.08)' : '#eff6ff', bd: dark ? 'rgba(59,130,246,0.15)' : '#bfdbfe', note: discount > 0 ? t('summary.beforeCoupon') : t('summary.customerPaid') },
     ...(discount > 0 ? [
-      { label: 'Coupon',     value: '−' + discount.toFixed(3),                               color: '#f59e0b', bg: 'rgba(245,158,11,0.06)', bd: 'rgba(245,158,11,0.18)', note: `Customer paid ${net.toFixed(3)}` },
+      { label: t('summary.coupon'), value: '−' + bare(discount),                    color: '#f59e0b', bg: 'rgba(245,158,11,0.06)', bd: 'rgba(245,158,11,0.18)', note: t('summary.customerPaidAmount', { amount: dt(net) }) },
     ] : []),
-    { label: 'Platform Fee', value: Number(commission.total_commission_amount).toFixed(3), color: '#ef4444', bg: 'rgba(239,68,68,0.06)', bd: 'rgba(239,68,68,0.18)', note: discount > 0 ? `On ${net.toFixed(3)}` : 'ChooseTounsi commission' },
-    { label: 'You Receive',  value: Number(commission.total_seller_net).toFixed(3),        color: '#10b981', bg: 'rgba(16,185,129,0.06)', bd: 'rgba(16,185,129,0.18)', note: 'Net after fees' },
+    { label: t('summary.fee'),      value: bare(commission.total_commission_amount), color: '#ef4444', bg: 'rgba(239,68,68,0.06)', bd: 'rgba(239,68,68,0.18)', note: discount > 0 ? t('summary.on', { amount: dt(net) }) : t('summary.commission') },
+    { label: t('summary.receive'),  value: bare(commission.total_seller_net),        color: '#10b981', bg: 'rgba(16,185,129,0.06)', bd: 'rgba(16,185,129,0.18)', note: t('summary.netAfterFees') },
   ];
   return (
     <div style={{ marginTop: 2 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-        <span style={{ fontSize: 11, fontWeight: 800, color: dark ? 'rgba(255,255,255,0.7)' : '#374151' }}>Commission Breakdown</span>
-        <span style={{ fontSize: 9, fontWeight: 700, background: 'rgba(219,20,46,0.1)', color: '#db142e', border: '1px solid rgba(219,20,46,0.2)', padding: '1px 6px', borderRadius: 4, textTransform: 'uppercase' as const }}>Order Summary</span>
+        <span style={{ fontSize: 11, fontWeight: 800, color: dark ? 'rgba(255,255,255,0.7)' : '#374151' }}>{t('summary.title')}</span>
+        <span style={{ fontSize: 9, fontWeight: 700, background: 'rgba(219,20,46,0.1)', color: '#db142e', border: '1px solid rgba(219,20,46,0.2)', padding: '1px 6px', borderRadius: 4, textTransform: 'uppercase' as const }}>{t('summary.badge')}</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns.length}, 1fr)`, gap: 8 }}>
         {columns.map(col => (
           <div key={col.label} style={{ background: col.bg, border: `1px solid ${col.bd}`, borderRadius: 12, padding: '10px 12px', textAlign: 'center' as const }}>
             <p style={{ fontSize: 9, fontWeight: 800, color: col.color, margin: '0 0 5px', opacity: 0.8, textTransform: 'uppercase' as const }}>{col.label}</p>
             <p style={{ fontSize: 15, fontWeight: 900, color: col.color, margin: '0 0 3px' }}>{col.value}</p>
-            <p style={{ fontSize: 9, color: col.color, margin: 0, opacity: 0.65 }}>TND · {col.note}</p>
+            <p style={{ fontSize: 9, color: col.color, margin: 0, opacity: 0.65 }}>{currency} · {col.note}</p>
           </div>
         ))}
       </div>
@@ -168,6 +189,9 @@ function CommissionSummaryCard({ commission, dark, border, bgSub }: {
 function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
   item: OrderItem; dark: boolean; border: string; textMain: string; textMuted: string; bgSub: string;
 }) {
+  const t = useTranslations('seller.orders');
+  const { dt, bare } = useDt();
+  const { currency } = useFormat();
   const hasVariant = !!item.variant_id;
   const hasImage   = !!item.variant_image_url;
   const hasAttrs   = item.variant_attributes && item.variant_attributes.length > 0;
@@ -195,8 +219,8 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
           <p style={{ fontWeight: 800, color: item.item_status ? (dark ? '#6b7280' : '#94a3b8') : textMain, fontSize: 13, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: item.item_status ? 'line-through' : 'none' }}>
             {item.product_name}
           </p>
-          {item.item_status === 'returned' && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'rgba(219,20,46,0.15)', color: '#db142e', border: '1px solid rgba(219,20,46,0.35)' }}>↩ Returned</span>}
-          {item.item_status === 'exchanged' && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.35)' }}>↔ Exchanged</span>}
+          {item.item_status === 'returned' && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'rgba(219,20,46,0.15)', color: '#db142e', border: '1px solid rgba(219,20,46,0.35)' }}>{t('returned')}</span>}
+          {item.item_status === 'exchanged' && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.35)' }}>{t('exchanged')}</span>}
         </div>
 
         {hasVariant && (
@@ -215,20 +239,20 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
           </div>
         )}
 
-        {!hasVariant && <p style={{ fontSize: 11, color: textMuted, margin: '0 0 6px' }}>Simple product</p>}
+        {!hasVariant && <p style={{ fontSize: 11, color: textMuted, margin: '0 0 6px' }}>{t('simpleProduct')}</p>}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: dark ? 'rgba(255,255,255,0.5)' : '#64748b', background: dark ? 'rgba(255,255,255,0.06)' : '#f1f5f9', border: `1px solid ${border}`, padding: '2px 8px', borderRadius: 5 }}>
-            Qty: {item.quantity}
+            {t('qty', { count: item.quantity })}
           </span>
-          <span style={{ fontSize: 11, color: textMuted }}>{Number(item.unit_price).toFixed(3)} TND / unit</span>
+          <span style={{ fontSize: 11, color: textMuted }}>{t('perUnit', { price: dt(item.unit_price) })}</span>
         </div>
         <CommissionItemBadge item={item} dark={dark} />
       </div>
 
       <div style={{ textAlign: 'end', flexShrink: 0 }}>
-        <p style={{ fontWeight: 900, color: '#3b82f6', fontSize: 14, margin: 0 }}>{Number(item.total).toFixed(3)}</p>
-        <p style={{ fontSize: 9, fontWeight: 700, color: textMuted, margin: '2px 0 0', textTransform: 'uppercase' }}>TND</p>
+        <p style={{ fontWeight: 900, color: '#3b82f6', fontSize: 14, margin: 0 }}>{bare(item.total)}</p>
+        <p style={{ fontSize: 9, fontWeight: 700, color: textMuted, margin: '2px 0 0', textTransform: 'uppercase' }}>{currency}</p>
       </div>
     </div>
   );
@@ -239,6 +263,10 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
 function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
   orderId: number; onClose: () => void; onUpdated: () => void; dark: boolean;
 }) {
+  const t = useTranslations('seller.orders');
+  const { dt } = useDt();
+  const { date } = useFormat();
+  const wilaya = useWilayaLabel();
   const [detail,         setDetail]         = useState<OrderDetail | null>(null);
   const [loading,        setLoading]        = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -254,7 +282,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
   useEffect(() => {
     ordersApi.getOne(orderId)
       .then(res => setDetail(res.data))
-      .catch(() => setError('Failed to load order details.'))
+      .catch(() => setError(t('loadFailed')))
       .finally(() => setLoading(false));
   }, [orderId]);
 
@@ -263,12 +291,12 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
     setError('');
     try {
       await ordersApi.updateStatus(orderId, 'completed');
-      setSuccessMsg('Order marked as completed! Delivery team notified.');
+      setSuccessMsg(t('markedCompleted'));
       const res = await ordersApi.getOne(orderId);
       setDetail(res.data);
       onUpdated();
     } catch {
-      setError('Failed to update order status.');
+      setError(t('updateFailed'));
     } finally {
       setUpdatingStatus(false);
     }
@@ -280,15 +308,15 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: `1px solid ${border}` }}>
-          <h2 style={{ fontSize: 15, fontWeight: 800, color: textMain, margin: 0 }}>Order Details</h2>
+          <h2 style={{ fontSize: 15, fontWeight: 800, color: textMain, margin: 0 }}>{t('details')}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               onClick={() => window.open(`/invoice/${orderId}`, '_blank')}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'linear-gradient(135deg,#db142e,#a50f22)', color: '#fff', fontWeight: 700, fontSize: 12, borderRadius: 8, border: 'none', cursor: 'pointer' }}
             >
-              🖨 Print Invoice
+              {t('printInvoice')}
             </button>
-            <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: textMuted, padding: 6, borderRadius: 10 }}>
+            <button onClick={onClose} aria-label={t('close')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: textMuted, padding: 6, borderRadius: 10 }}>
               <X size={16} />
             </button>
           </div>
@@ -322,10 +350,10 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
               {/* Meta grid */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {[
-                  { icon: Hash,     label: 'Order Number', value: detail.order.order_number },
-                  { icon: Calendar, label: 'Date',         value: new Date(detail.order.created_at).toLocaleDateString('fr-TN') },
-                  { icon: User,     label: 'Customer',     value: detail.order.customer?.name ?? '—' },
-                  { icon: MapPin,   label: 'Wilaya',       value: detail.order.wilaya ?? detail.order.customer?.state ?? '—' },
+                  { icon: Hash,     label: t('orderNumber'), value: detail.order.order_number },
+                  { icon: Calendar, label: t('date'),        value: date(detail.order.created_at, 'medium') },
+                  { icon: User,     label: t('customer'),    value: detail.order.customer?.name ?? '—' },
+                  { icon: MapPin,   label: t('wilaya'),      value: (detail.order.wilaya ?? detail.order.customer?.state) ? wilaya((detail.order.wilaya ?? detail.order.customer?.state) as string) : '—' },
                 ].map(({ icon: Icon, label, value }) => (
                   <div key={label} style={{ background: bgSub, borderRadius: 12, padding: '12px 14px', border: `1px solid ${border}` }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted, marginBottom: 6 }}>
@@ -339,9 +367,9 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
               {/* Status badges */}
               <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                 {[
-                  { label: 'Order Status',   node: <StatusBadge status={detail.order.status} dark={dark} /> },
-                  { label: 'Payment Status', node: <PaymentBadge status={detail.order.payment_status} /> },
-                  { label: 'Payment Method', node: <MethodBadge method={detail.order.payment_method ?? null} /> },
+                  { label: t('orderStatus'),   node: <StatusBadge status={detail.order.status} dark={dark} /> },
+                  { label: t('paymentStatus'), node: <PaymentBadge status={detail.order.payment_status} /> },
+                  { label: t('paymentMethod'), node: <MethodBadge method={detail.order.payment_method ?? null} /> },
                 ].map(({ label, node }) => (
                   <div key={label}>
                     <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted, marginBottom: 6 }}>{label}</p>
@@ -354,9 +382,9 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <Package size={14} color="#3b82f6" />
-                  <h3 style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>Your Items</h3>
+                  <h3 style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>{t('yourItems')}</h3>
                   <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.2)', padding: '1px 7px', borderRadius: 4 }}>
-                    {detail.items.length} {detail.items.length === 1 ? 'item' : 'items'}
+                    {t('itemCount', { count: detail.items.length })}
                   </span>
                 </div>
                 <div style={{ border: `1px solid ${border}`, borderRadius: 14, overflow: 'hidden' }}>
@@ -366,21 +394,21 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                   {Number(detail.discount_amount ?? 0) > 0 && (
                     <>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: `1px solid ${border}` }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: textMuted }}>Subtotal</span>
-                        <span style={{ fontWeight: 800, color: textMain, fontSize: 13 }}>{Number(detail.seller_subtotal).toFixed(3)} TND</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: textMuted }}>{t('subtotal')}</span>
+                        <span style={{ fontWeight: 800, color: textMain, fontSize: 13 }}>{dt(detail.seller_subtotal)}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: `1px solid ${border}` }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>
-                          Coupon{detail.coupon_code ? ` (${detail.coupon_code})` : ''}
+                          {t('coupon')}{detail.coupon_code ? ` (${detail.coupon_code})` : ''}
                           {detail.coupon_type === 'percentage' && detail.coupon_value ? ` · ${Number(detail.coupon_value)}%` : ''}
                         </span>
-                        <span style={{ fontWeight: 800, color: '#f59e0b', fontSize: 13 }}>−{Number(detail.discount_amount).toFixed(3)} TND</span>
+                        <span style={{ fontWeight: 800, color: '#f59e0b', fontSize: 13 }}>−{dt(detail.discount_amount)}</span>
                       </div>
                     </>
                   )}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: dark ? 'rgba(59,130,246,0.08)' : '#eff6ff', borderTop: `1px solid ${border}` }}>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: dark ? '#93c5fd' : '#1e40af' }}>{Number(detail.discount_amount ?? 0) > 0 ? 'Your Total (after coupon)' : 'Your Subtotal'}</span>
-                    <span style={{ fontWeight: 900, color: '#3b82f6', fontSize: 15 }}>{Number(detail.seller_total ?? detail.seller_subtotal).toFixed(3)} TND</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: dark ? '#93c5fd' : '#1e40af' }}>{Number(detail.discount_amount ?? 0) > 0 ? t('totalAfterCoupon') : t('yourSubtotal')}</span>
+                    <span style={{ fontWeight: 900, color: '#3b82f6', fontSize: 15 }}>{dt(detail.seller_total ?? detail.seller_subtotal)}</span>
                   </div>
                 </div>
 
@@ -400,8 +428,8 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                     <span style={{ fontSize: 18 }}>⏳</span>
                   </div>
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 800, color: '#f59e0b', margin: 0 }}>Waiting for Admin Confirmation</p>
-                    <p style={{ fontSize: 11, color: dark ? 'rgba(255,255,255,0.4)' : '#64748b', margin: '2px 0 0' }}>The admin will call the client to confirm. You'll be notified when ready.</p>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: '#f59e0b', margin: 0 }}>{t('waitingTitle')}</p>
+                    <p style={{ fontSize: 11, color: dark ? 'rgba(255,255,255,0.4)' : '#64748b', margin: '2px 0 0' }}>{t('waitingBody')}</p>
                   </div>
                 </div>
               )}
@@ -414,14 +442,14 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                       <Package size={16} color="#10b981" />
                     </div>
                     <div>
-                      <p style={{ fontSize: 13, fontWeight: 800, color: '#10b981', margin: 0 }}>Ready to Prepare</p>
+                      <p style={{ fontSize: 13, fontWeight: 800, color: '#10b981', margin: 0 }}>{t('readyTitle')}</p>
                       <p style={{ fontSize: 11, color: dark ? 'rgba(255,255,255,0.4)' : '#64748b', margin: '2px 0 0' }}>
-                        This order has been confirmed by admin. Pack the items and mark as completed.
+                        {t('readyBody')}
                       </p>
                     </div>
                   </div>
 
-                  {['Verify all items are in stock', 'Pack the order securely', 'Attach the order Invoice'].map((step, i) => (
+                  {[t('steps.stock'), t('steps.pack'), t('steps.invoice')].map((step, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 12, fontWeight: 600, color: dark ? 'rgba(255,255,255,0.6)' : '#374151' }}>
                       <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: '#10b981' }}>
                         {i + 1}
@@ -449,7 +477,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                       ? <Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite' }} />
                       : <span style={{ fontSize: 16 }}>✅</span>
                     }
-                    {updatingStatus ? 'Updating…' : 'Mark as Completed'}
+                    {updatingStatus ? t('updating') : t('markCompleted')}
                   </button>
                 </div>
               )}
@@ -461,8 +489,8 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                     <span style={{ fontSize: 18 }}>✅</span>
                   </div>
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 800, color: '#10b981', margin: 0 }}>Order Packed & Ready</p>
-                    <p style={{ fontSize: 11, color: dark ? 'rgba(255,255,255,0.4)' : '#64748b', margin: '2px 0 0' }}>Waiting for delivery pickup. The delivery team has been notified.</p>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: '#10b981', margin: 0 }}>{t('packedTitle')}</p>
+                    <p style={{ fontSize: 11, color: dark ? 'rgba(255,255,255,0.4)' : '#64748b', margin: '2px 0 0' }}>{t('packedBody')}</p>
                   </div>
                 </div>
               )}
@@ -482,6 +510,12 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
 
 export default function OrdersPage() {
   const { dark } = useTheme();
+  const t = useTranslations('seller.orders');
+  const { dt } = useDt();
+  const { date } = useFormat();
+  const statusLabel  = useStatusLabel();
+  const paymentLabel = useStatusLabel('paymentStatus');
+  const wilaya = useWilayaLabel();
   const [data,          setData]          = useState<PaginatedResponse<Order> | null>(null);
   const [loading,       setLoading]       = useState(true);
   const [search,        setSearch]        = useState('');
@@ -537,29 +571,29 @@ export default function OrdersPage() {
 
       {/* Header */}
       <div>
-        <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.02em' }}>Orders</h1>
-        <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>Orders that contain your products</p>
+        <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.02em' }}>{t('title')}</h1>
+        <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>{t('subtitle')}</p>
       </div>
 
       {/* Filters */}
       <div style={{ background: cardBg, borderRadius: 16, padding: 16, border: `1px solid ${border}`, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
           <Search size={13} style={{ position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)', color: textMuted, pointerEvents: 'none' }} />
-          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search order number or customer name…" style={{ ...inputStyle, width: '100%', paddingInlineStart: 32 }} />
+          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder={t('searchPlaceholder')} style={{ ...inputStyle, width: '100%', paddingInlineStart: 32 }} />
         </div>
         <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} style={inputStyle}>
-          <option value="">All Statuses</option>
+          <option value="">{t('allStatuses')}</option>
           {['pending', 'confirmed', 'completed', 'delivered', 'cancelled'].map(s => (
-            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+            <option key={s} value={s}>{statusLabel(s)}</option>
           ))}
         </select>
         <select value={filterPayment} onChange={e => { setFilterPayment(e.target.value); setPage(1); }} style={inputStyle}>
-          <option value="">All Payments</option>
+          <option value="">{t('allPayments')}</option>
           {['unpaid', 'paid', 'refunded'].map(s => (
-            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+            <option key={s} value={s}>{paymentLabel(s)}</option>
           ))}
         </select>
-        {data && <span style={{ fontSize: 11, fontWeight: 700, color: textMuted, marginInlineStart: 'auto' }}>{data.total} order{data.total !== 1 ? 's' : ''}</span>}
+        {data && <span style={{ fontSize: 11, fontWeight: 700, color: textMuted, marginInlineStart: 'auto' }}>{t('count', { count: data.total })}</span>}
       </div>
 
       {/* Table */}
@@ -573,8 +607,8 @@ export default function OrdersPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr style={{ background: theadBg }}>
-                  {['Order', 'Customer', 'Wilaya', 'Status', 'Payment', 'Method', 'Amount', 'Date', ''].map((h, i) => (
-                    <th key={h + i} style={{ padding: '10px 20px', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted, textAlign: h === 'Amount' ? 'right' : h === '' ? 'center' : 'left' }}>{h}</th>
+                  {(['order', 'customer', 'wilaya', 'status', 'payment', 'method', 'amount', 'date', ''] as const).map((h, i) => (
+                    <th key={h + i} style={{ padding: '10px 20px', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted, textAlign: h === 'amount' ? 'end' : h === '' ? 'center' : 'start' }}>{h ? t(`cols.${h}`) : ''}</th>
                   ))}
                 </tr>
               </thead>
@@ -585,7 +619,7 @@ export default function OrdersPage() {
                     className="order-row"
                     style={{
                       borderTop: `1px solid ${border}`,
-                      borderLeft: order.status === 'confirmed' ? '3px solid #3b82f6' : '3px solid transparent',
+                      borderInlineStart: order.status === 'confirmed' ? '3px solid #3b82f6' : '3px solid transparent',
                       background: order.status === 'confirmed' ? (dark ? 'rgba(59,130,246,0.05)' : 'rgba(59,130,246,0.03)') : undefined,
                     }}
                   >
@@ -600,22 +634,22 @@ export default function OrdersPage() {
                       </div>
                     </td>
                     <td style={{ padding: '13px 20px' }}>
-                      <p style={{ fontWeight: 700, color: textMain, margin: 0, fontSize: 12 }}>{order.user?.name ?? `Customer #${order.user_id}`}</p>
+                      <p style={{ fontWeight: 700, color: textMain, margin: 0, fontSize: 12 }}>{order.user?.name ?? t('customerFallback', { id: order.user_id })}</p>
                     </td>
-                    <td style={{ padding: '13px 20px', fontSize: 12, fontWeight: 500, color: textMuted }}>{order.wilaya ?? '—'}</td>
+                    <td style={{ padding: '13px 20px', fontSize: 12, fontWeight: 500, color: textMuted }}>{order.wilaya ? wilaya(order.wilaya) : '—'}</td>
                     <td style={{ padding: '13px 20px' }}><StatusBadge status={order.status} dark={dark} /></td>
                     <td style={{ padding: '13px 20px' }}><PaymentBadge status={order.payment_status} /></td>
                     <td style={{ padding: '13px 20px' }}><MethodBadge method={order.payment_method} /></td>
-                    <td style={{ padding: '13px 20px', textAlign: 'end', fontWeight: 900, color: textMain, fontSize: 12 }}>{Number(order.total_amount).toFixed(3)} TND</td>
-                    <td style={{ padding: '13px 20px', fontSize: 11, color: textMuted, fontWeight: 500 }}>{new Date(order.created_at).toLocaleDateString('fr-TN')}</td>
+                    <td style={{ padding: '13px 20px', textAlign: 'end', fontWeight: 900, color: textMain, fontSize: 12 }}>{dt(order.total_amount)}</td>
+                    <td style={{ padding: '13px 20px', fontSize: 11, color: textMuted, fontWeight: 500 }}>{date(order.created_at, 'short')}</td>
                     <td style={{ padding: '13px 20px', textAlign: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                         {order.status === 'confirmed' && (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 999, background: dark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.08)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', whiteSpace: 'nowrap', animation: 'confirmedPulse 2s ease-in-out infinite' }}>
-                            📦 Prepare Now
+                            {t('prepareNow')}
                           </span>
                         )}
-                        <button onClick={() => setSelectedId(order.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: textMuted }} className="eye-btn">
+                        <button onClick={() => setSelectedId(order.id)} aria-label={t('view')} title={t('view')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: textMuted }} className="eye-btn">
                           <Eye size={14} />
                         </button>
                       </div>
@@ -626,8 +660,8 @@ export default function OrdersPage() {
                   <tr>
                     <td colSpan={9} style={{ padding: '56px 20px', textAlign: 'center' }}>
                       <ShoppingBag size={28} style={{ margin: '0 auto 10px', display: 'block', color: textMuted, opacity: 0.4 }} />
-                      <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>No orders found</p>
-                      <p style={{ fontSize: 11, color: textMuted, opacity: 0.6, margin: 0 }}>Try adjusting your filters</p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>{t('empty')}</p>
+                      <p style={{ fontSize: 11, color: textMuted, opacity: 0.6, margin: 0 }}>{t('emptyHint')}</p>
                     </td>
                   </tr>
                 )}
@@ -638,7 +672,7 @@ export default function OrdersPage() {
 
         {data && data.last_page > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: `1px solid ${border}` }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>Showing {data.from}–{data.to} of {data.total}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>{t('showing', { from: data.from ?? 0, to: data.to ?? 0, total: data.total })}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: 6, borderRadius: 8, border: `1px solid ${border}`, background: 'transparent', cursor: 'pointer', color: textMuted, opacity: page === 1 ? 0.4 : 1 }}>
                 <ChevronLeft size={14} />
