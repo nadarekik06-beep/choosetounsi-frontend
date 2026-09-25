@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 interface SellerInfo {
   name: string
@@ -45,21 +47,19 @@ interface FullReceipt {
   generated_at: string
 }
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(n) + ' TND'
 
 function getToken(): string {
   if (typeof window === 'undefined') return ''
   return localStorage.getItem('ct_auth_token') ?? ''
 }
 
-const PLAN_LABELS: Record<string, string> = {
-  green: 'Green Pepper (Gratuit)',
-  red:   'Red Pepper (49 DT/mois)',
-  black: 'Black Pepper (129 DT/mois)',
-}
+// Plan labels: seller.receipt.plans.<plan>
 
 export default function FullReceiptPage() {
+  const t = useTranslations('seller.receipt')
+  const { price, number, date } = useFormat()
+  const fmt = (n: number) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+  const d = (v: string) => date(v, 'short')
   const [data,    setData]    = useState<FullReceipt | null>(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(false)
@@ -88,17 +88,17 @@ export default function FullReceiptPage() {
   if (loading) return (
     <div style={wrap}>
       <div style={spinner} />
-      <p style={{ fontSize: 14, fontWeight: 600, color: '#64748b' }}>Génération du rapport de gains…</p>
+      <p style={{ fontSize: 14, fontWeight: 600, color: '#64748b' }}>{t('generating')}</p>
     </div>
   )
 
   if (error || !data) return (
     <div style={wrap}>
-      <p style={{ color: '#dc2626', fontWeight: 700 }}>Impossible de charger le rapport. Fermez cet onglet et réessayez.</p>
+      <p style={{ color: '#dc2626', fontWeight: 700 }}>{t('loadFailed')}</p>
     </div>
   )
 
-  const generatedDate = new Date(data.generated_at).toLocaleDateString('fr-TN')
+  const generatedDate = date(data.generated_at, 'medium')
   const { seller, totals, batches, subscription } = data
 
   return (
@@ -129,12 +129,12 @@ export default function FullReceiptPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <img src={`${origin}/images/logo-chili.png`} alt="ChooseTounsi" style={{ height: 32 }} />
             <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 18, fontWeight: 800, color: '#db142e' }}>
-              Rapport de Gains Complet
+              {t('barTitle')}
             </span>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => window.print()} style={btn('#db142e')}>🖨 Imprimer / PDF</button>
-            <button onClick={() => window.close()} style={btn('#64748b')}>✕ Fermer</button>
+            <button onClick={() => window.print()} style={btn('#db142e')}>{t('print')}</button>
+            <button onClick={() => window.close()} style={btn('#64748b')}>{t('close')}</button>
           </div>
         </div>
 
@@ -145,29 +145,29 @@ export default function FullReceiptPage() {
               <img src={`${origin}/images/logo-chili.png`} alt="ChooseTounsi" style={{ height: 56 }} />
               <div>
                 <p style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>ChooseTounsi</p>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 500, marginTop: 3 }}>Marketplace Tunisien · choosetounsi.tn</p>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 500, marginTop: 3 }}>{t('tagline')}</p>
               </div>
             </div>
             <div style={{ textAlign: 'end' }}>
               <p style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 24, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>
-                Rapport de Gains
+                {t('title')}
               </p>
               <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: 700, marginTop: 4 }}>
-                Historique complet des règlements
+                {t('subtitle')}
               </p>
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>
-                Généré le {generatedDate}
+                {t('generatedOn', { date: generatedDate })}
               </p>
             </div>
           </div>
-          <div style={{ height: 4, background: 'linear-gradient(90deg,#198f41,#12b34a)' }} />
+          <div className="rtl-flip" style={{ height: 4, background: 'linear-gradient(90deg,#198f41,#12b34a)' }} />
 
           <div style={{ padding: '32px 40px' }}>
 
             {/* Seller + Subscription info */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 28 }}>
               <div style={card}>
-                <p style={lbl}>Vendeur</p>
+                <p style={lbl}>{t('seller')}</p>
                 <p style={name}>{seller.business_name}</p>
                 <p style={line}>{seller.name}</p>
                 <p style={line}>{seller.email}</p>
@@ -177,21 +177,19 @@ export default function FullReceiptPage() {
                 )}
               </div>
               <div style={card}>
-                <p style={lbl}>Abonnement</p>
-                <p style={name}>{PLAN_LABELS[subscription.plan] ?? subscription.plan}</p>
+                <p style={lbl}>{t('subscription')}</p>
+                <p style={name}>{t.has(`plans.${subscription.plan}`) ? t(`plans.${subscription.plan}`) : subscription.plan}</p>
                 {subscription.expires_at && (
-                  <p style={line}>Expire le : {new Date(subscription.expires_at).toLocaleDateString('fr-TN')}</p>
+                  <p style={line}>{t('expiresOn', { date: d(subscription.expires_at) })}</p>
                 )}
                 <div style={{ marginTop: 10 }}>
-                  <p style={lbl}>Période couverte</p>
+                  <p style={lbl}>{t('period')}</p>
                   {batches.length > 0 ? (
                     <p style={{ fontSize: 12, fontWeight: 700, color: '#1e293b' }}>
-                      {new Date(batches[batches.length - 1].batch_date).toLocaleDateString('fr-TN')}
-                      {' → '}
-                      {new Date(batches[0].batch_date).toLocaleDateString('fr-TN')}
+                      {t('range', { from: d(batches[batches.length - 1].batch_date), to: d(batches[0].batch_date) })}
                     </p>
                   ) : (
-                    <p style={{ fontSize: 12, color: '#94a3b8' }}>Aucun règlement</p>
+                    <p style={{ fontSize: 12, color: '#94a3b8' }}>{t('noSettlement')}</p>
                   )}
                 </div>
               </div>
@@ -199,14 +197,14 @@ export default function FullReceiptPage() {
 
             {/* Global KPI summary */}
             <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 10 }}>
-              Résumé financier global
+              {t('summary')}
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: '#e2e8f0', borderRadius: 10, overflow: 'hidden', marginBottom: 8 }}>
               {[
-                { label: 'Commandes totales', value: String(totals.orders_count), color: '#3b82f6' },
-                { label: 'Revenu brut',        value: fmt(totals.gross_revenue),   color: '#94a3b8' },
-                { label: 'Commissions payées', value: fmt(totals.total_commission), color: '#db142e' },
-                { label: 'Net total',           value: fmt(totals.total_net),       color: '#10b981' },
+                { label: t('kpi.orders'),     value: number(totals.orders_count),   color: '#3b82f6' },
+                { label: t('kpi.gross'),      value: fmt(totals.gross_revenue),     color: '#94a3b8' },
+                { label: t('kpi.commission'), value: fmt(totals.total_commission),  color: '#db142e' },
+                { label: t('kpi.net'),        value: fmt(totals.total_net),         color: '#10b981' },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{ background: '#f8fafc', padding: '14px 16px' }}>
                   <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 6 }}>{label}</p>
@@ -216,9 +214,9 @@ export default function FullReceiptPage() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, background: '#e2e8f0', borderRadius: 10, overflow: 'hidden', marginBottom: 28 }}>
               {[
-                { label: 'Déjà reçu',          value: fmt(totals.total_paid),    color: '#10b981' },
-                { label: 'En attente de règl.', value: fmt(totals.total_ready),   color: '#3b82f6' },
-                { label: 'En cours de livr.',   value: fmt(totals.total_pending), color: '#f59e0b' },
+                { label: t('kpi.paid'),    value: fmt(totals.total_paid),    color: '#10b981' },
+                { label: t('kpi.ready'),   value: fmt(totals.total_ready),   color: '#3b82f6' },
+                { label: t('kpi.pending'), value: fmt(totals.total_pending), color: '#f59e0b' },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{ background: '#f8fafc', padding: '14px 16px' }}>
                   <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 6 }}>{label}</p>
@@ -229,20 +227,20 @@ export default function FullReceiptPage() {
 
             {/* Settlements history table */}
             <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 10 }}>
-              Historique des règlements ({batches.length} batch{batches.length > 1 ? 's' : ''})
+              {t('historyTitle', { count: batches.length })}
             </p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 0 }}>
               <thead>
                 <tr style={{ background: '#1e293b' }}>
                   {[
-                    { label: 'Référence',      align: 'left'  },
-                    { label: 'Date',           align: 'left'  },
-                    { label: 'Commandes',      align: 'right' },
-                    { label: 'Brut',           align: 'right' },
-                    { label: 'Commission',     align: 'right' },
-                    { label: 'Frais livr.',    align: 'right' },
-                    { label: 'Votre paiement', align: 'right' },
-                    { label: 'Payé le',        align: 'right' },
+                    { label: t('cols.reference'),  align: 'start' },
+                    { label: t('cols.date'),       align: 'start' },
+                    { label: t('cols.orders'),     align: 'end'   },
+                    { label: t('cols.gross'),      align: 'end'   },
+                    { label: t('cols.commission'), align: 'end'   },
+                    { label: t('cols.delivery'),   align: 'end'   },
+                    { label: t('cols.payout'),     align: 'end'   },
+                    { label: t('cols.paidOn'),     align: 'end'   },
                   ].map(col => (
                     <th key={col.label} style={{ padding: '10px 12px', fontSize: 9, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.8)', textAlign: col.align as any }}>
                       {col.label}
@@ -254,21 +252,21 @@ export default function FullReceiptPage() {
                 {batches.length === 0 && (
                   <tr>
                     <td colSpan={8} style={{ padding: '32px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
-                      Aucun règlement confirmé pour l'instant
+                      {t('noneConfirmed')}
                     </td>
                   </tr>
                 )}
                 {batches.map((b, idx) => (
                   <tr key={b.id} style={{ background: idx % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                     <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 700, color: '#1e293b', fontSize: 11 }}>{b.batch_reference}</td>
-                    <td style={{ padding: '10px 12px', color: '#64748b', fontSize: 11 }}>{new Date(b.batch_date).toLocaleDateString('fr-TN')}</td>
+                    <td style={{ padding: '10px 12px', color: '#64748b', fontSize: 11 }}>{d(b.batch_date)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#64748b' }}>{b.orders_count}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#475569', fontWeight: 600 }}>{fmt(b.total_orders_gross)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#db142e', fontWeight: 700 }}>−{fmt(b.total_commission)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#3b82f6', fontWeight: 600 }}>{fmt(b.total_delivery_fees)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#10b981', fontWeight: 800 }}>{fmt(b.total_seller_payout)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#64748b', fontSize: 11 }}>
-                      {b.paid_at ? new Date(b.paid_at).toLocaleDateString('fr-TN') : '—'}
+                      {b.paid_at ? d(b.paid_at) : '—'}
                     </td>
                   </tr>
                 ))}
@@ -276,7 +274,7 @@ export default function FullReceiptPage() {
               {batches.length > 0 && (
                 <tfoot>
                   <tr style={{ background: '#1e293b', color: '#fff', fontWeight: 900 }}>
-                  <td colSpan={2} style={{ padding: '11px 12px', fontSize: 11 }}>TOTAL GÉNÉRAL</td>
+                  <td colSpan={2} style={{ padding: '11px 12px', fontSize: 11 }}>{t('grandTotal')}</td>
                   <td style={{ padding: '11px 12px', textAlign: 'end', fontSize: 11 }}>
                     {batches.reduce((s, b) => s + Number(b.orders_count), 0)}
                   </td>
@@ -302,14 +300,14 @@ export default function FullReceiptPage() {
             {(totals.total_ready > 0 || totals.total_pending > 0) && (
               <div style={{ marginTop: 20, background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 12, padding: '14px 20px' }}>
                 <p style={{ fontSize: 12, fontWeight: 800, color: '#3b82f6', marginBottom: 6 }}>
-                  Solde restant dû
+                  {t('balanceTitle')}
                 </p>
                 <p style={{ fontSize: 11, color: '#475569' }}>
                   {totals.total_ready > 0 && (
-                    <><strong style={{ color: '#3b82f6' }}>{fmt(totals.total_ready)}</strong> en attente de règlement (commandes livrées, non encore payées au vendeur). </>
+                    <>{t.rich('balanceReady', { amount: fmt(totals.total_ready), b: (chunks) => <strong style={{ color: '#3b82f6' }}>{chunks}</strong> })} </>
                   )}
                   {totals.total_pending > 0 && (
-                    <><strong style={{ color: '#f59e0b' }}>{fmt(totals.total_pending)}</strong> en cours de livraison.</>
+                    <>{t.rich('balancePending', { amount: fmt(totals.total_pending), b: (chunks) => <strong style={{ color: '#f59e0b' }}>{chunks}</strong> })}</>
                   )}
                 </p>
               </div>
@@ -318,17 +316,17 @@ export default function FullReceiptPage() {
             {/* Footer */}
             <div style={{ marginTop: 36, paddingTop: 20, borderTop: '2px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
               <div>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 3 }}>Merci de faire partie de la communauté ChooseTounsi !</p>
-                <p style={{ fontSize: 10, color: '#94a3b8' }}>Ce document est un relevé officieux à usage interne. Pour toute contestation contactez choosetounsi.tn</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 3 }}>{t('thanks')}</p>
+                <p style={{ fontSize: 10, color: '#94a3b8' }}>{t('disclaimer')}</p>
               </div>
               <div style={{ textAlign: 'end', flexShrink: 0 }}>
-                <p style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 600 }}>Généré le {generatedDate}</p>
+                <p style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 600 }}>{t('generatedOn', { date: generatedDate })}</p>
                 <p style={{ fontSize: 10, color: '#e2e8f0' }}>{seller.email}</p>
               </div>
             </div>
           </div>
 
-          <div style={{ height: 6, background: 'linear-gradient(90deg,#db142e 0%,#198f41 100%)' }} />
+          <div className="rtl-flip" style={{ height: 6, background: 'linear-gradient(90deg,#db142e 0%,#198f41 100%)' }} />
         </div>
       </div>
     </>

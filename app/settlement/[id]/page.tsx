@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 interface SettlementOrder {
   id: number
@@ -34,8 +36,6 @@ interface SettlementBatch {
   orders: SettlementOrder[]
 }
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(n) + ' TND'
 
 function getToken(): string {
   if (typeof window === 'undefined') return ''
@@ -45,6 +45,9 @@ function getToken(): string {
 export default function SettlementReceiptPage() {
   const params = useParams()
   const id = Number(params?.id)
+  const t = useTranslations('settlement')
+  const { price, number, date } = useFormat()
+  const fmt = (n: number) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
 
   const [data,    setData]    = useState<SettlementBatch | null>(null)
   const [loading, setLoading] = useState(true)
@@ -79,21 +82,19 @@ export default function SettlementReceiptPage() {
   if (loading) return (
     <div style={styles.loadingWrap}>
       <div style={styles.spinner} />
-      <p style={styles.loadingText}>Préparation du reçu…</p>
+      <p style={styles.loadingText}>{t('preparing')}</p>
     </div>
   )
 
   if (error || !data) return (
     <div style={styles.loadingWrap}>
       <p style={{ color: '#dc2626', fontWeight: 700 }}>
-        Impossible de charger le reçu. Veuillez fermer cet onglet et réessayer.
+        {t('loadFailed')}
       </p>
     </div>
   )
 
-  const paidDate = data.paid_at
-    ? new Date(data.paid_at).toLocaleDateString('fr-TN')
-    : new Date(data.batch_date).toLocaleDateString('fr-TN')
+  const paidDate = date(data.paid_at ?? data.batch_date, 'medium')
 
   return (
     <>
@@ -122,12 +123,12 @@ export default function SettlementReceiptPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <img src={`${origin}/images/logo-chili.png`} alt="ChooseTounsi" style={{ height: 32 }} />
             <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 800, color: '#db142e' }}>
-              Reçu de Règlement
+              {t('title')}
             </span>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => window.print()} style={btnStyle('#db142e')}>🖨 Imprimer / PDF</button>
-            <button onClick={() => window.close()} style={btnStyle('#64748b')}>✕ Fermer</button>
+            <button onClick={() => window.print()} style={btnStyle('#db142e')}>{t('print')}</button>
+            <button onClick={() => window.close()} style={btnStyle('#64748b')}>{t('close')}</button>
           </div>
         </div>
 
@@ -138,32 +139,32 @@ export default function SettlementReceiptPage() {
               <img src={`${origin}/images/logo-chili.png`} alt="ChooseTounsi" style={{ height: 56 }} />
               <div>
                 <p style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>ChooseTounsi</p>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 500, marginTop: 3 }}>Marketplace Tunisien · choosetounsi.tn</p>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 500, marginTop: 3 }}>{t('tagline')}</p>
               </div>
             </div>
             <div style={{ textAlign: 'end' }}>
-              <p style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>Reçu de Règlement</p>
+              <p style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{t('title')}</p>
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: 700, marginTop: 4 }}>{data.batch_reference}</p>
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{paidDate}</p>
             </div>
           </div>
-          <div style={{ height: 4, background: 'linear-gradient(90deg,#198f41,#12b34a)' }} />
+          <div className="rtl-flip" style={{ height: 4, background: 'linear-gradient(90deg,#198f41,#12b34a)' }} />
 
           <div style={{ padding: '32px 40px' }}>
             {/* Parties */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 28 }}>
               <div style={partyCard}>
-                <p style={partyLabel}>Vendeur</p>
+                <p style={partyLabel}>{t('seller')}</p>
                 <p style={partyName}>{data.seller_name}</p>
                 <p style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>{data.seller_email}</p>
                 <span style={{ fontSize: 10, fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 4, padding: '2px 8px' }}>
-                  ✓ Règlement confirmé
+                  {t('confirmed')}
                 </span>
               </div>
               <div style={partyCard}>
-                <p style={partyLabel}>Émetteur</p>
+                <p style={partyLabel}>{t('issuer')}</p>
                 <p style={partyName}>ChooseTounsi</p>
-                <p style={{ fontSize: 11, color: '#64748b' }}>Marketplace Tunisien</p>
+                <p style={{ fontSize: 11, color: '#64748b' }}>{t('marketplace')}</p>
                 <p style={{ fontSize: 11, color: '#64748b' }}>choosetounsi.tn</p>
               </div>
             </div>
@@ -171,10 +172,10 @@ export default function SettlementReceiptPage() {
             {/* Meta strip */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: '#e2e8f0', borderRadius: 10, overflow: 'hidden', marginBottom: 28 }}>
               {[
-                { label: 'Référence',         value: data.batch_reference },
-                { label: 'Date de règlement', value: paidDate },
-                { label: 'Commandes',         value: `${data.orders_count} commande${data.orders_count > 1 ? 's' : ''}` },
-                { label: 'Statut',            value: 'Payé' },
+                { label: t('reference'),      value: data.batch_reference },
+                { label: t('settlementDate'), value: paidDate },
+                { label: t('orders'),         value: t('ordersCount', { count: data.orders_count }) },
+                { label: t('status'),         value: t('paid') },
               ].map(({ label, value }) => (
                 <div key={label} style={{ background: '#f8fafc', padding: '12px 16px' }}>
                   <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 4 }}>{label}</p>
@@ -185,18 +186,18 @@ export default function SettlementReceiptPage() {
 
             {/* Orders table */}
             <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 10 }}>
-              Détail des commandes incluses
+              {t('ordersDetail')}
             </p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 0 }}>
               <thead>
                 <tr style={{ background: '#1e293b' }}>
                   {[
-                    { label: 'N° Commande', align: 'left'  },
-                    { label: 'Date',        align: 'left'  },
-                    { label: 'Brut',        align: 'right' },
-                    { label: 'Commission',  align: 'right' },
-                    { label: 'Frais livr.',align: 'right' },
-                    { label: 'Votre net',   align: 'right' },
+                    { label: t('cols.order'),      align: 'start' },
+                    { label: t('cols.date'),       align: 'start' },
+                    { label: t('cols.gross'),      align: 'end'   },
+                    { label: t('cols.commission'), align: 'end'   },
+                    { label: t('cols.delivery'),   align: 'end'   },
+                    { label: t('cols.net'),        align: 'end'   },
                   ].map(col => (
                     <th key={col.label} style={{ padding: '10px 12px', fontSize: 9, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.8)', textAlign: col.align as any }}>
                       {col.label}
@@ -208,7 +209,7 @@ export default function SettlementReceiptPage() {
                 {(data.orders ?? []).map((order, idx) => (
                   <tr key={order.id} style={{ background: idx % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                     <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 700, color: '#1e293b', fontSize: 11 }}>{order.order_number}</td>
-                    <td style={{ padding: '10px 12px', color: '#64748b', fontSize: 11 }}>{new Date(order.created_at).toLocaleDateString('fr-TN')}</td>
+                    <td style={{ padding: '10px 12px', color: '#64748b', fontSize: 11 }}>{date(order.created_at, 'short')}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#475569', fontWeight: 600 }}>{fmt(order.subtotal)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#db142e', fontWeight: 700 }}>−{fmt(order.commission_amount)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#3b82f6', fontWeight: 600 }}>{fmt(order.delivery_fee)}</td>
@@ -222,9 +223,9 @@ export default function SettlementReceiptPage() {
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <div style={{ width: 300, border: '1px solid #e2e8f0', borderTop: 'none', borderRadius: '0 0 10px 10px', overflow: 'hidden' }}>
                 {[
-                  { label: 'Revenu brut total',       value: fmt(data.total_orders_gross),  color: undefined, minus: false },
-                  { label: 'Commission ChooseTounsi', value: fmt(data.total_commission),     color: '#db142e', minus: true  },
-                  { label: 'Frais de livraison',      value: fmt(data.total_delivery_fees),  color: '#3b82f6', minus: false },
+                  { label: t('totals.gross'),      value: fmt(data.total_orders_gross),  color: undefined, minus: false },
+                  { label: t('totals.commission'), value: fmt(data.total_commission),     color: '#db142e', minus: true  },
+                  { label: t('totals.delivery'),   value: fmt(data.total_delivery_fees),  color: '#3b82f6', minus: false },
                 ].map(row => (
                   <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 16px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', fontSize: 12, fontWeight: 600, color: row.color ?? '#475569' }}>
                     <span>{row.label}</span>
@@ -232,7 +233,7 @@ export default function SettlementReceiptPage() {
                   </div>
                 ))}
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#1e293b', color: '#fff', fontSize: 14, fontWeight: 900, borderTop: '2px solid #db142e' }}>
-                  <span>VOTRE PAIEMENT NET</span>
+                  <span>{t('totals.net')}</span>
                   <span>{fmt(data.total_seller_payout)}</span>
                 </div>
               </div>
@@ -241,7 +242,7 @@ export default function SettlementReceiptPage() {
             {/* Notes */}
             {data.notes && (
               <div style={{ marginTop: 24, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 16px' }}>
-                <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 6 }}>Notes</p>
+                <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 6 }}>{t('notes')}</p>
                 <p style={{ fontSize: 12, color: '#475569', fontWeight: 500 }}>{data.notes}</p>
               </div>
             )}
@@ -250,9 +251,13 @@ export default function SettlementReceiptPage() {
             <div style={{ marginTop: 28, display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 12, padding: '14px 20px' }}>
               <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(16,185,129,0.12)', border: '2px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>✓</div>
               <div>
-                <p style={{ fontSize: 13, fontWeight: 800, color: '#10b981', marginBottom: 2 }}>Paiement confirmé par ChooseTounsi</p>
+                <p style={{ fontSize: 13, fontWeight: 800, color: '#10b981', marginBottom: 2 }}>{t('stampTitle')}</p>
                 <p style={{ fontSize: 11, color: '#64748b' }}>
-                  Ce document confirme que le montant de <strong style={{ color: '#10b981' }}>{fmt(data.total_seller_payout)}</strong> a été réglé au vendeur <strong>{data.seller_name}</strong> le {paidDate}.
+                  {t.rich('stampBody', {
+                    amount: fmt(data.total_seller_payout), seller: data.seller_name, date: paidDate,
+                    hl: (chunks) => <strong style={{ color: '#10b981' }}>{chunks}</strong>,
+                    b: (chunks) => <strong>{chunks}</strong>,
+                  })}
                 </p>
               </div>
             </div>
@@ -260,17 +265,17 @@ export default function SettlementReceiptPage() {
             {/* Footer */}
             <div style={{ marginTop: 36, paddingTop: 20, borderTop: '2px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
               <div>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 3 }}>Merci de faire partie de la communauté ChooseTounsi !</p>
-                <p style={{ fontSize: 10, color: '#94a3b8' }}>Pour toute question concernant ce règlement, contactez-nous sur choosetounsi.tn</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 3 }}>{t('thanks')}</p>
+                <p style={{ fontSize: 10, color: '#94a3b8' }}>{t('questions')}</p>
               </div>
               <div style={{ textAlign: 'end', flexShrink: 0 }}>
-                <p style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 600 }}>Document généré le {new Date().toLocaleDateString('fr-TN')}</p>
+                <p style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 600 }}>{t('generatedOn', { date: date(new Date(), 'medium') })}</p>
                 <p style={{ fontSize: 10, color: '#e2e8f0' }}>{data.batch_reference}</p>
               </div>
             </div>
           </div>
 
-          <div style={{ height: 6, background: 'linear-gradient(90deg,#db142e 0%,#198f41 100%)' }} />
+          <div className="rtl-flip" style={{ height: 6, background: 'linear-gradient(90deg,#db142e 0%,#198f41 100%)' }} />
         </div>
       </div>
     </>

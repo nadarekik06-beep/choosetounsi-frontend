@@ -2609,6 +2609,129 @@
         "amount": "Amount",
         "date": "Date"
       }
+    },
+    "earnings": {
+      "loadFailed": "Failed to load earnings data.",
+      "awaitingCashin": "{amount} awaiting cash-in",
+      "cashinDone": "{amount} cash-in done",
+      "title": "Earnings",
+      "subtitle": "Your net revenue after platform commissions",
+      "retry": "Retry",
+      "loading": "Loading…",
+      "split": "Revenue Split ({period})",
+      "daily": "Daily Breakdown",
+      "noOrders": "No orders found",
+      "fullReport": "📄 Full earnings report",
+      "history": "Settlement History",
+      "receipt": "🖨 Receipt",
+      "noSettlements": "No settlements yet",
+      "payout": {
+        "pending": "Pending",
+        "ready": "Ready",
+        "paid": "Paid",
+        "cancelled": "Cancelled",
+        "draft": "Draft",
+        "processing": "Processing"
+      },
+      "tabs": {
+        "overview": "📊 Overview",
+        "orders": "📦 Orders",
+        "history": "🧾 History"
+      },
+      "periods": {
+        "today": "Today",
+        "week": "Week",
+        "month": "Month",
+        "all": "All"
+      },
+      "kpi": {
+        "gross": "Gross Revenue",
+        "fees": "Platform Fees",
+        "net": "Your Net",
+        "orders": "Orders",
+        "pending": "Pending Payout",
+        "paid": "Paid Out"
+      },
+      "splitCols": {
+        "gross": "Gross Total",
+        "grossNote": "Customer paid",
+        "fee": "Platform Fee",
+        "feeNote": "ChooseTounsi commission",
+        "receive": "You Receive",
+        "receiveNote": "Your net earnings"
+      },
+      "filters": {
+        "all": "All"
+      },
+      "cols": {
+        "day": "Day",
+        "orders": "Orders",
+        "gross": "Gross",
+        "fee": "Fee",
+        "net": "Net Earnings",
+        "order": "Order",
+        "platformFee": "Platform Fee",
+        "yourNet": "Your Net",
+        "payoutStatus": "Payout Status",
+        "settled": "Settled",
+        "batch": "Batch Ref",
+        "date": "Date",
+        "payout": "Your Payout",
+        "status": "Status",
+        "paidOn": "Paid On",
+        "receipt": "Receipt"
+      }
+    },
+    "receipt": {
+      "generating": "Generating earnings report…",
+      "loadFailed": "Failed to load the report. Close this tab and try again.",
+      "barTitle": "Full earnings report",
+      "print": "🖨 Print / PDF",
+      "close": "✕ Close",
+      "tagline": "Tunisian marketplace · choosetounsi.tn",
+      "title": "Earnings report",
+      "subtitle": "Complete settlement history",
+      "generatedOn": "Generated on {date}",
+      "seller": "Seller",
+      "subscription": "Subscription",
+      "expiresOn": "Expires on: {date}",
+      "period": "Period covered",
+      "range": "{from} → {to}",
+      "noSettlement": "No settlements",
+      "summary": "Overall financial summary",
+      "historyTitle": "Settlement history ({count, plural, one {# batch} other {# batches}})",
+      "noneConfirmed": "No confirmed settlements yet",
+      "grandTotal": "GRAND TOTAL",
+      "balanceTitle": "Outstanding balance",
+      "balanceReady": "<b>{amount}</b> awaiting settlement (delivered orders, not yet paid to the seller).",
+      "balancePending": "<b>{amount}</b> out for delivery.",
+      "thanks": "Thank you for being part of the ChooseTounsi community!",
+      "disclaimer": "This document is an informal statement for internal use. For any dispute contact choosetounsi.tn",
+      "plans": {
+        "green": "Green Pepper (free)",
+        "free": "Green Pepper (free)",
+        "red": "Red Pepper (49 DT/month)",
+        "black": "Black Pepper (129 DT/month)"
+      },
+      "kpi": {
+        "orders": "Total orders",
+        "gross": "Gross revenue",
+        "commission": "Commissions paid",
+        "net": "Total net",
+        "paid": "Already received",
+        "ready": "Awaiting settlement",
+        "pending": "Out for delivery"
+      },
+      "cols": {
+        "reference": "Reference",
+        "date": "Date",
+        "orders": "Orders",
+        "gross": "Gross",
+        "commission": "Commission",
+        "delivery": "Delivery",
+        "payout": "Your payout",
+        "paidOn": "Paid on"
+      }
     }
   },
   "invoice": {
@@ -2646,6 +2769,45 @@
       "qty": "Qty",
       "unitPrice": "Unit price",
       "total": "Total"
+    }
+  },
+  "settlement": {
+    "preparing": "Preparing receipt…",
+    "loadFailed": "Failed to load the receipt. Please close this tab and try again.",
+    "title": "Settlement receipt",
+    "print": "🖨 Print / PDF",
+    "close": "✕ Close",
+    "tagline": "Tunisian marketplace · choosetounsi.tn",
+    "seller": "Seller",
+    "confirmed": "✓ Settlement confirmed",
+    "issuer": "Issuer",
+    "marketplace": "Tunisian marketplace",
+    "reference": "Reference",
+    "settlementDate": "Settlement date",
+    "orders": "Orders",
+    "ordersCount": "{count, plural, one {# order} other {# orders}}",
+    "status": "Status",
+    "paid": "Paid",
+    "ordersDetail": "Orders included",
+    "notes": "Notes",
+    "stampTitle": "Payment confirmed by ChooseTounsi",
+    "stampBody": "This document confirms that <hl>{amount}</hl> was paid to seller <b>{seller}</b> on {date}.",
+    "thanks": "Thank you for being part of the ChooseTounsi community!",
+    "questions": "For any question about this settlement, contact us at choosetounsi.tn",
+    "generatedOn": "Document generated on {date}",
+    "cols": {
+      "order": "Order No.",
+      "date": "Date",
+      "gross": "Gross",
+      "commission": "Commission",
+      "delivery": "Delivery",
+      "net": "Your net"
+    },
+    "totals": {
+      "gross": "Total gross revenue",
+      "commission": "ChooseTounsi commission",
+      "delivery": "Delivery fees",
+      "net": "YOUR NET PAYOUT"
     }
   }
 }

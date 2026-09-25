@@ -2609,6 +2609,129 @@
         "amount": "Montant",
         "date": "Date"
       }
+    },
+    "earnings": {
+      "loadFailed": "Impossible de charger les revenus.",
+      "awaitingCashin": "{amount} en attente d'encaissement",
+      "cashinDone": "{amount} encaissés",
+      "title": "Revenus",
+      "subtitle": "Votre chiffre d'affaires net après commissions de la plateforme",
+      "retry": "Réessayer",
+      "loading": "Chargement…",
+      "split": "Répartition du chiffre d'affaires ({period})",
+      "daily": "Détail par jour",
+      "noOrders": "Aucune commande trouvée",
+      "fullReport": "📄 Rapport de gains complet",
+      "history": "Historique des versements",
+      "receipt": "🖨 Reçu",
+      "noSettlements": "Aucun versement pour l'instant",
+      "payout": {
+        "pending": "En attente",
+        "ready": "Prêt",
+        "paid": "Payé",
+        "cancelled": "Annulé",
+        "draft": "Brouillon",
+        "processing": "En cours"
+      },
+      "tabs": {
+        "overview": "📊 Vue d'ensemble",
+        "orders": "📦 Commandes",
+        "history": "🧾 Historique"
+      },
+      "periods": {
+        "today": "Aujourd'hui",
+        "week": "Semaine",
+        "month": "Mois",
+        "all": "Tout"
+      },
+      "kpi": {
+        "gross": "Chiffre d'affaires brut",
+        "fees": "Commissions",
+        "net": "Votre net",
+        "orders": "Commandes",
+        "pending": "Versement en attente",
+        "paid": "Déjà versé"
+      },
+      "splitCols": {
+        "gross": "Total brut",
+        "grossNote": "Payé par les clients",
+        "fee": "Commission",
+        "feeNote": "Commission ChooseTounsi",
+        "receive": "Vous recevez",
+        "receiveNote": "Vos gains nets"
+      },
+      "filters": {
+        "all": "Tous"
+      },
+      "cols": {
+        "day": "Jour",
+        "orders": "Commandes",
+        "gross": "Brut",
+        "fee": "Commission",
+        "net": "Gains nets",
+        "order": "Commande",
+        "platformFee": "Commission",
+        "yourNet": "Votre net",
+        "payoutStatus": "Statut du versement",
+        "settled": "Réglé le",
+        "batch": "Réf. du lot",
+        "date": "Date",
+        "payout": "Votre versement",
+        "status": "Statut",
+        "paidOn": "Payé le",
+        "receipt": "Reçu"
+      }
+    },
+    "receipt": {
+      "generating": "Génération du rapport de gains…",
+      "loadFailed": "Impossible de charger le rapport. Fermez cet onglet et réessayez.",
+      "barTitle": "Rapport de gains complet",
+      "print": "🖨 Imprimer / PDF",
+      "close": "✕ Fermer",
+      "tagline": "Marketplace tunisienne · choosetounsi.tn",
+      "title": "Rapport de gains",
+      "subtitle": "Historique complet des règlements",
+      "generatedOn": "Généré le {date}",
+      "seller": "Vendeur",
+      "subscription": "Abonnement",
+      "expiresOn": "Expire le : {date}",
+      "period": "Période couverte",
+      "range": "{from} → {to}",
+      "noSettlement": "Aucun règlement",
+      "summary": "Résumé financier global",
+      "historyTitle": "Historique des règlements ({count, plural, one {# lot} other {# lots}})",
+      "noneConfirmed": "Aucun règlement confirmé pour l'instant",
+      "grandTotal": "TOTAL GÉNÉRAL",
+      "balanceTitle": "Solde restant dû",
+      "balanceReady": "<b>{amount}</b> en attente de règlement (commandes livrées, pas encore versées au vendeur).",
+      "balancePending": "<b>{amount}</b> en cours de livraison.",
+      "thanks": "Merci de faire partie de la communauté ChooseTounsi !",
+      "disclaimer": "Ce document est un relevé informatif à usage interne. Pour toute contestation, contactez choosetounsi.tn",
+      "plans": {
+        "green": "Green Pepper (gratuit)",
+        "free": "Green Pepper (gratuit)",
+        "red": "Red Pepper (49 DT/mois)",
+        "black": "Black Pepper (129 DT/mois)"
+      },
+      "kpi": {
+        "orders": "Commandes totales",
+        "gross": "Revenu brut",
+        "commission": "Commissions payées",
+        "net": "Net total",
+        "paid": "Déjà reçu",
+        "ready": "En attente de règlement",
+        "pending": "En cours de livraison"
+      },
+      "cols": {
+        "reference": "Référence",
+        "date": "Date",
+        "orders": "Commandes",
+        "gross": "Brut",
+        "commission": "Commission",
+        "delivery": "Frais livr.",
+        "payout": "Votre paiement",
+        "paidOn": "Payé le"
+      }
     }
   },
   "invoice": {
@@ -2646,6 +2769,45 @@
       "qty": "Qté",
       "unitPrice": "Prix unitaire",
       "total": "Total"
+    }
+  },
+  "settlement": {
+    "preparing": "Préparation du reçu…",
+    "loadFailed": "Impossible de charger le reçu. Veuillez fermer cet onglet et réessayer.",
+    "title": "Reçu de règlement",
+    "print": "🖨 Imprimer / PDF",
+    "close": "✕ Fermer",
+    "tagline": "Marketplace tunisienne · choosetounsi.tn",
+    "seller": "Vendeur",
+    "confirmed": "✓ Règlement confirmé",
+    "issuer": "Émetteur",
+    "marketplace": "Marketplace tunisienne",
+    "reference": "Référence",
+    "settlementDate": "Date de règlement",
+    "orders": "Commandes",
+    "ordersCount": "{count, plural, one {# commande} other {# commandes}}",
+    "status": "Statut",
+    "paid": "Payé",
+    "ordersDetail": "Détail des commandes incluses",
+    "notes": "Notes",
+    "stampTitle": "Paiement confirmé par ChooseTounsi",
+    "stampBody": "Ce document confirme que le montant de <hl>{amount}</hl> a été réglé au vendeur <b>{seller}</b> le {date}.",
+    "thanks": "Merci de faire partie de la communauté ChooseTounsi !",
+    "questions": "Pour toute question concernant ce règlement, contactez-nous sur choosetounsi.tn",
+    "generatedOn": "Document généré le {date}",
+    "cols": {
+      "order": "N° commande",
+      "date": "Date",
+      "gross": "Brut",
+      "commission": "Commission",
+      "delivery": "Frais livr.",
+      "net": "Votre net"
+    },
+    "totals": {
+      "gross": "Revenu brut total",
+      "commission": "Commission ChooseTounsi",
+      "delivery": "Frais de livraison",
+      "net": "VOTRE PAIEMENT NET"
     }
   }
 }

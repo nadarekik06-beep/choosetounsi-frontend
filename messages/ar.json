@@ -2609,6 +2609,129 @@
         "amount": "المبلغ",
         "date": "التاريخ"
       }
+    },
+    "earnings": {
+      "loadFailed": "تعذّر تحميل بيانات الأرباح.",
+      "awaitingCashin": "{amount} في انتظار التحصيل",
+      "cashinDone": "{amount} تم تحصيلها",
+      "title": "الأرباح",
+      "subtitle": "مداخيلك الصافية بعد عمولات المنصة",
+      "retry": "إعادة المحاولة",
+      "loading": "جارٍ التحميل…",
+      "split": "توزيع المداخيل ({period})",
+      "daily": "التفصيل اليومي",
+      "noOrders": "لم يتم العثور على طلبات",
+      "fullReport": "📄 تقرير الأرباح الكامل",
+      "history": "سجل التسويات",
+      "receipt": "🖨 وصل",
+      "noSettlements": "لا توجد تسويات بعد",
+      "payout": {
+        "pending": "قيد الانتظار",
+        "ready": "جاهز",
+        "paid": "مدفوع",
+        "cancelled": "ملغى",
+        "draft": "مسودة",
+        "processing": "قيد المعالجة"
+      },
+      "tabs": {
+        "overview": "📊 نظرة عامة",
+        "orders": "📦 الطلبات",
+        "history": "🧾 السجل"
+      },
+      "periods": {
+        "today": "اليوم",
+        "week": "الأسبوع",
+        "month": "الشهر",
+        "all": "الكل"
+      },
+      "kpi": {
+        "gross": "المداخيل الخام",
+        "fees": "العمولات",
+        "net": "صافي أرباحك",
+        "orders": "الطلبات",
+        "pending": "مستحقات قيد الانتظار",
+        "paid": "تم دفعه"
+      },
+      "splitCols": {
+        "gross": "الإجمالي الخام",
+        "grossNote": "دفعه الحرفاء",
+        "fee": "عمولة المنصة",
+        "feeNote": "عمولة ChooseTounsi",
+        "receive": "تحصل على",
+        "receiveNote": "أرباحك الصافية"
+      },
+      "filters": {
+        "all": "الكل"
+      },
+      "cols": {
+        "day": "اليوم",
+        "orders": "الطلبات",
+        "gross": "الخام",
+        "fee": "العمولة",
+        "net": "الربح الصافي",
+        "order": "الطلب",
+        "platformFee": "عمولة المنصة",
+        "yourNet": "صافي ربحك",
+        "payoutStatus": "حالة الدفع",
+        "settled": "تاريخ التسوية",
+        "batch": "مرجع الدفعة",
+        "date": "التاريخ",
+        "payout": "مستحقاتك",
+        "status": "الحالة",
+        "paidOn": "تاريخ الدفع",
+        "receipt": "الوصل"
+      }
+    },
+    "receipt": {
+      "generating": "جارٍ إعداد تقرير الأرباح…",
+      "loadFailed": "تعذّر تحميل التقرير. أغلق هذه الصفحة وحاول مجدداً.",
+      "barTitle": "تقرير الأرباح الكامل",
+      "print": "🖨 طباعة / PDF",
+      "close": "✕ إغلاق",
+      "tagline": "السوق التونسي · choosetounsi.tn",
+      "title": "تقرير الأرباح",
+      "subtitle": "السجل الكامل للتسويات",
+      "generatedOn": "صادر بتاريخ {date}",
+      "seller": "البائع",
+      "subscription": "الاشتراك",
+      "expiresOn": "ينتهي في: {date}",
+      "period": "الفترة المشمولة",
+      "range": "{from} ← {to}",
+      "noSettlement": "لا توجد تسويات",
+      "summary": "الملخص المالي العام",
+      "historyTitle": "سجل التسويات ({count, plural, one {دفعة واحدة} two {دفعتان} few {# دفعات} many {# دفعة} other {# دفعة}})",
+      "noneConfirmed": "لا توجد تسويات مؤكدة بعد",
+      "grandTotal": "المجموع العام",
+      "balanceTitle": "الرصيد المتبقي",
+      "balanceReady": "<b>{amount}</b> في انتظار التسوية (طلبات تم توصيلها ولم تُدفع للبائع بعد).",
+      "balancePending": "<b>{amount}</b> قيد التوصيل.",
+      "thanks": "شكراً لكونك جزءاً من مجتمع ChooseTounsi!",
+      "disclaimer": "هذه الوثيقة كشف إعلامي للاستعمال الداخلي. لأي اعتراض تواصل مع choosetounsi.tn",
+      "plans": {
+        "green": "Green Pepper (مجاني)",
+        "free": "Green Pepper (مجاني)",
+        "red": "Red Pepper (49 د.ت شهرياً)",
+        "black": "Black Pepper (129 د.ت شهرياً)"
+      },
+      "kpi": {
+        "orders": "إجمالي الطلبات",
+        "gross": "المداخيل الخام",
+        "commission": "العمولات المدفوعة",
+        "net": "الصافي الإجمالي",
+        "paid": "تم استلامه",
+        "ready": "في انتظار التسوية",
+        "pending": "قيد التوصيل"
+      },
+      "cols": {
+        "reference": "المرجع",
+        "date": "التاريخ",
+        "orders": "الطلبات",
+        "gross": "الخام",
+        "commission": "العمولة",
+        "delivery": "التوصيل",
+        "payout": "مستحقاتك",
+        "paidOn": "تاريخ الدفع"
+      }
     }
   },
   "invoice": {
@@ -2646,6 +2769,45 @@
       "qty": "الكمية",
       "unitPrice": "سعر الوحدة",
       "total": "المجموع"
+    }
+  },
+  "settlement": {
+    "preparing": "جارٍ تجهيز الوصل…",
+    "loadFailed": "تعذّر تحميل الوصل. أغلق هذه الصفحة وحاول مجدداً.",
+    "title": "وصل تسوية",
+    "print": "🖨 طباعة / PDF",
+    "close": "✕ إغلاق",
+    "tagline": "السوق التونسي · choosetounsi.tn",
+    "seller": "البائع",
+    "confirmed": "✓ تسوية مؤكدة",
+    "issuer": "الجهة المصدرة",
+    "marketplace": "السوق التونسي",
+    "reference": "المرجع",
+    "settlementDate": "تاريخ التسوية",
+    "orders": "الطلبات",
+    "ordersCount": "{count, plural, one {طلب واحد} two {طلبان} few {# طلبات} many {# طلبًا} other {# طلب}}",
+    "status": "الحالة",
+    "paid": "مدفوع",
+    "ordersDetail": "تفاصيل الطلبات المشمولة",
+    "notes": "ملاحظات",
+    "stampTitle": "دفع مؤكد من ChooseTounsi",
+    "stampBody": "تؤكد هذه الوثيقة أن مبلغ <hl>{amount}</hl> قد دُفع للبائع <b>{seller}</b> بتاريخ {date}.",
+    "thanks": "شكراً لكونك جزءاً من مجتمع ChooseTounsi!",
+    "questions": "لأي استفسار حول هذه التسوية تواصل معنا على choosetounsi.tn",
+    "generatedOn": "وثيقة صادرة بتاريخ {date}",
+    "cols": {
+      "order": "رقم الطلب",
+      "date": "التاريخ",
+      "gross": "الخام",
+      "commission": "العمولة",
+      "delivery": "التوصيل",
+      "net": "صافي ربحك"
+    },
+    "totals": {
+      "gross": "إجمالي المداخيل الخام",
+      "commission": "عمولة ChooseTounsi",
+      "delivery": "معاليم التوصيل",
+      "net": "صافي مستحقاتك"
     }
   }
 }

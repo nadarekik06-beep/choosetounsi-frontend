@@ -5,10 +5,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { DollarSign, TrendingDown, TrendingUp, Clock, CheckCircle, Package } from 'lucide-react'
 import api from '@/lib/sellerApi'
 import { useTheme } from '../SellerShell'
-
-function fmt(v: number | string) {
-  return `${Number(v).toFixed(3)} TND`
-}
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 const PAYOUT_COLORS: Record<string, string> = {
   pending:   '#f59e0b',
@@ -18,6 +16,7 @@ const PAYOUT_COLORS: Record<string, string> = {
 }
 
 function PayoutBadge({ status }: { status: string }) {
+  const t = useTranslations('seller.earnings.payout')
   const color = PAYOUT_COLORS[status] ?? '#94a3b8'
   return (
     <span style={{
@@ -27,7 +26,7 @@ function PayoutBadge({ status }: { status: string }) {
       textTransform: 'capitalize',
     }}>
       <span style={{ width: 5, height: 5, borderRadius: '50%', background: color }} />
-      {status}
+      {t.has(status) ? t(status) : status}
     </span>
   )
 }
@@ -36,6 +35,10 @@ type EarningsTab = 'overview' | 'orders' | 'history'
 
 export default function EarningsPage() {
   const { dark } = useTheme()
+  const t = useTranslations('seller.earnings')
+  const { price, number, date } = useFormat()
+  const fmt  = (v: number | string) => price(v, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+  const bare = (v: number | string) => price(v, { minimumFractionDigits: 3, maximumFractionDigits: 3, bare: true })
   const [tab,          setTab]          = useState<EarningsTab>('overview')
   const [period,       setPeriod]       = useState('month')
   const [overview,     setOverview]     = useState<any>(null)
@@ -71,7 +74,7 @@ export default function EarningsPage() {
         setHistory(res?.data ?? null)
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load earnings data.')
+      setError(e?.message ?? t('loadFailed'))
     } finally {
       setLoading(false)
     }
@@ -83,19 +86,19 @@ export default function EarningsPage() {
     padding: '9px 14px', fontSize: 9, fontWeight: 800,
     textTransform: 'uppercase', letterSpacing: '0.1em',
     color: textMuted, background: theadBg,
-    textAlign: right ? 'right' : 'left',
+    textAlign: right ? 'end' : 'start',
   })
 
   const td = (right = false): React.CSSProperties => ({
     padding: '12px 14px', fontSize: 12,
-    textAlign: right ? 'right' : 'left',
+    textAlign: right ? 'end' : 'start',
     borderTop: `1px solid ${border}`,
   })
 
   const TABS: { key: EarningsTab; label: string }[] = [
-    { key: 'overview', label: '📊 Overview' },
-    { key: 'orders',   label: '📦 Orders'   },
-    { key: 'history',  label: '🧾 History'  },
+    { key: 'overview', label: t('tabs.overview') },
+    { key: 'orders',   label: t('tabs.orders')   },
+    { key: 'history',  label: t('tabs.history')  },
   ]
 
   // Helper to build the "Pending Payout" subtitle showing the breakdown
@@ -104,8 +107,8 @@ export default function EarningsPage() {
     const ready    = Number(kpis?.ready_amount ?? 0)
     if (awaiting === 0 && ready === 0) return null
     const parts: string[] = []
-    if (awaiting > 0) parts.push(`${awaiting.toFixed(3)} awaiting cash-in`)
-    if (ready > 0)    parts.push(`${ready.toFixed(3)} cash-in done`)
+    if (awaiting > 0) parts.push(t('awaitingCashin', { amount: bare(awaiting) }))
+    if (ready > 0)    parts.push(t('cashinDone', { amount: bare(ready) }))
     return parts.join(' · ')
   }
 
@@ -115,24 +118,24 @@ export default function EarningsPage() {
       {/* Header */}
       <div>
         <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 4px', letterSpacing: '-0.02em' }}>
-          Earnings
+          {t('title')}
         </h1>
         <p style={{ fontSize: 12, color: textMuted, margin: 0 }}>
-          Your net revenue after platform commissions
+          {t('subtitle')}
         </p>
       </div>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, background: dark ? 'rgba(255,255,255,0.04)' : '#f1f5f9', borderRadius: 12, padding: 4, width: 'fit-content' }}>
-        {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{
+        {TABS.map(item => (
+          <button key={item.key} onClick={() => setTab(item.key)} style={{
             padding: '7px 14px', borderRadius: 9, border: 'none',
-            background: tab === t.key ? '#db142e' : 'transparent',
-            color: tab === t.key ? '#fff' : textMuted,
-            fontSize: 12, fontWeight: tab === t.key ? 800 : 600,
+            background: tab === item.key ? '#db142e' : 'transparent',
+            color: tab === item.key ? '#fff' : textMuted,
+            fontSize: 12, fontWeight: tab === item.key ? 800 : 600,
             cursor: 'pointer', fontFamily: 'inherit',
           }}>
-            {t.label}
+            {item.label}
           </button>
         ))}
       </div>
@@ -146,14 +149,14 @@ export default function EarningsPage() {
         }}>
           <span>⚠ {error}</span>
           <button onClick={load} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
-            Retry
+            {t('retry')}
           </button>
         </div>
       )}
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0', color: textMuted }}>
-          Loading…
+          {t('loading')}
         </div>
       ) : (
         <>
@@ -166,7 +169,7 @@ export default function EarningsPage() {
 
                 {/* Period selector */}
                 <div style={{ display: 'flex', gap: 6 }}>
-                  {['today', 'week', 'month', 'all'].map(p => (
+                  {(['today', 'week', 'month', 'all'] as const).map(p => (
                     <button key={p} onClick={() => setPeriod(p)} style={{
                       padding: '6px 14px', borderRadius: 8,
                       border: `1px solid ${border}`,
@@ -175,7 +178,7 @@ export default function EarningsPage() {
                       fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
                       textTransform: 'capitalize',
                     }}>
-                      {p}
+                      {t(`periods.${p}`)}
                     </button>
                   ))}
                 </div>
@@ -185,10 +188,10 @@ export default function EarningsPage() {
 
                   {/* Static KPI cards */}
                   {[
-                    { label: 'Gross Revenue', value: fmt(kpis.gross_revenue   ?? 0), color: '#94a3b8', icon: DollarSign  },
-                    { label: 'Platform Fees', value: fmt(kpis.total_commission ?? 0), color: '#db142e', icon: TrendingDown },
-                    { label: 'Your Net',      value: fmt(kpis.total_net        ?? 0), color: '#10b981', icon: TrendingUp   },
-                    { label: 'Orders',        value: String(kpis.orders_count  ?? 0), color: '#3b82f6', icon: Package      },
+                    { label: t('kpi.gross'),  value: fmt(kpis.gross_revenue   ?? 0), color: '#94a3b8', icon: DollarSign  },
+                    { label: t('kpi.fees'),   value: fmt(kpis.total_commission ?? 0), color: '#db142e', icon: TrendingDown },
+                    { label: t('kpi.net'),    value: fmt(kpis.total_net        ?? 0), color: '#10b981', icon: TrendingUp   },
+                    { label: t('kpi.orders'), value: number(kpis.orders_count  ?? 0), color: '#3b82f6', icon: Package      },
                   ].map(({ label, value, color, icon: Icon }) => (
                     <div key={label} style={{
                       background: cardBg, border: `1px solid ${color}28`,
@@ -213,7 +216,7 @@ export default function EarningsPage() {
                       <div style={{ width: 28, height: 28, borderRadius: 8, background: '#f59e0b15', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Clock size={13} color="#f59e0b" />
                       </div>
-                      <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Pending Payout</span>
+                      <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('kpi.pending')}</span>
                     </div>
                     <p style={{ fontSize: 18, fontWeight: 900, color: '#f59e0b', margin: '0 0 6px' }}>
                       {fmt(kpis.pending_amount ?? 0)}
@@ -235,7 +238,7 @@ export default function EarningsPage() {
                       <div style={{ width: 28, height: 28, borderRadius: 8, background: '#10b98115', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <CheckCircle size={13} color="#10b981" />
                       </div>
-                      <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Paid Out</span>
+                      <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('kpi.paid')}</span>
                     </div>
                     <p style={{ fontSize: 18, fontWeight: 900, color: '#10b981', margin: 0 }}>
                       {fmt(kpis.paid_amount ?? 0)}
@@ -247,13 +250,13 @@ export default function EarningsPage() {
                 {/* Revenue split */}
                 <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
                   <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
-                    <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>Revenue Split ({period})</p>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>{t('split', { period: t(`periods.${period as 'today' | 'week' | 'month' | 'all'}`) })}</p>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
                     {[
-                      { label: 'Gross Total',  value: fmt(kpis.gross_revenue   ?? 0), color: '#94a3b8', note: 'Customer paid' },
-                      { label: 'Platform Fee', value: fmt(kpis.total_commission ?? 0), color: '#db142e', note: 'ChooseTounsi commission' },
-                      { label: 'You Receive',  value: fmt(kpis.total_net        ?? 0), color: '#10b981', note: 'Your net earnings' },
+                      { label: t('splitCols.gross'),   value: fmt(kpis.gross_revenue   ?? 0), color: '#94a3b8', note: t('splitCols.grossNote') },
+                      { label: t('splitCols.fee'),     value: fmt(kpis.total_commission ?? 0), color: '#db142e', note: t('splitCols.feeNote') },
+                      { label: t('splitCols.receive'), value: fmt(kpis.total_net        ?? 0), color: '#10b981', note: t('splitCols.receiveNote') },
                     ].map((col, i) => (
                       <div key={col.label} style={{
                         padding: '16px 20px',
@@ -274,23 +277,23 @@ export default function EarningsPage() {
                 {(overview.daily_chart?.length ?? 0) > 0 && (
                   <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
                     <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
-                      <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>Daily Breakdown</p>
+                      <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>{t('daily')}</p>
                     </div>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                           <tr>
-                            <th style={th()}>Day</th>
-                            <th style={th(true)}>Orders</th>
-                            <th style={th(true)}>Gross</th>
-                            <th style={th(true)}>Fee</th>
-                            <th style={th(true)}>Net Earnings</th>
+                            <th style={th()}>{t('cols.day')}</th>
+                            <th style={th(true)}>{t('cols.orders')}</th>
+                            <th style={th(true)}>{t('cols.gross')}</th>
+                            <th style={th(true)}>{t('cols.fee')}</th>
+                            <th style={th(true)}>{t('cols.net')}</th>
                           </tr>
                         </thead>
                         <tbody>
                           {overview.daily_chart.slice(-14).map((row: any) => (
                             <tr key={row.day}>
-                              <td style={{ ...td(), fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{row.day}</td>
+                              <td style={{ ...td(), fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{/^\d{4}-\d{2}-\d{2}$/.test(row.day) ? date(row.day, 'dayMonth') : row.day}</td>
                               <td style={{ ...td(true), color: textMuted }}>{row.orders}</td>
                               <td style={{ ...td(true), color: textMuted }}>{fmt(row.gross ?? 0)}</td>
                               <td style={{ ...td(true), color: '#db142e' }}>{fmt(row.commission ?? 0)}</td>
@@ -312,7 +315,7 @@ export default function EarningsPage() {
 
               {/* Payout filter */}
               <div style={{ display: 'flex', gap: 6 }}>
-                {([['', 'All'], ['pending', 'Pending'], ['ready', 'Ready'], ['paid', 'Paid']] as [string, string][]).map(([val, label]) => (
+                {([['', t('filters.all')], ['pending', t('payout.pending')], ['ready', t('payout.ready')], ['paid', t('payout.paid')]] as [string, string][]).map(([val, label]) => (
                   <button key={val} onClick={() => setPayoutFilter(val)} style={{
                     padding: '6px 14px', borderRadius: 8, border: `1px solid ${border}`,
                     background: payoutFilter === val ? 'rgba(219,20,46,0.12)' : 'transparent',
@@ -329,12 +332,12 @@ export default function EarningsPage() {
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
-                        <th style={th()}>Order</th>
-                        <th style={th(true)}>Gross</th>
-                        <th style={th(true)}>Platform Fee</th>
-                        <th style={th(true)}>Your Net</th>
-                        <th style={th(true)}>Payout Status</th>
-                        <th style={th(true)}>Settled</th>
+                        <th style={th()}>{t('cols.order')}</th>
+                        <th style={th(true)}>{t('cols.gross')}</th>
+                        <th style={th(true)}>{t('cols.platformFee')}</th>
+                        <th style={th(true)}>{t('cols.yourNet')}</th>
+                        <th style={th(true)}>{t('cols.payoutStatus')}</th>
+                        <th style={th(true)}>{t('cols.settled')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -346,14 +349,14 @@ export default function EarningsPage() {
                           <td style={{ ...td(true), color: '#10b981', fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
                           <td style={{ ...td(true) }}><PayoutBadge status={row.payout_status ?? 'pending'} /></td>
                           <td style={{ ...td(true), color: textMuted, fontSize: 11 }}>
-                            {row.settled_at ? new Date(row.settled_at).toLocaleDateString('fr-TN') : '—'}
+                            {row.settled_at ? date(row.settled_at, 'short') : '—'}
                           </td>
                         </tr>
                       ))}
                       {(orders?.data ?? []).length === 0 && (
                         <tr>
                           <td colSpan={6} style={{ padding: '40px 20px', textAlign: 'center', color: textMuted }}>
-                            No orders found
+                            {t('noOrders')}
                           </td>
                         </tr>
                       )}
@@ -379,38 +382,38 @@ export default function EarningsPage() {
                     display: 'inline-flex', alignItems: 'center', gap: 6,
                   }}
                 >
-                  📄 Rapport de gains complet
+                  {t('fullReport')}
                 </button>
               </div>
 
               {/* Table card */}
               <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
                 <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
-                  <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>Settlement History</p>
+                  <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>{t('history')}</p>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
-                        <th style={th()}>Batch Ref</th>
-                        <th style={th()}>Date</th>
-                        <th style={th(true)}>Orders</th>
-                        <th style={th(true)}>Your Payout</th>
-                        <th style={th(true)}>Status</th>
-                        <th style={th(true)}>Paid On</th>
-                        <th style={th(true)}>Receipt</th>
+                        <th style={th()}>{t('cols.batch')}</th>
+                        <th style={th()}>{t('cols.date')}</th>
+                        <th style={th(true)}>{t('cols.orders')}</th>
+                        <th style={th(true)}>{t('cols.payout')}</th>
+                        <th style={th(true)}>{t('cols.status')}</th>
+                        <th style={th(true)}>{t('cols.paidOn')}</th>
+                        <th style={th(true)}>{t('cols.receipt')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(history?.data ?? []).map((row: any) => (
                         <tr key={row.id}>
                           <td style={{ ...td(), fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{row.batch_reference}</td>
-                          <td style={{ ...td(), color: textMuted, fontFamily: 'monospace' }}>{row.batch_date}</td>
+                          <td style={{ ...td(), color: textMuted, fontFamily: 'monospace' }}>{row.batch_date ? date(row.batch_date, 'short') : '—'}</td>
                           <td style={{ ...td(true), color: textMuted }}>{row.orders_count}</td>
                           <td style={{ ...td(true), color: '#10b981', fontWeight: 900 }}>{fmt(row.total_seller_payout ?? 0)}</td>
                           <td style={{ ...td(true) }}><PayoutBadge status={row.status ?? 'draft'} /></td>
                           <td style={{ ...td(true), color: textMuted, fontSize: 11 }}>
-                            {row.paid_at ? new Date(row.paid_at).toLocaleDateString('fr-TN') : '—'}
+                            {row.paid_at ? date(row.paid_at, 'short') : '—'}
                           </td>
                           <td style={{ ...td(true) }}>
                             {row.status === 'paid' && (
@@ -422,7 +425,7 @@ export default function EarningsPage() {
                                   color: '#fff', fontSize: 10, fontWeight: 700, cursor: 'pointer',
                                 }}
                               >
-                                🖨 Reçu
+                                {t('receipt')}
                               </button>
                             )}
                           </td>
@@ -431,7 +434,7 @@ export default function EarningsPage() {
                       {(history?.data ?? []).length === 0 && (
                         <tr>
                           <td colSpan={7} style={{ padding: '40px 20px', textAlign: 'center', color: textMuted }}>
-                            No settlements yet
+                            {t('noSettlements')}
                           </td>
                         </tr>
                       )}
