@@ -7,6 +7,13 @@ import {
   TrendingDown, TrendingUp,
 } from 'lucide-react'
 import { sellerPromotionsApi, type Promotion, type PromotionPayload } from '@/lib/promotionsApi'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
+
+function useDt() {
+  const { price } = useFormat()
+  return (n: number) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+}
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -96,6 +103,9 @@ function PromotionCommissionPreview({
   discountType:  'percentage' | 'fixed'
   discountValue: string
 }) {
+  const t  = useTranslations('seller.promotionForm')
+  const dt = useDt()
+  const { number } = useFormat()
   const [results, setResults] = useState<Record<number, CommissionLineData>>({})
   const [loading, setLoading] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -186,7 +196,7 @@ function PromotionCommissionPreview({
           display: 'flex', alignItems: 'center', gap: 4,
         }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: planColor, display: 'inline-block' }} />
-          {planLabel} Pepper · Commission after discount
+          {t('commissionHeader', { plan: planLabel })}
         </span>
         {loading && (
           <Loader2 size={11} style={{ animation: 'spin 0.8s linear infinite', color: '#94a3b8' }} />
@@ -217,10 +227,10 @@ function PromotionCommissionPreview({
             {/* Original → effective */}
             <div style={{ textAlign: 'end', paddingInlineEnd: 14 }}>
               <p style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through', margin: '0 0 1px', fontWeight: 500 }}>
-                {p.price.toFixed(3)} TND
+                {dt(p.price)}
               </p>
               <p style={{ fontSize: 12, fontWeight: 900, color: '#dc2626', margin: 0 }}>
-                {effective.toFixed(3)} TND
+                {dt(effective)}
               </p>
             </div>
 
@@ -229,10 +239,10 @@ function PromotionCommissionPreview({
               {result ? (
                 <>
                   <p style={{ fontSize: 9, color: '#94a3b8', margin: '0 0 1px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Fee {result.commission_percentage}%
+                    {t('fee', { pct: number(result.commission_percentage) })}
                   </p>
                   <p style={{ fontSize: 12, fontWeight: 800, color: '#ef4444', margin: 0 }}>
-                    −{result.commission_amount.toFixed(3)} TND
+                    −{dt(result.commission_amount)}
                   </p>
                 </>
               ) : (
@@ -245,10 +255,10 @@ function PromotionCommissionPreview({
               {result ? (
                 <>
                   <p style={{ fontSize: 9, color: '#94a3b8', margin: '0 0 1px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    You get
+                    {t('youGet')}
                   </p>
                   <p style={{ fontSize: 12, fontWeight: 900, color: '#10b981', margin: 0 }}>
-                    {result.seller_amount.toFixed(3)} TND
+                    {dt(result.seller_amount)}
                   </p>
                 </>
               ) : (
@@ -269,24 +279,24 @@ function PromotionCommissionPreview({
           borderTop: '1.5px solid #e5e7eb',
         }}>
           <p style={{ fontSize: 11, fontWeight: 800, color: '#64748b', margin: 0 }}>
-            Total ({selected.length} products)
+            {t('totalProducts', { count: selected.length })}
           </p>
           <div style={{ textAlign: 'end', paddingInlineEnd: 14 }}>
             <p style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through', margin: '0 0 1px' }}>
-              {totalOriginal.toFixed(3)} TND
+              {dt(totalOriginal)}
             </p>
             <p style={{ fontSize: 12, fontWeight: 900, color: '#dc2626', margin: 0 }}>
-              {totalEffective.toFixed(3)} TND
+              {dt(totalEffective)}
             </p>
           </div>
           <div style={{ textAlign: 'end', paddingInlineEnd: 14 }}>
             <p style={{ fontSize: 12, fontWeight: 800, color: '#ef4444', margin: 0 }}>
-              −{totalCommission.toFixed(3)} TND
+              −{dt(totalCommission)}
             </p>
           </div>
           <div style={{ textAlign: 'end' }}>
             <p style={{ fontSize: 12, fontWeight: 900, color: '#10b981', margin: 0 }}>
-              {totalSeller.toFixed(3)} TND
+              {dt(totalSeller)}
             </p>
           </div>
         </div>
@@ -307,6 +317,9 @@ interface PromotionModalProps {
 
 export default function PromotionModal({ promotion, onClose, onSaved }: PromotionModalProps) {
   const isEdit = !!promotion
+  const t  = useTranslations('seller.promotionForm')
+  const dt = useDt()
+  const { currency } = useFormat()
 
   // ── Form state ──────────────────────────────────────────────────────────────
   const [name,          setName]          = useState(promotion?.name           ?? '')
@@ -363,44 +376,44 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const maxDiscount      = type === 'flash_sale' ? 90 : 70
-  const minDurationLabel = type === 'flash_sale' ? '1 hour' : '1 day'
-  const maxDurationLabel = type === 'flash_sale' ? '72 hours' : '90 days'
+  const minDurationLabel = type === 'flash_sale' ? t('duration.hour1') : t('duration.day1')
+  const maxDurationLabel = type === 'flash_sale' ? t('duration.hours72') : t('duration.days90')
 
   // ── Validation ──────────────────────────────────────────────────────────────
  const validate = () => {
   const e: Record<string, string> = {}
-  if (!name.trim()) e.name = 'Required.'
+  if (!name.trim()) e.name = t('errors.required')
 
   if (!discountValue || parseFloat(discountValue) <= 0)
-    e.discount_value = 'Must be greater than 0.'
+    e.discount_value = t('errors.positive')
   if (discountType === 'percentage' && parseFloat(discountValue) > maxDiscount)
-    e.discount_value = `Max ${maxDiscount}% for ${type === 'flash_sale' ? 'flash sales' : 'discounts'}.`
+    e.discount_value = type === 'flash_sale' ? t('errors.maxFlash', { max: maxDiscount }) : t('errors.maxDiscount', { max: maxDiscount })
 
-  if (!startsAt) e.starts_at = 'Required.'
-  if (!endsAt)   e.ends_at   = 'Required.'
+  if (!startsAt) e.starts_at = t('errors.required')
+  if (!endsAt)   e.ends_at   = t('errors.required')
 
   if (startsAt && endsAt) {
     const start = new Date(startsAt)
     const end   = new Date(endsAt)
 
     if (end <= start) {
-      e.ends_at = 'End must be after start.'
+      e.ends_at = t('errors.endAfterStart')
     } else {
       const diffMs    = end.getTime() - start.getTime()
       const diffHours = diffMs / (1000 * 60 * 60)
       const diffDays  = diffHours / 24
 
       if (type === 'flash_sale') {
-        if (diffHours < 1)  e.ends_at = 'Flash sale must last at least 1 hour.'
-        if (diffHours > 72) e.ends_at = 'Flash sale cannot exceed 72 hours (3 days).'
+        if (diffHours < 1)  e.ends_at = t('errors.flashMin')
+        if (diffHours > 72) e.ends_at = t('errors.flashMax')
       } else {
-        if (diffDays < 1)  e.ends_at = 'Discount must last at least 1 full day.'
-        if (diffDays > 90) e.ends_at = 'Discount cannot exceed 90 days.'
+        if (diffDays < 1)  e.ends_at = t('errors.discountMin')
+        if (diffDays > 90) e.ends_at = t('errors.discountMax')
       }
     }
   }
 
-  if (selectedProductIds.length === 0) e.products = 'Select at least one product.'
+  if (selectedProductIds.length === 0) e.products = t('errors.products')
   setErrors(e)
   return Object.keys(e).length === 0
 }
@@ -451,10 +464,10 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
 
     if (Object.keys(fieldMap).length > 0) {
       setErrors(prev => ({ ...prev, ...fieldMap }))
-      if (!hasGeneral) setApiError('Please fix the errors highlighted below.')
+      if (!hasGeneral) setApiError(t('errors.fixBelow'))
     }
   } else {
-    setApiError(data?.message ?? 'Failed to save. Please try again.')
+    setApiError(data?.message ?? t('errors.saveFailed'))
   }
 } finally {
       setSaving(false)
@@ -499,13 +512,13 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
         }}>
           <div>
             <h2 style={{ fontSize: 16, fontWeight: 900, color: '#111', margin: 0 }}>
-              {isEdit ? 'Edit Promotion' : 'Create Promotion'}
+              {isEdit ? t('editTitle') : t('createTitle')}
             </h2>
             <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
-              No admin approval needed — goes live immediately at start time.
+              {t('subtitle')}
             </p>
           </div>
-          <button type="button" onClick={onClose} style={{
+          <button type="button" onClick={onClose} aria-label={t('close')} style={{
             padding: 6, borderRadius: 10, border: 'none',
             background: 'transparent', cursor: 'pointer', color: '#94a3b8',
           }}>
@@ -531,13 +544,13 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
             {/* ══ LEFT ══ */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-              <SLabel>Promotion Details</SLabel>
+              <SLabel>{t('details')}</SLabel>
 
               {/* Name */}
-              <Field label="Promotion Name" required error={errors.name}>
+              <Field label={t('name')} required error={errors.name}>
                 <input
                   value={name} onChange={e => setName(e.target.value)}
-                  placeholder="e.g. Summer Flash Sale"
+                  placeholder={t('namePlaceholder')}
                   style={inputBase}
                   onFocus={e => (e.target.style.borderColor = '#dc2626')}
                   onBlur={e => (e.target.style.borderColor = errors.name ? '#fca5a5' : '#e5e7eb')}
@@ -545,45 +558,44 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
               </Field>
 
               {/* Type toggle */}
-              <Field label="Promotion Type" required>
+              <Field label={t('type')} required>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  {(['flash_sale', 'discount'] as const).map(t => (
+                  {(['flash_sale', 'discount'] as const).map(kind => (
                     <button
-                      key={t} type="button"
-                      onClick={() => setType(t)}
+                      key={kind} type="button"
+                      onClick={() => setType(kind)}
                       style={{
                         padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-                        border: `1.5px solid ${type === t ? '#dc2626' : '#e5e7eb'}`,
-                        background: type === t ? 'rgba(220,38,38,0.06)' : '#f8fafc',
-                        color: type === t ? '#dc2626' : '#64748b',
+                        border: `1.5px solid ${type === kind ? '#dc2626' : '#e5e7eb'}`,
+                        background: type === kind ? 'rgba(220,38,38,0.06)' : '#f8fafc',
+                        color: type === kind ? '#dc2626' : '#64748b',
                         fontWeight: 800, fontSize: 12, fontFamily: 'inherit',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                       }}
                     >
-                      {t === 'flash_sale' ? <><Zap size={13} /> Flash Sale</> : <><Tag size={13} /> Discount</>}
+                      {kind === 'flash_sale' ? <><Zap size={13} /> {t('flashSale')}</> : <><Tag size={13} /> {t('discount')}</>}
                     </button>
                   ))}
                 </div>
                 <p style={{ fontSize: 10, color: '#94a3b8', margin: '5px 0 0' }}>
-                  Flash sale: max {maxDiscount}%, max 72h, overlap blocked per product.
-                  Discount: max {maxDiscount}%, up to 90 days.
+                  {t('typeHint', { flashMax: 90, discountMax: 70 })}
                 </p>
               </Field>
 
               {/* Discount type + value */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <Field label="Discount Type" required>
+                <Field label={t('discountType')} required>
                   <select
                     value={discountType}
                     onChange={e => setDiscountType(e.target.value as any)}
                     style={inputBase}
                   >
-                    <option value="percentage">Percentage (%)</option>
-                    <option value="fixed">Fixed (TND)</option>
+                    <option value="percentage">{t('percentage')}</option>
+                    <option value="fixed">{t('fixed', { currency })}</option>
                   </select>
                 </Field>
                 <Field
-                  label={discountType === 'percentage' ? `Value (max ${maxDiscount}%)` : 'Value (TND)'}
+                  label={discountType === 'percentage' ? t('valuePct', { max: maxDiscount }) : t('valueFixed', { currency })}
                   required
                   error={errors.discount_value}
                 >
@@ -601,7 +613,7 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
                       position: 'absolute', insetInlineEnd: 12, top: '50%',
                       transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 700,
                     }}>
-                      {discountType === 'percentage' ? '%' : 'DT'}
+                      {discountType === 'percentage' ? '%' : currency}
                     </span>
                   </div>
                 </Field>
@@ -609,7 +621,7 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
 
               {/* Start / End */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <Field label="Starts At" required error={errors.starts_at}>
+                <Field label={t('startsAt')} required error={errors.starts_at}>
                  <input
                     type="datetime-local"
                     value={startsAt}
@@ -624,7 +636,7 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
                     onBlur={e => (e.target.style.borderColor = errors.starts_at ? '#fca5a5' : '#e5e7eb')}
                   />
                 </Field>
-                <Field label="Ends At" required error={errors.ends_at}>
+                <Field label={t('endsAt')} required error={errors.ends_at}>
                  <input
                       type="datetime-local"
                       value={endsAt}
@@ -655,23 +667,23 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
               </div>
 
               <p style={{ fontSize: 10, color: '#94a3b8', margin: '-8px 0 0' }}>
-                Duration: min {minDurationLabel} — max {maxDurationLabel}
+                {t('durationHint', { min: minDurationLabel, max: maxDurationLabel })}
               </p>
 
               {/* Flash stock */}
               {type === 'flash_sale' && (
-                <Field label="Flash Stock Cap (optional)">
+                <Field label={t('flashStock')}>
                   <input
                     type="number" min="1" step="1"
                     value={flashStock}
                     onChange={e => setFlashStock(e.target.value)}
-                    placeholder="Leave blank for unlimited"
+                    placeholder={t('flashStockPlaceholder')}
                     style={inputBase}
                     onFocus={e => (e.target.style.borderColor = '#dc2626')}
                     onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
                   />
                   <p style={{ fontSize: 10, color: '#94a3b8', margin: '4px 0 0' }}>
-                    Max units sold at promo price. Does NOT reduce product stock.
+                    {t('flashStockHint')}
                   </p>
                 </Field>
               )}
@@ -700,7 +712,7 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
             {/* ══ RIGHT — Product selection ══ */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <SLabel>Select Products</SLabel>
+                <SLabel>{t('selectProducts')}</SLabel>
                 {selectedProductIds.length > 0 && (
                   <span style={{
                     fontSize: 11, fontWeight: 800, color: '#10b981',
@@ -708,7 +720,7 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
                     border: '1px solid rgba(16,185,129,0.25)',
                     padding: '2px 8px', borderRadius: 999,
                   }}>
-                    {selectedProductIds.length} selected
+                    {t('selectedCount', { count: selectedProductIds.length })}
                   </span>
                 )}
               </div>
@@ -727,7 +739,7 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Search your products…"
+                  placeholder={t('searchProducts')}
                   style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', fontSize: 13, color: '#0f172a' }}
                 />
               </div>
@@ -740,11 +752,11 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
                 {prodLoading ? (
                   <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8', fontSize: 13 }}>
                     <Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite', margin: '0 auto 6px', display: 'block' }} />
-                    Loading…
+                    {t('loading')}
                   </div>
                 ) : products.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8', fontSize: 13 }}>
-                    No approved products found.
+                    {t('noProducts')}
                   </div>
                 ) : products.map(p => {
                   const checked       = selectedProductIds.includes(p.id)
@@ -789,12 +801,12 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
                         <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>
                           {/* Original price always shown */}
                           <span style={effectivePrice !== null ? { textDecoration: 'line-through', color: '#94a3b8' } : {}}>
-                            {p.price.toFixed(3)} TND
+                            {dt(p.price)}
                           </span>
                           {/* Discounted price shown when discount is entered */}
                           {effectivePrice !== null && (
                             <span style={{ marginInlineStart: 8, color: '#dc2626', fontWeight: 700 }}>
-                              → {effectivePrice.toFixed(3)} TND
+                              <span className="rtl-flip" style={{ display: 'inline-block' }}>→</span> {dt(effectivePrice)}
                             </span>
                           )}
                         </p>
@@ -828,7 +840,7 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
               background: '#fff', color: '#64748b', fontWeight: 700, fontSize: 13,
               borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
             }}>
-              Cancel
+              {t('cancel')}
             </button>
             <button type="submit" disabled={saving} style={{
               flex: 1, padding: '12px 0',
@@ -840,7 +852,7 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
               opacity: saving ? 0.6 : 1,
             }}>
               {saving && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
-              {isEdit ? 'Save Changes' : 'Create Promotion'}
+              {isEdit ? t('save') : t('create')}
             </button>
           </div>
 

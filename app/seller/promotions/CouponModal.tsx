@@ -3,6 +3,8 @@
 import { useEffect, useCallback, useState } from 'react'
 import { X, Loader2, AlertCircle, Search, Package2 } from 'lucide-react'
 import { sellerCouponsApi, type Coupon, type CouponPayload } from '@/lib/couponsApi'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -29,6 +31,10 @@ interface CouponModalProps {
 
 export default function CouponModal({ coupon, onClose, onSaved }: CouponModalProps) {
   const isEdit = !!coupon
+  const t  = useTranslations('seller.couponForm')
+  const tp = useTranslations('seller.promotionForm')
+  const { price, currency } = useFormat()
+  const dt = (n: number) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
 
   const [code,                    setCode]                   = useState(coupon?.code ?? '')
   const [discountType,            setDiscountType]            = useState<'percentage' | 'fixed'>(coupon?.discount_type ?? 'percentage')
@@ -64,21 +70,21 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
   }, [])
 
   useEffect(() => { loadProducts() }, [loadProducts])
-  useEffect(() => { const t = setTimeout(() => loadProducts(search), 280); return () => clearTimeout(t) }, [search, loadProducts])
+  useEffect(() => { const h = setTimeout(() => loadProducts(search), 280); return () => clearTimeout(h) }, [search, loadProducts])
 
   const validate = () => {
     const e: Record<string, string> = {}
-    if (!code.trim()) e.code = 'Required.'
-    else if (!/^[A-Za-z0-9_-]+$/.test(code.trim())) e.code = 'Letters, numbers, - and _ only.'
+    if (!code.trim()) e.code = tp('errors.required')
+    else if (!/^[A-Za-z0-9_-]+$/.test(code.trim())) e.code = t('errors.codeChars')
 
-    if (!discountValue || parseFloat(discountValue) <= 0) e.discount_value = 'Must be greater than 0.'
-    if (discountType === 'percentage' && parseFloat(discountValue) > 100) e.discount_value = 'Cannot exceed 100%.'
+    if (!discountValue || parseFloat(discountValue) <= 0) e.discount_value = tp('errors.positive')
+    if (discountType === 'percentage' && parseFloat(discountValue) > 100) e.discount_value = t('errors.max100')
 
-    if (minOrderAmount && parseFloat(minOrderAmount) < 0) e.min_order_amount = 'Cannot be negative.'
-    if (usageLimit && parseInt(usageLimit) < 1) e.usage_limit = 'Must be at least 1.'
-    if (usageLimitPerCustomer && parseInt(usageLimitPerCustomer) < 1) e.usage_limit_per_customer = 'Must be at least 1.'
+    if (minOrderAmount && parseFloat(minOrderAmount) < 0) e.min_order_amount = t('errors.negative')
+    if (usageLimit && parseInt(usageLimit) < 1) e.usage_limit = t('errors.atLeast1')
+    if (usageLimitPerCustomer && parseInt(usageLimitPerCustomer) < 1) e.usage_limit_per_customer = t('errors.atLeast1')
 
-    if (selectedProductIds.length === 0) e.products = 'Select at least one product.'
+    if (selectedProductIds.length === 0) e.products = tp('errors.products')
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -112,9 +118,9 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
           fieldMap[key] = Array.isArray(msgs) ? msgs[0] : String(msgs)
         }
         setErrors(prev => ({ ...prev, ...fieldMap }))
-        setApiError('Please fix the errors highlighted below.')
+        setApiError(tp('errors.fixBelow'))
       } else {
-        setApiError(data?.message ?? 'Failed to save. Please try again.')
+        setApiError(data?.message ?? tp('errors.saveFailed'))
       }
     } finally {
       setSaving(false)
@@ -148,13 +154,13 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
         }}>
           <div>
             <h2 style={{ fontSize: 16, fontWeight: 900, color: '#111', margin: 0 }}>
-              {isEdit ? 'Edit Coupon' : 'Create Coupon'}
+              {isEdit ? t('editTitle') : t('createTitle')}
             </h2>
             <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
-              Applies only to the products selected below, and only for this store.
+              {t('subtitle')}
             </p>
           </div>
-          <button type="button" onClick={onClose} style={{ padding: 6, borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}>
+          <button type="button" onClick={onClose} aria-label={tp('close')} style={{ padding: 6, borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}>
             <X size={18} />
           </button>
         </div>
@@ -169,28 +175,28 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
             {/* ══ LEFT ══ */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <SLabel>Coupon Details</SLabel>
+              <SLabel>{t('details')}</SLabel>
 
-              <Field label="Coupon Code" required error={errors.code}>
+              <Field label={t('code')} required error={errors.code}>
                 <input
                   value={code} onChange={e => setCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. SAVE20"
+                  placeholder={t('codePlaceholder')}
                   style={{ ...inputBase, fontWeight: 800, letterSpacing: '0.04em' }}
                   disabled={isEdit}
                   onFocus={e => (e.target.style.borderColor = '#dc2626')}
                   onBlur={e => (e.target.style.borderColor = errors.code ? '#fca5a5' : '#e5e7eb')}
                 />
-                {isEdit && <p style={{ fontSize: 10, color: '#94a3b8', margin: '4px 0 0' }}>Code can't be changed after creation.</p>}
+                {isEdit && <p style={{ fontSize: 10, color: '#94a3b8', margin: '4px 0 0' }}>{t('codeLocked')}</p>}
               </Field>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <Field label="Discount Type" required>
+                <Field label={tp('discountType')} required>
                   <select value={discountType} onChange={e => setDiscountType(e.target.value as any)} style={inputBase}>
-                    <option value="percentage">Percentage (%)</option>
-                    <option value="fixed">Fixed (TND)</option>
+                    <option value="percentage">{tp('percentage')}</option>
+                    <option value="fixed">{tp('fixed', { currency })}</option>
                   </select>
                 </Field>
-                <Field label={discountType === 'percentage' ? 'Value (max 100%)' : 'Value (TND)'} required error={errors.discount_value}>
+                <Field label={discountType === 'percentage' ? tp('valuePct', { max: 100 }) : tp('valueFixed', { currency })} required error={errors.discount_value}>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="number" min="0.001" step="0.001"
@@ -200,40 +206,40 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
                       onBlur={e => (e.target.style.borderColor = errors.discount_value ? '#fca5a5' : '#e5e7eb')}
                     />
                     <span style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>
-                      {discountType === 'percentage' ? '%' : 'DT'}
+                      {discountType === 'percentage' ? '%' : currency}
                     </span>
                   </div>
                 </Field>
               </div>
 
-              <Field label="Minimum Order Amount (optional)" error={errors.min_order_amount}>
+              <Field label={t('minOrder')} error={errors.min_order_amount}>
                 <input
                   type="number" min="0" step="0.001"
                   value={minOrderAmount} onChange={e => setMinOrderAmount(e.target.value)}
-                  placeholder="No minimum" style={inputBase}
+                  placeholder={t('noMinimum')} style={inputBase}
                   onFocus={e => (e.target.style.borderColor = '#dc2626')}
                   onBlur={e => (e.target.style.borderColor = errors.min_order_amount ? '#fca5a5' : '#e5e7eb')}
                 />
                 <p style={{ fontSize: 10, color: '#94a3b8', margin: '4px 0 0' }}>
-                  Checked against the total of eligible items only, not the whole cart.
+                  {t('minOrderHint')}
                 </p>
               </Field>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <Field label="Total Uses (optional)" error={errors.usage_limit}>
+                <Field label={t('totalUses')} error={errors.usage_limit}>
                   <input
                     type="number" min="1" step="1"
                     value={usageLimit} onChange={e => setUsageLimit(e.target.value)}
-                    placeholder="Unlimited" style={inputBase}
+                    placeholder={t('unlimited')} style={inputBase}
                     onFocus={e => (e.target.style.borderColor = '#dc2626')}
                     onBlur={e => (e.target.style.borderColor = errors.usage_limit ? '#fca5a5' : '#e5e7eb')}
                   />
                 </Field>
-                <Field label="Uses Per Customer (optional)" error={errors.usage_limit_per_customer}>
+                <Field label={t('perCustomer')} error={errors.usage_limit_per_customer}>
                   <input
                     type="number" min="1" step="1"
                     value={usageLimitPerCustomer} onChange={e => setUsageLimitPerCustomer(e.target.value)}
-                    placeholder="Unlimited" style={inputBase}
+                    placeholder={t('unlimited')} style={inputBase}
                     onFocus={e => (e.target.style.borderColor = '#dc2626')}
                     onBlur={e => (e.target.style.borderColor = errors.usage_limit_per_customer ? '#fca5a5' : '#e5e7eb')}
                   />
@@ -245,19 +251,19 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
                   onClick={() => setIsActive(v => !v)}
                   style={{ width: 35, height: 19, borderRadius: 999, background: isActive ? '#dc2626' : '#e5e7eb', position: 'relative', cursor: 'pointer', transition: 'background 0.19s' }}
                 >
-                  <div style={{ position: 'absolute', top: 2, insetInlineStart: isActive ? 18 : 2, width: 15, height: 15, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.14)', transition: 'left 0.19s' }} />
+                  <div style={{ position: 'absolute', top: 2, insetInlineStart: isActive ? 18 : 2, width: 15, height: 15, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.14)', transition: 'inset-inline-start 0.19s' }} />
                 </div>
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: '#374151' }}>Active</span>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: '#374151' }}>{t('active')}</span>
               </label>
             </div>
 
             {/* ══ RIGHT — Product selection ══ */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <SLabel>Select Products</SLabel>
+                <SLabel>{tp('selectProducts')}</SLabel>
                 {selectedProductIds.length > 0 && (
                   <span style={{ fontSize: 11, fontWeight: 800, color: '#10b981', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', padding: '2px 8px', borderRadius: 999 }}>
-                    {selectedProductIds.length} selected
+                    {tp('selectedCount', { count: selectedProductIds.length })}
                   </span>
                 )}
               </div>
@@ -268,7 +274,7 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
                 <Search size={13} color="#94a3b8" />
                 <input
                   value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="Search your products…"
+                  placeholder={tp('searchProducts')}
                   style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', fontSize: 13, color: '#0f172a' }}
                 />
               </div>
@@ -277,10 +283,10 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
                 {prodLoading ? (
                   <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8', fontSize: 13 }}>
                     <Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite', margin: '0 auto 6px', display: 'block' }} />
-                    Loading…
+                    {tp('loading')}
                   </div>
                 ) : products.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8', fontSize: 13 }}>No approved products found.</div>
+                  <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8', fontSize: 13 }}>{tp('noProducts')}</div>
                 ) : products.map(p => {
                   const checked = selectedProductIds.includes(p.id)
                   const discNum = parseFloat(discountValue) || 0
@@ -302,8 +308,8 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
                           {p.name}
                         </p>
                         <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>
-                          <span style={effectivePrice !== null ? { textDecoration: 'line-through', color: '#94a3b8' } : {}}>{p.price.toFixed(3)} TND</span>
-                          {effectivePrice !== null && <span style={{ marginInlineStart: 8, color: '#dc2626', fontWeight: 700 }}>→ {effectivePrice.toFixed(3)} TND</span>}
+                          <span style={effectivePrice !== null ? { textDecoration: 'line-through', color: '#94a3b8' } : {}}>{dt(p.price)}</span>
+                          {effectivePrice !== null && <span style={{ marginInlineStart: 8, color: '#dc2626', fontWeight: 700 }}><span className="rtl-flip" style={{ display: 'inline-block' }}>→</span> {dt(effectivePrice)}</span>}
                         </p>
                       </div>
                       <div style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, border: `2px solid ${checked ? '#dc2626' : '#e5e7eb'}`, background: checked ? '#dc2626' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -318,7 +324,7 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
 
           <div style={{ display: 'flex', gap: 12, paddingTop: 12, position: 'sticky', bottom: 0, background: '#fff', borderTop: '1px solid #f0f0f0' }}>
             <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px 0', border: '1.5px solid #e5e7eb', background: '#fff', color: '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Cancel
+              {tp('cancel')}
             </button>
             <button type="submit" disabled={saving} style={{
               flex: 1, padding: '12px 0', background: 'linear-gradient(135deg,#dc2626,#b91c1c)', color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 12,
@@ -326,7 +332,7 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
               boxShadow: '0 6px 20px rgba(220,38,38,0.3)', opacity: saving ? 0.6 : 1,
             }}>
               {saving && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
-              {isEdit ? 'Save Changes' : 'Create Coupon'}
+              {isEdit ? tp('save') : t('create')}
             </button>
           </div>
 
