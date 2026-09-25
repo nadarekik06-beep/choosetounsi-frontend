@@ -11,9 +11,16 @@ import { Eye, MousePointer, ShoppingBag, TrendingUp, ArrowLeft } from 'lucide-re
 import Link from 'next/link';
 import { useTheme } from '../../SellerShell';
 import { sponsorshipApi, SponsorshipRecord } from '@/lib/sponsorshipApi';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
+
+const PLAN_NAMES: Record<string, string> = { free: 'Green Pepper', red: 'Red Pepper', black: 'Black Pepper' };
 
 export default function SponsorshipAnalyticsPage() {
   const { dark } = useTheme();
+  const t = useTranslations('seller.promoteAnalytics');
+  const { number, price, date } = useFormat();
+  const pct = (v: number) => number(v / 100, { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
   const [records,  setRecords]  = useState<SponsorshipRecord[]>([]);
   const [loading,  setLoading]  = useState(true);
@@ -45,15 +52,13 @@ export default function SponsorshipAnalyticsPage() {
   const totalImpressions = records.reduce((s, r) => s + r.impressions, 0);
   const totalClicks      = records.reduce((s, r) => s + r.clicks, 0);
   const totalConversions = records.reduce((s, r) => s + r.conversions, 0);
-  const avgCTR           = totalImpressions > 0
-    ? ((totalClicks / totalImpressions) * 100).toFixed(1)
-    : '0';
+  const avgCTR           = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
 
   const statCards = [
-    { label: 'Total Impressions', value: totalImpressions.toLocaleString(), icon: <Eye size={16} color="#6366f1" />, bg: '#ede9fe', color: '#6366f1' },
-    { label: 'Total Clicks',      value: totalClicks.toLocaleString(),      icon: <MousePointer size={16} color="#3b82f6" />, bg: '#dbeafe', color: '#3b82f6' },
-    { label: 'Conversions',       value: totalConversions.toLocaleString(), icon: <ShoppingBag size={16} color="#16a34a" />, bg: '#dcfce7', color: '#16a34a' },
-    { label: 'Avg CTR',           value: `${avgCTR}%`,                      icon: <TrendingUp size={16} color="#f59e0b" />, bg: '#fef9c3', color: '#f59e0b' },
+    { label: t('stats.impressions'), value: number(totalImpressions), icon: <Eye size={16} color="#6366f1" />, bg: '#ede9fe', color: '#6366f1' },
+    { label: t('stats.clicks'),      value: number(totalClicks),      icon: <MousePointer size={16} color="#3b82f6" />, bg: '#dbeafe', color: '#3b82f6' },
+    { label: t('stats.conversions'), value: number(totalConversions), icon: <ShoppingBag size={16} color="#16a34a" />, bg: '#dcfce7', color: '#16a34a' },
+    { label: t('stats.ctr'),         value: pct(avgCTR),                      icon: <TrendingUp size={16} color="#f59e0b" />, bg: '#fef9c3', color: '#f59e0b' },
   ];
 
   const STATUS_COLORS: Record<string, string> = {
@@ -76,10 +81,10 @@ export default function SponsorshipAnalyticsPage() {
           display: 'flex', alignItems: 'center', gap: 6,
           color: textMuted, textDecoration: 'none', fontSize: 13, fontWeight: 700,
         }}>
-          <ArrowLeft size={15} /> Back
+          <ArrowLeft size={15} /> {t('back')}
         </Link>
         <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: 0 }}>
-          Sponsorship Analytics
+          {t('title')}
         </h1>
       </div>
 
@@ -100,16 +105,15 @@ export default function SponsorshipAnalyticsPage() {
 
       {/* Tab filter */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
-        {(['all', 'active', 'expired'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{
+        {(['all', 'active', 'expired'] as const).map(key => (
+          <button key={key} onClick={() => setTab(key)} style={{
             padding: '7px 16px', borderRadius: 8,
-            border: `1.5px solid ${tab === t ? '#db142e' : border}`,
-            background: tab === t ? (dark ? 'rgba(219,20,46,0.14)' : 'rgba(219,20,46,0.06)') : 'transparent',
-            color: tab === t ? '#db142e' : textMuted,
+            border: `1.5px solid ${tab === key ? '#db142e' : border}`,
+            background: tab === key ? (dark ? 'rgba(219,20,46,0.14)' : 'rgba(219,20,46,0.06)') : 'transparent',
+            color: tab === key ? '#db142e' : textMuted,
             fontSize: 12, fontWeight: 700, cursor: 'pointer',
-            textTransform: 'capitalize',
           }}>
-            {t}
+            {t(`tabs.${key}`)}
           </button>
         ))}
       </div>
@@ -117,17 +121,17 @@ export default function SponsorshipAnalyticsPage() {
       {/* Table */}
       <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: textMuted }}>Loading…</div>
+          <div style={{ padding: 40, textAlign: 'center', color: textMuted }}>{t('loading')}</div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: textMuted }}>
-            No sponsorships found.
+            {t('empty')}
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${border}` }}>
-                  {['Product', 'Plan', 'Status', 'Boost', 'Period', 'Impressions', 'Clicks', 'CTR', 'Conversions', 'Cost'].map(h => (
+                  {(['product', 'plan', 'status', 'boost', 'period', 'impressions', 'clicks', 'ctr', 'conversions', 'cost'] as const).map(k => t(`cols.${k}`)).map(h => (
                     <th key={h} style={{ padding: '12px 16px', textAlign: 'start', fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
                       {h}
                     </th>
@@ -136,8 +140,7 @@ export default function SponsorshipAnalyticsPage() {
               </thead>
               <tbody>
                 {filtered.map((s, i) => {
-                  const ctr = s.impressions > 0 ? ((s.clicks / s.impressions) * 100).toFixed(1) : '0';
-                  const cvr = s.clicks > 0 ? ((s.conversions / s.clicks) * 100).toFixed(1) : '0';
+                  const ctr = s.impressions > 0 ? (s.clicks / s.impressions) * 100 : 0;
                   return (
                     <tr key={s.id} style={{ borderBottom: `1px solid ${border}`, background: i % 2 === 0 ? 'transparent' : (dark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.01)') }}>
                       <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 700, color: textMain, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -148,28 +151,26 @@ export default function SponsorshipAnalyticsPage() {
                           fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
                           color: PLAN_COLORS[s.plan_type] ?? '#888',
                           background: dark ? 'rgba(255,255,255,0.06)' : '#f5f5f5',
-                          textTransform: 'capitalize',
-                        }}>{s.plan_type}</span>
+                        }}>{PLAN_NAMES[s.plan_type] ?? s.plan_type}</span>
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         <span style={{
                           fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
                           color: STATUS_COLORS[s.status] ?? '#888',
                           background: dark ? 'rgba(255,255,255,0.06)' : '#f5f5f5',
-                          textTransform: 'capitalize',
-                        }}>{s.status}</span>
+                        }}>{t.has(`status.${s.status}`) ? t(`status.${s.status}`) : s.status}</span>
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 700, color: '#db142e' }}>+{s.boost_score}</td>
                       <td style={{ padding: '12px 16px', fontSize: 11, color: textMuted, whiteSpace: 'nowrap' }}>
-                        {s.start_at ? new Date(s.start_at).toLocaleDateString('en-GB') : '—'}
-                        {s.end_at ? ` → ${new Date(s.end_at).toLocaleDateString('en-GB')}` : ''}
+                        {s.start_at ? date(s.start_at, 'short') : '—'}
+                        {s.end_at ? <> <span className="rtl-flip" style={{ display: 'inline-block' }}>→</span> {date(s.end_at, 'short')}</> : ''}
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 700, color: '#6366f1' }}>{s.impressions.toLocaleString()}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 700, color: '#3b82f6' }}>{s.clicks.toLocaleString()}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>{ctr}%</td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 700, color: '#16a34a' }}>{s.conversions}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 700, color: '#6366f1' }}>{number(s.impressions)}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 700, color: '#3b82f6' }}>{number(s.clicks)}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>{pct(ctr)}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 700, color: '#16a34a' }}>{number(s.conversions)}</td>
                       <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 700, color: Number(s.amount_charged) === 0 ? '#16a34a' : textMain }}>
-                        {Number(s.amount_charged) === 0 ? 'FREE' : `${Number(s.amount_charged).toFixed(3)} DT`}
+                        {Number(s.amount_charged) === 0 ? t('free') : price(Number(s.amount_charged), { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                       </td>
                     </tr>
                   );

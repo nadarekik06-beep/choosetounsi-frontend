@@ -3101,6 +3101,194 @@
         "negative": "Ne peut pas être négatif.",
         "atLeast1": "Doit être au moins 1."
       }
+    },
+    "promote": {
+      "title": "Publicité & Boost",
+      "subtitle": "Mettez vos produits en avant sur l'accueil, les catégories et la recherche",
+      "quotaFree": "{remaining}/{total} gratuits",
+      "analytics": "Statistiques",
+      "close": "Fermer",
+      "pts": "{n} pts",
+      "points": "+{n} points",
+      "clear": "Effacer",
+      "clearAll": "Tout effacer",
+      "searchProducts": "Rechercher des produits…",
+      "live": "En ligne",
+      "footerCount": "{products, plural, one {# produit} other {# produits}} · {active, plural, one {# sponsoring actif} other {# sponsorings actifs}}",
+      "running": "En cours ({count})",
+      "runningStats": "{views} vues · {clicks} clics",
+      "until": "jusqu'au {date}",
+      "stop": "Arrêter",
+      "popular": "Populaire",
+      "free": "GRATUIT",
+      "boostHint": "Priorité 1 à 5 gratuite. Chaque point au-delà de 5 ajoute <b>+{amount}</b> à votre campagne.",
+      "lowReach": "Portée faible",
+      "maxReach": "Portée max.",
+      "surchargeLine": "Priorité {priority} : +{amount} de supplément ({points, plural, one {# pt} other {# pts}} × {unit})",
+      "finalBoost": "Boost final :",
+      "boostFormula": "(base {base} × {priority}/10)",
+      "activeCount": "{count, plural, one {# actif} other {# actifs}}",
+      "regions": "Régions ciblées",
+      "categories": "Catégories ciblées",
+      "preview": {
+        "title": "Aperçu en direct",
+        "sponsored": "Sponsorisé",
+        "selectProduct": "Choisissez un produit pour l'aperçu",
+        "productName": "Nom de votre produit",
+        "hint": "Voici comment les acheteurs verront votre annonce"
+      },
+      "errors": {
+        "activate": "Impossible d'activer le sponsoring.",
+        "cancel": "Échec de l'arrêt."
+      },
+      "successBanner": {
+        "title": "Sponsoring activé !",
+        "boost": "Boost :",
+        "expires": "Expire le :",
+        "quotaUsed": "Quota gratuit utilisé (encore {left} cette semaine)",
+        "charged": "{amount} débités"
+      },
+      "steps": {
+        "product": "Choisir le produit",
+        "duration": "Durée de la campagne",
+        "boost": "Boost de visibilité",
+        "audience": "Ciblage de l'audience"
+      },
+      "empty": {
+        "noMatch": "Aucun produit ne correspond à votre recherche",
+        "none": "Aucun produit validé trouvé",
+        "hint": "Vérifiez que vos produits sont validés par l'administration."
+      },
+      "gender": {
+        "title": "Genre",
+        "all": "Tous",
+        "male": "Hommes",
+        "female": "Femmes",
+        "unisex": "Unisexe"
+      },
+      "budget": {
+        "title": "Fourchette de budget ciblée",
+        "min": "Min",
+        "max": "Max",
+        "hint": "Utilisateurs dont le budget se situe dans cette fourchette"
+      },
+      "summary": {
+        "product": "Produit",
+        "duration": "Durée",
+        "boost": "Boost",
+        "baseRate": "Tarif de base",
+        "days": "{count, plural, one {# jour} other {# jours}}",
+        "freeQuota": "GRATUIT (quota)",
+        "perDay": "{rate}/jour",
+        "surcharge": "Supplément boost",
+        "total": "Total"
+      },
+      "cta": {
+        "activating": "Activation…",
+        "already": "Déjà sponsorisé",
+        "selectFirst": "Choisissez d'abord un produit",
+        "pay": "Payer et activer — {amount}",
+        "free": "Activer gratuitement",
+        "secure": "Paiement sécurisé · chiffrement SSL"
+      },
+      "how": {
+        "title": "Comment ça marche",
+        "s1": "Choisissez un produit dans la liste",
+        "s2": "Réglez la durée et le niveau de boost",
+        "s3": "Affinez le ciblage de votre audience",
+        "s4": "Payez (si nécessaire) et passez en ligne immédiatement"
+      },
+      "pay": {
+        "aria": "Paiement par carte",
+        "title": "Paiement sécurisé",
+        "ssl": "Chiffrement SSL",
+        "sandbox": "⚡ MODE SANDBOX — Carte pré-remplie avec des données de test. Aucun débit réel.",
+        "summary": "Récapitulatif",
+        "base": "Base ({rate}/jour × {days} j)",
+        "surcharge": "Supplément boost (priorité > 5)",
+        "totalDue": "Total à payer",
+        "cardNumber": "Numéro de carte",
+        "hide": "Masquer",
+        "show": "Afficher",
+        "month": "Mois",
+        "year": "Année",
+        "mm": "MM",
+        "yy": "AA",
+        "holder": "Titulaire de la carte",
+        "holderPlaceholder": "PRÉNOM NOM",
+        "confirmAmount": "Confirmer le paiement de {amount}",
+        "cardEnding": "Carte se terminant par •••• {last4}",
+        "secureNote": "Vos données de carte sont chiffrées et jamais stockées sur nos serveurs.",
+        "processing": "Traitement…",
+        "confirmPay": "Confirmer et payer {amount}",
+        "review": "Vérifier le paiement",
+        "success": "Paiement réussi !",
+        "activating": "Activation de votre sponsoring…",
+        "errors": {
+          "cardLength": "Le numéro de carte doit comporter 16 chiffres",
+          "cardInvalid": "Numéro de carte invalide",
+          "month": "Mois invalide (MM)",
+          "year": "Année invalide (AA)",
+          "expired": "La carte a expiré",
+          "cvv": "Le CVV doit comporter 3 ou 4 chiffres",
+          "holder": "Nom du titulaire requis",
+          "failed": "Échec du paiement. Veuillez réessayer."
+        }
+      },
+      "durations": {
+        "d3": {
+          "label": "3 jours",
+          "sub": "Test rapide"
+        },
+        "d7": {
+          "label": "1 semaine",
+          "sub": "Le plus populaire"
+        },
+        "d14": {
+          "label": "2 semaines",
+          "sub": "Meilleur rapport"
+        },
+        "d30": {
+          "label": "1 mois",
+          "sub": "Exposition max."
+        }
+      }
+    },
+    "promoteAnalytics": {
+      "back": "Retour",
+      "title": "Statistiques du sponsoring",
+      "loading": "Chargement…",
+      "empty": "Aucun sponsoring trouvé.",
+      "free": "GRATUIT",
+      "stats": {
+        "impressions": "Impressions totales",
+        "clicks": "Clics totaux",
+        "conversions": "Conversions",
+        "ctr": "CTR moyen"
+      },
+      "tabs": {
+        "all": "Tous",
+        "active": "Actifs",
+        "expired": "Expirés"
+      },
+      "status": {
+        "active": "Actif",
+        "expired": "Expiré",
+        "cancelled": "Annulé",
+        "pending": "En attente"
+      },
+      "cols": {
+        "product": "Produit",
+        "plan": "Formule",
+        "status": "Statut",
+        "boost": "Boost",
+        "period": "Période",
+        "impressions": "Impressions",
+        "clicks": "Clics",
+        "ctr": "CTR",
+        "conversions": "Conversions",
+        "cost": "Coût"
+      }
     }
   },
   "invoice": {

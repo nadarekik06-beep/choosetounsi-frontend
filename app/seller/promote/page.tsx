@@ -23,6 +23,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useTheme } from '../SellerShell';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
+import { useWilayaLabel } from '@/lib/i18n/wilayas';
 import { useSubscription } from '@/app/hooks/useSubscription';
 import {
   sponsorshipApi,
@@ -56,12 +59,20 @@ interface SellerProduct {
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
-const DURATIONS = [
-  { days: 3,  label: '3 Days',  sublabel: 'Quick test' },
-  { days: 7,  label: '1 Week',  sublabel: 'Most popular', popular: true },
-  { days: 14, label: '2 Weeks', sublabel: 'Best value' },
-  { days: 30, label: '1 Month', sublabel: 'Max exposure' },
+const DURATIONS: { days: number; key: string; popular?: boolean }[] = [
+  { days: 3,  key: 'd3'  },
+  { days: 7,  key: 'd7', popular: true },
+  { days: 14, key: 'd14' },
+  { days: 30, key: 'd30' },
 ];
+
+// Display aliases so the shared wilaya labels resolve for this list's spellings.
+const WILAYA_ALIAS: Record<string, string> = { Kef: 'Le Kef', Manouba: 'La Manouba', Medenine: 'Médenine' };
+
+function useDt() {
+  const { price } = useFormat();
+  return (n: number, digits = 3) => price(n, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
 
 const TUNISIAN_WILAYAS = [
   'Tunis','Ariana','Ben Arous','Manouba','Nabeul','Zaghouan','Bizerte',
@@ -161,10 +172,12 @@ function AdPreviewCard({
   border: string;
 }) {
   const card = dark ? '#1a2030' : '#fff';
+  const t  = useTranslations('seller.promote');
+  const dt = useDt();
   return (
     <div style={{ marginBottom: 16 }}>
       <p style={{ fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Eye size={10} /> Live Preview
+        <Eye size={10} /> {t('preview.title')}
       </p>
       <div style={{
         background: card, border: `1px solid ${border}`, borderRadius: 14, overflow: 'hidden', position: 'relative',
@@ -178,7 +191,7 @@ function AdPreviewCard({
           display: 'flex', alignItems: 'center', gap: 4,
           boxShadow: '0 2px 8px rgba(219,20,46,0.4)',
         }}>
-          <Zap size={8} /> Sponsored
+          <Zap size={8} /> {t('preview.sponsored')}
         </div>
 
         {product?.primary_image_url ? (
@@ -192,7 +205,7 @@ function AdPreviewCard({
             {product ? (
               <><Package size={28} color={textMuted} /><span style={{ fontSize: 11, color: textMuted, fontWeight: 600 }}>{product.name}</span></>
             ) : (
-              <><Sparkles size={24} color={textMuted} /><span style={{ fontSize: 11, color: textMuted }}>Select a product to preview</span></>
+              <><Sparkles size={24} color={textMuted} /><span style={{ fontSize: 11, color: textMuted }}>{t('preview.selectProduct')}</span></>
             )}
           </div>
         )}
@@ -200,10 +213,10 @@ function AdPreviewCard({
         <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: 13, fontWeight: 700, color: textMain, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {product?.name ?? 'Your product name'}
+              {product?.name ?? t('preview.productName')}
             </p>
             <p style={{ fontSize: 12, color: '#db142e', fontWeight: 800, margin: 0 }}>
-              {product ? `${Number(product.price).toFixed(3)} DT` : '0.000 DT'}
+              {dt(product ? Number(product.price) : 0)}
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: dark ? 'rgba(245,158,11,0.12)' : 'rgba(245,158,11,0.1)', borderRadius: 8, padding: '4px 8px' }}>
@@ -212,7 +225,7 @@ function AdPreviewCard({
           </div>
         </div>
       </div>
-      <p style={{ fontSize: 10, color: textMuted, marginTop: 6, textAlign: 'center' }}>This is how buyers will see your ad</p>
+      <p style={{ fontSize: 10, color: textMuted, marginTop: 6, textAlign: 'center' }}>{t('preview.hint')}</p>
     </div>
   );
 }
@@ -244,6 +257,9 @@ function PaymentModal({
   const [step,    setStep]      = useState<'form' | 'confirm' | 'success'>('form');
   const overlayRef = useRef<HTMLDivElement>(null);
   const planMeta   = PLAN_META[plan];
+  const t  = useTranslations('seller.promote.pay');
+  const tp = useTranslations('seller.promote');
+  const dt = useDt();
 
   // Reset on open — pre-fill dev card in localhost for frictionless testing
   useEffect(() => {
@@ -268,20 +284,20 @@ function PaymentModal({
   const validate = (): boolean => {
     const errs: typeof errors = {};
     const digits = card.card_number.replace(/\D/g, '');
-    if (digits.length !== 16)      errs.card_number  = 'Card number must be 16 digits';
-    else if (!luhnCheck(digits))   errs.card_number  = 'Invalid card number';
+    if (digits.length !== 16)      errs.card_number  = t('errors.cardLength');
+    else if (!luhnCheck(digits))   errs.card_number  = t('errors.cardInvalid');
 
     const mo = parseInt(card.expiry_month, 10);
     const yr = parseInt('20' + card.expiry_year, 10);
-    if (!card.expiry_month || mo < 1 || mo > 12) errs.expiry_month = 'Invalid month (MM)';
-    if (!card.expiry_year  || card.expiry_year.length !== 2) errs.expiry_year  = 'Invalid year (YY)';
+    if (!card.expiry_month || mo < 1 || mo > 12) errs.expiry_month = t('errors.month');
+    if (!card.expiry_year  || card.expiry_year.length !== 2) errs.expiry_year  = t('errors.year');
     else {
       const now  = new Date();
       const expDate = new Date(yr, mo - 1, 1);
-      if (expDate < new Date(now.getFullYear(), now.getMonth(), 1)) errs.expiry_year = 'Card has expired';
+      if (expDate < new Date(now.getFullYear(), now.getMonth(), 1)) errs.expiry_year = t('errors.expired');
     }
-    if (!card.cvv || card.cvv.length < 3)        errs.cvv          = 'CVV must be 3-4 digits';
-    if (!card.cardholder.trim())                  errs.cardholder   = 'Cardholder name required';
+    if (!card.cvv || card.cvv.length < 3)        errs.cvv          = t('errors.cvv');
+    if (!card.cardholder.trim())                  errs.cardholder   = t('errors.holder');
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -296,7 +312,7 @@ function PaymentModal({
       setStep('success');
       setTimeout(() => onSuccess(token), 900);
     } catch {
-      setErrors({ cardholder: 'Payment failed. Please try again.' });
+      setErrors({ cardholder: t('errors.failed') });
       setStep('form');
     } finally { setPaying(false); }
   };
@@ -327,7 +343,7 @@ function PaymentModal({
 
   return (
     <div style={overlay} ref={overlayRef} onClick={e => { if (e.target === overlayRef.current) onClose(); }}>
-      <div style={modal} role="dialog" aria-modal="true" aria-label="Card Payment">
+      <div style={modal} role="dialog" aria-modal="true" aria-label={t('aria')}>
 
         {/* Header */}
         <div style={{
@@ -341,43 +357,43 @@ function PaymentModal({
               <CreditCard size={18} color="#fff" />
             </div>
             <div>
-              <p style={{ fontSize: 15, fontWeight: 900, color: textMain, margin: 0 }}>Secure Payment</p>
+              <p style={{ fontSize: 15, fontWeight: 900, color: textMain, margin: 0 }}>{t('title')}</p>
               <p style={{ fontSize: 11, color: textMuted, margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Lock size={9} /> SSL encrypted · {planMeta.label}
+                <Lock size={9} /> {t('ssl')} · {planMeta.label}
               </p>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: textMuted, fontSize: 20, lineHeight: 1, padding: 4 }}>✕</button>
+          <button onClick={onClose} aria-label={tp('close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: textMuted, fontSize: 20, lineHeight: 1, padding: 4 }}>✕</button>
         </div>
 
         {/* Dev mode banner */}
         {IS_DEV && (
           <div style={{ padding: '7px 20px', background: 'rgba(99,102,241,0.12)', borderBottom: `1px solid rgba(99,102,241,0.25)`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 10, fontWeight: 800, color: '#818cf8', letterSpacing: '0.05em' }}>⚡ SANDBOX MODE — Card pre-filled with test data. No real charge.</span>
+            <span style={{ fontSize: 10, fontWeight: 800, color: '#818cf8', letterSpacing: '0.05em' }}>{t('sandbox')}</span>
           </div>
         )}
 
         {/* Order summary */}
         <div style={{ padding: '14px 20px', background: dark ? 'rgba(255,255,255,0.02)' : '#fafbfc', borderBottom: `1px solid ${border}` }}>
-          <p style={{ fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 10px' }}>Order Summary</p>
+          <p style={{ fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 10px' }}>{t('summary')}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {breakdown.baseCost > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 12, color: textMuted }}>Base ({breakdown.basePerDay.toFixed(3)} DT/day × {duration}d)</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: textMain }}>{breakdown.baseCost.toFixed(3)} DT</span>
+                <span style={{ fontSize: 12, color: textMuted }}>{t('base', { rate: dt(breakdown.basePerDay), days: duration })}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: textMain }}>{dt(breakdown.baseCost)}</span>
               </div>
             )}
             {breakdown.boostSurcharge > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 12, color: textMuted }}>Boost surcharge (priority &gt; 5)</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>+{breakdown.boostSurcharge.toFixed(3)} DT</span>
+                <span style={{ fontSize: 12, color: textMuted }}>{t('surcharge')}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>+{dt(breakdown.boostSurcharge)}</span>
               </div>
             )}
             <div style={{ height: 1, background: border, margin: '4px 0' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: textMain }}>Total due</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: textMain }}>{t('totalDue')}</span>
               <span style={{ fontSize: 20, fontWeight: 900, color: '#db142e', letterSpacing: '-0.02em' }}>
-                {amount.toFixed(3)} DT
+                {dt(amount)}
               </span>
             </div>
           </div>
@@ -390,7 +406,7 @@ function PaymentModal({
             {/* Card number */}
             <div>
               <label style={{ fontSize: 11, fontWeight: 700, color: textMuted, display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
-                <CreditCard size={11} /> Card Number
+                <CreditCard size={11} /> {t('cardNumber')}
               </label>
               <div style={{ position: 'relative' }}>
                 <input
@@ -407,7 +423,7 @@ function PaymentModal({
                   onClick={() => setShowNum(v => !v)}
                   style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: textMuted, fontSize: 11, fontWeight: 700 }}
                 >
-                  {showNum ? 'Hide' : 'Show'}
+                  {showNum ? t('hide') : t('show')}
                 </button>
               </div>
               {errors.card_number && <p style={{ fontSize: 11, color: '#ef4444', margin: '4px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}><AlertCircle size={10} />{errors.card_number}</p>}
@@ -417,10 +433,10 @@ function PaymentModal({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: textMuted, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-                  <Calendar size={10} /> Month
+                  <Calendar size={10} /> {t('month')}
                 </label>
                 <input
-                  type="text" placeholder="MM" maxLength={2}
+                  type="text" placeholder={t('mm')} maxLength={2}
                   value={card.expiry_month}
                   onChange={e => setCard(c => ({ ...c, expiry_month: e.target.value.replace(/\D/g, '').slice(0, 2) }))}
                   style={{ ...inp, borderColor: errors.expiry_month ? '#ef4444' : border }}
@@ -430,10 +446,10 @@ function PaymentModal({
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: textMuted, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-                  <Calendar size={10} /> Year
+                  <Calendar size={10} /> {t('year')}
                 </label>
                 <input
-                  type="text" placeholder="YY" maxLength={2}
+                  type="text" placeholder={t('yy')} maxLength={2}
                   value={card.expiry_year}
                   onChange={e => setCard(c => ({ ...c, expiry_year: e.target.value.replace(/\D/g, '').slice(0, 2) }))}
                   style={{ ...inp, borderColor: errors.expiry_year ? '#ef4444' : border }}
@@ -459,10 +475,10 @@ function PaymentModal({
             {/* Cardholder */}
             <div>
               <label style={{ fontSize: 11, fontWeight: 700, color: textMuted, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-                <Users size={10} /> Cardholder Name
+                <Users size={10} /> {t('holder')}
               </label>
               <input
-                type="text" placeholder="FIRST LAST"
+                type="text" placeholder={t('holderPlaceholder')}
                 value={card.cardholder}
                 onChange={e => setCard(c => ({ ...c, cardholder: e.target.value.toUpperCase() }))}
                 style={{ ...inp, borderColor: errors.cardholder ? '#ef4444' : border, textTransform: 'uppercase' }}
@@ -481,8 +497,8 @@ function PaymentModal({
               }}>
                 <Shield size={16} color="#f59e0b" />
                 <div>
-                  <p style={{ fontSize: 12, fontWeight: 800, color: '#f59e0b', margin: 0 }}>Confirm payment of {amount.toFixed(3)} DT</p>
-                  <p style={{ fontSize: 11, color: textMuted, margin: '2px 0 0' }}>Card ending in •••• {card.card_number.slice(-4)}</p>
+                  <p style={{ fontSize: 12, fontWeight: 800, color: '#f59e0b', margin: 0 }}>{t('confirmAmount', { amount: dt(amount) })}</p>
+                  <p style={{ fontSize: 11, color: textMuted, margin: '2px 0 0' }}>{t('cardEnding', { last4: card.card_number.slice(-4) })}</p>
                 </div>
               </div>
             )}
@@ -490,7 +506,7 @@ function PaymentModal({
             {/* Security note */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.6 }}>
               <Lock size={10} color={textMuted} />
-              <span style={{ fontSize: 10, color: textMuted }}>Your card data is encrypted and never stored on our servers.</span>
+              <span style={{ fontSize: 10, color: textMuted }}>{t('secureNote')}</span>
             </div>
 
             {/* CTA */}
@@ -509,11 +525,11 @@ function PaymentModal({
               }}
             >
               {paying ? (
-                <><span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Processing…</>
+                <><span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> {t('processing')}</>
               ) : step === 'confirm' ? (
-                <><Shield size={15} /> Confirm & Pay {amount.toFixed(3)} DT</>
+                <><Shield size={15} /> {t('confirmPay', { amount: dt(amount) })}</>
               ) : (
-                <><CreditCard size={15} /> Review Payment</>
+                <><CreditCard size={15} /> {t('review')}</>
               )}
             </button>
           </div>
@@ -525,8 +541,8 @@ function PaymentModal({
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(25,143,65,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #198f41' }}>
               <CheckCircle size={28} color="#198f41" />
             </div>
-            <p style={{ fontSize: 16, fontWeight: 900, color: '#198f41', margin: 0 }}>Payment successful!</p>
-            <p style={{ fontSize: 12, color: textMuted, margin: 0 }}>Activating your sponsorship…</p>
+            <p style={{ fontSize: 16, fontWeight: 900, color: '#198f41', margin: 0 }}>{t('success')}</p>
+            <p style={{ fontSize: 12, color: textMuted, margin: 0 }}>{t('activating')}</p>
           </div>
         )}
       </div>
@@ -541,6 +557,10 @@ export default function PromoteProductPage() {
   const { dark } = useTheme();
   const router   = useRouter();
   const { plan, loading: planLoading } = useSubscription();
+  const t  = useTranslations('seller.promote');
+  const dt = useDt();
+  const { date, number } = useFormat();
+  const wl = useWilayaLabel();
 
   // Theme tokens
   const bg       = dark ? '#0D1117' : '#f0f2f5';
@@ -665,11 +685,11 @@ export default function PromoteProductPage() {
       fetchActive();
       fetchQuota();
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? 'Failed to activate sponsorship.');
+      setError(e?.response?.data?.message ?? t('errors.activate'));
     } finally {
       setSubmitting(false);
     }
-  }, [selectedId, duration, priority, targetGender, targetWilayas, targetCategories, targetPriceMin, targetPriceMax, fetchActive, fetchQuota]);
+  }, [selectedId, duration, priority, targetGender, targetWilayas, targetCategories, targetPriceMin, targetPriceMax, fetchActive, fetchQuota, t]);
 
   const handleSubmit = () => {
     if (!selectedId || isAlreadySponsored || submitting) return;
@@ -691,7 +711,7 @@ export default function PromoteProductPage() {
   const handleCancel = async (id: number) => {
     setCancelling(id);
     try { await sponsorshipApi.cancel(id); fetchActive(); fetchQuota(); }
-    catch (e: any) { alert(e?.response?.data?.message ?? 'Cancel failed.'); }
+    catch (e: any) { alert(e?.response?.data?.message ?? t('errors.cancel')); }
     finally { setCancelling(null); }
   };
 
@@ -737,8 +757,8 @@ export default function PromoteProductPage() {
             <Zap size={18} color="#fff" />
           </div>
           <div>
-            <h1 style={{ fontSize: 18, fontWeight: 900, color: textMain, margin: 0, letterSpacing: '-0.02em' }}>Ads & Boost</h1>
-            <p style={{ fontSize: 12, color: textMuted, margin: 0 }}>Promote your products across homepage, categories & search</p>
+            <h1 style={{ fontSize: 18, fontWeight: 900, color: textMain, margin: 0, letterSpacing: '-0.02em' }}>{t('title')}</h1>
+            <p style={{ fontSize: 12, color: textMuted, margin: 0 }}>{t('subtitle')}</p>
           </div>
         </div>
 
@@ -748,12 +768,12 @@ export default function PromoteProductPage() {
             <span style={{ color: planMeta.color }}>{planMeta.icon}</span>
             <span style={{ fontSize: 12, fontWeight: 800, color: planMeta.color }}>{planMeta.label}</span>
             {currentPlan === 'black' && quota && (
-              <span style={{ fontSize: 10, color: textMuted, fontWeight: 600 }}>· {quota.remaining}/3 free</span>
+              <span style={{ fontSize: 10, color: textMuted, fontWeight: 600 }}>· {t('quotaFree', { remaining: quota.remaining, total: 3 })}</span>
             )}
           </div>
 
           <Link href="/seller/promote/analytics" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 10, border: `1px solid ${border}`, color: textMuted, textDecoration: 'none', fontSize: 12, fontWeight: 700, background: cardAlt }}>
-            <BarChart2 size={13} /> Analytics
+            <BarChart2 size={13} /> {t('analytics')}
           </Link>
         </div>
       </div>
@@ -763,15 +783,15 @@ export default function PromoteProductPage() {
         <div style={{ margin: '16px 24px 0', background: dark ? 'rgba(25,143,65,0.12)' : '#f0fdf4', border: '1px solid #16a34a', borderRadius: 14, padding: '16px 20px', animation: 'fadeUp 0.3s ease', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
           <CheckCircle size={20} color="#16a34a" style={{ flexShrink: 0, marginTop: 2 }} />
           <div style={{ flex: 1 }}>
-            <p style={{ fontWeight: 800, fontSize: 14, color: '#16a34a', margin: '0 0 4px' }}>Sponsorship activated!</p>
+            <p style={{ fontWeight: 800, fontSize: 14, color: '#16a34a', margin: '0 0 4px' }}>{t('successBanner.title')}</p>
             <p style={{ fontSize: 12, color: textMuted, margin: '0 0 8px' }}>
-              Boost: <strong style={{ color: textMain }}>{success.boost_score} pts</strong> &nbsp;·&nbsp;
-              Expires: <strong style={{ color: textMain }}>{new Date(success.expires_at).toLocaleDateString('en-GB')}</strong>
+              {t('successBanner.boost')} <strong style={{ color: textMain }}>{t('pts', { n: success.boost_score })}</strong> &nbsp;·&nbsp;
+              {t('successBanner.expires')} <strong style={{ color: textMain }}>{date(success.expires_at, 'medium')}</strong>
               {success.used_free_quota && (
-                <span style={{ marginInlineStart: 8, color: '#f59e0b', fontWeight: 700 }}>⬛ Free quota used ({success.remaining_free} left this week)</span>
+                <span style={{ marginInlineStart: 8, color: '#f59e0b', fontWeight: 700 }}>⬛ {t('successBanner.quotaUsed', { left: success.remaining_free })}</span>
               )}
               {success.amount_charged > 0 && (
-                <span style={{ marginInlineStart: 8, color: '#198f41', fontWeight: 700 }}>✓ {Number(success.amount_charged).toFixed(3)} DT charged</span>
+                <span style={{ marginInlineStart: 8, color: '#198f41', fontWeight: 700 }}>✓ {t('successBanner.charged', { amount: dt(Number(success.amount_charged)) })}</span>
               )}
             </p>
             {success.ai_ad_copy && (
@@ -787,7 +807,7 @@ export default function PromoteProductPage() {
               </div>
             )}
           </div>
-          <button onClick={() => setSuccess(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: textMuted, padding: 4 }}>✕</button>
+          <button onClick={() => setSuccess(null)} aria-label={t('close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: textMuted, padding: 4 }}>✕</button>
         </div>
       )}
 
@@ -802,18 +822,18 @@ export default function PromoteProductPage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ width: 22, height: 22, borderRadius: 7, background: '#db142e', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900 }}>1</div>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: textMain }}>Select Product</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: textMain }}>{t('steps.product')}</span>
                 </div>
                 {selectedProduct && (
-                  <button onClick={() => setSelectedId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: textMuted, fontSize: 11, fontWeight: 700 }}>Clear</button>
+                  <button onClick={() => setSelectedId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: textMuted, fontSize: 11, fontWeight: 700 }}>{t('clear')}</button>
                 )}
               </div>
               <div style={{ position: 'relative' }}>
                 <Search size={13} color={textMuted} style={{ position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)' }} />
                 <input
-                  type="text" placeholder="Search products…" value={search}
+                  type="text" placeholder={t('searchProducts')} value={search}
                   onChange={e => setSearch(e.target.value)}
-                  style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px 8px 30px', borderRadius: 9, fontSize: 12, border: `1.5px solid ${border}`, background: dark ? 'rgba(255,255,255,0.04)' : '#f5f6f8', color: textMain, outline: 'none', fontFamily: 'inherit' }}
+                  style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', paddingInlineStart: 30, borderRadius: 9, fontSize: 12, border: `1.5px solid ${border}`, background: dark ? 'rgba(255,255,255,0.04)' : '#f5f6f8', color: textMain, outline: 'none', fontFamily: 'inherit' }}
                 />
               </div>
             </div>
@@ -832,8 +852,8 @@ export default function PromoteProductPage() {
               ) : filteredProducts.length === 0 ? (
                 <div style={{ padding: 32, textAlign: 'center' }}>
                   <Package size={28} color={textMuted} style={{ marginBottom: 8 }} />
-                  <p style={{ fontSize: 13, color: textMuted, margin: '0 0 4px' }}>{search ? 'No products match your search' : 'No approved products found'}</p>
-                  {!search && <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>Make sure your products are approved by admin.</p>}
+                  <p style={{ fontSize: 13, color: textMuted, margin: '0 0 4px' }}>{search ? t('empty.noMatch') : t('empty.none')}</p>
+                  {!search && <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>{t('empty.hint')}</p>}
                 </div>
               ) : (
                 filteredProducts.map(p => {
@@ -848,7 +868,7 @@ export default function PromoteProductPage() {
                         width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px',
                         background: isSelected ? (dark ? 'rgba(219,20,46,0.1)' : 'rgba(219,20,46,0.05)') : 'transparent',
                         border: 'none', borderBottom: `1px solid ${border}`,
-                        borderLeft: isSelected ? '3px solid #db142e' : '3px solid transparent',
+                        borderInlineStart: isSelected ? '3px solid #db142e' : '3px solid transparent',
                         cursor: alreadySponsored ? 'not-allowed' : 'pointer', opacity: alreadySponsored ? 0.55 : 1,
                         textAlign: 'start', transition: 'all 0.12s ease', outline: 'none',
                       }}
@@ -866,13 +886,13 @@ export default function PromoteProductPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: 12, fontWeight: 700, color: textMain, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 11, color: '#db142e', fontWeight: 800 }}>{Number(p.price).toFixed(3)} DT</span>
+                          <span style={{ fontSize: 11, color: '#db142e', fontWeight: 800 }}>{dt(Number(p.price))}</span>
                           {p.category && <span style={{ fontSize: 10, color: textMuted, background: dark ? 'rgba(255,255,255,0.06)' : '#f0f2f5', borderRadius: 5, padding: '1px 5px' }}>{p.category.name}</span>}
                         </div>
                       </div>
                       <div style={{ flexShrink: 0 }}>
                         {alreadySponsored ? (
-                          <span style={{ fontSize: 9, fontWeight: 900, color: '#db142e', background: 'rgba(219,20,46,0.1)', borderRadius: 6, padding: '3px 7px', textTransform: 'uppercase' }}>Live</span>
+                          <span style={{ fontSize: 9, fontWeight: 900, color: '#db142e', background: 'rgba(219,20,46,0.1)', borderRadius: 6, padding: '3px 7px', textTransform: 'uppercase' }}>{t('live')}</span>
                         ) : isSelected ? (
                           <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#198f41', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CheckCircle size={12} color="#fff" /></div>
                         ) : (
@@ -888,7 +908,7 @@ export default function PromoteProductPage() {
             {!loadingProds && (
               <div style={{ padding: '10px 16px', borderTop: `1px solid ${border}`, background: cardAlt }}>
                 <span style={{ fontSize: 10, color: textMuted, fontWeight: 600 }}>
-                  {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} · {active.length} active sponsorship{active.length !== 1 ? 's' : ''}
+                  {t('footerCount', { products: filteredProducts.length, active: active.length })}
                 </span>
               </div>
             )}
@@ -899,7 +919,7 @@ export default function PromoteProductPage() {
             <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, marginTop: 12, overflow: 'hidden', boxShadow: shadow }}>
               <div style={{ padding: '12px 16px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Zap size={11} color="#db142e" />
-                <span style={{ fontSize: 11, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Running ({active.length})</span>
+                <span style={{ fontSize: 11, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('running', { count: active.length })}</span>
               </div>
               {active.map(s => (
                 <div key={s.id} style={{ padding: '10px 16px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -907,7 +927,7 @@ export default function PromoteProductPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: textMain, margin: '0 0 1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.product?.name ?? `#${s.product_id}`}</p>
                     <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>
-                      {s.impressions} views · {s.clicks} clicks{s.end_at && ` · until ${new Date(s.end_at).toLocaleDateString('en-GB')}`}
+                      {t('runningStats', { views: number(s.impressions), clicks: number(s.clicks) })}{s.end_at && ` · ${t('until', { date: date(s.end_at, 'medium') })}`}
                     </p>
                   </div>
                   <button
@@ -916,7 +936,7 @@ export default function PromoteProductPage() {
                     disabled={cancelling === s.id}
                     style={{ background: 'none', border: `1px solid ${border}`, borderRadius: 7, padding: '4px 9px', fontSize: 10, fontWeight: 700, color: '#ef4444', cursor: 'pointer', flexShrink: 0, transition: 'background 0.12s' }}
                   >
-                    {cancelling === s.id ? '…' : 'Stop'}
+                    {cancelling === s.id ? '…' : t('stop')}
                   </button>
                 </div>
               ))}
@@ -931,7 +951,7 @@ export default function PromoteProductPage() {
           <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 20, boxShadow: shadow }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
               <div style={{ width: 22, height: 22, borderRadius: 7, background: '#db142e', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900 }}>2</div>
-              <span style={{ fontSize: 13, fontWeight: 800, color: textMain }}>Campaign Duration</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: textMain }}>{t('steps.duration')}</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
               {DURATIONS.map(d => (
@@ -942,14 +962,14 @@ export default function PromoteProductPage() {
                   color: textMain, textAlign: 'center', position: 'relative', transition: 'all 0.15s ease',
                 }}>
                   {d.popular && (
-                    <span style={{ position: 'absolute', top: -9, left: '50%', transform: 'translateX(-50%)', background: '#f59e0b', color: '#fff', fontSize: 7, fontWeight: 900, padding: '2px 7px', borderRadius: 999, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>★ Popular</span>
+                    <span style={{ position: 'absolute', top: -9, left: '50%', transform: 'translateX(-50%)', background: '#f59e0b', color: '#fff', fontSize: 7, fontWeight: 900, padding: '2px 7px', borderRadius: 999, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>★ {t('popular')}</span>
                   )}
-                  <p style={{ fontSize: 16, fontWeight: 900, color: duration === d.days ? '#db142e' : textMain, margin: '0 0 2px' }}>{d.label}</p>
-                  <p style={{ fontSize: 10, color: textMuted, margin: '0 0 6px' }}>{d.sublabel}</p>
+                  <p style={{ fontSize: 16, fontWeight: 900, color: duration === d.days ? '#db142e' : textMain, margin: '0 0 2px' }}>{t(`durations.${d.key}.label`)}</p>
+                  <p style={{ fontSize: 10, color: textMuted, margin: '0 0 6px' }}>{t(`durations.${d.key}.sub`)}</p>
                   <p style={{ fontSize: 11, fontWeight: 700, color: duration === d.days ? '#db142e' : textMuted, margin: 0 }}>
                     {freeQuotaAvailable && priority <= 5
-                      ? 'FREE'
-                      : `${(costBreakdown.basePerDay * d.days).toFixed(2)} DT`}
+                      ? t('free')
+                      : dt(costBreakdown.basePerDay * d.days, 2)}
                   </p>
                 </button>
               ))}
@@ -960,17 +980,17 @@ export default function PromoteProductPage() {
           <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 20, boxShadow: shadow }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <div style={{ width: 22, height: 22, borderRadius: 7, background: '#db142e', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900 }}>3</div>
-              <span style={{ fontSize: 13, fontWeight: 800, color: textMain }}>Visibility Boost</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: textMain }}>{t('steps.boost')}</span>
             </div>
-            <p style={{ fontSize: 11, color: textMuted, margin: '4px 0 16px 30px' }}>
-              Priority 1-5 is free. Each point above 5 adds <strong style={{ color: '#f59e0b' }}>+5.000 DT</strong> to your campaign.
+            <p style={{ fontSize: 11, color: textMuted, margin: '4px 0 16px', marginInlineStart: 30 }}>
+              {t.rich('boostHint', { amount: dt(5), b: (c) => <strong style={{ color: '#f59e0b' }}>{c}</strong> })}
             </p>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, color: textMuted }}>Low reach</span>
-                  <span style={{ fontSize: 11, color: textMuted }}>Max reach</span>
+                  <span style={{ fontSize: 11, color: textMuted }}>{t('lowReach')}</span>
+                  <span style={{ fontSize: 11, color: textMuted }}>{t('maxReach')}</span>
                 </div>
                 <input type="range" min={1} max={10} value={priority} onChange={e => setPriority(Number(e.target.value))} style={{ width: '100%', accentColor: '#db142e', cursor: 'pointer' }} />
                 <BoostBar value={finalBoost} max={boostBase} />
@@ -980,7 +1000,7 @@ export default function PromoteProductPage() {
                   <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 9, background: dark ? 'rgba(245,158,11,0.1)' : 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.35)', display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Star size={12} color="#f59e0b" />
                     <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700 }}>
-                      Priority {priority}: +{calcBoostSurcharge(priority).toFixed(3)} DT surcharge ({priority - 5} pt{priority - 5 > 1 ? 's' : ''} × 5 DT)
+                      {t('surchargeLine', { priority, amount: dt(calcBoostSurcharge(priority)), points: priority - 5, unit: dt(5, 0) })}
                     </span>
                   </div>
                 )}
@@ -995,8 +1015,8 @@ export default function PromoteProductPage() {
             <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 10, background: dark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Gauge size={14} color="#6366f1" />
               <span style={{ fontSize: 11, color: '#6366f1', fontWeight: 700 }}>
-                Final boost: <strong>+{finalBoost} points</strong>
-                <span style={{ fontWeight: 500, color: textMuted }}> (base {boostBase} × {priority}/10)</span>
+                {t('finalBoost')} <strong>{t('points', { n: finalBoost })}</strong>
+                <span style={{ fontWeight: 500, color: textMuted }}> {t('boostFormula', { base: boostBase, priority })}</span>
               </span>
             </div>
           </div>
@@ -1006,14 +1026,14 @@ export default function PromoteProductPage() {
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{ width: 22, height: 22, borderRadius: 7, background: targetingCount > 0 ? '#db142e' : dark ? 'rgba(255,255,255,0.1)' : '#e5e8ed', color: targetingCount > 0 ? '#fff' : textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900 }}>4</div>
-                <span style={{ fontSize: 13, fontWeight: 800, color: textMain }}>Audience Targeting</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: textMain }}>{t('steps.audience')}</span>
                 {targetingCount > 0 && (
-                  <span style={{ background: '#db142e', color: '#fff', borderRadius: 999, fontSize: 9, fontWeight: 900, padding: '2px 7px' }}>{targetingCount} active</span>
+                  <span style={{ background: '#db142e', color: '#fff', borderRadius: 999, fontSize: 9, fontWeight: 900, padding: '2px 7px' }}>{t('activeCount', { count: targetingCount })}</span>
                 )}
               </div>
               {targetingCount > 0 && (
                 <button onClick={() => { setTargetGender(''); setTargetWilayas([]); setTargetCategories([]); setTargetPriceMin(''); setTargetPriceMax(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#ef4444', fontWeight: 700 }}>
-                  Clear all
+                  {t('clearAll')}
                 </button>
               )}
             </div>
@@ -1022,10 +1042,10 @@ export default function PromoteProductPage() {
               {/* Gender */}
               <div>
                 <p style={{ fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Users size={11} /> Gender
+                  <Users size={11} /> {t('gender.title')}
                 </p>
                 <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-                  {[{ value: '' as const, label: 'All' }, { value: 'male' as const, label: 'Men' }, { value: 'female' as const, label: 'Women' }, { value: 'unisex' as const, label: 'Unisex' }].map(g => (
+                  {[{ value: '' as const, label: t('gender.all') }, { value: 'male' as const, label: t('gender.male') }, { value: 'female' as const, label: t('gender.female') }, { value: 'unisex' as const, label: t('gender.unisex') }].map(g => (
                     <button key={g.value} onClick={() => setTargetGender(g.value)} style={{ padding: '7px 18px', borderRadius: 9, cursor: 'pointer', fontSize: 12, fontWeight: 700, border: `1.5px solid ${targetGender === g.value ? '#db142e' : border}`, background: targetGender === g.value ? (dark ? 'rgba(219,20,46,0.12)' : 'rgba(219,20,46,0.06)') : cardAlt, color: targetGender === g.value ? '#db142e' : textMuted, transition: 'all 0.12s' }}>{g.label}</button>
                   ))}
                 </div>
@@ -1036,13 +1056,13 @@ export default function PromoteProductPage() {
               {/* Price range */}
               <div>
                 <p style={{ fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <DollarSign size={11} /> Target Budget Range (DT)
+                  <DollarSign size={11} /> {t('budget.title')}
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  <input type="number" placeholder="Min" value={targetPriceMin} onChange={e => setTargetPriceMin(e.target.value)} style={{ width: 100, padding: '9px 12px', borderRadius: 9, fontSize: 12, border: `1.5px solid ${targetPriceMin ? '#db142e' : border}`, background: cardAlt, color: textMain, outline: 'none', fontFamily: 'inherit' }} />
+                  <input type="number" placeholder={t('budget.min')} value={targetPriceMin} onChange={e => setTargetPriceMin(e.target.value)} style={{ width: 100, padding: '9px 12px', borderRadius: 9, fontSize: 12, border: `1.5px solid ${targetPriceMin ? '#db142e' : border}`, background: cardAlt, color: textMain, outline: 'none', fontFamily: 'inherit' }} />
                   <span style={{ color: textMuted, fontWeight: 700, fontSize: 14 }}>–</span>
-                  <input type="number" placeholder="Max" value={targetPriceMax} onChange={e => setTargetPriceMax(e.target.value)} style={{ width: 100, padding: '9px 12px', borderRadius: 9, fontSize: 12, border: `1.5px solid ${targetPriceMax ? '#db142e' : border}`, background: cardAlt, color: textMain, outline: 'none', fontFamily: 'inherit' }} />
-                  <span style={{ fontSize: 11, color: textMuted }}>Users whose budget is in this range</span>
+                  <input type="number" placeholder={t('budget.max')} value={targetPriceMax} onChange={e => setTargetPriceMax(e.target.value)} style={{ width: 100, padding: '9px 12px', borderRadius: 9, fontSize: 12, border: `1.5px solid ${targetPriceMax ? '#db142e' : border}`, background: cardAlt, color: textMain, outline: 'none', fontFamily: 'inherit' }} />
+                  <span style={{ fontSize: 11, color: textMuted }}>{t('budget.hint')}</span>
                 </div>
               </div>
 
@@ -1052,16 +1072,16 @@ export default function PromoteProductPage() {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                   <p style={{ fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <MapPin size={11} /> Target Regions
+                    <MapPin size={11} /> {t('regions')}
                     {targetWilayas.length > 0 && <span style={{ background: '#db142e', color: '#fff', borderRadius: 999, fontSize: 9, fontWeight: 900, padding: '1px 6px' }}>{targetWilayas.length}</span>}
                   </p>
-                  {targetWilayas.length > 0 && <button onClick={() => setTargetWilayas([])} style={{ background: 'none', border: 'none', fontSize: 10, color: '#db142e', cursor: 'pointer', fontWeight: 700 }}>Clear</button>}
+                  {targetWilayas.length > 0 && <button onClick={() => setTargetWilayas([])} style={{ background: 'none', border: 'none', fontSize: 10, color: '#db142e', cursor: 'pointer', fontWeight: 700 }}>{t('clear')}</button>}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                   {TUNISIAN_WILAYAS.map(w => {
                     const on = targetWilayas.includes(w);
                     return (
-                      <button key={w} onClick={() => setTargetWilayas(prev => on ? prev.filter(x => x !== w) : [...prev, w])} style={{ padding: '5px 12px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${on ? '#db142e' : border}`, background: on ? '#db142e' : cardAlt, color: on ? '#fff' : textMuted, transition: 'all 0.12s' }}>{w}</button>
+                      <button key={w} onClick={() => setTargetWilayas(prev => on ? prev.filter(x => x !== w) : [...prev, w])} style={{ padding: '5px 12px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${on ? '#db142e' : border}`, background: on ? '#db142e' : cardAlt, color: on ? '#fff' : textMuted, transition: 'all 0.12s' }}>{wl(WILAYA_ALIAS[w] ?? w)}</button>
                     );
                   })}
                 </div>
@@ -1072,7 +1092,7 @@ export default function PromoteProductPage() {
                   <div style={{ height: 1, background: border }} />
                   <div>
                     <p style={{ fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <Tag size={11} /> Target Categories
+                      <Tag size={11} /> {t('categories')}
                       {targetCategories.length > 0 && <span style={{ background: '#db142e', color: '#fff', borderRadius: 999, fontSize: 9, fontWeight: 900, padding: '1px 6px' }}>{targetCategories.length}</span>}
                     </p>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
@@ -1096,7 +1116,7 @@ export default function PromoteProductPage() {
             <div style={{ background: dark ? 'rgba(239,68,68,0.1)' : '#fef2f2', border: '1px solid #ef4444', borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, animation: 'fadeUp 0.2s ease' }}>
               <AlertCircle size={16} color="#ef4444" />
               <p style={{ fontSize: 12, color: '#ef4444', margin: 0, fontWeight: 600 }}>{error}</p>
-              <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', marginInlineStart: 'auto', padding: 0 }}>✕</button>
+              <button onClick={() => setError(null)} aria-label={t('close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', marginInlineStart: 'auto', padding: 0 }}>✕</button>
             </div>
           )}
         </div>
@@ -1123,10 +1143,10 @@ export default function PromoteProductPage() {
             {/* Line items */}
             <div style={{ padding: '16px 16px 0' }}>
               {[
-                { label: 'Product',   value: selectedProduct?.name ?? '—', trunc: true },
-                { label: 'Duration',  value: `${duration} days` },
-                { label: 'Boost',     value: `+${finalBoost} pts` },
-                { label: 'Base rate', value: costBreakdown.isFree && costBreakdown.boostSurcharge === 0 ? 'FREE (quota)' : `${costBreakdown.basePerDay.toFixed(3)} DT/day` },
+                { label: t('summary.product'),  value: selectedProduct?.name ?? '—', trunc: true },
+                { label: t('summary.duration'), value: t('summary.days', { count: duration }) },
+                { label: t('summary.boost'),    value: `+${t('pts', { n: finalBoost })}` },
+                { label: t('summary.baseRate'), value: costBreakdown.isFree && costBreakdown.boostSurcharge === 0 ? t('summary.freeQuota') : t('summary.perDay', { rate: dt(costBreakdown.basePerDay) }) },
               ].map(({ label, value, trunc }) => (
                 <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <span style={{ fontSize: 12, color: textMuted }}>{label}</span>
@@ -1137,8 +1157,8 @@ export default function PromoteProductPage() {
               {/* Boost surcharge line (only when applicable) */}
               {costBreakdown.boostSurcharge > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <span style={{ fontSize: 12, color: '#f59e0b' }}>Boost surcharge</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>+{costBreakdown.boostSurcharge.toFixed(3)} DT</span>
+                  <span style={{ fontSize: 12, color: '#f59e0b' }}>{t('summary.surcharge')}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>+{dt(costBreakdown.boostSurcharge)}</span>
                 </div>
               )}
             </div>
@@ -1146,9 +1166,9 @@ export default function PromoteProductPage() {
             {/* Total */}
             <div style={{ margin: '0 16px', height: 1, background: border }} />
             <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 14, fontWeight: 800, color: textMain }}>Total</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: textMain }}>{t('summary.total')}</span>
               <span style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.02em', color: totalCost === 0 ? '#198f41' : '#db142e' }}>
-                {totalCost === 0 ? 'FREE' : `${totalCost.toFixed(3)} DT`}
+                {totalCost === 0 ? t('free') : dt(totalCost)}
               </span>
             </div>
 
@@ -1169,22 +1189,22 @@ export default function PromoteProductPage() {
                 }}
               >
                 {submitting ? (
-                  <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Activating…</>
+                  <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> {t('cta.activating')}</>
                 ) : isAlreadySponsored ? (
-                  'Already Sponsored'
+                  t('cta.already')
                 ) : !selectedId ? (
-                  'Select a product first'
+                  t('cta.selectFirst')
                 ) : needsPayment ? (
-                  <><CreditCard size={16} /> Pay & Activate — {totalCost.toFixed(3)} DT</>
+                  <><CreditCard size={16} /> {t('cta.pay', { amount: dt(totalCost) })}</>
                 ) : (
-                  <><Zap size={16} /> Activate for Free</>
+                  <><Zap size={16} /> {t('cta.free')}</>
                 )}
               </button>
 
               {needsPayment && canSubmit && (
                 <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
                   <Lock size={9} color={textMuted} />
-                  <span style={{ fontSize: 10, color: textMuted }}>Secure payment · SSL encrypted</span>
+                  <span style={{ fontSize: 10, color: textMuted }}>{t('cta.secure')}</span>
                 </div>
               )}
             </div>
@@ -1193,13 +1213,13 @@ export default function PromoteProductPage() {
             {!selectedId && (
               <div style={{ margin: '0 16px 16px', padding: '10px 12px', borderRadius: 10, background: dark ? 'rgba(255,255,255,0.03)' : '#f8f9fb', border: `1px solid ${border}` }}>
                 <p style={{ fontSize: 10, fontWeight: 700, color: textMuted, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Info size={10} /> How it works
+                  <Info size={10} /> {t('how.title')}
                 </p>
                 {[
-                  '① Pick a product from the list',
-                  '② Set duration & boost level',
-                  '③ Fine-tune your audience targeting',
-                  '④ Pay (if needed) & go live instantly',
+                  `① ${t('how.s1')}`,
+                  `② ${t('how.s2')}`,
+                  `③ ${t('how.s3')}`,
+                  `④ ${t('how.s4')}`,
                 ].map((tip, i) => (
                   <p key={i} style={{ fontSize: 10, color: textMuted, margin: '3px 0', lineHeight: 1.5 }}>{tip}</p>
                 ))}

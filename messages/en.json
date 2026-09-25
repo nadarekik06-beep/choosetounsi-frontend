@@ -3101,6 +3101,194 @@
         "negative": "Cannot be negative.",
         "atLeast1": "Must be at least 1."
       }
+    },
+    "promote": {
+      "title": "Ads & Boost",
+      "subtitle": "Promote your products across homepage, categories & search",
+      "quotaFree": "{remaining}/{total} free",
+      "analytics": "Analytics",
+      "close": "Close",
+      "pts": "{n} pts",
+      "points": "+{n} points",
+      "clear": "Clear",
+      "clearAll": "Clear all",
+      "searchProducts": "Search products…",
+      "live": "Live",
+      "footerCount": "{products, plural, one {# product} other {# products}} · {active, plural, one {# active sponsorship} other {# active sponsorships}}",
+      "running": "Running ({count})",
+      "runningStats": "{views} views · {clicks} clicks",
+      "until": "until {date}",
+      "stop": "Stop",
+      "popular": "Popular",
+      "free": "FREE",
+      "boostHint": "Priority 1-5 is free. Each point above 5 adds <b>+{amount}</b> to your campaign.",
+      "lowReach": "Low reach",
+      "maxReach": "Max reach",
+      "surchargeLine": "Priority {priority}: +{amount} surcharge ({points, plural, one {# pt} other {# pts}} × {unit})",
+      "finalBoost": "Final boost:",
+      "boostFormula": "(base {base} × {priority}/10)",
+      "activeCount": "{count} active",
+      "regions": "Target Regions",
+      "categories": "Target Categories",
+      "preview": {
+        "title": "Live Preview",
+        "sponsored": "Sponsored",
+        "selectProduct": "Select a product to preview",
+        "productName": "Your product name",
+        "hint": "This is how buyers will see your ad"
+      },
+      "errors": {
+        "activate": "Failed to activate sponsorship.",
+        "cancel": "Cancel failed."
+      },
+      "successBanner": {
+        "title": "Sponsorship activated!",
+        "boost": "Boost:",
+        "expires": "Expires:",
+        "quotaUsed": "Free quota used ({left} left this week)",
+        "charged": "{amount} charged"
+      },
+      "steps": {
+        "product": "Select Product",
+        "duration": "Campaign Duration",
+        "boost": "Visibility Boost",
+        "audience": "Audience Targeting"
+      },
+      "empty": {
+        "noMatch": "No products match your search",
+        "none": "No approved products found",
+        "hint": "Make sure your products are approved by admin."
+      },
+      "gender": {
+        "title": "Gender",
+        "all": "All",
+        "male": "Men",
+        "female": "Women",
+        "unisex": "Unisex"
+      },
+      "budget": {
+        "title": "Target Budget Range",
+        "min": "Min",
+        "max": "Max",
+        "hint": "Users whose budget is in this range"
+      },
+      "summary": {
+        "product": "Product",
+        "duration": "Duration",
+        "boost": "Boost",
+        "baseRate": "Base rate",
+        "days": "{count, plural, one {# day} other {# days}}",
+        "freeQuota": "FREE (quota)",
+        "perDay": "{rate}/day",
+        "surcharge": "Boost surcharge",
+        "total": "Total"
+      },
+      "cta": {
+        "activating": "Activating…",
+        "already": "Already Sponsored",
+        "selectFirst": "Select a product first",
+        "pay": "Pay & Activate — {amount}",
+        "free": "Activate for Free",
+        "secure": "Secure payment · SSL encrypted"
+      },
+      "how": {
+        "title": "How it works",
+        "s1": "Pick a product from the list",
+        "s2": "Set duration & boost level",
+        "s3": "Fine-tune your audience targeting",
+        "s4": "Pay (if needed) & go live instantly"
+      },
+      "pay": {
+        "aria": "Card Payment",
+        "title": "Secure Payment",
+        "ssl": "SSL encrypted",
+        "sandbox": "⚡ SANDBOX MODE — Card pre-filled with test data. No real charge.",
+        "summary": "Order Summary",
+        "base": "Base ({rate}/day × {days}d)",
+        "surcharge": "Boost surcharge (priority > 5)",
+        "totalDue": "Total due",
+        "cardNumber": "Card Number",
+        "hide": "Hide",
+        "show": "Show",
+        "month": "Month",
+        "year": "Year",
+        "mm": "MM",
+        "yy": "YY",
+        "holder": "Cardholder Name",
+        "holderPlaceholder": "FIRST LAST",
+        "confirmAmount": "Confirm payment of {amount}",
+        "cardEnding": "Card ending in •••• {last4}",
+        "secureNote": "Your card data is encrypted and never stored on our servers.",
+        "processing": "Processing…",
+        "confirmPay": "Confirm & Pay {amount}",
+        "review": "Review Payment",
+        "success": "Payment successful!",
+        "activating": "Activating your sponsorship…",
+        "errors": {
+          "cardLength": "Card number must be 16 digits",
+          "cardInvalid": "Invalid card number",
+          "month": "Invalid month (MM)",
+          "year": "Invalid year (YY)",
+          "expired": "Card has expired",
+          "cvv": "CVV must be 3-4 digits",
+          "holder": "Cardholder name required",
+          "failed": "Payment failed. Please try again."
+        }
+      },
+      "durations": {
+        "d3": {
+          "label": "3 Days",
+          "sub": "Quick test"
+        },
+        "d7": {
+          "label": "1 Week",
+          "sub": "Most popular"
+        },
+        "d14": {
+          "label": "2 Weeks",
+          "sub": "Best value"
+        },
+        "d30": {
+          "label": "1 Month",
+          "sub": "Max exposure"
+        }
+      }
+    },
+    "promoteAnalytics": {
+      "back": "Back",
+      "title": "Sponsorship Analytics",
+      "loading": "Loading…",
+      "empty": "No sponsorships found.",
+      "free": "FREE",
+      "stats": {
+        "impressions": "Total Impressions",
+        "clicks": "Total Clicks",
+        "conversions": "Conversions",
+        "ctr": "Avg CTR"
+      },
+      "tabs": {
+        "all": "All",
+        "active": "Active",
+        "expired": "Expired"
+      },
+      "status": {
+        "active": "Active",
+        "expired": "Expired",
+        "cancelled": "Cancelled",
+        "pending": "Pending"
+      },
+      "cols": {
+        "product": "Product",
+        "plan": "Plan",
+        "status": "Status",
+        "boost": "Boost",
+        "period": "Period",
+        "impressions": "Impressions",
+        "clicks": "Clicks",
+        "ctr": "CTR",
+        "conversions": "Conversions",
+        "cost": "Cost"
+      }
     }
   },
   "invoice": {
