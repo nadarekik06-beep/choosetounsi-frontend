@@ -8,15 +8,17 @@ import {
   RefreshCw, Tag, TrendingDown, CheckCircle, Clock
 } from 'lucide-react'
 import PackModal from '@/app/seller/packs/PackModal'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
-function fmt(n: number) {
-  return new Intl.NumberFormat('fr-TN', {
-    minimumFractionDigits: 3, maximumFractionDigits: 3,
-  }).format(n) + ' TND'
+function useFmt() {
+  const { price } = useFormat()
+  return (n: number) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
 }
 
 export default function PacksPage() {
   const { dark } = useTheme()
+  const t = useTranslations('seller.packs')
   const [packs,   setPacks]   = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(false)
@@ -42,13 +44,13 @@ export default function PacksPage() {
   useEffect(load, [])
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete this pack?')) return
+    if (!confirm(t('confirmDelete'))) return
     setDeleting(id)
     try {
       await packsApi.delete(id)
       setPacks(prev => prev.filter(p => p.id !== id))
     } catch {
-      alert('Failed to delete pack.')
+      alert(t('deleteFailed'))
     } finally {
       setDeleting(null)
     }
@@ -70,9 +72,9 @@ export default function PacksPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: 0 }}>Packs</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: 0 }}>{t('title')}</h1>
           <p style={{ fontSize: 12, color: textMuted, margin: '3px 0 0' }}>
-            Bundle your products and offer savings to customers
+            {t('subtitle')}
           </p>
         </div>
         <button
@@ -86,23 +88,23 @@ export default function PacksPage() {
             boxShadow: '0 6px 20px rgba(219,20,46,0.35)',
           }}
         >
-          <Plus size={15} /> Create Pack
+          <Plus size={15} /> {t('create')}
         </button>
       </div>
 
       {/* Content */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: textMuted }}>Loading…</div>
+        <div style={{ textAlign: 'center', padding: 60, color: textMuted }}>{t('loading')}</div>
       ) : error ? (
         <div style={{ textAlign: 'center', padding: 60 }}>
           <AlertCircle size={28} color="#db142e" style={{ margin: '0 auto 10px', display: 'block' }} />
-          <p style={{ color: textMuted, fontSize: 13 }}>Failed to load packs.</p>
+          <p style={{ color: textMuted, fontSize: 13 }}>{t('loadFailed')}</p>
           <button onClick={load} style={{
             marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '8px 16px', background: '#db142e', color: '#fff',
             fontWeight: 700, fontSize: 12, borderRadius: 10, border: 'none', cursor: 'pointer',
           }}>
-            <RefreshCw size={12} /> Retry
+            <RefreshCw size={12} /> {t('retry')}
           </button>
         </div>
       ) : packs.length === 0 ? (
@@ -112,10 +114,10 @@ export default function PacksPage() {
         }}>
           <Package2 size={40} style={{ color: textMuted, opacity: 0.3, margin: '0 auto 14px', display: 'block' }} />
           <p style={{ fontWeight: 800, color: textMain, fontSize: 15, margin: '0 0 6px' }}>
-            No packs yet
+            {t('empty')}
           </p>
           <p style={{ fontSize: 13, color: textMuted, margin: '0 0 20px' }}>
-            Create your first bundle to attract more buyers.
+            {t('emptyHint')}
           </p>
           <button
             onClick={() => setModal({ open: true, pack: null })}
@@ -127,7 +129,7 @@ export default function PacksPage() {
               borderRadius: 12, border: 'none', cursor: 'pointer',
             }}
           >
-            <Plus size={14} /> Create Pack
+            <Plus size={14} /> {t('create')}
           </button>
         </div>
       ) : (
@@ -169,6 +171,8 @@ function PackCard({
   pack: any; dark: boolean
   onEdit: () => void; onDelete: () => void; deleting: boolean
 }) {
+  const t = useTranslations('seller.packs')
+  const fmt = useFmt()
   const cardBg    = dark ? '#161b27' : '#ffffff'
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'
   const textMain  = dark ? '#fff'  : '#111'
@@ -213,8 +217,8 @@ function PackCard({
           color: '#fff',
         }}>
           {pack.is_approved
-            ? <><CheckCircle size={10} /> Live</>
-            : <><Clock size={10} /> Pending</>
+            ? <><CheckCircle size={10} /> {t('live')}</>
+            : <><Clock size={10} /> {t('pending')}</>
           }
         </div>
         {/* Savings badge */}
@@ -225,7 +229,7 @@ function PackCard({
             fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999,
             background: 'rgba(219,20,46,0.9)', color: '#fff',
           }}>
-            <TrendingDown size={10} /> Save {savings.toFixed(3)} TND
+            <TrendingDown size={10} /> {t('save', { amount: fmt(savings) })}
           </div>
         )}
       </div>
@@ -266,7 +270,7 @@ function PackCard({
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Tag size={12} color={textMuted} />
           <span style={{ fontSize: 12, color: textMuted }}>
-            {itemCount} item{itemCount !== 1 ? 's' : ''}
+            {t('itemCount', { count: itemCount })}
           </span>
         </div>
       </div>
@@ -287,7 +291,7 @@ function PackCard({
             color: '#3b82f6', fontWeight: 700, fontSize: 12, cursor: 'pointer',
           }}
         >
-          <Edit2 size={12} /> Edit
+          <Edit2 size={12} /> {t('edit')}
         </button>
         <button
           onClick={onDelete}
@@ -301,7 +305,7 @@ function PackCard({
             opacity: deleting ? 0.5 : 1,
           }}
         >
-          <Trash2 size={12} /> {deleting ? '…' : 'Delete'}
+          <Trash2 size={12} /> {deleting ? '…' : t('delete')}
         </button>
       </div>
 

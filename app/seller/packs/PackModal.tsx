@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import { packsApi, type PackPayload, type PackItemPayload } from '@/lib/sellerApi'
 import CommissionPreview from '@/app/seller/components/CommissionPreview'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,8 +40,9 @@ interface PackModalProps {
   onSaved: () => void
 }
 
-function fmt(n: number) {
-  return n.toFixed(3) + ' TND'
+function useFmt() {
+  const { price } = useFormat()
+  return (n: number) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
 }
 
 function makeEmptyRow(): PackItemRow {
@@ -55,6 +58,10 @@ function makeEmptyRow(): PackItemRow {
 
 export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
   const isEdit = !!pack
+  const t   = useTranslations('seller.packForm')
+  const tc  = useTranslations('seller.commission')
+  const fmt = useFmt()
+  const { currency } = useFormat()
 
   // ── Form state ─────────────────────────────────────────────────────────────
   const [name,             setName]             = useState(pack?.name              ?? '')
@@ -162,9 +169,9 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
 
   const validate = () => {
     const e: Record<string, string> = {}
-    if (!name.trim()) e.name = 'Required.'
-    if (!packPrice || isNaN(packPriceNum) || packPriceNum <= 0) e.pack_price = 'Enter a valid price.'
-    if (items.every(r => !r.product)) e.items = 'Add at least one product.'
+    if (!name.trim()) e.name = t('errors.required')
+    if (!packPrice || isNaN(packPriceNum) || packPriceNum <= 0) e.pack_price = t('errors.price')
+    if (items.every(r => !r.product)) e.items = t('errors.items')
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -205,7 +212,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
       onClose()
     } catch (err: any) {
       const data = err?.response?.data
-      setApiError(data?.message ?? 'Failed to save. Please try again.')
+      setApiError(data?.message ?? t('errors.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -238,15 +245,13 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
         }}>
           <div>
             <h2 style={{ fontSize: 16, fontWeight: 900, color: '#111', margin: 0 }}>
-              {isEdit ? 'Edit Pack' : 'Create New Pack'}
+              {isEdit ? t('editTitle') : t('createTitle')}
             </h2>
             <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
-              {isEdit
-                ? 'Update your bundle.'
-                : 'Bundle your products and set a special pack price.'}
+              {isEdit ? t('editSubtitle') : t('createSubtitle')}
             </p>
           </div>
-          <button type="button" onClick={onClose} style={{
+          <button type="button" onClick={onClose} aria-label={t('close')} style={{
             padding: 6, borderRadius: 10, border: 'none',
             background: 'transparent', cursor: 'pointer', color: '#94a3b8',
           }}>
@@ -275,39 +280,39 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
             {/* ══ LEFT — Info ══ */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-              <SectionLabel>Pack Information</SectionLabel>
+              <SectionLabel>{t('info')}</SectionLabel>
 
-              <Field label="Pack Name" required error={errors.name}>
+              <Field label={t('name')} required error={errors.name}>
                 <input
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  placeholder="e.g. Summer Starter Kit"
+                  placeholder={t('namePlaceholder')}
                   className={inputCls(errors.name)}
                 />
               </Field>
 
-              <Field label="Short Description">
+              <Field label={t('shortDescription')}>
                 <input
                   value={shortDescription}
                   onChange={e => setShortDescription(e.target.value)}
-                  placeholder="One-line summary…"
+                  placeholder={t('shortDescriptionPlaceholder')}
                   maxLength={500}
                   className={inputCls()}
                 />
               </Field>
 
-              <Field label="Description">
+              <Field label={t('description')}>
                 <textarea
                   rows={3}
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  placeholder="What's included and why it's a great deal…"
+                  placeholder={t('descriptionPlaceholder')}
                   className={`${inputCls()} resize-none`}
                 />
               </Field>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <Field label="Pack Price (TND)" required error={errors.pack_price}>
+                <Field label={t('price', { currency })} required error={errors.pack_price}>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="number" min="0" step="0.001"
@@ -321,18 +326,18 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                       position: 'absolute', insetInlineEnd: 10, top: '50%',
                       transform: 'translateY(-50%)',
                       fontSize: 11, color: '#94a3b8', fontWeight: 600,
-                    }}>TND</span>
+                    }}>{currency}</span>
                   </div>
                 </Field>
 
-                <Field label="Status">
+                <Field label={t('status')}>
                   <select
                     value={isActive ? 'active' : 'inactive'}
                     onChange={e => setIsActive(e.target.value === 'active')}
                     className={inputCls()}
                   >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="active">{t('active')}</option>
+                    <option value="inactive">{t('inactive')}</option>
                   </select>
                 </Field>
               </div>
@@ -350,8 +355,8 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                */}
               <CommissionPreview
                 price={packPrice}
-                label="per pack sold"
-                priceLabel="pack price"
+                label={tc('perPack')}
+                priceLabel={tc('packPrice')}
               />
 
               {/* ── Pricing summary ── */}
@@ -363,14 +368,14 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                   display: 'flex', flexDirection: 'column', gap: 8,
                 }}>
                   <p style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
-                    Customer Savings
+                    {t('customerSavings')}
                   </p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
-                    <span>Items total (min prices)</span>
+                    <span>{t('itemsTotal')}</span>
                     <span style={{ fontWeight: 700 }}>{fmt(originalPrice)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
-                    <span>Pack price</span>
+                    <span>{t('packPrice')}</span>
                     <span style={{ fontWeight: 700, color: '#dc2626' }}>
                       {packPriceNum > 0 ? fmt(packPriceNum) : '—'}
                     </span>
@@ -383,7 +388,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                         color: savings > 0 ? '#10b981' : '#ef4444',
                       }}>
                         <TrendingDown size={13} />
-                        {savings > 0 ? 'Customer saves' : 'No savings yet'}
+                        {savings > 0 ? t('customerSaves') : t('noSavings')}
                       </span>
                       {savings > 0 && (
                         <span style={{ fontSize: 16, fontWeight: 900, color: '#10b981' }}>
@@ -399,7 +404,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
               )}
 
               {/* ── Image upload ── */}
-              <SectionLabel>Pack Image</SectionLabel>
+              <SectionLabel>{t('image')}</SectionLabel>
               <div
                 onClick={() => fileRef.current?.click()}
                 style={{
@@ -423,7 +428,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                       style={{ margin: '0 auto 8px', display: 'block' }}
                     />
                     <p style={{ fontSize: 12, color: '#64748b', fontWeight: 600, margin: '0 0 3px' }}>
-                      Upload pack image
+                      {t('uploadImage')}
                     </p>
                     <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
                       JPG, PNG, WebP
@@ -448,7 +453,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <SectionLabel>Pack Items</SectionLabel>
+                <SectionLabel>{t('items')}</SectionLabel>
                 <button
                   type="button"
                   onClick={() => setItems(prev => [...prev, makeEmptyRow()])}
@@ -460,7 +465,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                     padding: '5px 12px', borderRadius: 8, cursor: 'pointer',
                   }}
                 >
-                  <Plus size={12} /> Add Item
+                  <Plus size={12} /> {t('addItem')}
                 </button>
               </div>
 
@@ -510,7 +515,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
               background: '#fff', color: '#64748b', fontWeight: 700, fontSize: 13,
               borderRadius: 12, cursor: 'pointer',
             }}>
-              Cancel
+              {t('cancel')}
             </button>
             <button type="submit" disabled={saving} style={{
               flex: 1, padding: '12px 0',
@@ -522,7 +527,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
               opacity: saving ? 0.6 : 1,
             }}>
               {saving && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
-              {isEdit ? 'Save Pack' : 'Create Pack'}
+              {isEdit ? t('save') : t('create')}
             </button>
           </div>
 
@@ -553,6 +558,8 @@ function ItemRow({
   onChangeQty: (q: number) => void
   onRemove: () => void; canRemove: boolean
 }) {
+  const t   = useTranslations('seller.packForm')
+  const fmt = useFmt()
   const totalVariants = row.product?.variants.length ?? 0
   const checkedIds    = row.allowed_variant_ids
   const checkedCount  = checkedIds === null ? totalVariants : checkedIds.length
@@ -627,22 +634,22 @@ function ItemRow({
                 {row.product.name}
               </p>
               <p style={{ fontSize: 12, color: '#64748b', margin: 0, fontWeight: 500 }}>
-                Base: <strong style={{ color: '#0f172a' }}>
-                  {row.product.price.toFixed(3)} TND
+                {t('base')} <strong style={{ color: '#0f172a' }}>
+                  {fmt(row.product.price)}
                 </strong>
                 {row.product.has_variants && (
                   <span style={{
                     marginInlineStart: 8, fontWeight: 700,
                     color: checkedCount > 0 ? '#198f41' : '#ef4444',
                   }}>
-                    · {checkedCount}/{totalVariants} variants
+                    · {t('variantsRatio', { checked: checkedCount, total: totalVariants })}
                   </span>
                 )}
               </p>
             </>
           ) : (
             <p style={{ fontSize: 14, fontWeight: 700, color: '#94a3b8', margin: 0 }}>
-              Click to select a product…
+              {t('clickToSelect')}
             </p>
           )}
         </div>
@@ -660,12 +667,13 @@ function ItemRow({
             }}
             onClick={onOpenPicker}
           >
-            {row.product ? 'Change ↓' : 'Select ↓'}
+            {row.product ? t('change') : t('select')}
           </span>
           {canRemove && (
             <button
               type="button"
               onClick={onRemove}
+              aria-label={t('removeItem')}
               style={{
                 width: 32, height: 32, borderRadius: 8,
                 border: '1px solid rgba(239,68,68,0.25)',
@@ -702,7 +710,7 @@ function ItemRow({
               autoFocus
               value={pickerSearch}
               onChange={e => onSearchChange(e.target.value)}
-              placeholder="Search your products…"
+              placeholder={t('searchProducts')}
               style={{
                 flex: 1, border: 'none', outline: 'none',
                 fontSize: 13, color: '#0f172a', background: 'transparent',
@@ -710,6 +718,7 @@ function ItemRow({
             />
             <button
               type="button" onClick={onClosePicker}
+              aria-label={t('close')}
               style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 2 }}
             >
               <X size={14} color="#94a3b8" />
@@ -719,11 +728,11 @@ function ItemRow({
           {prodLoading ? (
             <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
               <Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite', margin: '0 auto 6px', display: 'block' }} />
-              Loading…
+              {t('loading')}
             </div>
           ) : products.length === 0 ? (
             <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
-              No approved products found.
+              {t('noProducts')}
             </div>
           ) : products.map(p => (
             <div
@@ -756,7 +765,7 @@ function ItemRow({
                   {p.name}
                 </p>
                 <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>
-                  {p.price.toFixed(3)} TND
+                  {fmt(p.price)}
                 </p>
               </div>
               {p.has_variants && (
@@ -766,7 +775,7 @@ function ItemRow({
                   border: '1px solid rgba(99,102,241,0.2)',
                   padding: '2px 7px', borderRadius: 5, flexShrink: 0,
                 }}>
-                  {p.variants.length} variants
+                  {t('variantCount', { count: p.variants.length })}
                 </span>
               )}
             </div>
@@ -789,7 +798,7 @@ function ItemRow({
                   fontSize: 11, fontWeight: 800, color: '#64748b',
                   textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0,
                 }}>
-                  Variants client can choose from
+                  {t('variantsChoice')}
                 </p>
                 <span style={{
                   fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 5,
@@ -799,7 +808,7 @@ function ItemRow({
                   border: `1px solid ${checkedCount === totalVariants
                     ? 'rgba(25,143,65,0.2)' : 'rgba(245,158,11,0.2)'}`,
                 }}>
-                  {checkedCount}/{totalVariants} selected
+                  {t('selectedRatio', { checked: checkedCount, total: totalVariants })}
                 </span>
               </div>
 
@@ -852,7 +861,7 @@ function ItemRow({
                         fontSize: 10, margin: 0, fontWeight: 600,
                         color: outOfStock ? '#ef4444' : '#94a3b8',
                       }}>
-                        {outOfStock ? '⚠ Out of stock' : `${v.stock} in stock`}
+                        {outOfStock ? t('outOfStock') : t('inStock', { count: v.stock })}
                       </p>
                     </button>
                   )
@@ -861,8 +870,8 @@ function ItemRow({
 
               <p style={{ fontSize: 11, color: '#94a3b8', margin: '8px 0 0', fontStyle: 'italic' }}>
                 {checkedIds === null
-                  ? `All ${totalVariants} variants included — client picks at checkout`
-                  : `${checkedCount} of ${totalVariants} variant${totalVariants !== 1 ? 's' : ''} available to client`
+                  ? t('allIncluded', { count: totalVariants })
+                  : t('someAvailable', { checked: checkedCount, total: totalVariants })
                 }
               </p>
             </div>
@@ -877,7 +886,7 @@ function ItemRow({
             }}>
               <span style={{ fontSize: 20 }}>📦</span>
               <p style={{ fontSize: 12, color: '#64748b', margin: 0, fontWeight: 500 }}>
-                Simple product — no variants. Added as-is.
+                {t('simpleProduct')}
               </p>
             </div>
           )}
@@ -892,16 +901,17 @@ function ItemRow({
           }}>
             <div>
               <p style={{ fontSize: 13, fontWeight: 800, color: '#374151', margin: '0 0 2px' }}>
-                Quantity per pack
+                {t('quantity')}
               </p>
               <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
-                Units the client gets of this product
+                {t('quantityHint')}
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <button
                 type="button"
                 onClick={() => onChangeQty(Math.max(1, row.quantity - 1))}
+                aria-label={t('decrease')}
                 style={{
                   width: 36, height: 36, borderRadius: 10,
                   border: '1.5px solid #e5e7eb', background: '#fff',
@@ -918,6 +928,7 @@ function ItemRow({
               <button
                 type="button"
                 onClick={() => onChangeQty(row.quantity + 1)}
+                aria-label={t('increase')}
                 style={{
                   width: 36, height: 36, borderRadius: 10,
                   border: '1.5px solid #e5e7eb', background: '#fff',
