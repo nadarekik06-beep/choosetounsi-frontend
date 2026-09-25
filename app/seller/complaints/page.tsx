@@ -14,6 +14,14 @@ import { sellerComplaintApi } from '@/lib/complaintApi'
 import type { Complaint } from '@/types/complaint'
 import { STATUS_CONFIG, COMPLAINT_TYPE_LABELS } from '@/types/complaint'
 import { useTheme } from '../SellerShell'
+import { useTranslations } from 'next-intl'
+import { useFormat } from '@/lib/i18n/useFormat'
+
+/** Complaint type label (shared with the storefront complaint pages). */
+function useComplaintType() {
+  const t = useTranslations('complaints.types')
+  return (type: string) => (t.has(type) ? t(type) : (COMPLAINT_TYPE_LABELS as Record<string, string>)[type] ?? type)
+}
 
 // ─── Icon props ───────────────────────────────────────────────────────────────
 
@@ -182,28 +190,29 @@ const C = {
   blueDim:   'rgba(59,130,246,0.12)',
 }
 
-const REFUND_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  pending:   { label: 'Awaiting Pickup', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
-  assigned:  { label: 'Agent Assigned',  color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
-  picked_up: { label: 'Item Collected',  color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)' },
-  completed: { label: 'Refund Complete', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+// Labels: seller.complaints.refund.<status>
+const REFUND_STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
+  pending:   { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+  assigned:  { color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+  picked_up: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)' },
+  completed: { color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
 }
 // ─── Status meta ──────────────────────────────────────────────────────────────
 
 interface StatusMeta {
   icon: React.ReactNode
-  label: string
+  label: string   // key in seller.complaints.status
   bg: string
   color: string
   border: string
 }
 
 const STATUS_META: Record<string, StatusMeta> = {
-  pending:                       { icon: <IconClock size={11} />,        label: 'Pending',        color: C.amber,  bg: C.amberDim,  border: 'rgba(245,158,11,0.3)'  },
-  reviewing:                     { icon: <IconSearch size={11} />,       label: 'Reviewing',      color: C.blue,   bg: C.blueDim,   border: 'rgba(59,130,246,0.3)'  },
-  approved:                      { icon: <IconCheckCircle size={11} />,  label: 'Approved',       color: C.green,  bg: C.greenDim,  border: 'rgba(25,143,65,0.3)'   },
-  seller_rejected_pending_admin: { icon: <IconShieldAlert size={11} />,  label: 'Awaiting Admin', color: C.orange, bg: C.orangeDim, border: 'rgba(249,115,22,0.3)'  },
-  rejected:                      { icon: <IconXCircle size={11} />,      label: 'Rejected',       color: C.red,    bg: C.redDim,    border: 'rgba(219,20,46,0.3)'   },
+  pending:                       { icon: <IconClock size={11} />,        label: 'pending',       color: C.amber,  bg: C.amberDim,  border: 'rgba(245,158,11,0.3)'  },
+  reviewing:                     { icon: <IconSearch size={11} />,       label: 'reviewing',     color: C.blue,   bg: C.blueDim,   border: 'rgba(59,130,246,0.3)'  },
+  approved:                      { icon: <IconCheckCircle size={11} />,  label: 'approved',      color: C.green,  bg: C.greenDim,  border: 'rgba(25,143,65,0.3)'   },
+  seller_rejected_pending_admin: { icon: <IconShieldAlert size={11} />,  label: 'awaitingAdmin', color: C.orange, bg: C.orangeDim, border: 'rgba(249,115,22,0.3)'  },
+  rejected:                      { icon: <IconXCircle size={11} />,      label: 'rejected',      color: C.red,    bg: C.redDim,    border: 'rgba(219,20,46,0.3)'   },
 }
 
 // ─── Theme-aware color helpers ────────────────────────────────────────────────
@@ -279,6 +288,7 @@ const GLOBAL_CSS = `
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: Complaint['status'] }) {
+  const t = useTranslations('seller.complaints.status')
   const m = STATUS_META[status] ?? STATUS_META['pending']
   return (
     <span style={{
@@ -288,7 +298,7 @@ function StatusBadge({ status }: { status: Complaint['status'] }) {
       letterSpacing: '0.05em', whiteSpace: 'nowrap',
     }}>
       {m.icon}
-      {m.label.toUpperCase()}
+      {t(m.label)}
     </span>
   )
 }
@@ -371,6 +381,8 @@ interface DecisionModalProps {
 }
 
 function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: DecisionModalProps) {
+  const t = useTranslations('seller.complaints')
+  const typeLabel = useComplaintType()
   const [sellerNote,      setSellerNote]      = useState('')
   const [rejectionReason, setRejectionReason] = useState('')
   const [saving,          setSaving]          = useState(false)
@@ -390,16 +402,16 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
   const handleSubmit = async () => {
     if (isApprove) {
       if (sellerNote.trim().length > 0 && sellerNote.trim().length < 10) {
-        setError('Note must be at least 10 characters (or leave empty).')
+        setError(t('errors.noteShort'))
         return
       }
     } else {
       if (sellerNote.trim().length < 10) {
-        setError('Please explain your response (at least 10 characters).')
+        setError(t('errors.responseRequired'))
         return
       }
       if (rejectionReason.trim().length < 10) {
-        setError('Please provide a rejection reason (at least 10 characters).')
+        setError(t('errors.reasonRequired'))
         return
       }
     }
@@ -414,7 +426,7 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
       onClose()
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } }
-      setError(e?.response?.data?.message ?? 'Action failed. Please try again.')
+      setError(e?.response?.data?.message ?? t('errors.failed'))
     } finally {
       setSaving(false)
     }
@@ -437,7 +449,7 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
         style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', zIndex: 10000 }}
       />
       <div style={{
-        position: 'fixed', top: '50%', insetInlineStart: '50%', transform: 'translate(-50%,-50%)',
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
         width: '92%', maxWidth: 480,
         background: T.cardBg,
         border: `1px solid ${T.border}`,
@@ -459,12 +471,10 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
           </div>
           <div>
             <h3 style={{ fontSize: 17, fontWeight: 800, color: T.textMain, margin: '0 0 5px' }}>
-              {isApprove ? 'Approve Complaint' : 'Reject Complaint'}
+              {isApprove ? t('approveTitle') : t('rejectTitle')}
             </h3>
             <p style={{ fontSize: 12.5, color: T.textMuted, lineHeight: 1.5, margin: 0 }}>
-              {isApprove
-                ? 'The customer will be notified immediately after approval.'
-                : 'Admin will review and validate your rejection before it is final.'}
+              {isApprove ? t('approveHint') : t('rejectHint')}
             </p>
           </div>
         </div>
@@ -478,7 +488,7 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
         }}>
           <IconPackage size={14} color={T.iconMuted} />
           <span style={{ fontSize: 12.5, color: T.textSub, fontWeight: 600 }}>
-            {COMPLAINT_TYPE_LABELS[complaint.complaint_type]}
+            {typeLabel(complaint.complaint_type)}
           </span>
           <span style={{ marginInlineStart: 'auto', fontSize: 11.5, color: T.textMuted, fontFamily: 'monospace' }}>
             #{complaint.order?.order_number ?? complaint.order_id}
@@ -490,16 +500,16 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
           display: 'block', fontSize: 12, fontWeight: 700, color: T.labelColor,
           textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8,
         }}>
-          Your Response{' '}
+          {t('yourResponse')}{' '}
           {isApprove
-            ? <span style={{ fontWeight: 400, textTransform: 'none', color: T.textMuted }}>(optional)</span>
+            ? <span style={{ fontWeight: 400, textTransform: 'none', color: T.textMuted }}>{t('optional')}</span>
             : <span style={{ color: C.red }}>*</span>}
         </label>
         <textarea
           value={sellerNote}
           onChange={e => { setSellerNote(e.target.value); setError('') }}
           rows={3}
-          placeholder={isApprove ? 'Optional message for the customer…' : 'Explain why you are rejecting this complaint…'}
+          placeholder={isApprove ? t('approvePlaceholder') : t('rejectPlaceholder')}
           style={{ ...inputStyle, marginBottom: 16 }}
         />
 
@@ -510,13 +520,13 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
               display: 'block', fontSize: 12, fontWeight: 700, color: T.labelColor,
               textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8,
             }}>
-              Rejection Reason <span style={{ color: C.red }}>*</span>
+              {t('rejectionReason')} <span style={{ color: C.red }}>*</span>
             </label>
             <textarea
               value={rejectionReason}
               onChange={e => { setRejectionReason(e.target.value); setError('') }}
               rows={3}
-              placeholder="Clearly state the reason (visible to customer if admin approves)…"
+              placeholder={t('reasonPlaceholder')}
               style={{ ...inputStyle, marginBottom: 16 }}
             />
           </>
@@ -541,7 +551,7 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
           }}>
             <IconShieldAlert size={15} color={C.orange} strokeWidth={2.2} />
             <p style={{ fontSize: 12, color: C.orange, fontWeight: 600, margin: 0, lineHeight: 1.6 }}>
-              Your rejection goes to admin for final approval. Customer is notified only after admin confirms.
+              {t('adminWarning')}
             </p>
           </div>
         )}
@@ -562,7 +572,7 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
               cursor: 'pointer',
             }}
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             onClick={handleSubmit}
@@ -581,12 +591,12 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
                   width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)',
                   borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite',
                 }} />
-                Submitting…
+                {t('submitting')}
               </>
             ) : isApprove ? (
-              <><IconCheckCircle size={15} /> Confirm Approval</>
+              <><IconCheckCircle size={15} /> {t('confirmApproval')}</>
             ) : (
-              <><IconShieldAlert size={15} /> Submit for Review</>
+              <><IconShieldAlert size={15} /> {t('submitReview')}</>
             )}
           </button>
         </div>
@@ -632,6 +642,9 @@ interface ComplaintDrawerProps {
 }
 
 function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawerProps) {
+  const t = useTranslations('seller.complaints')
+  const typeLabel = useComplaintType()
+  const { date, isRtl } = useFormat()
   const [decisionMode, setDecisionMode] = useState<'approve' | 'reject' | null>(null)
   const [toast,        setToast]        = useState('')
   const T = useColors(dark)
@@ -655,9 +668,9 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
         position: 'fixed', top: 0, insetInlineEnd: 0, bottom: 0, width: '100%', maxWidth: 520,
         background: T.drawerBg,
         borderInlineStart: `1px solid ${T.drawerBorder}`,
-        boxShadow: dark ? '-24px 0 80px rgba(0,0,0,0.4)' : '-8px 0 40px rgba(0,0,0,0.12)',
+        boxShadow: dark ? `${isRtl ? 24 : -24}px 0 80px rgba(0,0,0,0.4)` : `${isRtl ? 8 : -8}px 0 40px rgba(0,0,0,0.12)`,
         zIndex: 9001, overflowY: 'auto', display: 'flex', flexDirection: 'column',
-        animation: 'slideIn 0.28s cubic-bezier(0.22,1,0.36,1)',
+        animation: 'drawerSlideIn 0.28s cubic-bezier(0.22,1,0.36,1)',
       }}>
         {/* Sticky header */}
         <div style={{
@@ -671,7 +684,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <span style={{ fontSize: 11, fontFamily: 'monospace', color: T.textMuted, fontWeight: 600 }}>
-                COMPLAINT #{complaint.id}
+                {t('complaintNumber', { id: complaint.id })}
               </span>
               <StatusBadge status={complaint.status} />
               {/* ↓ NEW — refund delivery progress badge */}
@@ -683,16 +696,17 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
     color: REFUND_STATUS_CONFIG[complaint.refund_status]?.color ?? '#a855f7',
     border: `1px solid ${REFUND_STATUS_CONFIG[complaint.refund_status]?.color ?? '#a855f7'}30`,
   }}>
-    ↩️ Refund: {REFUND_STATUS_CONFIG[complaint.refund_status]?.label ?? complaint.refund_status}
+    ↩️ {t('refundLabel', { status: t.has(`refund.${complaint.refund_status}`) ? t(`refund.${complaint.refund_status}`) : complaint.refund_status })}
   </span>
 )}
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 800, color: T.textMain, margin: 0 }}>
-              {COMPLAINT_TYPE_LABELS[complaint.complaint_type]}
+              {typeLabel(complaint.complaint_type)}
             </h2>
           </div>
           <button
             onClick={onClose}
+            aria-label={t('close')}
             className="action-btn"
             style={{
               width: 36, height: 36, borderRadius: 10,
@@ -717,7 +731,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
               border: `1px solid ${T.drawerBorder}`,
               borderRadius: 12, padding: '14px 16px',
             }}>
-              <DrawerSection icon={<IconUser size={13} />} label="Customer" dark={dark}>
+              <DrawerSection icon={<IconUser size={13} />} label={t('customer')} dark={dark}>
                 <p style={{ fontSize: 14, fontWeight: 700, color: T.textMain, margin: '2px 0 1px' }}>
                   {complaint.user?.name ?? '—'}
                 </p>
@@ -731,7 +745,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
               border: `1px solid ${T.drawerBorder}`,
               borderRadius: 12, padding: '14px 16px',
             }}>
-              <DrawerSection icon={<IconPackage size={13} />} label="Order" dark={dark}>
+              <DrawerSection icon={<IconPackage size={13} />} label={t('order')} dark={dark}>
                 <p style={{ fontSize: 14, fontWeight: 700, color: T.textMain, margin: '2px 0 1px', fontFamily: 'monospace' }}>
                   #{complaint.order?.order_number ?? complaint.order_id}
                 </p>
@@ -745,7 +759,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
           </div>
 
           {/* Description */}
-          <DrawerSection icon={<IconMessageSquare size={13} />} label="Description" dark={dark}>
+          <DrawerSection icon={<IconMessageSquare size={13} />} label={t('description')} dark={dark}>
             <div style={{
               background: T.drawerBgSub,
               border: `1px solid ${T.drawerBorder}`,
@@ -759,7 +773,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
 
           {/* Proof image */}
           {complaint.image_url && (
-            <DrawerSection icon={<IconImageIcon size={13} />} label="Proof Photo" dark={dark}>
+            <DrawerSection icon={<IconImageIcon size={13} />} label={t('proofPhoto')} dark={dark}>
               <a
                 href={complaint.image_url}
                 target="_blank"
@@ -774,7 +788,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
               >
                 <img
                   src={complaint.image_url}
-                  alt="Proof"
+                  alt={t('proofPhoto')}
                   style={{
                     width: '100%', maxHeight: 220, objectFit: 'contain',
                     background: T.drawerBgSub,
@@ -787,7 +801,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
 
           {/* Seller existing note */}
           {complaint.seller_note && (
-            <DrawerSection icon={<IconMessageSquare size={13} />} label="Your Response" dark={dark}>
+            <DrawerSection icon={<IconMessageSquare size={13} />} label={t('yourResponse')} dark={dark}>
               <div style={{
                 background: 'rgba(59,130,246,0.07)',
                 border: '1px solid rgba(59,130,246,0.2)',
@@ -809,14 +823,14 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
               <IconShieldAlert size={18} color={C.orange} strokeWidth={2} />
               <div>
                 <p style={{ fontSize: 12.5, fontWeight: 700, color: C.orange, margin: '0 0 5px' }}>
-                  Awaiting Admin Validation
+                  {t('awaitingTitle')}
                 </p>
                 <p style={{ fontSize: 12.5, color: T.textMuted, margin: 0, lineHeight: 1.6 }}>
-                  Your rejection is pending admin review. The customer will be notified once a final decision is made.
+                  {t('awaitingBody')}
                 </p>
                 {complaint.rejection_reason && (
                   <p style={{ fontSize: 12, color: T.textFaint, margin: '8px 0 0', lineHeight: 1.6 }}>
-                    <strong style={{ color: T.textMuted }}>Your reason:</strong> {complaint.rejection_reason}
+                    <strong style={{ color: T.textMuted }}>{t('yourReason')}</strong> {complaint.rejection_reason}
                   </p>
                 )}
               </div>
@@ -838,7 +852,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
                   fontSize: 12.5, fontWeight: 700, margin: '0 0 4px',
                   color: complaint.status === 'approved' ? C.green : C.red,
                 }}>
-                  {complaint.status === 'approved' ? 'Complaint Approved' : 'Complaint Rejected'}
+                  {complaint.status === 'approved' ? t('approvedFinal') : t('rejectedFinal')}
                 </p>
                 {complaint.rejection_reason && (
                   <p style={{ fontSize: 12.5, color: T.textMuted, margin: 0 }}>
@@ -850,10 +864,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
           )}
 
           <p style={{ fontSize: 11.5, color: T.textFaint, fontWeight: 500, marginTop: 4 }}>
-            Filed on{' '}
-            {new Date(complaint.created_at).toLocaleDateString('en-GB', {
-              day: 'numeric', month: 'long', year: 'numeric',
-            })}
+            {t('filedOn', { date: date(complaint.created_at, 'long') })}
           </p>
         </div>
 
@@ -877,7 +888,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}
             >
-              <IconXCircle size={16} /> Reject
+              <IconXCircle size={16} /> {t('reject')}
             </button>
             <button
               onClick={() => setDecisionMode('approve')}
@@ -890,7 +901,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}
             >
-              <IconCheckCircle size={16} /> Approve
+              <IconCheckCircle size={16} /> {t('approve')}
             </button>
           </div>
         )}
@@ -904,7 +915,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
           isOpen={!!decisionMode}
           onClose={() => setDecisionMode(null)}
           onDone={() => {
-            showToast(decisionMode === 'approve' ? '✓ Complaint approved' : '⚠ Rejection submitted for review')
+            showToast(decisionMode === 'approve' ? t('toastApproved') : t('toastRejected'))
             onRefresh()
             onClose()
           }}
@@ -915,7 +926,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
       {/* Toast */}
       {toast && (
         <div style={{
-          position: 'fixed', bottom: 28, insetInlineStart: '50%',
+          position: 'fixed', bottom: 28, left: '50%',
           background: T.toastBg,
           color: '#fff', padding: '11px 22px',
           borderRadius: 999, fontSize: 13, fontWeight: 700, zIndex: 99999,
@@ -928,7 +939,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
         </div>
       )}
 
-      <style>{`@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
+      <style>{`@keyframes drawerSlideIn{from{transform:translateX(${isRtl ? '-100%' : '100%'})}to{transform:translateX(0)}}`}</style>
     </>
   )
 }
@@ -945,6 +956,9 @@ interface StatsData {
 
 export default function SellerComplaintsPage() {
   const { dark } = useTheme()
+  const t = useTranslations('seller.complaints')
+  const typeLabel = useComplaintType()
+  const { date } = useFormat()
   const T = useColors(dark)
   const [complaints, setComplaints] = useState<Complaint[]>([])
   const [stats,      setStats]      = useState<StatsData | null>(null)
@@ -981,21 +995,21 @@ export default function SellerComplaintsPage() {
   }
 
   const statCards = stats ? [
-    { icon: <IconInbox size={18} />,       label: 'Total',          value: stats.total,           color: dark ? 'rgba(255,255,255,0.7)' : '#475569', delay: 0   },
-    { icon: <IconClock size={18} />,       label: 'Needs Action',   value: stats.needs_action,    color: C.amber,                                     delay: 60  },
-    { icon: <IconCheckCircle size={18} />, label: 'Approved',       value: stats.approved,        color: C.green,                                     delay: 120 },
-    { icon: <IconShieldAlert size={18} />, label: 'Awaiting Admin', value: stats.seller_rejected, color: C.orange,                                    delay: 180 },
-    { icon: <IconXCircle size={18} />,     label: 'Rejected',       value: stats.rejected,        color: C.red,                                       delay: 240 },
+    { icon: <IconInbox size={18} />,       label: t('stats.total'),         value: stats.total,           color: dark ? 'rgba(255,255,255,0.7)' : '#475569', delay: 0   },
+    { icon: <IconClock size={18} />,       label: t('stats.needsAction'),   value: stats.needs_action,    color: C.amber,                                     delay: 60  },
+    { icon: <IconCheckCircle size={18} />, label: t('stats.approved'),      value: stats.approved,        color: C.green,                                     delay: 120 },
+    { icon: <IconShieldAlert size={18} />, label: t('stats.awaitingAdmin'), value: stats.seller_rejected, color: C.orange,                                    delay: 180 },
+    { icon: <IconXCircle size={18} />,     label: t('stats.rejected'),      value: stats.rejected,        color: C.red,                                       delay: 240 },
   ] : []
 
   interface FilterTab { val: string; label: string; icon: React.ReactNode }
   const FILTERS: FilterTab[] = [
-    { val: '',                              label: 'All',            icon: <IconListFilter size={13} /> },
-    { val: 'pending',                       label: 'Pending',        icon: <IconClock size={13} />      },
-    { val: 'reviewing',                     label: 'Reviewing',      icon: <IconSearch size={13} />     },
-    { val: 'approved',                      label: 'Approved',       icon: <IconCheckCircle size={13} />},
-    { val: 'seller_rejected_pending_admin', label: 'Awaiting Admin', icon: <IconShieldAlert size={13} />},
-    { val: 'rejected',                      label: 'Rejected',       icon: <IconXCircle size={13} />    },
+    { val: '',                              label: t('filters.all'),           icon: <IconListFilter size={13} /> },
+    { val: 'pending',                       label: t('filters.pending'),       icon: <IconClock size={13} />      },
+    { val: 'reviewing',                     label: t('filters.reviewing'),     icon: <IconSearch size={13} />     },
+    { val: 'approved',                      label: t('filters.approved'),      icon: <IconCheckCircle size={13} />},
+    { val: 'seller_rejected_pending_admin', label: t('filters.awaitingAdmin'), icon: <IconShieldAlert size={13} />},
+    { val: 'rejected',                      label: t('filters.rejected'),      icon: <IconXCircle size={13} />    },
   ]
 
   return (
@@ -1020,10 +1034,10 @@ export default function SellerComplaintsPage() {
               <h1 style={{
                 fontSize: 25, fontWeight: 900, color: T.textMain, margin: 0, letterSpacing: '-0.3px',
               }}>
-                Complaints
+                {t('title')}
               </h1>
               <p style={{ fontSize: 12.5, color: T.textMuted, margin: '3px 0 0', fontWeight: 500 }}>
-                Customer complaints about your products
+                {t('subtitle')}
               </p>
             </div>
           </div>
@@ -1039,7 +1053,7 @@ export default function SellerComplaintsPage() {
               cursor: 'pointer',
             }}
           >
-            <IconRefreshCw size={14} /> Refresh
+            <IconRefreshCw size={14} /> {t('refresh')}
           </button>
         </div>
 
@@ -1053,7 +1067,7 @@ export default function SellerComplaintsPage() {
         {/* ── Filter tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ fontSize: 11.5, color: T.textMuted, fontWeight: 600, marginInlineEnd: 4 }}>
-            FILTER
+            {t('filter')}
           </span>
           {FILTERS.map(f => {
             const active = filter === f.val
@@ -1094,10 +1108,10 @@ export default function SellerComplaintsPage() {
               <IconCheckCircle size={28} color={C.green} strokeWidth={1.8} />
             </div>
             <p style={{ fontSize: 15, fontWeight: 800, color: T.textMain, margin: '0 0 6px' }}>
-              No complaints{filter ? ' with this status' : ''}
+              {filter ? t('emptyFiltered') : t('empty')}
             </p>
             <p style={{ fontSize: 13, color: T.textMuted, margin: 0 }}>
-              Keep up the excellent work!
+              {t('emptyHint')}
             </p>
           </div>
         ) : (
@@ -1135,7 +1149,7 @@ export default function SellerComplaintsPage() {
                         #{c.id}
                       </p>
                       <p style={{ fontSize: 13.5, fontWeight: 700, color: T.textMain, margin: 0 }}>
-                        {COMPLAINT_TYPE_LABELS[c.complaint_type]}
+                        {typeLabel(c.complaint_type)}
                       </p>
                     </div>
 
@@ -1151,7 +1165,7 @@ export default function SellerComplaintsPage() {
                         <IconUser size={14} />
                       </div>
                       <div>
-                        <p style={{ fontSize: 11, color: T.textMuted, margin: '0 0 1px', fontWeight: 600 }}>Customer</p>
+                        <p style={{ fontSize: 11, color: T.textMuted, margin: '0 0 1px', fontWeight: 600 }}>{t('customer')}</p>
                         <p style={{ fontSize: 13, fontWeight: 600, color: T.textSub, margin: 0 }}>
                           {c.user?.name ?? '—'}
                         </p>
@@ -1168,7 +1182,7 @@ export default function SellerComplaintsPage() {
                           background: C.amberDim, border: `1px solid ${C.amber}30`,
                           padding: '4px 10px', borderRadius: 6, letterSpacing: '0.05em',
                         }}>
-                          <IconAlertTriangle size={10} /> ACTION REQUIRED
+                          <IconAlertTriangle size={10} /> {t('actionRequired')}
                         </span>
                       )}
                     </div>
@@ -1176,11 +1190,9 @@ export default function SellerComplaintsPage() {
                     {/* Date + arrow */}
                     <div style={{ marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
                       <span style={{ fontSize: 11.5, color: T.textFaint, fontWeight: 500 }}>
-                        {new Date(c.created_at).toLocaleDateString('en-GB', {
-                          day: 'numeric', month: 'short', year: 'numeric',
-                        })}
+                        {date(c.created_at, 'medium')}
                       </span>
-                      <IconChevronRight size={16} color={T.iconMuted} />
+                      <IconChevronRight size={16} color={T.iconMuted} className="rtl-flip" />
                     </div>
                   </div>
                 </div>

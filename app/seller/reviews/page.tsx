@@ -6,6 +6,8 @@ import {
   BarChart2, Tag, AlertTriangle, X, CheckCircle,
 } from 'lucide-react';
 import { useTheme } from '@/app/seller/SellerShell';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
 const API_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
 const getToken = () => typeof window !== 'undefined'
@@ -68,7 +70,7 @@ function KpiCard({ title, value, subtitle, accent, icon: Icon, dark }: {
       <p style={{ fontSize: 24, fontWeight: 900, color: txt, margin: '0 0 4px', letterSpacing: '-0.03em', lineHeight: 1 }}>{value}</p>
       <p style={{ fontSize: 11, fontWeight: 800, color: accent, margin: '0 0 3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</p>
       {subtitle && <p style={{ fontSize: 11, color: muted, margin: 0, fontWeight: 500 }}>{subtitle}</p>}
-      <div style={{ position: 'absolute', bottom: 0, insetInlineStart: 0, insetInlineEnd: 0, height: 3, background: `linear-gradient(90deg,${accent},transparent)`, opacity: 0.6 }} />
+      <div className="rtl-flip" style={{ position: 'absolute', bottom: 0, insetInlineStart: 0, insetInlineEnd: 0, height: 3, background: `linear-gradient(90deg,${accent},transparent)`, opacity: 0.6 }} />
     </div>
   );
 }
@@ -78,6 +80,7 @@ function KpiCard({ title, value, subtitle, accent, icon: Icon, dark }: {
 function ReportModal({ reviewId, dark, onClose, onDone }: {
   reviewId: number; dark: boolean; onClose: () => void; onDone: () => void;
 }) {
+  const t = useTranslations('seller.reviews');
   const [reason,    setReason]    = useState('');
   const [note,      setNote]      = useState('');
   const [sending,   setSending]   = useState(false);
@@ -85,15 +88,15 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
   const [error,     setError]     = useState('');
 
   const reasons = [
-    { value: 'fake',          label: '🤥 Fake Review' },
-    { value: 'spam',          label: '🚫 Spam' },
-    { value: 'inappropriate', label: '⚠️ Inappropriate Content' },
-    { value: 'offensive',     label: '🤬 Offensive Language' },
-    { value: 'other',         label: '📝 Other' },
+    { value: 'fake',          label: t('reasons.fake') },
+    { value: 'spam',          label: t('reasons.spam') },
+    { value: 'inappropriate', label: t('reasons.inappropriate') },
+    { value: 'offensive',     label: t('reasons.offensive') },
+    { value: 'other',         label: t('reasons.other') },
   ];
 
   const handleSubmit = async () => {
-    if (!reason) { setError('Please select a reason.'); return; }
+    if (!reason) { setError(t('selectReasonError')); return; }
     setSending(true); setError('');
     try {
       const res  = await fetch(`${API_URL}/seller/reviews/${reviewId}/report`, {
@@ -109,10 +112,10 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
         setSuccess(true);
         setTimeout(() => { onDone(); onClose(); }, 1500);
       } else {
-        setError(json.message ?? 'Failed to submit report.');
+        setError(json.message ?? t('reportFailed'));
       }
     } catch {
-      setError('Network error. Please try again.');
+      setError(t('networkError'));
     } finally {
       setSending(false);
     }
@@ -130,22 +133,22 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
         {success ? (
           <div style={{ textAlign: 'center', padding: '16px 0' }}>
             <CheckCircle size={40} color="#10b981" style={{ margin: '0 auto 12px', display: 'block' }} />
-            <p style={{ fontSize: 16, fontWeight: 900, color: dark ? '#fff' : '#0f172a', margin: '0 0 6px' }}>Report Submitted</p>
-            <p style={{ fontSize: 13, color: dark ? 'rgba(255,255,255,0.5)' : '#64748b', margin: 0 }}>The admin will review this report.</p>
+            <p style={{ fontSize: 16, fontWeight: 900, color: dark ? '#fff' : '#0f172a', margin: '0 0 6px' }}>{t('reportSubmitted')}</p>
+            <p style={{ fontSize: 13, color: dark ? 'rgba(255,255,255,0.5)' : '#64748b', margin: 0 }}>{t('reportSubmittedHint')}</p>
           </div>
         ) : (
           <>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h3 style={{ fontSize: 17, fontWeight: 900, color: dark ? '#fff' : '#0f172a', margin: 0 }}>
-                🚩 Report Review
+                {t('reportTitle')}
               </h3>
-              <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: dark ? 'rgba(255,255,255,0.5)' : '#94a3b8' }}>
+              <button onClick={onClose} aria-label={t('close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: dark ? 'rgba(255,255,255,0.5)' : '#94a3b8' }}>
                 <X size={18} />
               </button>
             </div>
 
             <p style={{ fontSize: 12, fontWeight: 700, color: dark ? 'rgba(255,255,255,0.5)' : '#64748b', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Select reason *
+              {t('selectReason')}
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
@@ -168,14 +171,14 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
             </div>
 
             <p style={{ fontSize: 12, fontWeight: 700, color: dark ? 'rgba(255,255,255,0.5)' : '#64748b', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Additional note (optional)
+              {t('additionalNote')}
             </p>
             <textarea
               value={note}
               onChange={e => setNote(e.target.value)}
               maxLength={500}
               rows={3}
-              placeholder="Explain why this review should be removed…"
+              placeholder={t('notePlaceholder')}
               style={{
                 width: '100%', borderRadius: 10, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`,
                 background: dark ? 'rgba(255,255,255,0.05)' : '#f8fafc',
@@ -196,7 +199,7 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
                 onClick={onClose}
                 style={{ flex: 1, height: 44, borderRadius: 12, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`, background: 'transparent', color: dark ? 'rgba(255,255,255,0.6)' : '#64748b', fontWeight: 700, cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 onClick={handleSubmit}
@@ -209,7 +212,7 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
                   fontSize: 13, fontFamily: 'inherit',
                 }}
               >
-                {sending ? 'Submitting…' : '🚩 Submit Report'}
+                {sending ? t('submitting') : t('submitReport')}
               </button>
             </div>
           </>
@@ -224,6 +227,7 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
 function ReplyModal({ reviewId, existing, dark, onClose, onSaved }: {
   reviewId: number; existing: string; dark: boolean; onClose: () => void; onSaved: () => void;
 }) {
+  const t = useTranslations('seller.reviews');
   const [body,   setBody]   = useState(existing);
   const [saving, setSaving] = useState(false);
 
@@ -243,18 +247,18 @@ function ReplyModal({ reviewId, existing, dark, onClose, onSaved }: {
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
       <div onClick={e => e.stopPropagation()} style={{ background: dark ? '#1a2035' : '#fff', borderRadius: 20, padding: 24, maxWidth: 460, width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.3)' }}>
-        <h3 style={{ fontSize: 17, fontWeight: 900, color: dark ? '#fff' : '#0f172a', margin: '0 0 16px' }}>Reply to Review</h3>
+        <h3 style={{ fontSize: 17, fontWeight: 900, color: dark ? '#fff' : '#0f172a', margin: '0 0 16px' }}>{t('replyTitle')}</h3>
         <textarea
           value={body} onChange={e => setBody(e.target.value)}
-          rows={5} maxLength={1000} placeholder="Write your professional reply…"
+          rows={5} maxLength={1000} placeholder={t('replyPlaceholder')}
           style={{ width: '100%', borderRadius: 12, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`, background: dark ? 'rgba(255,255,255,0.05)' : '#f8fafc', padding: '12px 14px', fontSize: 14, color: dark ? '#fff' : '#374151', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', outline: 'none' }}
         />
         <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'end', margin: '4px 0 16px' }}>{body.length}/1000</p>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={onClose} style={{ flex: 1, height: 44, borderRadius: 12, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`, background: 'transparent', color: dark ? 'rgba(255,255,255,0.6)' : '#64748b', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>Cancel</button>
+          <button onClick={onClose} style={{ flex: 1, height: 44, borderRadius: 12, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`, background: 'transparent', color: dark ? 'rgba(255,255,255,0.6)' : '#64748b', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>{t('cancel')}</button>
           <button onClick={handleSave} disabled={saving || body.trim().length < 5}
             style={{ flex: 2, height: 44, borderRadius: 12, border: 'none', background: body.trim().length >= 5 ? 'linear-gradient(135deg,#db142e,#a00f22)' : '#e2e8f0', color: body.trim().length >= 5 ? '#fff' : '#94a3b8', fontWeight: 900, cursor: saving ? 'wait' : 'pointer', fontSize: 13 }}>
-            {saving ? 'Saving…' : 'Save Reply'}
+            {saving ? t('saving') : t('saveReply')}
           </button>
         </div>
       </div>
@@ -269,6 +273,7 @@ function ReviewRow({ review, dark, onReply, onReport }: {
   onReply: (id: number, existing: string) => void;
   onReport: (id: number) => void;
 }) {
+  const t = useTranslations('seller.reviews');
   const bg     = dark ? '#161b27' : '#fff';
   const border = dark ? 'rgba(255,255,255,0.07)' : '#f1f5f9';
   const txt    = dark ? '#fff' : '#0f172a';
@@ -283,7 +288,7 @@ function ReviewRow({ review, dark, onReply, onReport }: {
           </div>
           <div>
             <span style={{ fontSize: 13, fontWeight: 800, color: txt }}>{review.display_name}</span>
-            {review.is_verified && <span style={{ fontSize: 10, color: '#059669', fontWeight: 700, marginInlineStart: 6, background: 'rgba(5,150,105,0.1)', padding: '1px 6px', borderRadius: 999, border: '1px solid rgba(5,150,105,0.2)' }}>✅ Verified</span>}
+            {review.is_verified && <span style={{ fontSize: 10, color: '#059669', fontWeight: 700, marginInlineStart: 6, background: 'rgba(5,150,105,0.1)', padding: '1px 6px', borderRadius: 999, border: '1px solid rgba(5,150,105,0.2)' }}>{t('verified')}</span>}
             <p style={{ fontSize: 11, color: muted, margin: '2px 0 0' }}>{review.product?.name} · {review.created_at}</p>
           </div>
         </div>
@@ -291,7 +296,7 @@ function ReviewRow({ review, dark, onReply, onReport }: {
           <Stars rating={review.rating} />
           {review.reports_count > 0 && (
             <span style={{ fontSize: 10, fontWeight: 800, color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '2px 7px', borderRadius: 999 }}>
-              {review.reports_count} report{review.reports_count > 1 ? 's' : ''}
+              {t('reportsCount', { count: review.reports_count })}
             </span>
           )}
         </div>
@@ -312,7 +317,7 @@ function ReviewRow({ review, dark, onReply, onReport }: {
         </div>
       )}
 
-      {review.body && <p style={{ fontSize: 13, color: dark ? 'rgba(255,255,255,0.8)' : '#374151', margin: 0, lineHeight: 1.6 }}>{review.body}</p>}
+      {review.body && <p dir="auto" style={{ fontSize: 13, color: dark ? 'rgba(255,255,255,0.8)' : '#374151', margin: 0, lineHeight: 1.6 }}>{review.body}</p>}
 
       {review.media.length > 0 && (
         <div style={{ display: 'flex', gap: 6 }}>
@@ -324,7 +329,7 @@ function ReviewRow({ review, dark, onReply, onReport }: {
 
       {review.reply && (
         <div style={{ background: dark ? 'rgba(255,255,255,0.04)' : '#f8fafc', borderRadius: 10, padding: '10px 12px', borderInlineStart: '3px solid #db142e' }}>
-          <p style={{ fontSize: 11, fontWeight: 800, color: '#db142e', margin: '0 0 4px' }}>Your Reply</p>
+          <p style={{ fontSize: 11, fontWeight: 800, color: '#db142e', margin: '0 0 4px' }}>{t('yourReply')}</p>
           <p style={{ fontSize: 12, color: dark ? 'rgba(255,255,255,0.7)' : '#374151', margin: 0, lineHeight: 1.5 }}>{review.reply.body}</p>
         </div>
       )}
@@ -334,13 +339,13 @@ function ReviewRow({ review, dark, onReply, onReport }: {
           onClick={() => onReply(review.id, review.reply?.body ?? '')}
           style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 8, border: `1px solid ${border}`, background: 'transparent', color: '#db142e', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
         >
-          <Reply size={13} /> {review.reply ? 'Edit Reply' : 'Reply'}
+          <Reply size={13} className="rtl-flip" /> {review.reply ? t('editReply') : t('reply')}
         </button>
         <button
           onClick={() => onReport(review.id)}
           style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 8, border: `1px solid ${border}`, background: 'transparent', color: '#ef4444', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
         >
-          <Flag size={13} /> Report Fake
+          <Flag size={13} /> {t('reportFake')}
         </button>
       </div>
     </div>
@@ -351,6 +356,8 @@ function ReviewRow({ review, dark, onReply, onReport }: {
 
 export default function SellerReviewsPage() {
   const { dark } = useTheme();
+  const t = useTranslations('seller.reviews');
+  const { number } = useFormat();
   const [stats,       setStats]       = useState<ReviewStats | null>(null);
   const [reviews,     setReviews]     = useState<ReviewItem[]>([]);
   const [loading,     setLoading]     = useState(true);
@@ -405,22 +412,22 @@ export default function SellerReviewsPage() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h1 style={{ fontSize: 20, fontWeight: 900, color: txt, margin: '0 0 3px', letterSpacing: '-0.02em' }}>Reviews & Reputation</h1>
-            <p style={{ fontSize: 12, color: muted, margin: 0 }}>Manage customer feedback and build trust</p>
+            <h1 style={{ fontSize: 20, fontWeight: 900, color: txt, margin: '0 0 3px', letterSpacing: '-0.02em' }}>{t('title')}</h1>
+            <p style={{ fontSize: 12, color: muted, margin: 0 }}>{t('subtitle')}</p>
           </div>
           <button onClick={refresh}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, border: `1px solid ${border}`, background: card, color: muted, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-            <RefreshCw size={13} /> Refresh
+            <RefreshCw size={13} /> {t('refresh')}
           </button>
         </div>
 
         {/* KPI Cards */}
         {stats && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
-            <KpiCard dark={dark} title="Average Rating"   value={stats.average_rating} subtitle={`${stats.total} total reviews`} accent="#f59e0b" icon={Star} />
-            <KpiCard dark={dark} title="Positive Reviews" value={`${stats.total > 0 ? Math.round((stats.positive_count / stats.total) * 100) : 0}%`} subtitle={`${stats.positive_count} positive`} accent="#10b981" icon={ThumbsUp} />
-            <KpiCard dark={dark} title="Response Rate"   value={`${stats.response_rate}%`} subtitle="Of reviews replied" accent="#3b82f6" icon={MessageSquare} />
-            <KpiCard dark={dark} title="Pending Reports"  value={stats.pending_reports} subtitle="Awaiting admin review" accent={stats.pending_reports > 0 ? '#ef4444' : '#94a3b8'} icon={AlertCircle} />
+            <KpiCard dark={dark} title={t('kpi.average')}   value={number(stats.average_rating, { maximumFractionDigits: 1 })} subtitle={t('kpi.totalReviews', { count: stats.total })} accent="#f59e0b" icon={Star} />
+            <KpiCard dark={dark} title={t('kpi.positive')}  value={`${stats.total > 0 ? Math.round((stats.positive_count / stats.total) * 100) : 0}%`} subtitle={t('kpi.positiveCount', { count: stats.positive_count })} accent="#10b981" icon={ThumbsUp} />
+            <KpiCard dark={dark} title={t('kpi.response')}  value={`${stats.response_rate}%`} subtitle={t('kpi.responseHint')} accent="#3b82f6" icon={MessageSquare} />
+            <KpiCard dark={dark} title={t('kpi.reports')}   value={stats.pending_reports} subtitle={t('kpi.reportsHint')} accent={stats.pending_reports > 0 ? '#ef4444' : '#94a3b8'} icon={AlertCircle} />
           </div>
         )}
 
@@ -429,7 +436,7 @@ export default function SellerReviewsPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div style={{ background: card, borderRadius: 18, border: `1px solid ${border}`, padding: 20 }}>
               <p style={{ fontSize: 13, fontWeight: 800, color: txt, margin: '0 0 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <BarChart2 size={15} color="#f59e0b" /> Rating Distribution
+                <BarChart2 size={15} color="#f59e0b" /> {t('distribution')}
               </p>
               {[5,4,3,2,1].map(star => {
                 const count = stats.by_rating[star] ?? 0;
@@ -452,18 +459,18 @@ export default function SellerReviewsPage() {
               {stats.alerts.length > 0 && (
                 <div style={{ background: 'rgba(239,68,68,0.06)', borderRadius: 14, border: '1px solid rgba(239,68,68,0.15)', padding: 16 }}>
                   <p style={{ fontSize: 12, fontWeight: 800, color: '#ef4444', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <AlertTriangle size={13} /> Repeated Complaints
+                    <AlertTriangle size={13} /> {t('repeated')}
                   </p>
                   {stats.alerts.map(a => (
                     <div key={a.id} style={{ fontSize: 12, color: dark ? 'rgba(255,255,255,0.7)' : '#374151', marginBottom: 5, fontWeight: 600 }}>
-                      {a.icon} {a.usage_count} customers mentioned "{a.label}"
+                      {a.icon} {t('mentioned', { count: a.usage_count, label: a.label })}
                     </div>
                   ))}
                 </div>
               )}
               <div style={{ background: card, borderRadius: 14, border: `1px solid ${border}`, padding: 16, flex: 1 }}>
                 <p style={{ fontSize: 12, fontWeight: 800, color: txt, margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Tag size={13} color="#3b82f6" /> Most Used Tags
+                  <Tag size={13} color="#3b82f6" /> {t('topTags')}
                 </p>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {stats.top_tags.slice(0, 8).map(tag => (
@@ -480,10 +487,10 @@ export default function SellerReviewsPage() {
         {/* Reviews List */}
         <div style={{ background: card, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
           <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <p style={{ fontSize: 13, fontWeight: 800, color: txt, margin: '0 10px 0 0' }}>All Reviews ({meta.total})</p>
+            <p style={{ fontSize: 13, fontWeight: 800, color: txt, margin: 0, marginInlineEnd: 10 }}>{t('all', { count: meta.total })}</p>
             {rFilter && (
               <button onClick={() => setRFilter(null)} style={{ padding: '5px 12px', borderRadius: 999, border: '1.5px solid #db142e', background: 'rgba(219,20,46,0.06)', color: '#db142e', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                ★ {rFilter} Stars ✕
+                {t('starsFilter', { count: rFilter })}
               </button>
             )}
           </div>
@@ -492,12 +499,12 @@ export default function SellerReviewsPage() {
             {loading ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: muted }}>
                 <RefreshCw size={24} style={{ display: 'block', margin: '0 auto 12px', opacity: 0.4 }} />
-                <p style={{ fontWeight: 600, fontSize: 13 }}>Loading reviews…</p>
+                <p style={{ fontWeight: 600, fontSize: 13 }}>{t('loading')}</p>
               </div>
             ) : reviews.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '48px 0', color: muted }}>
                 <Star size={32} style={{ opacity: 0.2, display: 'block', margin: '0 auto 12px' }} />
-                <p style={{ fontWeight: 700 }}>No reviews yet</p>
+                <p style={{ fontWeight: 700 }}>{t('empty')}</p>
               </div>
             ) : reviews.map(review => (
               <ReviewRow
@@ -513,7 +520,7 @@ export default function SellerReviewsPage() {
               <div style={{ textAlign: 'center', paddingTop: 8 }}>
                 <button onClick={() => fetchReviews(meta.page + 1, true)} disabled={loadingMore}
                   style={{ padding: '10px 28px', borderRadius: 12, border: `1.5px solid ${border}`, background: 'transparent', color: txt, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                  {loadingMore ? 'Loading…' : `Load More (${meta.total - reviews.length} remaining)`}
+                  {loadingMore ? t('loadingMore') : t('loadMore', { count: meta.total - reviews.length })}
                 </button>
               </div>
             )}
