@@ -28,6 +28,8 @@ import {
 } from '@/lib/sellerAiApi';
 import { productsApi as sellerProductsApi } from '@/lib/sellerApi';
 import SalesForecastDashboard from '@/app/seller/components/SalesForecastDashboard';
+import { useLocale, useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 const fmt = (n: number) =>
   new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(n) + ' TND';
 
@@ -37,37 +39,45 @@ const RISK_COLORS: Record<string, string>       = { low: '#10b981', medium: '#f5
 const POSITIONING_COLORS: Record<string, string>= { underpriced: '#10b981', competitive: '#3b82f6', overpriced: '#ef4444', unknown: '#6b7280' };
 
 const TONES   = ['professional','casual','exciting','trust-focused'];
-const LANGS   = [{ value: 'fr', label: 'French' },{ value: 'en', label: 'English' }];
+const LANGS   = ['fr', 'ar', 'en'] as const;
+
+/** Whole-number TND amount in the active locale. */
+function useMoney0() {
+  const { price } = useFormat();
+  return (n: number) => price(n, { maximumFractionDigits: 0 });
+}
 
 // ─── Analysis steps for multi-step loader ────────────────────────────────────
 const ANALYSIS_STEPS = [
-  { id: 'internal',    label: 'Analyzing your store data',        icon: BarChart3, color: '#8b5cf6', duration: 800  },
-  { id: 'market',      label: 'Collecting Tunisian market data',  icon: Globe,     color: '#3b82f6', duration: 3500 },
-  { id: 'competitors', label: 'Analyzing competitors',            icon: Target,    color: '#f59e0b', duration: 2000 },
-  { id: 'normalizing', label: 'Normalizing prices',               icon: Shield,    color: '#10b981', duration: 1200 },
-  { id: 'strategy',    label: 'Calculating pricing strategy',     icon: TrendingUp,color: '#06b6d4', duration: 1000 },
-  { id: 'ai',          label: 'Generating AI recommendation',     icon: Brain,     color: '#db142e', duration: 1500 },
+  { id: 'internal',    icon: BarChart3, color: '#8b5cf6', duration: 800  },
+  { id: 'market',      icon: Globe,     color: '#3b82f6', duration: 3500 },
+  { id: 'competitors', icon: Target,    color: '#f59e0b', duration: 2000 },
+  { id: 'normalizing', icon: Shield,    color: '#10b981', duration: 1200 },
+  { id: 'strategy',    icon: TrendingUp,color: '#06b6d4', duration: 1000 },
+  { id: 'ai',          icon: Brain,     color: '#db142e', duration: 1500 },
 ] as const;
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
 function AiTag() {
+  const t = useTranslations('seller.aiTools');
   return (
     <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 9px', borderRadius:999, background:'rgba(219,20,46,0.1)', border:'1px solid rgba(219,20,46,0.25)', fontSize:10, fontWeight:800, color:'#f87171' }}>
-      <Brain size={10} /> AI Powered
+      <Brain size={10} /> {t('aiPowered')}
     </span>
   );
 }
 
 function CopyBtn({ text, dark }: { text: string; dark: boolean }) {
   const [copied, setCopied] = useState(false);
+  const t = useTranslations('seller.aiTools');
   return (
     <button
       onClick={() => { navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); }}
       style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:8, border:`1px solid ${dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`, background:'transparent', cursor:'pointer', fontSize:11, fontWeight:700, color: dark ? 'rgba(255,255,255,0.5)' : '#888' }}
     >
       {copied ? <Check size={11} style={{ color:'#10b981' }} /> : <Copy size={11} />}
-      {copied ? 'Copied' : 'Copy'}
+      {copied ? t('copied') : t('copy')}
     </button>
   );
 }
@@ -85,10 +95,11 @@ function ProdSelect({ products, value, onChange, dark }: { products: Array<{ id:
   const selectBg  = dark ? '#1e2330' : '#f8fafc';
   const selectClr = dark ? '#ffffff' : '#111111';
   const optionBg  = dark ? '#1e2330' : '#ffffff';
+  const t = useTranslations('seller.aiTools');
   return (
     <div style={{ position:'relative' }}>
-      <select value={value ?? ''} onChange={e => onChange(Number(e.target.value))} style={{ width:'100%', padding:'10px 36px 10px 12px', borderRadius:10, border:`1px solid ${dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`, background:selectBg, color:selectClr, fontSize:13, fontWeight:600, cursor:'pointer', appearance:'none', outline:'none', colorScheme: dark ? 'dark' : 'light' }}>
-        <option value="" style={{ background:optionBg, color:selectClr }}>— Select a product —</option>
+      <select value={value ?? ''} onChange={e => onChange(Number(e.target.value))} style={{ width:'100%', padding:'10px 12px', paddingInlineEnd:36, borderRadius:10, border:`1px solid ${dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`, background:selectBg, color:selectClr, fontSize:13, fontWeight:600, cursor:'pointer', appearance:'none', outline:'none', colorScheme: dark ? 'dark' : 'light' }}>
+        <option value="" style={{ background:optionBg, color:selectClr }}>{t('selectProductOption')}</option>
         {products.map(p => <option key={p.id} value={p.id} style={{ background:optionBg, color:selectClr }}>{p.name}</option>)}
       </select>
       <ChevronDown size={14} style={{ position:'absolute', insetInlineEnd:12, top:'50%', transform:'translateY(-50%)', color:selectClr, pointerEvents:'none' }} />
@@ -96,11 +107,12 @@ function ProdSelect({ products, value, onChange, dark }: { products: Array<{ id:
   );
 }
 
-function RunBtn({ onClick, loading, label = 'Analyze', icon: Icon = Sparkles }: { onClick:()=>void; loading:boolean; label?:string; icon?: React.ElementType }) {
+function RunBtn({ onClick, loading, label, icon: Icon = Sparkles }: { onClick:()=>void; loading:boolean; label?:string; icon?: React.ElementType }) {
+  const t = useTranslations('seller.aiTools');
   return (
     <button onClick={onClick} disabled={loading} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 20px', borderRadius:12, background: loading ? 'rgba(219,20,46,0.4)' : 'linear-gradient(135deg,#db142e,#a00f22)', color:'#fff', fontWeight:700, fontSize:13, border:'none', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : '0 4px 16px rgba(219,20,46,0.35)' }}>
       {loading ? <Loader2 size={14} style={{ animation:'spin 1s linear infinite' }} /> : <Icon size={14} />}
-      {loading ? 'Analyzing…' : label}
+      {loading ? t('analyzing') : (label ?? t('analyze'))}
     </button>
   );
 }
@@ -116,6 +128,7 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
   const [completedSteps, setCompleted]    = useState<Set<number>>(new Set());
   const [progressPct, setProgressPct]     = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const t = useTranslations('seller.aiTools.loader');
 
   useEffect(() => {
     let stepIndex = 0;
@@ -168,8 +181,8 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
           <Brain size={18} style={{ color:'#db142e', animation:'pulse 1.5s ease-in-out infinite' }} />
         </div>
         <div>
-          <p style={{ fontWeight:900, fontSize:14, color:text, margin:'0 0 2px' }}>AI Price Analysis Running</p>
-          <p style={{ fontSize:11, color:muted, margin:0 }}>Collecting real Tunisian market data…</p>
+          <p style={{ fontWeight:900, fontSize:14, color:text, margin:'0 0 2px' }}>{t('title')}</p>
+          <p style={{ fontSize:11, color:muted, margin:0 }}>{t('subtitle')}</p>
         </div>
         <div style={{ marginInlineStart:'auto', fontSize:24, fontWeight:900, color:'#db142e', letterSpacing:'-0.04em' }}>
           {progressPct}%
@@ -177,7 +190,7 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
       </div>
 
       <div style={{ height:6, borderRadius:999, background: dark ? 'rgba(255,255,255,0.07)' : '#f1f5f9', overflow:'hidden' }}>
-        <div style={{ height:'100%', borderRadius:999, background:'linear-gradient(90deg,#db142e,#f59e0b)', width:`${progressPct}%`, transition:'width 0.1s linear' }} />
+        <div className="rtl-flip" style={{ height:'100%', borderRadius:999, background:'linear-gradient(90deg,#db142e,#f59e0b)', width:`${progressPct}%`, transition:'width 0.1s linear' }} />
       </div>
 
       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
@@ -200,7 +213,7 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
 
               <div style={{ flex:1 }}>
                 <p style={{ fontSize:12, fontWeight:700, color: isDone ? '#10b981' : isActive ? text : muted, margin:'0 0 4px', transition:'color 0.3s' }}>
-                  {step.label}
+                  {t(`steps.${step.id}`)}
                 </p>
                 {isActive && (
                   <div style={{ height:3, borderRadius:999, background: dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)', overflow:'hidden' }}>
@@ -209,8 +222,8 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
                 )}
               </div>
 
-              {isDone && <span style={{ fontSize:9, fontWeight:800, color:'#10b981', background:'rgba(16,185,129,0.1)', padding:'2px 6px', borderRadius:999 }}>DONE</span>}
-              {isActive && <span style={{ fontSize:9, fontWeight:800, color:step.color, background:`${step.color}15`, padding:'2px 6px', borderRadius:999, animation:'pulse 1s ease-in-out infinite' }}>ACTIVE</span>}
+              {isDone && <span style={{ fontSize:9, fontWeight:800, color:'#10b981', background:'rgba(16,185,129,0.1)', padding:'2px 6px', borderRadius:999 }}>{t('done')}</span>}
+              {isActive && <span style={{ fontSize:9, fontWeight:800, color:step.color, background:`${step.color}15`, padding:'2px 6px', borderRadius:999, animation:'pulse 1s ease-in-out infinite' }}>{t('active')}</span>}
             </div>
           );
         })}
@@ -219,7 +232,7 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
       <div style={{ background: dark?'rgba(59,130,246,0.06)':'rgba(59,130,246,0.04)', border:'1px solid rgba(59,130,246,0.15)', borderRadius:10, padding:'10px 14px', display:'flex', gap:10, alignItems:'flex-start' }}>
         <Globe size={14} style={{ color:'#3b82f6', marginTop:1, flexShrink:0 }} />
         <p style={{ fontSize:11, color:muted, margin:0, lineHeight:1.5 }}>
-  Scanning <strong style={{ color:'#3b82f6' }}>Tayara.tn</strong>, <strong style={{ color:'#3b82f6' }}>Mytek</strong> & <strong style={{ color:'#3b82f6' }}>Tunisianet</strong> via Google Search API…
+  {t.rich('scanning', { b: (c) => <strong style={{ color:'#3b82f6' }}>{c}</strong> })}
 </p>
       </div>
 
@@ -264,6 +277,8 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
   const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
   const subBg  = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
   const hasRealData = report.has_data && (dataSource === 'serper' || dataSource === 'cache');
+  const t = useTranslations('seller.aiTools.market');
+  const money0 = useMoney0();
 
   const PLATFORM_META: Record<string, { color: string; emoji: string }> = {
     'Mytek':                    { color:'#e84393', emoji:'🖥️' },
@@ -289,17 +304,17 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
         <Search size={13} style={{ color:'#db142e' }} />
         <p style={{ fontSize:10, fontWeight:900, color:muted, margin:0, textTransform:'uppercase', letterSpacing:'0.08em' }}>
-          Platforms analysed
+          {t('platforms')}
         </p>
       <span style={{ marginInlineStart:'auto', fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:999,
   background: hasRealData ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
   color: hasRealData ? '#10b981' : '#f59e0b',
   border: hasRealData ? '1px solid rgba(16,185,129,0.25)' : '1px solid rgba(245,158,11,0.25)' }}>
   {report.has_data
-    ? `✓ ${report.data_points} results found`
+    ? `✓ ${t('results', { count: report.data_points })}`
     : dataSource === 'none'
-    ? '⚠ No data — internal only'
-    : '⚠ Search unavailable'}
+    ? `⚠ ${t('noData')}`
+    : `⚠ ${t('searchUnavailable')}`}
 </span>
       </div>
 
@@ -311,7 +326,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
             <span style={{ fontSize:16 }}>{m.emoji}</span>
             <div>
               <p style={{ fontSize:11, fontWeight:800, color:'#db142e', margin:0 }}>ChooseTounsi</p>
-              <p style={{ fontSize:9, color:muted, margin:0 }}>Platform data</p>
+              <p style={{ fontSize:9, color:muted, margin:0 }}>{t('platformData')}</p>
             </div>
             <CheckCircle2 size={12} style={{ color:'#10b981', marginInlineStart:2 }} />
           </div>
@@ -327,7 +342,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
               <span style={{ fontSize:16 }}>{m.emoji}</span>
               <div>
                 <p style={{ fontSize:11, fontWeight:800, color:m.color, margin:0 }}>{src.source}</p>
-                <p style={{ fontSize:9, color:muted, margin:0 }}>{src.count} products · avg {new Intl.NumberFormat('fr-TN',{maximumFractionDigits:0}).format(src.avg)} TND</p>
+                <p style={{ fontSize:9, color:muted, margin:0 }}>{t('sourceLine', { count: src.count, avg: money0(src.avg) })}</p>
               </div>
               <CheckCircle2 size={12} style={{ color:'#10b981', marginInlineStart:2 }} />
             </div>
@@ -344,7 +359,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
       <span style={{ fontSize:16 }}>{m.emoji}</span>
       <div>
         <p style={{ fontSize:11, fontWeight:800, color:m.color, margin:0 }}>{name}</p>
-        <p style={{ fontSize:9, color:muted, margin:0 }}>Google indexed</p>
+        <p style={{ fontSize:9, color:muted, margin:0 }}>{t('googleIndexed')}</p>
       </div>
       <CheckCircle2 size={12} style={{ color:'#10b981', marginInlineStart:2 }} />
     </div>
@@ -355,8 +370,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
     background: dark ? 'rgba(245,158,11,0.06)' : 'rgba(245,158,11,0.04)',
     border:'1px solid rgba(245,158,11,0.18)' }}>
     <p style={{ fontSize:11, color:'#f59e0b', margin:0, fontWeight:700 }}>
-      ⚠ No external market data found for this product.
-      Recommendation is based on your platform data only.
+      ⚠ {t('noExternal')}
     </p>
   </div>
 )}
@@ -365,14 +379,14 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
       {report.has_data && (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
           {[
-            { label:'Market Avg', val:report.market_avg,  color: hasRealData ? '#10b981' : '#f59e0b', icon:'📊' },
-            { label:'Lowest',     val:report.market_min,  color: hasRealData ? '#10b981' : '#f59e0b', icon:'⬇️' },
-            { label:'Highest',    val:report.market_max,  color: hasRealData ? '#10b981' : '#f59e0b', icon:'⬆️' },
+            { label:t('avg'),     val:report.market_avg,  color: hasRealData ? '#10b981' : '#f59e0b', icon:'📊' },
+            { label:t('lowest'),  val:report.market_min,  color: hasRealData ? '#10b981' : '#f59e0b', icon:'⬇️' },
+            { label:t('highest'), val:report.market_max,  color: hasRealData ? '#10b981' : '#f59e0b', icon:'⬆️' },
           ].map(({ label, val, color, icon }) => (
             <div key={label} style={{ background:subBg, borderRadius:12, padding:'12px', textAlign:'center', border:`1px solid ${border}` }}>
               <p style={{ fontSize:14, margin:'0 0 2px' }}>{icon}</p>
               <p style={{ fontSize:15, fontWeight:900, color, margin:'0 0 2px' }}>
-                {new Intl.NumberFormat('fr-TN',{maximumFractionDigits:0}).format(val)} TND
+                {money0(val)}
               </p>
               <p style={{ fontSize:9, fontWeight:700, color:muted, margin:0, textTransform:'uppercase' }}>{label}</p>
             </div>
@@ -382,11 +396,11 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
 
       <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
         {[
-          { emoji:'💰', label:'Price benchmarked' },
-          { emoji:'📈', label:'Demand analysed' },
-          { emoji:'🎯', label:'Margin optimised' },
-          { emoji:'🧮', label:'Purchasing power' },
-          { emoji:'✨', label:'Charm pricing' },
+          { emoji:'💰', label:t('chips.benchmarked') },
+          { emoji:'📈', label:t('chips.demand') },
+          { emoji:'🎯', label:t('chips.margin') },
+          { emoji:'🧮', label:t('chips.power') },
+          { emoji:'✨', label:t('chips.charm') },
         ].map(({ emoji, label }) => (
           <span key={label} style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999,
             background: dark ? 'rgba(16,185,129,0.08)' : 'rgba(16,185,129,0.06)',
@@ -402,8 +416,8 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
         border:'1px solid rgba(16,185,129,0.18)' }}>
         <Shield size={18} style={{ color:'#10b981', flexShrink:0 }} />
         <div>
-          <p style={{ fontSize:11, fontWeight:900, color:'#10b981', margin:'0 0 1px' }}>Verified by ChooseTounsi AI</p>
-          <p style={{ fontSize:10, color:muted, margin:0 }}>Cross-validated · Tunisian market · Optimised for conversion</p>
+          <p style={{ fontSize:11, fontWeight:900, color:'#10b981', margin:'0 0 1px' }}>{t('verified')}</p>
+          <p style={{ fontSize:10, color:muted, margin:0 }}>{t('verifiedSub')}</p>
         </div>
         <Star size={14} style={{ color:'#f59e0b', marginInlineStart:'auto', flexShrink:0 }} />
       </div>
@@ -442,6 +456,10 @@ function PriceOptimizerTool({ products, dark, initialProductId, autorun }: { pro
   const [result,     setResult]     = useState<{ ai_result: PriceOptimizerResult; data_context: PriceOptimizerDataContext }|null>(null);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string|null>(null);
+  const t = useTranslations('seller.aiTools.price');
+  const { price, number } = useFormat();
+  const money  = (n: number) => price(n, { maximumFractionDigits: 3 });
+  const money0 = useMoney0();
   // ADD THIS after the useState lines:
 useEffect(() => {
   if (!initialProductId || products.length === 0) return;
@@ -468,7 +486,7 @@ useEffect(() => {
     const res = await sellerAiApi.priceOptimizer(targetId);
       setResult(res.data);
     } catch (e: any) {
-      setError(e.message ?? 'Analysis failed');
+      setError(e.message ?? t('failed'));
     } finally {
       setLoading(false);
     }
@@ -488,12 +506,12 @@ useEffect(() => {
 
       <div style={{ background:cardBg, borderRadius:18, border:`1px solid ${border}`, padding:'18px 20px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-          <p style={{ fontWeight:900, fontSize:14, color:text, margin:0 }}>Select Product</p>
+          <p style={{ fontWeight:900, fontSize:14, color:text, margin:0 }}>{t('selectProduct')}</p>
           <AiTag />
         </div>
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <ProdSelect products={products} value={selectedId} onChange={setSelectedId} dark={dark} />
-          <RunBtn onClick={run} loading={loading} label="Optimize Price" icon={DollarSign} />
+          <RunBtn onClick={run} loading={loading} label={t('run')} icon={DollarSign} />
         </div>
         {error && <p style={{ color:'#ef4444', fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
       </div>
@@ -502,13 +520,13 @@ useEffect(() => {
 
       {!loading && ctx !== null && (
         <div style={{ background:subBg, borderRadius:14, border:`1px solid ${border}`, padding:'14px 16px', animation:'fadeIn 0.4s ease' }}>
-          <p style={{ fontSize:10, fontWeight:800, color:muted, margin:'0 0 10px', textTransform:'uppercase', letterSpacing:'0.06em' }}>Based on your real data</p>
+          <p style={{ fontSize:10, fontWeight:800, color:muted, margin:'0 0 10px', textTransform:'uppercase', letterSpacing:'0.06em' }}>{t('basedOn')}</p>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
             {([
-              { label:'Current Price',    val: fmt(ctx.current_price) },
-              { label:'Units Sold',       val: ctx.total_units },
-              { label:'Conversion Rate',  val: ctx.conversion_rate + '%' },
-              { label:'Platform Cat Avg', val: ctx.category_avg > 0 ? fmt(ctx.category_avg) : 'N/A' },
+              { label:t('ctx.current'),    val: money(ctx.current_price) },
+              { label:t('ctx.units'),      val: number(ctx.total_units) },
+              { label:t('ctx.conversion'), val: number(ctx.conversion_rate / 100, { style:'percent', maximumFractionDigits:2 }) },
+              { label:t('ctx.catAvg'),     val: ctx.category_avg > 0 ? money(ctx.category_avg) : t('na') },
             ] as { label:string; val:string|number }[]).map(({ label, val }) => (
               <div key={label} style={{ textAlign:'center' }}>
                 <p style={{ fontSize:14, fontWeight:900, color:text, margin:'0 0 2px' }}>{val}</p>
@@ -531,8 +549,8 @@ useEffect(() => {
                   <Rocket size={16} style={{ color:'#db142e' }} />
                 </div>
                 <div>
-                  <p style={{ fontSize:12, fontWeight:900, color:'#db142e', margin:0, letterSpacing:'0.04em' }}>AI Optimal Price</p>
-                  <p style={{ fontSize:10, color:muted, margin:0 }}>Tunisian market · right now</p>
+                  <p style={{ fontSize:12, fontWeight:900, color:'#db142e', margin:0, letterSpacing:'0.04em' }}>{t('optimal')}</p>
+                  <p style={{ fontSize:10, color:muted, margin:0 }}>{t('optimalSub')}</p>
                 </div>
               </div>
               <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10, fontWeight:800,
@@ -540,34 +558,34 @@ useEffect(() => {
                 background: CONFIDENCE_COLORS[r.confidence] ? `${CONFIDENCE_COLORS[r.confidence]}18` : 'rgba(148,163,184,0.12)',
                 color: CONFIDENCE_COLORS[r.confidence] ?? '#94a3b8',
                 border:`1px solid ${CONFIDENCE_COLORS[r.confidence] ?? '#94a3b8'}30` }}>
-                {r.confidence === 'high' ? <><Star size={9}/> High confidence</>
-                : r.confidence === 'medium' ? <>◎ Medium confidence</>
-                : <>○ Low confidence</>}
+                {r.confidence === 'high' ? <><Star size={9}/> {t('confidence.high')}</>
+                : r.confidence === 'medium' ? <>◎ {t('confidence.medium')}</>
+                : <>○ {t('confidence.low')}</>}
               </span>
             </div>
 
             <div style={{ textAlign:'center', padding:'10px 0 18px' }}>
-              <p style={{ fontSize:10, fontWeight:700, color:muted, margin:'0 0 5px', textTransform:'uppercase', letterSpacing:'0.12em' }}>Recommended selling price</p>
+              <p style={{ fontSize:10, fontWeight:700, color:muted, margin:'0 0 5px', textTransform:'uppercase', letterSpacing:'0.12em' }}>{t('recommended')}</p>
               <div style={{ display:'inline-flex', alignItems:'baseline', gap:6 }}>
                 <p style={{ fontSize:58, fontWeight:900, color:'#db142e', margin:0, letterSpacing:'-0.05em', lineHeight:1 }}>
-                  {new Intl.NumberFormat('fr-TN',{minimumFractionDigits:0,maximumFractionDigits:3}).format(r.suggested_price)}
+                  {number(r.suggested_price, { minimumFractionDigits:0, maximumFractionDigits:3 })}
                 </p>
-                <p style={{ fontSize:20, fontWeight:800, color:'rgba(219,20,46,0.7)', margin:0 }}>TND</p>
+                <p style={{ fontSize:20, fontWeight:800, color:'rgba(219,20,46,0.7)', margin:0 }}>{t('currency')}</p>
               </div>
               {r.market_avg_price > 0 && (
                 <div style={{ display:'inline-flex', alignItems:'center', gap:8, marginTop:8, padding:'4px 12px', borderRadius:999,
                   background: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }}>
                   <Globe size={10} style={{ color:muted }} />
                   <span style={{ fontSize:10, color:muted }}>
-                    Market avg: <strong style={{ color: dark?'rgba(255,255,255,0.7)':'#555' }}>
-                      {new Intl.NumberFormat('fr-TN',{maximumFractionDigits:0}).format(r.market_avg_price)} TND
+                    {t('marketAvg')} <strong style={{ color: dark?'rgba(255,255,255,0.7)':'#555' }}>
+                      {money0(r.market_avg_price)}
                     </strong>
                   </span>
                   <span style={{ fontSize:10, fontWeight:800,
                     color: POSITIONING_COLORS[r.market_positioning] ?? '#6b7280' }}>
-                    {r.market_positioning === 'underpriced' ? `↓ ${Math.abs(ctx.market_report?.positioning_pct ?? 0)}% below`
-                    : r.market_positioning === 'overpriced'  ? `↑ ${Math.abs(ctx.market_report?.positioning_pct ?? 0)}% above`
-                    : '✓ Competitive'}
+                    {r.market_positioning === 'underpriced' ? `↓ ${t('below', { pct: Math.abs(ctx.market_report?.positioning_pct ?? 0) })}`
+                    : r.market_positioning === 'overpriced'  ? `↑ ${t('above', { pct: Math.abs(ctx.market_report?.positioning_pct ?? 0) })}`
+                    : `✓ ${t('competitive')}`}
                   </span>
                 </div>
               )}
@@ -575,14 +593,14 @@ useEffect(() => {
 
             <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, borderTop:'1px solid rgba(219,20,46,0.12)', paddingTop:16 }}>
               {([
-                { label:'Competitive', price:r.competitive_price,    color:'#3b82f6', icon:'⚖️', desc:'Market match' },
-                { label:'Premium',     price:r.premium_price,        color:'#8b5cf6', icon:'👑', desc:'Top position' },
-                { label:'Floor',       price:r.min_profitable_price, color:'#10b981', icon:'🛡️', desc:'Never below' },
-              ] as const).map(({ label, price, color, icon, desc }) => (
+                { label:t('tiers.competitive'), amount:r.competitive_price,    color:'#3b82f6', icon:'⚖️', desc:t('tiers.competitiveDesc') },
+                { label:t('tiers.premium'),     amount:r.premium_price,        color:'#8b5cf6', icon:'👑', desc:t('tiers.premiumDesc') },
+                { label:t('tiers.floor'),       amount:r.min_profitable_price, color:'#10b981', icon:'🛡️', desc:t('tiers.floorDesc') },
+              ]).map(({ label, amount, color, icon, desc }) => (
                 <div key={label} style={{ background: dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)', borderRadius:12, padding:'10px', textAlign:'center' }}>
                   <p style={{ fontSize:14, margin:'0 0 3px' }}>{icon}</p>
                   <p style={{ fontSize:15, fontWeight:900, color, margin:'0 0 2px', letterSpacing:'-0.02em' }}>
-                    {new Intl.NumberFormat('fr-TN',{maximumFractionDigits:0}).format(price)} TND
+                    {money0(amount)}
                   </p>
                   <p style={{ fontSize:9, color:muted, margin:'0 0 1px', fontWeight:700, textTransform:'uppercase' }}>{label}</p>
                   <p style={{ fontSize:9, color:muted, margin:0, opacity:0.7 }}>{desc}</p>
@@ -593,10 +611,10 @@ useEffect(() => {
 
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
             {([
-              { icon:'🎯', label:'Strategy',   val:r.strategy },
-              { icon:'📏', label:'Safe zone',  val:`${new Intl.NumberFormat('fr-TN',{maximumFractionDigits:0}).format(r.min_price)} → ${new Intl.NumberFormat('fr-TN',{maximumFractionDigits:0}).format(r.max_price)} TND` },
-              { icon:'⚡', label:'Risk level', val: r.risk.charAt(0).toUpperCase() + r.risk.slice(1) },
-            ] as const).map(({ icon, label, val }) => (
+              { icon:'🎯', label:t('strategy'), val:r.strategy },
+              { icon:'📏', label:t('safeZone'), val:t('range', { min: money0(r.min_price), max: money0(r.max_price) }) },
+              { icon:'⚡', label:t('riskLevel'), val: t.has(`risk.${r.risk}`) ? t(`risk.${r.risk}`) : r.risk },
+            ]).map(({ icon, label, val }) => (
               <div key={label} style={{ background:cardBg, borderRadius:14, border:`1px solid ${border}`, padding:'12px 14px' }}>
                 <p style={{ fontSize:14, margin:'0 0 4px' }}>{icon}</p>
                 <p style={{ fontSize:12, fontWeight:800, color:text, margin:'0 0 2px', lineHeight:1.3 }}>{val}</p>
@@ -610,7 +628,7 @@ useEffect(() => {
               <Brain size={15} style={{ color:'#db142e' }} />
             </div>
             <div>
-              <p style={{ fontSize:11, fontWeight:900, color:'#db142e', margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.06em' }}>AI Verdict</p>
+              <p style={{ fontSize:11, fontWeight:900, color:'#db142e', margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.06em' }}>{t('verdict')}</p>
               <p style={{ fontSize:12, color: dark?'rgba(255,255,255,0.82)':'#333', margin:0, lineHeight:1.7, fontWeight:500 }}>{r.reasoning}</p>
             </div>
           </div>
@@ -643,7 +661,7 @@ useEffect(() => {
               <div style={{ background:'rgba(245,158,11,0.05)', border:'1px solid rgba(245,158,11,0.15)', borderRadius:14, padding:'13px 15px', display:'flex', gap:10, alignItems:'flex-start' }}>
                 <span style={{ fontSize:20, flexShrink:0 }}>🧲</span>
                 <div>
-                  <p style={{ fontSize:10, fontWeight:900, color:'#f59e0b', margin:'0 0 4px', textTransform:'uppercase' }}>Price tip</p>
+                  <p style={{ fontSize:10, fontWeight:900, color:'#f59e0b', margin:'0 0 4px', textTransform:'uppercase' }}>{t('tip')}</p>
                   <p style={{ fontSize:11, color: dark?'rgba(255,255,255,0.75)':'#555', margin:0, lineHeight:1.55 }}>{r.psychological_tip}</p>
                 </div>
               </div>
@@ -652,7 +670,7 @@ useEffect(() => {
               <div style={{ background:cardBg, borderRadius:14, border:`1px solid ${border}`, padding:'13px 15px', display:'flex', gap:10, alignItems:'flex-start' }}>
                 <span style={{ fontSize:20, flexShrink:0 }}>🏪</span>
                 <div>
-                  <p style={{ fontSize:10, fontWeight:900, color:muted, margin:'0 0 4px', textTransform:'uppercase' }}>Market</p>
+                  <p style={{ fontSize:10, fontWeight:900, color:muted, margin:'0 0 4px', textTransform:'uppercase' }}>{t('market')}</p>
                   <p style={{ fontSize:11, color: dark?'rgba(255,255,255,0.75)':'#555', margin:0, lineHeight:1.55 }}>{r.competitor_summary}</p>
                 </div>
               </div>
@@ -1282,7 +1300,9 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
 function DescriptionGeneratorTool({ products, dark, initialProductId }: { products: Array<{ id:number; name:string }>; dark:boolean; initialProductId?: number }) {
   const [selectedId, setSelectedId] = useState<number|null>(initialProductId ?? null);
   const [tone,       setTone]       = useState('professional');
-  const [lang,       setLang]       = useState('fr');
+  const locale = useLocale();
+  const t = useTranslations('seller.aiTools.description');
+  const [lang,       setLang]       = useState<string>(locale);
   const [result,     setResult]     = useState<{ ai_result: DescriptionResult; data_context: any }|null>(null);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string|null>(null);
@@ -1301,7 +1321,7 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
     if (!selectedId) return;
     setLoading(true); setError(null);
     try { const res = await sellerAiApi.descriptionGenerator(selectedId, tone, lang); setResult(res.data); }
-    catch (e: any) { setError(e.message ?? 'Generation failed'); }
+    catch (e: any) { setError(e.message ?? t('failed')); }
     finally { setLoading(false); }
   };
 
@@ -1312,26 +1332,26 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       <div style={{ background:cardBg, borderRadius:18, border:`1px solid ${border}`, padding:'18px 20px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-          <p style={{ fontWeight:900, fontSize:14, color:text, margin:0 }}>Generate Product Content</p>
+          <p style={{ fontWeight:900, fontSize:14, color:text, margin:0 }}>{t('title')}</p>
           <AiTag />
         </div>
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           <ProdSelect products={products} value={selectedId} onChange={setSelectedId} dark={dark} />
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
             <div>
-              <p style={{ fontSize:10, fontWeight:700, color:muted, margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.05em' }}>Tone</p>
+              <p style={{ fontSize:10, fontWeight:700, color:muted, margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('tone')}</p>
               <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
-                {TONES.map(t => <button key={t} onClick={() => setTone(t)} style={{ padding:'5px 10px', borderRadius:999, fontSize:10, fontWeight:700, cursor:'pointer', border:'none', background: tone===t?'rgba(219,20,46,0.15)':subBg, color: tone===t?'#f87171':muted, outline: tone===t?'1px solid rgba(219,20,46,0.35)':'1px solid transparent', textTransform:'capitalize' }}>{t}</button>)}
+                {TONES.map(tn => <button key={tn} onClick={() => setTone(tn)} style={{ padding:'5px 10px', borderRadius:999, fontSize:10, fontWeight:700, cursor:'pointer', border:'none', background: tone===tn?'rgba(219,20,46,0.15)':subBg, color: tone===tn?'#f87171':muted, outline: tone===tn?'1px solid rgba(219,20,46,0.35)':'1px solid transparent' }}>{t(`tones.${tn}`)}</button>)}
               </div>
             </div>
             <div>
-              <p style={{ fontSize:10, fontWeight:700, color:muted, margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.05em' }}>Language</p>
+              <p style={{ fontSize:10, fontWeight:700, color:muted, margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('language')}</p>
               <div style={{ display:'flex', gap:5 }}>
-                {LANGS.map(l => <button key={l.value} onClick={() => setLang(l.value)} style={{ padding:'5px 10px', borderRadius:999, fontSize:10, fontWeight:700, cursor:'pointer', border:'none', background: lang===l.value?'rgba(59,130,246,0.15)':subBg, color: lang===l.value?'#60a5fa':muted, outline: lang===l.value?'1px solid rgba(59,130,246,0.35)':'1px solid transparent' }}>{l.label}</button>)}
+                {LANGS.map(l => <button key={l} onClick={() => setLang(l)} style={{ padding:'5px 10px', borderRadius:999, fontSize:10, fontWeight:700, cursor:'pointer', border:'none', background: lang===l?'rgba(59,130,246,0.15)':subBg, color: lang===l?'#60a5fa':muted, outline: lang===l?'1px solid rgba(59,130,246,0.35)':'1px solid transparent' }}>{t(`langs.${l}`)}</button>)}
               </div>
             </div>
           </div>
-          <RunBtn onClick={run} loading={loading} label="Generate Content" icon={FileText} />
+          <RunBtn onClick={run} loading={loading} label={t('run')} icon={FileText} />
         </div>
         {error && <p style={{ color:'#ef4444', fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
       </div>
@@ -1375,7 +1395,7 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
           letterSpacing: '0.06em',
         }}
       >
-        Generated description
+        {t('generated')}
       </p>
       <span
         style={{
@@ -1389,7 +1409,7 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
           color: '#10b981',
         }}
       >
-        AI · Human-quality
+        {t('quality')}
       </span>
     </div>
  
@@ -1420,7 +1440,7 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
             letterSpacing: '0.07em',
           }}
         >
-          Short description
+          {t('short')}
         </p>
         <CopyBtn text={r.short_description} dark={dark} />
       </div>
@@ -1464,7 +1484,7 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
             letterSpacing: '0.07em',
           }}
         >
-          Full description
+          {t('full')}
         </p>
         <CopyBtn text={r.description} dark={dark} />
       </div>
@@ -1488,8 +1508,8 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
     <button
       onClick={() => {
         const both =
-          `SHORT DESCRIPTION:\n${r.short_description}\n\n` +
-          `FULL DESCRIPTION:\n${r.description}`;
+          `${t('short').toUpperCase()}:\n${r.short_description}\n\n` +
+          `${t('full').toUpperCase()}:\n${r.description}`;
         navigator.clipboard.writeText(both);
       }}
       style={{
@@ -1510,7 +1530,7 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
       }}
     >
       <Copy size={13} />
-      Copy both fields
+      {t('copyBoth')}
     </button>
   </div>
 )}
@@ -1526,7 +1546,7 @@ function BundleProductChip({ name, imageUrl, dark }: { name: string; imageUrl: s
   const [imgErr, setImgErr] = useState(false);
   const showImage = !!imageUrl && !imgErr;
   return (
-    <span style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px 10px 4px 4px', borderRadius:999, background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.25)', fontSize:12, fontWeight:700, color:'#fbbf24' }}>
+    <span style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px', paddingInlineEnd:10, borderRadius:999, background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.25)', fontSize:12, fontWeight:700, color:'#fbbf24' }}>
       <span style={{ width:24, height:24, borderRadius:'50%', overflow:'hidden', background: dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
         {showImage ? <img src={imageUrl as string} alt={name} onError={() => setImgErr(true)} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} /> : <Package size={12} style={{ color:'#fbbf24', opacity:0.7 }} />}
       </span>
@@ -1539,6 +1559,8 @@ function BundleRecommenderTool({ products, dark, initialProductId }: { products:
   const [selectedId, setSelectedId] = useState<number|null>(initialProductId ?? null);
   const [mode,        setMode]        = useState<'bundle'|'related'>('bundle');
   const [discountPct, setDiscountPct] = useState(10);
+  const t = useTranslations('seller.aiTools.bundles');
+  const { number } = useFormat();
   const [result,      setResult]      = useState<{ ai_result: RecommenderResult; data_context: any }|null>(null);
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState<string|null>(null);
@@ -1558,7 +1580,7 @@ function BundleRecommenderTool({ products, dark, initialProductId }: { products:
     if (!selectedId) return;
     setLoading(true); setError(null);
     try { const res = await sellerAiApi.recommender(selectedId, mode, discountPct); setResult(res.data); }
-    catch (e: any) { setError(e.message ?? 'Recommendation failed'); }
+    catch (e: any) { setError(e.message ?? t('failed')); }
     finally { setLoading(false); }
   };
 
@@ -1572,30 +1594,30 @@ function BundleRecommenderTool({ products, dark, initialProductId }: { products:
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       <div style={{ background:cardBg, borderRadius:18, border:`1px solid ${border}`, padding:'18px 20px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-          <p style={{ fontWeight:900, fontSize:14, color:text, margin:0 }}>Bundle & Recommendations</p>
+          <p style={{ fontWeight:900, fontSize:14, color:text, margin:0 }}>{t('title')}</p>
           <AiTag />
         </div>
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           <ProdSelect products={products} value={selectedId} onChange={setSelectedId} dark={dark} />
           <div style={{ display:'flex', gap:6 }}>
-            {(['bundle','related'] as const).map(m => <button key={m} onClick={() => setMode(m)} style={{ flex:1, padding:'8px 12px', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', border:'none', background: mode===m?'rgba(219,20,46,0.15)':subBg, color: mode===m?'#f87171':muted, outline: mode===m?'1px solid rgba(219,20,46,0.35)':'1px solid transparent', textTransform:'capitalize' }}>{m==='bundle'?'📦 Bundle Suggestions':'🔗 Related Products'}</button>)}
+            {(['bundle','related'] as const).map(m => <button key={m} onClick={() => setMode(m)} style={{ flex:1, padding:'8px 12px', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', border:'none', background: mode===m?'rgba(219,20,46,0.15)':subBg, color: mode===m?'#f87171':muted, outline: mode===m?'1px solid rgba(219,20,46,0.35)':'1px solid transparent' }}>{m==='bundle'?`📦 ${t('modeBundle')}`:`🔗 ${t('modeRelated')}`}</button>)}
           </div>
           {mode === 'bundle' && (
             <div>
               <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
-                <p style={{ fontSize:10, fontWeight:700, color:muted, margin:0, textTransform:'uppercase' }}>Bundle Discount</p>
-                <p style={{ fontSize:12, fontWeight:900, color:'#db142e', margin:0 }}>{discountPct}%</p>
+                <p style={{ fontSize:10, fontWeight:700, color:muted, margin:0, textTransform:'uppercase' }}>{t('discount')}</p>
+                <p style={{ fontSize:12, fontWeight:900, color:'#db142e', margin:0 }}>{number(discountPct / 100, { style:'percent' })}</p>
               </div>
               <input type="range" min="5" max="30" value={discountPct} onChange={e => setDiscountPct(Number(e.target.value))} style={{ width:'100%', accentColor:'#db142e', cursor:'pointer' }} />
             </div>
           )}
-          <RunBtn onClick={run} loading={loading} label="Generate Recommendations" icon={Package} />
+          <RunBtn onClick={run} loading={loading} label={t('run')} icon={Package} />
         </div>
         {error && <p style={{ color:'#ef4444', fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
       </div>
       {coPurchased.length > 0 && (
         <div style={{ background:subBg, borderRadius:14, border:`1px solid ${border}`, padding:'14px 16px' }}>
-          <p style={{ fontSize:10, fontWeight:800, color:muted, margin:'0 0 8px', textTransform:'uppercase' }}>Real co-purchase data used</p>
+          <p style={{ fontSize:10, fontWeight:800, color:muted, margin:'0 0 8px', textTransform:'uppercase' }}>{t('coPurchase')}</p>
           <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
             {coPurchased.map((p: any) => <span key={p.id} style={{ padding:'3px 9px', borderRadius:999, background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.25)', fontSize:11, fontWeight:700, color:'#34d399' }}>{p.name} ×{p.co_count}</span>)}
           </div>
@@ -1613,14 +1635,14 @@ function BundleRecommenderTool({ products, dark, initialProductId }: { products:
           <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
             {(bundle.products ?? []).map((name, j) => <BundleProductChip key={j} name={name} imageUrl={productImages[name]} dark={dark} />)}
           </div>
-          <Field dark={dark} label="Why it works"      value={bundle.reason} />
-          <Field dark={dark} label="Discount Strategy" value={bundle.suggested_price_reduction} />
+          <Field dark={dark} label={t('why')} value={bundle.reason} />
+          <Field dark={dark} label={t('strategy')} value={bundle.suggested_price_reduction} />
         </div>
       ))}
       {r !== null && r.recommendations != null && (
         <div style={{ background:cardBg, borderRadius:18, border:'1px solid rgba(59,130,246,0.2)', padding:'18px 20px', display:'flex', flexDirection:'column', gap:10 }}>
-          {r.placement_strategy != null && <Field dark={dark} label="Placement Strategy" value={r.placement_strategy} />}
-          {r.best_time_to_show  != null && <Field dark={dark} label="Best Time to Show"  value={r.best_time_to_show} />}
+          {r.placement_strategy != null && <Field dark={dark} label={t('placement')} value={r.placement_strategy} />}
+          {r.best_time_to_show  != null && <Field dark={dark} label={t('bestTime')} value={r.best_time_to_show} />}
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {r.recommendations.map((rec, i) => (
               <div key={i} style={{ background: dark?'rgba(255,255,255,0.04)':'#f8fafc', borderRadius:10, padding:'12px 14px', display:'flex', alignItems:'flex-start', gap:10 }}>
@@ -1630,7 +1652,7 @@ function BundleRecommenderTool({ products, dark, initialProductId }: { products:
                   <p style={{ fontSize:11, color:muted, margin:'0 0 6px', lineHeight:1.4 }}>{rec.reason}</p>
                   <div style={{ display:'flex', gap:6 }}>
                     <span style={{ padding:'2px 7px', borderRadius:999, background:'rgba(59,130,246,0.1)', fontSize:10, fontWeight:700, color:'#60a5fa' }}>{rec.placement}</span>
-                    <span style={{ padding:'2px 7px', borderRadius:999, background:'rgba(16,185,129,0.1)', fontSize:10, fontWeight:700, color:'#34d399' }}>CTR: {rec.est_click_rate}</span>
+                    <span style={{ padding:'2px 7px', borderRadius:999, background:'rgba(16,185,129,0.1)', fontSize:10, fontWeight:700, color:'#34d399' }}>{t('ctr', { rate: rec.est_click_rate })}</span>
                   </div>
                 </div>
               </div>
@@ -1647,10 +1669,10 @@ function BundleRecommenderTool({ products, dark, initialProductId }: { products:
 // ═════════════════════════════════════════════════════════════════════════════
 
 const TOOLS = [
-  { key:'price',       label:'Price',       icon:DollarSign, accent:'#db142e' },
-  { key:'sales',       label:'Sales',       icon:TrendingUp, accent:'#3b82f6' },
-  { key:'description', label:'Description', icon:FileText,   accent:'#10b981' },
-  { key:'bundles',     label:'Bundles',     icon:Package,    accent:'#f59e0b' },
+  { key:'price',       icon:DollarSign, accent:'#db142e' },
+  { key:'sales',       icon:TrendingUp, accent:'#3b82f6' },
+  { key:'description', icon:FileText,   accent:'#10b981' },
+  { key:'bundles',     icon:Package,    accent:'#f59e0b' },
 ];
 
 export default function AIToolsPanel({  dark,
@@ -1664,6 +1686,7 @@ export default function AIToolsPanel({  dark,
 const validTab = ['price','sales','description','bundles'].includes(initialTab ?? '') ? initialTab! : 'price';
 const [activeTool, setActiveTool] = useState(validTab);
   const [products,   setProducts]   = useState<Array<{ id:number; name:string }>>([]);
+  const t = useTranslations('seller.aiTools');
 
   const text  = dark ? '#fff' : '#111';
   const muted = dark ? 'rgba(255,255,255,0.4)' : '#888';
@@ -1685,8 +1708,8 @@ const [activeTool, setActiveTool] = useState(validTab);
             <Brain size={18} />
           </div>
           <div>
-            <p style={{ fontSize:14, fontWeight:900, color:text, margin:'0 0 2px' }}>AI Business Tools</p>
-            <p style={{ fontSize:11, color:muted, margin:0, fontWeight:500 }}>Powered by real data from your store</p>
+            <p style={{ fontSize:14, fontWeight:900, color:text, margin:'0 0 2px' }}>{t('title')}</p>
+            <p style={{ fontSize:11, color:muted, margin:0, fontWeight:500 }}>{t('subtitle')}</p>
           </div>
         </div>
         <span style={{ padding:'4px 10px', borderRadius:999, background:'rgba(219,20,46,0.12)', border:'1px solid rgba(219,20,46,0.3)', fontSize:10, fontWeight:800, color:'#f87171' }}>🔴 Red Pepper</span>
@@ -1699,7 +1722,7 @@ const [activeTool, setActiveTool] = useState(validTab);
           return (
             <button key={tool.key} onClick={() => setActiveTool(tool.key)} style={{ padding:'10px 8px', borderRadius:12, cursor:'pointer', border:'none', background: isActive?`${tool.accent}18`:(dark?'rgba(255,255,255,0.04)':'#f8fafc'), outline: isActive?`1px solid ${tool.accent}44`:'1px solid transparent', display:'flex', flexDirection:'column', alignItems:'center', gap:5, transition:'all 0.2s ease' }}>
               <Icon size={16} style={{ color: isActive?tool.accent:muted }} />
-              <span style={{ fontSize:10, fontWeight:700, color: isActive?text:muted }}>{tool.label}</span>
+              <span style={{ fontSize:10, fontWeight:700, color: isActive?text:muted }}>{t(`tabs.${tool.key}`)}</span>
             </button>
           );
         })}

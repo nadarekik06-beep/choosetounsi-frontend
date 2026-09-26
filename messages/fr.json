@@ -3550,6 +3550,156 @@
       "allGoodTitle": "Toutes les fiches dépassent 80",
       "allGoodText": "Chaque produit a une fiche complète et de qualité.",
       "empty": "Aucun produit à analyser pour l'instant."
+    },
+    "pageHeaders": {
+      "aiTools": {
+        "title": "Outils IA pour votre boutique",
+        "subtitle": "Optimiseur de prix, prévision des ventes, générateur de descriptions et recommandations de packs"
+      },
+      "analytics": {
+        "title": "Statistiques avancées",
+        "subtitle": "Des analyses approfondies basées sur vos ventes réelles"
+      },
+      "forecast": {
+        "title": "Prévision des ventes",
+        "subtitle": "Prévision IA sur 6 mois · Saisonnalité tunisienne · Carte régionale · Signaux d'événements"
+      }
+    },
+    "aiTools": {
+      "title": "Outils IA pour votre boutique",
+      "subtitle": "Basés sur les données réelles de votre boutique",
+      "tabs": {
+        "price": "Prix",
+        "sales": "Ventes",
+        "description": "Description",
+        "bundles": "Packs"
+      },
+      "aiPowered": "Propulsé par l'IA",
+      "copy": "Copier",
+      "copied": "Copié",
+      "selectProductOption": "— Choisir un produit —",
+      "analyze": "Analyser",
+      "analyzing": "Analyse…",
+      "loader": {
+        "title": "Analyse IA des prix en cours",
+        "subtitle": "Collecte des données réelles du marché tunisien…",
+        "done": "FAIT",
+        "active": "EN COURS",
+        "scanning": "Analyse de <b>Tayara.tn</b>, <b>Mytek</b> et <b>Tunisianet</b> via Google Search…",
+        "steps": {
+          "internal": "Analyse des données de votre boutique",
+          "market": "Collecte des données du marché tunisien",
+          "competitors": "Analyse des concurrents",
+          "normalizing": "Normalisation des prix",
+          "strategy": "Calcul de la stratégie de prix",
+          "ai": "Génération de la recommandation IA"
+        }
+      },
+      "market": {
+        "platforms": "Plateformes analysées",
+        "results": "{count, plural, one {# résultat trouvé} other {# résultats trouvés}}",
+        "noData": "Aucune donnée — interne uniquement",
+        "searchUnavailable": "Recherche indisponible",
+        "platformData": "Données de la plateforme",
+        "sourceLine": "{count, plural, one {# produit} other {# produits}} · moy. {avg}",
+        "googleIndexed": "Indexé par Google",
+        "noExternal": "Aucune donnée externe trouvée pour ce produit. La recommandation repose uniquement sur les données de la plateforme.",
+        "avg": "Moyenne du marché",
+        "lowest": "Le plus bas",
+        "highest": "Le plus haut",
+        "chips": {
+          "benchmarked": "Prix comparé",
+          "demand": "Demande analysée",
+          "margin": "Marge optimisée",
+          "power": "Pouvoir d'achat",
+          "charm": "Prix psychologique"
+        },
+        "verified": "Vérifié par l'IA ChooseTounsi",
+        "verifiedSub": "Recoupé · Marché tunisien · Optimisé pour la conversion"
+      },
+      "price": {
+        "failed": "L'analyse a échoué",
+        "selectProduct": "Choisir le produit",
+        "run": "Optimiser le prix",
+        "basedOn": "Basé sur vos données réelles",
+        "ctx": {
+          "current": "Prix actuel",
+          "units": "Unités vendues",
+          "conversion": "Taux de conversion",
+          "catAvg": "Moyenne de la catégorie"
+        },
+        "na": "N/D",
+        "optimal": "Prix optimal IA",
+        "optimalSub": "Marché tunisien · en ce moment",
+        "confidence": {
+          "high": "Confiance élevée",
+          "medium": "Confiance moyenne",
+          "low": "Confiance faible"
+        },
+        "recommended": "Prix de vente recommandé",
+        "currency": "DT",
+        "marketAvg": "Moyenne du marché :",
+        "below": "{pct} % en dessous",
+        "above": "{pct} % au-dessus",
+        "competitive": "Compétitif",
+        "tiers": {
+          "competitive": "Compétitif",
+          "competitiveDesc": "Aligné sur le marché",
+          "premium": "Premium",
+          "premiumDesc": "Position haut de gamme",
+          "floor": "Plancher",
+          "floorDesc": "Ne jamais descendre en dessous"
+        },
+        "strategy": "Stratégie",
+        "safeZone": "Zone sûre",
+        "range": "{min} → {max}",
+        "riskLevel": "Niveau de risque",
+        "risk": {
+          "low": "Faible",
+          "medium": "Moyen",
+          "high": "Élevé"
+        },
+        "verdict": "Verdict de l'IA",
+        "tip": "Astuce prix",
+        "market": "Marché"
+      },
+      "description": {
+        "failed": "La génération a échoué",
+        "title": "Générer le contenu du produit",
+        "tone": "Ton",
+        "language": "Langue",
+        "tones": {
+          "professional": "Professionnel",
+          "casual": "Décontracté",
+          "exciting": "Enthousiaste",
+          "trust-focused": "Confiance"
+        },
+        "langs": {
+          "fr": "Français",
+          "ar": "Arabe",
+          "en": "Anglais"
+        },
+        "run": "Générer le contenu",
+        "generated": "Description générée",
+        "quality": "IA · Qualité rédactionnelle",
+        "short": "Description courte",
+        "full": "Description complète",
+        "copyBoth": "Copier les deux champs"
+      },
+      "bundles": {
+        "failed": "La recommandation a échoué",
+        "title": "Packs et recommandations",
+        "modeBundle": "Suggestions de packs",
+        "modeRelated": "Produits associés",
+        "discount": "Remise sur le pack",
+        "run": "Générer les recommandations",
+        "coPurchase": "Données réelles d'achats groupés utilisées",
+        "why": "Pourquoi ça marche",
+        "strategy": "Stratégie de remise",
+        "placement": "Stratégie de placement",
+        "bestTime": "Meilleur moment d'affichage",
+        "ctr": "CTR : {rate}"
+      }
     }
   },
   "invoice": {

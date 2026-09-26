@@ -3550,6 +3550,156 @@
       "allGoodTitle": "All listings score 80+",
       "allGoodText": "Every product has a complete, high-quality listing.",
       "empty": "No products to audit yet."
+    },
+    "pageHeaders": {
+      "aiTools": {
+        "title": "AI Business Tools",
+        "subtitle": "Price optimizer, sales predictor, description generator & bundle recommender"
+      },
+      "analytics": {
+        "title": "Advanced Analytics",
+        "subtitle": "Deep insights powered by your real sales data"
+      },
+      "forecast": {
+        "title": "Sales Forecast",
+        "subtitle": "6-month AI forecast · Tunisia seasonality · Regional heatmap · Event signals"
+      }
+    },
+    "aiTools": {
+      "title": "AI Business Tools",
+      "subtitle": "Powered by real data from your store",
+      "tabs": {
+        "price": "Price",
+        "sales": "Sales",
+        "description": "Description",
+        "bundles": "Bundles"
+      },
+      "aiPowered": "AI Powered",
+      "copy": "Copy",
+      "copied": "Copied",
+      "selectProductOption": "— Select a product —",
+      "analyze": "Analyze",
+      "analyzing": "Analyzing…",
+      "loader": {
+        "title": "AI Price Analysis Running",
+        "subtitle": "Collecting real Tunisian market data…",
+        "done": "DONE",
+        "active": "ACTIVE",
+        "scanning": "Scanning <b>Tayara.tn</b>, <b>Mytek</b> & <b>Tunisianet</b> via Google Search API…",
+        "steps": {
+          "internal": "Analyzing your store data",
+          "market": "Collecting Tunisian market data",
+          "competitors": "Analyzing competitors",
+          "normalizing": "Normalizing prices",
+          "strategy": "Calculating pricing strategy",
+          "ai": "Generating AI recommendation"
+        }
+      },
+      "market": {
+        "platforms": "Platforms analysed",
+        "results": "{count, plural, one {# result found} other {# results found}}",
+        "noData": "No data — internal only",
+        "searchUnavailable": "Search unavailable",
+        "platformData": "Platform data",
+        "sourceLine": "{count, plural, one {# product} other {# products}} · avg {avg}",
+        "googleIndexed": "Google indexed",
+        "noExternal": "No external market data found for this product. Recommendation is based on your platform data only.",
+        "avg": "Market Avg",
+        "lowest": "Lowest",
+        "highest": "Highest",
+        "chips": {
+          "benchmarked": "Price benchmarked",
+          "demand": "Demand analysed",
+          "margin": "Margin optimised",
+          "power": "Purchasing power",
+          "charm": "Charm pricing"
+        },
+        "verified": "Verified by ChooseTounsi AI",
+        "verifiedSub": "Cross-validated · Tunisian market · Optimised for conversion"
+      },
+      "price": {
+        "failed": "Analysis failed",
+        "selectProduct": "Select Product",
+        "run": "Optimize Price",
+        "basedOn": "Based on your real data",
+        "ctx": {
+          "current": "Current Price",
+          "units": "Units Sold",
+          "conversion": "Conversion Rate",
+          "catAvg": "Platform Cat Avg"
+        },
+        "na": "N/A",
+        "optimal": "AI Optimal Price",
+        "optimalSub": "Tunisian market · right now",
+        "confidence": {
+          "high": "High confidence",
+          "medium": "Medium confidence",
+          "low": "Low confidence"
+        },
+        "recommended": "Recommended selling price",
+        "currency": "TND",
+        "marketAvg": "Market avg:",
+        "below": "{pct}% below",
+        "above": "{pct}% above",
+        "competitive": "Competitive",
+        "tiers": {
+          "competitive": "Competitive",
+          "competitiveDesc": "Market match",
+          "premium": "Premium",
+          "premiumDesc": "Top position",
+          "floor": "Floor",
+          "floorDesc": "Never below"
+        },
+        "strategy": "Strategy",
+        "safeZone": "Safe zone",
+        "range": "{min} → {max}",
+        "riskLevel": "Risk level",
+        "risk": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        },
+        "verdict": "AI Verdict",
+        "tip": "Price tip",
+        "market": "Market"
+      },
+      "description": {
+        "failed": "Generation failed",
+        "title": "Generate Product Content",
+        "tone": "Tone",
+        "language": "Language",
+        "tones": {
+          "professional": "Professional",
+          "casual": "Casual",
+          "exciting": "Exciting",
+          "trust-focused": "Trust-focused"
+        },
+        "langs": {
+          "fr": "French",
+          "ar": "Arabic",
+          "en": "English"
+        },
+        "run": "Generate Content",
+        "generated": "Generated description",
+        "quality": "AI · Human-quality",
+        "short": "Short description",
+        "full": "Full description",
+        "copyBoth": "Copy both fields"
+      },
+      "bundles": {
+        "failed": "Recommendation failed",
+        "title": "Bundle & Recommendations",
+        "modeBundle": "Bundle Suggestions",
+        "modeRelated": "Related Products",
+        "discount": "Bundle Discount",
+        "run": "Generate Recommendations",
+        "coPurchase": "Real co-purchase data used",
+        "why": "Why it works",
+        "strategy": "Discount Strategy",
+        "placement": "Placement Strategy",
+        "bestTime": "Best Time to Show",
+        "ctr": "CTR: {rate}"
+      }
     }
   },
   "invoice": {

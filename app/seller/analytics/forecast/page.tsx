@@ -12,12 +12,14 @@
 
 import { Suspense } from 'react';
 import { useTheme } from '../../SellerShell';
+import { useTranslations } from 'next-intl';
 import { PlanGate } from '@/app/components/seller/SubscriptionBadge';
 import SalesForecastDashboard from '@/app/seller/components/SalesForecastDashboard';
 import { TrendingUp } from 'lucide-react';
 
 function ForecastInner() {
   const { dark } = useTheme();
+  const tp = useTranslations('seller.pageHeaders');
 
   const textMain  = dark ? '#fff' : '#111';
   const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
@@ -37,10 +39,10 @@ function ForecastInner() {
         </div>
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.02em' }}>
-            Sales Forecast
+            {tp('forecast.title')}
           </h1>
           <p style={{ fontSize: 12, color: textMuted, margin: 0, fontWeight: 500 }}>
-            6-month AI forecast · Tunisia seasonality · Regional heatmap · Event signals
+            {tp('forecast.subtitle')}
           </p>
         </div>
       </div>

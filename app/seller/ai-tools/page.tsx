@@ -3,12 +3,14 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTheme } from '../SellerShell';
+import { useTranslations } from 'next-intl';
 import { PlanGate } from '@/app/components/seller/SubscriptionBadge';
 import AIToolsPanel from '@/app/components/seller/AIToolsPanel';
 import { Brain } from 'lucide-react';
 
 function AIToolsInner() {
   const { dark } = useTheme();
+  const tp = useTranslations('seller.pageHeaders');
   const searchParams = useSearchParams();
 
   const tabParam       = searchParams.get('tab');
@@ -32,10 +34,10 @@ function AIToolsInner() {
         </div>
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.02em' }}>
-            AI Business Tools
+            {tp('aiTools.title')}
           </h1>
           <p style={{ fontSize: 12, color: textMuted, margin: 0, fontWeight: 500 }}>
-            Price optimizer, sales predictor, description generator & bundle recommender
+            {tp('aiTools.subtitle')}
           </p>
         </div>
       </div>

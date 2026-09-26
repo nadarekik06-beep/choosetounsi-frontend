@@ -9,12 +9,14 @@
  */
 
 import { useTheme } from '../SellerShell';
+import { useTranslations } from 'next-intl';
 import { PlanGate } from '@/app/components/seller/SubscriptionBadge';
 import AdvancedAnalytics from '@/app/components/seller/AdvancedAnalytics';
 import { BarChart2 } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const { dark } = useTheme();
+  const tp = useTranslations('seller.pageHeaders');
 
   const textMain  = dark ? '#fff' : '#111';
   const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
@@ -34,10 +36,10 @@ export default function AnalyticsPage() {
         </div>
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.02em' }}>
-            Advanced Analytics
+            {tp('analytics.title')}
           </h1>
           <p style={{ fontSize: 12, color: textMuted, margin: 0, fontWeight: 500 }}>
-            Deep insights powered by your real sales data
+            {tp('analytics.subtitle')}
           </p>
         </div>
       </div>
