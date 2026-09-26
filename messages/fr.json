@@ -3700,6 +3700,192 @@
         "bestTime": "Meilleur moment d'affichage",
         "ctr": "CTR : {rate}"
       }
+    },
+    "forecast": {
+      "title": "Prévision des ventes",
+      "subtitle": "6 mois · calibrée pour la Tunisie",
+      "justNow": "à l'instant",
+      "updated": "Mis à jour {age}",
+      "refreshing": "Actualisation…",
+      "selectOption": "— Choisir un produit à prévoir —",
+      "forecasting": "Prévision…",
+      "refresh": "Actualiser",
+      "autoRefresh": "Actualisation auto toutes les 60 s · mise à jour immédiate au retour sur l'onglet",
+      "failed": "La prévision a échoué",
+      "kpi": {
+        "forecast": "Prévision 6 mois",
+        "forecastSub": "unités prévues",
+        "revenue": "Revenus prévus",
+        "revenueSub": "potentiel sur 6 mois",
+        "peak": "Mois record",
+        "peakSub": "{count, plural, one {# unité attendue} other {# unités attendues}}",
+        "stock": "Stock nécessaire (3 mois)",
+        "stockSub": "unités (marge de 30 %)"
+      },
+      "confidence": {
+        "high": "Confiance élevée",
+        "medium": "Confiance moyenne",
+        "low": "Confiance faible"
+      },
+      "basedOn": "{count, plural, one {Basé sur # commande réelle} other {Basé sur # commandes réelles}}",
+      "trend": {
+        "up": "Tendance à la hausse",
+        "down": "Tendance à la baisse",
+        "stable": "Tendance stable"
+      },
+      "slope": "pente : {value} unités/mois",
+      "unitsWord": "unités",
+      "eventTag": "événement",
+      "tunisia": "Tunisie",
+      "similarCount": "{count, plural, one {# similaire} other {# similaires}}",
+      "poweredBy": "Propulsé par Groq",
+      "cards": {
+        "chart": "Graphique de prévision sur 6 mois",
+        "regional": "Demande par région",
+        "events": "Calendrier des événements en Tunisie",
+        "market": "Comparaison avec le marché",
+        "ai": "Analyse IA"
+      },
+      "chart": {
+        "now": "maintenant",
+        "history": "Historique",
+        "forecast": "Prévision",
+        "eventBoost": "Pic d'événement"
+      },
+      "demand": {
+        "high": "Forte demande",
+        "moderate": "Modérée",
+        "low": "Faible demande",
+        "score": "Score de demande"
+      },
+      "stock": {
+        "shortTitle": "Stock insuffisant détecté",
+        "shortText": "Il vous faut <b>{need} unités</b> mais vous n'en avez que <b>{have}</b>. Réapprovisionnez <r>{missing} unités</r> dès maintenant.",
+        "unitsShort": "unités manquantes",
+        "okTitle": "Le niveau de stock est suffisant",
+        "okText": "Le stock actuel ({have} unités) couvre la prévision sur 3 mois ({need} nécessaires)."
+      },
+      "computedAt": "Calculé le {date}",
+      "cached": "En cache",
+      "fresh": "Récent",
+      "emptyTitle": "Choisissez un produit à prévoir",
+      "emptyText": "L'IA analysera votre historique de ventes, la saisonnalité tunisienne et les événements à venir pour générer une prévision sur 6 mois avec une carte de la demande régionale en direct.",
+      "events": {
+        "empty": "Aucun événement à venir pour cette catégorie de produits.",
+        "source": {
+          "real": "Données réelles",
+          "category": "Modèle de catégorie",
+          "tunisia": "Référence Tunisie"
+        },
+        "now": "Maintenant",
+        "inDays": "dans {count} j",
+        "demand": "{pct} % de demande",
+        "units": "{count, plural, one {# unité} other {# unités}}",
+        "confidence": "{pct} % de confiance",
+        "bestRegions": "Meilleures régions :"
+      },
+      "similar": {
+        "empty": "Aucun produit similaire dans cette sous-catégorie pour l'instant.",
+        "yourMonthly": "Vos ventes/mois",
+        "median": "Médiane du marché",
+        "avgPrice": "Prix moyen du marché",
+        "perMonth": "{count}/mois"
+      },
+      "ai": {
+        "loading": "L'IA analyse votre prévision…",
+        "summary": "Résumé",
+        "opportunity": "Opportunité",
+        "risk": "Risque",
+        "seasonTip": "Conseil saisonnier"
+      }
+    },
+    "heatmap": {
+      "noData": "Pas encore de données régionales — les commandes avec une wilaya rempliront cette carte.",
+      "aria": "Carte de la demande régionale en Tunisie",
+      "units": "{count, plural, one {{n} unité} other {{n} unités}}",
+      "orders": "{count, plural, one {# commande} other {# commandes}}",
+      "noOrders": "Aucune commande pour l'instant",
+      "legendNone": "Aucune commande",
+      "legendPeak": "Pic",
+      "noWilaya": "Pas encore de données par wilaya.",
+      "topRegion": "Région en tête",
+      "coverage": "Couverture",
+      "governorates": "gouvernorats",
+      "untapped": "{count, plural, one {# région inexploitée} other {# régions inexploitées}} — pensez à des promotions pour {a}, {b} et {c}."
+    },
+    "advanced": {
+      "title": "Statistiques avancées",
+      "subtitle": "Des analyses approfondies basées sur vos ventes réelles",
+      "loadFailed": "Impossible de charger les statistiques",
+      "error": "Erreur des statistiques",
+      "retry": "Réessayer",
+      "revenue": "Revenus",
+      "tabs": {
+        "overview": "Vue d'ensemble",
+        "products": "Produits",
+        "customers": "Clients"
+      },
+      "kpi": {
+        "week": "Cette semaine",
+        "month": "Ce mois-ci",
+        "aov": "Panier moyen",
+        "repeat": "Taux de fidélité"
+      },
+      "weekly": {
+        "title": "Revenus hebdomadaires",
+        "subtitle": "8 dernières semaines"
+      },
+      "daily": {
+        "title": "Revenus quotidiens",
+        "subtitle": "30 derniers jours"
+      },
+      "payment": {
+        "title": "Revenus par mode de paiement",
+        "subtitle": "Répartition par type de paiement",
+        "empty": "Aucune donnée de paiement"
+      },
+      "ordersCount": "{count, plural, one {# commande} other {# commandes}}",
+      "productsCount": "{count, plural, one {# produit} other {# produits}}",
+      "stock": {
+        "healthy": "Stock sain",
+        "low": "Stock faible",
+        "out": "En rupture"
+      },
+      "category": {
+        "title": "Revenus par catégorie",
+        "subtitle": "Vos catégories classées par performance"
+      },
+      "perf": {
+        "title": "Performance des produits",
+        "subtitle": "Classés par revenus · Conversion = commandes ÷ vues",
+        "cols": {
+          "product": "Produit",
+          "revenue": "Revenus",
+          "units": "Unités",
+          "conv": "Conv. %",
+          "stock": "Stock"
+        }
+      },
+      "segments": {
+        "champion": "Champion",
+        "loyal": "Fidèle",
+        "regular": "Régulier",
+        "atRisk": "À risque",
+        "lost": "Perdu"
+      },
+      "rfm": {
+        "title": "Analyse RFM des clients",
+        "subtitle": "Score Récence × Fréquence × Montant",
+        "cols": {
+          "customer": "Client",
+          "segment": "Segment",
+          "orders": "Commandes",
+          "spent": "Total dépensé",
+          "last": "Dernière commande",
+          "rfm": "RFM"
+        }
+      },
+      "daysAgo": "il y a {count} j"
     }
   },
   "invoice": {

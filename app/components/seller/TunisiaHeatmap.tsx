@@ -15,6 +15,12 @@
 
 import { useState, useMemo } from 'react';
 import type { RegionalDemandResult, RegionalDemandRegion } from '@/lib/sellerForecastApi';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
+import { useWilayaLabel } from '@/lib/i18n/wilayas';
+
+// Map spellings that differ from the shared wilaya list.
+const LABEL_ALIAS: Record<string, string> = { Manouba: 'La Manouba' };
 
 // Real GADM-sourced paths projected to viewBox="10 10 320 375"
 const GOVS = [
@@ -84,6 +90,10 @@ interface Props { regional: RegionalDemandResult; dark?: boolean; }
 
 export default function TunisiaHeatmap({ regional, dark = true }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
+  const t = useTranslations('seller.heatmap');
+  const { number } = useFormat();
+  const wl = useWilayaLabel();
+  const name = (gov: string) => wl(LABEL_ALIAS[gov] ?? gov);
   const text  = dark ? '#f0f4ff' : '#0f172a';
   const muted = dark ? 'rgba(180,200,255,0.45)' : '#64748b';
   const barBg = dark ? 'rgba(255,255,255,0.06)' : '#e2e8f0';
@@ -110,7 +120,7 @@ export default function TunisiaHeatmap({ regional, dark = true }: Props) {
 
   if (!regional?.has_data) return (
     <p style={{ textAlign:'center', padding:'32px 0', color:muted, fontSize:12 }}>
-      No regional data yet — orders with a wilaya will populate this map.
+      {t('noData')}
     </p>
   );
 
@@ -119,7 +129,7 @@ export default function TunisiaHeatmap({ regional, dark = true }: Props) {
       <div style={{ flexShrink:0, width:220, position:'relative' }}>
         <svg viewBox="10 10 320 375" preserveAspectRatio="xMidYMid meet"
           style={{ width:'100%', height:'auto', display:'block' }}
-          aria-label="Tunisia regional demand map">
+          aria-label={t('aria')}>
           <rect x="10" y="10" width="320" height="375" fill={dark?'#0b1220':'#d8e8f5'} rx="6"/>
           {GOVS.map(gov => {
             const data  = byName.get(gov.n);
@@ -142,7 +152,7 @@ export default function TunisiaHeatmap({ regional, dark = true }: Props) {
                     fontSize={isHov?7.5:6.5} fontFamily="system-ui,sans-serif"
                     fontWeight="700" fill="rgba(255,255,255,0.97)" textAnchor="middle"
                     style={{ pointerEvents:'none', userSelect:'none' }}>
-                    {gov.n.length>9?gov.n.slice(0,8)+'…':gov.n}
+                    {(() => { const l = name(gov.n); return l.length>9?l.slice(0,8)+'…':l; })()}
                   </text>
                 )}
               </g>
@@ -164,8 +174,8 @@ export default function TunisiaHeatmap({ regional, dark = true }: Props) {
             <div style={{
               position:'absolute',
               top:`${Math.max(4,Math.min(80,pctY*100))}%`,
-              insetInlineStart:  onRight?'auto':`${Math.min(pctX*100+28,68)}%`,
-              insetInlineEnd: onRight?'4px':'auto',
+              left:  onRight?'auto':`${Math.min(pctX*100+28,68)}%`,
+              right: onRight?'4px':'auto',
               transform:'translateY(-50%)',
               background:dark?'#1c2540':'#fff',
               border:`1px solid ${dark?'rgba(255,255,255,0.10)':'rgba(0,0,0,0.10)'}`,
@@ -173,31 +183,31 @@ export default function TunisiaHeatmap({ regional, dark = true }: Props) {
               pointerEvents:'none', zIndex:30, minWidth:112,
               boxShadow:dark?'0 10px 28px rgba(0,0,0,0.55)':'0 8px 20px rgba(0,0,0,0.14)',
             }}>
-              <p style={{ fontSize:11, fontWeight:800, color:text, margin:'0 0 3px' }}>{hovered}</p>
+              <p style={{ fontSize:11, fontWeight:800, color:text, margin:'0 0 3px' }}>{name(hovered)}</p>
               {data && data.total_units > 0 ? (<>
                 <p style={{ fontSize:14, fontWeight:900, color:'#db142e', margin:'0 0 2px', letterSpacing:'-0.02em' }}>
-                  {data.total_units.toLocaleString()} unit{data.total_units!==1?'s':''}
+                  {t('units', { count: data.total_units, n: number(data.total_units) })}
                 </p>
                 <p style={{ fontSize:9, color:muted, margin:0 }}>
-                  {data.total_orders} order{data.total_orders!==1?'s':''} · {Math.round(data.demand_index)}/100
+                  {t('orders', { count: data.total_orders })} · {Math.round(data.demand_index)}/100
                 </p>
-              </>) : <p style={{ fontSize:10, color:muted, margin:0 }}>No orders yet</p>}
+              </>) : <p style={{ fontSize:10, color:muted, margin:0 }}>{t('noOrders')}</p>}
             </div>
           );
         })()}
 
         <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:8 }}>
-          <span style={{ fontSize:9, color:muted, flexShrink:0 }}>No orders</span>
-          <div style={{ flex:1, height:5, borderRadius:999,
+          <span style={{ fontSize:9, color:muted, flexShrink:0 }}>{t('legendNone')}</span>
+          <div className="rtl-flip" style={{ flex:1, height:5, borderRadius:999,
             background:'linear-gradient(90deg,#111827,#4b1122,#981e39,#db142e)'}}/>
-          <span style={{ fontSize:9, color:muted, flexShrink:0 }}>Peak</span>
+          <span style={{ fontSize:9, color:muted, flexShrink:0 }}>{t('legendPeak')}</span>
         </div>
       </div>
 
       <div style={{ flex:1, minWidth:140, display:'flex', flexDirection:'column', gap:12 }}>
         <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
           {ranked.length===0
-            ? <p style={{ fontSize:11, color:muted, margin:0, fontStyle:'italic' }}>No wilaya data yet.</p>
+            ? <p style={{ fontSize:11, color:muted, margin:0, fontStyle:'italic' }}>{t('noWilaya')}</p>
             : ranked.map((r,i) => (
               <div key={r._c}
                 onMouseEnter={() => setHovered(r._c!)}
@@ -214,13 +224,13 @@ export default function TunisiaHeatmap({ regional, dark = true }: Props) {
                     <span style={{ fontSize:11, fontWeight:700,
                       color:hovered===r._c?'#db142e':text,
                       overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
-                      transition:'color 0.12s' }}>{r._c??r.wilaya}</span>
+                      transition:'color 0.12s' }}>{r._c ? name(r._c) : r.wilaya}</span>
                     <span style={{ fontSize:10, fontWeight:900, color:'#db142e', flexShrink:0, marginInlineStart:8 }}>
-                      {r.total_units.toLocaleString()} unit{r.total_units!==1?'s':''}
+                      {t('units', { count: r.total_units, n: number(r.total_units) })}
                     </span>
                   </div>
                   <div style={{ height:3, borderRadius:999, background:barBg, overflow:'hidden' }}>
-                    <div style={{ height:'100%', borderRadius:999,
+                    <div className="rtl-flip" style={{ height:'100%', borderRadius:999,
                       background:'linear-gradient(90deg,#db142e,#ff4d6a)',
                       width:`${Math.round((r.total_units/maxUnits)*100)}%`,
                       transition:'width 0.6s ease' }}/>
@@ -234,20 +244,20 @@ export default function TunisiaHeatmap({ regional, dark = true }: Props) {
           <div style={{ padding:'10px 12px', borderRadius:10,
             background:dark?'rgba(219,20,46,0.07)':'rgba(219,20,46,0.04)',
             border:'1px solid rgba(219,20,46,0.20)' }}>
-            <p style={{ fontSize:9, fontWeight:800, color:'#f87171', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'0.06em' }}>Top region</p>
+            <p style={{ fontSize:9, fontWeight:800, color:'#f87171', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'0.06em' }}>{t('topRegion')}</p>
             <p style={{ fontSize:13, fontWeight:900, color:text, margin:'0 0 1px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-              {top?(resolve(top.wilaya)??top.wilaya):'—'}
+              {top ? (resolve(top.wilaya) ? name(resolve(top.wilaya)!) : top.wilaya) : '—'}
             </p>
             <p style={{ fontSize:9, color:muted, margin:0 }}>
-              {(top?.total_units??0).toLocaleString()} unit{(top?.total_units??0)!==1?'s':''}
+              {t('units', { count: top?.total_units ?? 0, n: number(top?.total_units ?? 0) })}
             </p>
           </div>
           <div style={{ padding:'10px 12px', borderRadius:10,
             background:dark?'rgba(59,130,246,0.07)':'rgba(59,130,246,0.04)',
             border:'1px solid rgba(59,130,246,0.20)' }}>
-            <p style={{ fontSize:9, fontWeight:800, color:'#60a5fa', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'0.06em' }}>Coverage</p>
+            <p style={{ fontSize:9, fontWeight:800, color:'#60a5fa', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'0.06em' }}>{t('coverage')}</p>
             <p style={{ fontSize:13, fontWeight:900, color:text, margin:'0 0 1px' }}>{reached} / 24</p>
-            <p style={{ fontSize:9, color:muted, margin:0 }}>governorates</p>
+            <p style={{ fontSize:9, color:muted, margin:0 }}>{t('governorates')}</p>
           </div>
         </div>
 
@@ -258,7 +268,7 @@ export default function TunisiaHeatmap({ regional, dark = true }: Props) {
             display:'flex', gap:8, alignItems:'flex-start' }}>
             <span style={{ fontSize:13, flexShrink:0, lineHeight:1.4 }}>💡</span>
             <p style={{ fontSize:10, color:dark?'rgba(255,255,255,0.68)':'#555', margin:0, lineHeight:1.55 }}>
-              {24-reached} region{24-reached!==1?'s':''} untapped — consider promotions for Sousse, Monastir &amp; Nabeul.
+              {t('untapped', { count: 24 - reached, a: name('Sousse'), b: name('Monastir'), c: name('Nabeul') })}
             </p>
           </div>
         )}

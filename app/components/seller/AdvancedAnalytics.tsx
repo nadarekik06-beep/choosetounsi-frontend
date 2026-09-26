@@ -25,15 +25,16 @@ import {
   Package, RefreshCw, AlertCircle, Zap,
 } from 'lucide-react';
 import { analyticsApi, type AnalyticsOverview, type ProductAnalytics, type CustomerAnalytics } from '@/lib/sellerAiApi';
+import { useTranslations } from 'next-intl';
+import { useFormat } from '@/lib/i18n/useFormat';
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(n) + ' TND';
-
-const pct = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
 
 const SEGMENT_COLORS: Record<string, string> = {
   Champion: '#10b981', Loyal: '#3b82f6', Regular: '#f59e0b',
   'At Risk': '#f97316', Lost: '#ef4444',
+};
+const SEGMENT_KEYS: Record<string, string> = {
+  Champion: 'champion', Loyal: 'loyal', Regular: 'regular', 'At Risk': 'atRisk', Lost: 'lost',
 };
 
 const PAYMENT_COLORS: Record<string, string> = {
@@ -53,6 +54,7 @@ function MiniKPI({
   const border  = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const textM   = dark ? '#fff' : '#111';
   const textMu  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const { number } = useFormat();
 
   return (
     <div style={{ background: bg, borderRadius: 16, border: `1px solid ${border}`, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -69,7 +71,7 @@ function MiniKPI({
             padding: '2px 7px', borderRadius: 999,
           }}>
             {change >= 0 ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
-            {Math.abs(change).toFixed(1)}%
+            {number(Math.abs(change) / 100, { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 })}
           </span>
         )}
       </div>
@@ -108,6 +110,12 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState<string | null>(null);
   const [activeTab,  setActiveTab]  = useState<'overview' | 'products' | 'customers'>('overview');
+  const t  = useTranslations('seller.advanced');
+  const tm = useTranslations('seller.orders.methods');
+  const { price, number, isRtl } = useFormat();
+  const fmt = (n: number) => price(n, { maximumFractionDigits: 3 });
+  const pctOf = (n: number, digits = 0) => number(n / 100, { style: 'percent', maximumFractionDigits: digits, minimumFractionDigits: digits });
+  const segLabel = (s: string) => SEGMENT_KEYS[s] ? t(`segments.${SEGMENT_KEYS[s]}`) : s;
 
   const cardBg   = dark ? '#161b27' : '#ffffff';
   const border   = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
@@ -125,7 +133,7 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
       ]);
       setOverview(ov); setProducts(pr); setCustomers(cu);
     } catch (e: any) {
-      setError(e.message ?? 'Failed to load analytics');
+      setError(e.message ?? t('loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -149,10 +157,10 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
   if (error) return (
     <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: '32px 24px', textAlign: 'center' }}>
       <AlertCircle size={28} style={{ color: '#db142e', margin: '0 auto 12px', display: 'block' }} />
-      <p style={{ color: textMain, fontWeight: 700, margin: '0 0 6px' }}>Analytics Error</p>
+      <p style={{ color: textMain, fontWeight: 700, margin: '0 0 6px' }}>{t('error')}</p>
       <p style={{ color: textMuted, fontSize: 12, margin: '0 0 16px' }}>{error}</p>
       <button onClick={load} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: '#db142e', color: '#fff', borderRadius: 10, border: 'none', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-        <RefreshCw size={12} /> Retry
+        <RefreshCw size={12} /> {t('retry')}
       </button>
     </div>
   );
@@ -160,9 +168,9 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
   if (!overview || !products || !customers) return null;
 
   const tabs = [
-    { key: 'overview' as const,  label: 'Overview'  },
-    { key: 'products' as const,  label: 'Products'  },
-    { key: 'customers' as const, label: 'Customers' },
+    { key: 'overview' as const,  label: t('tabs.overview')  },
+    { key: 'products' as const,  label: t('tabs.products')  },
+    { key: 'customers' as const, label: t('tabs.customers') },
   ];
 
   return (
@@ -180,8 +188,8 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
             <Zap size={18} />
           </div>
           <div>
-            <p style={{ fontSize: 14, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.01em' }}>Advanced Analytics</p>
-            <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>Deep insights powered by your real sales data</p>
+            <p style={{ fontSize: 14, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.01em' }}>{t('title')}</p>
+            <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>{t('subtitle')}</p>
           </div>
         </div>
         <span style={{ padding: '4px 10px', borderRadius: 999, background: 'rgba(219,20,46,0.12)', border: '1px solid rgba(219,20,46,0.3)', fontSize: 10, fontWeight: 800, color: '#f87171' }}>
@@ -191,16 +199,16 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, background: dark ? 'rgba(255,255,255,0.04)' : '#f1f5f9', borderRadius: 12, padding: 4 }}>
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setActiveTab(t.key)} style={{
+        {tabs.map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
             flex: 1, padding: '8px 12px', borderRadius: 9,
             fontWeight: 700, fontSize: 12, border: 'none', cursor: 'pointer',
-            background: activeTab === t.key ? (dark ? '#1e2535' : '#fff') : 'transparent',
-            color: activeTab === t.key ? textMain : textMuted,
-            boxShadow: activeTab === t.key ? '0 1px 6px rgba(0,0,0,0.12)' : 'none',
+            background: activeTab === tab.key ? (dark ? '#1e2535' : '#fff') : 'transparent',
+            color: activeTab === tab.key ? textMain : textMuted,
+            boxShadow: activeTab === tab.key ? '0 1px 6px rgba(0,0,0,0.12)' : 'none',
             transition: 'all 0.2s ease',
           }}>
-            {t.label}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -210,23 +218,23 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
         <>
           {/* Period KPIs */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-            <MiniKPI dark={dark} icon={TrendingUp} accent="#db142e" label="This Week" value={fmt(overview.period_stats.this_week)} change={overview.period_stats.week_growth} />
-            <MiniKPI dark={dark} icon={TrendingUp} accent="#3b82f6" label="This Month" value={fmt(overview.period_stats.this_month)} change={overview.period_stats.month_growth} />
-            <MiniKPI dark={dark} icon={ShoppingCart} accent="#10b981" label="Avg Order Value" value={fmt(overview.avg_order_value)} />
-            <MiniKPI dark={dark} icon={Users} accent="#f59e0b" label="Repeat Rate" value={`${overview.repeat_customers.repeat_rate_pct}%`} />
+            <MiniKPI dark={dark} icon={TrendingUp} accent="#db142e" label={t('kpi.week')} value={fmt(overview.period_stats.this_week)} change={overview.period_stats.week_growth} />
+            <MiniKPI dark={dark} icon={TrendingUp} accent="#3b82f6" label={t('kpi.month')} value={fmt(overview.period_stats.this_month)} change={overview.period_stats.month_growth} />
+            <MiniKPI dark={dark} icon={ShoppingCart} accent="#10b981" label={t('kpi.aov')} value={fmt(overview.avg_order_value)} />
+            <MiniKPI dark={dark} icon={Users} accent="#f59e0b" label={t('kpi.repeat')} value={pctOf(overview.repeat_customers.repeat_rate_pct, 1)} />
           </div>
 
           {/* Weekly revenue chart */}
           <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: '20px' }}>
-            <SectionHeader icon={TrendingUp} title="Weekly Revenue" subtitle="Last 8 weeks" accent="#db142e" dark={dark} />
+            <SectionHeader icon={TrendingUp} title={t('weekly.title')} subtitle={t('weekly.subtitle')} accent="#db142e" dark={dark} />
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={overview.charts.weekly_revenue} margin={{ top: 4, right: 8, bottom: 0, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={dark ? 'rgba(255,255,255,0.05)' : '#f0f0f0'} />
-                <XAxis dataKey="week" tick={{ fill: textMuted, fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: textMuted, fontSize: 10 }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="week" reversed={isRtl} tick={{ fill: textMuted, fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis orientation={isRtl ? 'right' : 'left'} tickFormatter={(v) => number(v)} tick={{ fill: textMuted, fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ background: dark ? '#1e2535' : '#fff', border: `1px solid ${border}`, borderRadius: 10, color: textMain }}
-                  formatter={(v) => [fmt(Number(v ?? 0)), 'Revenue']}
+                  formatter={(v) => [fmt(Number(v ?? 0)), t('revenue')]}
                 />
                 <Bar dataKey="revenue" radius={[6, 6, 0, 0]} fill="url(#redGrad)">
                   <defs>
@@ -242,15 +250,15 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
 
           {/* Daily revenue (last 30 days) */}
           <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: '20px' }}>
-            <SectionHeader icon={TrendingUp} title="Daily Revenue" subtitle="Last 30 days" accent="#3b82f6" dark={dark} />
+            <SectionHeader icon={TrendingUp} title={t('daily.title')} subtitle={t('daily.subtitle')} accent="#3b82f6" dark={dark} />
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={overview.charts.daily_revenue} margin={{ top: 4, right: 8, bottom: 0, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={dark ? 'rgba(255,255,255,0.05)' : '#f0f0f0'} />
-                <XAxis dataKey="day" tick={{ fill: textMuted, fontSize: 9 }} axisLine={false} tickLine={false} interval={4} />
-                <YAxis tick={{ fill: textMuted, fontSize: 10 }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="day" reversed={isRtl} tick={{ fill: textMuted, fontSize: 9 }} axisLine={false} tickLine={false} interval={4} />
+                <YAxis orientation={isRtl ? 'right' : 'left'} tickFormatter={(v) => number(v)} tick={{ fill: textMuted, fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ background: dark ? '#1e2535' : '#fff', border: `1px solid ${border}`, borderRadius: 10, color: textMain }}
-                  formatter={(v) => [fmt(Number(v ?? 0)), 'Revenue']}
+                  formatter={(v) => [fmt(Number(v ?? 0)), t('revenue')]}
                 />
                 <Line dataKey="revenue" stroke="#3b82f6" strokeWidth={2} dot={false} />
               </LineChart>
@@ -259,9 +267,9 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
 
           {/* Revenue by payment method */}
           <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: '20px' }}>
-            <SectionHeader icon={CreditCard} title="Revenue by Payment Method" subtitle="Distribution across payment types" accent="#8b5cf6" dark={dark} />
+            <SectionHeader icon={CreditCard} title={t('payment.title')} subtitle={t('payment.subtitle')} accent="#8b5cf6" dark={dark} />
             {overview.revenue_by_payment.length === 0 ? (
-              <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '20px 0' }}>No payment data</p>
+              <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '20px 0' }}>{t('payment.empty')}</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {(() => {
@@ -272,12 +280,12 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
                     return (
                       <div key={r.method}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: textMain, textTransform: 'uppercase', display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: textMain, display: 'flex', gap: 6, alignItems: 'center' }}>
                             <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }} />
-                            {r.method}
+                            {tm.has(r.method) ? tm(r.method) : r.method.toUpperCase()}
                           </span>
                           <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>
-                            {fmt(r.revenue)} · {r.orders} orders
+                            {fmt(r.revenue)} · {t('ordersCount', { count: r.orders })}
                           </span>
                         </div>
                         <div style={{ height: 5, background: dark ? 'rgba(255,255,255,0.07)' : '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
@@ -299,9 +307,9 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
           {/* Stock health */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
             {[
-              { label: 'Healthy Stock', val: products.stock_health.healthy,   color: '#10b981', icon: Package },
-              { label: 'Low Stock',     val: products.stock_health.low_stock, color: '#f59e0b', icon: Package },
-              { label: 'Out of Stock',  val: products.stock_health.out,       color: '#ef4444', icon: Package },
+              { label: t('stock.healthy'), val: products.stock_health.healthy,   color: '#10b981', icon: Package },
+              { label: t('stock.low'),     val: products.stock_health.low_stock, color: '#f59e0b', icon: Package },
+              { label: t('stock.out'),     val: products.stock_health.out,       color: '#ef4444', icon: Package },
             ].map(({ label, val, color, icon }) => (
               <div key={label} style={{ background: cardBg, borderRadius: 14, border: `1px solid ${border}`, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: `${color}1a`, border: `1px solid ${color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color }}>
@@ -318,7 +326,7 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
           {/* Revenue by category */}
           {products.by_category.length > 0 && (
             <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: '20px' }}>
-              <SectionHeader icon={Package} title="Revenue by Category" subtitle="Your categories ranked by performance" accent="#f59e0b" dark={dark} />
+              <SectionHeader icon={Package} title={t('category.title')} subtitle={t('category.subtitle')} accent="#f59e0b" dark={dark} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {products.by_category.slice(0, 5).map((cat, i) => {
                   const maxRev = products.by_category[0]?.total_revenue || 1;
@@ -329,11 +337,11 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
                           {i + 1}. {cat.category}
                         </span>
                         <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>
-                          {fmt(cat.total_revenue)} · {cat.product_count} products
+                          {fmt(cat.total_revenue)} · {t('productsCount', { count: cat.product_count })}
                         </span>
                       </div>
                       <div style={{ height: 5, background: dark ? 'rgba(255,255,255,0.07)' : '#e5e7eb', borderRadius: 999 }}>
-                        <div style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg,#f59e0b,#fbbf24)`, width: `${(cat.total_revenue / maxRev) * 100}%`, transition: 'width 0.8s ease' }} />
+                        <div className="rtl-flip" style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg,#f59e0b,#fbbf24)`, width: `${(cat.total_revenue / maxRev) * 100}%`, transition: 'width 0.8s ease' }} />
                       </div>
                     </div>
                   );
@@ -345,15 +353,15 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
           {/* Product performance table */}
           <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
-              <p style={{ fontWeight: 900, fontSize: 13, color: textMain, margin: 0 }}>Product Performance</p>
-              <p style={{ fontSize: 10, color: textMuted, margin: '2px 0 0' }}>Ranked by revenue · Conversion = orders ÷ views</p>
+              <p style={{ fontWeight: 900, fontSize: 13, color: textMain, margin: 0 }}>{t('perf.title')}</p>
+              <p style={{ fontSize: 10, color: textMuted, margin: '2px 0 0' }}>{t('perf.subtitle')}</p>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: gridBg }}>
-                    {['Product', 'Revenue', 'Units', 'Conv.%', 'Stock'].map((h, i) => (
-                      <th key={h} style={{ padding: '10px 16px', textAlign: i === 0 ? 'left' : 'right', fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                    {[t('perf.cols.product'), t('perf.cols.revenue'), t('perf.cols.units'), t('perf.cols.conv'), t('perf.cols.stock')].map((h, i) => (
+                      <th key={h} style={{ padding: '10px 16px', textAlign: i === 0 ? 'start' : 'end', fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -365,10 +373,10 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
                         <div style={{ fontSize: 10, color: textMuted }}>{p.category_name}</div>
                       </td>
                       <td style={{ padding: '10px 16px', textAlign: 'end', fontWeight: 800, color: '#db142e' }}>{fmt(p.total_revenue)}</td>
-                      <td style={{ padding: '10px 16px', textAlign: 'end', color: textMain, fontWeight: 700 }}>{p.total_units}</td>
+                      <td style={{ padding: '10px 16px', textAlign: 'end', color: textMain, fontWeight: 700 }}>{number(p.total_units)}</td>
                       <td style={{ padding: '10px 16px', textAlign: 'end' }}>
                         <span style={{ color: p.conversion_rate > 5 ? '#10b981' : p.conversion_rate > 1 ? '#f59e0b' : textMuted, fontWeight: 700 }}>
-                          {p.conversion_rate.toFixed(2)}%
+                          {pctOf(p.conversion_rate, 2)}
                         </span>
                       </td>
                       <td style={{ padding: '10px 16px', textAlign: 'end' }}>
@@ -396,7 +404,7 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
                 <div key={seg.segment} style={{ background: cardBg, borderRadius: 14, border: `1px solid ${border}`, padding: '14px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                    <span style={{ fontSize: 11, fontWeight: 800, color }}>{seg.segment}</span>
+                    <span style={{ fontSize: 11, fontWeight: 800, color }}>{segLabel(seg.segment)}</span>
                   </div>
                   <p style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px' }}>{seg.count}</p>
                   <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{fmt(seg.revenue)}</p>
@@ -408,15 +416,15 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
           {/* Customer list */}
           <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
-              <p style={{ fontWeight: 900, fontSize: 13, color: textMain, margin: 0 }}>RFM Customer Analysis</p>
-              <p style={{ fontSize: 10, color: textMuted, margin: '2px 0 0' }}>Recency × Frequency × Monetary scoring</p>
+              <p style={{ fontWeight: 900, fontSize: 13, color: textMain, margin: 0 }}>{t('rfm.title')}</p>
+              <p style={{ fontSize: 10, color: textMuted, margin: '2px 0 0' }}>{t('rfm.subtitle')}</p>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: gridBg }}>
-                    {['Customer', 'Segment', 'Orders', 'Total Spent', 'Last Order', 'RFM'].map((h, i) => (
-                      <th key={h} style={{ padding: '10px 16px', textAlign: i === 0 ? 'left' : i > 1 ? 'right' : 'center', fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                    {[t('rfm.cols.customer'), t('rfm.cols.segment'), t('rfm.cols.orders'), t('rfm.cols.spent'), t('rfm.cols.last'), t('rfm.cols.rfm')].map((h, i) => (
+                      <th key={h} style={{ padding: '10px 16px', textAlign: i === 0 ? 'start' : i > 1 ? 'end' : 'center', fontSize: 10, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -431,13 +439,13 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
                         </td>
                         <td style={{ padding: '10px 16px', textAlign: 'center' }}>
                           <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: `${segColor}18`, color: segColor, border: `1px solid ${segColor}33` }}>
-                            {c.segment}
+                            {segLabel(c.segment)}
                           </span>
                         </td>
                         <td style={{ padding: '10px 16px', textAlign: 'end', fontWeight: 700, color: textMain }}>{c.order_count}</td>
                         <td style={{ padding: '10px 16px', textAlign: 'end', fontWeight: 800, color: '#db142e' }}>{fmt(c.total_spent)}</td>
                         <td style={{ padding: '10px 16px', textAlign: 'end', color: textMuted, fontSize: 11 }}>
-                          {c.days_since_last}d ago
+                          {t('daysAgo', { count: c.days_since_last })}
                         </td>
                         <td style={{ padding: '10px 16px', textAlign: 'end' }}>
                           <span style={{ fontSize: 13, fontWeight: 900, color: c.rfm_score >= 4 ? '#10b981' : c.rfm_score >= 3 ? '#f59e0b' : '#ef4444' }}>

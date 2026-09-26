@@ -3700,6 +3700,192 @@
         "bestTime": "Best Time to Show",
         "ctr": "CTR: {rate}"
       }
+    },
+    "forecast": {
+      "title": "Sales Forecast",
+      "subtitle": "6-month · Tunisia-calibrated",
+      "justNow": "just now",
+      "updated": "Updated {age}",
+      "refreshing": "Refreshing…",
+      "selectOption": "— Select a product to forecast —",
+      "forecasting": "Forecasting…",
+      "refresh": "Refresh",
+      "autoRefresh": "Auto-refreshes every 60s · Updates instantly when tab regains focus",
+      "failed": "Forecast failed",
+      "kpi": {
+        "forecast": "6-Month Forecast",
+        "forecastSub": "units predicted",
+        "revenue": "Predicted Revenue",
+        "revenueSub": "6-month potential",
+        "peak": "Peak Month",
+        "peakSub": "{count, plural, one {# unit expected} other {# units expected}}",
+        "stock": "Stock Needed (3m)",
+        "stockSub": "units (30% buffer)"
+      },
+      "confidence": {
+        "high": "High confidence",
+        "medium": "Medium confidence",
+        "low": "Low confidence"
+      },
+      "basedOn": "{count, plural, one {Based on # real order} other {Based on # real orders}}",
+      "trend": {
+        "up": "Growing trend",
+        "down": "Declining trend",
+        "stable": "Stable trend"
+      },
+      "slope": "slope: {value} units/mo",
+      "unitsWord": "units",
+      "eventTag": "event",
+      "tunisia": "Tunisia",
+      "similarCount": "{count} similar",
+      "poweredBy": "Powered by Groq",
+      "cards": {
+        "chart": "6-Month Forecast Chart",
+        "regional": "Regional Demand",
+        "events": "Tunisia Events Calendar",
+        "market": "Market Comparison",
+        "ai": "AI Analysis"
+      },
+      "chart": {
+        "now": "now",
+        "history": "History",
+        "forecast": "Forecast",
+        "eventBoost": "Event boost"
+      },
+      "demand": {
+        "high": "High Demand",
+        "moderate": "Moderate",
+        "low": "Low Demand",
+        "score": "Demand Score"
+      },
+      "stock": {
+        "shortTitle": "Stock shortfall detected",
+        "shortText": "You need <b>{need} units</b> but only have <b>{have}</b>. Restock <r>{missing} units</r> now.",
+        "unitsShort": "units short",
+        "okTitle": "Stock level is sufficient",
+        "okText": "Current stock ({have} units) covers the 3-month forecast ({need} needed)."
+      },
+      "computedAt": "Computed at {date}",
+      "cached": "Cached",
+      "fresh": "Fresh",
+      "emptyTitle": "Select a product to forecast",
+      "emptyText": "The AI will analyze your sales history, Tunisia seasonal patterns, and upcoming events to generate a 6-month forward forecast with live regional demand heatmap.",
+      "events": {
+        "empty": "No upcoming events for this product category.",
+        "source": {
+          "real": "Real data",
+          "category": "Category model",
+          "tunisia": "Tunisia baseline"
+        },
+        "now": "Now",
+        "inDays": "in {count}d",
+        "demand": "{pct}% demand",
+        "units": "{count, plural, one {# unit} other {# units}}",
+        "confidence": "{pct}% confidence",
+        "bestRegions": "Best regions:"
+      },
+      "similar": {
+        "empty": "No similar products found in this subcategory yet.",
+        "yourMonthly": "Your Monthly",
+        "median": "Market Median",
+        "avgPrice": "Market Avg Price",
+        "perMonth": "{count}/mo"
+      },
+      "ai": {
+        "loading": "AI is analyzing your forecast…",
+        "summary": "Summary",
+        "opportunity": "Opportunity",
+        "risk": "Risk",
+        "seasonTip": "Season Tip"
+      }
+    },
+    "heatmap": {
+      "noData": "No regional data yet — orders with a wilaya will populate this map.",
+      "aria": "Tunisia regional demand map",
+      "units": "{count, plural, one {{n} unit} other {{n} units}}",
+      "orders": "{count, plural, one {# order} other {# orders}}",
+      "noOrders": "No orders yet",
+      "legendNone": "No orders",
+      "legendPeak": "Peak",
+      "noWilaya": "No wilaya data yet.",
+      "topRegion": "Top region",
+      "coverage": "Coverage",
+      "governorates": "governorates",
+      "untapped": "{count, plural, one {# region} other {# regions}} untapped — consider promotions for {a}, {b} & {c}."
+    },
+    "advanced": {
+      "title": "Advanced Analytics",
+      "subtitle": "Deep insights powered by your real sales data",
+      "loadFailed": "Failed to load analytics",
+      "error": "Analytics Error",
+      "retry": "Retry",
+      "revenue": "Revenue",
+      "tabs": {
+        "overview": "Overview",
+        "products": "Products",
+        "customers": "Customers"
+      },
+      "kpi": {
+        "week": "This Week",
+        "month": "This Month",
+        "aov": "Avg Order Value",
+        "repeat": "Repeat Rate"
+      },
+      "weekly": {
+        "title": "Weekly Revenue",
+        "subtitle": "Last 8 weeks"
+      },
+      "daily": {
+        "title": "Daily Revenue",
+        "subtitle": "Last 30 days"
+      },
+      "payment": {
+        "title": "Revenue by Payment Method",
+        "subtitle": "Distribution across payment types",
+        "empty": "No payment data"
+      },
+      "ordersCount": "{count, plural, one {# order} other {# orders}}",
+      "productsCount": "{count, plural, one {# product} other {# products}}",
+      "stock": {
+        "healthy": "Healthy Stock",
+        "low": "Low Stock",
+        "out": "Out of Stock"
+      },
+      "category": {
+        "title": "Revenue by Category",
+        "subtitle": "Your categories ranked by performance"
+      },
+      "perf": {
+        "title": "Product Performance",
+        "subtitle": "Ranked by revenue · Conversion = orders ÷ views",
+        "cols": {
+          "product": "Product",
+          "revenue": "Revenue",
+          "units": "Units",
+          "conv": "Conv.%",
+          "stock": "Stock"
+        }
+      },
+      "segments": {
+        "champion": "Champion",
+        "loyal": "Loyal",
+        "regular": "Regular",
+        "atRisk": "At Risk",
+        "lost": "Lost"
+      },
+      "rfm": {
+        "title": "RFM Customer Analysis",
+        "subtitle": "Recency × Frequency × Monetary scoring",
+        "cols": {
+          "customer": "Customer",
+          "segment": "Segment",
+          "orders": "Orders",
+          "spent": "Total Spent",
+          "last": "Last Order",
+          "rfm": "RFM"
+        }
+      },
+      "daysAgo": "{count}d ago"
     }
   },
   "invoice": {
