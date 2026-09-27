@@ -5,7 +5,8 @@
 //   2. NotifIcon — added 'alert-triangle' for low-stock icon mapping
 //   3. No structural changes — fully backward compatible
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Bell, CheckCheck, RefreshCw,
   PackagePlus, PackageCheck, PackageX,
@@ -64,15 +65,37 @@ function accent(action: string): string {
   return '#db142e';
 }
 
+// ─── mobile breakpoint — matches the Topbar's `sm` (640px) switch ─
+// Below it the dropdown becomes a fixed sheet portalled to <body> so it
+// escapes the sticky header's stacking context (zIndex 20) and sits above
+// the floating chat button (10002) and cart drawer (9999).
+const MOBILE_QUERY = '(max-width: 639px)';
+const Z_BACKDROP   = 10010;
+const Z_PANEL      = 10011;
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_QUERY);
+    const update = () => setMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+  return mobile;
+}
+
 
 // ─── single notification row ──────────────────────────────────────
 function NotifRow({
   n,
   dark,
+  mobile,
   onRead,
 }: {
   n: AppNotification;
   dark: boolean;
+  mobile: boolean;
   onRead: (n: AppNotification) => void;
 }) {
   const { relative } = useFormat();
@@ -88,7 +111,8 @@ function NotifRow({
       onClick={() => onRead(n)}
       style={{
         width: '100%', textAlign: 'start',
-        padding: '11px 14px',
+        padding: mobile ? '12px 14px' : '11px 14px',
+        ...(mobile ? { minHeight: 44 } : {}),
         background: n.is_read ? 'transparent' : unreadBg,
         borderBottom: `1px solid ${border}`,
         border: 'none', cursor: 'pointer',
@@ -110,25 +134,40 @@ function NotifRow({
 
       {/* text */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', marginBottom: 3,
+          ...(mobile ? { alignItems: 'flex-start' } : {}),
+        }}>
           <span style={{
             fontSize: 12, fontWeight: n.is_read ? 500 : 800,
             color: n.is_read ? textMuted : textMain,
             overflow: 'hidden', textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap', maxWidth: 200,
+            ...(mobile
+              ? {
+                  flex: 1, minWidth: 0, lineHeight: 1.35,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical' as const,
+                  overflowWrap: 'anywhere' as const,
+                }
+              : { whiteSpace: 'nowrap' as const, maxWidth: 200 }),
           }}>
             {n.data.title}
           </span>
-          <span style={{ fontSize: 10, color: textMuted, flexShrink: 0, marginInlineStart: 6 }}>
+          <span style={{
+            fontSize: 10, color: textMuted, flexShrink: 0, marginInlineStart: 6,
+            ...(mobile ? { whiteSpace: 'nowrap' as const, lineHeight: '16px' } : {}),
+          }}>
             {relative(n.created_at)}
           </span>
         </div>
         <p style={{
           fontSize: 11, color: textMuted, margin: 0,
           display: '-webkit-box',
-          WebkitLineClamp: 2,
+          WebkitLineClamp: mobile ? 3 : 2,
           WebkitBoxOrient: 'vertical' as const,
           overflow: 'hidden', lineHeight: 1.45,
+          ...(mobile ? { overflowWrap: 'anywhere' as const } : {}),
         }}>
           {n.data.body}
         </p>
@@ -138,7 +177,7 @@ function NotifRow({
       {!n.is_read && (
         <span style={{
           width: 7, height: 7, borderRadius: '50%',
-          background: a, flexShrink: 0, marginTop: 4,
+          background: a, flexShrink: 0, marginTop: mobile ? 5 : 4,
         }} />
       )}
     </button>
@@ -177,14 +216,36 @@ export default function NotificationBell({
     fetchAll, markRead, markAllRead,
   } = useNotifications({ api, pollInterval, onNewNotifications: onNew });
 
+  const mobile = useIsMobile();
+
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    // On mobile the full-screen backdrop handles outside taps (closing on
+    // mousedown there would let the tap fall through to the page beneath).
+    if (mobile) return;
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [setOpen]);
+  }, [setOpen, mobile]);
+
+  // Mobile sheet: ESC closes it, and the page behind must not scroll.
+  // Lock <html>, not <body>: globals.css gives html `overflow-x: hidden`, so
+  // body overflow isn't propagated to the viewport and locking body would
+  // turn it into a clip box that scrolls the sticky header off-screen.
+  useEffect(() => {
+    if (!open || !mobile) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    const root = document.documentElement;
+    const prevOverflow = root.style.overflow;
+    root.style.overflow = 'hidden';
+    document.addEventListener('keydown', onKey);
+    return () => {
+      root.style.overflow = prevOverflow;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open, mobile, setOpen]);
 
   const bg        = dark ? '#161b27' : '#ffffff';
   const border    = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
@@ -200,6 +261,101 @@ export default function NotificationBell({
     }
   };
 
+  // Header + list, shared by the desktop dropdown and the mobile sheet.
+  const panelBody = (
+    <>
+      {/* header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: mobile ? '4px 6px' : '13px 14px 12px',
+        ...(mobile ? { paddingInlineStart: 14, gap: 6, flexShrink: 0 } : {}),
+        borderBottom: `1px solid ${border}`,
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          ...(mobile ? { minWidth: 0, flexWrap: 'wrap' as const, rowGap: 4 } : {}),
+        }}>
+          <Bell size={14} style={{ color: '#db142e', ...(mobile ? { flexShrink: 0 } : {}) }} />
+          <span style={{ fontSize: 13, fontWeight: 800, color: textMain }}>
+            {t('title')}
+          </span>
+          {unreadCount > 0 && (
+            <span style={{
+              fontSize: 10, fontWeight: 800, padding: '2px 7px',
+              borderRadius: 999,
+              background: 'rgba(219,20,46,0.14)',
+              color: '#db142e',
+              border: '1px solid rgba(219,20,46,0.25)',
+              ...(mobile ? { whiteSpace: 'nowrap' as const } : {}),
+            }}>
+              {t('newCount', { count: unreadCount })}
+            </span>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center', ...(mobile ? { flexShrink: 0 } : {}) }}>
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllRead}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                fontSize: 11, fontWeight: 700, color: textMuted,
+                background: 'transparent', border: 'none',
+                cursor: 'pointer', padding: mobile ? '0 10px' : '3px 7px', borderRadius: 7,
+                ...(mobile ? { minHeight: 44, whiteSpace: 'nowrap' as const } : {}),
+              }}
+              title={t('markAllRead')}
+            >
+              <CheckCheck size={12} />
+              {t('allRead')}
+            </button>
+          )}
+          <button
+            onClick={fetchAll}
+            style={{
+              background: 'transparent', border: 'none',
+              cursor: 'pointer', color: textMuted,
+              display: 'flex', alignItems: 'center',
+              padding: 4, borderRadius: 6,
+              ...(mobile ? { width: 44, height: 44, justifyContent: 'center' } : {}),
+            }}
+            title={t('refresh')}
+            aria-label={t('refresh')}
+          >
+            <RefreshCw size={mobile ? 14 : 12} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+          </button>
+        </div>
+      </div>
+
+      {/* list */}
+      <div style={
+        mobile
+          ? { overflowY: 'auto', flex: 1, minHeight: 0, overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }
+          : { overflowY: 'auto', maxHeight: 420 }
+      }>
+        {loading && items.length === 0 ? (
+          <div style={{ padding: '40px 16px', textAlign: 'center', color: textMuted, fontSize: 13 }}>
+            {t('loading')}
+          </div>
+        ) : items.length === 0 ? (
+          <div style={{ padding: '48px 16px', textAlign: 'center' }}>
+            <Bell size={32} style={{ color: textMuted, opacity: 0.2, margin: '0 auto 12px', display: 'block' }} />
+            <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: 0 }}>
+              {t('empty')}
+            </p>
+            <p style={{ fontSize: 11, color: textMuted, opacity: 0.6, margin: '4px 0 0' }}>
+              {t('emptyHint')}
+            </p>
+          </div>
+        ) : (
+          items.map(n => (
+            <NotifRow key={n.id} n={n} dark={dark} mobile={mobile} onRead={handleRead} />
+          ))
+        )}
+      </div>
+    </>
+  );
+
   return (
     <>
       <style>{`
@@ -211,6 +367,18 @@ export default function NotificationBell({
           0%,100% { transform: scale(1); }
           50%     { transform: scale(1.3); }
         }
+        @keyframes notif-fade {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        .nb-sheet {
+          max-height: min(72vh, calc(100vh - 84px));
+          max-height: min(72dvh, calc(100dvh - 84px));
+        }
+        /* 44px touch target — CSS (not JS) so it applies from first paint */
+        @media ${MOBILE_QUERY} {
+          .nb-bell { width: 44px !important; height: 44px !important; }
+        }
       `}</style>
 
       <div ref={ref} style={{ position: 'relative' }}>
@@ -218,6 +386,8 @@ export default function NotificationBell({
         {/* Bell button */}
         <button
           onClick={() => setOpen(o => !o)}
+          aria-expanded={open}
+          className="nb-bell"
           style={{
             width: 38, height: 38, borderRadius: 10,
             background: open ? 'rgba(219,20,46,0.12)' : btnBg,
@@ -247,8 +417,8 @@ export default function NotificationBell({
           )}
         </button>
 
-        {/* Dropdown */}
-        {open && (
+        {/* Dropdown (tablet / desktop) */}
+        {open && !mobile && (
           <div style={{
             position: 'absolute', top: 'calc(100% + 10px)', insetInlineEnd: 0,
             width: 360, maxHeight: 500,
@@ -261,89 +431,48 @@ export default function NotificationBell({
             zIndex: 9999, overflow: 'hidden',
             animation: 'notif-pop 0.2s ease',
           }}>
-
-            {/* header */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '13px 14px 12px',
-              borderBottom: `1px solid ${border}`,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Bell size={14} style={{ color: '#db142e' }} />
-                <span style={{ fontSize: 13, fontWeight: 800, color: textMain }}>
-                  {t('title')}
-                </span>
-                {unreadCount > 0 && (
-                  <span style={{
-                    fontSize: 10, fontWeight: 800, padding: '2px 7px',
-                    borderRadius: 999,
-                    background: 'rgba(219,20,46,0.14)',
-                    color: '#db142e',
-                    border: '1px solid rgba(219,20,46,0.25)',
-                  }}>
-                    {t('newCount', { count: unreadCount })}
-                  </span>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                {unreadCount > 0 && (
-                  <button
-                    onClick={markAllRead}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      fontSize: 11, fontWeight: 700, color: textMuted,
-                      background: 'transparent', border: 'none',
-                      cursor: 'pointer', padding: '3px 7px', borderRadius: 7,
-                    }}
-                    title={t('markAllRead')}
-                  >
-                    <CheckCheck size={12} />
-                    {t('allRead')}
-                  </button>
-                )}
-                <button
-                  onClick={fetchAll}
-                  style={{
-                    background: 'transparent', border: 'none',
-                    cursor: 'pointer', color: textMuted,
-                    display: 'flex', alignItems: 'center',
-                    padding: 4, borderRadius: 6,
-                  }}
-                  title={t('refresh')}
-                  aria-label={t('refresh')}
-                >
-                  <RefreshCw size={12} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-                </button>
-              </div>
-            </div>
-
-            {/* list */}
-            <div style={{ overflowY: 'auto', maxHeight: 420 }}>
-              {loading && items.length === 0 ? (
-                <div style={{ padding: '40px 16px', textAlign: 'center', color: textMuted, fontSize: 13 }}>
-                  {t('loading')}
-                </div>
-              ) : items.length === 0 ? (
-                <div style={{ padding: '48px 16px', textAlign: 'center' }}>
-                  <Bell size={32} style={{ color: textMuted, opacity: 0.2, margin: '0 auto 12px', display: 'block' }} />
-                  <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: 0 }}>
-                    {t('empty')}
-                  </p>
-                  <p style={{ fontSize: 11, color: textMuted, opacity: 0.6, margin: '4px 0 0' }}>
-                    {t('emptyHint')}
-                  </p>
-                </div>
-              ) : (
-                items.map(n => (
-                  <NotifRow key={n.id} n={n} dark={dark} onRead={handleRead} />
-                ))
-              )}
-            </div>
-
+            {panelBody}
           </div>
         )}
       </div>
+
+      {/* Mobile sheet — portalled out of the sticky header's stacking context */}
+      {open && mobile && typeof document !== 'undefined' && createPortal(
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+            style={{
+              position: 'fixed', inset: 0, zIndex: Z_BACKDROP,
+              background: 'rgba(0,0,0,0.45)',
+              touchAction: 'none',
+              animation: 'notif-fade 0.2s ease',
+            }}
+          />
+          <div
+            role="dialog"
+            aria-label={t('title')}
+            className="nb-sheet"
+            style={{
+              position: 'fixed', top: 72, insetInline: 12,
+              display: 'flex', flexDirection: 'column',
+              background: bg,
+              border: `1px solid ${border}`,
+              borderRadius: 16,
+              boxShadow: dark
+                ? '0 24px 64px rgba(0,0,0,0.7)'
+                : '0 24px 64px rgba(0,0,0,0.18)',
+              zIndex: Z_PANEL, overflow: 'hidden',
+              transformOrigin: 'top center',
+              animation: 'notif-pop 0.2s ease',
+            }}
+          >
+            {panelBody}
+          </div>
+        </>,
+        document.body,
+      )}
     </>
   );
 }
+
