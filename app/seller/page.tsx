@@ -12,9 +12,7 @@ import {
   Star, Eye, BarChart2,
 } from 'lucide-react';
 import { SubscriptionBadge } from '@/app/components/seller/SubscriptionBadge';
-import OnboardingChecklist from './components/OnboardingChecklist';
 import CommissionUpgradeNudge from './components/CommissionUpgradeNudge';
-import { getUser } from '@/lib/auth';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { useStatusLabel } from '@/lib/i18n/useStatusLabel';
@@ -301,15 +299,6 @@ export default function SellerDashboardPage() {
               {tc('live')}
             </span>
           </div>
-        </div>
-
-        {/* ─── ONBOARDING CHECKLIST ─── */}
-        <div className={`fade-up ${visible?'show':''}`}>
-          <OnboardingChecklist
-            totalProducts={summary.total_products}
-            hasProfilePicture={!!(getUser()?.avatar)}
-            dark={dark}
-          />
         </div>
 
         {/* ─── KPI CARDS ─── */}

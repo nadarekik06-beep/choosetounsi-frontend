@@ -1920,16 +1920,6 @@
       },
       "thousandsShort": "{value} k"
     },
-    "checklist": {
-      "title": "🚀 Premiers pas",
-      "progress": "{done} étape(s) sur {total} terminée(s)",
-      "firstProduct": "Ajoutez votre premier produit",
-      "firstProductDesc": "Publiez un produit pour que les acheteurs découvrent votre boutique",
-      "profile": "Complétez votre profil",
-      "profileDesc": "Ajoutez une photo de profil et vos réseaux sociaux",
-      "delivery": "Vérifiez vos options de livraison",
-      "deliveryDesc": "Assurez-vous que les acheteurs connaissent vos modes de livraison"
-    },
     "charts": {
       "revenue": "Chiffre d'affaires",
       "orders": "Commandes",

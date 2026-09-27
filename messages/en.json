@@ -1920,16 +1920,6 @@
       },
       "thousandsShort": "{value}k"
     },
-    "checklist": {
-      "title": "🚀 Getting Started",
-      "progress": "{done} of {total} steps completed",
-      "firstProduct": "Add your first product",
-      "firstProductDesc": "List a product so buyers can discover your store",
-      "profile": "Complete your profile",
-      "profileDesc": "Add a profile picture and social links",
-      "delivery": "Review delivery options",
-      "deliveryDesc": "Make sure buyers know your shipping options"
-    },
     "charts": {
       "revenue": "Revenue",
       "orders": "Orders",

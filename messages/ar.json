@@ -1920,16 +1920,6 @@
       },
       "thousandsShort": "{value} ألف"
     },
-    "checklist": {
-      "title": "🚀 الخطوات الأولى",
-      "progress": "{done} من {total} خطوات مكتملة",
-      "firstProduct": "أضف منتجك الأول",
-      "firstProductDesc": "انشر منتجاً ليكتشف المشترون متجرك",
-      "profile": "أكمل ملفك الشخصي",
-      "profileDesc": "أضف صورة شخصية وروابط حساباتك",
-      "delivery": "راجع خيارات التوصيل",
-      "deliveryDesc": "تأكّد من أن المشترين يعرفون طرق التوصيل لديك"
-    },
     "charts": {
       "revenue": "المداخيل",
       "orders": "الطلبات",
