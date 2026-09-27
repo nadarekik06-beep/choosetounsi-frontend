@@ -102,6 +102,7 @@ export interface SponsoredProduct {
     end_at:     string | null;
   } | null;
   effective_price?: number | null
+  original_price?: number | null   // crossed-out price (30-day lowest) when discounted
   discount_amount?: number | null
   promotion?: {
     id: number

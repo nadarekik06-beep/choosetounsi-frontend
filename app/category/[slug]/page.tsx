@@ -58,6 +58,7 @@ interface Product {
   sponsored_priority?: number
   // ── NEW: promotion overlay fields — sent by backend since PROMO FIX ──────
   effective_price?: number | null   // discounted price; equals price when no promo
+  original_price?: number | null    // crossed-out price (30-day lowest) when discounted
   discount_amount?: number | null   // absolute savings amount
   promotion?: ActivePromotion | null
 }
@@ -100,7 +101,8 @@ function getDisplayPrices(p: Product, money: (v: number) => string): {
   discountBadge: string | null
   isFlashSale: boolean
 } {
-  const base      = Number(p.price)                               // always the real price
+  // Crossed-out price: the lowest price of the last 30 days when discounted (equals price otherwise)
+  const base      = Number(p.original_price ?? p.price)
   const effective = p.effective_price != null
     ? Number(p.effective_price)
     : base

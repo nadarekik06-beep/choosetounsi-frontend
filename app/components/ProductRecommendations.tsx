@@ -47,6 +47,7 @@ interface RecProduct {
   short_description: string | null
   price: number                      // original base price
   effective_price?: number | null    // ← discounted price
+  original_price?: number | null     // crossed-out price (30-day lowest) when discounted
   discount_amount?: number | null
   promotion?: ActivePromotion | null
   stock: number
@@ -78,7 +79,7 @@ function MiniCard({ product }: { product: RecProduct }) {
   const outOfStock = product.stock <= 0
 
   // Resolve effective vs original price
-  const originalPrice  = Number(product.price)
+  const originalPrice  = Number(product.original_price ?? product.price)
   const effectivePrice = product.effective_price != null ? Number(product.effective_price) : originalPrice
   const hasDiscount    = effectivePrice < originalPrice - 0.001
 

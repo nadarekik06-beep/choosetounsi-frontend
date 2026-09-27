@@ -29,6 +29,7 @@ interface Product {
   slug: string
   price: number | string           // original base price
   effective_price?: number | null  // ← NEW: discounted price from backend
+  original_price?: number | null   // crossed-out price (30-day lowest) when discounted
   discount_amount?: number | null
   promotion?: ActivePromotion | null
   stock: number
@@ -105,9 +106,9 @@ function CompactProductCard({ product }: { product: Product }) {
         }
         {/* rest unchanged */}
         {product.promotion && product.effective_price != null &&
-          Number(product.effective_price) < Number(product.price) && (
+          Number(product.effective_price) < Number(product.original_price ?? product.price) && (
           <span className="cpc-discount">
-            -{Math.round(((Number(product.price) - Number(product.effective_price)) / Number(product.price)) * 100)}%
+            -{Math.round(((Number(product.original_price ?? product.price) - Number(product.effective_price)) / Number(product.original_price ?? product.price)) * 100)}%
           </span>
         )}
         <FlashCountdownBadge promotion={product.promotion} />
@@ -128,7 +129,7 @@ function CompactProductCard({ product }: { product: Product }) {
       </div>
       <div className="cpc-info">
         <p className="cpc-name">{product.name}</p>
-        <PriceDisplay price={product.price} effectivePrice={product.effective_price} promotion={product.promotion} size="sm" />
+        <PriceDisplay price={product.original_price ?? product.price} effectivePrice={product.effective_price} promotion={product.promotion} size="sm" />
       </div>
     </Link>
   )

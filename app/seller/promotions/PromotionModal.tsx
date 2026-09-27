@@ -21,7 +21,18 @@ interface SellerProduct {
   id: number
   name: string
   price: number
+  /** Lowest price of the last 30 days — what a discount is computed from and shows crossed out. */
+  reference_price: number
   primary_image_url: string | null
+}
+
+/** Opened from the product form after a seller tried to lower a price. */
+export interface PromotionPrefill {
+  productId: number
+  discountType: 'percentage' | 'fixed'
+  discountValue: number
+  /** Price the seller wanted customers to pay (base-price drops only) */
+  target?: number
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -311,11 +322,18 @@ function PromotionCommissionPreview({
 
 interface PromotionModalProps {
   promotion: Promotion | null
+  prefill?: PromotionPrefill | null
   onClose: () => void
   onSaved: () => void
 }
 
-export default function PromotionModal({ promotion, onClose, onSaved }: PromotionModalProps) {
+const inDays = (d: number) => {
+  const x = new Date(Date.now() + d * 86400000)
+  x.setSeconds(0, 0)
+  return new Date(x.getTime() - x.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+}
+
+export default function PromotionModal({ promotion, prefill, onClose, onSaved }: PromotionModalProps) {
   const isEdit = !!promotion
   const t  = useTranslations('seller.promotionForm')
   const dt = useDt()
@@ -323,14 +341,14 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
 
   // ── Form state ──────────────────────────────────────────────────────────────
   const [name,          setName]          = useState(promotion?.name           ?? '')
-  const [type,          setType]          = useState<'flash_sale' | 'discount'>(promotion?.type ?? 'flash_sale')
-  const [discountType,  setDiscountType]  = useState<'percentage' | 'fixed'>(promotion?.discount_type ?? 'percentage')
-  const [discountValue, setDiscountValue] = useState(promotion?.discount_value?.toString() ?? '')
-  const [startsAt,      setStartsAt]      = useState(toLocalDateTimeInput(promotion?.starts_at))
-  const [endsAt,        setEndsAt]        = useState(toLocalDateTimeInput(promotion?.ends_at))
+  const [type,          setType]          = useState<'flash_sale' | 'discount'>(promotion?.type ?? (prefill ? 'discount' : 'flash_sale'))
+  const [discountType,  setDiscountType]  = useState<'percentage' | 'fixed'>(promotion?.discount_type ?? prefill?.discountType ?? 'percentage')
+  const [discountValue, setDiscountValue] = useState(promotion?.discount_value?.toString() ?? prefill?.discountValue?.toString() ?? '')
+  const [startsAt,      setStartsAt]      = useState(promotion ? toLocalDateTimeInput(promotion.starts_at) : prefill ? inDays(0) : '')
+  const [endsAt,        setEndsAt]        = useState(promotion ? toLocalDateTimeInput(promotion.ends_at) : prefill ? inDays(14) : '')
   const [flashStock,    setFlashStock]    = useState(promotion?.flash_stock?.toString() ?? '')
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>(
-    promotion?.products?.map(p => p.id) ?? []
+    promotion?.products?.map(p => p.id) ?? (prefill ? [prefill.productId] : [])
   )
 
   // Product picker
@@ -358,6 +376,7 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
         id:                p.id,
         name:              p.name,
         price:             parseFloat(p.price),
+        reference_price:   p.reference_price != null ? parseFloat(p.reference_price) : parseFloat(p.price),
         primary_image_url: p.primary_image_url,
       })))
     } catch {
@@ -368,6 +387,13 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
   }, [])
 
   useEffect(() => { loadProducts() }, [loadProducts])
+
+  // Name the prefilled discount after its product
+  const prefillProduct = prefill ? products.find(p => p.id === prefill.productId) : undefined
+  useEffect(() => {
+    if (prefillProduct && !name) setName(prefillProduct.name)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillProduct?.id])
 
   useEffect(() => {
     const t = setTimeout(() => loadProducts(search), 280)
@@ -527,6 +553,11 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
         </div>
 
         <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {prefill && prefillProduct && prefill.target != null && (
+            <div style={{ background: 'rgba(25,143,65,0.07)', border: '1px solid rgba(25,143,65,0.3)', borderRadius: 12, padding: '10px 14px', fontSize: 12, color: '#166534' }}>
+              {t('prefill', { price: dt(prefill.target), was: dt(Math.min(prefillProduct.price, prefillProduct.reference_price)) })}
+            </div>
+          )}
 
           {apiError && (
             <div style={{
@@ -761,8 +792,10 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
                 ) : products.map(p => {
                   const checked       = selectedProductIds.includes(p.id)
                   const discNum       = parseFloat(discountValue) || 0
+                  // Discounts start from the lowest price of the last 30 days
+                  const basis          = Math.min(p.price, p.reference_price)
                   const effectivePrice = discNum > 0
-                    ? computeEffectivePrice(p.price, discountType, discNum)
+                    ? computeEffectivePrice(basis, discountType, discNum)
                     : null
 
                   return (
@@ -801,7 +834,7 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
                         <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>
                           {/* Original price always shown */}
                           <span style={effectivePrice !== null ? { textDecoration: 'line-through', color: '#94a3b8' } : {}}>
-                            {dt(p.price)}
+                            {dt(effectivePrice !== null ? basis : p.price)}
                           </span>
                           {/* Discounted price shown when discount is entered */}
                           {effectivePrice !== null && (
@@ -810,6 +843,11 @@ export default function PromotionModal({ promotion, onClose, onSaved }: Promotio
                             </span>
                           )}
                         </p>
+                        {basis < p.price && (
+                          <p style={{ fontSize: 10, color: '#b45309', margin: '2px 0 0' }}>
+                            {t('referencePrice', { price: dt(basis) })}
+                          </p>
+                        )}
                       </div>
 
                       {/* Checkmark */}

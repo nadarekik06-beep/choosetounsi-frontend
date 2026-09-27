@@ -6,7 +6,7 @@
  *
  * CHANGES vs previous version:
  *   1. Added `restockApi` — direct stock updates (no admin approval)
- *   2. Updated `productUpdateRequestsApi.submit` type to include full variant CRUD
+ *   2. (removed) product update requests — sellers now edit live products directly
  *   3. color_images key typed as string (was already done, kept)
  *   4. ProductPayload: season → seasons (JSON-stringified array)
  *   5. buildFormData updated: seasons handling, is_pack, variant_images
@@ -67,6 +67,34 @@ async function jsonRequest<T>(method: string, path: string, body?: unknown): Pro
     throw err
   }
   return json
+}
+
+// ─── Upload with progress (fetch can't report upload progress) ────────────────
+
+function uploadRequest<T>(path: string, data: FormData, onProgress?: (percent: number) => void): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', `${API_URL}${path}`)
+    xhr.setRequestHeader('Accept', 'application/json')
+    Object.entries(authHeaders()).forEach(([k, v]) => xhr.setRequestHeader(k, v))
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)) }
+    }
+    xhr.onload = () => {
+      let json: any = {}
+      try { json = JSON.parse(xhr.responseText) } catch { /* non-JSON error page */ }
+      if (xhr.status >= 200 && xhr.status < 300) return resolve(json)
+      const err: any = new Error(json.message ?? 'Request failed')
+      err.response = { data: json, status: xhr.status }
+      reject(err)
+    }
+    xhr.onerror = () => {
+      const err: any = new Error('Network error')
+      err.response = { data: {}, status: 0 }
+      reject(err)
+    }
+    xhr.send(data)
+  })
 }
 
 // ─── FormData request (POST/PUT with file uploads) ────────────────────────────
@@ -177,16 +205,10 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
     })
   }
 
-  // ── Variant images (edit mode: new uploads per variant) ───────────────────
-  if (payload.variant_images) {
-    Object.entries(payload.variant_images as Record<number, File[]>).forEach(
-      ([variantId, files]) => {
-        if (!Array.isArray(files)) return
-        files.forEach((file, j) => {
-          fd.append(`variant_images[${variantId}][${j}]`, file)
-        })
-      }
-    )
+  // ── Image manifest: ordered gallery + color groups, new files under uploads[key]
+  if (payload.image_manifest) {
+    fd.append('image_manifest', payload.image_manifest)
+    Object.entries(payload.uploads ?? {}).forEach(([key, file]) => fd.append(`uploads[${key}]`, file, file.name))
   }
 
   return fd
@@ -217,22 +239,6 @@ export interface VariantPayload {
   is_active?: boolean
 }
 
-/**
- * Variant payload for update requests — includes structural change fields
- * and deletion flag.
- */
-export interface UpdateRequestVariantPayload {
-  id?: number
-  /** Required for new variants, optional for existing (structural change) */
-  option_ids?: number[]
-  stock?: number
-  price_override?: number | string | null
-  sku?: string | null
-  is_active?: boolean
-  /** Set to true to request deletion of this variant */
-  _delete?: boolean
-}
-
 export interface ProductPayload {
   name: string
   slug?: string
@@ -252,7 +258,9 @@ export interface ProductPayload {
   attributes?: Record<string, string>
   variants?: VariantPayload[]
   color_images?: Record<string, File[]>
-  variant_images?: Record<number, File[]>
+  /** JSON: { gallery: Item[], color_groups: { color_option_ids, items: Item[] }[] }, Item = {id} | {upload, replaces?} */
+  image_manifest?: string
+  uploads?: Record<string, File>
   [key: string]: any
 }
 
@@ -280,6 +288,14 @@ export const dashboardApi = {
   get: () =>       jsonRequest<any>('GET', '/seller/dashboard'),
   getOverview: () => jsonRequest<any>('GET', '/seller/dashboard'),
   stats: () =>     jsonRequest<any>('GET', '/seller/products/stats'),
+}
+
+// ─── Shipping cost (agency) ───────────────────────────────────────────────────
+// What the seller pays per order when they offer free shipping.
+
+export const shippingApi = {
+  cost: () =>
+    jsonRequest<{ data: { shipping_cost: number; customer_delivery_fee: number } }>('GET', '/seller/shipping-cost'),
 }
 
 // ─── Seller Orders API ────────────────────────────────────────────────────────
@@ -313,8 +329,10 @@ export const productsApi = {
     return jsonRequest<any>('GET', `/seller/products${qs ? `?${qs}` : ''}`)
   },
   getOne:   (id: number)                    => jsonRequest<any>('GET',    `/seller/products/${id}`),
-  create:   (payload: ProductPayload)        => formRequest<any>('POST',   '/seller/products', buildFormData(payload, false)),
-  update:   (id: number, payload: ProductPayload) => formRequest<any>('POST', `/seller/products/${id}`, buildFormData(payload, true)),
+  create:   (payload: ProductPayload, onProgress?: (percent: number) => void) =>
+    uploadRequest<any>('/seller/products', buildFormData(payload, false), onProgress),
+  update:   (id: number, payload: ProductPayload, onProgress?: (percent: number) => void) =>
+    uploadRequest<any>(`/seller/products/${id}`, buildFormData(payload, true), onProgress),
   delete:   (id: number)                    => jsonRequest<any>('DELETE', `/seller/products/${id}`),
   setPrimaryImage: (productId: number, imageId: number) =>
     jsonRequest<any>('PATCH', `/seller/products/${productId}/images/${imageId}/primary`),
@@ -365,26 +383,6 @@ export const restockApi = {
    */
   restock: (productId: number, payload: RestockPayload): Promise<RestockResponse> =>
     jsonRequest<RestockResponse>('POST', `/seller/products/${productId}/restock`, payload),
-}
-
-// ─── Product Update Requests API (Seller) ─────────────────────────────────────
-
-export interface UpdateRequestPayload {
-  price?:          number | string
-  stock?:          number | string
-  category_id?:    number
-  subcategory_id?: number | null
-  /** Full variant CRUD — see UpdateRequestVariantPayload */
-  variants?:       UpdateRequestVariantPayload[]
-  note?:           string
-}
-
-export const productUpdateRequestsApi = {
-  getAll: (productId: number) =>
-    jsonRequest<any>('GET', `/seller/products/${productId}/update-requests`),
-
-  submit: (productId: number, payload: UpdateRequestPayload) =>
-    jsonRequest<any>('POST', `/seller/products/${productId}/request-update`, payload),
 }
 
 // ─── Default fetch-based API export ──────────────────────────────────────────

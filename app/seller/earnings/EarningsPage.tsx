@@ -252,16 +252,18 @@ export default function EarningsPage() {
                   <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
                     <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>{t('split', { period: t(`periods.${period as 'today' | 'week' | 'month' | 'all'}`) })}</p>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
                     {[
-                      { label: t('splitCols.gross'),   value: fmt(kpis.gross_revenue   ?? 0), color: '#94a3b8', note: t('splitCols.grossNote') },
-                      { label: t('splitCols.fee'),     value: fmt(kpis.total_commission ?? 0), color: '#db142e', note: t('splitCols.feeNote') },
-                      { label: t('splitCols.receive'), value: fmt(kpis.total_net        ?? 0), color: '#10b981', note: t('splitCols.receiveNote') },
-                    ].map((col, i) => (
+                      { label: t('splitCols.gross'),    value: fmt(kpis.gross_revenue   ?? 0), color: '#94a3b8', note: t('splitCols.grossNote'),    bg: undefined },
+                      { label: t('splitCols.fee'),      value: fmt(kpis.total_commission ?? 0), color: '#db142e', note: t('splitCols.feeNote'),      bg: 'rgba(219,20,46,0.03)' },
+                      // Free-shipping orders: agency cost paid by the seller (already out of total_net)
+                      { label: t('splitCols.shipping'), value: fmt(kpis.total_shipping  ?? 0), color: '#b45309', note: t('splitCols.shippingNote'), bg: 'rgba(245,158,11,0.03)' },
+                      { label: t('splitCols.receive'),  value: fmt(kpis.total_net        ?? 0), color: '#10b981', note: t('splitCols.receiveNote'),  bg: 'rgba(16,185,129,0.03)' },
+                    ].map((col, i, cols) => (
                       <div key={col.label} style={{
                         padding: '16px 20px',
-                        borderInlineEnd: i < 2 ? `1px solid ${border}` : undefined,
-                        background: i === 2 ? 'rgba(16,185,129,0.03)' : i === 1 ? 'rgba(219,20,46,0.03)' : undefined,
+                        borderInlineEnd: i < cols.length - 1 ? `1px solid ${border}` : undefined,
+                        background: col.bg,
                       }}>
                         <p style={{ fontSize: 9, fontWeight: 800, color: col.color, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>
                           {col.label}
@@ -287,6 +289,7 @@ export default function EarningsPage() {
                             <th style={th(true)}>{t('cols.orders')}</th>
                             <th style={th(true)}>{t('cols.gross')}</th>
                             <th style={th(true)}>{t('cols.fee')}</th>
+                            <th style={th(true)}>{t('cols.shipping')}</th>
                             <th style={th(true)}>{t('cols.net')}</th>
                           </tr>
                         </thead>
@@ -297,6 +300,7 @@ export default function EarningsPage() {
                               <td style={{ ...td(true), color: textMuted }}>{row.orders}</td>
                               <td style={{ ...td(true), color: textMuted }}>{fmt(row.gross ?? 0)}</td>
                               <td style={{ ...td(true), color: '#db142e' }}>{fmt(row.commission ?? 0)}</td>
+                              <td style={{ ...td(true), color: '#b45309' }}>{Number(row.shipping ?? 0) > 0 ? '−' + fmt(row.shipping) : '—'}</td>
                               <td style={{ ...td(true), color: '#10b981', fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
                             </tr>
                           ))}
@@ -335,6 +339,7 @@ export default function EarningsPage() {
                         <th style={th()}>{t('cols.order')}</th>
                         <th style={th(true)}>{t('cols.gross')}</th>
                         <th style={th(true)}>{t('cols.platformFee')}</th>
+                        <th style={th(true)}>{t('cols.shipping')}</th>
                         <th style={th(true)}>{t('cols.yourNet')}</th>
                         <th style={th(true)}>{t('cols.payoutStatus')}</th>
                         <th style={th(true)}>{t('cols.settled')}</th>
@@ -346,6 +351,7 @@ export default function EarningsPage() {
                           <td style={{ ...td(), fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{row.order_number}</td>
                           <td style={{ ...td(true), color: textMuted }}>{fmt(row.gross ?? 0)}</td>
                           <td style={{ ...td(true), color: '#db142e', fontWeight: 700 }}>{fmt(row.commission_amount ?? 0)}</td>
+                          <td style={{ ...td(true), color: '#b45309', fontWeight: 700 }}>{Number(row.seller_shipping_charge ?? 0) > 0 ? '−' + fmt(row.seller_shipping_charge) : '—'}</td>
                           <td style={{ ...td(true), color: '#10b981', fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
                           <td style={{ ...td(true) }}><PayoutBadge status={row.payout_status ?? 'pending'} /></td>
                           <td style={{ ...td(true), color: textMuted, fontSize: 11 }}>
@@ -355,7 +361,7 @@ export default function EarningsPage() {
                       ))}
                       {(orders?.data ?? []).length === 0 && (
                         <tr>
-                          <td colSpan={6} style={{ padding: '40px 20px', textAlign: 'center', color: textMuted }}>
+                          <td colSpan={7} style={{ padding: '40px 20px', textAlign: 'center', color: textMuted }}>
                             {t('noOrders')}
                           </td>
                         </tr>

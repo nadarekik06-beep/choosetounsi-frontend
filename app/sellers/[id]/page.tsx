@@ -80,6 +80,7 @@ interface GridProduct {
   price: number | string; stock: number
   primary_image_url: string | null
   effective_price?: number
+  original_price?: number
   promotion?: ActivePromotion | null
 }
 
@@ -161,7 +162,7 @@ function ProductCard({ product }: { product: GridProduct }) {
           }}>
             {product.name}
           </p>
-          <PriceDisplay price={product.price} effectivePrice={product.effective_price} promotion={product.promotion} size="sm" />
+          <PriceDisplay price={product.original_price ?? product.price} effectivePrice={product.effective_price} promotion={product.promotion} size="sm" />
         </div>
       </div>
     </Link>

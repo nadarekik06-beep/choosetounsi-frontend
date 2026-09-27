@@ -46,6 +46,7 @@ interface RecommendedProduct {
   primary_image_url?: string | null
   variant_images?: string[]           // ← ADD: all variant image URLs
   effective_price?: number | null
+  original_price?: number | null
   discount_amount?: number | null
   promotion?: Promotion | null
   category?: { id: number; name: string; slug: string }
@@ -80,7 +81,7 @@ function getDisplayPrice(p: RecommendedProduct, price: PriceFn): {
   badge: string | null
   isFlash: boolean
 } {
-  const base      = Number(p.price)
+  const base      = Number(p.original_price ?? p.price)   // 30-day lowest when discounted
   const effective = p.effective_price != null ? Number(p.effective_price) : base
   const hasDiscount = effective < base - 0.001
 

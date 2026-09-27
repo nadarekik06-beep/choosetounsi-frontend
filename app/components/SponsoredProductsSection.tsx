@@ -267,7 +267,7 @@ useEffect(() => () => {
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, flexWrap: 'wrap' }}>
       {(() => {
-        const original  = Number(product.price)
+        const original  = Number(product.original_price ?? product.price)
         const effective = product.effective_price != null ? Number(product.effective_price) : original
         const hasDiscount = effective < original - 0.001
         return (

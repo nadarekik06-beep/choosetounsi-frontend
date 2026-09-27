@@ -71,11 +71,14 @@ interface Product {
   attribute_data?: Record<string, AttributeData>
   has_variants: boolean
   effective_price?: number
+  /** Crossed-out price when discounted: lowest price of the last 30 days */
+  original_price?: number
   discount_amount?: number
   promotion?: ActivePromotion | null
   variants: (ProductVariant & {
     color_option_id?: number | null
     color_group_key?: string | null
+    effective_price?: number
     original_price?: number
     image_urls: string[]
     primary_image_url?: string | null
@@ -456,10 +459,8 @@ export default function ProductDetailPage() {
     })
   }, [variants, selectedOptions, axes])
 
+  // Images follow the selected color only: every size of a color shares its photos
   const galleryImages = (() => {
-    if (selectedVariant && selectedVariant.image_urls.length > 0) {
-      return selectedVariant.image_urls
-    }
     if (selectedColorKey) {
       const colorVariant = variants.find(v =>
         v.color_group_key === selectedColorKey && v.image_urls.length > 0
@@ -486,15 +487,17 @@ export default function ProductDetailPage() {
       ? variants.reduce((s, v) => s + v.stock, 0)
       : (product?.stock ?? 0)
 
+  // Same prices as cart/checkout: the promotion applies to the selected variant too,
+  // and the crossed-out price is the lowest price of the last 30 days.
   const effectivePrice = selectedVariant
-    ? selectedVariant.price
+    ? (activePromotion && selectedVariant.effective_price != null ? selectedVariant.effective_price : selectedVariant.price)
     : (activePromotion && product?.effective_price != null)
       ? product.effective_price
       : (product?.price ?? 0)
 
   const originalPrice = selectedVariant
-    ? (selectedVariant.original_price ?? (selectedVariant.price_override ?? Number(product?.price ?? 0)))
-    : Number(product?.price ?? 0)
+    ? Number(selectedVariant.original_price ?? selectedVariant.price)
+    : Number(product?.original_price ?? product?.price ?? 0)
 
   const hasPromoDiscount = activePromotion && Number(effectivePrice) < originalPrice
 

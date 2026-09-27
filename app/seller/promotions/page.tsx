@@ -9,7 +9,7 @@ import {
   Clock, CheckCircle, Zap, Calendar, TrendingDown,
   XCircle, Pause, Ticket, Users,
 } from 'lucide-react'
-import PromotionModal from './PromotionModal'
+import PromotionModal, { type PromotionPrefill } from './PromotionModal'
 import CouponModal from './CouponModal'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -114,6 +114,22 @@ export default function PromotionsPage() {
   }, [typeFilter, statusFilter])
 
   useEffect(() => { load() }, [load])
+
+  // Opened from the product form after a price cut: /seller/promotions?create=discount&product=…
+  const [prefill, setPrefill] = useState<PromotionPrefill | null>(null)
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    if (q.get('create') !== 'discount' || !q.get('product')) return
+    setSection('promotions')
+    setPrefill({
+      productId:     Number(q.get('product')),
+      discountType:  q.get('discount_type') === 'percentage' ? 'percentage' : 'fixed',
+      discountValue: Number(q.get('discount_value')) || 0,
+      target:        q.get('target') ? Number(q.get('target')) : undefined,
+    })
+    setModal({ open: true, promotion: null })
+    window.history.replaceState(null, '', window.location.pathname)
+  }, [])
 
   const handleDelete = async (id: number) => {
     if (!confirm(t('confirmDelete'))) return
@@ -306,8 +322,9 @@ export default function PromotionsPage() {
       {modal.open && (
         <PromotionModal
           promotion={modal.promotion}
-          onClose={() => setModal({ open: false, promotion: null })}
-          onSaved={() => { setModal({ open: false, promotion: null }); load() }}
+          prefill={modal.promotion ? null : prefill}
+          onClose={() => { setModal({ open: false, promotion: null }); setPrefill(null) }}
+          onSaved={() => { setModal({ open: false, promotion: null }); setPrefill(null); load() }}
         />
       )}
       </>

@@ -268,7 +268,7 @@ function FilterBar({
 
 function getDisplayPrice(item: FeedItem, price: (n: number) => string) {
   const p         = item as any
-  const base      = Number(p.price ?? 0)
+  const base      = Number(p.original_price ?? p.price ?? 0)   // 30-day lowest when discounted
   const effective = p.effective_price != null ? Number(p.effective_price) : base
   const hasDiscount = effective < base - 0.001
   if (!hasDiscount || !p.promotion) {

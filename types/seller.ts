@@ -206,6 +206,8 @@ export interface OrderCommissionSummary {
   total_net?: number;                      // total_gross − total_discount (commission base)
   total_commission_amount: number | null;  // null for legacy orders
   total_seller_net: number | null;         // null for legacy orders
+  shipping_paid_by_seller?: number;        // free-shipping orders: agency cost the seller pays
+  net_after_shipping?: number | null;      // total_seller_net − shipping_paid_by_seller
 }
 
 export interface OrderDetail {

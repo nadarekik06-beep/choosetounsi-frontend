@@ -156,6 +156,7 @@ function CommissionSummaryCard({ commission, dark, border, bgSub }: {
   if (!commission.has_commission) return null;
   const discount = Number(commission.total_discount ?? 0);
   const net      = Number(commission.total_net ?? commission.total_gross);
+  const shipping = Number(commission.shipping_paid_by_seller ?? 0);
   // Coupon is seller-funded; the platform fee is charged on the price after it.
   const columns = [
     { label: t('summary.gross'),    value: bare(commission.total_gross),             color: dark ? '#93c5fd' : '#1e40af', bg: dark ? 'rgba(59,130,246,0.08)' : '#eff6ff', bd: dark ? 'rgba(59,130,246,0.15)' : '#bfdbfe', note: discount > 0 ? t('summary.beforeCoupon') : t('summary.customerPaid') },
@@ -163,7 +164,11 @@ function CommissionSummaryCard({ commission, dark, border, bgSub }: {
       { label: t('summary.coupon'), value: '−' + bare(discount),                    color: '#f59e0b', bg: 'rgba(245,158,11,0.06)', bd: 'rgba(245,158,11,0.18)', note: t('summary.customerPaidAmount', { amount: dt(net) }) },
     ] : []),
     { label: t('summary.fee'),      value: bare(commission.total_commission_amount), color: '#ef4444', bg: 'rgba(239,68,68,0.06)', bd: 'rgba(239,68,68,0.18)', note: discount > 0 ? t('summary.on', { amount: dt(net) }) : t('summary.commission') },
-    { label: t('summary.receive'),  value: bare(commission.total_seller_net),        color: '#10b981', bg: 'rgba(16,185,129,0.06)', bd: 'rgba(16,185,129,0.18)', note: t('summary.netAfterFees') },
+    // Free shipping offered by the seller: the agency cost comes off their earnings.
+    ...(shipping > 0 ? [
+      { label: t('summary.shipping'), value: '−' + bare(shipping),                   color: '#b45309', bg: 'rgba(245,158,11,0.06)', bd: 'rgba(245,158,11,0.18)', note: t('summary.shippingNote') },
+    ] : []),
+    { label: t('summary.receive'),  value: bare(shipping > 0 ? commission.net_after_shipping : commission.total_seller_net), color: '#10b981', bg: 'rgba(16,185,129,0.06)', bd: 'rgba(16,185,129,0.18)', note: shipping > 0 ? t('summary.netAfterFeesShipping') : t('summary.netAfterFees') },
   ];
   return (
     <div style={{ marginTop: 2 }}>
@@ -410,6 +415,16 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                     <span style={{ fontSize: 12, fontWeight: 800, color: dark ? '#93c5fd' : '#1e40af' }}>{Number(detail.discount_amount ?? 0) > 0 ? t('totalAfterCoupon') : t('yourSubtotal')}</span>
                     <span style={{ fontWeight: 900, color: '#3b82f6', fontSize: 15 }}>{dt(detail.seller_total ?? detail.seller_subtotal)}</span>
                   </div>
+                  {/* Free shipping: the customer paid 0, the agency cost comes off the seller's earnings */}
+                  {Number(detail.commission?.shipping_paid_by_seller ?? 0) > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 16px', background: 'rgba(245,158,11,0.06)', borderTop: `1px solid ${border}` }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#b45309' }}>
+                        {t('shippingRow')}
+                        <span style={{ display: 'block', fontSize: 10, fontWeight: 600, color: textMuted }}>{t('shippingRowNote')}</span>
+                      </span>
+                      <span style={{ fontWeight: 800, color: '#b45309', fontSize: 13, whiteSpace: 'nowrap' }}>−{dt(detail.commission?.shipping_paid_by_seller)}</span>
+                    </div>
+                  )}
                 </div>
 
                 {detail.commission?.has_commission && (

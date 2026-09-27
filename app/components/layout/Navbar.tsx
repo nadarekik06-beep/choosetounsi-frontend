@@ -451,7 +451,7 @@ function SearchDropdown({
                       <p style={{ fontSize: 13, fontWeight: 900, color: "#db142e", margin: 0, letterSpacing: "-0.01em" }}>
                           {/* Price — shows discounted price + strikethrough original when promotion active */}
                                 {(() => {
-                                  const original  = Number(product.price)
+                                  const original  = Number(product.original_price ?? product.price)
                                   const effective = product.effective_price != null
                                     ? Number(product.effective_price)
                                     : original

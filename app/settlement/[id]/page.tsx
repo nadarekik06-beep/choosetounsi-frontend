@@ -12,6 +12,7 @@ interface SettlementOrder {
   commission_amount: number
   seller_net_amount: number
   delivery_fee: number
+  seller_shipping_charge?: number   // free-shipping orders: deducted from the seller
   status: string
   money_received_at: string | null
   created_at: string
@@ -196,7 +197,7 @@ export default function SettlementReceiptPage() {
                     { label: t('cols.date'),       align: 'start' },
                     { label: t('cols.gross'),      align: 'end'   },
                     { label: t('cols.commission'), align: 'end'   },
-                    { label: t('cols.delivery'),   align: 'end'   },
+                    { label: t('cols.shipping'),   align: 'end'   },
                     { label: t('cols.net'),        align: 'end'   },
                   ].map(col => (
                     <th key={col.label} style={{ padding: '10px 12px', fontSize: 9, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.8)', textAlign: col.align as any }}>
@@ -212,7 +213,7 @@ export default function SettlementReceiptPage() {
                     <td style={{ padding: '10px 12px', color: '#64748b', fontSize: 11 }}>{date(order.created_at, 'short')}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#475569', fontWeight: 600 }}>{fmt(order.subtotal)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#db142e', fontWeight: 700 }}>−{fmt(order.commission_amount)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#3b82f6', fontWeight: 600 }}>{fmt(order.delivery_fee)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#b45309', fontWeight: 600 }}>{Number(order.seller_shipping_charge ?? 0) > 0 ? '−' + fmt(Number(order.seller_shipping_charge)) : '—'}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#10b981', fontWeight: 800 }}>{fmt(order.seller_net_amount)}</td>
                   </tr>
                 ))}
@@ -225,7 +226,7 @@ export default function SettlementReceiptPage() {
                 {[
                   { label: t('totals.gross'),      value: fmt(data.total_orders_gross),  color: undefined, minus: false },
                   { label: t('totals.commission'), value: fmt(data.total_commission),     color: '#db142e', minus: true  },
-                  { label: t('totals.delivery'),   value: fmt(data.total_delivery_fees),  color: '#3b82f6', minus: false },
+                  { label: t('totals.shipping'),   value: fmt((data.orders ?? []).reduce((s, o) => s + Number(o.seller_shipping_charge ?? 0), 0)), color: '#b45309', minus: true },
                 ].map(row => (
                   <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 16px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', fontSize: 12, fontWeight: 600, color: row.color ?? '#475569' }}>
                     <span>{row.label}</span>
