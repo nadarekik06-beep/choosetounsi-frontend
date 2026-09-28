@@ -316,7 +316,7 @@
     "exploreAll": "اكتشف الكل"
   },
   "homeFeed": {
-    "sponsoredBadge": "إعلان ممول",
+    "sponsoredBadge": "مُموَّل",
     "viewAll": "عرض الكل",
     "following": "متابَع",
     "scrollPrev": "التمرير للخلف",
@@ -325,6 +325,7 @@
       "recommended": "مقترحات لك",
       "sponsored": "منتجات ممولة",
       "trending": "الأكثر رواجًا الآن",
+      "best_sellers": "الأكثر مبيعًا",
       "similar": "قد يعجبك أيضًا",
       "favorites": "مفضلاتك",
       "favorite_sellers": "من بائعيك المفضلين",
@@ -337,6 +338,7 @@
       "recommended": "مختارة حسب ما تتصفحه وتحبه وتشتريه",
       "sponsored": "يروّج لها بائعو ChooseTounsi",
       "trending": "الأكثر مشاهدة وشراءً هذا الأسبوع",
+      "best_sellers": "المنتجات الأكثر شراءً",
       "similar": "مشابهة لما شاهدته مؤخرًا",
       "favorites": "هل ما زلت تفكر فيها؟",
       "favorite_sellers": "الجديد والأكثر طلبًا من متاجرك المفضلة",
@@ -344,9 +346,12 @@
       "new_arrivals": "وصلت للتو إلى ChooseTounsi",
       "top_rated": "يحبها عملاؤنا",
       "popular_in_category": "ما يختاره المتسوقون الآن"
-    }
+    },
+    "hot": "رائج",
+    "bestSellerRank": "الأكثر مبيعًا #{rank}"
   },
   "productCard": {
+    "sponsored": "مُموَّل",
     "hot": "🔥 رائج",
     "trending": "⚡ رائج",
     "trendingPlain": "رائج",

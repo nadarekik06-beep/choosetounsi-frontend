@@ -37,7 +37,7 @@ export interface FeedProduct {
 }
 
 export type FeedSectionType =
-  | 'recommended' | 'sponsored' | 'trending' | 'similar' | 'favorites'
+  | 'recommended' | 'sponsored' | 'trending' | 'best_sellers' | 'similar' | 'favorites'
   | 'favorite_sellers' | 'recently_viewed' | 'new_arrivals' | 'top_rated' | 'popular_in_category'
 
 export interface FeedSellerBadge {
@@ -62,6 +62,7 @@ export interface HomeFeed {
   success: boolean
   personalized: boolean
   profile_state: 'warm' | 'cold'
+  catalog_mode?: 'small' | 'standard'
   generated_at: string
   sections: FeedSection[]
 }

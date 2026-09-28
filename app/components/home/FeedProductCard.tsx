@@ -6,6 +6,8 @@
  *   - paid placements carry a clear "Sponsored" label (organic cards never do)
  *   - sponsored impressions are recorded once the card is actually visible
  *   - clicks are tracked with the section they came from
+ *   - variant "ranked" (Trending): rank numeral on the image, flame on the top 3
+ *   - variant "bestseller" (Best sellers): trophy chip on the top 3
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -36,15 +38,18 @@ function displayPrice(p: FeedProduct, price: PriceFn) {
   return { display: effective, original: base, badge, isFlash: p.promotion.is_flash_sale }
 }
 
+export type CardVariant = 'ranked' | 'bestseller'
+
 const pill: React.CSSProperties = {
   fontSize: 8, fontWeight: 900, padding: '2px 7px', borderRadius: 999,
   textTransform: 'uppercase', letterSpacing: '0.06em', color: '#fff',
 }
 
-export default function FeedProductCard({ product, index, section }: {
+export default function FeedProductCard({ product, index, section, variant }: {
   product: FeedProduct
   index: number
   section: string
+  variant?: CardVariant
 }) {
   const t    = useTranslations('productCard')
   const tf   = useTranslations('homeFeed')
@@ -142,6 +147,12 @@ export default function FeedProductCard({ product, index, section }: {
           {isPaid && (
             <span style={{ ...pill, background: 'rgba(17,17,17,0.78)', color: '#fbbf24' }}>{tf('sponsoredBadge')}</span>
           )}
+          {variant === 'ranked' && index < 3 && !isPaid && (
+            <span style={{ ...pill, background: 'linear-gradient(135deg,#f97316,#db142e)' }}>🔥 {tf('hot')}</span>
+          )}
+          {variant === 'bestseller' && index < 3 && !isPaid && (
+            <span style={{ ...pill, background: 'linear-gradient(135deg,#ca8a04,#a16207)' }}>🏆 {tf('bestSellerRank', { rank: index + 1 })}</span>
+          )}
           {badge && (
             <span style={{ ...pill, padding: '2px 6px', background: isFlash ? 'linear-gradient(135deg,#dc2626,#f97316)' : '#db142e' }}>
               {badge}
@@ -150,6 +161,15 @@ export default function FeedProductCard({ product, index, section }: {
         </div>
 
         <FlashCountdownBadge promotion={product.promotion} />
+
+        {variant === 'ranked' && (
+          <span aria-hidden className="feed-rank" style={{
+            position: 'absolute', bottom: 2, insetInlineStart: 8, zIndex: 3, pointerEvents: 'none',
+            fontFamily: "'Outfit', sans-serif", fontSize: 46, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.04em',
+            color: '#fff', WebkitTextStroke: index < 3 ? '1.5px #db142e' : '1.5px #111',
+            textShadow: '0 4px 14px rgba(0,0,0,0.35)',
+          }}>{index + 1}</span>
+        )}
 
         {oos && (
           <div style={{

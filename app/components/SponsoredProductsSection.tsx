@@ -163,8 +163,8 @@ useEffect(() => () => {
                 ⚡ {product.promotion.discount_label}
               </span>
             )}
-            {/* HOT badge — shown for high-priority sponsorships without a flash sale */}
-            {showBadge && !product.promotion?.is_flash_sale && (
+            {/* Paid placement — always disclosed (the row can also hold popular backfill) */}
+            {showBadge && product.is_sponsored && !product.promotion?.is_flash_sale && (
               <span style={{
                 background: 'linear-gradient(135deg, #db142e, #ff4757)',
                 color: '#fff', fontSize: 8, fontWeight: 800,
@@ -172,7 +172,7 @@ useEffect(() => () => {
                 letterSpacing: '0.07em', textTransform: 'uppercase',
                 boxShadow: '0 2px 8px rgba(219,20,46,0.38)',
               }}>
-                {t('hot')}
+                {t('sponsored')}
               </span>
             )}
           </div>

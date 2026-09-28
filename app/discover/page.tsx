@@ -10,8 +10,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  Flame, TrendingUp, Star, Heart, ShoppingBag, Eye,
-  Compass, Zap, Award, ArrowRight, ChevronRight,
+  TrendingUp, Star, Heart, ShoppingBag, Eye,
+  Compass, Award, ArrowRight, ChevronRight,
   SlidersHorizontal, Search, X, Check, Sparkles,
 } from 'lucide-react';
 import Navbar from '@/app/components/layout/Navbar';
@@ -29,16 +29,8 @@ const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api')
 
 const SPONSORED_EVERY = 4;
 
-// Psychologically attractive labels for sponsored products
-// Text lives in messages: discover.labels.<key>
-const PREMIUM_LABELS = [
-  { key: 'trending',  icon: TrendingUp, color: '#e11d48', bg: '#fff1f2' },
-  { key: 'hotPick',   icon: Flame,      color: '#ea580c', bg: '#fff7ed' },
-  { key: 'bestSeller', icon: Award,     color: '#0284c7', bg: '#f0f9ff' },
-  { key: 'mostLoved', icon: Heart,      color: '#db2777', bg: '#fdf2f8' },
-  { key: 'editorsChoice', icon: Star,   color: '#7c3aed', bg: '#faf5ff' },
-  { key: 'viral',     icon: Zap,        color: '#d97706', bg: '#fffbeb' },
-] as const;
+// Paid placements are always disclosed as "Sponsored" (productCard.sponsored).
+const SPONSORED_LABEL = { icon: Star, color: '#b45309', bg: '#fef3c7' } as const;
 
 interface ActivePromotion {
   id: number;
@@ -291,6 +283,7 @@ function getDisplayPrice(item: FeedItem, price: (n: number) => string) {
 
 function ProductCard({ item, index }: { item: FeedItem; index: number }) {
   const t   = useTranslations('discover');
+  const tp  = useTranslations('productCard');
   const fmt = useFormat();
   const [imgErr, setImgErr]   = useState(false);
   const [wished, setWished]   = useState(false);
@@ -311,9 +304,7 @@ const allImages = useMemo(() => {                     // ← NEW
   useEffect(() => () => {
     if (tickRef.current) clearInterval(tickRef.current);
   }, []);
-  const label = item._is_sponsored && item._label_idx !== undefined
-    ? PREMIUM_LABELS[item._label_idx % PREMIUM_LABELS.length]
-    : null;
+  const label = item._is_sponsored ? SPONSORED_LABEL : null;
 
   const handleClick = () => {
     if (item._is_sponsored && item._sponsor_id) sponsorshipApi.recordClick(item._sponsor_id);
@@ -406,7 +397,7 @@ onMouseLeave={() => {
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}>
               <label.icon size={9} />
-              {t(`labels.${label.key}`)}
+              {tp('sponsored')}
             </div>
           )}
           {badge && (
@@ -579,6 +570,11 @@ export default function DiscoverPage() {
   const [page,      setPage]      = useState(1);
   const [hasMore,   setHasMore]   = useState(true);
   const [activeSort, setActiveSort] = useState('views');
+  // Homepage "See all" links open the shop pre-sorted (?sort=newest, …).
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get('sort');
+    if (requested && SORT_OPTIONS.some(o => o.key === requested)) setActiveSort(requested);
+  }, []);
   const [labelCounter, setLabelCounter] = useState(0);
   const labelRef = useRef(0);
 

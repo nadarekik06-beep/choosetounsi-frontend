@@ -325,6 +325,7 @@
       "recommended": "Recommandé pour vous",
       "sponsored": "Sélection sponsorisée",
       "trending": "Tendances du moment",
+      "best_sellers": "Meilleures ventes",
       "similar": "Vous aimerez aussi",
       "favorites": "Vos favoris",
       "favorite_sellers": "De vos vendeurs préférés",
@@ -337,6 +338,7 @@
       "recommended": "Choisi selon ce que vous consultez, aimez et achetez",
       "sponsored": "Mis en avant par les vendeurs de ChooseTounsi",
       "trending": "Les plus vus et achetés cette semaine",
+      "best_sellers": "Les produits les plus achetés",
       "similar": "Proche de ce que vous avez consulté récemment",
       "favorites": "Vous y pensez encore ?",
       "favorite_sellers": "Nouveautés et succès de vos boutiques préférées",
@@ -344,9 +346,12 @@
       "new_arrivals": "Tout juste arrivés sur ChooseTounsi",
       "top_rated": "Adorés par nos clients",
       "popular_in_category": "Ce que les clients choisissent en ce moment"
-    }
+    },
+    "hot": "Tendance",
+    "bestSellerRank": "N°{rank} des ventes"
   },
   "productCard": {
+    "sponsored": "Sponsorisé",
     "hot": "🔥 Top",
     "trending": "⚡ Tendance",
     "trendingPlain": "Tendance",

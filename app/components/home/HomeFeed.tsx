@@ -22,9 +22,18 @@ const FEED_CSS = `
   }
   .feed-track::-webkit-scrollbar { display: none; }
   .feed-card    { width: 170px; }
+  .feed-section--highlight { padding-top: 22px; }
+  .feed-panel {
+    background: linear-gradient(135deg, #fff4f5 0%, #fffaf3 55%, #ffffff 100%);
+    border: 1px solid #fbe3e6; border-radius: 20px; padding: 18px 16px 8px;
+    box-shadow: 0 8px 30px rgba(219, 20, 46, 0.05);
+  }
   @media (max-width: 640px) {
     .feed-section { padding: 20px 0 4px; }
     .feed-wrap    { padding: 0 16px; }
+    .feed-panel   { border-radius: 16px; padding: 14px 10px 6px; margin: 0 -6px; }
+    .feed-subtitle { display: none; }
+    .feed-rank    { font-size: 38px !important; }
     .feed-card    { width: 42vw; max-width: 165px; }
     .feed-arrows  { display: none !important; }
     .feed-section h2 { font-size: 17px !important; }
