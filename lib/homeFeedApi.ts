@@ -33,7 +33,7 @@ export interface FeedProduct {
   discount_amount?: number | null
   promotion?: FeedPromotion | null
   category?: { id: number; name: string; name_fr?: string | null; name_ar?: string | null; slug: string } | null
-  seller?: { id: number; name: string } | null
+  seller?: { id: number; name: string; business_name?: string | null } | null
 }
 
 export type FeedSectionType =

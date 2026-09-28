@@ -196,9 +196,9 @@ export default function FeedProductCard({ product, index, section, variant }: {
       </div>
 
       <div style={{ padding: '9px 11px 11px' }}>
-        {product.seller?.name && (
+        {(product.seller?.business_name || product.seller?.name) && (
           <p style={{ fontSize: 9, fontWeight: 700, color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {product.seller.name}
+            {product.seller?.business_name || product.seller?.name}
           </p>
         )}
         <p style={{
