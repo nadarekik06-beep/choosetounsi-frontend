@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { currentLocale, fallbackError } from '@/lib/i18n/clientLocale';
+import { mergeGuestHistory } from '@/lib/tracking';
 export interface AuthUser {
   id: number;
   name: string;
@@ -97,6 +98,8 @@ export function saveSession(token: string, user: AuthUser): void {
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
   document.cookie = 'ct_token_exists=1; path=/; max-age=86400; SameSite=Lax';
+  // Carry what they browsed as a guest into their personalized homepage.
+  mergeGuestHistory(token);
 }
 
 function clearSession(): void {

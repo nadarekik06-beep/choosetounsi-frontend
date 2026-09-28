@@ -315,6 +315,37 @@
     "brandSubtitle": "Sélectionnés. Vérifiés. Exclusivement à nous.",
     "exploreAll": "Tout explorer"
   },
+  "homeFeed": {
+    "sponsoredBadge": "Sponsorisé",
+    "viewAll": "Voir tout",
+    "following": "Suivi",
+    "scrollPrev": "Défiler en arrière",
+    "scrollNext": "Défiler en avant",
+    "titles": {
+      "recommended": "Recommandé pour vous",
+      "sponsored": "Sélection sponsorisée",
+      "trending": "Tendances du moment",
+      "similar": "Vous aimerez aussi",
+      "favorites": "Vos favoris",
+      "favorite_sellers": "De vos vendeurs préférés",
+      "recently_viewed": "Reprendre votre visite",
+      "new_arrivals": "Nouveautés",
+      "top_rated": "Les mieux notés",
+      "popular_in_category": "Populaire en {category}"
+    },
+    "subtitles": {
+      "recommended": "Choisi selon ce que vous consultez, aimez et achetez",
+      "sponsored": "Mis en avant par les vendeurs de ChooseTounsi",
+      "trending": "Les plus vus et achetés cette semaine",
+      "similar": "Proche de ce que vous avez consulté récemment",
+      "favorites": "Vous y pensez encore ?",
+      "favorite_sellers": "Nouveautés et succès de vos boutiques préférées",
+      "recently_viewed": "Reprenez là où vous vous êtes arrêté",
+      "new_arrivals": "Tout juste arrivés sur ChooseTounsi",
+      "top_rated": "Adorés par nos clients",
+      "popular_in_category": "Ce que les clients choisissent en ce moment"
+    }
+  },
   "productCard": {
     "hot": "🔥 Top",
     "trending": "⚡ Tendance",

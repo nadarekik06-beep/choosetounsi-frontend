@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { isAuthenticated, getUser } from '@/lib/auth'
+import { trackView } from '@/lib/tracking'
 import type { ProductVariant, SelectableAxis } from '@/lib/shopApi'
 import ProductRecommendations from 'app/components/ProductRecommendations'
 import CountdownTimer from '@/app/components/promotions/CountdownTimer'
@@ -397,6 +398,7 @@ export default function ProductDetailPage() {
       .then(json => {
         const prod: Product = json.data
         setProduct(prod)
+        trackView(prod.id)
         if (prod.promotion) {
           setActivePromotion(prod.promotion)
         }

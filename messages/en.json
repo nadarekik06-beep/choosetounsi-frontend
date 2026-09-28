@@ -315,6 +315,37 @@
     "brandSubtitle": "Curated. Verified. Exclusively ours.",
     "exploreAll": "Explore all"
   },
+  "homeFeed": {
+    "sponsoredBadge": "Sponsored",
+    "viewAll": "View all",
+    "following": "Following",
+    "scrollPrev": "Scroll back",
+    "scrollNext": "Scroll forward",
+    "titles": {
+      "recommended": "Recommended for you",
+      "sponsored": "Sponsored picks",
+      "trending": "Trending now",
+      "similar": "You might also like",
+      "favorites": "Your favourites",
+      "favorite_sellers": "From your favourite sellers",
+      "recently_viewed": "Continue browsing",
+      "new_arrivals": "New arrivals",
+      "top_rated": "Top rated",
+      "popular_in_category": "Popular in {category}"
+    },
+    "subtitles": {
+      "recommended": "Picked from what you browse, love and buy",
+      "sponsored": "Promoted by sellers on ChooseTounsi",
+      "trending": "Most viewed and bought this week",
+      "similar": "Similar to what you looked at recently",
+      "favorites": "Still thinking about these?",
+      "favorite_sellers": "New and popular from shops you love",
+      "recently_viewed": "Pick up where you left off",
+      "new_arrivals": "Just landed on ChooseTounsi",
+      "top_rated": "Loved by our customers",
+      "popular_in_category": "What shoppers are choosing right now"
+    }
+  },
   "productCard": {
     "hot": "🔥 Hot",
     "trending": "⚡ Trending",
