@@ -5,9 +5,10 @@ import { ordersApi } from '@/lib/sellerApi';
 import {
   Search, Eye, ChevronLeft, ChevronRight, X, Loader2,
   ShoppingBag, AlertCircle, User, MapPin, Package,
-  Hash, Calendar, Tag,
+  Hash, Calendar, Tag, Wallet,
 } from 'lucide-react';
 import { useTheme } from '../SellerShell';
+import SellerOrderDrawer from '../components/SellerOrderDrawer';
 import type { Order, OrderDetail, OrderItem, VariantAttribute, PaginatedResponse, OrderCommissionSummary } from '@/types/seller';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
@@ -538,6 +539,8 @@ export default function OrdersPage() {
   const [filterPayment, setFilterPayment] = useState('');
   const [page,          setPage]          = useState(1);
   const [selectedId,    setSelectedId]    = useState<number | null>(null);
+  const [earningsOrder, setEarningsOrder] = useState<Order | null>(null);
+  const tDrawer = useTranslations('seller.orderDrawer');
 
   const empty: PaginatedResponse<Order> = { data: [], current_page: 1, last_page: 1, per_page: 12, total: 0, from: 0, to: 0 };
 
@@ -643,9 +646,16 @@ export default function OrdersPage() {
                         <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           <ShoppingBag size={13} color="#3b82f6" />
                         </div>
-                        <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 11, background: dark ? 'rgba(255,255,255,0.07)' : '#f1f5f9', color: textMain, padding: '2px 7px', borderRadius: 6 }}>
-                          {order.order_number}
-                        </span>
+                        <div>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 11, background: dark ? 'rgba(255,255,255,0.07)' : '#f1f5f9', color: textMain, padding: '2px 7px', borderRadius: 6 }}>
+                            {order.order_number}
+                          </span>
+                          {order.items_count != null && (
+                            <span style={{ display: 'block', marginTop: 4, fontSize: 9, fontWeight: 800, color: textMuted }}>
+                              {t('itemCount', { count: order.items_count })}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td style={{ padding: '13px 20px' }}>
@@ -666,6 +676,9 @@ export default function OrdersPage() {
                         )}
                         <button onClick={() => setSelectedId(order.id)} aria-label={t('view')} title={t('view')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: textMuted }} className="eye-btn">
                           <Eye size={14} />
+                        </button>
+                        <button onClick={() => setEarningsOrder(order)} aria-label={tDrawer('earningsTooltip')} title={tDrawer('earningsTooltip')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#198f41' }} className="eye-btn">
+                          <Wallet size={14} />
                         </button>
                       </div>
                     </td>
@@ -703,6 +716,14 @@ export default function OrdersPage() {
 
       {selectedId !== null && (
         <OrderDetailModal orderId={selectedId} onClose={() => setSelectedId(null)} onUpdated={fetchData} dark={dark} />
+      )}
+
+      {earningsOrder && (
+        <SellerOrderDrawer
+          sellerOrderId={earningsOrder.id}
+          orderNumber={earningsOrder.order_number}
+          onClose={() => setEarningsOrder(null)}
+        />
       )}
     </div>
   );

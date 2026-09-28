@@ -1,0 +1,1851 @@
+﻿
+
+===== app\seller\layout.tsx =====
+'use client';
+
+/**
+ * app/seller/layout.tsx  â† MODIFIED
+ *
+ * Changes from previous version:
+ *   1. Imports and mounts <GlobalSellerStyles dark={dark} /> for global
+ *      light-mode button hover (#198f41 green) and shared animations.
+ *   Everything else is identical.
+ */
+
+import { useState, useEffect, createContext, useContext } from 'react';
+import Sidebar             from './components/Sidebar';
+import Topbar              from './components/Topbar';
+import AuthGuard           from './components/AuthGuard';
+import { SubscriptionProvider } from '@/app/hooks/useSubscription';
+import GlobalSellerStyles  from '@/app/components/seller/GlobalSellerStyles'; // â† NEW
+
+/* â”€â”€ Theme context (unchanged) â”€â”€ */
+export const ThemeContext = createContext<{
+  dark: boolean;
+  toggle: () => void;
+}>({ dark: true, toggle: () => {} });
+
+export function useTheme() { return useContext(ThemeContext); }
+
+const STORAGE_KEY = 'ct_seller_theme';
+
+export default function SellerLayout({ children }: { children: React.ReactNode }) {
+  const [collapsed,  setCollapsed]  = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [dark,       setDark]       = useState<boolean>(true);
+  const [mounted,    setMounted]    = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved !== null) setDark(saved === 'dark');
+    setMounted(true);
+  }, []);
+
+  const toggle = () => {
+    setDark(prev => {
+      const next = !prev;
+      localStorage.setItem(STORAGE_KEY, next ? 'dark' : 'light');
+      return next;
+    });
+  };
+
+  if (!mounted) return null;
+
+  return (
+    <ThemeContext.Provider value={{ dark, toggle }}>
+      {/* â”€â”€ Global CSS injected here, re-evaluated on dark/light toggle â”€â”€ */}
+      <GlobalSellerStyles dark={dark} /> {/* â† NEW */}
+
+      <SubscriptionProvider>
+        <AuthGuard>
+          <div
+            className="min-h-screen flex font-sans transition-colors duration-300"
+            style={{ background: dark ? '#0D1117' : '#f0f2f5' }}
+          >
+            <Sidebar
+              collapsed={collapsed}
+              onCollapse={setCollapsed}
+              mobileOpen={mobileOpen}
+              onMobileClose={() => setMobileOpen(false)}
+            />
+            <div
+              className="flex-1 flex flex-col min-h-screen transition-all duration-300"
+              style={{ marginLeft: collapsed ? 70 : 240 }}
+            >
+              <Topbar onMobileMenuOpen={() => setMobileOpen(true)} />
+              <main className="flex-1 p-4 lg:p-6 overflow-auto">
+                {children}
+              </main>
+            </div>
+          </div>
+        </AuthGuard>
+      </SubscriptionProvider>
+    </ThemeContext.Provider>
+  );
+}
+
+===== app\seller\components\Sidebar.tsx =====
+'use client';
+
+/**
+ * app/seller/components/Sidebar.tsx — v3
+ *
+ * Fixes vs v2:
+ *   • Logo is 44px (was 36), text is bigger
+ *   • Sidebar bg is #111827 — a proper dark slate, not near-black
+ *   • Active item: solid colored left bar + bright white text + accent bg pill
+ *   • Inactive text is rgba(255,255,255,0.62) — clearly readable
+ *   • Section labels: 10px, 0.15em tracking, rgba(255,255,255,0.35)
+ *   • Hover: rgba(255,255,255,0.09) bg + full white text
+ *   • Icons are 17px — more visible
+ *   • Black Elite items get a subtle amber tint on hover
+ */
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  LayoutDashboard, Package, ShoppingBag,
+  ChevronLeft, ChevronRight, LogOut, Home, Sun, Moon,
+  AlertTriangle, BarChart2, Brain, Lock, Crown, Zap,
+  Tag, Package2, TrendingUp, Eye, Star, DollarSign,
+  Users, Megaphone, ChevronDown, ChevronUp, CreditCard,
+} from 'lucide-react';
+import { useTheme } from '../layout';
+import { useSubscription } from '@/app/hooks/useSubscription';
+import { useState } from 'react';
+import { Wallet } from 'lucide-react'
+
+const STORE_NAV = [
+  { href: '/seller',          label: 'Overview',   icon: LayoutDashboard },
+  { href: '/seller/products', label: 'Products',   icon: Package },
+  { href: '/seller/packs',    label: 'Packs',      icon: Package2 },
+  { href: '/seller/orders',   label: 'Orders',     icon: ShoppingBag },
+  { href: '/seller/earnings', label: 'Earnings', icon: Wallet },
+  { href: '/seller/subscription', label: 'Subscription',  icon: CreditCard },
+
+];
+const CUSTOMER_NAV = [
+  { href: '/seller/complaints', label: 'Complaints', icon: AlertTriangle },
+    { href: '/seller/reviews', icon: Star, label: 'Reviews & Reputation' },
+
+];
+const GROWTH_NAV = [
+  { href: '/seller/promotions', label: 'Promotions',  icon: Tag },
+  { href: '/seller/promote',    label: 'Ads & Boost', icon: Megaphone },
+];
+const RED_NAV = [
+  { href: '/seller/analytics', label: 'Analytics', icon: BarChart2, accent: '#fca5a5' },
+  { href: '/seller/ai-tools',  label: 'AI Tools',  icon: Brain,     accent: '#c4b5fd' },
+
+];
+const BLACK_NAV = [
+  { href: '/seller/black',                  label: 'Elite Overview',   icon: Crown,      accent: '#fbbf24' },
+  { href: '/seller/black/ai-intelligence',  label: 'AI Intelligence',  icon: Brain,      accent: '#c4b5fd' },
+  { href: '/seller/black/visitor-insights', label: 'Visitor Insights', icon: Eye,        accent: '#93c5fd' },
+  { href: '/seller/black/listing-quality',  label: 'Listing Quality',  icon: Star,       accent: '#d8b4fe' },
+  { href: '/seller/black/smart-promotions', label: 'Smart Promotions', icon: TrendingUp, accent: '#fbbf24' },
+  { href: '/seller/black/profit',           label: 'Profit Center',    icon: DollarSign, accent: '#6ee7b7' },
+  { href: '/seller/black/vip-lounge',       label: 'VIP Lounge',       icon: Users,      accent: '#fbbf24' },
+];
+
+interface SidebarProps {
+  collapsed: boolean;
+  onCollapse: (v: boolean) => void;
+  mobileOpen: boolean;
+  onMobileClose: () => void;
+}
+
+export default function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClose }: SidebarProps) {
+  const pathname = usePathname();
+  const { dark, toggle } = useTheme();
+  const { isPaid, isBlack, loading } = useSubscription();
+
+  const [storeOpen,    setStoreOpen]    = useState(true);
+  const [customerOpen, setCustomerOpen] = useState(true);
+  const [growthOpen,   setGrowthOpen]   = useState(true);
+
+  // Sidebar is ALWAYS dark regardless of page theme — like a real admin panel
+  const SB_BG       = '#111827';
+  const SB_BORDER   = 'rgba(255,255,255,0.07)';
+  const TXT_BASE    = 'rgba(255,255,255,0.62)';
+  const TXT_ACTIVE  = '#ffffff';
+  const TXT_SECTION = 'rgba(255,255,255,0.32)';
+  const HOVER_BG    = 'rgba(255,255,255,0.08)';
+
+  const handleLogout = () => {
+    localStorage.clear(); sessionStorage.clear();
+    document.cookie.split(';').forEach(c => {
+      document.cookie = c.split('=')[0].trim() + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    });
+    window.location.href = '/auth/login';
+  };
+
+  /* ── Section label ── */
+  const SectionLabel = ({ label, open, onToggle }: { label: string; open?: boolean; onToggle?: () => void }) => {
+    if (collapsed) return (
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '10px 14px 6px' }}/>
+    );
+    return (
+      <button onClick={onToggle} style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        width: '100%', background: 'none', border: 'none', cursor: onToggle ? 'pointer' : 'default',
+        padding: '0 16px', margin: '16px 0 4px',
+      }}>
+        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', color: TXT_SECTION, textTransform: 'uppercase' }}>
+          {label}
+        </span>
+        {onToggle && <span style={{ color: TXT_SECTION }}>{open ? <ChevronUp size={10}/> : <ChevronDown size={10}/>}</span>}
+      </button>
+    );
+  };
+
+  /* ── Nav item ── */
+  const NavItem = ({ href, label, Icon, accent, exact = false }: {
+    href: string; label: string; Icon: React.ElementType; accent?: string; exact?: boolean;
+  }) => {
+    const isActive = exact
+      ? pathname === href
+      : href === '/seller' ? pathname === '/seller' : pathname === href || pathname.startsWith(href + '/');
+
+    const color = accent ?? '#ffffff';
+
+    return (
+      <Link
+        href={href}
+        onClick={onMobileClose}
+        className="sb3-item"
+        data-active={isActive ? 'true' : 'false'}
+        data-accent={accent ?? ''}
+        title={collapsed ? label : undefined}
+        style={{
+          display: 'flex', alignItems: 'center',
+          gap: collapsed ? 0 : 11,
+          padding: collapsed ? '11px 0' : '9px 16px',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          borderRadius: collapsed ? 0 : 9,
+          fontSize: 13.5, fontWeight: isActive ? 700 : 500,
+          textDecoration: 'none', position: 'relative',
+          margin: collapsed ? '0' : '1px 8px',
+          transition: 'background 0.14s, color 0.14s',
+          background: isActive
+            ? accent ? `${accent}18` : 'rgba(219,20,46,0.15)'
+            : 'transparent',
+          color: isActive ? (accent ?? TXT_ACTIVE) : TXT_BASE,
+        }}
+      >
+        {/* Left active bar */}
+        {isActive && !collapsed && (
+          <div style={{
+            position: 'absolute', left: 0, top: '18%', bottom: '18%',
+            width: 3.5, borderRadius: '0 3px 3px 0',
+            background: accent ?? '#db142e',
+          }}/>
+        )}
+
+        <Icon
+          size={17}
+          style={{ flexShrink: 0, color: isActive ? (accent ?? TXT_ACTIVE) : TXT_BASE, transition: 'color 0.14s' }}
+        />
+
+        {!collapsed && (
+          <span style={{ flex: 1, lineHeight: 1.2, color: isActive ? (accent ?? TXT_ACTIVE) : TXT_BASE }}>
+            {label}
+          </span>
+        )}
+
+        {/* Tooltip */}
+        {collapsed && (
+          <span className="sb3-tip" style={{
+            position: 'absolute', left: 'calc(100% + 8px)', top: '50%', transform: 'translateY(-50%)',
+            padding: '5px 12px', background: '#1f2937', color: '#fff',
+            fontSize: 12, fontWeight: 600, borderRadius: 8, whiteSpace: 'nowrap',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)',
+            opacity: 0, pointerEvents: 'none', transition: 'opacity 0.12s', zIndex: 100,
+          }}>{label}</span>
+        )}
+      </Link>
+    );
+  };
+
+  /* ── Locked item ── */
+  const LockedItem = ({ label, Icon }: { label: string; Icon: React.ElementType }) => (
+    <div style={{
+      display: 'flex', alignItems: 'center',
+      gap: collapsed ? 0 : 11,
+      padding: collapsed ? '11px 0' : '9px 16px',
+      justifyContent: collapsed ? 'center' : 'flex-start',
+      margin: collapsed ? 0 : '1px 8px',
+      borderRadius: 9, opacity: 0.38, cursor: 'not-allowed',
+    }}>
+      <Icon size={17} style={{ flexShrink: 0, color: TXT_BASE }}/>
+      {!collapsed && (
+        <>
+          <span style={{ flex: 1, fontSize: 13.5, fontWeight: 500, color: TXT_BASE }}>{label}</span>
+          <Lock size={11} style={{ color: TXT_BASE }}/>
+        </>
+      )}
+    </div>
+  );
+
+  /* ── Tier divider ── */
+  const TierDivider = ({ label, color }: { label: string; color: string }) => {
+    if (collapsed) return <div style={{ height: 1, background: `${color}30`, margin: '10px 14px 6px' }}/>;
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', margin: '16px 0 4px' }}>
+        <div style={{ flex: 1, height: 1, background: `${color}28` }}/>
+        <span style={{ fontSize: 9.5, fontWeight: 900, letterSpacing: '0.13em', color: `${color}99`, textTransform: 'uppercase' as const }}>
+          {label}
+        </span>
+        <div style={{ flex: 1, height: 1, background: `${color}28` }}/>
+      </div>
+    );
+  };
+
+  /* ── Footer button ── */
+  const FooterBtn = ({ icon: Icon, label, onClick, href, danger }: {
+    icon: React.ElementType; label: string; onClick?: () => void; href?: string; danger?: boolean;
+  }) => {
+    const style: React.CSSProperties = {
+      display: 'flex', alignItems: 'center',
+      gap: collapsed ? 0 : 10,
+      padding: collapsed ? '10px 0' : '9px 16px',
+      justifyContent: collapsed ? 'center' : 'flex-start',
+      borderRadius: 9, margin: collapsed ? '1px 0' : '1px 8px',
+      fontSize: 13, fontWeight: 500,
+      background: 'transparent', border: 'none', cursor: 'pointer',
+      color: danger ? '#f87171' : TXT_BASE, width: '100%',
+      transition: 'background 0.14s, color 0.14s', textDecoration: 'none',
+    };
+    const content = (
+      <>
+        <Icon size={16} style={{ flexShrink: 0, color: danger ? '#f87171' : TXT_BASE }}/>
+        {!collapsed && <span style={{ color: danger ? '#f87171' : TXT_BASE }}>{label}</span>}
+      </>
+    );
+    if (href) return <Link href={href} onClick={onMobileClose} className={danger ? 'sb3-danger' : 'sb3-footer'} style={style}>{content}</Link>;
+    return <button onClick={onClick} className={danger ? 'sb3-danger' : 'sb3-footer'} style={style}>{content}</button>;
+  };
+
+  return (
+    <>
+      {mobileOpen && (
+        <div className="fixed inset-0 z-30 bg-black/70 backdrop-blur-sm lg:hidden" onClick={onMobileClose}/>
+      )}
+
+      <aside
+        style={{
+          position: 'fixed', top: 0, left: 0, height: '100%', zIndex: 40,
+          background: SB_BG,
+          borderRight: `1px solid ${SB_BORDER}`,
+          width: collapsed ? 64 : 242,
+          transition: 'width 0.28s ease',
+          display: 'flex', flexDirection: 'column',
+          overflowX: 'hidden',
+        }}
+        className={!mobileOpen ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
+      >
+
+        {/* ── Logo ── */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          gap: collapsed ? 0 : 12,
+          padding: collapsed ? '0 10px' : '0 16px',
+          height: 66, borderBottom: `1px solid ${SB_BORDER}`,
+          flexShrink: 0, justifyContent: collapsed ? 'center' : 'flex-start',
+        }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+            background: '#fff', padding: 4, overflow: 'hidden',
+            boxShadow: isBlack
+              ? '0 0 0 2.5px #f59e0b, 0 0 14px rgba(245,158,11,0.55)'
+              : '0 0 0 2.5px #198f41, 0 0 14px rgba(25,143,65,0.45)',
+          }}>
+            <img src="/images/logo-chili.png" alt="ChooseTounsi"
+              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}/>
+          </div>
+
+          {!collapsed && (
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontWeight: 900, fontSize: 14.5, color: '#fff', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1 }}>
+                Choose<span style={{ color: '#db142e' }}>Tounsi</span>
+              </p>
+              <p style={{ fontSize: 9, fontWeight: 800, margin: 0, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1,
+                color: isBlack ? '#f59e0b' : '#4ade80' }}>
+                {isBlack ? '⬛ Elite Portal' : 'Seller Portal'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* ── Navigation ── */}
+        <nav style={{ flex: 1, paddingTop: 4, overflowY: 'auto', overflowX: 'hidden' }}>
+
+          <SectionLabel label="My Store" open={storeOpen} onToggle={() => setStoreOpen(p => !p)}/>
+          {storeOpen && STORE_NAV.map(item => (
+            <NavItem key={item.href} href={item.href} label={item.label} Icon={item.icon} exact={item.href === '/seller'}/>
+          ))}
+
+          <SectionLabel label="Customer" open={customerOpen} onToggle={() => setCustomerOpen(p => !p)}/>
+          {customerOpen && CUSTOMER_NAV.map(item => (
+            <NavItem key={item.href} href={item.href} label={item.label} Icon={item.icon}/>
+          ))}
+
+          <SectionLabel label="Growth" open={growthOpen} onToggle={() => setGrowthOpen(p => !p)}/>
+          {growthOpen && GROWTH_NAV.map(item => (
+            <NavItem key={item.href} href={item.href} label={item.label} Icon={item.icon}/>
+          ))}
+
+          {!loading && <TierDivider label={isPaid ? '● Red Pepper' : '● Premium'} color="#f87171"/>}
+          {RED_NAV.map(item =>
+            isPaid
+              ? <NavItem key={item.href} href={item.href} label={item.label} Icon={item.icon} accent={item.accent}/>
+              : <LockedItem key={item.href} label={item.label} Icon={item.icon}/>
+          )}
+
+          {!loading && <TierDivider label={isBlack ? '■ Black Elite' : '■ Black Pepper'} color="#f59e0b"/>}
+          {isBlack
+            ? BLACK_NAV.map(item => (
+              <NavItem key={item.href} href={item.href} label={item.label} Icon={item.icon}
+                accent={item.accent} exact={item.href === '/seller/black'}/>
+            ))
+            : BLACK_NAV.slice(0, 2).map(item => (
+              <LockedItem key={item.href} label={item.label} Icon={item.icon}/>
+            ))
+          }
+        </nav>
+
+        {/* ── Footer ── */}
+        <div style={{ borderTop: `1px solid ${SB_BORDER}`, paddingTop: 8, paddingBottom: 12, flexShrink: 0 }}>
+          <FooterBtn icon={Home} label="Homepage" href="/"/>
+          <FooterBtn icon={dark ? Sun : Moon} label={dark ? 'Light Mode' : 'Dark Mode'} onClick={toggle}/>
+          <FooterBtn icon={collapsed ? ChevronRight : ChevronLeft} label="Collapse" onClick={() => onCollapse(!collapsed)}/>
+          <FooterBtn icon={LogOut} label="Sign Out" onClick={handleLogout} danger/>
+        </div>
+      </aside>
+
+      <style>{`
+        /* Nav items */
+        .sb3-item:hover {
+          background: ${HOVER_BG} !important;
+        }
+        .sb3-item:hover span,
+        .sb3-item:hover svg { color: ${TXT_ACTIVE} !important; }
+        .sb3-item:hover .sb3-tip { opacity: 1 !important; }
+
+        /* Black Elite item hover gets amber tint */
+        .sb3-item[data-accent="#fbbf24"]:hover,
+        .sb3-item[data-accent="#6ee7b7"]:hover {
+          background: rgba(245,158,11,0.1) !important;
+        }
+
+        /* Footer */
+        .sb3-footer:hover { background: ${HOVER_BG} !important; }
+        .sb3-footer:hover span { color: ${TXT_ACTIVE} !important; }
+        .sb3-danger:hover { background: rgba(239,68,68,0.12) !important; }
+
+        /* Scrollbar */
+        nav::-webkit-scrollbar { width: 4px; }
+        nav::-webkit-scrollbar-track { background: transparent; }
+        nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+        @media (max-width: 1024px) {
+          aside { transition: transform 0.28s ease, width 0.28s ease !important; }
+        }
+      `}</style>
+    </>
+  );
+}
+
+===== app\seller\components\Topbar.tsx =====
+'use client';
+// app/seller/components/Topbar.tsx  â† MODIFIED
+//
+// Changes from previous version:
+//   1. Imports useSubscription to read isRed / isBlack / plan
+//   2. Red Plan: top bar gets a premium soft-red gradient background
+//   3. Red Plan: seller name shows a ðŸŒ¶ Red Pepper badge with tooltip
+//   4. Black Plan: seller name shows a â¬› Black Elite badge with tooltip
+//   5. Black Plan: gold accent colors on indicator, role label, avatar ring
+//   6. All existing logic (notifications, avatar, theme toggle) unchanged
+
+import { useState, useEffect, useRef } from 'react';
+import { Menu, Sun, Moon, Flame, Crown } from 'lucide-react'; // â† Crown added
+import { useRouter } from 'next/navigation';
+import { getUser, AuthUser } from '@/lib/auth';
+import { useTheme } from '../layout';
+import NotificationBell from '@/app/components/NotificationBell';
+import { sellerNotificationApi } from '@/lib/notificationApi';
+import { useSubscription } from '@/app/hooks/useSubscription';
+
+/* â”€â”€ Avatar helpers (unchanged) â”€â”€ */
+const AVATAR_COLORS = [
+  ['#fde68a', '#92400e'], ['#bfdbfe', '#1e40af'], ['#bbf7d0', '#14532d'],
+  ['#fecaca', '#991b1b'], ['#e9d5ff', '#4c1d95'], ['#fed7aa', '#7c2d12'],
+];
+
+function avatarMeta(name: string) {
+  const p        = name.trim().split(/\s+/);
+  const initials = p.length >= 2 ? (p[0][0] + p[1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  const [bg, fg] = AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+  return { initials, bg, fg };
+}
+
+function fixGoogle(url: string) {
+  return url.replace(/=s\d+-?c?$/, '=s200-c');
+}
+
+/* â”€â”€ Red Pepper badge (unchanged) â”€â”€ */
+function RedPepperBadge({ dark }: { dark: boolean }) {
+  const [showTip, setShowTip] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  return (
+    <span
+      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
+      onMouseEnter={() => { clearTimeout(timerRef.current); setShowTip(true);  }}
+      onMouseLeave={() => { timerRef.current = setTimeout(() => setShowTip(false), 120); }}
+    >
+      {/* Badge pill */}
+      <span style={{
+        display:        'inline-flex',
+        alignItems:     'center',
+        gap:            4,
+        padding:        '2px 8px 2px 5px',
+        borderRadius:   999,
+        background:     dark
+          ? 'linear-gradient(135deg, rgba(219,20,46,0.25), rgba(160,15,34,0.18))'
+          : 'linear-gradient(135deg, rgba(219,20,46,0.12), rgba(180,12,28,0.08))',
+        border:         `1px solid ${dark ? 'rgba(219,20,46,0.45)' : 'rgba(219,20,46,0.3)'}`,
+        animation:      'pepper-badge-glow 2.4s ease-in-out infinite',
+        cursor:         'default',
+        flexShrink:     0,
+      }}>
+        <Flame
+          size={11}
+          style={{
+            color:   '#db142e',
+            fill:    'rgba(219,20,46,0.35)',
+            flexShrink: 0,
+          }}
+        />
+        <span style={{
+          fontSize:      9,
+          fontWeight:    800,
+          color:         '#db142e',
+          letterSpacing: '0.07em',
+          textTransform: 'uppercase',
+          lineHeight:    1,
+        }}>
+          Red
+        </span>
+      </span>
+
+      {/* Tooltip */}
+      {showTip && (
+        <span style={{
+          position:     'absolute',
+          bottom:       'calc(100% + 7px)',
+          left:         '50%',
+          transform:    'translateX(-50%)',
+          whiteSpace:   'nowrap',
+          background:   dark ? '#1e2330' : '#ffffff',
+          color:        dark ? '#ffffff' : '#111111',
+          fontSize:     11,
+          fontWeight:   600,
+          padding:      '5px 10px',
+          borderRadius: 8,
+          boxShadow:    '0 4px 16px rgba(0,0,0,0.18)',
+          border:       `1px solid ${dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+          pointerEvents: 'none',
+          zIndex:        100,
+          animation:     'fadeUp 0.15s ease forwards',
+        }}>
+          ðŸŒ¶ï¸ Red Pepper â€” Premium Seller
+          <span style={{
+            position:    'absolute',
+            top:         '100%',
+            left:        '50%',
+            transform:   'translateX(-50%)',
+            width:       0,
+            height:      0,
+            borderLeft:  '5px solid transparent',
+            borderRight: '5px solid transparent',
+            borderTop:   `5px solid ${dark ? '#1e2330' : '#ffffff'}`,
+          }} />
+        </span>
+      )}
+    </span>
+  );
+}
+
+/* â”€â”€ Black Pepper badge (NEW) â”€â”€ */
+function BlackPepperBadge({ dark }: { dark: boolean }) {
+  const [showTip, setShowTip] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  return (
+    <span
+      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
+      onMouseEnter={() => { clearTimeout(timerRef.current); setShowTip(true); }}
+      onMouseLeave={() => { timerRef.current = setTimeout(() => setShowTip(false), 120); }}
+    >
+      <span style={{
+        display:      'inline-flex',
+        alignItems:   'center',
+        gap:          4,
+        padding:      '2px 8px 2px 5px',
+        borderRadius: 999,
+        background:   dark
+          ? 'linear-gradient(135deg, rgba(245,158,11,0.3), rgba(161,98,7,0.2))'
+          : 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.08))',
+        border:       `1px solid ${dark ? 'rgba(245,158,11,0.55)' : 'rgba(245,158,11,0.4)'}`,
+        animation:    'gold-badge-glow 2.4s ease-in-out infinite',
+        cursor:       'default',
+        flexShrink:   0,
+      }}>
+        <Crown
+          size={11}
+          style={{ color: '#f59e0b', fill: 'rgba(245,158,11,0.4)', flexShrink: 0 }}
+        />
+        <span style={{
+          fontSize:      9,
+          fontWeight:    800,
+          color:         '#f59e0b',
+          letterSpacing: '0.07em',
+          textTransform: 'uppercase',
+          lineHeight:    1,
+        }}>
+          Elite
+        </span>
+      </span>
+
+      {showTip && (
+        <span style={{
+          position:      'absolute',
+          bottom:        'calc(100% + 7px)',
+          left:          '50%',
+          transform:     'translateX(-50%)',
+          whiteSpace:    'nowrap',
+          background:    dark ? '#1e2330' : '#ffffff',
+          color:         dark ? '#ffffff' : '#111111',
+          fontSize:      11,
+          fontWeight:    600,
+          padding:       '5px 10px',
+          borderRadius:  8,
+          boxShadow:     '0 4px 16px rgba(0,0,0,0.18)',
+          border:        `1px solid ${dark ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.15)'}`,
+          pointerEvents: 'none',
+          zIndex:        100,
+          animation:     'fadeUp 0.15s ease forwards',
+        }}>
+          â¬› Black Seller Elite â€” All Premium Features Unlocked
+          <span style={{
+            position:    'absolute',
+            top:         '100%',
+            left:        '50%',
+            transform:   'translateX(-50%)',
+            width:       0,
+            height:      0,
+            borderLeft:  '5px solid transparent',
+            borderRight: '5px solid transparent',
+            borderTop:   `5px solid ${dark ? '#1e2330' : '#ffffff'}`,
+          }} />
+        </span>
+      )}
+    </span>
+  );
+}
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   TOPBAR
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => void }) {
+  const { dark, toggle }    = useTheme();
+  const { isRed, isBlack }  = useSubscription();
+  const router               = useRouter();
+  const [user,   setUser]   = useState<AuthUser | null>(null);
+  const [imgErr, setImgErr] = useState(false);
+
+  useEffect(() => { setUser(getUser()); }, []);
+
+  /* â”€â”€ Base colors â”€â”€ */
+  const baseBg     = dark ? '#161b27' : '#ffffff';
+  const baseBorder = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
+  const textMain   = dark ? '#fff'   : '#111';
+  const textMuted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+
+  /* â”€â”€ Red Plan overrides â”€â”€ */
+  const redBg = dark
+    ? 'linear-gradient(135deg, #1f0d10 0%, #2a0f14 40%, #1a0c10 100%)'
+    : 'linear-gradient(135deg, #fff5f5 0%, #fef0f1 50%, #fff8f8 100%)';
+
+  const redBorder = dark
+    ? 'rgba(219, 20, 46, 0.22)'
+    : 'rgba(219, 20, 46, 0.15)';
+
+  // Subtle accent line along the bottom of the bar for Red/Black plan
+  const redAccentLine = isRed || isBlack
+    ? `linear-gradient(90deg, transparent, #db142e 20%, #db142e 80%, transparent)`
+    : undefined;
+
+  const bg     = isRed || isBlack ? redBg     : baseBg;
+  const border = isRed || isBlack ? redBorder : baseBorder;
+
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+
+  const { initials, bg: aBg, fg: aFg } = user
+    ? avatarMeta(user.name)
+    : { initials: '?', bg: '#eee', fg: '#999' };
+
+  const avatarSrc = user?.avatar && !imgErr ? fixGoogle(user.avatar) : null;
+
+  return (
+    <>
+      <header style={{
+        height:       64,
+        background:   bg,
+        borderBottom: `1px solid ${border}`,
+        display:      'flex',
+        alignItems:   'center',
+        padding:      '0 20px',
+        gap:          12,
+        position:     'sticky',
+        top:          0,
+        zIndex:       20,
+        transition:   'background 0.35s ease, border-color 0.35s ease',
+        // Subtle glow on the bar for Red plan in dark mode
+        ...(isRed && dark ? {
+          boxShadow: '0 1px 0 rgba(219,20,46,0.18), 0 4px 24px rgba(219,20,46,0.06)',
+        } : {}),
+        // Subtle gold glow on the bar for Black plan in dark mode
+        ...(isBlack && dark ? {
+          boxShadow: '0 1px 0 rgba(245,158,11,0.18), 0 4px 24px rgba(245,158,11,0.06)',
+        } : {}),
+      }}>
+
+        {/* â”€â”€ Red/Black plan accent line (bottom border) â”€â”€ */}
+        {(isRed || isBlack) && (
+          <div style={{
+            position:      'absolute',
+            bottom:        0,
+            left:          0,
+            right:         0,
+            height:        2,
+            background:    isBlack
+              ? 'linear-gradient(90deg, transparent, #f59e0b 20%, #f59e0b 80%, transparent)'
+              : redAccentLine,
+            opacity:       dark ? 0.7 : 0.5,
+            pointerEvents: 'none',
+          }} />
+        )}
+
+        {/* hamburger */}
+        <button
+          onClick={onMobileMenuOpen}
+          className="lg:hidden theme-toggle"
+          style={{
+            background: 'transparent',
+            border:     'none',
+            cursor:     'pointer',
+            color:      textMuted,
+            padding:    4,
+          }}
+        >
+          <Menu size={20} />
+        </button>
+
+        {/* title + date */}
+        <div style={{ flex: 1 }}>
+          <h2 style={{
+            fontSize:   16,
+            fontWeight: 800,
+            color:      textMain,
+            margin:     0,
+            lineHeight: 1.2,
+          }}>
+            Dashboard
+          </h2>
+          <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>{today}</p>
+        </div>
+
+        {/* right side */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+          {/* dark/light toggle */}
+          <button
+            onClick={toggle}
+            className="theme-toggle"
+            style={{
+              width:          38,
+              height:         38,
+              borderRadius:   10,
+              background:     dark ? 'rgba(255,255,255,0.07)' : '#f0f2f5',
+              border:         `1px solid ${border}`,
+              cursor:         'pointer',
+              display:        'flex',
+              alignItems:     'center',
+              justifyContent: 'center',
+              color:          dark ? '#f59e0b' : '#6366f1',
+              transition:     'all 0.2s ease',
+            }}
+          >
+            {dark ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+
+          {/* notification bell */}
+          <NotificationBell
+            api={sellerNotificationApi}
+            dark={dark}
+            onNavigate={router.push}
+            pollInterval={30_000}
+          />
+
+          {/* divider */}
+          <div style={{ width: 1, height: 28, background: border }} />
+
+          {/* user pill */}
+          <div style={{
+            display:      'flex',
+            alignItems:   'center',
+            gap:          10,
+            padding:      '6px 12px 6px 6px',
+            borderRadius: 12,
+            background: dark
+              ? isBlack
+                ? 'rgba(245,158,11,0.1)'
+                : isRed
+                  ? 'rgba(219,20,46,0.12)'
+                  : 'rgba(255,255,255,0.05)'
+              : isBlack
+                ? 'rgba(245,158,11,0.06)'
+                : isRed
+                  ? 'rgba(219,20,46,0.06)'
+                  : '#f0f2f5',
+            border: `1px solid ${
+              isBlack
+                ? dark ? 'rgba(245,158,11,0.35)' : 'rgba(245,158,11,0.22)'
+                : isRed
+                  ? dark ? 'rgba(219,20,46,0.3)' : 'rgba(219,20,46,0.18)'
+                  : border
+            }`,
+            cursor:     'pointer',
+            transition: 'all 0.25s ease',
+          }}>
+            {/* Avatar */}
+            {avatarSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarSrc}
+                alt={user?.name}
+                referrerPolicy="no-referrer"
+                onError={() => setImgErr(true)}
+                style={{
+                  width:        32,
+                  height:       32,
+                  borderRadius: '50%',
+                  objectFit:    'cover',
+                  flexShrink:   0,
+                  // Black plan: gold ring; Red plan: red ring
+                  ...(isBlack ? { boxShadow: '0 0 0 2px rgba(245,158,11,0.6)' }
+                    : isRed   ? { boxShadow: '0 0 0 2px rgba(219,20,46,0.5)' }
+                    : {}),
+                }}
+              />
+            ) : (
+              <span style={{
+                width:          32,
+                height:         32,
+                borderRadius:   '50%',
+                background:     aBg,
+                color:          aFg,
+                display:        'flex',
+                alignItems:     'center',
+                justifyContent: 'center',
+                fontSize:       11,
+                fontWeight:     800,
+                flexShrink:     0,
+                // Black plan: gold ring; Red plan: red ring
+                ...(isBlack ? { boxShadow: '0 0 0 2px rgba(245,158,11,0.6)' }
+                  : isRed   ? { boxShadow: '0 0 0 2px rgba(219,20,46,0.5)' }
+                  : {}),
+              }}>
+                {initials}
+              </span>
+            )}
+
+            {/* Name + role */}
+            <div style={{ lineHeight: 1.3 }}>
+              {/* Name row â€” with plan badge inline */}
+              <div style={{
+                display:    'flex',
+                alignItems: 'center',
+                gap:        5,
+                margin:     0,
+              }}>
+                <p style={{
+                  fontSize:   12,
+                  fontWeight: 800,
+                  color:      textMain,
+                  margin:     0,
+                  lineHeight: 1.2,
+                }}>
+                  {user?.name?.split(' ')[0] ?? 'Seller'}
+                </p>
+                {/* Black badge takes priority over Red badge */}
+                {isBlack ? <BlackPepperBadge dark={dark} /> : isRed ? <RedPepperBadge dark={dark} /> : null}
+              </div>
+
+              <p style={{
+                fontSize:      10,
+                fontWeight:    600,
+                // Black â†’ gold, Red â†’ red, Green â†’ green
+                color:         isBlack ? '#f59e0b' : isRed ? '#db142e' : '#198f41',
+                margin:        0,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}>
+                {isBlack ? 'Black Elite' : isRed ? 'Premium Seller' : (user?.role ?? 'seller')}
+              </p>
+            </div>
+
+            {/* Online indicator */}
+            <span style={{
+              width:        8,
+              height:       8,
+              borderRadius: '50%',
+              // Black â†’ gold, Red â†’ red, Green â†’ green
+              background:   isBlack ? '#f59e0b' : isRed ? '#db142e' : '#198f41',
+              boxShadow:    isBlack
+                ? '0 0 0 2px rgba(245,158,11,0.4)'
+                : isRed
+                  ? '0 0 0 2px rgba(219,20,46,0.3)'
+                  : '0 0 0 2px rgba(25,143,65,0.3)',
+              animation:    isBlack
+                ? 'gold-badge-glow 2s infinite'
+                : isRed
+                  ? 'pepper-badge-glow 2s infinite'
+                  : 'pulse-green 2s infinite',
+            }} />
+          </div>
+        </div>
+      </header>
+
+      <style>{`
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(4px); }
+          to   { opacity: 1; transform: translateY(0);   }
+        }
+        @keyframes gold-badge-glow {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+          50%       { box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
+        }
+      `}</style>
+    </>
+  );
+}
+
+===== app\components\seller\GlobalSellerStyles.tsx =====
+'use client';
+
+/**
+ * app/components/seller/GlobalSellerStyles.tsx  â† NEW FILE
+ *
+ * Injects global CSS rules into the seller shell:
+ *   - Light mode: all buttons get #198f41 green hover
+ *   - Smooth transitions on all interactive elements
+ *
+ * Mount this once inside SellerLayout so it covers the entire dashboard.
+ */
+
+interface GlobalSellerStylesProps {
+  dark: boolean;
+}
+
+export default function GlobalSellerStyles({ dark }: GlobalSellerStylesProps) {
+  return (
+    <style>{`
+      /* â”€â”€ Light mode: global button hover â†’ brand green â”€â”€ */
+      ${!dark ? `
+        button:hover,
+        a[role="button"]:hover {
+          background-color: #198f41 !important;
+          color: #ffffff !important;
+          border-color: transparent !important;
+          transition: background-color 0.22s ease, color 0.22s ease,
+                      border-color 0.22s ease, box-shadow 0.22s ease !important;
+        }
+
+        button:hover svg,
+        a[role="button"]:hover svg {
+          color: #ffffff !important;
+          stroke: #ffffff !important;
+        }
+
+        /* Smooth transition on ALL buttons in light mode (rest state) */
+        button,
+        a[role="button"] {
+          transition: background-color 0.22s ease, color 0.22s ease,
+                      border-color 0.22s ease, box-shadow 0.22s ease !important;
+        }
+
+        /* Preserve red active nav links â€” don't override intentional reds */
+        a.nav-link[style*="linear-gradient"]:hover,
+        a.nav-link[style*="linear-gradient(135deg,#db142e"]:hover {
+          background: linear-gradient(135deg, #198f41, #126b30) !important;
+          color: #ffffff !important;
+          box-shadow: 0 4px 14px rgba(25, 143, 65, 0.4) !important;
+        }
+
+        /* Logout button stays red-toned on hover (it's a destructive action) */
+        button.logout-btn:hover {
+          background-color: rgba(219, 20, 46, 0.1) !important;
+          color: #db142e !important;
+        }
+
+        /* Theme toggle keeps its own color logic */
+        button.theme-toggle:hover {
+          background-color: #198f41 !important;
+          color: #ffffff !important;
+        }
+      ` : `
+        /* Dark mode: keep existing hover behaviors, just ensure smooth transitions */
+        button,
+        a[role="button"] {
+          transition: background-color 0.22s ease, color 0.22s ease,
+                      border-color 0.22s ease, box-shadow 0.22s ease !important;
+        }
+      `}
+
+      /* â”€â”€ Red Plan top bar pulse animation â”€â”€ */
+      @keyframes red-plan-shimmer {
+        0%   { opacity: 0.6; }
+        50%  { opacity: 1;   }
+        100% { opacity: 0.6; }
+      }
+
+      @keyframes pepper-badge-glow {
+        0%, 100% { box-shadow: 0 0 0 2px rgba(219, 20, 46, 0.25); }
+        50%       { box-shadow: 0 0 0 5px rgba(219, 20, 46, 0.1);  }
+      }
+
+      @keyframes pulse-green {
+        0%, 100% { box-shadow: 0 0 0 2px rgba(25, 143, 65, 0.3); }
+        50%       { box-shadow: 0 0 0 5px rgba(25, 143, 65, 0.1); }
+      }
+    `}</style>
+  );
+}
+
+===== app\seller\page.tsx =====
+'use client';
+
+import { useEffect, useState, useRef } from 'react';
+import { dashboardApi } from '../../lib/sellerApi';
+import type { DashboardData, TopProduct } from '../../types/seller';
+import RevenueChart from './components/RevenueChart';
+import { useTheme } from './layout';
+import {
+  DollarSign, ShoppingBag, Package, Clock,
+  MapPin, Award, AlertCircle, RefreshCw,
+  TrendingUp, TrendingDown, ArrowUpRight,
+  Star, Eye, BarChart2,
+} from 'lucide-react';
+import { SubscriptionBadge } from '@/app/components/seller/SubscriptionBadge';
+import OnboardingChecklist from './components/OnboardingChecklist';
+import CommissionUpgradeNudge from './components/CommissionUpgradeNudge';
+import { getUser } from '@/lib/auth';
+
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   HELPERS
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const fmt = (n: number) =>
+  new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(n) + ' TND';
+
+const STATUS_COLORS: Record<string, string> = {
+  pending:    '#f59e0b',
+  processing: '#3b82f6',
+  completed:  '#10b981',
+  delivered:  '#14b8a6',
+  cancelled:  '#ef4444',
+  refunded:   '#a855f7',
+};
+
+function useCount(target: number): string {
+  const [val, setVal]  = useState(0);
+  const rafRef = useRef<number>(0);
+  useEffect(() => {
+    if (target === 0) { setVal(0); return; }
+    const duration = 900;
+    const start    = performance.now();
+    const tick = (now: number) => {
+      const p    = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      setVal(Math.round(target * ease));
+      if (p < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [target]);
+  return val.toLocaleString();
+}
+
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   KPI CARD
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+function KpiCard({ title, value, subtitle, change, icon: Icon, accent, dark }: {
+  title: string; value: string | number; subtitle?: string;
+  change?: number; icon: React.ElementType; accent: string; dark: boolean;
+}) {
+  const bg        = dark ? '#161b27' : '#ffffff';
+  const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const textMain  = dark ? '#fff'  : '#111';
+  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+
+  return (
+    <div className="kpi-card" style={{
+      background: bg, borderRadius: 18,
+      border: `1px solid ${border}`,
+      padding: '20px 20px 16px',
+      position: 'relative', overflow: 'hidden',
+      transition: 'transform 0.22s ease, box-shadow 0.22s ease',
+      cursor: 'default',
+    }}>
+      <div style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: '50%', background: accent, opacity: dark ? 0.12 : 0.08, filter: 'blur(28px)', pointerEvents: 'none' }} />
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ width: 42, height: 42, borderRadius: 12, background: `${accent}22`, border: `1px solid ${accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, flexShrink: 0 }}>
+          <Icon size={19} />
+        </div>
+        {change !== undefined && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 800, color: change >= 0 ? '#10b981' : '#ef4444', background: change >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '3px 8px', borderRadius: 999 }}>
+            {change >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+            {Math.abs(change).toFixed(1)}%
+          </span>
+        )}
+      </div>
+      <p style={{ fontSize: 22, fontWeight: 900, color: textMain, margin: '0 0 4px', letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: 11, fontWeight: 700, color: accent, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</p>
+      {subtitle && <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>{subtitle}</p>}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${accent},transparent)`, borderRadius: '0 0 18px 18px', opacity: 0.6 }} />
+      <style>{`.kpi-card:hover{transform:translateY(-4px)!important;box-shadow:0 16px 40px rgba(0,0,0,0.15)!important}`}</style>
+    </div>
+  );
+}
+
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   TOP PRODUCT CARD
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+function TopProductCard({ product, rank, dark }: { product: TopProduct; rank: number; dark: boolean }) {
+  const [imgErr, setImgErr] = useState(false);
+  const bg        = dark ? '#161b27' : '#ffffff';
+  const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const textMain  = dark ? '#ffffff' : '#0f172a';
+  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#94a3b8';
+  const subBg     = dark ? 'rgba(255,255,255,0.05)' : '#f8fafc';
+
+  const imgSrc     = product.primary_image_url ? (imgErr ? null : product.primary_image_url) : null;
+  const rankColors = ['#f59e0b', '#94a3b8', '#f97316'];
+  const rankColor  = rankColors[rank - 1] ?? '#64748b';
+
+  return (
+    <div className="top-product-card" style={{ background: bg, borderRadius: 16, border: `1px solid ${border}`, padding: 16, display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', overflow: 'hidden', transition: 'transform 0.22s ease, box-shadow 0.22s ease' }}>
+      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, width: 24, height: 24, borderRadius: '50%', background: rank <= 3 ? rankColor : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: '#fff', boxShadow: rank <= 3 ? `0 2px 8px ${rankColor}60` : 'none' }}>
+        {rank <= 3 ? <Star size={10} fill="#fff" stroke="none" /> : rank}
+      </div>
+      <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 4, zIndex: 2 }}>
+        <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 999, background: product.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: product.is_active ? '#10b981' : '#ef4444', border: `1px solid ${product.is_active ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
+          {product.is_active ? 'Active' : 'Off'}
+        </span>
+      </div>
+      <div style={{ width: '100%', aspectRatio: '16/9', borderRadius: 10, overflow: 'hidden', background: subBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        {imgSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={imgSrc} alt={product.name} onError={() => setImgErr(true)} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        ) : (
+          <Package size={28} style={{ color: textMuted, opacity: 0.4 }} />
+        )}
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</p>
+        <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{product.category_name ?? 'â€”'}</p>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: 15, fontWeight: 900, color: '#db142e', letterSpacing: '-0.01em' }}>{fmt(product.price)}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: product.stock === 0 ? '#ef4444' : product.stock <= 10 ? '#f59e0b' : '#10b981' }}>
+          {product.stock === 0 ? 'âš  Out' : `${product.stock} in stock`}
+        </span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
+        {[
+          { icon: ShoppingBag, label: 'Sales',   value: product.total_sales,   color: '#db142e' },
+          { icon: DollarSign,  label: 'Revenue', value: product.total_revenue > 0 ? `${(product.total_revenue / 1000).toFixed(1)}k` : '0', color: '#10b981' },
+          { icon: Eye,         label: 'Views',   value: product.views,          color: '#3b82f6' },
+        ].map(({ icon: Icon, label, value, color }) => (
+          <div key={label} style={{ background: subBg, borderRadius: 8, padding: '7px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, border: `1px solid ${border}` }}>
+            <Icon size={12} style={{ color, opacity: 0.9 }} />
+            <span style={{ fontSize: 13, fontWeight: 900, color: textMain, lineHeight: 1 }}>{value}</span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
+          </div>
+        ))}
+      </div>
+      <style>{`.top-product-card:hover{transform:translateY(-4px)!important;box-shadow:0 16px 36px rgba(0,0,0,0.15)!important}`}</style>
+    </div>
+  );
+}
+
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   SKELETON + ERROR
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+function Skeleton({ dark, style = {} }: { dark: boolean; style?: React.CSSProperties }) {
+  return <div style={{ borderRadius: 18, background: dark ? 'rgba(255,255,255,0.05)' : '#e5e7eb', animation: 'shimmer 1.4s infinite linear', ...style }} />;
+}
+
+function ErrorState({ onRetry, dark }: { onRetry: () => void; dark: boolean }) {
+  const textMain  = dark ? '#fff' : '#111';
+  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
+      <div style={{ textAlign: 'center', maxWidth: 340 }}>
+        <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(219,20,46,0.1)', border: '1px solid rgba(219,20,46,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <AlertCircle size={24} color="#db142e" />
+        </div>
+        <h3 style={{ fontWeight: 800, color: textMain, margin: '0 0 6px' }}>Connection Error</h3>
+        <p style={{ fontSize: 13, color: textMuted, margin: '0 0 18px' }}>Could not reach the API. Make sure Laravel is running.</p>
+        <button onClick={onRetry} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', background: 'linear-gradient(135deg,#db142e,#a00f22)', color: '#fff', fontWeight: 700, fontSize: 13, borderRadius: 12, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(219,20,46,0.35)' }}>
+          <RefreshCw size={14} /> Retry
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   PAGE
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•*/
+export default function SellerDashboardPage() {
+  const { dark } = useTheme();
+  const [data,    setData]    = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  const load = () => {
+    setLoading(true); setError(false);
+    dashboardApi.getOverview()
+      .then(res => { setData(res.data); setTimeout(() => setVisible(true), 80); })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  };
+  useEffect(load, []);
+
+  const animTotalOrders      = useCount(data?.summary.total_orders            ?? 0);
+  const animTotalProducts    = useCount(data?.summary.total_products          ?? 0);
+  const animPendingOrders    = useCount(data?.summary.pending_orders          ?? 0);
+  const animActiveProducts   = useCount(data?.summary.active_products         ?? 0);
+  const animPendingApprovals = useCount(data?.summary.pending_product_approvals ?? 0);
+
+  const cardBg    = dark ? '#161b27' : '#ffffff';
+  const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const textMain  = dark ? '#fff'  : '#111';
+  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+
+  if (loading) return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <style>{`@keyframes shimmer{0%{opacity:0.4}50%{opacity:0.8}100%{opacity:0.4}}`}</style>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+        {[...Array(4)].map((_, i) => <Skeleton key={i} dark={dark} style={{ height: 120 }} />)}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+        <Skeleton dark={dark} style={{ height: 320 }} />
+        <Skeleton dark={dark} style={{ height: 320 }} />
+      </div>
+    </div>
+  );
+
+  if (error) return <ErrorState onRetry={load} dark={dark} />;
+  if (!data)  return null;
+
+  const { summary, charts, order_status_distribution, top_clients, top_wilayas, top_products = [], recent_orders } = data;
+  const maxWilaya   = Math.max(...top_wilayas.map(w => w.revenue), 1);
+  const totalOrders = Object.values(order_status_distribution).reduce((a, b) => a + b, 0);
+
+  // seller_plan is added by the SellerDashboardController patch â€” fallback to 'free' if not yet deployed
+  const sellerPlan = (summary as any).seller_plan ?? 'free';
+
+  return (
+    <>
+      <style>{`
+          @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+          @keyframes shimmer { 0%{opacity:0.4}50%{opacity:0.8}100%{opacity:0.4} }
+          .fade-up{opacity:0}
+          .fade-up.show{animation:fadeUp 0.45s ease forwards}
+          .fade-up:nth-child(1){animation-delay:0.04s}
+          .fade-up:nth-child(2){animation-delay:0.10s}
+          .fade-up:nth-child(3){animation-delay:0.16s}
+          .fade-up:nth-child(4){animation-delay:0.22s}
+          .fade-up:nth-child(5){animation-delay:0.28s}
+          .fade-up:nth-child(6){animation-delay:0.34s}
+          .fade-up:nth-child(7){animation-delay:0.40s}
+          .fade-up:nth-child(8){animation-delay:0.46s}
+          .fade-up:nth-child(9){animation-delay:0.52s}
+          .fade-up:nth-child(10){animation-delay:0.58s}
+          .fade-up:nth-child(11){animation-delay:0.64s}
+          tr.order-row:hover td{background:${dark?'rgba(255,255,255,0.03)':'#f9fafb'}!important}
+          .client-row:hover{background:${dark?'rgba(255,255,255,0.03)':'#fafafa'}!important}
+        `}</style>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* â”€â”€â”€ HEADER â”€â”€â”€ */}
+        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <h1 style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', letterSpacing: '-0.02em' }}>Dashboard</h1>
+            <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>Overview of your store performance</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <SubscriptionBadge dark={dark} />
+            <span style={{ fontSize: 11, fontWeight: 800, background: 'rgba(219,20,46,0.12)', color: '#db142e', border: '1px solid rgba(219,20,46,0.25)', padding: '5px 14px', borderRadius: 999 }}>
+              ðŸŸ¢ Live
+            </span>
+          </div>
+        </div>
+
+        {/* â”€â”€â”€ ONBOARDING CHECKLIST â”€â”€â”€ */}
+        <div className={`fade-up ${visible?'show':''}`}>
+          <OnboardingChecklist
+            totalProducts={summary.total_products}
+            hasProfilePicture={!!(getUser()?.avatar)}
+            dark={dark}
+          />
+        </div>
+
+        {/* â”€â”€â”€ KPI CARDS â”€â”€â”€ */}
+        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+          <KpiCard dark={dark} title="Total Revenue" icon={DollarSign} accent="#db142e" value={fmt(summary.total_revenue)} subtitle="Completed & paid" change={summary.revenue_growth} />
+          <KpiCard dark={dark} title="Total Orders"  icon={ShoppingBag} accent="#3b82f6" value={animTotalOrders} subtitle={`${summary.pending_orders} pending`} />
+          <KpiCard dark={dark} title="Products"      icon={Package} accent="#198f41" value={animTotalProducts} subtitle={`${summary.active_products} active`} />
+          <KpiCard dark={dark} title="This Month"    icon={TrendingUp} accent="#f59e0b" value={fmt(summary.revenue_this_month)} subtitle={`Last: ${fmt(summary.revenue_last_month)}`} />
+        </div>
+
+        {/* â”€â”€â”€ SECONDARY KPIs â”€â”€â”€ */}
+        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+          {[
+            { label: 'Pending Orders',    val: animPendingOrders,    accent: '#f59e0b', icon: Clock       },
+            { label: 'Active Products',   val: animActiveProducts,   accent: '#198f41', icon: Package     },
+            { label: 'Pending Approvals', val: animPendingApprovals, accent: '#db142e', icon: AlertCircle },
+          ].map(({ label, val, accent, icon: Icon }) => (
+            <div key={label} style={{ background: cardBg, borderRadius: 16, border: `1px solid ${border}`, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: `${accent}1a`, border: `1px solid ${accent}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, flexShrink: 0 }}>
+                <Icon size={18} />
+              </div>
+              <div>
+                <p style={{ fontSize: 20, fontWeight: 900, color: textMain, margin: '0 0 2px', lineHeight: 1 }}>{val}</p>
+                <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 600 }}>{label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* â”€â”€â”€ UPGRADE NUDGE (only shown for free/red plan sellers) â”€â”€â”€ */}
+        <div className={`fade-up ${visible?'show':''}`}>
+          <CommissionUpgradeNudge
+            currentPlan={sellerPlan}
+            monthlyRevenue={summary.revenue_this_month ?? 0}
+            dark={dark}
+          />
+        </div>
+
+        {/* â”€â”€â”€ REVENUE CHART + WILAYAS â”€â”€â”€ */}
+        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+            <RevenueChart data={charts.monthly_revenue} />
+          </div>
+          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(219,20,46,0.12)', border: '1px solid rgba(219,20,46,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#db142e' }}>
+                <MapPin size={16} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Top Wilayas</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0, fontWeight: 500 }}>By revenue</p>
+              </div>
+            </div>
+            {top_wilayas.length === 0
+              ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '24px 0' }}>No data yet</p>
+              : top_wilayas.map((w, i) => (
+                <div key={w.wilaya} style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: textMain, display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <span style={{ color: textMuted, fontSize: 10 }}>{i+1}.</span>{w.wilaya}
+                    </span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>{fmt(w.revenue)}</span>
+                  </div>
+                  <div style={{ height: 5, background: dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#db142e,#ff4d6a)', width: `${(w.revenue/maxWilaya)*100}%`, transition: 'width 0.8s ease' }} />
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+
+        {/* â”€â”€â”€ TOP PRODUCTS â”€â”€â”€ */}
+        <div className={`fade-up ${visible?'show':''}`}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                <BarChart2 size={16} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 900, fontSize: 15, color: textMain, margin: 0, letterSpacing: '-0.01em' }}>Top Products</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0, fontWeight: 500 }}>Ranked by total units sold</p>
+              </div>
+            </div>
+            <a href="/seller/products" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none' }}>
+              View all <ArrowUpRight size={12} />
+            </a>
+          </div>
+          {top_products.length === 0 ? (
+            <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: '48px 20px', textAlign: 'center' }}>
+              <Package size={32} style={{ color: textMuted, opacity: 0.3, margin: '0 auto 12px', display: 'block' }} />
+              <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>No product data yet</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
+              {top_products.map((product, i) => (
+                <TopProductCard key={product.id} product={product} rank={i + 1} dark={dark} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* â”€â”€â”€ TOP CLIENTS + ORDER STATUS â”€â”€â”€ */}
+        <div className={`fade-up ${visible?'show':''}`} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                <Award size={16} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Top Clients</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>By lifetime revenue</p>
+              </div>
+            </div>
+            {top_clients.length === 0
+              ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '28px 0' }}>No data yet</p>
+              : top_clients.map((c, i) => (
+                <div key={c.id} className="client-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: `1px solid ${border}`, transition: 'background 0.15s ease' }}>
+                  <span style={{ width: 24, height: 24, borderRadius: '50%', background: i===0?'rgba(245,158,11,0.2)':i===1?'rgba(148,163,184,0.2)':'rgba(249,115,22,0.2)', color: i===0?'#f59e0b':i===1?'#94a3b8':'#f97316', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>
+                    {i+1}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 12, fontWeight: 800, color: textMain, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</p>
+                    <p style={{ fontSize: 10, color: textMuted, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.email}</p>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <p style={{ fontSize: 12, fontWeight: 900, color: '#db142e', margin: 0 }}>{fmt(c.total_revenue)}</p>
+                    <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{c.total_orders} orders</p>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+
+          <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(25,143,65,0.12)', border: '1px solid rgba(25,143,65,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#198f41' }}>
+                <ShoppingBag size={16} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Order Status</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>Distribution</p>
+              </div>
+            </div>
+            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {Object.entries(order_status_distribution).length === 0
+                ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '24px 0' }}>No orders yet</p>
+                : Object.entries(order_status_distribution).map(([status, count]) => {
+                  const pct   = totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0;
+                  const color = STATUS_COLORS[status] ?? '#94a3b8';
+                  return (
+                    <div key={status}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: textMain, textTransform: 'capitalize' }}>
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }} />{status}
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: textMuted }}>{count} ({pct}%)</span>
+                      </div>
+                      <div style={{ height: 5, background: dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', borderRadius: 999, background: color, width: `${pct}%`, transition: 'width 0.8s ease' }} />
+                      </div>
+                    </div>
+                  );
+                })
+              }
+            </div>
+          </div>
+        </div>
+
+        {/* â”€â”€â”€ RECENT ORDERS â”€â”€â”€ */}
+        <div className={`fade-up ${visible?'show':''}`} style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: textMuted }}>
+                <Clock size={16} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 800, fontSize: 13, color: textMain, margin: 0 }}>Recent Orders</p>
+                <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>Latest 5 orders</p>
+              </div>
+            </div>
+            <a href="/seller/orders" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#db142e', textDecoration: 'none' }}>
+              View all <ArrowUpRight size={12} />
+            </a>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: dark ? 'rgba(255,255,255,0.03)' : '#f9fafb' }}>
+                  {['Order','Customer','Status','Amount','Date'].map((h, i) => (
+                    <th key={h} style={{ padding: '10px 20px', textAlign: i===2?'center':i===3?'right':'left', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: textMuted }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {recent_orders.length === 0
+                  ? <tr><td colSpan={5} style={{ padding: '32px 20px', textAlign: 'center', color: textMuted, fontSize: 13 }}>No recent orders</td></tr>
+                  : recent_orders.map(order => {
+                    const sc = STATUS_COLORS[order.status] ?? '#94a3b8';
+                    return (
+                      <tr key={order.id} className="order-row" style={{ borderBottom: `1px solid ${border}`, transition: 'background 0.15s' }}>
+                        <td style={{ padding: '12px 20px' }}>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 11, background: dark?'rgba(255,255,255,0.07)':'#f1f5f9', color: textMain, padding: '3px 8px', borderRadius: 6 }}>{order.order_number}</span>
+                        </td>
+                        <td style={{ padding: '12px 20px', color: textMain, fontWeight: 600 }}>{order.user?.name ?? `User #${order.user_id}`}</td>
+                        <td style={{ padding: '12px 20px', textAlign: 'center' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 999, background: `${sc}18`, color: sc, border: `1px solid ${sc}33`, textTransform: 'capitalize' }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc }} />{order.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 900, color: textMain }}>{fmt(order.total_amount)}</td>
+                        <td style={{ padding: '12px 20px', color: textMuted, fontWeight: 500 }}>{new Date(order.created_at).toLocaleDateString('fr-TN')}</td>
+                      </tr>
+                    );
+                  })
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </>
+  );
+}
+
+===== app\seller\components\OnboardingChecklist.tsx =====
+'use client'
+
+import { CheckCircle, Circle, Package, User, Truck, ChevronRight } from 'lucide-react'
+
+interface OnboardingChecklistProps {
+  totalProducts: number
+  hasProfilePicture: boolean
+  dark: boolean
+}
+
+interface CheckItem {
+  id: string
+  label: string
+  description: string
+  done: boolean
+  href: string
+  icon: React.ElementType
+}
+
+export default function OnboardingChecklist({ totalProducts, hasProfilePicture, dark }: OnboardingChecklistProps) {
+  const bg        = dark ? '#161b27' : '#ffffff'
+  const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'
+  const textMain  = dark ? '#fff' : '#111'
+  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888'
+
+  const items: CheckItem[] = [
+    {
+      id: 'first_product',
+      label: 'Add your first product',
+      description: 'List a product so buyers can discover your store',
+      done: totalProducts > 0,
+      href: '/seller/products/new',
+      icon: Package,
+    },
+    {
+      id: 'profile',
+      label: 'Complete your profile',
+      description: 'Add a profile picture and social links',
+      done: hasProfilePicture,
+      href: '/seller/settings',
+      icon: User,
+    },
+    {
+      id: 'delivery',
+      label: 'Review delivery options',
+      description: 'Make sure buyers know your shipping options',
+      done: false,
+      href: '/seller/settings',
+      icon: Truck,
+    },
+  ]
+
+  const completedCount = items.filter(i => i.done).length
+  const allDone = completedCount === items.length
+
+  if (allDone) return null
+
+  return (
+    <div style={{ background: bg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden', marginBottom: 4 }}>
+
+      {/* Header */}
+      <div style={{ padding: '16px 20px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <p style={{ fontWeight: 900, fontSize: 15, color: textMain, margin: '0 0 2px', letterSpacing: '-0.01em' }}>
+            ðŸš€ Getting Started
+          </p>
+          <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>
+            {completedCount} of {items.length} steps completed
+          </p>
+        </div>
+        <div style={{ width: 80 }}>
+          <div style={{ height: 5, background: dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', borderRadius: 999,
+              background: 'linear-gradient(90deg, #db142e, #ff4060)',
+              width: `${(completedCount / items.length) * 100}%`,
+              transition: 'width 0.5s ease',
+            }} />
+          </div>
+          <p style={{ fontSize: 10, color: textMuted, margin: '4px 0 0', textAlign: 'right' }}>
+            {Math.round((completedCount / items.length) * 100)}%
+          </p>
+        </div>
+      </div>
+
+      {/* Items */}
+      {items.map((item, idx) => {
+        const Icon = item.icon
+        return (
+          <a
+            key={item.id}
+            href={item.done ? undefined : item.href}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '14px 20px',
+              borderBottom: idx < items.length - 1 ? `1px solid ${border}` : 'none',
+              textDecoration: 'none',
+              cursor: item.done ? 'default' : 'pointer',
+              transition: 'background 0.15s ease',
+              opacity: item.done ? 0.6 : 1,
+            }}
+            onMouseEnter={e => { if (!item.done) (e.currentTarget as HTMLElement).style.background = dark ? 'rgba(255,255,255,0.03)' : '#fafafa' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+          >
+            {/* Status icon */}
+            <div style={{ flexShrink: 0 }}>
+              {item.done
+                ? <CheckCircle size={20} color="#198f41" />
+                : <Circle size={20} color={dark ? 'rgba(255,255,255,0.2)' : '#d1d5db'} />}
+            </div>
+
+            {/* Step icon */}
+            <div style={{
+              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+              background: item.done
+                ? 'rgba(25,143,65,0.1)'
+                : dark ? 'rgba(255,255,255,0.06)' : '#f3f4f6',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Icon size={17} color={item.done ? '#198f41' : (dark ? 'rgba(255,255,255,0.4)' : '#9ca3af')} />
+            </div>
+
+            {/* Text */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{
+                fontSize: 13, fontWeight: 700, margin: '0 0 2px',
+                color: item.done ? (dark ? 'rgba(255,255,255,0.4)' : '#9ca3af') : textMain,
+                textDecoration: item.done ? 'line-through' : 'none',
+              }}>
+                {item.label}
+              </p>
+              <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>{item.description}</p>
+            </div>
+
+            {/* Arrow (only if not done) */}
+            {!item.done && <ChevronRight size={15} color={dark ? 'rgba(255,255,255,0.25)' : '#d1d5db'} style={{ flexShrink: 0 }} />}
+          </a>
+        )
+      })}
+    </div>
+  )
+}
+
+===== app\seller\components\StatCard.tsx =====
+'use client';
+
+import type { LucideIcon } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { useTheme } from '../layout';
+
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  change?: number | null;
+  icon: LucideIcon;
+  iconClassName?: string;
+  wrapperClassName?: string;
+}
+
+export default function StatCard({
+  title, value, subtitle, change,
+  icon: Icon, iconClassName = 'text-blue-500', wrapperClassName = '',
+}: StatCardProps) {
+  const { dark } = useTheme();
+
+  const hasChange = change !== null && change !== undefined;
+  const isPositive = hasChange && change! > 0;
+  const isNeutral  = hasChange && change! === 0;
+
+  const bg     = dark ? '#161b27' : '#ffffff';
+  const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const textMain  = dark ? '#ffffff' : '#0f172a';
+  const textMuted = dark ? 'rgba(255,255,255,0.38)' : '#94a3b8';
+  const iconBg    = dark ? 'rgba(255,255,255,0.06)' : '#f8fafc';
+  const iconBorder= dark ? 'rgba(255,255,255,0.08)' : '#e2e8f0';
+
+  return (
+    <div
+      style={{
+        background: bg,
+        border: `1px solid ${border}`,
+        borderRadius: 18,
+        padding: '20px',
+        position: 'relative',
+        overflow: 'hidden',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease',
+      }}
+      className={`stat-card-hover ${wrapperClassName}`}
+    >
+      {/* glow blob */}
+      <div style={{
+        position:'absolute', top:-24, right:-24,
+        width:80, height:80, borderRadius:'50%',
+        background: '#3b82f6', opacity: dark ? 0.1 : 0.06,
+        filter:'blur(20px)', pointerEvents:'none',
+      }}/>
+
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, position:'relative' }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <p style={{ fontSize:10, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.1em', color:textMuted, marginBottom:8 }}>
+            {title}
+          </p>
+          <p style={{ fontSize:22, fontWeight:900, color:textMain, lineHeight:1, margin:'0 0 4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+            {value}
+          </p>
+          {subtitle && (
+            <p style={{ fontSize:11, color:textMuted, margin:'4px 0 0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+              {subtitle}
+            </p>
+          )}
+          {hasChange && (
+            <div style={{
+              display:'inline-flex', alignItems:'center', gap:4,
+              marginTop:8, padding:'3px 8px', borderRadius:999,
+              fontSize:10, fontWeight:800,
+              background: isNeutral  ? (dark?'rgba(148,163,184,0.12)':'#f1f5f9')
+                        : isPositive ? (dark?'rgba(16,185,129,0.12)':'#ecfdf5')
+                                     : (dark?'rgba(239,68,68,0.12)':'#fef2f2'),
+              color: isNeutral  ? (dark?'#94a3b8':'#64748b')
+                   : isPositive ? '#10b981'
+                                 : '#ef4444',
+            }}>
+              {isNeutral  ? <Minus size={10}/> :
+               isPositive ? <TrendingUp size={10}/> :
+                            <TrendingDown size={10}/>}
+              {isPositive ? '+' : ''}{change!.toFixed(1)}% vs last month
+            </div>
+          )}
+        </div>
+
+        <div style={{
+          width:44, height:44, borderRadius:12, flexShrink:0,
+          background:iconBg, border:`1px solid ${iconBorder}`,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          transition:'transform 0.2s ease',
+        }} className="stat-icon-hover">
+          <Icon size={20} className={iconClassName}/>
+        </div>
+      </div>
+
+      <style>{`
+        .stat-card-hover:hover { transform:translateY(-3px)!important; box-shadow:0 12px 32px rgba(0,0,0,0.15)!important; }
+        .stat-card-hover:hover .stat-icon-hover { transform:scale(1.1)!important; }
+      `}</style>
+    </div>
+  );
+}
+
+===== app\globals.css =====
+@import "tailwindcss";
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   Mobile safety net (added for mobile-friendly pass)
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: hidden;          /* never allow sideways page scroll */
+}
+body {
+  max-width: 100%;
+  overflow-x: clip;            /* clip (not hidden) keeps position:sticky working */
+}
+img, video, canvas {
+  max-width: 100%;
+}
+/* Inline-styled tables / code blocks scroll inside themselves */
+pre, table {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  /* 16px inputs stop iOS Safari from zooming the page on focus */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+  /* Comfortable tap targets for icon-only buttons */
+  button {
+    touch-action: manipulation;
+  }
+}
+

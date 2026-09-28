@@ -2,9 +2,10 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { DollarSign, TrendingDown, TrendingUp, Clock, CheckCircle, Package } from 'lucide-react'
+import { DollarSign, TrendingDown, TrendingUp, Clock, CheckCircle, Package, Eye } from 'lucide-react'
 import api from '@/lib/sellerApi'
 import { useTheme } from '../SellerShell'
+import SellerOrderDrawer from '../components/SellerOrderDrawer'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
@@ -47,6 +48,9 @@ export default function EarningsPage() {
   const [loading,      setLoading]      = useState(true)
   const [error,        setError]        = useState<string | null>(null)
   const [payoutFilter, setPayoutFilter] = useState('')
+  const [detailRow,    setDetailRow]    = useState<{ id: number; order_number: string | null } | null>(null)
+  const tOrders = useTranslations('seller.orders')
+  const tDrawer = useTranslations('seller.orderDrawer')
 
   const cardBg    = dark ? '#161b27' : '#ffffff'
   const border    = dark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'
@@ -114,6 +118,15 @@ export default function EarningsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+      {/* Order details drawer (Orders tab) — fetched lazily on open */}
+      {detailRow && (
+        <SellerOrderDrawer
+          sellerOrderId={detailRow.id}
+          orderNumber={detailRow.order_number}
+          onClose={() => setDetailRow(null)}
+        />
+      )}
 
       {/* Header */}
       <div>
@@ -348,7 +361,33 @@ export default function EarningsPage() {
                     <tbody>
                       {(orders?.data ?? []).map((row: any) => (
                         <tr key={row.id}>
-                          <td style={{ ...td(), fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{row.order_number}</td>
+                          <td style={td()}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{row.order_number}</span>
+                              <button
+                                onClick={() => setDetailRow(row)}
+                                title={tDrawer('earningsTooltip')}
+                                aria-label={tDrawer('earningsTooltip')}
+                                style={{
+                                  width: 26, height: 26, borderRadius: 7, flexShrink: 0, cursor: 'pointer',
+                                  border: `1px solid ${border}`, background: dark ? 'rgba(255,255,255,0.05)' : '#f8fafc',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: textMuted,
+                                }}
+                              >
+                                <Eye size={13} />
+                              </button>
+                            </div>
+                            {row.items_count != null && (
+                              <span style={{
+                                display: 'inline-block', marginTop: 4,
+                                fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
+                                background: dark ? 'rgba(255,255,255,0.06)' : '#f1f5f9', color: textMuted,
+                                border: `1px solid ${border}`,
+                              }}>
+                                {tOrders('itemCount', { count: Number(row.items_count) })}
+                              </span>
+                            )}
+                          </td>
                           <td style={{ ...td(true), color: textMuted }}>{fmt(row.gross ?? 0)}</td>
                           <td style={{ ...td(true), color: '#db142e', fontWeight: 700 }}>{fmt(row.commission_amount ?? 0)}</td>
                           <td style={{ ...td(true), color: '#b45309', fontWeight: 700 }}>{Number(row.seller_shipping_charge ?? 0) > 0 ? '−' + fmt(row.seller_shipping_charge) : '—'}</td>

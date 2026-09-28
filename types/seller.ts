@@ -156,6 +156,7 @@ export interface Order {
   payment_method: PaymentMethod | null;
   wilaya: string | null;
   created_at: string;
+  items_count?: number;   // this seller's line items only
 }
 
 /**
