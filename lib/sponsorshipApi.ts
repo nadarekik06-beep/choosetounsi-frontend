@@ -1,5 +1,5 @@
 // lib/sponsorshipApi.ts
-// Sponsoring system API layer — seller + public endpoints.
+// Legacy seller sponsoring endpoints (the old promote page). Buyer-side ads live in lib/adsApi.ts.
 // UPDATED: Added payment types, boost surcharge logic, card payment endpoint.
 
 const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
@@ -82,38 +82,6 @@ export interface SponsorQuota {
   week_resets_at: string;
   boost_scores:   Record<SponsorPlan, number>;
   prices:         Record<SponsorPlan, number>;
-}
-
-export interface SponsoredProduct {
-  id:               number;
-  name:             string;
-  slug:             string;
-  price:            number;
-  stock:            number;
-  is_sponsored:     boolean;
-  primary_image_url: string | null;
-  category?:        { id: number; name: string; slug: string };
-  seller?:          { id: number; name: string };
-  sponsor_data?: {
-    id:         number;
-    ai_ad_copy: string | null;
-    ai_tags:    string[] | null;
-    boost_score: number;
-    end_at:     string | null;
-  } | null;
-  effective_price?: number | null
-  original_price?: number | null   // crossed-out price (30-day lowest) when discounted
-  discount_amount?: number | null
-  promotion?: {
-    id: number
-    type: 'flash_sale' | 'discount'
-    discount_type: 'percentage' | 'fixed'
-    discount_value: number
-    discount_label: string
-    ends_at: string
-    is_flash_sale: boolean
-  } | null
-
 }
 
 // ── Payment types ─────────────────────────────────────────────────────────────
@@ -275,30 +243,4 @@ export const sponsorshipApi = {
   // Seller: black-plan quota status
   quota: () =>
     jsonRequest<{ success: boolean; data: SponsorQuota }>('GET', '/seller/sponsorships/quota'),
-
-  // Public: sponsored product feed (homepage / category / search)
-  publicFeed: (params: { limit?: number; category_slug?: string } = {}) => {
-    const qs = new URLSearchParams(
-      Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])
-    ).toString();
-    return jsonRequest<{ success: boolean; data: SponsoredProduct[] }>(
-      'GET', `/sponsored-products${qs ? `?${qs}` : ''}`
-    );
-  },
-
-  // Analytics: record impression (fire-and-forget)
-  recordImpression: (sponsorshipId: number) => {
-    fetch(`${API_URL}/sponsorships/${sponsorshipId}/impression`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    }).catch(() => {});
-  },
-
-  // Analytics: record click (fire-and-forget)
-  recordClick: (sponsorshipId: number) => {
-    fetch(`${API_URL}/sponsorships/${sponsorshipId}/click`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    }).catch(() => {});
-  },
 };

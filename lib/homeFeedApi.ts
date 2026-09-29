@@ -25,7 +25,9 @@ export interface FeedProduct {
   is_sponsored: boolean
   placement: 'sponsored' | 'organic'
   sponsored_priority?: number
-  sponsor_data?: { id: number; ai_ad_copy?: string | null } | null
+  /** Paid placements only: campaign id, ad line and the signed token for ad events. */
+  sponsor_data?: { id: number; ai_ad_copy?: string | null; token?: string } | null
+  ad_token?: string
   primary_image_url?: string | null
   variant_images?: string[]
   effective_price?: number | null

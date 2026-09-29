@@ -12,6 +12,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { acquireOverlay, releaseOverlay } from '@/lib/overlayStore';
 import { X, Star, Mail } from 'lucide-react';
 import ReviewSubmitModal from './ReviewSubmitModal';
 import { isAuthenticated } from '@/lib/auth';
@@ -82,6 +83,13 @@ export default function ReviewPromptPopup() {
 
     load();
   }, []);
+
+  // Only one entry overlay at a time: the review prompt takes precedence over ads.
+  useEffect(() => {
+    if (visible || showModal) acquireOverlay('review_prompt', true);
+    else releaseOverlay('review_prompt');
+  }, [visible, showModal]);
+  useEffect(() => () => releaseOverlay('review_prompt'), []);
 
   // ── Auto-dismiss countdown ───────────────────────────────────────────────
   useEffect(() => {

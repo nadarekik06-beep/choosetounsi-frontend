@@ -19,13 +19,12 @@ import {
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import type { CartItem as BaseCartItem } from '@/lib/shopApi'
-import SponsoredBadge from '@/app/components/SponsoredBadge'
+import AdStrip from '@/components/ads/AdStrip'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
 // ─── Extend CartItem with sponsored + pack fields ─────────────────────────────
 type CartItem = BaseCartItem & {
-  is_sponsored?: boolean
   is_pack?: boolean
   is_free_delivery?: boolean   
   delivery_fee?: number        
@@ -103,11 +102,6 @@ function CartRow({
               <Package size={20} color="#e2e8f0" />
             </div>
         }
-        {item.is_sponsored && (
-          <div style={{ position: 'absolute', bottom: 3, insetInlineStart: 3, pointerEvents: 'none' }}>
-            <SponsoredBadge compact />
-          </div>
-        )}
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -123,7 +117,6 @@ function CartRow({
           >
             {item.name}
           </Link>
-          {item.is_sponsored && <SponsoredBadge compact />}
         </div>
 
         
@@ -529,6 +522,15 @@ export default function CartDrawer() {
                     />
                   )
               )}
+
+              {/* Paid cross-sell, complementary to what's in the cart */}
+              <AdStrip
+                placement="cart_cross_sell"
+                title="cartTitle"
+                layout="row"
+                query={{ cartProductIds: items.map(i => i.product_id).filter((id): id is number => !!id) }}
+                onNavigate={closeDrawer}
+              />
 
               {items.length > 1 && (
                 <button

@@ -323,7 +323,7 @@
     "scrollNext": "Scroll forward",
     "titles": {
       "recommended": "Recommended for you",
-      "sponsored": "Sponsored picks",
+      "sponsored": "Sponsored for you",
       "trending": "Trending now",
       "best_sellers": "Best sellers",
       "similar": "You might also like",
@@ -4090,6 +4090,19 @@
       "cvv": "Enter 3 or 4 digit CVV.",
       "name": "Enter the cardholder name.",
       "failed": "Payment failed. Please check your details and try again."
+    }
+  },
+  "ads": {
+    "sponsored": "Sponsored",
+    "sponsoredForYou": "Sponsored for you",
+    "similarTitle": "Sponsored — similar items",
+    "cartTitle": "Sponsored — you might also like",
+    "searchLabel": "Sponsored result",
+    "popup": {
+      "title": "Picked for you",
+      "view": "View product",
+      "close": "Close",
+      "label": "Sponsored product"
     }
   }
 }

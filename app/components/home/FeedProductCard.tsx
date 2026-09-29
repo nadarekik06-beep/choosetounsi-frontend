@@ -17,12 +17,14 @@ import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge
 import { useFormat } from '@/lib/i18n/useFormat'
 import type { PriceOptions } from '@/lib/i18n/format'
 import type { FeedProduct } from '@/lib/homeFeedApi'
-import { sponsorshipApi } from '@/lib/sponsorshipApi'
+import { recordAdClick } from '@/lib/adsApi'
+import { useAdImpression } from '@/components/ads/useAdImpression'
 import { trackClick } from '@/lib/tracking'
 
 type PriceFn = (v: number | string, o?: PriceOptions) => string
 
-function displayPrice(p: FeedProduct, price: PriceFn) {
+/** Promotion-aware price for a card (shared with components/ads/SponsoredCard). */
+export function displayPrice(p: FeedProduct, price: PriceFn) {
   const base      = Number(p.original_price ?? p.price)   // 30-day lowest when discounted
   const effective = p.effective_price != null ? Number(p.effective_price) : base
   if (!(effective < base - 0.001) || !p.promotion) {
@@ -53,6 +55,7 @@ export default function FeedProductCard({ product, index, section, variant }: {
 }) {
   const t    = useTranslations('productCard')
   const tf   = useTranslations('homeFeed')
+  const ta   = useTranslations('ads')
   const fmt  = useFormat()
   const ref  = useRef<HTMLAnchorElement>(null)
   const tick = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -61,7 +64,7 @@ export default function FeedProductCard({ product, index, section, variant }: {
   const [imgIndex, setImgIndex] = useState(0)
 
   const isPaid = product.placement === 'sponsored' && product.is_sponsored
-  const sponsorshipId = isPaid ? product.sponsor_data?.id : undefined
+  const adToken = isPaid ? (product.sponsor_data?.token ?? product.ad_token) : undefined
 
   const images = useMemo(() => {
     const out: string[] = []
@@ -70,19 +73,8 @@ export default function FeedProductCard({ product, index, section, variant }: {
     return out
   }, [product.primary_image_url, product.variant_images])
 
-  // Count a sponsored impression only once at least half the card has been on screen.
-  useEffect(() => {
-    const el = ref.current
-    if (!sponsorshipId || !el || typeof IntersectionObserver === 'undefined') return
-    const io = new IntersectionObserver(entries => {
-      if (entries.some(e => e.isIntersecting)) {
-        sponsorshipApi.recordImpression(sponsorshipId)
-        io.disconnect()
-      }
-    }, { threshold: 0.5 })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [sponsorshipId])
+  // A sponsored impression counts once half the card has been on screen for a second.
+  useAdImpression(ref, adToken)
 
   useEffect(() => () => { if (tick.current) clearInterval(tick.current) }, [])
 
@@ -97,7 +89,7 @@ export default function FeedProductCard({ product, index, section, variant }: {
   }
   const onClick = () => {
     trackClick(product.id, section)
-    if (sponsorshipId) sponsorshipApi.recordClick(sponsorshipId)
+    if (adToken) recordAdClick(adToken)
   }
 
   const image = images[imgIndex] ?? null
@@ -145,7 +137,7 @@ export default function FeedProductCard({ product, index, section, variant }: {
 
         <div style={{ position: 'absolute', top: 7, insetInlineStart: 7, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, zIndex: 3 }}>
           {isPaid && (
-            <span style={{ ...pill, background: 'rgba(17,17,17,0.78)', color: '#fbbf24' }}>{tf('sponsoredBadge')}</span>
+            <span style={{ ...pill, background: 'rgba(17,17,17,0.78)', color: '#fbbf24' }}>{ta('sponsored')}</span>
           )}
           {variant === 'ranked' && index < 3 && !isPaid && (
             <span style={{ ...pill, background: 'linear-gradient(135deg,#f97316,#db142e)' }}>🔥 {tf('hot')}</span>

@@ -5,6 +5,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useFormat } from "@/lib/i18n/useFormat";
+import { fetchAds, fetchAdsConfig, withAdSlots, type AdCard } from "@/lib/adsApi";
+import SponsoredCard from "@/components/ads/SponsoredCard";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -226,12 +228,16 @@ function Divider({ label }: { label: string }) {
 }
 
 // ─── Product Grid ─────────────────────────────────────────────────────────────
-function ProductGrid({ products, showRank = false, rankOffset = 0 }: {
-  products: SearchProduct[]; showRank?: boolean; rankOffset?: number;
+// Sponsored results take reserved slots (from /api/ads/config); organic order and ranks are untouched.
+function ProductGrid({ products, showRank = false, rankOffset = 0, ads = [], slots = [] }: {
+  products: SearchProduct[]; showRank?: boolean; rankOffset?: number; ads?: AdCard[]; slots?: number[];
 }) {
+  let organic = 0;
   return (
     <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(min(190px, 45%), 1fr))", gap:18 }}>
-      {products.map((p, i) => <ProductCard key={p.id} product={p} rank={showRank ? rankOffset + i + 1 : undefined}/>)}
+      {withAdSlots(products, ads, slots).map((cell, i) => "ad" in cell
+        ? <SponsoredCard key={`ad-${cell.ad.sponsor_data.id}`} ad={cell.ad} index={i}/>
+        : <ProductCard key={cell.item.id} product={cell.item} rank={showRank ? rankOffset + (++organic) : undefined}/>)}
     </div>
   );
 }
@@ -306,6 +312,20 @@ function SearchPageContent() {
   const [didYouMean,      setDidYouMean]      = useState<string | null>(null);
   const [originalQuery,   setOriginalQuery]   = useState("");
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [ads,             setAds]             = useState<AdCard[]>([]);
+  const [adSlots,         setAdSlots]         = useState<number[]>([]);
+
+  // Sponsored results for this query (text search only), once the organic results are in.
+  useEffect(() => {
+    setAds([]);
+    if (!queryParam || modeParam === "image" || !searched || loading) return;
+    const ctrl = new AbortController();
+    const shown = [...directHits, ...sameCategory, ...related].map(p => p.id);
+    Promise.all([fetchAds("search_top", { q: queryParam, exclude: shown }, ctrl.signal), fetchAdsConfig()])
+      .then(([list, cfg]) => { setAds(list); setAdSlots(cfg?.reserved_slots ?? []); });
+    return () => ctrl.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryParam, modeParam, searched, loading]);
 
   // Reset on new query
   useEffect(() => {
@@ -534,7 +554,7 @@ function SearchPageContent() {
                     accentColor="#db142e"
                     subtitle={t("bestMatchesSub", { query: queryParam })}
                   />
-                  <ProductGrid products={applySort(directHits, sort)} showRank={sort==="relevance"} rankOffset={0}/>
+                  <ProductGrid products={applySort(directHits, sort)} showRank={sort==="relevance"} rankOffset={0} ads={ads} slots={adSlots}/>
                 </section>
               )}
 
@@ -550,7 +570,7 @@ function SearchPageContent() {
                       accentColor="#198f41"
                       subtitle={t("moreInSub")}
                     />
-                    <ProductGrid products={applySort(sameCategory, sort)}/>
+                    <ProductGrid products={applySort(sameCategory, sort)} {...(directHits.length === 0 ? { ads, slots: adSlots } : {})}/>
                   </section>
                 </>
               )}
@@ -567,7 +587,7 @@ function SearchPageContent() {
                       accentColor="#6366f1"
                       subtitle={t("alsoLikeSub")}
                     />
-                    <ProductGrid products={applySort(related, sort)}/>
+                    <ProductGrid products={applySort(related, sort)} {...(directHits.length === 0 && sameCategory.length === 0 ? { ads, slots: adSlots } : {})}/>
                   </section>
                 </>
               )}

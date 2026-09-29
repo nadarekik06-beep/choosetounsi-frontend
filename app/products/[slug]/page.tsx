@@ -13,6 +13,7 @@ import { isAuthenticated, getUser } from '@/lib/auth'
 import { trackView } from '@/lib/tracking'
 import type { ProductVariant, SelectableAxis } from '@/lib/shopApi'
 import ProductRecommendations from 'app/components/ProductRecommendations'
+import AdStrip from '@/components/ads/AdStrip'
 import CountdownTimer from '@/app/components/promotions/CountdownTimer'
 import PromotionBadge from '@/app/components/promotions/PromotionBadge'
 import ProductReviewsSection from '@/app/components/reviews/ProductReviewsSection';
@@ -848,6 +849,9 @@ export default function ProductDetailPage() {
         </div>
       </div>
       <ProductReviewsSection slug={slug} />
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 16px' }}>
+        <AdStrip placement="product_similar" title="similarTitle" query={{ contextProductId: product.id }} />
+      </div>
       <ProductRecommendations slug={slug} sellerId={product.seller?.id} />
     </>
   )

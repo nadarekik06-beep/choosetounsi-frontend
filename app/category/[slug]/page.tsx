@@ -15,7 +15,8 @@ import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge
 import { useCart } from '@/context/CartContext'
 
 import Navbar from '@/app/components/layout/Navbar'
-import SponsoredProductsSection from '@/app/components/SponsoredProductsSection'
+import SponsoredCard from '@/components/ads/SponsoredCard'
+import { fetchAds, fetchAdsConfig, withAdSlots, type AdCard } from '@/lib/adsApi'
 import ProductFilterSidebar, { type F } from '@/app/components/filters/ProductFilterSidebar'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -54,7 +55,6 @@ interface Product {
   is_new?: boolean; is_bestseller?: boolean
   color_swatches?: ColorSwatch[]
   variants?: { id: number; stock: number }[]
-  is_sponsored?: boolean
   sponsored_priority?: number
   // ── NEW: promotion overlay fields — sent by backend since PROMO FIX ──────
   effective_price?: number | null   // discounted price; equals price when no promo
@@ -233,16 +233,6 @@ function Card({ p, idx }: { p: Product; idx: number }) {
 
         {/* ── Badges ── */}
         <div className="shc-badges">
-          {p.is_sponsored && (
-            <span className="shc-badge" style={{
-              background: 'linear-gradient(135deg,rgba(245,158,11,0.18),rgba(251,191,36,0.12))',
-              border: '1px solid rgba(245,158,11,0.4)',
-              color: '#f59e0b',
-            }}>
-              ⭐ {t('sponsored')}
-            </span>
-          )}
-
           {/* ── FIXED: Discount badge from real promotion data ── */}
           {discountBadge && (
             <span
@@ -515,6 +505,9 @@ function Inner() {
 
   const [allC, setAllC]  = useState<Category[]>([])
   const [prods,setProds] = useState<Paginated|null>(null)
+  // Sponsored products in reserved grid slots (organic order and the chosen sort are untouched)
+  const [ads,setAds] = useState<AdCard[]>([])
+  const [adSlots,setAdSlots] = useState<number[]>([])
   const [load, setLoad]  = useState(true)
   const [page, setPage]  = useState(1)
   const [view, setView]  = useState<View>('grid')
@@ -563,6 +556,14 @@ function Inner() {
   },[slug,subSlug,f.sort,f.pMin,f.pMax,f.inStock,attrQP,page])
 
   useEffect(()=>{ fetchP() },[fetchP])
+  useEffect(()=>{
+    setAds([])
+    if(!slug||load||!prods?.data?.length) return
+    const ctrl=new AbortController()
+    Promise.all([fetchAds('category_top',{categorySlug:slug,exclude:prods.data.map(p=>p.id)},ctrl.signal),fetchAdsConfig()])
+      .then(([list,cfg])=>{ setAds(list); setAdSlots(cfg?.reserved_slots??[]) })
+    return ()=>ctrl.abort()
+  },[slug,load,prods])
   useEffect(()=>{ setPage(1) },[f.sort,f.pMin,f.pMax,f.inStock,attrQP,subSlug])
 
   const displayed=useMemo(()=>{
@@ -756,16 +757,6 @@ function Inner() {
             searchPlaceholder={t('searchInCategory')} mOpen={mOpen} setMOpen={setMOpen}/>
 
           <div>
-            {!load && (
-              <SponsoredProductsSection
-                title={t('trendingInCategory')}
-                categorySlug={slug}
-                limit={4}
-                layout="row"
-                showBadge={true}
-              />
-            )}
-
             {load && <div className="shgrid">{Array.from({length:12}).map((_,i)=><Skel key={i}/>)}</div>}
             {!load&&displayed.length===0&&(
               <div className="shempty">
@@ -778,8 +769,12 @@ function Inner() {
             {!load&&displayed.length>0&&(
               <>
                 {view==='grid'
-                  ?<div className="shgrid">{displayed.map((p,i)=><Card key={p.id} p={p} idx={i}/>)}</div>
-                  :<div className="shlist">{displayed.map((p,i)=><ListCard key={p.id} p={p} idx={i}/>)}</div>
+                  ?<div className="shgrid">{withAdSlots(displayed,ads,adSlots).map((c,i)=>'ad' in c
+                    ?<SponsoredCard key={`ad-${c.ad.sponsor_data.id}`} ad={c.ad} index={i}/>
+                    :<Card key={c.item.id} p={c.item} idx={i}/>)}</div>
+                  :<div className="shlist">{withAdSlots(displayed,ads,adSlots).map((c,i)=>'ad' in c
+                    ?<SponsoredCard key={`ad-${c.ad.sponsor_data.id}`} ad={c.ad} index={i} layout="row"/>
+                    :<ListCard key={c.item.id} p={c.item} idx={i}/>)}</div>
                 }
                 {prods&&<Pages cur={page} total={prods.last_page} go={n=>{setPage(n);window.scrollTo({top:0,behavior:'smooth'})}}/>}
               </>

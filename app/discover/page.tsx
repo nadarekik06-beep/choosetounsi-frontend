@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import Navbar from '@/app/components/layout/Navbar';
 import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge';
-import { sponsorshipApi, SponsoredProduct } from '@/lib/sponsorshipApi';
+import { fetchAds, recordAdClick, type AdCard } from '@/lib/adsApi';
+import { useAdImpression } from '@/components/ads/useAdImpression';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 
@@ -57,9 +58,9 @@ interface OrganicProduct {
 
 }
 
-type FeedItem = (OrganicProduct | SponsoredProduct) & {
+type FeedItem = (OrganicProduct | AdCard) & {
   _is_sponsored: boolean;
-  _sponsor_id?: number;
+  _ad_token?: string;
   _label_idx?: number;
 };
 
@@ -291,6 +292,9 @@ function ProductCard({ item, index }: { item: FeedItem; index: number }) {
   const [added, setAdded]     = useState(false);
   const [imgIndex, setImgIndex] = useState(0);          // ← NEW
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null); // ← NEW
+  const linkRef = useRef<HTMLAnchorElement>(null);
+  const ta = useTranslations('ads');
+  useAdImpression(linkRef, item._is_sponsored ? item._ad_token : null);
 const allImages = useMemo(() => {                     // ← NEW
     const imgs: string[] = [];
     const primary = (item as any).primary_image_url;
@@ -307,7 +311,7 @@ const allImages = useMemo(() => {                     // ← NEW
   const label = item._is_sponsored ? SPONSORED_LABEL : null;
 
   const handleClick = () => {
-    if (item._is_sponsored && item._sponsor_id) sponsorshipApi.recordClick(item._sponsor_id);
+    if (item._is_sponsored && item._ad_token) recordAdClick(item._ad_token);
   };
 
   const handleWish = (e: React.MouseEvent) => {
@@ -327,6 +331,7 @@ const { display, original, badge, isFlash } = getDisplayPrice(item, fmt.price);
 
   return (
     <Link
+      ref={linkRef}
       href={`/products/${item.slug}`}
       onClick={handleClick}
       style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
@@ -397,7 +402,7 @@ onMouseLeave={() => {
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}>
               <label.icon size={9} />
-              {tp('sponsored')}
+              {ta('sponsored')}
             </div>
           )}
           {badge && (
@@ -586,16 +591,14 @@ export default function DiscoverPage() {
     try {
       // Ads are fetched once (page 1) and interleaved there; later pages are organic only.
       const [sponsoredRes, organicRes] = await Promise.allSettled([
-        pageNum === 1 ? sponsorshipApi.publicFeed({ limit: 12 }) : Promise.resolve({ data: [] as SponsoredProduct[] }),
+        pageNum === 1 ? fetchAds('home_row', { limit: 8 }) : Promise.resolve([] as AdCard[]),
         fetch(`${API_URL}/api/products?sort=${sort}&per_page=20&page=${pageNum}`, {
           headers: { Accept: 'application/json' },
         }).then(r => r.json()),
       ]);
 
-      // The feed tops up with popular organic products (is_sponsored=false): those are
-      // not ads and are never labelled — the organic grid already lists them.
-      const sponsored: SponsoredProduct[] =
-        sponsoredRes.status === 'fulfilled' ? (sponsoredRes.value.data ?? []).filter(s => s.is_sponsored) : [];
+      // Relevant ads for this viewer (page 1 only), each with its signed token.
+      const sponsored: AdCard[] = sponsoredRes.status === 'fulfilled' ? sponsoredRes.value : [];
       const organic: any[] =
         organicRes.status === 'fulfilled' ? (organicRes.value.data?.data ?? []) : [];
       const lastPage =
@@ -604,33 +607,17 @@ export default function DiscoverPage() {
       if (pageNum >= lastPage) setHasMore(false);
       if (pageNum === 1) adIdsRef.current = new Set(sponsored.map(s => s.id));
 
-      const organicById = new Map(organic.map(o => [o.id, o]));
-      const sponsoredWithPromo = sponsored.map(s => ({
-        ...s,
-        ...(organicById.get(s.id) ?? {}),
-      }));
       const cleanOrganic = organic.filter(o => !adIdsRef.current.has(o.id));
       const merged: FeedItem[] = [];
+      const pushAd = (s: AdCard) =>
+        merged.push({ ...s, _is_sponsored: true, _ad_token: s.ad_token, _label_idx: labelRef.current++ } as FeedItem);
       let sIdx = 0;
 
       cleanOrganic.forEach((o, i) => {
-        if (i % SPONSORED_EVERY === 0 && sIdx < sponsored.length) {
-          const s = sponsored[sIdx++];
-          const enriched = sponsoredWithPromo.find(sp => sp.id === s.id) ?? s;
-          merged.push({
-            ...enriched,
-            _is_sponsored: true,
-            _sponsor_id: s.sponsor_data?.id,
-            _label_idx: labelRef.current++,
-          } as FeedItem);
-        }
+        if (i % SPONSORED_EVERY === 0 && sIdx < sponsored.length) pushAd(sponsored[sIdx++]);
         merged.push({ ...o, _is_sponsored: false } as FeedItem);
       });
-      while (sIdx < sponsored.length) {
-        const s = sponsored[sIdx++];
-        const enriched = sponsoredWithPromo.find(sp => sp.id === s.id) ?? s;
-        merged.push({ ...enriched, _is_sponsored: true, _sponsor_id: s.sponsor_data?.id, _label_idx: labelRef.current++ } as FeedItem);
-      }
+      while (sIdx < sponsored.length) pushAd(sponsored[sIdx++]);
       setFeed(prev => pageNum === 1 ? merged : [...prev, ...merged]);
     } catch {
       /* silent */

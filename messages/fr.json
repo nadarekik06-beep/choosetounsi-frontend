@@ -323,7 +323,7 @@
     "scrollNext": "Défiler en avant",
     "titles": {
       "recommended": "Recommandé pour vous",
-      "sponsored": "Sélection sponsorisée",
+      "sponsored": "Sponsorisé pour vous",
       "trending": "Tendances du moment",
       "best_sellers": "Meilleures ventes",
       "similar": "Vous aimerez aussi",
@@ -4090,6 +4090,19 @@
       "cvv": "Saisissez un CVV à 3 ou 4 chiffres.",
       "name": "Saisissez le nom du titulaire.",
       "failed": "Le paiement a échoué. Vérifiez vos informations et réessayez."
+    }
+  },
+  "ads": {
+    "sponsored": "Sponsorisé",
+    "sponsoredForYou": "Sponsorisé pour vous",
+    "similarTitle": "Sponsorisé — articles similaires",
+    "cartTitle": "Sponsorisé — ça pourrait vous plaire",
+    "searchLabel": "Résultat sponsorisé",
+    "popup": {
+      "title": "Sélectionné pour vous",
+      "view": "Voir le produit",
+      "close": "Fermer",
+      "label": "Produit sponsorisé"
     }
   }
 }

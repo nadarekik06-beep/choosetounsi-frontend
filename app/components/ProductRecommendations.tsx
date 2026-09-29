@@ -52,7 +52,6 @@ interface RecProduct {
   promotion?: ActivePromotion | null
   stock: number
   primary_image_url: string | null
-  is_sponsored: boolean
   featured: boolean
   seller: { id: number; name: string } | null
   _score?: number | null
@@ -148,13 +147,7 @@ function MiniCard({ product }: { product: RecProduct }) {
           )}
           <FlashCountdownBadge promotion={product.promotion} />
 
-          {product.is_sponsored && (
-            <span style={{ position: 'absolute', top: 6, insetInlineStart: 6, fontSize: 8, fontWeight: 800, background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', color: '#f59e0b', padding: '2px 6px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              ⭐ {tc('sponsored')}
-            </span>
-          )}
-
-          {product.featured && !product.is_sponsored && (
+          {product.featured && (
             <span style={{ position: 'absolute', top: 6, insetInlineStart: hasDiscount ? 'auto' : 6, fontSize: 8, fontWeight: 800, background: '#198f41', color: '#fff', padding: '2px 6px', borderRadius: 999, textTransform: 'uppercase' }}>
               {t('top')}
             </span>
