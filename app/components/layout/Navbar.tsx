@@ -8,7 +8,15 @@ import { useCart } from "@/context/CartContext";
 import { Heart, ShoppingBag, ClipboardList, AlertCircle } from "lucide-react";
 import Image from 'next/image'
 import { useTranslations } from "next-intl";
-import { sponsorshipApi, SponsoredProduct } from "@/lib/sponsorshipApi";
+// Organic popular products (same card fields as the listing API). No ads here: paid
+// placements are only shown where they carry a visible "Sponsored" label.
+interface PopularProduct {
+  id: number; name: string; slug: string; price: number;
+  primary_image_url: string | null;
+  effective_price?: number | null;
+  original_price?: number | null;
+  category?: { id: number; name: string; slug: string } | null;
+}
 import { useFormat } from "@/lib/i18n/useFormat";
 import { LanguageLink, LanguageInlineSelect } from "@/components/i18n/LanguageSwitcher";
 
@@ -216,7 +224,7 @@ function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible
    Shows when the search input is focused and query is empty.
    Two sections:
      1. Trending Searches  — category pills
-     2. Popular Products   — mini product cards from sponsored feed
+     2. Popular Products   — most-viewed products (organic, never ads)
 ══════════════════════════════════════════════════════════════ */
 function SearchDropdown({
   visible,
@@ -232,14 +240,15 @@ function SearchDropdown({
   const t   = useTranslations("nav");
   const tc  = useTranslations("common");
   const fmt = useFormat();
-  const [products, setProducts]     = useState<SponsoredProduct[]>([]);
+  const [products, setProducts]     = useState<PopularProduct[]>([]);
   const [loadingP, setLoadingP]     = useState(true);
   const [imgErrors, setImgErrors]   = useState<Record<number, boolean>>({});
 
-  // Load sponsored products once on mount — cached by sponsorshipApi
+  // Load the most-viewed products once on mount
   useEffect(() => {
-    sponsorshipApi.publicFeed({ limit: 4 })
-      .then(res => setProducts(res.data ?? []))
+    fetch(`${API_URL}/api/products?sort=views&per_page=4`, { headers: { Accept: "application/json" } })
+      .then(r => (r.ok ? r.json() : null))
+      .then(res => setProducts(res?.data?.data ?? []))
       .catch(() => {})
       .finally(() => setLoadingP(false));
   }, []);

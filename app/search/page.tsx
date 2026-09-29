@@ -318,12 +318,12 @@ function SearchPageContent() {
     if (stored && modeParam === "image") { setImagePreview(stored); sessionStorage.removeItem("searchImagePreview"); }
   }, [modeParam]);
 
-  // Trending
+  // Trending: the most-viewed products (organic — ads only appear in labelled slots)
   useEffect(() => {
-    fetch(`${API_URL}/api/sponsorships/public?limit=4`, { headers: { Accept:"application/json" } })
+    fetch(`${API_URL}/api/products?sort=views&per_page=4`, { headers: { Accept:"application/json" } })
       .then(r => r.ok ? r.json() : null).then(data => {
         if (!data) return;
-        setTrendingNow((data.data ?? []).map((p: any) => ({
+        setTrendingNow((data.data?.data ?? []).map((p: any) => ({
           id:p.id, name:p.name, slug:p.slug, description:p.description??null,
           price:Number(p.price), stock:p.stock??0, views:p.views??0, featured:p.featured??false,
           category_name:p.category?.name??null, category_slug:p.category?.slug??null,

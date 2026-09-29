@@ -25,7 +25,7 @@ import Link from 'next/link';
 import { useTheme } from '../SellerShell';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
-import { useWilayaLabel } from '@/lib/i18n/wilayas';
+import { WILAYAS, useWilayaLabel } from '@/lib/i18n/wilayas';
 import { useSubscription } from '@/app/hooks/useSubscription';
 import {
   sponsorshipApi,
@@ -66,20 +66,10 @@ const DURATIONS: { days: number; key: string; popular?: boolean }[] = [
   { days: 30, key: 'd30' },
 ];
 
-// Display aliases so the shared wilaya labels resolve for this list's spellings.
-const WILAYA_ALIAS: Record<string, string> = { Kef: 'Le Kef', Manouba: 'La Manouba', Medenine: 'Médenine' };
-
 function useDt() {
   const { price } = useFormat();
   return (n: number, digits = 3) => price(n, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
-
-const TUNISIAN_WILAYAS = [
-  'Tunis','Ariana','Ben Arous','Manouba','Nabeul','Zaghouan','Bizerte',
-  'Béja','Jendouba','Kef','Siliana','Sousse','Monastir','Mahdia',
-  'Sfax','Kairouan','Kasserine','Sidi Bouzid','Gabès','Medenine',
-  'Tataouine','Gafsa','Tozeur','Kébili',
-];
 
 const PLAN_META: Record<SponsorPlan, { icon: React.ReactNode; label: string; color: string; bg: string }> = {
   free:  { icon: <Leaf size={14} />,  label: 'Green Pepper', color: '#198f41', bg: 'rgba(25,143,65,0.12)'  },
@@ -1078,10 +1068,10 @@ export default function PromoteProductPage() {
                   {targetWilayas.length > 0 && <button onClick={() => setTargetWilayas([])} style={{ background: 'none', border: 'none', fontSize: 10, color: '#db142e', cursor: 'pointer', fontWeight: 700 }}>{t('clear')}</button>}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-                  {TUNISIAN_WILAYAS.map(w => {
+                  {WILAYAS.map(w => {
                     const on = targetWilayas.includes(w);
                     return (
-                      <button key={w} onClick={() => setTargetWilayas(prev => on ? prev.filter(x => x !== w) : [...prev, w])} style={{ padding: '5px 12px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${on ? '#db142e' : border}`, background: on ? '#db142e' : cardAlt, color: on ? '#fff' : textMuted, transition: 'all 0.12s' }}>{wl(WILAYA_ALIAS[w] ?? w)}</button>
+                      <button key={w} onClick={() => setTargetWilayas(prev => on ? prev.filter(x => x !== w) : [...prev, w])} style={{ padding: '5px 12px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${on ? '#db142e' : border}`, background: on ? '#db142e' : cardAlt, color: on ? '#fff' : textMuted, transition: 'all 0.12s' }}>{wl(w)}</button>
                     );
                   })}
                 </div>

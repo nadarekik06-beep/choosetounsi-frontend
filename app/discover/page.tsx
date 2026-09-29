@@ -578,32 +578,38 @@ export default function DiscoverPage() {
   const [labelCounter, setLabelCounter] = useState(0);
   const labelRef = useRef(0);
 
+  // Ads shown on page 1, so later pages don't repeat them organically.
+  const adIdsRef = useRef<Set<number>>(new Set());
+
   const buildFeed = useCallback(async (pageNum: number, sort: string) => {
     setLoading(true);
     try {
+      // Ads are fetched once (page 1) and interleaved there; later pages are organic only.
       const [sponsoredRes, organicRes] = await Promise.allSettled([
-        sponsorshipApi.publicFeed({ limit: 12 }),
+        pageNum === 1 ? sponsorshipApi.publicFeed({ limit: 12 }) : Promise.resolve({ data: [] as SponsoredProduct[] }),
         fetch(`${API_URL}/api/products?sort=${sort}&per_page=20&page=${pageNum}`, {
           headers: { Accept: 'application/json' },
         }).then(r => r.json()),
       ]);
 
+      // The feed tops up with popular organic products (is_sponsored=false): those are
+      // not ads and are never labelled — the organic grid already lists them.
       const sponsored: SponsoredProduct[] =
-        sponsoredRes.status === 'fulfilled' ? (sponsoredRes.value.data ?? []) : [];
+        sponsoredRes.status === 'fulfilled' ? (sponsoredRes.value.data ?? []).filter(s => s.is_sponsored) : [];
       const organic: any[] =
         organicRes.status === 'fulfilled' ? (organicRes.value.data?.data ?? []) : [];
       const lastPage =
         organicRes.status === 'fulfilled' ? (organicRes.value.data?.last_page ?? 1) : 1;
 
       if (pageNum >= lastPage) setHasMore(false);
+      if (pageNum === 1) adIdsRef.current = new Set(sponsored.map(s => s.id));
 
       const organicById = new Map(organic.map(o => [o.id, o]));
-const sponsoredWithPromo = sponsored.map(s => ({
-  ...s,
-  ...(organicById.get(s.id) ?? {}),
-}));
-const sponsoredIds = new Set(sponsored.map(s => s.id));
-const cleanOrganic = organic.filter(o => !sponsoredIds.has(o.id));
+      const sponsoredWithPromo = sponsored.map(s => ({
+        ...s,
+        ...(organicById.get(s.id) ?? {}),
+      }));
+      const cleanOrganic = organic.filter(o => !adIdsRef.current.has(o.id));
       const merged: FeedItem[] = [];
       let sIdx = 0;
 
@@ -620,11 +626,11 @@ const cleanOrganic = organic.filter(o => !sponsoredIds.has(o.id));
         }
         merged.push({ ...o, _is_sponsored: false } as FeedItem);
       });
-    while (sIdx < sponsored.length) {
-  const s = sponsored[sIdx++];
-  const enriched = sponsoredWithPromo.find(sp => sp.id === s.id) ?? s;
-  merged.push({ ...enriched, _is_sponsored: true, _sponsor_id: s.sponsor_data?.id, _label_idx: labelRef.current++ } as FeedItem);
-}
+      while (sIdx < sponsored.length) {
+        const s = sponsored[sIdx++];
+        const enriched = sponsoredWithPromo.find(sp => sp.id === s.id) ?? s;
+        merged.push({ ...enriched, _is_sponsored: true, _sponsor_id: s.sponsor_data?.id, _label_idx: labelRef.current++ } as FeedItem);
+      }
       setFeed(prev => pageNum === 1 ? merged : [...prev, ...merged]);
     } catch {
       /* silent */
