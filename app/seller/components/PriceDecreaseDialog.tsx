@@ -57,7 +57,7 @@ export default function PriceDecreaseDialog({ drops, windowDays, busy, onCreateD
             <h3 id="price-dialog-title" style={{ fontSize: 15, fontWeight: 900, color: '#0f172a', margin: 0 }}>{t('title')}</h3>
             <p style={{ fontSize: 12.5, color: '#475569', margin: '6px 0 0', lineHeight: 1.55 }}>{t('body')}</p>
           </div>
-          <button type="button" onClick={onCancel} aria-label={t('cancel')} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: 4 }}>
+          <button type="button" onClick={onCancel} aria-label={t('cancel')} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#5b6472', padding: 4 }}>
             <X size={16} />
           </button>
         </div>
@@ -69,7 +69,7 @@ export default function PriceDecreaseDialog({ drops, windowDays, busy, onCreateD
               <div key={d.id ?? `base-${i}`} style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '10px 12px', background: '#f8fafc' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', margin: '0 0 6px' }}>{d.label ?? t('basePrice')}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 13, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt(d.reference_price)}</span>
+                  <span style={{ fontSize: 13, color: '#5b6472', textDecoration: 'line-through' }}>{fmt(d.reference_price)}</span>
                   <span style={{ fontSize: 16, fontWeight: 900, color: '#db142e' }}>{fmt(d.requested_price)}</span>
                   <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', background: '#db142e', borderRadius: 6, padding: '2px 6px' }}>-{pct}%</span>
                 </div>

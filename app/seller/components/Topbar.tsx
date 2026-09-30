@@ -11,6 +11,7 @@ import { useTheme } from '../SellerShell';
 import NotificationBell from '@/app/components/NotificationBell';
 import { sellerNotificationApi } from '@/lib/notificationApi';
 import { useSubscription } from '@/app/hooks/useSubscription';
+import { ink } from '@/app/seller/ink';
 
 const AVATAR_COLORS = [
   ['#fde68a', '#92400e'], ['#bfdbfe', '#1e40af'], ['#bbf7d0', '#14532d'],
@@ -103,8 +104,8 @@ function BlackPepperBadge({ dark }: { dark: boolean }) {
         animation: 'gold-badge-glow 2.4s ease-in-out infinite',
         cursor: 'default', flexShrink: 0,
       }}>
-        <Crown size={11} style={{ color: '#f59e0b', fill: 'rgba(245,158,11,0.4)', flexShrink: 0 }} />
-        <span style={{ fontSize: 9, fontWeight: 800, color: '#f59e0b', letterSpacing: '0.07em', textTransform: 'uppercase', lineHeight: 1 }}>
+        <Crown size={11} style={{ color: ink('#f59e0b', dark), fill: 'rgba(245,158,11,0.4)', flexShrink: 0 }} />
+        <span style={{ fontSize: 9, fontWeight: 800, color: ink('#f59e0b', dark), letterSpacing: '0.07em', textTransform: 'uppercase', lineHeight: 1 }}>
           {t('elite')}
         </span>
       </span>
@@ -150,7 +151,7 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
   const baseBg     = dark ? '#161b27' : '#ffffff';
   const baseBorder = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
   const textMain   = dark ? '#fff'   : '#111';
-  const textMuted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   const redBg = dark
     ? 'linear-gradient(135deg, #1f0d10 0%, #2a0f14 40%, #1a0c10 100%)'
@@ -326,7 +327,7 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
               </div>
               <p style={{
                 fontSize: 10, fontWeight: 600,
-                color: isBlack ? '#f59e0b' : isRed ? '#db142e' : '#198f41',
+                color: isBlack ? ink('#f59e0b', dark) : isRed ? '#db142e' : '#198f41',
                 margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em',
               }}>
                 {isBlack ? t('blackElite') : isRed ? t('premiumSeller') : t('roleSeller')}

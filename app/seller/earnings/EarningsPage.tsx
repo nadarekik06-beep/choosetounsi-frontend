@@ -8,6 +8,7 @@ import { useTheme } from '../SellerShell'
 import SellerOrderDrawer from '../components/SellerOrderDrawer'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
+import { ink } from '@/app/seller/ink';
 
 const PAYOUT_COLORS: Record<string, string> = {
   pending:   '#f59e0b',
@@ -55,7 +56,7 @@ export default function EarningsPage() {
   const cardBg    = dark ? '#161b27' : '#ffffff'
   const border    = dark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'
   const textMain  = dark ? '#f1f5f9' : '#0f172a'
-  const textMuted = dark ? '#64748b' : '#94a3b8'
+  const textMuted = dark ? '#94a3b8' : '#5b6472'
   const theadBg   = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc'
 
   const load = useCallback(async () => {
@@ -157,11 +158,11 @@ export default function EarningsPage() {
       {error && !loading && (
         <div style={{
           background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
-          borderRadius: 12, padding: '12px 16px', color: '#ef4444', fontSize: 13, fontWeight: 600,
+          borderRadius: 12, padding: '12px 16px', color: ink('#ef4444', dark), fontSize: 13, fontWeight: 600,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <span>⚠ {error}</span>
-          <button onClick={load} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
+          <button onClick={load} style={{ background: 'transparent', border: 'none', color: ink('#ef4444', dark), cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
             {t('retry')}
           </button>
         </div>
@@ -201,10 +202,10 @@ export default function EarningsPage() {
 
                   {/* Static KPI cards */}
                   {[
-                    { label: t('kpi.gross'),  value: fmt(kpis.gross_revenue   ?? 0), color: '#94a3b8', icon: DollarSign  },
+                    { label: t('kpi.gross'),  value: fmt(kpis.gross_revenue   ?? 0), color: ink('#94a3b8', dark), icon: DollarSign  },
                     { label: t('kpi.fees'),   value: fmt(kpis.total_commission ?? 0), color: '#db142e', icon: TrendingDown },
-                    { label: t('kpi.net'),    value: fmt(kpis.total_net        ?? 0), color: '#10b981', icon: TrendingUp   },
-                    { label: t('kpi.orders'), value: number(kpis.orders_count  ?? 0), color: '#3b82f6', icon: Package      },
+                    { label: t('kpi.net'),    value: fmt(kpis.total_net        ?? 0), color: ink('#10b981', dark), icon: TrendingUp   },
+                    { label: t('kpi.orders'), value: number(kpis.orders_count  ?? 0), color: ink('#3b82f6', dark), icon: Package      },
                   ].map(({ label, value, color, icon: Icon }) => (
                     <div key={label} style={{
                       background: cardBg, border: `1px solid ${color}28`,
@@ -231,7 +232,7 @@ export default function EarningsPage() {
                       </div>
                       <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('kpi.pending')}</span>
                     </div>
-                    <p style={{ fontSize: 18, fontWeight: 900, color: '#f59e0b', margin: '0 0 6px' }}>
+                    <p style={{ fontSize: 18, fontWeight: 900, color: ink('#f59e0b', dark), margin: '0 0 6px' }}>
                       {fmt(kpis.pending_amount ?? 0)}
                     </p>
                     {/* Breakdown: awaiting cash-in vs cash-in done (ready) */}
@@ -253,7 +254,7 @@ export default function EarningsPage() {
                       </div>
                       <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('kpi.paid')}</span>
                     </div>
-                    <p style={{ fontSize: 18, fontWeight: 900, color: '#10b981', margin: 0 }}>
+                    <p style={{ fontSize: 18, fontWeight: 900, color: ink('#10b981', dark), margin: 0 }}>
                       {fmt(kpis.paid_amount ?? 0)}
                     </p>
                   </div>
@@ -267,21 +268,21 @@ export default function EarningsPage() {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
                     {[
-                      { label: t('splitCols.gross'),    value: fmt(kpis.gross_revenue   ?? 0), color: '#94a3b8', note: t('splitCols.grossNote'),    bg: undefined },
+                      { label: t('splitCols.gross'),    value: fmt(kpis.gross_revenue   ?? 0), color: ink('#94a3b8', dark), note: t('splitCols.grossNote'),    bg: undefined },
                       { label: t('splitCols.fee'),      value: fmt(kpis.total_commission ?? 0), color: '#db142e', note: t('splitCols.feeNote'),      bg: 'rgba(219,20,46,0.03)' },
                       // Free-shipping orders: agency cost paid by the seller (already out of total_net)
-                      { label: t('splitCols.shipping'), value: fmt(kpis.total_shipping  ?? 0), color: '#b45309', note: t('splitCols.shippingNote'), bg: 'rgba(245,158,11,0.03)' },
-                      { label: t('splitCols.receive'),  value: fmt(kpis.total_net        ?? 0), color: '#10b981', note: t('splitCols.receiveNote'),  bg: 'rgba(16,185,129,0.03)' },
+                      { label: t('splitCols.shipping'), value: fmt(kpis.total_shipping  ?? 0), color: ink('#f59e0b', dark), note: t('splitCols.shippingNote'), bg: 'rgba(245,158,11,0.03)' },
+                      { label: t('splitCols.receive'),  value: fmt(kpis.total_net        ?? 0), color: ink('#10b981', dark), note: t('splitCols.receiveNote'),  bg: 'rgba(16,185,129,0.03)' },
                     ].map((col, i, cols) => (
                       <div key={col.label} style={{
                         padding: '16px 20px',
                         borderInlineEnd: i < cols.length - 1 ? `1px solid ${border}` : undefined,
                         background: col.bg,
                       }}>
-                        <p style={{ fontSize: 9, fontWeight: 800, color: col.color, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>
+                        <p style={{ fontSize: 9, fontWeight: 800, color: ink(col.color, dark), textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>
                           {col.label}
                         </p>
-                        <p style={{ fontSize: 18, fontWeight: 900, color: col.color, margin: '0 0 3px' }}>{col.value}</p>
+                        <p style={{ fontSize: 18, fontWeight: 900, color: ink(col.color, dark), margin: '0 0 3px' }}>{col.value}</p>
                         <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{col.note}</p>
                       </div>
                     ))}
@@ -313,8 +314,8 @@ export default function EarningsPage() {
                               <td style={{ ...td(true), color: textMuted }}>{row.orders}</td>
                               <td style={{ ...td(true), color: textMuted }}>{fmt(row.gross ?? 0)}</td>
                               <td style={{ ...td(true), color: '#db142e' }}>{fmt(row.commission ?? 0)}</td>
-                              <td style={{ ...td(true), color: '#b45309' }}>{Number(row.shipping ?? 0) > 0 ? '−' + fmt(row.shipping) : '—'}</td>
-                              <td style={{ ...td(true), color: '#10b981', fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
+                              <td style={{ ...td(true), color: ink('#f59e0b', dark) }}>{Number(row.shipping ?? 0) > 0 ? '−' + fmt(row.shipping) : '—'}</td>
+                              <td style={{ ...td(true), color: ink('#10b981', dark), fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -390,8 +391,8 @@ export default function EarningsPage() {
                           </td>
                           <td style={{ ...td(true), color: textMuted }}>{fmt(row.gross ?? 0)}</td>
                           <td style={{ ...td(true), color: '#db142e', fontWeight: 700 }}>{fmt(row.commission_amount ?? 0)}</td>
-                          <td style={{ ...td(true), color: '#b45309', fontWeight: 700 }}>{Number(row.seller_shipping_charge ?? 0) > 0 ? '−' + fmt(row.seller_shipping_charge) : '—'}</td>
-                          <td style={{ ...td(true), color: '#10b981', fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
+                          <td style={{ ...td(true), color: ink('#f59e0b', dark), fontWeight: 700 }}>{Number(row.seller_shipping_charge ?? 0) > 0 ? '−' + fmt(row.seller_shipping_charge) : '—'}</td>
+                          <td style={{ ...td(true), color: ink('#10b981', dark), fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
                           <td style={{ ...td(true) }}><PayoutBadge status={row.payout_status ?? 'pending'} /></td>
                           <td style={{ ...td(true), color: textMuted, fontSize: 11 }}>
                             {row.settled_at ? date(row.settled_at, 'short') : '—'}
@@ -455,7 +456,7 @@ export default function EarningsPage() {
                           <td style={{ ...td(), fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{row.batch_reference}</td>
                           <td style={{ ...td(), color: textMuted, fontFamily: 'monospace' }}>{row.batch_date ? date(row.batch_date, 'short') : '—'}</td>
                           <td style={{ ...td(true), color: textMuted }}>{row.orders_count}</td>
-                          <td style={{ ...td(true), color: '#10b981', fontWeight: 900 }}>{fmt(row.total_seller_payout ?? 0)}</td>
+                          <td style={{ ...td(true), color: ink('#10b981', dark), fontWeight: 900 }}>{fmt(row.total_seller_payout ?? 0)}</td>
                           <td style={{ ...td(true) }}><PayoutBadge status={row.status ?? 'draft'} /></td>
                           <td style={{ ...td(true), color: textMuted, fontSize: 11 }}>
                             {row.paid_at ? date(row.paid_at, 'short') : '—'}

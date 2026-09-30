@@ -16,13 +16,14 @@ import { useTranslations } from 'next-intl';
 import { PlanGate } from '@/app/components/seller/SubscriptionBadge';
 import SalesForecastDashboard from '@/app/seller/components/SalesForecastDashboard';
 import { TrendingUp } from 'lucide-react';
+import { ink } from '@/app/seller/ink';
 
 function ForecastInner() {
   const { dark } = useTheme();
   const tp = useTranslations('seller.pageHeaders');
 
   const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -33,7 +34,7 @@ function ForecastInner() {
           background: 'rgba(16,185,129,0.12)',
           border: '1px solid rgba(16,185,129,0.25)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#10b981', flexShrink: 0,
+          color: ink('#10b981', dark), flexShrink: 0,
         }}>
           <TrendingUp size={20} />
         </div>

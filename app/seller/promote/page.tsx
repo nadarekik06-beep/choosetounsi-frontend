@@ -61,7 +61,7 @@ export default function AdsHomePage() {
       <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))' }}>
         {/* Wallet */}
         <Panel title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><WalletIcon size={16} />{t('wallet.title')}</span>}
-          action={<Link href="/seller/promote/wallet" style={{ fontSize: 12, fontWeight: 800, color: GOLD, textDecoration: 'none' }}>{t('wallet.history')}</Link>}>
+          action={<Link href="/seller/promote/wallet" style={{ fontSize: 12, fontWeight: 800, color: p.gold, textDecoration: 'none' }}>{t('wallet.history')}</Link>}>
           {loading && !wallet ? <p style={{ color: p.muted, fontSize: 13 }}>{t('loading')}</p> : wallet && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -145,7 +145,7 @@ export default function AdsHomePage() {
                 </div>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <p style={{ fontSize: 12.5, fontWeight: 800, color: p.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.product_name}</p>
-                  <p style={{ fontSize: 11, color: '#16a34a', margin: '2px 0 0', fontWeight: 700 }}>{t('suggestions.est', { amount: money(s.estimated_boost_tnd) })}</p>
+                  <p style={{ fontSize: 11, color: p.positive, margin: '2px 0 0', fontWeight: 700 }}>{t('suggestions.est', { amount: money(s.estimated_boost_tnd) })}</p>
                 </div>
                 {s.already_sponsored
                   ? <span style={{ fontSize: 11, fontWeight: 800, color: p.muted }}>{t('suggestions.boosted')}</span>

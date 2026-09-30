@@ -139,9 +139,9 @@ export default function ColorImageUploader({
 
   return (
     <div>
-      <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
+      <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
         Images per Color
-        <span style={{ marginInlineStart: 8, fontSize: 9, fontWeight: 500, color: '#c4b5fd', textTransform: 'none', letterSpacing: 0 }}>
+        <span style={{ marginInlineStart: 8, fontSize: 9, fontWeight: 500, color: '#6d28d9', textTransform: 'none', letterSpacing: 0 }}>
           images switch when customer selects a color
         </span>
       </p>
@@ -162,7 +162,7 @@ export default function ColorImageUploader({
                   <span style={{ display: 'inline-block', width: 18, height: 18, borderRadius: '50%', background: opt.color_hex, border: '1px solid rgba(0,0,0,0.15)', flexShrink: 0 }} />
                 )}
                 <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>{opt.value}</span>
-                <span style={{ fontSize: 11, color: '#94a3b8', marginInlineStart: 'auto' }}>
+                <span style={{ fontSize: 11, color: '#5b6472', marginInlineStart: 'auto' }}>
                   {slot.existingUrls.length + slot.files.length}/5
                 </span>
               </div>

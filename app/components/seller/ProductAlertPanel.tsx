@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useSubscription } from '@/app/hooks/useSubscription';
 import { useTranslations } from 'next-intl';
+import { ink } from '@/app/seller/ink';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -76,7 +77,7 @@ export function AlertIndicator({ alertData, dark }: { alertData: ProductAlertDat
       fontSize: 9, fontWeight: 800,
       padding: '2px 6px', borderRadius: 999,
       background: isCritical ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)',
-      color:      isCritical ? '#ef4444'               : '#f59e0b',
+      color:      isCritical ? ink('#ef4444', dark)               : ink('#f59e0b', dark),
       border:     `1px solid ${isCritical ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`,
       animation:  isCritical ? 'alertPulse 2s ease-in-out infinite' : 'none',
       flexShrink: 0,
@@ -103,7 +104,7 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
 
   const border  = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const text    = dark ? '#fff' : '#111';
-  const muted   = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted   = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   const canUseRedFeature = plan === 'red' || plan === 'black';
 
@@ -140,11 +141,11 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
               border: `1px solid ${accentColor}30`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <AlertTriangle size={12} style={{ color: accentColor }} />
+              <AlertTriangle size={12} style={{ color: ink(accentColor, dark) }} />
             </div>
 
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 11, fontWeight: 800, color: accentColor, margin: '0 0 1px' }}>
+              <p style={{ fontSize: 11, fontWeight: 800, color: ink(accentColor, dark), margin: '0 0 1px' }}>
                 {isCritical ? t('actionRequired') : t('opportunity')}
                 {' · '}{productName}
               </p>

@@ -33,6 +33,7 @@ import ProductAlertPanel, {
   AlertIndicator,
   type ProductAlertData,
 } from '@/app/components/seller/ProductAlertPanel';
+import { ink } from '@/app/seller/ink';
 
 interface ModalState {
   open: boolean;
@@ -164,7 +165,7 @@ export default function ProductsPage() {
   const cardBg    = dark ? '#161b27' : '#ffffff';
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const textMain  = dark ? '#ffffff' : '#0f172a';
-  const textMuted = dark ? 'rgba(255,255,255,0.38)' : '#94a3b8';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const inputBg   = dark ? '#0d1117' : '#f8fafc';
   const theadBg   = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
   const rowHover  = dark ? 'rgba(255,255,255,0.03)' : '#f9fafb';
@@ -333,7 +334,7 @@ export default function ProductsPage() {
                                     {(product as any).sku ? t('sku', { sku: (product as any).sku }) : t('id', { id: product.id })}
                                   </p>
                                   {hasVariants && (
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 800, color: '#6366f1', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 5px', borderRadius: 4 }}>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 800, color: ink('#6366f1', dark), background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 5px', borderRadius: 4 }}>
                                       <Layers size={8} /> {t('variantsBadge')}
                                     </span>
                                   )}
@@ -357,17 +358,17 @@ export default function ProductsPage() {
                           {/* Stock */}
                           <td style={{ padding: '12px 20px', textAlign: 'end' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
-                              <span style={{ fontWeight: 800, color: displayStock === 0 ? '#ef4444' : displayStock <= 10 ? '#f59e0b' : textMain }}>
+                              <span style={{ fontWeight: 800, color: displayStock === 0 ? ink('#ef4444', dark) : displayStock <= 10 ? ink('#f59e0b', dark) : textMain }}>
                                 {displayStock}
-                                {displayStock === 0 && <span style={{ fontSize: 10, marginInlineStart: 4, color: '#ef4444' }}>{t('outTag')}</span>}
-                                {displayStock > 0 && displayStock <= 10 && <span style={{ fontSize: 10, marginInlineStart: 4, color: '#f59e0b' }}>{t('lowTag')}</span>}
+                                {displayStock === 0 && <span style={{ fontSize: 10, marginInlineStart: 4, color: ink('#ef4444', dark) }}>{t('outTag')}</span>}
+                                {displayStock > 0 && displayStock <= 10 && <span style={{ fontSize: 10, marginInlineStart: 4, color: ink('#f59e0b', dark) }}>{t('lowTag')}</span>}
                               </span>
                             </div>
                           </td>
 
                           {/* Status */}
                           <td style={{ padding: '12px 20px', textAlign: 'center' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999, background: product.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: product.is_active ? '#10b981' : '#ef4444', border: `1px solid ${product.is_active ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999, background: product.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: product.is_active ? ink('#10b981', dark) : ink('#ef4444', dark), border: `1px solid ${product.is_active ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
                               {product.is_active ? <><CheckCircle size={9} />{t('active')}</> : <><XCircle size={9} />{t('inactive')}</>}
                             </span>
                           </td>
@@ -384,10 +385,10 @@ export default function ProductsPage() {
                 ? 'rgba(239,68,68,0.12)'
                 : 'rgba(245,158,11,0.12)',
             color: product.is_approved
-                ? '#3b82f6'
+                ? ink('#3b82f6', dark)
                 : (product as any).rejection_reason
-                ? '#ef4444'
-                : '#f59e0b',
+                ? ink('#ef4444', dark)
+                : ink('#f59e0b', dark),
             border: `1px solid ${product.is_approved
                 ? 'rgba(59,130,246,0.25)'
                 : (product as any).rejection_reason
@@ -406,7 +407,7 @@ export default function ProductsPage() {
         {/* Reason snippet */}
         {!product.is_approved && (product as any).rejection_reason && (
             <span style={{
-                fontSize: 9, color: '#ef4444', maxWidth: 120,
+                fontSize: 9, color: ink('#ef4444', dark), maxWidth: 120,
                 overflow: 'hidden', textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap', display: 'block',
             }}
@@ -426,7 +427,7 @@ export default function ProductsPage() {
                               <button
                                 onClick={() => router.push(`/seller/products/${product.id}`)}
                                 className="act-btn"
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#94a3b8', opacity: 0.7 }}
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: ink('#94a3b8', dark), opacity: 0.7 }}
                                 title={t('view')}
                                 aria-label={t('view')}
                               >
@@ -437,7 +438,7 @@ export default function ProductsPage() {
                               <button
                                 onClick={() => handleEdit(product)}
                                 className="act-btn"
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#94a3b8', opacity: 0.7 }}
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: ink('#94a3b8', dark), opacity: 0.7 }}
                                 title={t('edit')}
                                 aria-label={t('edit')}
                               >
@@ -456,7 +457,7 @@ export default function ProductsPage() {
                                     background: 'rgba(16,185,129,0.1)',
                                     border: '1px solid rgba(16,185,129,0.3)',
                                     borderRadius: 8, cursor: 'pointer',
-                                    color: '#10b981',
+                                    color: ink('#10b981', dark),
                                     fontSize: 10, fontWeight: 800,
                                     opacity: 0.9, transition: 'all 0.15s',
                                     fontFamily: 'inherit',
@@ -472,7 +473,7 @@ export default function ProductsPage() {
                                 onClick={() => handleDelete(product.id)}
                                 disabled={deleting === product.id}
                                 className="act-btn"
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#94a3b8', opacity: deleting === product.id ? 0.4 : 0.7 }}
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: ink('#94a3b8', dark), opacity: deleting === product.id ? 0.4 : 0.7 }}
                                 title={t('delete')}
                                 aria-label={t('delete')}
                               >
@@ -504,7 +505,7 @@ export default function ProductsPage() {
                       <td colSpan={7} style={{ padding: '56px 20px', textAlign: 'center' }}>
                         <Package size={28} style={{ margin: '0 auto 10px', display: 'block', color: textMuted, opacity: 0.4 }} />
                         <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>{t('empty')}</p>
-                        <p style={{ fontSize: 11, color: textMuted, opacity: 0.6, margin: 0 }}>{t('emptyHint')}</p>
+                        <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>{t('emptyHint')}</p>
                       </td>
                     </tr>
                   )}

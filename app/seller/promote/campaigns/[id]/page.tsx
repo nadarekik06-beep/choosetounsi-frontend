@@ -67,7 +67,7 @@ function CampaignDetail() {
   return (
     <PageFrame
       title={c.product?.name ?? `#${c.id}`}
-      subtitle={<Link href="/seller/promote" style={{ color: GOLD, textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}><ArrowLeft size={14} className="rtl-flip" />{t('detail.back')}</Link>}
+      subtitle={<Link href="/seller/promote" style={{ color: p.gold, textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}><ArrowLeft size={14} className="rtl-flip" />{t('detail.back')}</Link>}
       actions={
         <>
           {c.can.pause && <Button variant="ghost" disabled={busy} onClick={() => act(() => sellerAdsApi.pause(c.id))}>{t('detail.pause')}</Button>}

@@ -189,44 +189,44 @@ export default function FullReceiptPage() {
                       {t('range', { from: d(batches[batches.length - 1].batch_date), to: d(batches[0].batch_date) })}
                     </p>
                   ) : (
-                    <p style={{ fontSize: 12, color: '#94a3b8' }}>{t('noSettlement')}</p>
+                    <p style={{ fontSize: 12, color: '#5b6472' }}>{t('noSettlement')}</p>
                   )}
                 </div>
               </div>
             </div>
 
             {/* Global KPI summary */}
-            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 10 }}>
+            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#5b6472', marginBottom: 10 }}>
               {t('summary')}
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: '#e2e8f0', borderRadius: 10, overflow: 'hidden', marginBottom: 8 }}>
               {[
-                { label: t('kpi.orders'),     value: number(totals.orders_count),   color: '#3b82f6' },
-                { label: t('kpi.gross'),      value: fmt(totals.gross_revenue),     color: '#94a3b8' },
+                { label: t('kpi.orders'),     value: number(totals.orders_count),   color: '#1d4ed8' },
+                { label: t('kpi.gross'),      value: fmt(totals.gross_revenue),     color: '#5b6472' },
                 { label: t('kpi.commission'), value: fmt(totals.total_commission),  color: '#db142e' },
-                { label: t('kpi.net'),        value: fmt(totals.total_net),         color: '#10b981' },
+                { label: t('kpi.net'),        value: fmt(totals.total_net),         color: '#047857' },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{ background: '#f8fafc', padding: '14px 16px' }}>
-                  <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 6 }}>{label}</p>
+                  <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#5b6472', marginBottom: 6 }}>{label}</p>
                   <p style={{ fontSize: 15, fontWeight: 900, color }}>{value}</p>
                 </div>
               ))}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, background: '#e2e8f0', borderRadius: 10, overflow: 'hidden', marginBottom: 28 }}>
               {[
-                { label: t('kpi.paid'),    value: fmt(totals.total_paid),    color: '#10b981' },
-                { label: t('kpi.ready'),   value: fmt(totals.total_ready),   color: '#3b82f6' },
-                { label: t('kpi.pending'), value: fmt(totals.total_pending), color: '#f59e0b' },
+                { label: t('kpi.paid'),    value: fmt(totals.total_paid),    color: '#047857' },
+                { label: t('kpi.ready'),   value: fmt(totals.total_ready),   color: '#1d4ed8' },
+                { label: t('kpi.pending'), value: fmt(totals.total_pending), color: '#92400e' },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{ background: '#f8fafc', padding: '14px 16px' }}>
-                  <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 6 }}>{label}</p>
+                  <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#5b6472', marginBottom: 6 }}>{label}</p>
                   <p style={{ fontSize: 15, fontWeight: 900, color }}>{value}</p>
                 </div>
               ))}
             </div>
 
             {/* Settlements history table */}
-            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 10 }}>
+            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#5b6472', marginBottom: 10 }}>
               {t('historyTitle', { count: batches.length })}
             </p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 0 }}>
@@ -251,7 +251,7 @@ export default function FullReceiptPage() {
               <tbody>
                 {batches.length === 0 && (
                   <tr>
-                    <td colSpan={8} style={{ padding: '32px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                    <td colSpan={8} style={{ padding: '32px', textAlign: 'center', color: '#5b6472', fontSize: 13 }}>
                       {t('noneConfirmed')}
                     </td>
                   </tr>
@@ -263,8 +263,8 @@ export default function FullReceiptPage() {
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#64748b' }}>{b.orders_count}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#475569', fontWeight: 600 }}>{fmt(b.total_orders_gross)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#db142e', fontWeight: 700 }}>−{fmt(b.total_commission)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#3b82f6', fontWeight: 600 }}>{fmt(b.total_delivery_fees)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#10b981', fontWeight: 800 }}>{fmt(b.total_seller_payout)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#1d4ed8', fontWeight: 600 }}>{fmt(b.total_delivery_fees)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'end', color: '#047857', fontWeight: 800 }}>{fmt(b.total_seller_payout)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'end', color: '#64748b', fontSize: 11 }}>
                       {b.paid_at ? d(b.paid_at) : '—'}
                     </td>
@@ -281,13 +281,13 @@ export default function FullReceiptPage() {
                   <td style={{ padding: '11px 12px', textAlign: 'end', fontSize: 11 }}>
                     {fmt(batches.reduce((s, b) => s + Number(b.total_orders_gross), 0))}
                   </td>
-                  <td style={{ padding: '11px 12px', textAlign: 'end', color: '#fca5a5', fontSize: 11 }}>
+                  <td style={{ padding: '11px 12px', textAlign: 'end', color: '#b91c1c', fontSize: 11 }}>
                     −{fmt(batches.reduce((s, b) => s + Number(b.total_commission), 0))}
                   </td>
-                  <td style={{ padding: '11px 12px', textAlign: 'end', color: '#93c5fd', fontSize: 11 }}>
+                  <td style={{ padding: '11px 12px', textAlign: 'end', color: '#1d4ed8', fontSize: 11 }}>
                     {fmt(batches.reduce((s, b) => s + Number(b.total_delivery_fees), 0))}
                   </td>
-                  <td style={{ padding: '11px 12px', textAlign: 'end', color: '#6ee7b7', fontSize: 13 }}>
+                  <td style={{ padding: '11px 12px', textAlign: 'end', color: '#047857', fontSize: 13 }}>
                     {fmt(batches.reduce((s, b) => s + Number(b.total_seller_payout), 0))}
                   </td>
                   <td />
@@ -299,15 +299,15 @@ export default function FullReceiptPage() {
             {/* Remaining balance note */}
             {(totals.total_ready > 0 || totals.total_pending > 0) && (
               <div style={{ marginTop: 20, background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 12, padding: '14px 20px' }}>
-                <p style={{ fontSize: 12, fontWeight: 800, color: '#3b82f6', marginBottom: 6 }}>
+                <p style={{ fontSize: 12, fontWeight: 800, color: '#1d4ed8', marginBottom: 6 }}>
                   {t('balanceTitle')}
                 </p>
                 <p style={{ fontSize: 11, color: '#475569' }}>
                   {totals.total_ready > 0 && (
-                    <>{t.rich('balanceReady', { amount: fmt(totals.total_ready), b: (chunks) => <strong style={{ color: '#3b82f6' }}>{chunks}</strong> })} </>
+                    <>{t.rich('balanceReady', { amount: fmt(totals.total_ready), b: (chunks) => <strong style={{ color: '#1d4ed8' }}>{chunks}</strong> })} </>
                   )}
                   {totals.total_pending > 0 && (
-                    <>{t.rich('balancePending', { amount: fmt(totals.total_pending), b: (chunks) => <strong style={{ color: '#f59e0b' }}>{chunks}</strong> })}</>
+                    <>{t.rich('balancePending', { amount: fmt(totals.total_pending), b: (chunks) => <strong style={{ color: '#92400e' }}>{chunks}</strong> })}</>
                   )}
                 </p>
               </div>
@@ -317,7 +317,7 @@ export default function FullReceiptPage() {
             <div style={{ marginTop: 36, paddingTop: 20, borderTop: '2px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
               <div>
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 3 }}>{t('thanks')}</p>
-                <p style={{ fontSize: 10, color: '#94a3b8' }}>{t('disclaimer')}</p>
+                <p style={{ fontSize: 10, color: '#5b6472' }}>{t('disclaimer')}</p>
               </div>
               <div style={{ textAlign: 'end', flexShrink: 0 }}>
                 <p style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 600 }}>{t('generatedOn', { date: generatedDate })}</p>
@@ -337,6 +337,6 @@ const wrap: React.CSSProperties = { minHeight: '100vh', display: 'flex', flexDir
 const spinner: React.CSSProperties = { width: 36, height: 36, border: '3px solid #e2e8f0', borderTopColor: '#db142e', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }
 const btn = (bg: string): React.CSSProperties => ({ padding: '9px 20px', background: bg, color: '#fff', fontFamily: "'Barlow',sans-serif", fontWeight: 700, fontSize: 13, border: 'none', borderRadius: 8, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 })
 const card: React.CSSProperties = { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 16px' }
-const lbl:  React.CSSProperties = { fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#94a3b8', marginBottom: 6 }
+const lbl:  React.CSSProperties = { fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#5b6472', marginBottom: 6 }
 const name: React.CSSProperties = { fontSize: 15, fontWeight: 800, color: '#1e293b', marginBottom: 4 }
 const line: React.CSSProperties = { fontSize: 12, color: '#475569', marginBottom: 2, fontWeight: 500 }

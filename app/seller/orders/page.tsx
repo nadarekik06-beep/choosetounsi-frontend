@@ -14,6 +14,7 @@ import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { useStatusLabel } from '@/lib/i18n/useStatusLabel';
 import { useWilayaLabel } from '@/lib/i18n/wilayas';
+import { ink } from '@/app/seller/ink';
 
 /** 3-decimal DT amounts, as on invoices */
 function useDt() {
@@ -162,14 +163,14 @@ function CommissionSummaryCard({ commission, dark, border, bgSub }: {
   const columns = [
     { label: t('summary.gross'),    value: bare(commission.total_gross),             color: dark ? '#93c5fd' : '#1e40af', bg: dark ? 'rgba(59,130,246,0.08)' : '#eff6ff', bd: dark ? 'rgba(59,130,246,0.15)' : '#bfdbfe', note: discount > 0 ? t('summary.beforeCoupon') : t('summary.customerPaid') },
     ...(discount > 0 ? [
-      { label: t('summary.coupon'), value: '−' + bare(discount),                    color: '#f59e0b', bg: 'rgba(245,158,11,0.06)', bd: 'rgba(245,158,11,0.18)', note: t('summary.customerPaidAmount', { amount: dt(net) }) },
+      { label: t('summary.coupon'), value: '−' + bare(discount),                    color: ink('#f59e0b', dark), bg: 'rgba(245,158,11,0.06)', bd: 'rgba(245,158,11,0.18)', note: t('summary.customerPaidAmount', { amount: dt(net) }) },
     ] : []),
-    { label: t('summary.fee'),      value: bare(commission.total_commission_amount), color: '#ef4444', bg: 'rgba(239,68,68,0.06)', bd: 'rgba(239,68,68,0.18)', note: discount > 0 ? t('summary.on', { amount: dt(net) }) : t('summary.commission') },
+    { label: t('summary.fee'),      value: bare(commission.total_commission_amount), color: ink('#ef4444', dark), bg: 'rgba(239,68,68,0.06)', bd: 'rgba(239,68,68,0.18)', note: discount > 0 ? t('summary.on', { amount: dt(net) }) : t('summary.commission') },
     // Free shipping offered by the seller: the agency cost comes off their earnings.
     ...(shipping > 0 ? [
       { label: t('summary.shipping'), value: '−' + bare(shipping),                   color: '#b45309', bg: 'rgba(245,158,11,0.06)', bd: 'rgba(245,158,11,0.18)', note: t('summary.shippingNote') },
     ] : []),
-    { label: t('summary.receive'),  value: bare(shipping > 0 ? commission.net_after_shipping : commission.total_seller_net), color: '#10b981', bg: 'rgba(16,185,129,0.06)', bd: 'rgba(16,185,129,0.18)', note: shipping > 0 ? t('summary.netAfterFeesShipping') : t('summary.netAfterFees') },
+    { label: t('summary.receive'),  value: bare(shipping > 0 ? commission.net_after_shipping : commission.total_seller_net), color: ink('#10b981', dark), bg: 'rgba(16,185,129,0.06)', bd: 'rgba(16,185,129,0.18)', note: shipping > 0 ? t('summary.netAfterFeesShipping') : t('summary.netAfterFees') },
   ];
   return (
     <div style={{ marginTop: 2 }}>
@@ -180,9 +181,9 @@ function CommissionSummaryCard({ commission, dark, border, bgSub }: {
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns.length}, 1fr)`, gap: 8 }}>
         {columns.map(col => (
           <div key={col.label} style={{ background: col.bg, border: `1px solid ${col.bd}`, borderRadius: 12, padding: '10px 12px', textAlign: 'center' as const }}>
-            <p style={{ fontSize: 9, fontWeight: 800, color: col.color, margin: '0 0 5px', opacity: 0.8, textTransform: 'uppercase' as const }}>{col.label}</p>
-            <p style={{ fontSize: 15, fontWeight: 900, color: col.color, margin: '0 0 3px' }}>{col.value}</p>
-            <p style={{ fontSize: 9, color: col.color, margin: 0, opacity: 0.65 }}>{currency} · {col.note}</p>
+            <p style={{ fontSize: 9, fontWeight: 800, color: ink(col.color, dark), margin: '0 0 5px', opacity: 0.8, textTransform: 'uppercase' as const }}>{col.label}</p>
+            <p style={{ fontSize: 15, fontWeight: 900, color: ink(col.color, dark), margin: '0 0 3px' }}>{col.value}</p>
+            <p style={{ fontSize: 9, color: ink(col.color, dark), margin: 0, opacity: dark ? 0.65 : 1 }}>{currency} · {col.note}</p>
           </div>
         ))}
       </div>
@@ -222,11 +223,11 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <p style={{ fontWeight: 800, color: item.item_status ? (dark ? '#6b7280' : '#94a3b8') : textMain, fontSize: 13, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: item.item_status ? 'line-through' : 'none' }}>
+          <p style={{ fontWeight: 800, color: item.item_status ? (dark ? '#6b7280' : '#5b6472') : textMain, fontSize: 13, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: item.item_status ? 'line-through' : 'none' }}>
             {item.product_name}
           </p>
           {item.item_status === 'returned' && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'rgba(219,20,46,0.15)', color: '#db142e', border: '1px solid rgba(219,20,46,0.35)' }}>{t('returned')}</span>}
-          {item.item_status === 'exchanged' && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.35)' }}>{t('exchanged')}</span>}
+          {item.item_status === 'exchanged' && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'rgba(245,158,11,0.15)', color: ink('#f59e0b', dark), border: '1px solid rgba(245,158,11,0.35)' }}>{t('exchanged')}</span>}
         </div>
 
         {hasVariant && (
@@ -248,7 +249,7 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
         {!hasVariant && <p style={{ fontSize: 11, color: textMuted, margin: '0 0 6px' }}>{t('simpleProduct')}</p>}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: dark ? 'rgba(255,255,255,0.5)' : '#64748b', background: dark ? 'rgba(255,255,255,0.06)' : '#f1f5f9', border: `1px solid ${border}`, padding: '2px 8px', borderRadius: 5 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: dark ? 'rgba(255,255,255,0.5)' : '#5b6472', background: dark ? 'rgba(255,255,255,0.06)' : '#f1f5f9', border: `1px solid ${border}`, padding: '2px 8px', borderRadius: 5 }}>
             {t('qty', { count: item.quantity })}
           </span>
           <span style={{ fontSize: 11, color: textMuted }}>{t('perUnit', { price: dt(item.unit_price) })}</span>
@@ -257,7 +258,7 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
       </div>
 
       <div style={{ textAlign: 'end', flexShrink: 0 }}>
-        <p style={{ fontWeight: 900, color: '#3b82f6', fontSize: 14, margin: 0 }}>{bare(item.total)}</p>
+        <p style={{ fontWeight: 900, color: ink('#3b82f6', dark), fontSize: 14, margin: 0 }}>{bare(item.total)}</p>
         <p style={{ fontSize: 9, fontWeight: 700, color: textMuted, margin: '2px 0 0', textTransform: 'uppercase' }}>{currency}</p>
       </div>
     </div>
@@ -283,7 +284,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
   const bgSub     = dark ? '#1e2535' : '#f8fafc';
   const border    = dark ? 'rgba(255,255,255,0.08)' : '#e2e8f0';
   const textMain  = dark ? '#fff'    : '#0f172a';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#64748b';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   useEffect(() => {
     ordersApi.getOne(orderId)
@@ -332,7 +333,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
         <div style={{ overflowY: 'auto', flex: 1, padding: 24 }}>
           {loading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
-              <Loader2 size={24} style={{ animation: 'spin 0.8s linear infinite', color: '#3b82f6' }} />
+              <Loader2 size={24} style={{ animation: 'spin 0.8s linear infinite', color: ink('#3b82f6', dark) }} />
             </div>
           ) : error && !detail ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(219,20,46,0.1)', border: '1px solid rgba(219,20,46,0.2)', borderRadius: 12, padding: '12px 16px', color: '#db142e', fontSize: 13 }}>
@@ -343,12 +344,12 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
 
               {/* Feedback */}
               {successMsg && (
-                <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 10, padding: '10px 14px', color: '#10b981', fontSize: 12, fontWeight: 600 }}>
+                <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 10, padding: '10px 14px', color: ink('#10b981', dark), fontSize: 12, fontWeight: 600 }}>
                   ✓ {successMsg}
                 </div>
               )}
               {error && (
-                <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, padding: '10px 14px', color: '#ef4444', fontSize: 12, fontWeight: 600 }}>
+                <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, padding: '10px 14px', color: ink('#ef4444', dark), fontSize: 12, fontWeight: 600 }}>
                   {error}
                 </div>
               )}
@@ -389,7 +390,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <Package size={14} color="#3b82f6" />
                   <h3 style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>{t('yourItems')}</h3>
-                  <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.2)', padding: '1px 7px', borderRadius: 4 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(59,130,246,0.1)', color: ink('#3b82f6', dark), border: '1px solid rgba(59,130,246,0.2)', padding: '1px 7px', borderRadius: 4 }}>
                     {t('itemCount', { count: detail.items.length })}
                   </span>
                 </div>
@@ -404,17 +405,17 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                         <span style={{ fontWeight: 800, color: textMain, fontSize: 13 }}>{dt(detail.seller_subtotal)}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: `1px solid ${border}` }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: ink('#f59e0b', dark) }}>
                           {t('coupon')}{detail.coupon_code ? ` (${detail.coupon_code})` : ''}
                           {detail.coupon_type === 'percentage' && detail.coupon_value ? ` · ${Number(detail.coupon_value)}%` : ''}
                         </span>
-                        <span style={{ fontWeight: 800, color: '#f59e0b', fontSize: 13 }}>−{dt(detail.discount_amount)}</span>
+                        <span style={{ fontWeight: 800, color: ink('#f59e0b', dark), fontSize: 13 }}>−{dt(detail.discount_amount)}</span>
                       </div>
                     </>
                   )}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: dark ? 'rgba(59,130,246,0.08)' : '#eff6ff', borderTop: `1px solid ${border}` }}>
                     <span style={{ fontSize: 12, fontWeight: 800, color: dark ? '#93c5fd' : '#1e40af' }}>{Number(detail.discount_amount ?? 0) > 0 ? t('totalAfterCoupon') : t('yourSubtotal')}</span>
-                    <span style={{ fontWeight: 900, color: '#3b82f6', fontSize: 15 }}>{dt(detail.seller_total ?? detail.seller_subtotal)}</span>
+                    <span style={{ fontWeight: 900, color: ink('#3b82f6', dark), fontSize: 15 }}>{dt(detail.seller_total ?? detail.seller_subtotal)}</span>
                   </div>
                   {/* Free shipping: the customer paid 0, the agency cost comes off the seller's earnings */}
                   {Number(detail.commission?.shipping_paid_by_seller ?? 0) > 0 && (
@@ -444,8 +445,8 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                     <span style={{ fontSize: 18 }}>⏳</span>
                   </div>
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 800, color: '#f59e0b', margin: 0 }}>{t('waitingTitle')}</p>
-                    <p style={{ fontSize: 11, color: dark ? 'rgba(255,255,255,0.4)' : '#64748b', margin: '2px 0 0' }}>{t('waitingBody')}</p>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: ink('#f59e0b', dark), margin: 0 }}>{t('waitingTitle')}</p>
+                    <p style={{ fontSize: 11, color: dark ? 'rgba(255,255,255,0.55)' : '#5b6472', margin: '2px 0 0' }}>{t('waitingBody')}</p>
                   </div>
                 </div>
               )}
@@ -458,8 +459,8 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                       <Package size={16} color="#10b981" />
                     </div>
                     <div>
-                      <p style={{ fontSize: 13, fontWeight: 800, color: '#10b981', margin: 0 }}>{t('readyTitle')}</p>
-                      <p style={{ fontSize: 11, color: dark ? 'rgba(255,255,255,0.4)' : '#64748b', margin: '2px 0 0' }}>
+                      <p style={{ fontSize: 13, fontWeight: 800, color: ink('#10b981', dark), margin: 0 }}>{t('readyTitle')}</p>
+                      <p style={{ fontSize: 11, color: dark ? 'rgba(255,255,255,0.55)' : '#5b6472', margin: '2px 0 0' }}>
                         {t('readyBody')}
                       </p>
                     </div>
@@ -467,7 +468,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
 
                   {[t('steps.stock'), t('steps.pack'), t('steps.invoice')].map((step, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 12, fontWeight: 600, color: dark ? 'rgba(255,255,255,0.6)' : '#374151' }}>
-                      <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: '#10b981' }}>
+                      <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: ink('#10b981', dark) }}>
                         {i + 1}
                       </div>
                       {step}
@@ -505,8 +506,8 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                     <span style={{ fontSize: 18 }}>✅</span>
                   </div>
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 800, color: '#10b981', margin: 0 }}>{t('packedTitle')}</p>
-                    <p style={{ fontSize: 11, color: dark ? 'rgba(255,255,255,0.4)' : '#64748b', margin: '2px 0 0' }}>{t('packedBody')}</p>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: ink('#10b981', dark), margin: 0 }}>{t('packedTitle')}</p>
+                    <p style={{ fontSize: 11, color: dark ? 'rgba(255,255,255,0.55)' : '#5b6472', margin: '2px 0 0' }}>{t('packedBody')}</p>
                   </div>
                 </div>
               )}
@@ -564,7 +565,7 @@ export default function OrdersPage() {
   const cardBg    = dark ? '#161b27' : '#ffffff';
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const textMain  = dark ? '#ffffff' : '#0f172a';
-  const textMuted = dark ? 'rgba(255,255,255,0.38)' : '#94a3b8';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const inputBg   = dark ? '#0d1117' : '#f8fafc';
   const theadBg   = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
   const rowHover  = dark ? 'rgba(255,255,255,0.03)' : '#f9fafb';
@@ -618,7 +619,7 @@ export default function OrdersPage() {
       <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}>
-            <Loader2 size={24} style={{ animation: 'spin 0.8s linear infinite', color: '#3b82f6' }} />
+            <Loader2 size={24} style={{ animation: 'spin 0.8s linear infinite', color: ink('#3b82f6', dark) }} />
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -670,7 +671,7 @@ export default function OrdersPage() {
                     <td style={{ padding: '13px 20px', textAlign: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                         {order.status === 'confirmed' && (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 999, background: dark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.08)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', whiteSpace: 'nowrap', animation: 'confirmedPulse 2s ease-in-out infinite' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 999, background: dark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.08)', color: ink('#3b82f6', dark), border: '1px solid rgba(59,130,246,0.3)', whiteSpace: 'nowrap', animation: 'confirmedPulse 2s ease-in-out infinite' }}>
                             {t('prepareNow')}
                           </span>
                         )}
@@ -689,7 +690,7 @@ export default function OrdersPage() {
                     <td colSpan={9} style={{ padding: '56px 20px', textAlign: 'center' }}>
                       <ShoppingBag size={28} style={{ margin: '0 auto 10px', display: 'block', color: textMuted, opacity: 0.4 }} />
                       <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>{t('empty')}</p>
-                      <p style={{ fontSize: 11, color: textMuted, opacity: 0.6, margin: 0 }}>{t('emptyHint')}</p>
+                      <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>{t('emptyHint')}</p>
                     </td>
                   </tr>
                 )}

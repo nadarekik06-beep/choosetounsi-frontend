@@ -12,6 +12,8 @@ import { useSubscription, type FeatureKey } from '@/app/hooks/useSubscription';
 import { PLAN_META } from '@/lib/subscriptionApi';
 import { Lock, Sparkles, Zap, Crown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useTheme } from '@/app/seller/SellerShell';
+import { ink } from '@/app/seller/ink';
 
 // ─── SubscriptionBadge ────────────────────────────────────────────────────────
 
@@ -22,8 +24,10 @@ interface BadgeProps {
   dark?: boolean;
 }
 
-export function SubscriptionBadge({ size = 'md', compact = false, dark = true }: BadgeProps) {
+export function SubscriptionBadge({ size = 'md', compact = false, dark: darkProp }: BadgeProps) {
   const { plan, loading } = useSubscription();
+  const theme = useTheme();
+  const dark = darkProp ?? theme.dark;
 
   if (loading) {
     return (
@@ -86,7 +90,7 @@ export function SubscriptionBadge({ size = 'md', compact = false, dark = true }:
       borderRadius: 999,
       background: c.bg,
       border: `1px solid ${c.border}`,
-      color: c.text,
+      color: ink(c.text, dark),
       fontSize: size === 'sm' ? 10 : 11,
       fontWeight: 800,
       letterSpacing: '0.04em',
@@ -157,7 +161,7 @@ export function UpgradeBanner({ feature, dark = true }: { feature: FeatureKey; d
   const cardBg  = dark ? '#161b27' : '#ffffff';
   const border  = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const textMain = dark ? '#ffffff' : '#111827';
-  const textMuted= dark ? 'rgba(255,255,255,0.4)' : '#6b7280';
+  const textMuted= dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   return (
     <div style={{

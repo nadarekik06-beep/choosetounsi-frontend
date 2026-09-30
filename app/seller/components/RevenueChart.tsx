@@ -23,12 +23,12 @@ function CustomTooltip({ active, payload, label, dark }: any) {
       boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
       minWidth: 160,
     }}>
-      <p style={{ fontSize:10, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.08em', color: dark?'rgba(255,255,255,0.4)':'#94a3b8', marginBottom:8 }}>
+      <p style={{ fontSize:10, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.08em', color: dark?'rgba(255,255,255,0.55)':'#5b6472', marginBottom:8 }}>
         {label}
       </p>
       {payload.map((entry: any) => (
         <div key={entry.dataKey} style={{ display:'flex', justifyContent:'space-between', gap:16, marginBottom:4 }}>
-          <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, color:dark?'rgba(255,255,255,0.5)':'#64748b' }}>
+          <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, color:dark?'rgba(255,255,255,0.5)':'#5b6472' }}>
             <span style={{ width:8, height:8, borderRadius:'50%', background:entry.color, display:'inline-block' }}/>
             {entry.dataKey === 'revenue' ? t('revenue') : t('orders')}
           </span>
@@ -49,9 +49,9 @@ export default function RevenueChart({ data }: RevenueChartProps) {
   const bg       = dark ? '#161b27' : '#ffffff';
   const border   = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const gridColor= dark ? 'rgba(255,255,255,0.05)' : '#f1f5f9';
-  const tickColor= dark ? 'rgba(255,255,255,0.3)' : '#94a3b8';
+  const tickColor= dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const textMain = dark ? '#ffffff' : '#0f172a';
-  const textMuted= dark ? 'rgba(255,255,255,0.4)' : '#94a3b8';
+  const textMuted= dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   return (
     <div style={{
@@ -88,7 +88,10 @@ export default function RevenueChart({ data }: RevenueChartProps) {
 
           <Legend iconType="circle" iconSize={8}
             wrapperStyle={{ fontSize:'11px', paddingTop:'14px', color:tickColor }}
-            formatter={(val) => val === 'revenue' ? t('revenueWithCurrency', { currency }) : t('orders')}/>
+            formatter={(val) => (
+              // Recharts paints legend text in the series colour; keep it readable on both themes
+              <span style={{ color: textMuted }}>{val === 'revenue' ? t('revenueWithCurrency', { currency }) : t('orders')}</span>
+            )}/>
 
           <Area yAxisId="revenue" type="monotone" dataKey="revenue"
             stroke="#3B82F6" strokeWidth={2.5} fill="url(#gradRevenueDark)"

@@ -13,6 +13,7 @@ import { blackPepperApi, type FunnelInsight } from '@/lib/blackPepperApi'; // â†
 import SmartActionButton from '@/app/components/seller/black/SmartActionButton';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
+import { ink } from '@/app/seller/ink';
 
 const GOLD = '#f59e0b';
 
@@ -49,7 +50,7 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
   useEffect(() => { load(); }, [load]);
 
   const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const cardBg    = dark ? '#0f0d0a' : '#fffdf5';
   const innerBg   = dark ? '#141209' : '#fff';
   const border    = 'rgba(245,158,11,0.2)';
@@ -75,7 +76,7 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
         <div style={{
           width: 38, height: 38, borderRadius: 11, flexShrink: 0,
           background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink('#3b82f6', dark),
         }}>
           <Eye size={18} />
         </div>
@@ -85,7 +86,7 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
             {!loading && count > 0 && (
               <span style={{
                 fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999,
-                background: 'rgba(239,68,68,0.15)', color: '#ef4444',
+                background: 'rgba(239,68,68,0.15)', color: ink('#ef4444', dark),
                 border: '1px solid rgba(239,68,68,0.3)', textTransform: 'uppercase' as const,
                 letterSpacing: '0.06em',
               }}>
@@ -95,7 +96,7 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
             {!loading && count === 0 && data !== null && (
               <span style={{
                 fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999,
-                background: 'rgba(16,185,129,0.15)', color: '#10b981',
+                background: 'rgba(16,185,129,0.15)', color: ink('#10b981', dark),
                 border: '1px solid rgba(16,185,129,0.3)', textTransform: 'uppercase' as const,
               }}>{t('allGood')}</span>
             )}
@@ -125,11 +126,11 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
 
           {!loading && error && (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <p style={{ fontSize: 12, color: '#ef4444', margin: '0 0 8px' }}>{t('loadError')}</p>
+              <p style={{ fontSize: 12, color: ink('#ef4444', dark), margin: '0 0 8px' }}>{t('loadError')}</p>
               <button
                 onClick={load}
                 style={{
-                  fontSize: 11, fontWeight: 700, color: GOLD,
+                  fontSize: 11, fontWeight: 700, color: ink(GOLD, dark),
                   background: `${GOLD}12`, border: `1px solid ${GOLD}30`,
                   borderRadius: 7, padding: '5px 12px', cursor: 'pointer',
                 }}
@@ -147,7 +148,7 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
             }}>
               <CheckCircle size={18} color="#10b981" />
               <div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#10b981', margin: '0 0 2px' }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: ink('#10b981', dark), margin: '0 0 2px' }}>
                   {t('okTitle')}
                 </p>
                 <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>
@@ -195,9 +196,9 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
                       {[
-                        { label: t('stats.visitors'),    value: number(item.views),      color: '#3b82f6' },
-                        { label: t('stats.bought'),      value: number(item.units_sold), color: item.units_sold > 0 ? '#10b981' : '#ef4444' },
-                        { label: t('stats.opportunity'), value: price(item.opportunity_tnd, { maximumFractionDigits: 0 }), color: GOLD },
+                        { label: t('stats.visitors'),    value: number(item.views),      color: ink('#3b82f6', dark) },
+                        { label: t('stats.bought'),      value: number(item.units_sold), color: item.units_sold > 0 ? ink('#10b981', dark) : ink('#ef4444', dark) },
+                        { label: t('stats.opportunity'), value: price(item.opportunity_tnd, { maximumFractionDigits: 0 }), color: ink(GOLD, dark) },
                       ].map(({ label, value, color }) => (
                         <div key={label} style={{
                           background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',

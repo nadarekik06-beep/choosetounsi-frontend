@@ -168,7 +168,7 @@ function Wizard() {
         {STEPS.map((s, i) => (
           <li key={s} aria-current={s === step ? 'step' : undefined} style={{
             flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800,
-            background: s === step ? RED : i < idx ? `${GOLD}22` : p.cardAlt, color: s === step ? '#fff' : i < idx ? GOLD : p.muted, border: `1px solid ${p.border}`,
+            background: s === step ? RED : i < idx ? `${GOLD}22` : p.cardAlt, color: s === step ? '#fff' : i < idx ? p.gold : p.muted, border: `1px solid ${p.border}`,
           }}>
             {i < idx ? <Check size={12} /> : <span>{i + 1}</span>}{t(`wizard.steps.${s}`)}
           </li>
@@ -248,7 +248,7 @@ function Wizard() {
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               {config.tier_click_discount > 0 && <Notice tone="success">{t('wizard.budget.discount', { pct: Math.round(config.tier_click_discount * 100) })}</Notice>}
-              <button type="button" onClick={() => setAdvanced(a => !a)} aria-expanded={advanced} style={{ marginTop: 10, background: 'none', border: 'none', color: GOLD, fontWeight: 800, fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+              <button type="button" onClick={() => setAdvanced(a => !a)} aria-expanded={advanced} style={{ marginTop: 10, background: 'none', border: 'none', color: p.gold, fontWeight: 800, fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
                 {t('wizard.budget.advanced')} {advanced ? '▴' : '▾'}
               </button>
             </div>

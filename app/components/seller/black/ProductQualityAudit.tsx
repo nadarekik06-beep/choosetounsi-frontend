@@ -19,6 +19,7 @@ import {
 import { blackPepperApi, type QualityAuditProduct } from '@/lib/blackPepperApi';
 import SmartActionButton from '@/app/components/seller/black/SmartActionButton';
 import { useTranslations } from 'next-intl';
+import { ink } from '@/app/seller/ink';
 
 const GOLD = '#f59e0b';
 
@@ -106,7 +107,7 @@ function ProductCard({
   const t = useTranslations('seller.quality');
   const label = t(`score.${scoreKey(product.score)}`);
   const txtMain = dark ? '#f1f5f9' : '#0f172a';
-  const txtMut  = dark ? 'rgba(255,255,255,0.38)' : '#64748b';
+  const txtMut  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const cardBg  = dark ? '#13110e' : '#ffffff';
 
   return (
@@ -198,7 +199,7 @@ function DetailPanel({ product, dark, onClose }: {
   const { main, bg, border } = scoreColor(product.score);
   const t = useTranslations('seller.quality');
   const txtMain = dark ? '#f1f5f9' : '#0f172a';
-  const txtMut  = dark ? 'rgba(255,255,255,0.4)' : '#64748b';
+  const txtMut  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const panelBg = dark ? '#13110e' : '#ffffff';
   const innerBg = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
   const divider = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
@@ -242,7 +243,7 @@ function DetailPanel({ product, dark, onClose }: {
           border: '1px solid rgba(16,185,129,0.2)',
         }}>
           <CheckCircle size={18} color="#10b981"/>
-          <p style={{ fontSize: 13, fontWeight: 700, color: '#10b981', margin: 0 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: ink('#10b981', dark), margin: 0 }}>
             {t('completeLong')}
           </p>
         </div>
@@ -295,7 +296,7 @@ function StatPill({ label, value, color, dark }: { label: string; value: string 
       boxShadow: dark ? 'none' : '0 2px 10px rgba(0,0,0,0.06)',
     }}>
       <p style={{ fontSize: 24, fontWeight: 900, color, margin: '0 0 4px', letterSpacing: '-0.02em' }}>{value}</p>
-      <p style={{ fontSize: 10, fontWeight: 800, color: dark ? 'rgba(255,255,255,0.35)' : '#94a3b8', margin: 0, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{label}</p>
+      <p style={{ fontSize: 10, fontWeight: 800, color: dark ? 'rgba(255,255,255,0.55)' : '#5b6472', margin: 0, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{label}</p>
     </div>
   );
 }
@@ -328,7 +329,7 @@ export default function ProductQualityAudit({ dark }: { dark: boolean }) {
   }, [selected]);
 
   const txtMain = dark ? '#f1f5f9' : '#0f172a';
-  const txtMut  = dark ? 'rgba(255,255,255,0.38)' : '#64748b';
+  const txtMut  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const cardBg  = dark ? 'rgba(255,255,255,0.03)' : '#fff';
   const border  = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
   const tabsBg  = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
@@ -376,8 +377,8 @@ export default function ProductQualityAudit({ dark }: { dark: boolean }) {
         {/* ── Error ── */}
         {!loading && error && (
           <div style={{ textAlign: 'center', padding: '48px', background: cardBg, borderRadius: 20, border: `1px solid ${border}` }}>
-            <p style={{ fontSize: 13, color: '#ef4444', margin: '0 0 12px' }}>{t('loadError')}</p>
-            <button onClick={load} style={{ padding: '9px 20px', borderRadius: 10, border: 'none', cursor: 'pointer', background: `${GOLD}18`, color: GOLD, fontSize: 12, fontWeight: 700 }}>{t('retry')}</button>
+            <p style={{ fontSize: 13, color: ink('#ef4444', dark), margin: '0 0 12px' }}>{t('loadError')}</p>
+            <button onClick={load} style={{ padding: '9px 20px', borderRadius: 10, border: 'none', cursor: 'pointer', background: `${GOLD}18`, color: ink(GOLD, dark), fontSize: 12, fontWeight: 700 }}>{t('retry')}</button>
           </div>
         )}
 
@@ -423,7 +424,7 @@ export default function ProductQualityAudit({ dark }: { dark: boolean }) {
                     fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
                     background: filter === val ? (dark ? 'rgba(245,158,11,0.18)' : '#fff') : 'transparent',
                     border: filter === val ? '1px solid rgba(245,158,11,0.35)' : '1px solid transparent',
-                    color: filter === val ? GOLD : txtMut,
+                    color: filter === val ? ink(GOLD, dark) : txtMut,
                     boxShadow: filter === val && !dark ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
                     transition: 'all 0.15s ease',
                   }}>{label}</button>
@@ -438,7 +439,7 @@ export default function ProductQualityAudit({ dark }: { dark: boolean }) {
                   <CheckCircle size={28} color="#10b981"/>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <p style={{ fontSize: 15, fontWeight: 800, color: '#10b981', margin: '0 0 4px' }}>{t('allGoodTitle')}</p>
+                  <p style={{ fontSize: 15, fontWeight: 800, color: ink('#10b981', dark), margin: '0 0 4px' }}>{t('allGoodTitle')}</p>
                   <p style={{ fontSize: 12, color: txtMut, margin: 0 }}>{t('allGoodText')}</p>
                 </div>
               </div>

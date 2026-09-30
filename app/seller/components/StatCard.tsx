@@ -3,6 +3,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useTheme } from '../SellerShell';
+import { ink } from '../ink';
 
 interface StatCardProps {
   title: string;
@@ -27,7 +28,7 @@ export default function StatCard({
   const bg     = dark ? '#161b27' : '#ffffff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const textMain  = dark ? '#ffffff' : '#0f172a';
-  const textMuted = dark ? 'rgba(255,255,255,0.38)' : '#94a3b8';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const iconBg    = dark ? 'rgba(255,255,255,0.06)' : '#f8fafc';
   const iconBorder= dark ? 'rgba(255,255,255,0.08)' : '#e2e8f0';
 
@@ -73,9 +74,9 @@ export default function StatCard({
               background: isNeutral  ? (dark?'rgba(148,163,184,0.12)':'#f1f5f9')
                         : isPositive ? (dark?'rgba(16,185,129,0.12)':'#ecfdf5')
                                      : (dark?'rgba(239,68,68,0.12)':'#fef2f2'),
-              color: isNeutral  ? (dark?'#94a3b8':'#64748b')
-                   : isPositive ? '#10b981'
-                                 : '#ef4444',
+              color: isNeutral  ? (dark?'#94a3b8':'#5b6472')
+                   : isPositive ? ink('#10b981', dark)
+                                 : ink('#ef4444', dark),
             }}>
               {isNeutral  ? <Minus size={10}/> :
                isPositive ? <TrendingUp size={10}/> :

@@ -463,7 +463,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                         <div style={{ fontWeight: 900, fontSize: '1rem', color: plan.dark ? 'white' : '#111' }}>
                           {plan.name}
                         </div>
-                        <div style={{ fontSize: '0.68rem', color: plan.dark ? 'rgba(255,255,255,0.45)' : '#888', marginTop: 2 }}>
+                        <div style={{ fontSize: '0.68rem', color: plan.dark ? 'rgba(255,255,255,0.45)' : '#5b6472', marginTop: 2 }}>
                           {t(plan.target)}
                         </div>
                       </div>
@@ -478,7 +478,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                       }}>
                         {priceOf(plan)}
                       </span>
-                      <span style={{ fontSize: '0.78rem', color: plan.dark ? 'rgba(255,255,255,0.4)' : '#888', marginInlineStart: 6 }}>
+                      <span style={{ fontSize: '0.78rem', color: plan.dark ? 'rgba(255,255,255,0.4)' : '#5b6472', marginInlineStart: 6 }}>
                         {t(plan.priceSub)}
                       </span>
                     </div>
@@ -498,9 +498,9 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                     {/* Max products */}
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
-                      color: plan.dark ? 'rgba(255,255,255,0.5)' : '#888', marginBottom: 18,
+                      color: plan.dark ? 'rgba(255,255,255,0.5)' : '#5b6472', marginBottom: 18,
                     }}>
-                      <Package size={13} color={plan.dark ? 'rgba(255,255,255,0.35)' : '#aaa'} />
+                      <Package size={13} color={plan.dark ? 'rgba(255,255,255,0.35)' : '#5b6472'} />
                       {!plan.loaded ? '…' : plan.maxProducts ? t('upToProducts', { count: plan.maxProducts }) : t('unlimitedProducts')}
                     </div>
 

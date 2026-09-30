@@ -16,6 +16,7 @@ import { blackPepperApi, type AutoPromoteSuggestion } from '@/lib/blackPepperApi
 import { sellerAdsApi } from '@/lib/sellerAdsApi';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
+import { ink } from '@/app/seller/ink';
 
 const GOLD  = '#f59e0b';
 const GOLD2 = '#fbbf24';
@@ -27,7 +28,7 @@ function SuggestionCard({
   dark: boolean;
 }) {
   const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const innerBg   = dark ? '#141209' : '#fff';
   const innerBdr  = dark ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.18)';
   const t = useTranslations('seller.smartPromote');
@@ -58,7 +59,7 @@ function SuggestionCard({
             </p>
             <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999,
               background: item.trend_signal === 'hot' ? 'rgba(239,68,68,0.15)' : GOLD + '18',
-              color: item.trend_signal === 'hot' ? '#ef4444' : GOLD,
+              color: item.trend_signal === 'hot' ? ink('#ef4444', dark) : GOLD,
               border: '1px solid ' + (item.trend_signal === 'hot' ? 'rgba(239,68,68,0.3)' : GOLD + '35'),
               textTransform: 'uppercase' as const }}>
               {item.trend_signal === 'hot' ? t('hot') : t('rising')}
@@ -76,9 +77,9 @@ function SuggestionCard({
         {/* 3 impact stats */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
           {[
-            { label: t('stats.selling'),  value: item.velocity_label, color: '#10b981' },
-            { label: t('stats.thisWeek'), value: price(item.seven_day_revenue, { maximumFractionDigits: 0 }), color: GOLD },
-            { label: t('stats.estBoost'), value: '+' + price(item.estimated_boost_tnd, { maximumFractionDigits: 0 }), color: '#3b82f6' },
+            { label: t('stats.selling'),  value: item.velocity_label, color: ink('#10b981', dark) },
+            { label: t('stats.thisWeek'), value: price(item.seven_day_revenue, { maximumFractionDigits: 0 }), color: ink(GOLD, dark) },
+            { label: t('stats.estBoost'), value: '+' + price(item.estimated_boost_tnd, { maximumFractionDigits: 0 }), color: ink('#3b82f6', dark) },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
               borderRadius: 8, padding: '7px 10px', textAlign: 'center' as const }}>
@@ -138,7 +139,7 @@ export default function SmartPromoteCard({ dark }: { dark: boolean }) {
   
 
   const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const cardBg    = dark ? '#0f0d0a' : '#fffdf5';
   const border    = 'rgba(245,158,11,0.2)';
   const unspon    = data ? data.filter(p => !p.already_sponsored) : [];
@@ -156,7 +157,7 @@ export default function SmartPromoteCard({ dark }: { dark: boolean }) {
           : 'linear-gradient(135deg,rgba(245,158,11,0.06),rgba(245,158,11,0.02))' }}>
         <div style={{ width: 38, height: 38, borderRadius: 11, flexShrink: 0,
           background: 'rgba(245,158,11,0.18)', border: '1px solid rgba(245,158,11,0.4)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD }}>
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink(GOLD, dark) }}>
           <Zap size={18}/>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -164,7 +165,7 @@ export default function SmartPromoteCard({ dark }: { dark: boolean }) {
             <p style={{ fontSize: 14, fontWeight: 900, color: textMain, margin: 0 }}>{t('title')}</p>
             {!loading && unspon.length > 0 && (
               <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999,
-                background: GOLD + '20', color: GOLD, border: '1px solid ' + GOLD + '40',
+                background: GOLD + '20', color: ink(GOLD, dark), border: '1px solid ' + GOLD + '40',
                 textTransform: 'uppercase' as const }}>
                 {t('ready', { count: unspon.length })}
               </span>
@@ -176,7 +177,7 @@ export default function SmartPromoteCard({ dark }: { dark: boolean }) {
               : t('allSponsored')}
           </p>
           {credit && credit.monthly > 0 && (
-            <p style={{ fontSize: 11, color: GOLD, margin: '3px 0 0', fontWeight: 700 }}>
+            <p style={{ fontSize: 11, color: ink(GOLD, dark), margin: '3px 0 0', fontWeight: 700 }}>
               {tAds('wallet.credit')}: {price(credit.left)} · {tAds('wallet.monthlyCredit', { amount: price(credit.monthly) })}
             </p>
           )}
@@ -200,8 +201,8 @@ export default function SmartPromoteCard({ dark }: { dark: boolean }) {
 
           {!loading && error && (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <p style={{ fontSize: 12, color: '#ef4444', margin: '0 0 8px' }}>{t('loadError')}</p>
-              <button onClick={load} style={{ fontSize: 11, fontWeight: 700, color: GOLD,
+              <p style={{ fontSize: 12, color: ink('#ef4444', dark), margin: '0 0 8px' }}>{t('loadError')}</p>
+              <button onClick={load} style={{ fontSize: 11, fontWeight: 700, color: ink(GOLD, dark),
                 background: GOLD + '12', border: '1px solid ' + GOLD + '30',
                 borderRadius: 7, padding: '5px 12px', cursor: 'pointer' }}>{t('retry')}</button>
             </div>
@@ -211,7 +212,7 @@ export default function SmartPromoteCard({ dark }: { dark: boolean }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px',
               background: 'rgba(16,185,129,0.08)', borderRadius: 12, border: '1px solid rgba(16,185,129,0.2)' }}>
               <CheckCircle size={18} color="#10b981"/>
-              <p style={{ fontSize: 13, fontWeight: 700, color: '#10b981', margin: 0 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: ink('#10b981', dark), margin: 0 }}>
                 {t('allSponsoredLong')}
               </p>
             </div>

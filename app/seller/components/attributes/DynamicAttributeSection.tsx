@@ -67,7 +67,7 @@ export default function DynamicAttributeSection({
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 0', color: '#94a3b8', fontSize: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 0', color: '#5b6472', fontSize: 12 }}>
         <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />
         {t('loading')}
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>

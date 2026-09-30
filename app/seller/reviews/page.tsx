@@ -8,6 +8,7 @@ import {
 import { useTheme } from '@/app/seller/SellerShell';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
+import { ink } from '@/app/seller/ink';
 
 const API_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
 const getToken = () => typeof window !== 'undefined'
@@ -60,15 +61,15 @@ function KpiCard({ title, value, subtitle, accent, icon: Icon, dark }: {
   const bg = dark ? '#161b27' : '#fff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const txt = dark ? '#fff' : '#111';
-  const muted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   return (
     <div style={{ background: bg, borderRadius: 18, border: `1px solid ${border}`, padding: '20px 20px 16px', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: -30, insetInlineEnd: -30, width: 90, height: 90, borderRadius: '50%', background: accent, opacity: dark ? 0.12 : 0.08, filter: 'blur(24px)' }} />
-      <div style={{ width: 40, height: 40, borderRadius: 11, background: `${accent}22`, border: `1px solid ${accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, marginBottom: 12 }}>
+      <div style={{ width: 40, height: 40, borderRadius: 11, background: `${accent}22`, border: `1px solid ${accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink(accent, dark), marginBottom: 12 }}>
         <Icon size={18} />
       </div>
       <p style={{ fontSize: 24, fontWeight: 900, color: txt, margin: '0 0 4px', letterSpacing: '-0.03em', lineHeight: 1 }}>{value}</p>
-      <p style={{ fontSize: 11, fontWeight: 800, color: accent, margin: '0 0 3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</p>
+      <p style={{ fontSize: 11, fontWeight: 800, color: ink(accent, dark), margin: '0 0 3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</p>
       {subtitle && <p style={{ fontSize: 11, color: muted, margin: 0, fontWeight: 500 }}>{subtitle}</p>}
       <div className="rtl-flip" style={{ position: 'absolute', bottom: 0, insetInlineStart: 0, insetInlineEnd: 0, height: 3, background: `linear-gradient(90deg,${accent},transparent)`, opacity: 0.6 }} />
     </div>
@@ -134,7 +135,7 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
           <div style={{ textAlign: 'center', padding: '16px 0' }}>
             <CheckCircle size={40} color="#10b981" style={{ margin: '0 auto 12px', display: 'block' }} />
             <p style={{ fontSize: 16, fontWeight: 900, color: dark ? '#fff' : '#0f172a', margin: '0 0 6px' }}>{t('reportSubmitted')}</p>
-            <p style={{ fontSize: 13, color: dark ? 'rgba(255,255,255,0.5)' : '#64748b', margin: 0 }}>{t('reportSubmittedHint')}</p>
+            <p style={{ fontSize: 13, color: dark ? 'rgba(255,255,255,0.5)' : '#5b6472', margin: 0 }}>{t('reportSubmittedHint')}</p>
           </div>
         ) : (
           <>
@@ -142,12 +143,12 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
               <h3 style={{ fontSize: 17, fontWeight: 900, color: dark ? '#fff' : '#0f172a', margin: 0 }}>
                 {t('reportTitle')}
               </h3>
-              <button onClick={onClose} aria-label={t('close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: dark ? 'rgba(255,255,255,0.5)' : '#94a3b8' }}>
+              <button onClick={onClose} aria-label={t('close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: dark ? 'rgba(255,255,255,0.5)' : '#5b6472' }}>
                 <X size={18} />
               </button>
             </div>
 
-            <p style={{ fontSize: 12, fontWeight: 700, color: dark ? 'rgba(255,255,255,0.5)' : '#64748b', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: dark ? 'rgba(255,255,255,0.5)' : '#5b6472', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {t('selectReason')}
             </p>
 
@@ -170,7 +171,7 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
               ))}
             </div>
 
-            <p style={{ fontSize: 12, fontWeight: 700, color: dark ? 'rgba(255,255,255,0.5)' : '#64748b', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: dark ? 'rgba(255,255,255,0.5)' : '#5b6472', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {t('additionalNote')}
             </p>
             <textarea
@@ -189,7 +190,7 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
             />
 
             {error && (
-              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#ef4444', fontWeight: 600, marginBottom: 12 }}>
+              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: ink('#ef4444', dark), fontWeight: 600, marginBottom: 12 }}>
                 {error}
               </div>
             )}
@@ -197,7 +198,7 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
             <div style={{ display: 'flex', gap: 10 }}>
               <button
                 onClick={onClose}
-                style={{ flex: 1, height: 44, borderRadius: 12, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`, background: 'transparent', color: dark ? 'rgba(255,255,255,0.6)' : '#64748b', fontWeight: 700, cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}
+                style={{ flex: 1, height: 44, borderRadius: 12, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`, background: 'transparent', color: dark ? 'rgba(255,255,255,0.6)' : '#5b6472', fontWeight: 700, cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}
               >
                 {t('cancel')}
               </button>
@@ -207,7 +208,7 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
                 style={{
                   flex: 2, height: 44, borderRadius: 12, border: 'none',
                   background: !reason ? '#e2e8f0' : 'linear-gradient(135deg,#ef4444,#dc2626)',
-                  color: !reason ? '#94a3b8' : '#fff',
+                  color: !reason ? ink('#94a3b8', dark) : '#fff',
                   fontWeight: 900, cursor: sending || !reason ? 'not-allowed' : 'pointer',
                   fontSize: 13, fontFamily: 'inherit',
                 }}
@@ -253,11 +254,11 @@ function ReplyModal({ reviewId, existing, dark, onClose, onSaved }: {
           rows={5} maxLength={1000} placeholder={t('replyPlaceholder')}
           style={{ width: '100%', borderRadius: 12, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`, background: dark ? 'rgba(255,255,255,0.05)' : '#f8fafc', padding: '12px 14px', fontSize: 14, color: dark ? '#fff' : '#374151', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', outline: 'none' }}
         />
-        <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'end', margin: '4px 0 16px' }}>{body.length}/1000</p>
+        <p style={{ fontSize: 11, color: ink('#94a3b8', dark), textAlign: 'end', margin: '4px 0 16px' }}>{body.length}/1000</p>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={onClose} style={{ flex: 1, height: 44, borderRadius: 12, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`, background: 'transparent', color: dark ? 'rgba(255,255,255,0.6)' : '#64748b', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>{t('cancel')}</button>
+          <button onClick={onClose} style={{ flex: 1, height: 44, borderRadius: 12, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`, background: 'transparent', color: dark ? 'rgba(255,255,255,0.6)' : '#5b6472', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>{t('cancel')}</button>
           <button onClick={handleSave} disabled={saving || body.trim().length < 5}
-            style={{ flex: 2, height: 44, borderRadius: 12, border: 'none', background: body.trim().length >= 5 ? 'linear-gradient(135deg,#db142e,#a00f22)' : '#e2e8f0', color: body.trim().length >= 5 ? '#fff' : '#94a3b8', fontWeight: 900, cursor: saving ? 'wait' : 'pointer', fontSize: 13 }}>
+            style={{ flex: 2, height: 44, borderRadius: 12, border: 'none', background: body.trim().length >= 5 ? 'linear-gradient(135deg,#db142e,#a00f22)' : '#e2e8f0', color: body.trim().length >= 5 ? '#fff' : ink('#94a3b8', dark), fontWeight: 900, cursor: saving ? 'wait' : 'pointer', fontSize: 13 }}>
             {saving ? t('saving') : t('saveReply')}
           </button>
         </div>
@@ -277,7 +278,7 @@ function ReviewRow({ review, dark, onReply, onReport }: {
   const bg     = dark ? '#161b27' : '#fff';
   const border = dark ? 'rgba(255,255,255,0.07)' : '#f1f5f9';
   const txt    = dark ? '#fff' : '#0f172a';
-  const muted  = dark ? 'rgba(255,255,255,0.4)' : '#94a3b8';
+  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   return (
     <div style={{ background: bg, borderRadius: 14, border: `1px solid ${border}`, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -288,14 +289,14 @@ function ReviewRow({ review, dark, onReply, onReport }: {
           </div>
           <div>
             <span style={{ fontSize: 13, fontWeight: 800, color: txt }}>{review.display_name}</span>
-            {review.is_verified && <span style={{ fontSize: 10, color: '#059669', fontWeight: 700, marginInlineStart: 6, background: 'rgba(5,150,105,0.1)', padding: '1px 6px', borderRadius: 999, border: '1px solid rgba(5,150,105,0.2)' }}>{t('verified')}</span>}
+            {review.is_verified && <span style={{ fontSize: 10, color: ink('#059669', dark), fontWeight: 700, marginInlineStart: 6, background: 'rgba(5,150,105,0.1)', padding: '1px 6px', borderRadius: 999, border: '1px solid rgba(5,150,105,0.2)' }}>{t('verified')}</span>}
             <p style={{ fontSize: 11, color: muted, margin: '2px 0 0' }}>{review.product?.name} · {review.created_at}</p>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <Stars rating={review.rating} />
           {review.reports_count > 0 && (
-            <span style={{ fontSize: 10, fontWeight: 800, color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '2px 7px', borderRadius: 999 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: ink('#ef4444', dark), background: 'rgba(239,68,68,0.1)', padding: '2px 7px', borderRadius: 999 }}>
               {t('reportsCount', { count: review.reports_count })}
             </span>
           )}
@@ -308,7 +309,7 @@ function ReviewRow({ review, dark, onReply, onReport }: {
             <span key={tag.id} style={{
               fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 700,
               background: tag.sentiment === 'positive' ? 'rgba(5,150,105,0.08)' : tag.sentiment === 'negative' ? 'rgba(239,68,68,0.08)' : 'rgba(100,116,139,0.08)',
-              color: tag.sentiment === 'positive' ? '#059669' : tag.sentiment === 'negative' ? '#ef4444' : '#64748b',
+              color: tag.sentiment === 'positive' ? ink('#059669', dark) : tag.sentiment === 'negative' ? ink('#ef4444', dark) : '#64748b',
               border: `1px solid ${tag.sentiment === 'positive' ? 'rgba(5,150,105,0.2)' : tag.sentiment === 'negative' ? 'rgba(239,68,68,0.2)' : 'rgba(100,116,139,0.15)'}`,
             }}>
               {tag.icon} {tag.label}
@@ -343,7 +344,7 @@ function ReviewRow({ review, dark, onReply, onReport }: {
         </button>
         <button
           onClick={() => onReport(review.id)}
-          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 8, border: `1px solid ${border}`, background: 'transparent', color: '#ef4444', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 8, border: `1px solid ${border}`, background: 'transparent', color: ink('#ef4444', dark), fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
         >
           <Flag size={13} /> {t('reportFake')}
         </button>
@@ -371,7 +372,7 @@ export default function SellerReviewsPage() {
   const card   = dark ? '#161b27' : '#fff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const txt    = dark ? '#fff' : '#111';
-  const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   const fetchStats = useCallback(async () => {
     try {
@@ -458,7 +459,7 @@ export default function SellerReviewsPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {stats.alerts.length > 0 && (
                 <div style={{ background: 'rgba(239,68,68,0.06)', borderRadius: 14, border: '1px solid rgba(239,68,68,0.15)', padding: 16 }}>
-                  <p style={{ fontSize: 12, fontWeight: 800, color: '#ef4444', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <p style={{ fontSize: 12, fontWeight: 800, color: ink('#ef4444', dark), margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <AlertTriangle size={13} /> {t('repeated')}
                   </p>
                   {stats.alerts.map(a => (
@@ -474,7 +475,7 @@ export default function SellerReviewsPage() {
                 </p>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {stats.top_tags.slice(0, 8).map(tag => (
-                    <span key={tag.id} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 999, fontWeight: 700, background: tag.sentiment === 'positive' ? 'rgba(5,150,105,0.1)' : 'rgba(239,68,68,0.1)', color: tag.sentiment === 'positive' ? '#059669' : '#ef4444', border: `1px solid ${tag.sentiment === 'positive' ? 'rgba(5,150,105,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
+                    <span key={tag.id} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 999, fontWeight: 700, background: tag.sentiment === 'positive' ? 'rgba(5,150,105,0.1)' : 'rgba(239,68,68,0.1)', color: tag.sentiment === 'positive' ? ink('#059669', dark) : ink('#ef4444', dark), border: `1px solid ${tag.sentiment === 'positive' ? 'rgba(5,150,105,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
                       {tag.icon} {tag.label} ({tag.usage_count})
                     </span>
                   ))}

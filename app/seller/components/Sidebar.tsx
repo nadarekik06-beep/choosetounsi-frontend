@@ -33,18 +33,19 @@ const GROWTH_NAV = [
   { href: '/seller/promotions', label: 'promotions', icon: Tag },
   { href: '/seller/promote',    label: 'promote',    icon: Megaphone },
 ];
+// `accent` is tuned for the dark sidebar, `accentLight` for the light one (AA on white)
 const RED_NAV = [
-  { href: '/seller/analytics', label: 'analytics', icon: BarChart2, accent: '#fca5a5' },
-  { href: '/seller/ai-tools',  label: 'aiTools',   icon: Brain,     accent: '#c4b5fd' },
+  { href: '/seller/analytics', label: 'analytics', icon: BarChart2, accent: '#fca5a5', accentLight: '#b91c1c' },
+  { href: '/seller/ai-tools',  label: 'aiTools',   icon: Brain,     accent: '#c4b5fd', accentLight: '#6d28d9' },
 ];
 const BLACK_NAV = [
-  { href: '/seller/black',                  label: 'eliteOverview',   icon: Crown,      accent: '#fbbf24' },
-  { href: '/seller/black/ai-intelligence',  label: 'aiIntelligence',  icon: Brain,      accent: '#c4b5fd' },
-  { href: '/seller/black/visitor-insights', label: 'visitorInsights', icon: Eye,        accent: '#93c5fd' },
-  { href: '/seller/black/listing-quality',  label: 'listingQuality',  icon: Star,       accent: '#d8b4fe' },
-  { href: '/seller/black/smart-promotions', label: 'smartPromotions', icon: TrendingUp, accent: '#fbbf24' },
-  { href: '/seller/black/profit',           label: 'profitCenter',    icon: DollarSign, accent: '#6ee7b7' },
-  { href: '/seller/black/vip-lounge',       label: 'vipLounge',       icon: Users,      accent: '#fbbf24' },
+  { href: '/seller/black',                  label: 'eliteOverview',   icon: Crown,      accent: '#fbbf24', accentLight: '#92400e' },
+  { href: '/seller/black/ai-intelligence',  label: 'aiIntelligence',  icon: Brain,      accent: '#c4b5fd', accentLight: '#6d28d9' },
+  { href: '/seller/black/visitor-insights', label: 'visitorInsights', icon: Eye,        accent: '#93c5fd', accentLight: '#1d4ed8' },
+  { href: '/seller/black/listing-quality',  label: 'listingQuality',  icon: Star,       accent: '#d8b4fe', accentLight: '#7e22ce' },
+  { href: '/seller/black/smart-promotions', label: 'smartPromotions', icon: TrendingUp, accent: '#fbbf24', accentLight: '#92400e' },
+  { href: '/seller/black/profit',           label: 'profitCenter',    icon: DollarSign, accent: '#6ee7b7', accentLight: '#047857' },
+  { href: '/seller/black/vip-lounge',       label: 'vipLounge',       icon: Users,      accent: '#fbbf24', accentLight: '#92400e' },
 ];
 
 interface SidebarProps {
@@ -78,12 +79,18 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
   }, []);
   const collapsed = collapsedProp && isDesktop;
 
-  const SB_BG       = '#111827';
-  const SB_BORDER   = 'rgba(255,255,255,0.07)';
-  const TXT_BASE    = 'rgba(255,255,255,0.62)';
-  const TXT_ACTIVE  = '#ffffff';
-  const TXT_SECTION = 'rgba(255,255,255,0.32)';
-  const HOVER_BG    = 'rgba(255,255,255,0.08)';
+  const SB_BG       = dark ? '#111827' : '#ffffff';
+  const SB_BORDER   = dark ? 'rgba(255,255,255,0.07)' : '#e5e8ed';
+  const TXT_BASE    = dark ? 'rgba(255,255,255,0.62)' : '#4b5563';
+  const TXT_ACTIVE  = dark ? '#ffffff' : '#111827';
+  const TXT_SECTION = dark ? 'rgba(255,255,255,0.5)' : '#5b6472';
+  const HOVER_BG    = dark ? 'rgba(255,255,255,0.08)' : 'rgba(17,24,39,0.05)';
+  const DIVIDER     = dark ? 'rgba(255,255,255,0.08)' : '#e5e8ed';
+  const DANGER      = dark ? '#f87171' : '#dc2626';
+  const ACTIVE_BG   = dark ? 'rgba(219,20,46,0.15)' : 'rgba(219,20,46,0.08)';
+  const SCROLL_RGB  = dark ? '255,255,255' : '17,24,39';
+  // Tier colours are pastel-ish for the dark sidebar; darker shades keep them AA on white
+  const tierColor   = (c: string) => dark ? c : ({ '#f87171': '#b91c1c', '#f59e0b': '#92400e' }[c] ?? c);
 
   const handleLogout = () => {
     localStorage.clear(); sessionStorage.clear();
@@ -95,10 +102,10 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
 
   const SectionLabel = ({ label, open, onToggle }: { label: string; open?: boolean; onToggle?: () => void }) => {
     if (collapsed) return (
-      <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '10px 14px 6px' }}/>
+      <div style={{ height: 1, background: DIVIDER, margin: '10px 14px 6px' }}/>
     );
     return (
-      <button onClick={onToggle} style={{
+      <button onClick={onToggle} className="sb3-section" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         width: '100%', background: 'none', border: 'none', cursor: onToggle ? 'pointer' : 'default',
         padding: '0 16px', margin: '16px 0 4px',
@@ -111,9 +118,10 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
     );
   };
 
-  const NavItem = ({ href, label, Icon, accent, exact = false }: {
-    href: string; label: string; Icon: React.ElementType; accent?: string; exact?: boolean;
+  const NavItem = ({ href, label, Icon, accent: accentDark, accentLight, exact = false }: {
+    href: string; label: string; Icon: React.ElementType; accent?: string; accentLight?: string; exact?: boolean;
   }) => {
+    const accent = dark ? accentDark : (accentLight ?? accentDark);
     const isActive = exact
       ? pathname === href
       : href === '/seller' ? pathname === '/seller' : pathname === href || pathname.startsWith(href + '/');
@@ -124,7 +132,7 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
         onClick={onMobileClose}
         className="sb3-item"
         data-active={isActive ? 'true' : 'false'}
-        data-accent={accent ?? ''}
+        data-accent={accentDark ?? ''}
         title={collapsed ? label : undefined}
         style={{
           display: 'flex', alignItems: 'center',
@@ -137,7 +145,7 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
           margin: collapsed ? '0' : '1px 8px',
           transition: 'background 0.14s, color 0.14s',
           background: isActive
-            ? accent ? `${accent}18` : 'rgba(219,20,46,0.15)'
+            ? accent ? `${accent}18` : ACTIVE_BG
             : 'transparent',
           color: isActive ? (accent ?? TXT_ACTIVE) : TXT_BASE,
         }}
@@ -193,12 +201,13 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
     </div>
   );
 
-  const TierDivider = ({ label, color }: { label: string; color: string }) => {
+  const TierDivider = ({ label, color: base }: { label: string; color: string }) => {
+    const color = tierColor(base);
     if (collapsed) return <div style={{ height: 1, background: `${color}30`, margin: '10px 14px 6px' }}/>;
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', margin: '16px 0 4px' }}>
         <div style={{ flex: 1, height: 1, background: `${color}28` }}/>
-        <span style={{ fontSize: 9.5, fontWeight: 900, letterSpacing: '0.13em', color: `${color}99`, textTransform: 'uppercase' as const }}>
+        <span style={{ fontSize: 9.5, fontWeight: 900, letterSpacing: '0.13em', color: dark ? `${color}dd` : color, textTransform: 'uppercase' as const }}>
           {label}
         </span>
         <div style={{ flex: 1, height: 1, background: `${color}28` }}/>
@@ -217,14 +226,14 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
       borderRadius: 9, margin: collapsed ? '1px 0' : '1px 8px',
       fontSize: 13, fontWeight: 500,
       background: 'transparent', border: 'none', cursor: 'pointer',
-      color: danger ? '#f87171' : TXT_BASE,
+      color: danger ? DANGER : TXT_BASE,
       width: collapsed ? '100%' : 'calc(100% - 16px)',
       transition: 'background 0.14s, color 0.14s', textDecoration: 'none',
     };
     const content = (
       <>
-        <Icon size={16} style={{ flexShrink: 0, color: danger ? '#f87171' : TXT_BASE }}/>
-        {!collapsed && <span style={{ color: danger ? '#f87171' : TXT_BASE }}>{label}</span>}
+        <Icon size={16} style={{ flexShrink: 0, color: danger ? DANGER : TXT_BASE }}/>
+        {!collapsed && <span style={{ color: danger ? DANGER : TXT_BASE }}>{label}</span>}
       </>
     );
     if (href) return <Link href={href} onClick={onMobileClose} className={danger ? 'sb3-danger' : 'sb3-footer'} style={style}>{content}</Link>;
@@ -272,11 +281,11 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
 
           {!collapsed && (
             <div style={{ minWidth: 0, flex: 1 }}>
-              <p style={{ fontWeight: 900, fontSize: 14.5, color: '#fff', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1 }}>
+              <p style={{ fontWeight: 900, fontSize: 14.5, color: TXT_ACTIVE, margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1 }}>
                 Choose<span style={{ color: '#db142e' }}>Tounsi</span>
               </p>
               <p style={{ fontSize: 9, fontWeight: 800, margin: 0, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1,
-                color: isBlack ? '#f59e0b' : '#4ade80' }}>
+                color: isBlack ? (dark ? '#f59e0b' : '#92400e') : (dark ? '#4ade80' : '#15803d') }}>
                 {isBlack ? t('elitePortal') : t('portal')}
               </p>
             </div>
@@ -287,10 +296,10 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
             <button
               onClick={onMobileClose}
               aria-label={t('closeMenu')}
-              className="lg:hidden"
+              className="lg:hidden sb3-close"
               style={{
                 width: 34, height: 34, borderRadius: 9, flexShrink: 0,
-                background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer',
+                background: HOVER_BG, border: 'none', cursor: 'pointer',
                 color: TXT_BASE, display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
@@ -320,7 +329,7 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
           {!loading && <TierDivider label={isPaid ? t('tierRed') : t('tierPremium')} color="#f87171"/>}
           {RED_NAV.map(item =>
             isPaid
-              ? <NavItem key={item.href} href={item.href} label={t(item.label)} Icon={item.icon} accent={item.accent}/>
+              ? <NavItem key={item.href} href={item.href} label={t(item.label)} Icon={item.icon} accent={item.accent} accentLight={item.accentLight}/>
               : <LockedItem key={item.href} label={t(item.label)} Icon={item.icon}/>
           )}
 
@@ -328,7 +337,7 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
           {isBlack
             ? BLACK_NAV.map(item => (
               <NavItem key={item.href} href={item.href} label={t(item.label)} Icon={item.icon}
-                accent={item.accent} exact={item.href === '/seller/black'}/>
+                accent={item.accent} accentLight={item.accentLight} exact={item.href === '/seller/black'}/>
             ))
             : BLACK_NAV.slice(0, 2).map(item => (
               <LockedItem key={item.href} label={t(item.label)} Icon={item.icon}/>
@@ -363,14 +372,19 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
           background: rgba(245,158,11,0.1) !important;
         }
 
-        .sb3-footer:hover { background: ${HOVER_BG} !important; }
+        /* These out-rank the light-mode green "button:hover" rule in GlobalSellerStyles */
+        .sb3-footer:hover, .sb3-close:hover { background: ${HOVER_BG} !important; color: ${TXT_ACTIVE} !important; }
         .sb3-footer:hover span { color: ${TXT_ACTIVE} !important; }
-        .sb3-danger:hover { background: rgba(239,68,68,0.12) !important; }
+        .sb3-footer:hover svg, .sb3-close:hover svg { color: ${TXT_ACTIVE} !important; stroke: currentColor !important; }
+        .sb3-danger:hover { background: rgba(239,68,68,0.12) !important; color: ${DANGER} !important; }
+        .sb3-danger:hover span, .sb3-danger:hover svg { color: ${DANGER} !important; stroke: currentColor !important; }
+        .sb3-section:hover { background: none !important; }
+        .sb3-section:hover span, .sb3-section:hover svg { color: ${TXT_ACTIVE} !important; stroke: currentColor !important; }
 
         nav::-webkit-scrollbar { width: 4px; }
         nav::-webkit-scrollbar-track { background: transparent; }
-        nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-        nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        nav::-webkit-scrollbar-thumb { background: rgba(${SCROLL_RGB},0.1); border-radius: 4px; }
+        nav::-webkit-scrollbar-thumb:hover { background: rgba(${SCROLL_RGB},0.2); }
 
         @media (max-width: 1023px) {
           aside { transition: transform 0.28s ease, width 0.28s ease !important; }

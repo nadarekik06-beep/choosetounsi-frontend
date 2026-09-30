@@ -226,7 +226,7 @@ export default function AiDescriptionPanel({
         }}
       >
         <Lock size={10} color="#94a3b8" />
-        <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>{t('generateShort')}</span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: '#5b6472' }}>{t('generateShort')}</span>
         <span style={{
           fontSize: 8, fontWeight: 800, color: '#db142e',
           background: 'rgba(219,20,46,0.08)', border: '1px solid rgba(219,20,46,0.2)',
@@ -350,7 +350,7 @@ export default function AiDescriptionPanel({
 
               <div>
                 <p style={{
-                  fontSize: 9, fontWeight: 800, color: '#94a3b8',
+                  fontSize: 9, fontWeight: 800, color: '#5b6472',
                   textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 8px',
                 }}>{t('checklist')}</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -363,12 +363,12 @@ export default function AiDescriptionPanel({
                             border: '1.5px solid #d1d5db', flexShrink: 0,
                           }} />
                       }
-                      <span style={{ fontSize: 11, fontWeight: pass ? 600 : 400, color: pass ? '#374151' : '#9ca3af' }}>
+                      <span style={{ fontSize: 11, fontWeight: pass ? 600 : 400, color: pass ? '#374151' : '#5b6472' }}>
                         {t(`checks.${label}`)}
                       </span>
                       {!pass && (
                         <span style={{
-                          fontSize: 9, fontWeight: 700, color: '#f59e0b',
+                          fontSize: 9, fontWeight: 700, color: '#92400e',
                           background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)',
                           padding: '1px 5px', borderRadius: 4,
                         }}>{t('missing')}</span>
@@ -380,7 +380,7 @@ export default function AiDescriptionPanel({
 
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: '#5b6472', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     {t('completeness')}
                   </span>
                   <span style={{ fontSize: 10, fontWeight: 800, color: scoreColor }}>
@@ -406,7 +406,7 @@ export default function AiDescriptionPanel({
                 borderRadius: 8, padding: '10px 12px',
               }}>
                 <p style={{
-                  fontSize: 9, fontWeight: 800, color: '#3b82f6',
+                  fontSize: 9, fontWeight: 800, color: '#1d4ed8',
                   textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 7px',
                 }}>{t('willUse')}</p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
@@ -431,7 +431,7 @@ export default function AiDescriptionPanel({
               {/* Tone + Language */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <p style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 7px' }}>
+                  <p style={{ fontSize: 9, fontWeight: 800, color: '#5b6472', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 7px' }}>
                     {t('tone')}
                   </p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
@@ -449,7 +449,7 @@ export default function AiDescriptionPanel({
                   </div>
                 </div>
                 <div>
-                  <p style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 7px' }}>
+                  <p style={{ fontSize: 9, fontWeight: 800, color: '#5b6472', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 7px' }}>
                     {t('language')}
                   </p>
                   <div style={{ display: 'flex', gap: 4 }}>
@@ -459,7 +459,7 @@ export default function AiDescriptionPanel({
                           padding: '4px 9px', borderRadius: 999, fontSize: 10, fontWeight: 700,
                           cursor: 'pointer', border: 'none', fontFamily: 'inherit',
                           background: lang === value ? 'rgba(59,130,246,0.1)' : '#f1f5f9',
-                          color:      lang === value ? '#3b82f6' : '#64748b',
+                          color:      lang === value ? '#1d4ed8' : '#64748b',
                           outline:    lang === value ? '1.5px solid rgba(59,130,246,0.35)' : '1px solid transparent',
                         }}
                       >{t(`langs.${value}`)}</button>
@@ -487,7 +487,7 @@ export default function AiDescriptionPanel({
               </button>
 
               {error && (
-                <p style={{ fontSize: 11, color: '#ef4444', fontWeight: 600, margin: 0 }}>{error}</p>
+                <p style={{ fontSize: 11, color: '#b91c1c', fontWeight: 600, margin: 0 }}>{error}</p>
               )}
 
               {/* Result */}
@@ -516,7 +516,7 @@ export default function AiDescriptionPanel({
                       padding: '9px 0', borderRadius: 10, fontFamily: 'inherit',
                       border: '1.5px solid rgba(16,185,129,0.4)',
                       background: 'rgba(16,185,129,0.06)',
-                      color: '#059669', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                      color: '#047857', fontWeight: 700, fontSize: 12, cursor: 'pointer',
                     }}
                   >
                     <Check size={13} /> {t('insertBoth')}
@@ -540,13 +540,13 @@ function ResultBlock({ label, text, onInsert, scrollable = false }: {
   return (
     <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: '10px 12px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
-        <p style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
+        <p style={{ fontSize: 9, fontWeight: 800, color: '#5b6472', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
           {label}
         </p>
         <button type="button" onClick={onInsert} style={{
           display: 'inline-flex', alignItems: 'center', gap: 4,
           padding: '3px 8px', borderRadius: 6, border: 'none', fontFamily: 'inherit',
-          background: 'rgba(16,185,129,0.1)', color: '#059669',
+          background: 'rgba(16,185,129,0.1)', color: '#047857',
           fontSize: 10, fontWeight: 700, cursor: 'pointer',
         }}>
           <ArrowRight size={10} /> {t('insert')}

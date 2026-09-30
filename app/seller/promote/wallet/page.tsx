@@ -112,7 +112,7 @@ export default function AdWalletPage() {
   return (
     <PageFrame
       title={t('walletPage.title')}
-      subtitle={<Link href="/seller/promote" style={{ color: GOLD, textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}><ArrowLeft size={14} className="rtl-flip" />{t('detail.back')}</Link>}
+      subtitle={<Link href="/seller/promote" style={{ color: p.gold, textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}><ArrowLeft size={14} className="rtl-flip" />{t('detail.back')}</Link>}
     >
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
@@ -195,7 +195,7 @@ export default function AdWalletPage() {
                     {x.note && ` · ${x.note}`}
                   </p>
                 </div>
-                <span style={{ fontSize: 14, fontWeight: 900, color: x.amount < 0 ? '#dc2626' : '#16a34a', whiteSpace: 'nowrap', direction: 'ltr' }}>
+                <span style={{ fontSize: 14, fontWeight: 900, color: x.amount < 0 ? '#dc2626' : p.positive, whiteSpace: 'nowrap', direction: 'ltr' }}>
                   {x.amount > 0 ? '+' : ''}{money(x.amount)}
                 </span>
               </li>

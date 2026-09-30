@@ -210,7 +210,7 @@ function PromotionCommissionPreview({
           {t('commissionHeader', { plan: planLabel })}
         </span>
         {loading && (
-          <Loader2 size={11} style={{ animation: 'spin 0.8s linear infinite', color: '#94a3b8' }} />
+          <Loader2 size={11} style={{ animation: 'spin 0.8s linear infinite', color: '#5b6472' }} />
         )}
       </div>
 
@@ -237,7 +237,7 @@ function PromotionCommissionPreview({
 
             {/* Original → effective */}
             <div style={{ textAlign: 'end', paddingInlineEnd: 14 }}>
-              <p style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through', margin: '0 0 1px', fontWeight: 500 }}>
+              <p style={{ fontSize: 10, color: '#5b6472', textDecoration: 'line-through', margin: '0 0 1px', fontWeight: 500 }}>
                 {dt(p.price)}
               </p>
               <p style={{ fontSize: 12, fontWeight: 900, color: '#dc2626', margin: 0 }}>
@@ -249,10 +249,10 @@ function PromotionCommissionPreview({
             <div style={{ textAlign: 'end', paddingInlineEnd: 14, minWidth: 80 }}>
               {result ? (
                 <>
-                  <p style={{ fontSize: 9, color: '#94a3b8', margin: '0 0 1px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <p style={{ fontSize: 9, color: '#5b6472', margin: '0 0 1px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     {t('fee', { pct: number(result.commission_percentage) })}
                   </p>
-                  <p style={{ fontSize: 12, fontWeight: 800, color: '#ef4444', margin: 0 }}>
+                  <p style={{ fontSize: 12, fontWeight: 800, color: '#b91c1c', margin: 0 }}>
                     −{dt(result.commission_amount)}
                   </p>
                 </>
@@ -265,10 +265,10 @@ function PromotionCommissionPreview({
             <div style={{ textAlign: 'end', minWidth: 80 }}>
               {result ? (
                 <>
-                  <p style={{ fontSize: 9, color: '#94a3b8', margin: '0 0 1px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <p style={{ fontSize: 9, color: '#5b6472', margin: '0 0 1px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     {t('youGet')}
                   </p>
-                  <p style={{ fontSize: 12, fontWeight: 900, color: '#10b981', margin: 0 }}>
+                  <p style={{ fontSize: 12, fontWeight: 900, color: '#047857', margin: 0 }}>
                     {dt(result.seller_amount)}
                   </p>
                 </>
@@ -293,7 +293,7 @@ function PromotionCommissionPreview({
             {t('totalProducts', { count: selected.length })}
           </p>
           <div style={{ textAlign: 'end', paddingInlineEnd: 14 }}>
-            <p style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through', margin: '0 0 1px' }}>
+            <p style={{ fontSize: 10, color: '#5b6472', textDecoration: 'line-through', margin: '0 0 1px' }}>
               {dt(totalOriginal)}
             </p>
             <p style={{ fontSize: 12, fontWeight: 900, color: '#dc2626', margin: 0 }}>
@@ -301,12 +301,12 @@ function PromotionCommissionPreview({
             </p>
           </div>
           <div style={{ textAlign: 'end', paddingInlineEnd: 14 }}>
-            <p style={{ fontSize: 12, fontWeight: 800, color: '#ef4444', margin: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 800, color: '#b91c1c', margin: 0 }}>
               −{dt(totalCommission)}
             </p>
           </div>
           <div style={{ textAlign: 'end' }}>
-            <p style={{ fontSize: 12, fontWeight: 900, color: '#10b981', margin: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 900, color: '#047857', margin: 0 }}>
               {dt(totalSeller)}
             </p>
           </div>
@@ -540,13 +540,13 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
             <h2 style={{ fontSize: 16, fontWeight: 900, color: '#111', margin: 0 }}>
               {isEdit ? t('editTitle') : t('createTitle')}
             </h2>
-            <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
+            <p style={{ fontSize: 11, color: '#5b6472', margin: '3px 0 0' }}>
               {t('subtitle')}
             </p>
           </div>
           <button type="button" onClick={onClose} aria-label={t('close')} style={{
             padding: 6, borderRadius: 10, border: 'none',
-            background: 'transparent', cursor: 'pointer', color: '#94a3b8',
+            background: 'transparent', cursor: 'pointer', color: '#5b6472',
           }}>
             <X size={18} />
           </button>
@@ -599,7 +599,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
                         padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
                         border: `1.5px solid ${type === kind ? '#dc2626' : '#e5e7eb'}`,
                         background: type === kind ? 'rgba(220,38,38,0.06)' : '#f8fafc',
-                        color: type === kind ? '#dc2626' : '#64748b',
+                        color: type === kind ? '#b91c1c' : '#5b6472',
                         fontWeight: 800, fontSize: 12, fontFamily: 'inherit',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                       }}
@@ -608,7 +608,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
                     </button>
                   ))}
                 </div>
-                <p style={{ fontSize: 10, color: '#94a3b8', margin: '5px 0 0' }}>
+                <p style={{ fontSize: 10, color: '#5b6472', margin: '5px 0 0' }}>
                   {t('typeHint', { flashMax: 90, discountMax: 70 })}
                 </p>
               </Field>
@@ -642,7 +642,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
                     />
                     <span style={{
                       position: 'absolute', insetInlineEnd: 12, top: '50%',
-                      transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 700,
+                      transform: 'translateY(-50%)', fontSize: 12, color: '#5b6472', fontWeight: 700,
                     }}>
                       {discountType === 'percentage' ? '%' : currency}
                     </span>
@@ -697,7 +697,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
                 </Field>
               </div>
 
-              <p style={{ fontSize: 10, color: '#94a3b8', margin: '-8px 0 0' }}>
+              <p style={{ fontSize: 10, color: '#5b6472', margin: '-8px 0 0' }}>
                 {t('durationHint', { min: minDurationLabel, max: maxDurationLabel })}
               </p>
 
@@ -713,7 +713,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
                     onFocus={e => (e.target.style.borderColor = '#dc2626')}
                     onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
                   />
-                  <p style={{ fontSize: 10, color: '#94a3b8', margin: '4px 0 0' }}>
+                  <p style={{ fontSize: 10, color: '#5b6472', margin: '4px 0 0' }}>
                     {t('flashStockHint')}
                   </p>
                 </Field>
@@ -746,7 +746,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
                 <SLabel>{t('selectProducts')}</SLabel>
                 {selectedProductIds.length > 0 && (
                   <span style={{
-                    fontSize: 11, fontWeight: 800, color: '#10b981',
+                    fontSize: 11, fontWeight: 800, color: '#047857',
                     background: 'rgba(16,185,129,0.1)',
                     border: '1px solid rgba(16,185,129,0.25)',
                     padding: '2px 8px', borderRadius: 999,
@@ -757,7 +757,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
               </div>
 
               {errors.products && (
-                <p style={{ fontSize: 11, color: '#ef4444', margin: '-4px 0 0' }}>{errors.products}</p>
+                <p style={{ fontSize: 11, color: '#b91c1c', margin: '-4px 0 0' }}>{errors.products}</p>
               )}
 
               {/* Search */}
@@ -781,12 +781,12 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
                 display: 'flex', flexDirection: 'column', gap: 6,
               }}>
                 {prodLoading ? (
-                  <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8', fontSize: 13 }}>
+                  <div style={{ textAlign: 'center', padding: 32, color: '#5b6472', fontSize: 13 }}>
                     <Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite', margin: '0 auto 6px', display: 'block' }} />
                     {t('loading')}
                   </div>
                 ) : products.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8', fontSize: 13 }}>
+                  <div style={{ textAlign: 'center', padding: 32, color: '#5b6472', fontSize: 13 }}>
                     {t('noProducts')}
                   </div>
                 ) : products.map(p => {
@@ -833,7 +833,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
                         </p>
                         <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>
                           {/* Original price always shown */}
-                          <span style={effectivePrice !== null ? { textDecoration: 'line-through', color: '#94a3b8' } : {}}>
+                          <span style={effectivePrice !== null ? { textDecoration: 'line-through', color: '#5b6472' } : {}}>
                             {dt(effectivePrice !== null ? basis : p.price)}
                           </span>
                           {/* Discounted price shown when discount is entered */}
@@ -907,7 +907,7 @@ function SLabel({ children }: { children: React.ReactNode }) {
   return (
     <p style={{
       fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-      letterSpacing: '0.1em', color: '#94a3b8',
+      letterSpacing: '0.1em', color: '#5b6472',
       paddingBottom: 6, borderBottom: '1px solid #f0f0f0', margin: 0,
     }}>
       {children}
@@ -923,12 +923,12 @@ function Field({ label, required, error, children }: {
       <label style={{
         display: 'flex', alignItems: 'center', gap: 4,
         fontSize: 11, fontWeight: 800, textTransform: 'uppercase',
-        letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 5,
+        letterSpacing: '0.07em', color: '#5b6472', marginBottom: 5,
       }}>
-        {label} {required && <span style={{ color: '#ef4444' }}>*</span>}
+        {label} {required && <span style={{ color: '#b91c1c' }}>*</span>}
       </label>
       {children}
-      {error && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{error}</p>}
+      {error && <p style={{ fontSize: 11, color: '#b91c1c', marginTop: 4 }}>{error}</p>}
     </div>
   )
 }

@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { PlanGate } from '@/app/components/seller/SubscriptionBadge';
 import AIToolsPanel from '@/app/components/seller/AIToolsPanel';
 import { Brain } from 'lucide-react';
+import { ink } from '@/app/seller/ink';
 
 function AIToolsInner() {
   const { dark } = useTheme();
@@ -18,7 +19,7 @@ function AIToolsInner() {
   const autorun        = searchParams.get('autorun');
 
   const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -28,7 +29,7 @@ function AIToolsInner() {
           background: 'rgba(139,92,246,0.12)',
           border: '1px solid rgba(139,92,246,0.25)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#8b5cf6', flexShrink: 0,
+          color: ink('#8b5cf6', dark), flexShrink: 0,
         }}>
           <Brain size={20} />
         </div>

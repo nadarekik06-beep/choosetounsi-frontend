@@ -30,6 +30,8 @@ import { productsApi as sellerProductsApi } from '@/lib/sellerApi';
 import SalesForecastDashboard from '@/app/seller/components/SalesForecastDashboard';
 import { useLocale, useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
+import { ink } from '@/app/seller/ink';
+import { useTheme } from '@/app/seller/SellerShell';
 const fmt = (n: number) =>
   new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(n) + ' TND';
 
@@ -61,8 +63,9 @@ const ANALYSIS_STEPS = [
 
 function AiTag() {
   const t = useTranslations('seller.aiTools');
+  const { dark } = useTheme();
   return (
-    <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 9px', borderRadius:999, background:'rgba(219,20,46,0.1)', border:'1px solid rgba(219,20,46,0.25)', fontSize:10, fontWeight:800, color:'#f87171' }}>
+    <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 9px', borderRadius:999, background:'rgba(219,20,46,0.1)', border:'1px solid rgba(219,20,46,0.25)', fontSize:10, fontWeight:800, color:ink('#f87171', dark) }}>
       <Brain size={10} /> {t('aiPowered')}
     </span>
   );
@@ -74,9 +77,9 @@ function CopyBtn({ text, dark }: { text: string; dark: boolean }) {
   return (
     <button
       onClick={() => { navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); }}
-      style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:8, border:`1px solid ${dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`, background:'transparent', cursor:'pointer', fontSize:11, fontWeight:700, color: dark ? 'rgba(255,255,255,0.5)' : '#888' }}
+      style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:8, border:`1px solid ${dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`, background:'transparent', cursor:'pointer', fontSize:11, fontWeight:700, color: dark ? 'rgba(255,255,255,0.5)' : '#5b6472' }}
     >
-      {copied ? <Check size={11} style={{ color:'#10b981' }} /> : <Copy size={11} />}
+      {copied ? <Check size={11} style={{ color:ink('#10b981', dark) }} /> : <Copy size={11} />}
       {copied ? t('copied') : t('copy')}
     </button>
   );
@@ -85,7 +88,7 @@ function CopyBtn({ text, dark }: { text: string; dark: boolean }) {
 function Field({ label, value, dark }: { label: string; value: string | number; dark: boolean }) {
   return (
     <div style={{ background: dark ? 'rgba(255,255,255,0.04)' : '#f8fafc', borderRadius:10, padding:'10px 14px' }}>
-      <p style={{ fontSize:10, fontWeight:700, color: dark ? 'rgba(255,255,255,0.4)' : '#888', margin:'0 0 3px', textTransform:'uppercase', letterSpacing:'0.06em' }}>{label}</p>
+      <p style={{ fontSize:10, fontWeight:700, color: dark ? 'rgba(255,255,255,0.55)' : '#5b6472', margin:'0 0 3px', textTransform:'uppercase', letterSpacing:'0.06em' }}>{label}</p>
       <p style={{ fontSize:13, fontWeight:700, color: dark ? '#fff' : '#111', margin:0, lineHeight:1.5 }}>{value}</p>
     </div>
   );
@@ -171,7 +174,7 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
 
   const border  = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const text    = dark ? '#fff' : '#111';
-  const muted   = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted   = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const cardBg  = dark ? '#161b27' : '#ffffff';
 
   return (
@@ -204,15 +207,15 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
             <div key={step.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', borderRadius:12, background: isActive ? `${step.color}10` : isDone ? (dark?'rgba(16,185,129,0.06)':'rgba(16,185,129,0.04)') : 'transparent', border: isActive ? `1px solid ${step.color}30` : '1px solid transparent', transition:'all 0.3s ease' }}>
               <div style={{ width:32, height:32, borderRadius:10, background: isDone ? 'rgba(16,185,129,0.15)' : isActive ? `${step.color}18` : (dark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)'), border: `1px solid ${isDone?'rgba(16,185,129,0.3)':isActive?`${step.color}30`:'transparent'}`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'all 0.3s ease' }}>
                 {isDone
-                  ? <Check size={14} style={{ color:'#10b981' }} />
+                  ? <Check size={14} style={{ color:ink('#10b981', dark) }} />
                   : isActive
-                    ? <Loader2 size={14} style={{ color:step.color, animation:'spin 0.8s linear infinite' }} />
+                    ? <Loader2 size={14} style={{ color:ink(step.color, dark), animation:'spin 0.8s linear infinite' }} />
                     : <Icon size={14} style={{ color: isPending ? muted : step.color, opacity: isPending ? 0.4 : 1 }} />
                 }
               </div>
 
               <div style={{ flex:1 }}>
-                <p style={{ fontSize:12, fontWeight:700, color: isDone ? '#10b981' : isActive ? text : muted, margin:'0 0 4px', transition:'color 0.3s' }}>
+                <p style={{ fontSize:12, fontWeight:700, color: isDone ? ink('#10b981', dark) : isActive ? text : muted, margin:'0 0 4px', transition:'color 0.3s' }}>
                   {t(`steps.${step.id}`)}
                 </p>
                 {isActive && (
@@ -222,17 +225,17 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
                 )}
               </div>
 
-              {isDone && <span style={{ fontSize:9, fontWeight:800, color:'#10b981', background:'rgba(16,185,129,0.1)', padding:'2px 6px', borderRadius:999 }}>{t('done')}</span>}
-              {isActive && <span style={{ fontSize:9, fontWeight:800, color:step.color, background:`${step.color}15`, padding:'2px 6px', borderRadius:999, animation:'pulse 1s ease-in-out infinite' }}>{t('active')}</span>}
+              {isDone && <span style={{ fontSize:9, fontWeight:800, color:ink('#10b981', dark), background:'rgba(16,185,129,0.1)', padding:'2px 6px', borderRadius:999 }}>{t('done')}</span>}
+              {isActive && <span style={{ fontSize:9, fontWeight:800, color:ink(step.color, dark), background:`${step.color}15`, padding:'2px 6px', borderRadius:999, animation:'pulse 1s ease-in-out infinite' }}>{t('active')}</span>}
             </div>
           );
         })}
       </div>
 
       <div style={{ background: dark?'rgba(59,130,246,0.06)':'rgba(59,130,246,0.04)', border:'1px solid rgba(59,130,246,0.15)', borderRadius:10, padding:'10px 14px', display:'flex', gap:10, alignItems:'flex-start' }}>
-        <Globe size={14} style={{ color:'#3b82f6', marginTop:1, flexShrink:0 }} />
+        <Globe size={14} style={{ color:ink('#3b82f6', dark), marginTop:1, flexShrink:0 }} />
         <p style={{ fontSize:11, color:muted, margin:0, lineHeight:1.5 }}>
-  {t.rich('scanning', { b: (c) => <strong style={{ color:'#3b82f6' }}>{c}</strong> })}
+  {t.rich('scanning', { b: (c) => <strong style={{ color:ink('#3b82f6', dark) }}>{c}</strong> })}
 </p>
       </div>
 
@@ -255,7 +258,7 @@ function PriceCard({ label, price, accent, highlight = false, dark }: {
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   return (
     <div style={{ background: highlight ? `${accent}12` : (dark?'rgba(255,255,255,0.03)':'#f8fafc'), borderRadius:12, padding:'14px 12px', textAlign:'center', border: highlight ? `1px solid ${accent}30` : `1px solid ${border}`, flex:1, minWidth:0 }}>
-      <p style={{ fontSize:9, fontWeight:800, color: highlight ? accent : (dark?'rgba(255,255,255,0.4)':'#888'), margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.07em' }}>{label}</p>
+      <p style={{ fontSize:9, fontWeight:800, color: highlight ? accent : (dark?'rgba(255,255,255,0.55)':'#5b6472'), margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.07em' }}>{label}</p>
       <p style={{ fontSize: highlight ? 20 : 16, fontWeight:900, color: highlight ? accent : (dark?'#fff':'#111'), margin:0, letterSpacing:'-0.03em' }}>
         {new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(price)}
         <span style={{ fontSize:10, fontWeight:700, marginInlineStart:3 }}>TND</span>
@@ -274,7 +277,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
 }) {
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const text   = dark ? '#fff' : '#111';
-  const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const subBg  = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
   const hasRealData = report.has_data && (dataSource === 'serper' || dataSource === 'cache');
   const t = useTranslations('seller.aiTools.market');
@@ -282,15 +285,15 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
 
   const PLATFORM_META: Record<string, { color: string; emoji: string }> = {
     'Mytek':                    { color:'#e84393', emoji:'🖥️' },
-    'Tunisianet':               { color:'#f97316', emoji:'🛒' },
-    'Tayara.tn':                { color:'#06b6d4', emoji:'📦' },
+    'Tunisianet':               { color:ink('#f97316', dark), emoji:'🛒' },
+    'Tayara.tn':                { color:ink('#06b6d4', dark), emoji:'📦' },
     'ChooseTounsi':             { color:'#db142e', emoji:'🇹🇳' },
-    'Tunisian Market Knowledge':{ color:'#8b5cf6', emoji:'🧠' },
-    'Tunisian Market Knowledge (AI)': { color:'#8b5cf6', emoji:'🧠' },
+    'Tunisian Market Knowledge':{ color:ink('#8b5cf6', dark), emoji:'🧠' },
+    'Tunisian Market Knowledge (AI)': { color:ink('#8b5cf6', dark), emoji:'🧠' },
     'Google Tunisie':   { color:'#4285f4', emoji:'🔍' },
-    'Tunisian Market':  { color:'#10b981', emoji:'🏪' },
+    'Tunisian Market':  { color:ink('#10b981', dark), emoji:'🏪' },
     'Facebook Market':  { color:'#1877f2', emoji:'📘' },
-    'Scoop.tn':         { color:'#8b5cf6', emoji:'🛍️' },
+    'Scoop.tn':         { color:ink('#8b5cf6', dark), emoji:'🛍️' },
   };
 
   const getPlatformMeta = (name: string) =>
@@ -308,7 +311,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
         </p>
       <span style={{ marginInlineStart:'auto', fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:999,
   background: hasRealData ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
-  color: hasRealData ? '#10b981' : '#f59e0b',
+  color: hasRealData ? ink('#10b981', dark) : ink('#f59e0b', dark),
   border: hasRealData ? '1px solid rgba(16,185,129,0.25)' : '1px solid rgba(245,158,11,0.25)' }}>
   {report.has_data
     ? `✓ ${t('results', { count: report.data_points })}`
@@ -328,7 +331,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
               <p style={{ fontSize:11, fontWeight:800, color:'#db142e', margin:0 }}>ChooseTounsi</p>
               <p style={{ fontSize:9, color:muted, margin:0 }}>{t('platformData')}</p>
             </div>
-            <CheckCircle2 size={12} style={{ color:'#10b981', marginInlineStart:2 }} />
+            <CheckCircle2 size={12} style={{ color:ink('#10b981', dark), marginInlineStart:2 }} />
           </div>
         ); })()}
 
@@ -341,10 +344,10 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
               animation:`fadeIn ${0.3 + i * 0.1}s ease` }}>
               <span style={{ fontSize:16 }}>{m.emoji}</span>
               <div>
-                <p style={{ fontSize:11, fontWeight:800, color:m.color, margin:0 }}>{src.source}</p>
+                <p style={{ fontSize:11, fontWeight:800, color:ink(m.color, dark), margin:0 }}>{src.source}</p>
                 <p style={{ fontSize:9, color:muted, margin:0 }}>{t('sourceLine', { count: src.count, avg: money0(src.avg) })}</p>
               </div>
-              <CheckCircle2 size={12} style={{ color:'#10b981', marginInlineStart:2 }} />
+              <CheckCircle2 size={12} style={{ color:ink('#10b981', dark), marginInlineStart:2 }} />
             </div>
           );
         })}
@@ -358,10 +361,10 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
       animation:`fadeIn ${0.3 + i * 0.1}s ease` }}>
       <span style={{ fontSize:16 }}>{m.emoji}</span>
       <div>
-        <p style={{ fontSize:11, fontWeight:800, color:m.color, margin:0 }}>{name}</p>
+        <p style={{ fontSize:11, fontWeight:800, color:ink(m.color, dark), margin:0 }}>{name}</p>
         <p style={{ fontSize:9, color:muted, margin:0 }}>{t('googleIndexed')}</p>
       </div>
-      <CheckCircle2 size={12} style={{ color:'#10b981', marginInlineStart:2 }} />
+      <CheckCircle2 size={12} style={{ color:ink('#10b981', dark), marginInlineStart:2 }} />
     </div>
   );
 })}
@@ -369,7 +372,7 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
   <div style={{ padding:'12px 14px', borderRadius:12,
     background: dark ? 'rgba(245,158,11,0.06)' : 'rgba(245,158,11,0.04)',
     border:'1px solid rgba(245,158,11,0.18)' }}>
-    <p style={{ fontSize:11, color:'#f59e0b', margin:0, fontWeight:700 }}>
+    <p style={{ fontSize:11, color:ink('#f59e0b', dark), margin:0, fontWeight:700 }}>
       ⚠ {t('noExternal')}
     </p>
   </div>
@@ -379,9 +382,9 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
       {report.has_data && (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
           {[
-            { label:t('avg'),     val:report.market_avg,  color: hasRealData ? '#10b981' : '#f59e0b', icon:'📊' },
-            { label:t('lowest'),  val:report.market_min,  color: hasRealData ? '#10b981' : '#f59e0b', icon:'⬇️' },
-            { label:t('highest'), val:report.market_max,  color: hasRealData ? '#10b981' : '#f59e0b', icon:'⬆️' },
+            { label:t('avg'),     val:report.market_avg,  color: hasRealData ? ink('#10b981', dark) : ink('#f59e0b', dark), icon:'📊' },
+            { label:t('lowest'),  val:report.market_min,  color: hasRealData ? ink('#10b981', dark) : ink('#f59e0b', dark), icon:'⬇️' },
+            { label:t('highest'), val:report.market_max,  color: hasRealData ? ink('#10b981', dark) : ink('#f59e0b', dark), icon:'⬆️' },
           ].map(({ label, val, color, icon }) => (
             <div key={label} style={{ background:subBg, borderRadius:12, padding:'12px', textAlign:'center', border:`1px solid ${border}` }}>
               <p style={{ fontSize:14, margin:'0 0 2px' }}>{icon}</p>
@@ -414,12 +417,12 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
       <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 14px', borderRadius:12,
         background: dark ? 'rgba(16,185,129,0.06)' : 'rgba(16,185,129,0.04)',
         border:'1px solid rgba(16,185,129,0.18)' }}>
-        <Shield size={18} style={{ color:'#10b981', flexShrink:0 }} />
+        <Shield size={18} style={{ color:ink('#10b981', dark), flexShrink:0 }} />
         <div>
-          <p style={{ fontSize:11, fontWeight:900, color:'#10b981', margin:'0 0 1px' }}>{t('verified')}</p>
+          <p style={{ fontSize:11, fontWeight:900, color:ink('#10b981', dark), margin:'0 0 1px' }}>{t('verified')}</p>
           <p style={{ fontSize:10, color:muted, margin:0 }}>{t('verifiedSub')}</p>
         </div>
-        <Star size={14} style={{ color:'#f59e0b', marginInlineStart:'auto', flexShrink:0 }} />
+        <Star size={14} style={{ color:ink('#f59e0b', dark), marginInlineStart:'auto', flexShrink:0 }} />
       </div>
     </div>
   );
@@ -475,7 +478,7 @@ useEffect(() => {
   const cardBg = dark ? '#161b27' : '#ffffff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const text   = dark ? '#fff' : '#111';
-  const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const subBg  = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
 
   const run = async (idOverride?: number) => {
@@ -513,7 +516,7 @@ useEffect(() => {
           <ProdSelect products={products} value={selectedId} onChange={setSelectedId} dark={dark} />
           <RunBtn onClick={run} loading={loading} label={t('run')} icon={DollarSign} />
         </div>
-        {error && <p style={{ color:'#ef4444', fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
+        {error && <p style={{ color:ink('#ef4444', dark), fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
       </div>
 
       {loading && <PriceAnalysisLoader dark={dark} />}
@@ -556,7 +559,7 @@ useEffect(() => {
               <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10, fontWeight:800,
                 padding:'4px 11px', borderRadius:999,
                 background: CONFIDENCE_COLORS[r.confidence] ? `${CONFIDENCE_COLORS[r.confidence]}18` : 'rgba(148,163,184,0.12)',
-                color: CONFIDENCE_COLORS[r.confidence] ?? '#94a3b8',
+                color: CONFIDENCE_COLORS[r.confidence] ?? ink('#94a3b8', dark),
                 border:`1px solid ${CONFIDENCE_COLORS[r.confidence] ?? '#94a3b8'}30` }}>
                 {r.confidence === 'high' ? <><Star size={9}/> {t('confidence.high')}</>
                 : r.confidence === 'medium' ? <>◎ {t('confidence.medium')}</>
@@ -593,9 +596,9 @@ useEffect(() => {
 
             <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, borderTop:'1px solid rgba(219,20,46,0.12)', paddingTop:16 }}>
               {([
-                { label:t('tiers.competitive'), amount:r.competitive_price,    color:'#3b82f6', icon:'⚖️', desc:t('tiers.competitiveDesc') },
-                { label:t('tiers.premium'),     amount:r.premium_price,        color:'#8b5cf6', icon:'👑', desc:t('tiers.premiumDesc') },
-                { label:t('tiers.floor'),       amount:r.min_profitable_price, color:'#10b981', icon:'🛡️', desc:t('tiers.floorDesc') },
+                { label:t('tiers.competitive'), amount:r.competitive_price,    color:ink('#3b82f6', dark), icon:'⚖️', desc:t('tiers.competitiveDesc') },
+                { label:t('tiers.premium'),     amount:r.premium_price,        color:ink('#8b5cf6', dark), icon:'👑', desc:t('tiers.premiumDesc') },
+                { label:t('tiers.floor'),       amount:r.min_profitable_price, color:ink('#10b981', dark), icon:'🛡️', desc:t('tiers.floorDesc') },
               ]).map(({ label, amount, color, icon, desc }) => (
                 <div key={label} style={{ background: dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)', borderRadius:12, padding:'10px', textAlign:'center' }}>
                   <p style={{ fontSize:14, margin:'0 0 3px' }}>{icon}</p>
@@ -661,7 +664,7 @@ useEffect(() => {
               <div style={{ background:'rgba(245,158,11,0.05)', border:'1px solid rgba(245,158,11,0.15)', borderRadius:14, padding:'13px 15px', display:'flex', gap:10, alignItems:'flex-start' }}>
                 <span style={{ fontSize:20, flexShrink:0 }}>🧲</span>
                 <div>
-                  <p style={{ fontSize:10, fontWeight:900, color:'#f59e0b', margin:'0 0 4px', textTransform:'uppercase' }}>{t('tip')}</p>
+                  <p style={{ fontSize:10, fontWeight:900, color:ink('#f59e0b', dark), margin:'0 0 4px', textTransform:'uppercase' }}>{t('tip')}</p>
                   <p style={{ fontSize:11, color: dark?'rgba(255,255,255,0.75)':'#555', margin:0, lineHeight:1.55 }}>{r.psychological_tip}</p>
                 </div>
               </div>
@@ -721,7 +724,7 @@ function SeasonSelector({
   productSeasons: string[]; selected: string[];
   onChange: (seasons: string[]) => void; dark: boolean;
 }) {
-  const muted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const toggle = (slug: string) => {
     if (slug === 'all_seasons') {
       onChange(selected.includes('all_seasons') ? [] : ['all_seasons']);
@@ -747,7 +750,7 @@ function SeasonSelector({
           Forecast for season
         </p>
         {selected.length > 0 && (
-          <span style={{ fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:999, background:'rgba(219,20,46,0.1)', border:'1px solid rgba(219,20,46,0.25)', color:'#f87171' }}>
+          <span style={{ fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:999, background:'rgba(219,20,46,0.1)', border:'1px solid rgba(219,20,46,0.25)', color:ink('#f87171', dark) }}>
             {selected.length} selected
           </span>
         )}
@@ -766,7 +769,7 @@ function SeasonSelector({
         })}
       </div>
       {selected.length === 0 && (
-        <p style={{ fontSize:10, color: dark ? 'rgba(255,255,255,0.3)' : '#aaa', margin:'6px 0 0', fontStyle:'italic' }}>
+        <p style={{ fontSize:10, color: dark ? 'rgba(255,255,255,0.55)' : '#5b6472', margin:'6px 0 0', fontStyle:'italic' }}>
           No season selected — will forecast across all product seasons.
         </p>
       )}
@@ -779,7 +782,7 @@ function SeasonBreakdownPanel({ perSeasonData, dark }: {
   dark: boolean;
 }) {
   if (!perSeasonData || perSeasonData.length < 2) return null;
-  const muted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
       <p style={{ fontSize:10, fontWeight:800, color:muted, margin:0, textTransform:'uppercase', letterSpacing:'0.06em' }}>Per-season breakdown</p>
@@ -791,9 +794,9 @@ function SeasonBreakdownPanel({ perSeasonData, dark }: {
             <div key={sd.slug} style={{ background: dark?'rgba(255,255,255,0.03)':'#f8fafc', borderRadius:12, border:`1px solid ${meta.color}22`, padding:'12px 14px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8 }}>
                 <span style={{ fontSize:18 }}>{meta.emoji}</span>
-                <p style={{ fontSize:11, fontWeight:800, color:meta.color, margin:0 }}>{sd.label}</p>
+                <p style={{ fontSize:11, fontWeight:800, color:ink(meta.color, dark), margin:0 }}>{sd.label}</p>
               </div>
-              <p style={{ fontSize:22, fontWeight:900, color:meta.color, margin:'0 0 4px', letterSpacing:'-0.03em' }}>×{sd.effective_multiplier.toFixed(2)}</p>
+              <p style={{ fontSize:22, fontWeight:900, color:ink(meta.color, dark), margin:'0 0 4px', letterSpacing:'-0.03em' }}>×{sd.effective_multiplier.toFixed(2)}</p>
               <p style={{ fontSize:9, color:muted, margin:0, fontWeight:700, textTransform:'uppercase' }}>
                 {isReal ? `✓ Real data (${sd.real_data_points} samples)` : '📊 Market baseline'}
               </p>
@@ -813,14 +816,14 @@ function AlgorithmPanel({ algorithm, dark }: {
   dark: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const muted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const text  = dark ? '#fff' : '#111';
   return (
     <div style={{ borderRadius:12, border:'1px solid rgba(99,102,241,0.2)', overflow:'hidden' }}>
       <button onClick={() => setOpen(o => !o)} style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'10px 14px', background: dark?'rgba(99,102,241,0.06)':'rgba(99,102,241,0.04)', border:'none', cursor:'pointer', outline:'none' }}>
-        <BarChart3 size={13} style={{ color:'#6366f1', flexShrink:0 }} />
-        <p style={{ fontSize:10, fontWeight:800, color:'#6366f1', margin:0, textTransform:'uppercase', letterSpacing:'0.06em' }}>Algorithm transparency</p>
-        <ChevronDown size={12} style={{ color:'#6366f1', marginInlineStart:'auto', transform: open?'rotate(180deg)':'none', transition:'transform 0.2s' }} />
+        <BarChart3 size={13} style={{ color:ink('#6366f1', dark), flexShrink:0 }} />
+        <p style={{ fontSize:10, fontWeight:800, color:ink('#6366f1', dark), margin:0, textTransform:'uppercase', letterSpacing:'0.06em' }}>Algorithm transparency</p>
+        <ChevronDown size={12} style={{ color:ink('#6366f1', dark), marginInlineStart:'auto', transform: open?'rotate(180deg)':'none', transition:'transform 0.2s' }} />
       </button>
       {open && (
         <div style={{ padding:'12px 14px', background: dark?'rgba(255,255,255,0.02)':'#fafafa', display:'flex', flexDirection:'column', gap:8 }}>
@@ -870,12 +873,12 @@ function MiniBarChart({ weeks, trend, dark }: {
                 transition:'height 0.8s ease',
                 animation:`fadeIn ${0.3 + i * 0.1}s ease` }} />
               {w.predicted > 0 && (
-                <span style={{ position:'absolute', top:-18, fontSize:10, fontWeight:900, color: isBest ? trendColor : dark?'rgba(255,255,255,0.5)':'#888' }}>
+                <span style={{ position:'absolute', top:-18, fontSize:10, fontWeight:900, color: isBest ? trendColor : dark?'rgba(255,255,255,0.5)':'#5b6472' }}>
                   {w.predicted}
                 </span>
               )}
             </div>
-            <p style={{ fontSize:8, color: dark?'rgba(255,255,255,0.35)':'#aaa', margin:0, fontWeight:700, textAlign:'center' }}>
+            <p style={{ fontSize:8, color: dark?'rgba(255,255,255,0.55)':'#5b6472', margin:0, fontWeight:700, textAlign:'center' }}>
               W{i+1}
             </p>
           </div>
@@ -905,7 +908,7 @@ function ProductDNAStrip({ ctx, dark }: {
 }) {
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const text   = dark ? '#fff' : '#111';
-  const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const subBg  = dark ? 'rgba(255,255,255,0.03)' : '#fafafa';
 
   const hasInfo      = ctx.info_attributes && Object.keys(ctx.info_attributes).length > 0;
@@ -928,12 +931,12 @@ function ProductDNAStrip({ ctx, dark }: {
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
         <div style={{ width:26, height:26, borderRadius:8, background:'rgba(139,92,246,0.12)', border:'1px solid rgba(139,92,246,0.25)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-          <Layers size={12} style={{ color:'#8b5cf6' }} />
+          <Layers size={12} style={{ color:ink('#8b5cf6', dark) }} />
         </div>
-        <p style={{ fontSize:10, fontWeight:900, color:'#8b5cf6', margin:0, textTransform:'uppercase', letterSpacing:'0.07em' }}>
+        <p style={{ fontSize:10, fontWeight:900, color:ink('#8b5cf6', dark), margin:0, textTransform:'uppercase', letterSpacing:'0.07em' }}>
           Product DNA — used by AI
         </p>
-        <span style={{ marginInlineStart:'auto', fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:999, background:'rgba(139,92,246,0.1)', border:'1px solid rgba(139,92,246,0.2)', color:'#8b5cf6' }}>
+        <span style={{ marginInlineStart:'auto', fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:999, background:'rgba(139,92,246,0.1)', border:'1px solid rgba(139,92,246,0.2)', color:ink('#8b5cf6', dark) }}>
           🧬 Context
         </span>
       </div>
@@ -941,17 +944,17 @@ function ProductDNAStrip({ ctx, dark }: {
       {/* Row 1: Subcategory + variant axes */}
       <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
         {ctx.subcategory && (
-          <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999, background: dark?'rgba(139,92,246,0.1)':'rgba(139,92,246,0.07)', border:'1px solid rgba(139,92,246,0.22)', fontSize:10, fontWeight:700, color:'#8b5cf6' }}>
+          <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999, background: dark?'rgba(139,92,246,0.1)':'rgba(139,92,246,0.07)', border:'1px solid rgba(139,92,246,0.22)', fontSize:10, fontWeight:700, color:ink('#8b5cf6', dark) }}>
             📂 {ctx.subcategory}
           </span>
         )}
         {hasVariants && axes.length > 0 && (
-          <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999, background: dark?'rgba(59,130,246,0.1)':'rgba(59,130,246,0.07)', border:'1px solid rgba(59,130,246,0.22)', fontSize:10, fontWeight:700, color:'#3b82f6' }}>
+          <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999, background: dark?'rgba(59,130,246,0.1)':'rgba(59,130,246,0.07)', border:'1px solid rgba(59,130,246,0.22)', fontSize:10, fontWeight:700, color:ink('#3b82f6', dark) }}>
             🎨 {axes.join(' × ')}
           </span>
         )}
         {hasVariants && (
-          <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999, background: dark?'rgba(16,185,129,0.08)':'rgba(16,185,129,0.05)', border:'1px solid rgba(16,185,129,0.2)', fontSize:10, fontWeight:700, color:'#10b981' }}>
+          <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999, background: dark?'rgba(16,185,129,0.08)':'rgba(16,185,129,0.05)', border:'1px solid rgba(16,185,129,0.2)', fontSize:10, fontWeight:700, color:ink('#10b981', dark) }}>
             🔀 {ctx.active_variants}/{ctx.total_variants} variants active
           </span>
         )}
@@ -962,7 +965,7 @@ function ProductDNAStrip({ ctx, dark }: {
         )}
         {/* Price range */}
         {hasVariants && ctx.variant_price_min != null && ctx.variant_price_max != null && ctx.variant_price_min !== ctx.variant_price_max && (
-          <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999, background: dark?'rgba(245,158,11,0.08)':'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)', fontSize:10, fontWeight:700, color:'#f59e0b' }}>
+          <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999, background: dark?'rgba(245,158,11,0.08)':'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)', fontSize:10, fontWeight:700, color:ink('#f59e0b', dark) }}>
             💰 {new Intl.NumberFormat('fr-TN',{maximumFractionDigits:0}).format(ctx.variant_price_min)}–{new Intl.NumberFormat('fr-TN',{maximumFractionDigits:0}).format(ctx.variant_price_max)} TND range
           </span>
         )}
@@ -995,7 +998,7 @@ function ProductDNAStrip({ ctx, dark }: {
                 <p style={{ fontSize:10, fontWeight:700, color: i === 0 ? '#10b981' : (dark?'rgba(255,255,255,0.7)':'#444'), margin:0, flex:1 }}>
                   {v.combo}
                 </p>
-                <span style={{ fontSize:10, fontWeight:900, color: i === 0 ? '#10b981' : muted }}>
+                <span style={{ fontSize:10, fontWeight:900, color: i === 0 ? ink('#10b981', dark) : muted }}>
                   {v.units_sold} units
                 </span>
               </div>
@@ -1007,8 +1010,8 @@ function ProductDNAStrip({ ctx, dark }: {
       {/* Row 4: Stockout warning */}
       {stockoutList.length > 0 && (
         <div style={{ display:'flex', alignItems:'flex-start', gap:8, padding:'8px 12px', borderRadius:10, background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.2)' }}>
-          <AlertTriangle size={12} style={{ color:'#ef4444', flexShrink:0, marginTop:1 }} />
-          <p style={{ fontSize:10, fontWeight:700, color:'#ef4444', margin:0, lineHeight:1.4 }}>
+          <AlertTriangle size={12} style={{ color:ink('#ef4444', dark), flexShrink:0, marginTop:1 }} />
+          <p style={{ fontSize:10, fontWeight:700, color:ink('#ef4444', dark), margin:0, lineHeight:1.4 }}>
             Stockout detected: {stockoutList.slice(0, 4).join(', ')}{stockoutList.length > 4 ? ` +${stockoutList.length - 4} more` : ''}
           </p>
         </div>
@@ -1028,7 +1031,7 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
   const cardBg = dark ? '#161b27' : '#ffffff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const text   = dark ? '#fff' : '#111';
-  const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const subBg  = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
 
   useEffect(() => {
@@ -1084,7 +1087,7 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ width:32, height:32, borderRadius:10, background:'rgba(59,130,246,0.12)', border:'1px solid rgba(59,130,246,0.25)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <TrendingUp size={15} style={{ color:'#3b82f6' }} />
+              <TrendingUp size={15} style={{ color:ink('#3b82f6', dark) }} />
             </div>
             <div>
               <p style={{ fontWeight:900, fontSize:13, color:text, margin:0 }}>Sales Forecast</p>
@@ -1104,13 +1107,13 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
 
         {!selectedId && (
           <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', borderRadius:10, background:dark?'rgba(59,130,246,0.06)':'rgba(59,130,246,0.04)', border:'1px solid rgba(59,130,246,0.15)' }}>
-            <Info size={13} style={{ color:'#3b82f6', flexShrink:0 }} />
+            <Info size={13} style={{ color:ink('#3b82f6', dark), flexShrink:0 }} />
             <p style={{ fontSize:11, color:muted, margin:0, lineHeight:1.5 }}>Select a product to see its declared seasons and forecast demand.</p>
           </div>
         )}
 
         <RunBtn onClick={run} loading={loading} label="Predict Sales" icon={TrendingUp} />
-        {error && <p style={{ color:'#ef4444', fontSize:12, margin:0, fontWeight:600 }}>{error}</p>}
+        {error && <p style={{ color:ink('#ef4444', dark), fontSize:12, margin:0, fontWeight:600 }}>{error}</p>}
       </div>
 
       {/* ── Season badge ── */}
@@ -1118,17 +1121,17 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
         <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', borderRadius:12, background:dark?'rgba(139,92,246,0.08)':'rgba(139,92,246,0.05)', border:'1px solid rgba(139,92,246,0.2)', animation:'fadeIn 0.3s ease' }}>
           <span style={{ fontSize:18 }}>{ctx.is_multi_season ? '🌐' : (SEASON_META[ctx.season]?.emoji ?? '📅')}</span>
           <div style={{ flex:1 }}>
-            <p style={{ fontSize:10, fontWeight:800, color:'#8b5cf6', margin:'0 0 1px', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+            <p style={{ fontSize:10, fontWeight:800, color:ink('#8b5cf6', dark), margin:'0 0 1px', textTransform:'uppercase', letterSpacing:'0.06em' }}>
               {ctx.is_multi_season ? 'Multi-season forecast' : 'Product season'}
             </p>
             <p style={{ fontSize:12, fontWeight:700, color:text, margin:0 }}>{ctx.season_label}</p>
           </div>
           {ctx.is_multi_season && (
-            <span style={{ fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:999, background:'rgba(139,92,246,0.1)', border:'1px solid rgba(139,92,246,0.2)', color:'#8b5cf6' }}>
+            <span style={{ fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:999, background:'rgba(139,92,246,0.1)', border:'1px solid rgba(139,92,246,0.2)', color:ink('#8b5cf6', dark) }}>
               {ctx.target_seasons?.length} seasons combined
             </span>
           )}
-          <span style={{ fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:999, background:'rgba(139,92,246,0.1)', border:'1px solid rgba(139,92,246,0.2)', color:'#8b5cf6' }}>Set on product</span>
+          <span style={{ fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:999, background:'rgba(139,92,246,0.1)', border:'1px solid rgba(139,92,246,0.2)', color:ink('#8b5cf6', dark) }}>Set on product</span>
         </div>
       )}
 
@@ -1153,7 +1156,7 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
           {ctx.momentum && (
             <div style={{ marginTop:10, display:'flex', alignItems:'center', gap:6 }}>
               <span style={{ fontSize:10, fontWeight:700, color:muted }}>Trend:</span>
-              <span style={{ fontSize:10, fontWeight:900, color: ctx.momentum==='growing'?'#10b981':ctx.momentum==='declining'?'#ef4444':'#6b7280' }}>
+              <span style={{ fontSize:10, fontWeight:900, color: ctx.momentum==='growing'?ink('#10b981', dark):ctx.momentum==='declining'?ink('#ef4444', dark):'#6b7280' }}>
                 {ctx.momentum==='growing'?'📈 Growing':ctx.momentum==='declining'?'📉 Declining':'➡️ Stable'}
               </span>
             </div>
@@ -1174,7 +1177,7 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ fontSize:22 }}>{ctx?.is_multi_season ? '🌐' : sm.emoji}</span>
                 <div>
-                  <p style={{ fontSize:12, fontWeight:900, color:sm.color, margin:0 }}>{ctx?.season_label ?? 'Sales'} Forecast</p>
+                  <p style={{ fontSize:12, fontWeight:900, color:ink(sm.color, dark), margin:0 }}>{ctx?.season_label ?? 'Sales'} Forecast</p>
                   <p style={{ fontSize:10, color:muted, margin:0 }}>{ctx?.is_multi_season ? 'Combined season intelligence' : sm.desc}</p>
                 </div>
               </div>
@@ -1191,7 +1194,7 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
               <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, marginTop:8 }}>
                 <span style={{ fontSize:13, fontWeight:900, color:trendColor }}>{r.growth_pct >= 0 ? '+' : ''}{r.growth_pct}%</span>
                 <span style={{ fontSize:11, color:muted }}>vs monthly average</span>
-                <span style={{ fontSize:11, fontWeight:800, color: r.trend==='up'?'#10b981':r.trend==='down'?'#ef4444':'#6b7280' }}>
+                <span style={{ fontSize:11, fontWeight:800, color: r.trend==='up'?ink('#10b981', dark):r.trend==='down'?ink('#ef4444', dark):'#6b7280' }}>
                   {r.trend==='up'?'↑ Trending up':r.trend==='down'?'↓ Trending down':'→ Stable'}
                 </span>
               </div>
@@ -1224,10 +1227,10 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
 
           <div style={{ background:cardBg, borderRadius:16, border:`1px solid ${border}`, padding:'14px 16px', display:'flex', gap:10, alignItems:'flex-start' }}>
             <div style={{ width:30, height:30, borderRadius:9, background:'rgba(59,130,246,0.1)', border:'1px solid rgba(59,130,246,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              <Brain size={14} style={{ color:'#3b82f6' }} />
+              <Brain size={14} style={{ color:ink('#3b82f6', dark) }} />
             </div>
             <div>
-              <p style={{ fontSize:10, fontWeight:900, color:'#3b82f6', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'0.06em' }}>AI Verdict</p>
+              <p style={{ fontSize:10, fontWeight:900, color:ink('#3b82f6', dark), margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'0.06em' }}>AI Verdict</p>
               <p style={{ fontSize:12, color:dark?'rgba(255,255,255,0.82)':'#333', margin:0, lineHeight:1.65, fontWeight:500 }}>{r.key_factor}</p>
             </div>
           </div>
@@ -1236,16 +1239,16 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
             <div style={{ background:dark?'rgba(16,185,129,0.07)':'rgba(16,185,129,0.04)', border:'1px solid rgba(16,185,129,0.2)', borderRadius:16, padding:'14px 16px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
                 <span style={{ fontSize:20 }}>📦</span>
-                <p style={{ fontSize:11, fontWeight:900, color:'#10b981', margin:0, textTransform:'uppercase', letterSpacing:'0.05em' }}>Stock Target</p>
+                <p style={{ fontSize:11, fontWeight:900, color:ink('#10b981', dark), margin:0, textTransform:'uppercase', letterSpacing:'0.05em' }}>Stock Target</p>
               </div>
-              <p style={{ fontSize:28, fontWeight:900, color:'#10b981', margin:'0 0 4px', letterSpacing:'-0.03em' }}>{r.stock_recommendation || r.predicted_units + ' units'}</p>
+              <p style={{ fontSize:28, fontWeight:900, color:ink('#10b981', dark), margin:'0 0 4px', letterSpacing:'-0.03em' }}>{r.stock_recommendation || r.predicted_units + ' units'}</p>
               <p style={{ fontSize:10, color:muted, margin:0, lineHeight:1.5 }}>{r.advice}</p>
             </div>
             {r.opportunity && (
               <div style={{ background:dark?'rgba(245,158,11,0.07)':'rgba(245,158,11,0.04)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:16, padding:'14px 16px' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
                   <span style={{ fontSize:20 }}>💡</span>
-                  <p style={{ fontSize:11, fontWeight:900, color:'#f59e0b', margin:0, textTransform:'uppercase', letterSpacing:'0.05em' }}>Opportunity</p>
+                  <p style={{ fontSize:11, fontWeight:900, color:ink('#f59e0b', dark), margin:0, textTransform:'uppercase', letterSpacing:'0.05em' }}>Opportunity</p>
                 </div>
                 <p style={{ fontSize:12, color:dark?'rgba(255,255,255,0.82)':'#333', margin:0, lineHeight:1.6, fontWeight:500 }}>{r.opportunity}</p>
               </div>
@@ -1273,12 +1276,12 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
             <div style={{ background:'rgba(239,68,68,0.04)', border:'1px solid rgba(239,68,68,0.15)', borderRadius:14, padding:'14px 16px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
                 <span style={{ fontSize:16 }}>⚠️</span>
-                <p style={{ fontSize:10, fontWeight:900, color:'#ef4444', margin:0, textTransform:'uppercase', letterSpacing:'0.06em' }}>Watch Out For</p>
+                <p style={{ fontSize:10, fontWeight:900, color:ink('#ef4444', dark), margin:0, textTransform:'uppercase', letterSpacing:'0.06em' }}>Watch Out For</p>
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                 {r.risk_factors.map((f, i) => (
                   <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
-                    <span style={{ fontSize:11, color:'#ef4444', flexShrink:0, marginTop:1 }}>→</span>
+                    <span style={{ fontSize:11, color:ink('#ef4444', dark), flexShrink:0, marginTop:1 }}>→</span>
                     <p style={{ fontSize:12, color:dark?'rgba(255,255,255,0.75)':'#444', margin:0, lineHeight:1.5 }}>{f}</p>
                   </div>
                 ))}
@@ -1314,7 +1317,7 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
   const cardBg = dark ? '#161b27' : '#ffffff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const text   = dark ? '#fff' : '#111';
-  const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const subBg  = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
 
   const run = async () => {
@@ -1341,19 +1344,19 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
             <div>
               <p style={{ fontSize:10, fontWeight:700, color:muted, margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('tone')}</p>
               <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
-                {TONES.map(tn => <button key={tn} onClick={() => setTone(tn)} style={{ padding:'5px 10px', borderRadius:999, fontSize:10, fontWeight:700, cursor:'pointer', border:'none', background: tone===tn?'rgba(219,20,46,0.15)':subBg, color: tone===tn?'#f87171':muted, outline: tone===tn?'1px solid rgba(219,20,46,0.35)':'1px solid transparent' }}>{t(`tones.${tn}`)}</button>)}
+                {TONES.map(tn => <button key={tn} onClick={() => setTone(tn)} style={{ padding:'5px 10px', borderRadius:999, fontSize:10, fontWeight:700, cursor:'pointer', border:'none', background: tone===tn?'rgba(219,20,46,0.15)':subBg, color: tone===tn?ink('#f87171', dark):muted, outline: tone===tn?'1px solid rgba(219,20,46,0.35)':'1px solid transparent' }}>{t(`tones.${tn}`)}</button>)}
               </div>
             </div>
             <div>
               <p style={{ fontSize:10, fontWeight:700, color:muted, margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('language')}</p>
               <div style={{ display:'flex', gap:5 }}>
-                {LANGS.map(l => <button key={l} onClick={() => setLang(l)} style={{ padding:'5px 10px', borderRadius:999, fontSize:10, fontWeight:700, cursor:'pointer', border:'none', background: lang===l?'rgba(59,130,246,0.15)':subBg, color: lang===l?'#60a5fa':muted, outline: lang===l?'1px solid rgba(59,130,246,0.35)':'1px solid transparent' }}>{t(`langs.${l}`)}</button>)}
+                {LANGS.map(l => <button key={l} onClick={() => setLang(l)} style={{ padding:'5px 10px', borderRadius:999, fontSize:10, fontWeight:700, cursor:'pointer', border:'none', background: lang===l?'rgba(59,130,246,0.15)':subBg, color: lang===l?ink('#60a5fa', dark):muted, outline: lang===l?'1px solid rgba(59,130,246,0.35)':'1px solid transparent' }}>{t(`langs.${l}`)}</button>)}
               </div>
             </div>
           </div>
           <RunBtn onClick={run} loading={loading} label={t('run')} icon={FileText} />
         </div>
-        {error && <p style={{ color:'#ef4444', fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
+        {error && <p style={{ color:ink('#ef4444', dark), fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
       </div>
       {r !== null && (
   <div
@@ -1383,13 +1386,13 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
           flexShrink: 0,
         }}
       >
-        <FileText size={14} style={{ color: '#10b981' }} />
+        <FileText size={14} style={{ color: ink('#10b981', dark) }} />
       </div>
       <p
         style={{
           fontSize: 12,
           fontWeight: 900,
-          color: '#10b981',
+          color: ink('#10b981', dark),
           margin: 0,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
@@ -1406,7 +1409,7 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
           borderRadius: 999,
           background: 'rgba(16,185,129,0.1)',
           border: '1px solid rgba(16,185,129,0.25)',
-          color: '#10b981',
+          color: ink('#10b981', dark),
         }}
       >
         {t('quality')}
@@ -1521,7 +1524,7 @@ function DescriptionGeneratorTool({ products, dark, initialProductId }: { produc
         borderRadius: 10,
         border: '1.5px solid rgba(16,185,129,0.35)',
         background: 'rgba(16,185,129,0.06)',
-        color: '#059669',
+        color: ink('#059669', dark),
         fontWeight: 700,
         fontSize: 12,
         cursor: 'pointer',
@@ -1546,9 +1549,9 @@ function BundleProductChip({ name, imageUrl, dark }: { name: string; imageUrl: s
   const [imgErr, setImgErr] = useState(false);
   const showImage = !!imageUrl && !imgErr;
   return (
-    <span style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px', paddingInlineEnd:10, borderRadius:999, background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.25)', fontSize:12, fontWeight:700, color:'#fbbf24' }}>
+    <span style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px', paddingInlineEnd:10, borderRadius:999, background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.25)', fontSize:12, fontWeight:700, color:ink('#fbbf24', dark) }}>
       <span style={{ width:24, height:24, borderRadius:'50%', overflow:'hidden', background: dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-        {showImage ? <img src={imageUrl as string} alt={name} onError={() => setImgErr(true)} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} /> : <Package size={12} style={{ color:'#fbbf24', opacity:0.7 }} />}
+        {showImage ? <img src={imageUrl as string} alt={name} onError={() => setImgErr(true)} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} /> : <Package size={12} style={{ color:ink('#fbbf24', dark), opacity:0.7 }} />}
       </span>
       {name}
     </span>
@@ -1573,7 +1576,7 @@ function BundleRecommenderTool({ products, dark, initialProductId }: { products:
   const cardBg = dark ? '#161b27' : '#ffffff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const text   = dark ? '#fff' : '#111';
-  const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const subBg  = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
 
   const run = async () => {
@@ -1600,7 +1603,7 @@ function BundleRecommenderTool({ products, dark, initialProductId }: { products:
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           <ProdSelect products={products} value={selectedId} onChange={setSelectedId} dark={dark} />
           <div style={{ display:'flex', gap:6 }}>
-            {(['bundle','related'] as const).map(m => <button key={m} onClick={() => setMode(m)} style={{ flex:1, padding:'8px 12px', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', border:'none', background: mode===m?'rgba(219,20,46,0.15)':subBg, color: mode===m?'#f87171':muted, outline: mode===m?'1px solid rgba(219,20,46,0.35)':'1px solid transparent' }}>{m==='bundle'?`📦 ${t('modeBundle')}`:`🔗 ${t('modeRelated')}`}</button>)}
+            {(['bundle','related'] as const).map(m => <button key={m} onClick={() => setMode(m)} style={{ flex:1, padding:'8px 12px', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', border:'none', background: mode===m?'rgba(219,20,46,0.15)':subBg, color: mode===m?ink('#f87171', dark):muted, outline: mode===m?'1px solid rgba(219,20,46,0.35)':'1px solid transparent' }}>{m==='bundle'?`📦 ${t('modeBundle')}`:`🔗 ${t('modeRelated')}`}</button>)}
           </div>
           {mode === 'bundle' && (
             <div>
@@ -1613,13 +1616,13 @@ function BundleRecommenderTool({ products, dark, initialProductId }: { products:
           )}
           <RunBtn onClick={run} loading={loading} label={t('run')} icon={Package} />
         </div>
-        {error && <p style={{ color:'#ef4444', fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
+        {error && <p style={{ color:ink('#ef4444', dark), fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
       </div>
       {coPurchased.length > 0 && (
         <div style={{ background:subBg, borderRadius:14, border:`1px solid ${border}`, padding:'14px 16px' }}>
           <p style={{ fontSize:10, fontWeight:800, color:muted, margin:'0 0 8px', textTransform:'uppercase' }}>{t('coPurchase')}</p>
           <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-            {coPurchased.map((p: any) => <span key={p.id} style={{ padding:'3px 9px', borderRadius:999, background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.25)', fontSize:11, fontWeight:700, color:'#34d399' }}>{p.name} ×{p.co_count}</span>)}
+            {coPurchased.map((p: any) => <span key={p.id} style={{ padding:'3px 9px', borderRadius:999, background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.25)', fontSize:11, fontWeight:700, color:ink('#34d399', dark) }}>{p.name} ×{p.co_count}</span>)}
           </div>
         </div>
       )}
@@ -1628,8 +1631,8 @@ function BundleRecommenderTool({ products, dark, initialProductId }: { products:
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             <p style={{ fontSize:14, fontWeight:900, color:text, margin:0 }}>{bundle.name}</p>
             <div style={{ display:'flex', gap:6 }}>
-              <span style={{ padding:'3px 8px', borderRadius:999, background:'rgba(16,185,129,0.12)', border:'1px solid rgba(16,185,129,0.25)', fontSize:11, fontWeight:800, color:'#34d399' }}>{bundle.est_uplift}</span>
-              <span style={{ padding:'3px 8px', borderRadius:999, background:'rgba(219,20,46,0.1)', border:'1px solid rgba(219,20,46,0.25)', fontSize:11, fontWeight:800, color:'#f87171' }}>{bundle.display_label}</span>
+              <span style={{ padding:'3px 8px', borderRadius:999, background:'rgba(16,185,129,0.12)', border:'1px solid rgba(16,185,129,0.25)', fontSize:11, fontWeight:800, color:ink('#34d399', dark) }}>{bundle.est_uplift}</span>
+              <span style={{ padding:'3px 8px', borderRadius:999, background:'rgba(219,20,46,0.1)', border:'1px solid rgba(219,20,46,0.25)', fontSize:11, fontWeight:800, color:ink('#f87171', dark) }}>{bundle.display_label}</span>
             </div>
           </div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
@@ -1646,13 +1649,13 @@ function BundleRecommenderTool({ products, dark, initialProductId }: { products:
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {r.recommendations.map((rec, i) => (
               <div key={i} style={{ background: dark?'rgba(255,255,255,0.04)':'#f8fafc', borderRadius:10, padding:'12px 14px', display:'flex', alignItems:'flex-start', gap:10 }}>
-                <div style={{ width:32, height:32, borderRadius:8, background:'rgba(59,130,246,0.12)', border:'1px solid rgba(59,130,246,0.25)', display:'flex', alignItems:'center', justifyContent:'center', color:'#60a5fa', flexShrink:0, fontSize:13, fontWeight:900 }}>{i+1}</div>
+                <div style={{ width:32, height:32, borderRadius:8, background:'rgba(59,130,246,0.12)', border:'1px solid rgba(59,130,246,0.25)', display:'flex', alignItems:'center', justifyContent:'center', color:ink('#60a5fa', dark), flexShrink:0, fontSize:13, fontWeight:900 }}>{i+1}</div>
                 <div style={{ flex:1 }}>
                   <p style={{ fontSize:13, fontWeight:800, color:text, margin:'0 0 3px' }}>{rec.product_name}</p>
                   <p style={{ fontSize:11, color:muted, margin:'0 0 6px', lineHeight:1.4 }}>{rec.reason}</p>
                   <div style={{ display:'flex', gap:6 }}>
-                    <span style={{ padding:'2px 7px', borderRadius:999, background:'rgba(59,130,246,0.1)', fontSize:10, fontWeight:700, color:'#60a5fa' }}>{rec.placement}</span>
-                    <span style={{ padding:'2px 7px', borderRadius:999, background:'rgba(16,185,129,0.1)', fontSize:10, fontWeight:700, color:'#34d399' }}>{t('ctr', { rate: rec.est_click_rate })}</span>
+                    <span style={{ padding:'2px 7px', borderRadius:999, background:'rgba(59,130,246,0.1)', fontSize:10, fontWeight:700, color:ink('#60a5fa', dark) }}>{rec.placement}</span>
+                    <span style={{ padding:'2px 7px', borderRadius:999, background:'rgba(16,185,129,0.1)', fontSize:10, fontWeight:700, color:ink('#34d399', dark) }}>{t('ctr', { rate: rec.est_click_rate })}</span>
                   </div>
                 </div>
               </div>
@@ -1689,7 +1692,7 @@ const [activeTool, setActiveTool] = useState(validTab);
   const t = useTranslations('seller.aiTools');
 
   const text  = dark ? '#fff' : '#111';
-  const muted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   useEffect(() => {
     sellerProductsApi.getAll({ per_page: 50 })
@@ -1712,7 +1715,7 @@ const [activeTool, setActiveTool] = useState(validTab);
             <p style={{ fontSize:11, color:muted, margin:0, fontWeight:500 }}>{t('subtitle')}</p>
           </div>
         </div>
-        <span style={{ padding:'4px 10px', borderRadius:999, background:'rgba(219,20,46,0.12)', border:'1px solid rgba(219,20,46,0.3)', fontSize:10, fontWeight:800, color:'#f87171' }}>🔴 Red Pepper</span>
+        <span style={{ padding:'4px 10px', borderRadius:999, background:'rgba(219,20,46,0.12)', border:'1px solid rgba(219,20,46,0.3)', fontSize:10, fontWeight:800, color:ink('#f87171', dark) }}>🔴 Red Pepper</span>
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:6 }}>

@@ -247,13 +247,13 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
             <h2 style={{ fontSize: 16, fontWeight: 900, color: '#111', margin: 0 }}>
               {isEdit ? t('editTitle') : t('createTitle')}
             </h2>
-            <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
+            <p style={{ fontSize: 11, color: '#5b6472', margin: '3px 0 0' }}>
               {isEdit ? t('editSubtitle') : t('createSubtitle')}
             </p>
           </div>
           <button type="button" onClick={onClose} aria-label={t('close')} style={{
             padding: 6, borderRadius: 10, border: 'none',
-            background: 'transparent', cursor: 'pointer', color: '#94a3b8',
+            background: 'transparent', cursor: 'pointer', color: '#5b6472',
           }}>
             <X size={18} />
           </button>
@@ -325,7 +325,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                     <span style={{
                       position: 'absolute', insetInlineEnd: 10, top: '50%',
                       transform: 'translateY(-50%)',
-                      fontSize: 11, color: '#94a3b8', fontWeight: 600,
+                      fontSize: 11, color: '#5b6472', fontWeight: 600,
                     }}>{currency}</span>
                   </div>
                 </Field>
@@ -367,7 +367,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                   borderRadius: 14, padding: '14px 16px',
                   display: 'flex', flexDirection: 'column', gap: 8,
                 }}>
-                  <p style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
+                  <p style={{ fontSize: 10, fontWeight: 800, color: '#5b6472', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
                     {t('customerSavings')}
                   </p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
@@ -385,13 +385,13 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                       <span style={{
                         display: 'flex', alignItems: 'center', gap: 5,
                         fontSize: 13, fontWeight: 800,
-                        color: savings > 0 ? '#10b981' : '#ef4444',
+                        color: savings > 0 ? '#047857' : '#b91c1c',
                       }}>
                         <TrendingDown size={13} />
                         {savings > 0 ? t('customerSaves') : t('noSavings')}
                       </span>
                       {savings > 0 && (
-                        <span style={{ fontSize: 16, fontWeight: 900, color: '#10b981' }}>
+                        <span style={{ fontSize: 16, fontWeight: 900, color: '#047857' }}>
                           {fmt(savings)}
                           <span style={{ fontSize: 11, fontWeight: 700, marginInlineStart: 4 }}>
                             ({savingsPct}%)
@@ -430,7 +430,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                     <p style={{ fontSize: 12, color: '#64748b', fontWeight: 600, margin: '0 0 3px' }}>
                       {t('uploadImage')}
                     </p>
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
+                    <p style={{ fontSize: 11, color: '#5b6472', margin: 0 }}>
                       JPG, PNG, WebP
                     </p>
                   </div>
@@ -470,7 +470,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
               </div>
 
               {errors.items && (
-                <p style={{ fontSize: 11, color: '#ef4444', margin: '-8px 0 0' }}>
+                <p style={{ fontSize: 11, color: '#b91c1c', margin: '-8px 0 0' }}>
                   {errors.items}
                 </p>
               )}
@@ -640,7 +640,7 @@ function ItemRow({
                 {row.product.has_variants && (
                   <span style={{
                     marginInlineStart: 8, fontWeight: 700,
-                    color: checkedCount > 0 ? '#198f41' : '#ef4444',
+                    color: checkedCount > 0 ? '#198f41' : '#b91c1c',
                   }}>
                     · {t('variantsRatio', { checked: checkedCount, total: totalVariants })}
                   </span>
@@ -648,7 +648,7 @@ function ItemRow({
               </p>
             </>
           ) : (
-            <p style={{ fontSize: 14, fontWeight: 700, color: '#94a3b8', margin: 0 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: '#5b6472', margin: 0 }}>
               {t('clickToSelect')}
             </p>
           )}
@@ -661,7 +661,7 @@ function ItemRow({
         >
           <span
             style={{
-              fontSize: 10, fontWeight: 700, color: '#94a3b8',
+              fontSize: 10, fontWeight: 700, color: '#5b6472',
               background: '#f1f5f9', border: '1px solid #e5e7eb',
               padding: '3px 8px', borderRadius: 6, cursor: 'pointer',
             }}
@@ -678,7 +678,7 @@ function ItemRow({
                 width: 32, height: 32, borderRadius: 8,
                 border: '1px solid rgba(239,68,68,0.25)',
                 background: 'rgba(239,68,68,0.06)',
-                cursor: 'pointer', color: '#ef4444',
+                cursor: 'pointer', color: '#b91c1c',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
@@ -726,12 +726,12 @@ function ItemRow({
           </div>
 
           {prodLoading ? (
-            <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+            <div style={{ padding: '20px', textAlign: 'center', color: '#5b6472', fontSize: 13 }}>
               <Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite', margin: '0 auto 6px', display: 'block' }} />
               {t('loading')}
             </div>
           ) : products.length === 0 ? (
-            <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+            <div style={{ padding: '20px', textAlign: 'center', color: '#5b6472', fontSize: 13 }}>
               {t('noProducts')}
             </div>
           ) : products.map(p => (
@@ -771,7 +771,7 @@ function ItemRow({
               {p.has_variants && (
                 <span style={{
                   fontSize: 10, fontWeight: 700,
-                  color: '#6366f1', background: 'rgba(99,102,241,0.08)',
+                  color: '#4338ca', background: 'rgba(99,102,241,0.08)',
                   border: '1px solid rgba(99,102,241,0.2)',
                   padding: '2px 7px', borderRadius: 5, flexShrink: 0,
                 }}>
@@ -802,7 +802,7 @@ function ItemRow({
                 </p>
                 <span style={{
                   fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 5,
-                  color: checkedCount === totalVariants ? '#198f41' : '#f59e0b',
+                  color: checkedCount === totalVariants ? '#198f41' : '#92400e',
                   background: checkedCount === totalVariants
                     ? 'rgba(25,143,65,0.08)' : 'rgba(245,158,11,0.08)',
                   border: `1px solid ${checkedCount === totalVariants
@@ -843,7 +843,7 @@ function ItemRow({
                       <p style={{
                         fontSize: 12, fontWeight: 700, margin: '0 0 3px',
                         color: checked
-                          ? outOfStock ? '#ef4444' : '#dc2626'
+                          ? outOfStock ? '#b91c1c' : '#dc2626'
                           : '#374151',
                         display: 'flex', alignItems: 'center', gap: 4,
                       }}>
@@ -859,7 +859,7 @@ function ItemRow({
                       </p>
                       <p style={{
                         fontSize: 10, margin: 0, fontWeight: 600,
-                        color: outOfStock ? '#ef4444' : '#94a3b8',
+                        color: outOfStock ? '#b91c1c' : '#5b6472',
                       }}>
                         {outOfStock ? t('outOfStock') : t('inStock', { count: v.stock })}
                       </p>
@@ -868,7 +868,7 @@ function ItemRow({
                 })}
               </div>
 
-              <p style={{ fontSize: 11, color: '#94a3b8', margin: '8px 0 0', fontStyle: 'italic' }}>
+              <p style={{ fontSize: 11, color: '#5b6472', margin: '8px 0 0', fontStyle: 'italic' }}>
                 {checkedIds === null
                   ? t('allIncluded', { count: totalVariants })
                   : t('someAvailable', { checked: checkedCount, total: totalVariants })
@@ -903,7 +903,7 @@ function ItemRow({
               <p style={{ fontSize: 13, fontWeight: 800, color: '#374151', margin: '0 0 2px' }}>
                 {t('quantity')}
               </p>
-              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
+              <p style={{ fontSize: 11, color: '#5b6472', margin: 0 }}>
                 {t('quantityHint')}
               </p>
             </div>
@@ -954,7 +954,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p style={{
       fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-      letterSpacing: '0.1em', color: '#94a3b8',
+      letterSpacing: '0.1em', color: '#5b6472',
       paddingBottom: 6, borderBottom: '1px solid #f0f0f0', margin: 0,
     }}>
       {children}
@@ -971,12 +971,12 @@ function Field({ label, required, error, children }: {
         display: 'flex', alignItems: 'center', gap: 4,
         fontSize: 11, fontWeight: 800,
         textTransform: 'uppercase', letterSpacing: '0.07em',
-        color: '#94a3b8', marginBottom: 5,
+        color: '#5b6472', marginBottom: 5,
       }}>
-        {label} {required && <span style={{ color: '#ef4444' }}>*</span>}
+        {label} {required && <span style={{ color: '#b91c1c' }}>*</span>}
       </label>
       {children}
-      {error && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{error}</p>}
+      {error && <p style={{ fontSize: 11, color: '#b91c1c', marginTop: 4 }}>{error}</p>}
     </div>
   )
 }

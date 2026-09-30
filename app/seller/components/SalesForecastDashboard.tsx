@@ -31,6 +31,7 @@ import TunisiaHeatmap from '@/app/components/seller/TunisiaHeatmap';
 import { useLocale, useTranslations } from 'next-intl';
 import { useWilayaLabel } from '@/lib/i18n/wilayas';
 import { useFormat } from '@/lib/i18n/useFormat';
+import { ink } from '@/app/seller/ink';
 
 /** Short month name ("sept.", "سبتمبر") from a YYYY-MM key, falling back to the API label. */
 function useMonthShort() {
@@ -74,7 +75,7 @@ function LiveBadge({ lastUpdated, dark }: { lastUpdated: Date | null; dark: bool
   const t = useTranslations('seller.forecast');
   const { relative } = useFormat();
   const [age, setAge] = useState<string>('');
-  const muted = dark ? 'rgba(255,255,255,0.38)' : '#888';
+  const muted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   useEffect(() => {
     if (!lastUpdated) return;
@@ -110,7 +111,7 @@ function DemandScoreGauge({ score, dark }: { score: number; dark: boolean }) {
   const label = score >= 70 ? t('demand.high') : score >= 40 ? t('demand.moderate') : t('demand.low');
   const circ  = 2 * Math.PI * 40;
   const dash  = (score / 100) * circ;
-  const muted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
@@ -244,7 +245,7 @@ function ForecastLineChart({ history, projections, dark }: {
     y: PAD_T + innerH - pct * innerH,
   }));
  
-  const tc = dark ? 'rgba(255,255,255,0.45)' : '#888';
+  const tc = dark ? 'rgba(255,255,255,0.45)' : '#5b6472';
   const gc = dark ? 'rgba(255,255,255,0.05)' : '#f0f4f8';
  
   return (
@@ -285,7 +286,7 @@ function ForecastLineChart({ history, projections, dark }: {
           <text
             x={dividerX} y={PAD_T - 6}
             textAnchor="middle" fontSize="8"
-            fill={dark ? 'rgba(255,255,255,0.3)' : '#aaa'}
+            fill={dark ? 'rgba(255,255,255,0.55)' : '#5b6472'}
             fontStyle="italic">
             {t('chart.now')}
           </text>
@@ -435,7 +436,7 @@ function EventsCalendar({ events, dark }: { events: EventSignal[]; dark: boolean
   const { date, number } = useFormat();
   const wl = useWilayaLabel();
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
-  const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const text   = dark ? '#fff' : '#111';
  
   if (events.length === 0) {
@@ -701,15 +702,15 @@ function SimilarProductsList({ data, dark }: { data: SimilarProductsResult; dark
   const fmtTND = useTnd();
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const text   = dark ? '#fff' : '#111';
-  const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   if (!data.has_data || data.similar.length === 0) return <p style={{ fontSize: 12, color: muted, margin: 0, textAlign: 'center', padding: '20px 0' }}>{t('empty')}</p>;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, padding: '12px 14px', borderRadius: 12, background: dark ? 'rgba(255,255,255,0.03)' : '#f8fafc', border: `1px solid ${border}` }}>
         {[
           { label: t('yourMonthly'),  val: `${data.own_monthly_units}`,                color: '#db142e' },
-          { label: t('median'),       val: `${data.market_median_monthly_units}`,      color: '#3b82f6' },
-          { label: t('avgPrice'),     val: fmtTND(data.market_avg_price),             color: '#10b981' },
+          { label: t('median'),       val: `${data.market_median_monthly_units}`,      color: ink('#3b82f6', dark) },
+          { label: t('avgPrice'),     val: fmtTND(data.market_avg_price),             color: ink('#10b981', dark) },
         ].map(({ label, val, color }) => (
           <div key={label} style={{ textAlign: 'center' }}>
             <p style={{ fontSize: 14, fontWeight: 900, color, margin: '0 0 2px' }}>{val}</p>
@@ -737,7 +738,7 @@ function SimilarProductsList({ data, dark }: { data: SimilarProductsResult; dark
               <p style={{ fontSize: 11, fontWeight: 700, color: text, margin: '0 0 1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</p>
               <p style={{ fontSize: 9, color: muted, margin: 0 }}>{fmtTND(p.price)}</p>
             </div>
-            <span style={{ fontSize: 11, fontWeight: 800, color: '#10b981', flexShrink: 0 }}>{t('perMonth', { count: p.monthly_units })}</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: ink('#10b981', dark), flexShrink: 0 }}>{t('perMonth', { count: p.monthly_units })}</span>
           </div>
         ))}
       </div>
@@ -746,11 +747,11 @@ function SimilarProductsList({ data, dark }: { data: SimilarProductsResult; dark
 }
 
 function AIExplanationPanel({ explanation, loading, dark }: { explanation: AIExplanation | null; loading: boolean; dark: boolean }) {
-  const muted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const t = useTranslations('seller.forecast.ai');
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px' }}>
-      <Loader2 size={16} style={{ color: '#8b5cf6', animation: 'spin 1s linear infinite', flexShrink: 0 }}/>
+      <Loader2 size={16} style={{ color: ink('#8b5cf6', dark), animation: 'spin 1s linear infinite', flexShrink: 0 }}/>
       <p style={{ fontSize: 12, color: muted, margin: 0 }}>{t('loading')}</p>
     </div>
   );
@@ -758,10 +759,10 @@ function AIExplanationPanel({ explanation, loading, dark }: { explanation: AIExp
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {[
-        { icon: '📊', label: t('summary'),     content: explanation.summary,          color: '#3b82f6' },
-        { icon: '💡', label: t('opportunity'), content: explanation.main_opportunity,  color: '#10b981' },
-        { icon: '⚠️', label: t('risk'),        content: explanation.main_risk,         color: '#f59e0b' },
-        { icon: '🌙', label: t('seasonTip'),   content: explanation.seasonal_tip,      color: '#8b5cf6' },
+        { icon: '📊', label: t('summary'),     content: explanation.summary,          color: ink('#3b82f6', dark) },
+        { icon: '💡', label: t('opportunity'), content: explanation.main_opportunity,  color: ink('#10b981', dark) },
+        { icon: '⚠️', label: t('risk'),        content: explanation.main_risk,         color: ink('#f59e0b', dark) },
+        { icon: '🌙', label: t('seasonTip'),   content: explanation.seasonal_tip,      color: ink('#8b5cf6', dark) },
       ].map(({ icon, label, content, color }) => (
         <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', borderRadius: 10, background: `${color}06`, border: `1px solid ${color}18` }}>
           <span style={{ fontSize: 16, flexShrink: 0 }}>{icon}</span>
@@ -787,7 +788,7 @@ function Card({ title, icon: Icon, accent = '#db142e', children, dark, badge, ri
     <div style={{ background: bg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: `1px solid ${border}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 10, background: `${accent}18`, border: `1px solid ${accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, flexShrink: 0 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 10, background: `${accent}18`, border: `1px solid ${accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink(accent, dark), flexShrink: 0 }}>
             <Icon size={15}/>
           </div>
           <p style={{ fontWeight: 800, fontSize: 13, color: text, margin: 0 }}>{title}</p>
@@ -835,7 +836,7 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
   const bg     = dark ? '#161b27' : '#ffffff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const text   = dark ? '#fff' : '#111';
-  const muted  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const subBg  = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
   const trendColor = forecast ? (TREND_COLORS[forecast.overall_trend] ?? '#3b82f6') : '#3b82f6';
 
@@ -977,7 +978,7 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <p style={{ fontSize: 10, color: muted, margin: 0 }}>{t('subtitle')}</p>
                 {loadingLive && !loadingFull && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, color: '#10b981' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, color: ink('#10b981', dark) }}>
                     <Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }}/>
                     {t('refreshing')}
                   </span>
@@ -986,7 +987,7 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
               </div>
             </div>
           </div>
-          <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: 999, background: 'rgba(219,20,46,0.1)', border: '1px solid rgba(219,20,46,0.25)', color: '#f87171' }}>
+          <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: 999, background: 'rgba(219,20,46,0.1)', border: '1px solid rgba(219,20,46,0.25)', color: ink('#f87171', dark) }}>
             🔴 Red Pepper
           </span>
         </div>
@@ -1022,7 +1023,7 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
           </p>
         )}
 
-        {error && <p style={{ color: '#ef4444', fontSize: 12, margin: '10px 0 0', fontWeight: 600 }}>{error}</p>}
+        {error && <p style={{ color: ink('#ef4444', dark), fontSize: 12, margin: '10px 0 0', fontWeight: 600 }}>{error}</p>}
       </div>
 
       {/* Loading */}
@@ -1047,9 +1048,9 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
             {[
               { label: t('kpi.forecast'),  value: `${forecast.total_predicted_units}`,    sub: t('kpi.forecastSub'),         color: trendColor,                                                                  icon: '📦' },
-              { label: t('kpi.revenue'), value: fmtTND(forecast.total_predicted_revenue), sub: t('kpi.revenueSub'),      color: '#10b981',                                                                   icon: '💰' },
-              { label: t('kpi.peak'),        value: forecast.peak_month ? monthShort(forecast.peak_month.month, forecast.peak_month.label) : '—', sub: t('kpi.peakSub', { count: forecast.peak_month?.predicted_units ?? 0 }), color: '#f59e0b',                              icon: '🔥' },
-              { label: t('kpi.stock'), value: `${forecast.stock_recommendation_3m}`,  sub: t('kpi.stockSub'),      color: forecast.stock_recommendation_3m > forecast.current_stock ? '#ef4444' : '#10b981', icon: '📊' },
+              { label: t('kpi.revenue'), value: fmtTND(forecast.total_predicted_revenue), sub: t('kpi.revenueSub'),      color: ink('#10b981', dark),                                                                   icon: '💰' },
+              { label: t('kpi.peak'),        value: forecast.peak_month ? monthShort(forecast.peak_month.month, forecast.peak_month.label) : '—', sub: t('kpi.peakSub', { count: forecast.peak_month?.predicted_units ?? 0 }), color: ink('#f59e0b', dark),                              icon: '🔥' },
+              { label: t('kpi.stock'), value: `${forecast.stock_recommendation_3m}`,  sub: t('kpi.stockSub'),      color: forecast.stock_recommendation_3m > forecast.current_stock ? ink('#ef4444', dark) : ink('#10b981', dark), icon: '📊' },
             ].map(({ label, value, sub, color, icon }) => (
               <div key={label} style={{ background: bg, borderRadius: 14, border: `1px solid ${border}`, padding: '14px 16px', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: -20, insetInlineEnd: -20, width: 70, height: 70, borderRadius: '50%', background: color, opacity: dark ? 0.1 : 0.06, filter: 'blur(16px)' }}/>
@@ -1072,7 +1073,7 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
               <p style={{ fontSize: 9, color: muted, margin: 0, fontWeight: 600 }}>{t('basedOn', { count: forecast.data_points })}</p>
               {forecast.blend_note && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 8, background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }}>
-                  <Info size={11} style={{ color: '#3b82f6', flexShrink: 0 }}/>
+                  <Info size={11} style={{ color: ink('#3b82f6', dark), flexShrink: 0 }}/>
                   <p style={{ fontSize: 10, color: muted, margin: 0, lineHeight: 1.4 }}>{forecast.blend_note}</p>
                 </div>
               )}
@@ -1099,9 +1100,9 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
                 return (
                   <div key={p.month} style={{ textAlign: 'center', padding: '8px 4px', borderRadius: 10, background: p.event_name ? 'rgba(245,158,11,0.08)' : subBg, border: p.event_name ? '1px solid rgba(245,158,11,0.2)' : `1px solid ${border}` }}>
                     <p style={{ fontSize: 9, fontWeight: 700, color: muted, margin: '0 0 3px' }}>{monthShort(p.month, p.label)}</p>
-                    <p style={{ fontSize: 16, fontWeight: 900, color: '#10b981', margin: '0 0 2px', letterSpacing: '-0.02em' }}>{p.predicted_units}</p>
+                    <p style={{ fontSize: 16, fontWeight: 900, color: ink('#10b981', dark), margin: '0 0 2px', letterSpacing: '-0.02em' }}>{p.predicted_units}</p>
                     <p style={{ fontSize: 8, color: muted, margin: '0 0 3px' }}>{t('unitsWord')}</p>
-                    {p.event_name && <span style={{ fontSize: 7, fontWeight: 800, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', padding: '1px 4px', borderRadius: 4 }}>⚡ {t('eventTag')}</span>}
+                    {p.event_name && <span style={{ fontSize: 7, fontWeight: 800, color: ink('#f59e0b', dark), background: 'rgba(245,158,11,0.12)', padding: '1px 4px', borderRadius: 4 }}>⚡ {t('eventTag')}</span>}
                     <div style={{ marginTop: 3, width: 6, height: 6, borderRadius: '50%', background: cc, margin: '3px auto 0' }}/>
                   </div>
                 );
@@ -1113,7 +1114,7 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <Card title={t('cards.regional')} icon={MapPin} accent="#db142e" dark={dark}
               badge={<span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: 'rgba(219,20,46,0.1)', border: '1px solid rgba(219,20,46,0.2)', color: '#db142e' }}>🇹🇳 {t('tunisia')}</span>}
-              rightSlot={loadingLive ? <Loader2 size={12} style={{ color: '#10b981', animation: 'spin 1s linear infinite' }}/> : undefined}
+              rightSlot={loadingLive ? <Loader2 size={12} style={{ color: ink('#10b981', dark), animation: 'spin 1s linear infinite' }}/> : undefined}
             >
               {regional
                 ? <TunisiaHeatmap regional={regional} dark={dark}/>
@@ -1129,7 +1130,7 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <Card title={t('cards.market')} icon={Layers} accent="#6b7280" dark={dark}
               badge={similar?.count ? <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: 'rgba(107,114,128,0.12)', border: `1px solid ${border}`, color: muted }}>{t('similarCount', { count: similar.count })}</span> : undefined}
-              rightSlot={loadingLive ? <Loader2 size={12} style={{ color: '#10b981', animation: 'spin 1s linear infinite' }}/> : undefined}
+              rightSlot={loadingLive ? <Loader2 size={12} style={{ color: ink('#10b981', dark), animation: 'spin 1s linear infinite' }}/> : undefined}
             >
               {similar
                 ? <SimilarProductsList data={similar} dark={dark}/>
@@ -1137,7 +1138,7 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
               }
             </Card>
             <Card title={t('cards.ai')} icon={Brain} accent="#8b5cf6" dark={dark}
-              badge={<span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', color: '#8b5cf6' }}>{t('poweredBy')}</span>}
+              badge={<span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', color: ink('#8b5cf6', dark) }}>{t('poweredBy')}</span>}
             >
               <AIExplanationPanel explanation={explanation} loading={loadingExplain} dark={dark}/>
             </Card>
@@ -1146,28 +1147,28 @@ export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
           {/* Stock banners */}
           {forecast.stock_recommendation_3m > forecast.current_stock ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderRadius: 14, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
-              <AlertTriangle size={20} style={{ color: '#ef4444', flexShrink: 0 }}/>
+              <AlertTriangle size={20} style={{ color: ink('#ef4444', dark), flexShrink: 0 }}/>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 12, fontWeight: 800, color: '#ef4444', margin: '0 0 2px' }}>{t('stock.shortTitle')}</p>
+                <p style={{ fontSize: 12, fontWeight: 800, color: ink('#ef4444', dark), margin: '0 0 2px' }}>{t('stock.shortTitle')}</p>
                 <p style={{ fontSize: 11, color: muted, margin: 0 }}>
                   {t.rich('stock.shortText', {
                     need: forecast.stock_recommendation_3m, have: forecast.current_stock,
                     missing: forecast.stock_recommendation_3m - forecast.current_stock,
                     b: (c) => <strong style={{ color: text }}>{c}</strong>,
-                    r: (c) => <strong style={{ color: '#ef4444' }}>{c}</strong>,
+                    r: (c) => <strong style={{ color: ink('#ef4444', dark) }}>{c}</strong>,
                   })}
                 </p>
               </div>
               <div style={{ textAlign: 'end', flexShrink: 0 }}>
-                <p style={{ fontSize: 22, fontWeight: 900, color: '#ef4444', margin: '0 0 1px', letterSpacing: '-0.02em' }}>-{forecast.stock_recommendation_3m - forecast.current_stock}</p>
+                <p style={{ fontSize: 22, fontWeight: 900, color: ink('#ef4444', dark), margin: '0 0 1px', letterSpacing: '-0.02em' }}>-{forecast.stock_recommendation_3m - forecast.current_stock}</p>
                 <p style={{ fontSize: 9, color: muted, margin: 0, fontWeight: 700 }}>{t('stock.unitsShort')}</p>
               </div>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderRadius: 14, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <Package size={20} style={{ color: '#10b981', flexShrink: 0 }}/>
+              <Package size={20} style={{ color: ink('#10b981', dark), flexShrink: 0 }}/>
               <div>
-                <p style={{ fontSize: 12, fontWeight: 800, color: '#10b981', margin: '0 0 2px' }}>{t('stock.okTitle')} ✓</p>
+                <p style={{ fontSize: 12, fontWeight: 800, color: ink('#10b981', dark), margin: '0 0 2px' }}>{t('stock.okTitle')} ✓</p>
                 <p style={{ fontSize: 11, color: muted, margin: 0 }}>{t('stock.okText', { have: forecast.current_stock, need: forecast.stock_recommendation_3m })}</p>
               </div>
             </div>

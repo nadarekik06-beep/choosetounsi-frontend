@@ -11,6 +11,7 @@ import { blackPepperApi, type VipRequest, type VipRequestType } from '@/lib/blac
 import { Crown, Film, Tag, Headphones, CheckCircle, Clock, XCircle, Loader } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
+import { ink } from '@/app/seller/ink';
 
 const GOLD = '#f59e0b';
 
@@ -56,7 +57,7 @@ export default function VipLoungePage() {
   if (loading || !isBlack) return null;
 
   const txtMain = dark ? '#fff' : '#111';
-  const txtMut  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const txtMut  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const cardBg  = dark ? 'rgba(255,255,255,0.03)' : '#fff';
   const border  = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
 
@@ -123,7 +124,7 @@ export default function VipLoungePage() {
               }}
             >
               <Icon size={16} color={selected === key ? GOLD : txtMut} style={{ marginBottom: 8, display: 'block' }} />
-              <p style={{ fontSize: 12, fontWeight: 800, color: selected === key ? GOLD : txtMain, margin: '0 0 4px' }}>{t(`types.${key}.label`)}</p>
+              <p style={{ fontSize: 12, fontWeight: 800, color: selected === key ? ink(GOLD, dark) : txtMain, margin: '0 0 4px' }}>{t(`types.${key}.label`)}</p>
               <p style={{ fontSize: 10.5, color: txtMut, margin: 0, lineHeight: 1.5 }}>{t(`types.${key}.description`)}</p>
             </button>
           ))}
@@ -143,13 +144,13 @@ export default function VipLoungePage() {
           }}
         />
 
-        {err && <p style={{ fontSize: 12, color: '#f87171', margin: '8px 0 0' }}>{err}</p>}
+        {err && <p style={{ fontSize: 12, color: ink('#f87171', dark), margin: '8px 0 0' }}>{err}</p>}
         {success && (
           <div style={{
             marginTop: 10, padding: '10px 14px', borderRadius: 10,
             background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)',
           }}>
-            <p style={{ fontSize: 12, color: '#34d399', margin: 0, fontWeight: 600 }}>{success}</p>
+            <p style={{ fontSize: 12, color: ink('#34d399', dark), margin: 0, fontWeight: 600 }}>{success}</p>
           </div>
         )}
 
@@ -200,7 +201,7 @@ export default function VipLoungePage() {
                   <div style={{
                     width: 34, height: 34, borderRadius: 10, flexShrink: 0,
                     background: `${cfg.color}15`, border: `1px solid ${cfg.color}30`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: cfg.color,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink(cfg.color, dark),
                   }}>
                     <Icon size={15} />
                   </div>
@@ -209,7 +210,7 @@ export default function VipLoungePage() {
                       <span style={{ fontSize: 13, fontWeight: 800, color: txtMain }}>{t.has(`types.${req.type}.label`) ? t(`types.${req.type}.label`) : req.type_label}</span>
                       <span style={{
                         fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
-                        background: `${cfg.color}15`, color: cfg.color, border: `1px solid ${cfg.color}30`,
+                        background: `${cfg.color}15`, color: ink(cfg.color, dark), border: `1px solid ${cfg.color}30`,
                         textTransform: 'uppercase' as const,
                       }}>{t.has(`status.${req.status}`) ? t(`status.${req.status}`) : req.status_label}</span>
                     </div>

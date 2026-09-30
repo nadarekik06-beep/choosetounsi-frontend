@@ -11,6 +11,7 @@ import { useTheme } from '../SellerShell'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { useStatusLabel } from '@/lib/i18n/useStatusLabel'
 import { useWilayaLabel } from '@/lib/i18n/wilayas'
+import { ink } from '@/app/seller/ink';
 
 const RED   = '#db142e'
 const GREEN = '#198f41'
@@ -133,7 +134,7 @@ export default function SellerOrderDrawer({ sellerOrderId, orderNumber, onClose 
   const border    = dark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'
   const textMain  = dark ? '#f1f5f9' : '#0f172a'
   const textSoft  = dark ? '#94a3b8' : '#475569'
-  const textMuted = dark ? '#64748b' : '#94a3b8'
+  const textMuted = dark ? '#94a3b8' : '#5b6472'
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -355,7 +356,7 @@ export default function SellerOrderDrawer({ sellerOrderId, orderNumber, onClose 
                             )}
                             <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0, direction: 'ltr' }}>{fmt(item.paid_total)}</p>
                             {discounted && (
-                              <p style={{ fontSize: 10, color: '#f59e0b', margin: 0, fontWeight: 700 }}>{t('couponSaving', { amount: fmt(item.discount_amount) })}</p>
+                              <p style={{ fontSize: 10, color: ink('#f59e0b', dark), margin: 0, fontWeight: 700 }}>{t('couponSaving', { amount: fmt(item.discount_amount) })}</p>
                             )}
                           </div>
                         </div>

@@ -25,6 +25,7 @@ import { useTheme } from '../SellerShell'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { usePlanPrice } from '@/lib/i18n/usePlanPrice'
+import { ink } from '@/app/seller/ink';
 
 type Translate = ReturnType<typeof useTranslations>
 
@@ -57,12 +58,13 @@ const PLAN_FEATURES: Record<ActivePlan, string[]> = {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function PlanBadge({ plan, size = 'md' }: { plan: string; size?: 'sm' | 'md' | 'lg' }) {
+  const { dark } = useTheme();
   const meta  = planMeta(plan)
   const Icon  = planIcon(plan)
   const sizes = { sm: { text: 11, icon: 12, pad: '3px 10px' }, md: { text: 13, icon: 15, pad: '5px 14px' }, lg: { text: 16, icon: 19, pad: '8px 20px' } }
   const s = sizes[size]
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: s.pad, borderRadius: 999, background: `${meta.color}18`, border: `1.5px solid ${meta.color}40`, color: meta.accentColor, fontWeight: 800, fontSize: s.text }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: s.pad, borderRadius: 999, background: `${meta.color}18`, border: `1.5px solid ${meta.color}40`, color: ink(meta.accentColor, dark), fontWeight: 800, fontSize: s.text }}>
       <Icon size={s.icon} />
       {meta.name}
     </span>
@@ -84,7 +86,7 @@ function DowngradeModal({ currentPlan, targetPlan, billingCycleEnd, daysRemainin
   const TargetIcon  = planIcon(targetPlan)
   const cardBg      = dark ? '#161b27' : '#fff'
   const textMain    = dark ? '#fff' : '#111'
-  const textMuted   = dark ? 'rgba(255,255,255,0.5)' : '#6b7280'
+  const textMuted   = dark ? 'rgba(255,255,255,0.5)' : '#5b6472'
 
   // Features that will be LOST
   const currentFeatures = planFeatures(currentPlan, t)
@@ -113,13 +115,13 @@ function DowngradeModal({ currentPlan, targetPlan, billingCycleEnd, daysRemainin
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <div style={{ flex: 1, padding: '12px', borderRadius: 10, background: `${currentMeta.color}10`, border: `1px solid ${currentMeta.color}25`, textAlign: 'center' as const }}>
               <CurrentIcon size={20} color={currentMeta.accentColor} style={{ margin: '0 auto 4px', display: 'block' }} />
-              <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: currentMeta.accentColor }}>{currentMeta.name}</p>
+              <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: ink(currentMeta.accentColor, dark) }}>{currentMeta.name}</p>
               <p style={{ margin: 0, fontSize: 10, color: textMuted }}>{t('downgrade.current')}</p>
             </div>
             <ArrowRight size={16} color={textMuted} className="rtl-flip" />
             <div style={{ flex: 1, padding: '12px', borderRadius: 10, background: `${targetMeta.color}10`, border: `1px solid ${targetMeta.color}25`, textAlign: 'center' as const }}>
               <TargetIcon size={20} color={targetMeta.accentColor} style={{ margin: '0 auto 4px', display: 'block' }} />
-              <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: targetMeta.accentColor }}>{targetMeta.name}</p>
+              <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: ink(targetMeta.accentColor, dark) }}>{targetMeta.name}</p>
               <p style={{ margin: 0, fontSize: 10, color: textMuted }}>{t('downgrade.after')}</p>
             </div>
           </div>
@@ -141,7 +143,7 @@ function DowngradeModal({ currentPlan, targetPlan, billingCycleEnd, daysRemainin
           {/* Lost features */}
           {lostFeatures.length > 0 && (
             <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>{t('downgrade.lose')}</p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: ink('#ef4444', dark), marginBottom: 8 }}>{t('downgrade.lose')}</p>
               <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
                 {lostFeatures.map(f => (
                   <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: textMuted }}>
@@ -206,7 +208,7 @@ export default function SellerSubscriptionPage() {
   const cardBg    = dark ? '#161b27' : '#fff'
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'
   const textMain  = dark ? '#fff' : '#111'
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#6b7280'
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472'
   const palette   = { text: textMain, muted: textMuted, border, card: cardBg, cardAlt: dark ? '#1a2030' : '#f8f9fb' }
 
   const loadStatus = async () => {
@@ -314,7 +316,7 @@ export default function SellerSubscriptionPage() {
         {!created && pendingRequest && (
           <div className="sub-enter" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 14, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', flexWrap: 'wrap' }}>
             <Clock size={18} color="#f59e0b" />
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#d97706', flex: '1 1 240px' }}>{tm('pendingUpgrade', { reference: pendingRequest.reference })}</p>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: ink('#d97706', dark), flex: '1 1 240px' }}>{tm('pendingUpgrade', { reference: pendingRequest.reference })}</p>
             {pendingRequest.whatsapp_url && (
               <button onClick={() => openWhatsApp(pendingRequest.whatsapp_url!)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, border: 'none', background: '#25D366', color: '#073b1c', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>
                 <MessageCircle size={13} />{tm('reopen')}
@@ -325,8 +327,8 @@ export default function SellerSubscriptionPage() {
         {downgradeDone && (
           <div className="sub-enter" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 14, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)' }}>
             <Clock size={18} color="#f59e0b" />
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>{t('downgradeDone')}</p>
-            <button onClick={() => setDowngradeDone(false)} aria-label={t('close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f59e0b', marginInlineStart: 'auto' }}><X size={14} /></button>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: ink('#f59e0b', dark) }}>{t('downgradeDone')}</p>
+            <button onClick={() => setDowngradeDone(false)} aria-label={t('close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: ink('#f59e0b', dark), marginInlineStart: 'auto' }}><X size={14} /></button>
           </div>
         )}
 
@@ -340,9 +342,9 @@ export default function SellerSubscriptionPage() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                  <span style={{ fontSize: 18, fontWeight: 900, color: currentMeta.accentColor }}>{currentMeta.name}</span>
+                  <span style={{ fontSize: 18, fontWeight: 900, color: ink(currentMeta.accentColor, dark) }}>{currentMeta.name}</span>
                   {sub?.status && sub.status !== 'active' && (
-                    <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: sub.status === 'grace_period' ? 'rgba(245,158,11,0.15)' : sub.status === 'suspended' ? 'rgba(239,68,68,0.15)' : 'rgba(100,116,139,0.15)', color: sub.status === 'grace_period' ? '#f59e0b' : sub.status === 'suspended' ? '#ef4444' : '#94a3b8' }}>
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: sub.status === 'grace_period' ? 'rgba(245,158,11,0.15)' : sub.status === 'suspended' ? 'rgba(239,68,68,0.15)' : 'rgba(100,116,139,0.15)', color: sub.status === 'grace_period' ? ink('#f59e0b', dark) : sub.status === 'suspended' ? ink('#ef4444', dark) : ink('#94a3b8', dark) }}>
                       {sub.status_label}
                     </span>
                   )}
@@ -387,7 +389,7 @@ export default function SellerSubscriptionPage() {
             <div style={{ padding: '14px 22px', background: 'rgba(245,158,11,0.08)', borderBottom: `1px solid rgba(245,158,11,0.2)`, display: 'flex', alignItems: 'center', gap: 12 }}>
               <AlertTriangle size={16} color="#f59e0b" style={{ flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
-                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: ink('#f59e0b', dark) }}>
                   {t('pendingDowngrade', { plan: planMeta(sub.pending_plan).name, date: sub.billing_cycle_end ? date(sub.billing_cycle_end, 'medium') : '—' })}
                 </p>
                 <p style={{ margin: '2px 0 0', fontSize: 11, color: textMuted }}>
@@ -397,7 +399,7 @@ export default function SellerSubscriptionPage() {
               <button
                 onClick={handleCancelDowngrade}
                 disabled={cancelLoading}
-                style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid rgba(245,158,11,0.4)', background: 'transparent', color: '#f59e0b', fontSize: 11, fontWeight: 700, cursor: cancelLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+                style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid rgba(245,158,11,0.4)', background: 'transparent', color: ink('#f59e0b', dark), fontSize: 11, fontWeight: 700, cursor: cancelLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
                 {cancelLoading ? <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> : <RefreshCw size={11} />}
                 {t('cancelDowngrade')}
               </button>
@@ -460,12 +462,12 @@ export default function SellerSubscriptionPage() {
                   }}>
                     {isCurrent && (
                       <div style={{ position: 'absolute', top: 12, insetInlineEnd: 12 }}>
-                        <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: `${meta.color}20`, color: meta.accentColor, border: `1px solid ${meta.color}40` }}>{t('badgeCurrent')}</span>
+                        <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: `${meta.color}20`, color: ink(meta.accentColor, dark), border: `1px solid ${meta.color}40` }}>{t('badgeCurrent')}</span>
                       </div>
                     )}
                     {isPending && (
                       <div style={{ position: 'absolute', top: 12, insetInlineEnd: 12 }}>
-                        <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: 'rgba(245,158,11,0.2)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>{t('badgeScheduled')}</span>
+                        <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: 'rgba(245,158,11,0.2)', color: ink('#f59e0b', dark), border: '1px solid rgba(245,158,11,0.3)' }}>{t('badgeScheduled')}</span>
                       </div>
                     )}
 
@@ -481,11 +483,11 @@ export default function SellerSubscriptionPage() {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, padding: '5px 8px', borderRadius: 7, background: `${meta.color}0d`, width: 'fit-content' as const }}>
                       <BarChart2 size={12} color={meta.accentColor} />
-                      <span style={{ fontSize: 11, fontWeight: 700, color: meta.accentColor }}>{t('commission', { range: meta.commission })}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: ink(meta.accentColor, dark) }}>{t('commission', { range: meta.commission })}</span>
                     </div>
 
                     {isCurrent ? (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '9px', borderRadius: 10, background: `${meta.color}10`, border: `1px solid ${meta.color}20`, fontSize: 12, fontWeight: 700, color: meta.accentColor }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '9px', borderRadius: 10, background: `${meta.color}10`, border: `1px solid ${meta.color}20`, fontSize: 12, fontWeight: 700, color: ink(meta.accentColor, dark) }}>
                         <CheckCircle size={13} /> {t('activePlan')}
                       </div>
                     ) : isUpgrade ? (
@@ -503,7 +505,7 @@ export default function SellerSubscriptionPage() {
                     ) : isDowngrade && sub?.has_pending_downgrade && !isPending ? (
                       <div style={{ fontSize: 11, color: textMuted, textAlign: 'center' as const, padding: '9px' }}>{t('alreadyScheduled')}</div>
                     ) : isDowngrade && isPending ? (
-                      <div style={{ fontSize: 11, color: '#f59e0b', textAlign: 'center' as const, padding: '9px', fontWeight: 700 }}>{t('scheduled')}</div>
+                      <div style={{ fontSize: 11, color: ink('#f59e0b', dark), textAlign: 'center' as const, padding: '9px', fontWeight: 700 }}>{t('scheduled')}</div>
                     ) : null}
                   </div>
                 )
@@ -545,7 +547,7 @@ export default function SellerSubscriptionPage() {
                     <p style={{ margin: '2px 0 0', fontSize: 11, color: textMuted }}>{h.reason}</p>
                   </div>
                   <div style={{ textAlign: 'end' as const, flexShrink: 0 }}>
-                    <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: h.change_type === 'upgrade' ? '#10b981' : textMuted }}>
+                    <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: h.change_type === 'upgrade' ? ink('#10b981', dark) : textMuted }}>
                       {h.amount_charged > 0 ? `+${priceShort(h.amount_charged)}` : h.change_type_label}
                     </p>
                     <p style={{ margin: '2px 0 0', fontSize: 10, color: textMuted }}>{date(h.effective_at, 'short')}</p>

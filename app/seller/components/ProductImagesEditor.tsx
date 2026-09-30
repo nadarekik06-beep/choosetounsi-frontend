@@ -116,7 +116,7 @@ export default function ProductImagesEditor({ groups, value, onChange, removed, 
       <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>{t('perColorHint')}</p>
 
       {groups.length === 0 && (
-        <div style={{ border: '1.5px dashed #e2e8f0', borderRadius: 14, padding: 18, textAlign: 'center', fontSize: 12.5, color: '#94a3b8' }}>
+        <div style={{ border: '1.5px dashed #e2e8f0', borderRadius: 14, padding: 18, textAlign: 'center', fontSize: 12.5, color: '#5b6472' }}>
           {t('noColorsYet')}
         </div>
       )}
@@ -257,7 +257,7 @@ function ImageSet({ title, hint, swatches, items, onChange, max, warning, error,
           background: full ? 'rgba(219,20,46,0.08)' : '#f1f5f9', color: full ? '#db142e' : '#64748b',
         }}>{items.length}/{max}</span>
       </div>
-      {hint && <p style={{ fontSize: 11, color: '#94a3b8', margin: '-4px 0 10px' }}>{hint}</p>}
+      {hint && <p style={{ fontSize: 11, color: '#5b6472', margin: '-4px 0 10px' }}>{hint}</p>}
 
       <div
         onDragOver={e => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setFileOver(true) } }}
@@ -326,12 +326,12 @@ function ImageSet({ title, hint, swatches, items, onChange, max, warning, error,
           >
             <ImagePlus size={20} />
             <span style={{ fontSize: 11.5, fontWeight: 800 }}>{t('addImages')}</span>
-            <span style={{ fontSize: 10, color: '#94a3b8', textAlign: 'center' }}>{t('dropHint')}</span>
+            <span style={{ fontSize: 10, color: '#5b6472', textAlign: 'center' }}>{t('dropHint')}</span>
           </button>
         )}
       </div>
 
-      {items.length > 1 && <p style={{ fontSize: 10.5, color: '#94a3b8', margin: '8px 0 0' }}>{t('reorderHint')}</p>}
+      {items.length > 1 && <p style={{ fontSize: 10.5, color: '#5b6472', margin: '8px 0 0' }}>{t('reorderHint')}</p>}
       {(error || notice || warning) && (
         <p role={error ? 'alert' : undefined} style={{ fontSize: 11.5, fontWeight: 600, margin: '8px 0 0', color: error || notice ? '#dc2626' : '#b45309', display: 'flex', alignItems: 'center', gap: 5 }}>
           <AlertTriangle size={12} /> {error || notice || warning}

@@ -28,12 +28,12 @@ export default function DailyChart({ data, height = 220 }: { data: DailyPoint[];
           <CartesianGrid stroke={p.border} vertical={false} />
           <XAxis dataKey="label" tick={{ fontSize: 10, fill: p.muted }} tickLine={false} axisLine={false} minTickGap={16} />
           <YAxis yAxisId="money" tick={{ fontSize: 10, fill: p.muted }} tickLine={false} axisLine={false} width={48} />
-          <YAxis yAxisId="clicks" orientation="right" allowDecimals={false} tick={{ fontSize: 10, fill: '#6366f1' }} tickLine={false} axisLine={false} width={32} />
+          <YAxis yAxisId="clicks" orientation="right" allowDecimals={false} tick={{ fontSize: 10, fill: p.dark ? '#6366f1' : '#4338ca' }} tickLine={false} axisLine={false} width={32} />
           <Tooltip
             contentStyle={{ background: p.card, border: `1px solid ${p.border}`, borderRadius: 10, fontSize: 12, color: p.text }}
             formatter={(value, name) => [name === t('kpis.clicks') ? fmt.number(Number(value)) : fmt.price(Number(value)), name]}
           />
-          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Legend wrapperStyle={{ fontSize: 11 }} formatter={(value) => <span style={{ color: p.muted }}>{value}</span>} />
           <Area yAxisId="money" type="monotone" dataKey="revenue" name={t('kpis.revenue')} stroke="#16a34a" fill="#16a34a" fillOpacity={0.15} strokeWidth={2} />
           <Area yAxisId="money" type="monotone" dataKey="cost" name={t('kpis.spend')} stroke="#db142e" fill="#db142e" fillOpacity={0.12} strokeWidth={2} />
           <Area yAxisId="clicks" type="monotone" dataKey="clicks" name={t('kpis.clicks')} stroke="#6366f1" fill="none" strokeDasharray="4 3" strokeWidth={1.5} />

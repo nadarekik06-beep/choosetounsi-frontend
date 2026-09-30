@@ -12,6 +12,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Crown, TrendingUp, AlertTriangle, Sparkles, ArrowRight, RefreshCw } from "lucide-react";
 import { blackPepperApi, type DailyBriefData } from "@/lib/blackPepperApi";
 import SmartActionButton from "@/app/components/seller/black/SmartActionButton";
+import { ink } from '@/app/seller/ink';
 
 const GOLD = "#f59e0b";
 
@@ -57,7 +58,7 @@ export default function DailyBriefCard({ dark }: { dark: boolean }) {
   useEffect(() => { load(); }, [load]);
 
   const textMain  = dark ? "#fff" : "#111";
-  const textMuted = dark ? "rgba(255,255,255,0.45)" : "#888";
+  const textMuted = dark ? "rgba(255,255,255,0.45)" : "#5b6472";
   const action    = data?.top_action;
   const cfg       = ACTION_CFG[action?.type ?? "default_"] ?? ACTION_CFG.default_;
 
@@ -87,7 +88,7 @@ export default function DailyBriefCard({ dark }: { dark: boolean }) {
             <Crown size={18} color={GOLD}/>
           </div>
           <div>
-            <p style={{ fontSize:10, fontWeight:800, color:GOLD, margin:0, textTransform:"uppercase", letterSpacing:"0.08em" }}>
+            <p style={{ fontSize:10, fontWeight:800, color:ink(GOLD, dark), margin:0, textTransform:"uppercase", letterSpacing:"0.08em" }}>
               Today&apos;s Brief
             </p>
             <p style={{ fontSize:13, fontWeight:900, color:textMain, margin:0 }}>
@@ -107,9 +108,9 @@ export default function DailyBriefCard({ dark }: { dark: boolean }) {
 
       {!loading && error && (
         <div style={{ textAlign:"center", padding:"12px 0" }}>
-          <p style={{ fontSize:12, color:"#ef4444", margin:"0 0 8px" }}>Could not load your brief.</p>
+          <p style={{ fontSize:12, color:ink('#ef4444', dark), margin:"0 0 8px" }}>Could not load your brief.</p>
           <button onClick={load} style={{
-            fontSize:11, fontWeight:700, color:GOLD,
+            fontSize:11, fontWeight:700, color:ink(GOLD, dark),
             background:"rgba(245,158,11,0.12)", border:"1px solid rgba(245,158,11,0.3)",
             borderRadius:7, padding:"5px 12px", cursor:"pointer",
           }}>Try again</button>
@@ -121,11 +122,11 @@ export default function DailyBriefCard({ dark }: { dark: boolean }) {
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
             {[
               { label:"Revenue",  value: data.revenue_delta,
-                color: data.revenue_positive ? "#10b981" : "#ef4444" },
+                color: data.revenue_positive ? ink('#10b981', dark) : ink('#ef4444', dark) },
               { label:"Trending", value: data.trending_count + " product" + (data.trending_count !== 1 ? "s" : ""),
-                color: data.trending_count > 0 ? "#10b981" : textMain },
+                color: data.trending_count > 0 ? ink('#10b981', dark) : textMain },
               { label:"At risk",  value: data.risk_count + " product" + (data.risk_count !== 1 ? "s" : ""),
-                color: data.risk_count === 0 ? "#10b981" : "#ef4444" },
+                color: data.risk_count === 0 ? ink('#10b981', dark) : ink('#ef4444', dark) },
             ].map(({ label, value, color }) => (
               <div key={label} style={{
                 background: dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",

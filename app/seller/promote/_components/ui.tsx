@@ -20,7 +20,10 @@ export function usePalette() {
     cardAlt:   dark ? '#1a2030' : '#f8f9fb',
     border:    dark ? 'rgba(255,255,255,0.07)' : '#e5e8ed',
     text:      dark ? '#f0f0f0' : '#111827',
-    muted:     dark ? 'rgba(255,255,255,0.45)' : '#6b7280',
+    muted:     dark ? 'rgba(255,255,255,0.55)' : '#5b6472',
+    // accent text: GOLD / green are too light for text on white
+    gold:      dark ? GOLD : '#92400e',
+    positive:  dark ? '#16a34a' : '#15803d',
     input:     dark ? '#0f141d' : '#ffffff',
     shadow:    dark ? '0 1px 3px rgba(0,0,0,0.4)' : '0 1px 3px rgba(0,0,0,0.06)',
   }

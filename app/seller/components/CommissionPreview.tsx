@@ -151,8 +151,8 @@ export default function CommissionPreview({
         background: '#f8fafc', borderRadius: 10,
         border: '1px solid #e5e7eb',
       }}>
-        <Loader2 size={12} style={{ animation: 'spin 0.8s linear infinite', color: '#94a3b8', flexShrink: 0 }} />
-        <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
+        <Loader2 size={12} style={{ animation: 'spin 0.8s linear infinite', color: '#5b6472', flexShrink: 0 }} />
+        <span style={{ fontSize: 11, color: '#5b6472', fontWeight: 500 }}>
           {t('calculating')}
         </span>
         <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
@@ -198,7 +198,7 @@ export default function CommissionPreview({
             }} />
             {planLabel}
           </span>
-          <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
+          <span style={{ fontSize: 10, color: '#5b6472', fontWeight: 500 }}>
             {label ?? t('perUnit')}
           </span>
         </div>
@@ -210,15 +210,15 @@ export default function CommissionPreview({
           <div style={{ padding: '10px 12px', borderInlineEnd: '1px solid #f0f0f0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
               <TrendingDown size={11} color="#ef4444" />
-              <span style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              <span style={{ fontSize: 9, fontWeight: 800, color: '#5b6472', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                 {t('fee')}
               </span>
             </div>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#ef4444', lineHeight: 1 }}>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#b91c1c', lineHeight: 1 }}>
               {bare(data.commission_amount)}
-              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginInlineStart: 3 }}>{currency}</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: '#5b6472', marginInlineStart: 3 }}>{currency}</span>
             </p>
-            <p style={{ margin: '2px 0 0', fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
+            <p style={{ margin: '2px 0 0', fontSize: 10, color: '#5b6472', fontWeight: 500 }}>
               {priceLine}
             </p>
           </div>
@@ -227,15 +227,15 @@ export default function CommissionPreview({
           <div style={{ padding: '10px 12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
               <TrendingUp size={11} color="#10b981" />
-              <span style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              <span style={{ fontSize: 9, fontWeight: 800, color: '#5b6472', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                 {t('earnings')}
               </span>
             </div>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#10b981', lineHeight: 1 }}>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#047857', lineHeight: 1 }}>
               {bare(data.seller_amount)}
-              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginInlineStart: 3 }}>{currency}</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: '#5b6472', marginInlineStart: 3 }}>{currency}</span>
             </p>
-            <p style={{ margin: '2px 0 0', fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
+            <p style={{ margin: '2px 0 0', fontSize: 10, color: '#5b6472', fontWeight: 500 }}>
               {t('afterFee')}
             </p>
           </div>
@@ -253,7 +253,7 @@ export default function CommissionPreview({
             <span style={{ fontSize: 11, fontWeight: 700, color: planColor }}>
               {t('saved', { amount: dt(data.saved_with_plan), plan: planLabel })}
             </span>
-            <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
+            <span style={{ fontSize: 10, color: '#5b6472', fontWeight: 500 }}>
               {t('vsFree', { from: number(data.base_rate), to: number(data.commission_percentage) })}
             </span>
           </div>
@@ -291,11 +291,11 @@ export default function CommissionPreview({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: '#374151' }}>
                       {t('upgradeTo', { plan: suggestion.plan_name })}
-                      <span style={{ fontWeight: 500, color: '#94a3b8' }}>
+                      <span style={{ fontWeight: 500, color: '#5b6472' }}>
                         {' '}{t('perMonth', { amount: fmt(suggestion.monthly_cost, { minimumFractionDigits: 0 }) })}
                       </span>
                     </p>
-                    <p style={{ margin: '1px 0 0', fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
+                    <p style={{ margin: '1px 0 0', fontSize: 10, color: '#5b6472', fontWeight: 500 }}>
                       {t.rich('upgradeLine', {
                         rate: number(suggestion.new_rate),
                         earn: dt(suggestion.new_seller_amount),

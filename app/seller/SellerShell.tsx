@@ -15,6 +15,7 @@ export const ThemeContext = createContext<{
 export function useTheme() { return useContext(ThemeContext); }
 
 const STORAGE_KEY = 'ct_seller_theme';
+const BG_STYLE_ID = 'ct-seller-theme-bg';
 
 export default function SellerLayout({ children }: { children: React.ReactNode }) {
   const [collapsed,  setCollapsed]  = useState(false);
@@ -27,6 +28,20 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
     if (saved !== null) setDark(saved === 'dark');
     setMounted(true);
   }, []);
+
+  // Keep the boot <style> from layout.tsx in sync (page background behind the shell);
+  // removed when leaving the seller area so storefront pages are unaffected.
+  useEffect(() => {
+    if (!mounted) return;
+    let el = document.getElementById(BG_STYLE_ID);
+    if (!el) {
+      el = document.createElement('style');
+      el.id = BG_STYLE_ID;
+      document.head.appendChild(el);
+    }
+    el.textContent = `body{background:${dark ? '#0D1117' : '#f0f2f5'}}`;
+  }, [dark, mounted]);
+  useEffect(() => () => { document.getElementById(BG_STYLE_ID)?.remove(); }, []);
 
   // Lock page scroll while the mobile drawer is open
   useEffect(() => {

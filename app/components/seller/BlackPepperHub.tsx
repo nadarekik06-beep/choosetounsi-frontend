@@ -22,6 +22,8 @@ import ProductQualityAudit from './black/ProductQualityAudit';
 import SmartPromoteCard from './black/SmartPromoteCard';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
+import { ink } from '@/app/seller/ink';
+import { useTheme } from '@/app/seller/SellerShell';
 
 const GOLD   = '#f59e0b';
 const GOLD_2 = '#fbbf24';
@@ -61,13 +63,14 @@ const CONFIDENCE_HUMAN: Record<string, string> = {
 // ---- Shared UI -------------------------------------------------------------
 
 function GoldBadge({ text }: { text: string }) {
+  const { dark } = useTheme();
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
       padding: '3px 10px', borderRadius: 999,
       background: 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(251,191,36,0.12))',
       border: '1px solid rgba(245,158,11,0.45)',
-      fontSize: 9, fontWeight: 800, color: GOLD,
+      fontSize: 9, fontWeight: 800, color: ink(GOLD, dark),
       letterSpacing: '0.08em', textTransform: 'uppercase' as const,
     }}>
       <Crown size={9} /> {text}
@@ -88,7 +91,7 @@ function SectionCard({ title, subtitle, icon: Icon, accentColor = GOLD,
   const border    = 'rgba(245,158,11,0.2)';
   const bg        = dark ? '#0f0d0a' : '#fffdf5';
   const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   return (
     <div style={{ background: bg, borderRadius: 20, border: `1px solid ${border}`, overflow: 'hidden',
       boxShadow: dark ? '0 4px 32px rgba(245,158,11,0.06)' : '0 4px 24px rgba(245,158,11,0.08)' }}>
@@ -100,7 +103,7 @@ function SectionCard({ title, subtitle, icon: Icon, accentColor = GOLD,
       }} onClick={() => collapsible && setOpen(p => !p)}>
         <div style={{ width: 38, height: 38, borderRadius: 11, flexShrink: 0,
           background: `${accentColor}18`, border: `1px solid ${accentColor}35`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', color: accentColor }}>
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink(accentColor, dark) }}>
           <Icon size={18} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -147,7 +150,7 @@ export function EliteBanner({ dark }: { dark: boolean }) {
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 900, color: GOLD, margin: 0 }}>{t('elite.title')}</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 900, color: ink(GOLD, dark), margin: 0 }}>{t('elite.title')}</h2>
           <GoldBadge text="Black Pepper"/>
         </div>
         <p style={{ fontSize: 12, color: textMuted, margin: 0, fontWeight: 500 }}>
@@ -177,7 +180,7 @@ export function AiHubSection({ dark }: { dark: boolean }) {
   useEffect(() => { load(); }, [load]);
 
   const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const cardBg    = dark ? '#141209' : '#fff';
   const cardBdr   = dark ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.18)';
   const sigColors = { hot:'#ef4444', rising:GOLD, warm:'#10b981' };
@@ -190,9 +193,9 @@ export function AiHubSection({ dark }: { dark: boolean }) {
       {loading && <LoadingSpinner/>}
       {error && (
         <div style={{ textAlign:'center', padding:'24px 0' }}>
-          <p style={{ color:'#ef4444', fontSize:13 }}>{error}</p>
+          <p style={{ color:ink('#ef4444', dark), fontSize:13 }}>{error}</p>
           <button onClick={load} style={{ marginTop:8, padding:'8px 16px', borderRadius:8,
-            background:`${GOLD}18`, border:`1px solid ${GOLD}33`, color:GOLD, cursor:'pointer', fontWeight:700, fontSize:12 }}>
+            background:`${GOLD}18`, border:`1px solid ${GOLD}33`, color:ink(GOLD, dark), cursor:'pointer', fontWeight:700, fontSize:12 }}>
             <RefreshCw size={12} style={{ display:'inline', marginInlineEnd:4 }}/> Retry
           </button>
         </div>
@@ -204,18 +207,18 @@ export function AiHubSection({ dark }: { dark: boolean }) {
               ? 'linear-gradient(135deg,rgba(245,158,11,0.1),rgba(245,158,11,0.05))'
               : 'linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.04))',
               borderRadius:14, border:`1px solid ${GOLD}25`, padding:16 }}>
-              <p style={{ fontSize:15, fontWeight:800, color:GOLD, margin:'0 0 10px' }}>{data.market_insights.headline}</p>
+              <p style={{ fontSize:15, fontWeight:800, color:ink(GOLD, dark), margin:'0 0 10px' }}>{data.market_insights.headline}</p>
               <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                 {data.market_insights.insights.map((s,i) => (
                   <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
-                    <span style={{ color:GOLD, fontSize:14, lineHeight:1.5, flexShrink:0 }}>›</span>
+                    <span style={{ color:ink(GOLD, dark), fontSize:14, lineHeight:1.5, flexShrink:0 }}>›</span>
                     <p style={{ fontSize:12, color:textMain, margin:0, fontWeight:500, lineHeight:1.5 }}>{s}</p>
                   </div>
                 ))}
               </div>
               {data.market_insights.priority_action && (
                 <div style={{ marginTop:12, padding:'8px 12px', borderRadius:8, background:`${GOLD}15`, border:`1px solid ${GOLD}25` }}>
-                  <p style={{ fontSize:11, fontWeight:800, color:GOLD, margin:'0 0 2px', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                  <p style={{ fontSize:11, fontWeight:800, color:ink(GOLD, dark), margin:'0 0 2px', textTransform:'uppercase', letterSpacing:'0.06em' }}>
                     Priority Action
                   </p>
                   <p style={{ fontSize:12, color:textMain, margin:0, fontWeight:600 }}>{data.market_insights.priority_action}</p>
@@ -225,7 +228,7 @@ export function AiHubSection({ dark }: { dark: boolean }) {
           )}
 
           <div>
-            <p style={{ fontSize:12, fontWeight:800, color:GOLD, margin:'0 0 12px', textTransform:'uppercase', letterSpacing:'0.08em',
+            <p style={{ fontSize:12, fontWeight:800, color:ink(GOLD, dark), margin:'0 0 12px', textTransform:'uppercase', letterSpacing:'0.08em',
               display:'flex', alignItems:'center', gap:6 }}>
               <TrendingUp size={13}/> Trending Right Now ({data.trending_products.length})
             </p>
@@ -255,8 +258,8 @@ export function AiHubSection({ dark }: { dark: boolean }) {
                         <p style={{ fontSize:11, color:sc, fontWeight:700, margin:'0 0 2px' }}>{vl}</p>
                         <p style={{ fontSize:11, color:textMuted, margin:'0 0 8px' }}>{p.insight}</p>
                         <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-                          <span style={{ fontSize:11, fontWeight:700, color:'#10b981' }}>{p.seven_day_units} sold this week</span>
-                          <span style={{ fontSize:11, fontWeight:700, color:GOLD }}>{fmt(p.seven_day_revenue)}</span>
+                          <span style={{ fontSize:11, fontWeight:700, color:ink('#10b981', dark) }}>{p.seven_day_units} sold this week</span>
+                          <span style={{ fontSize:11, fontWeight:700, color:ink(GOLD, dark) }}>{fmt(p.seven_day_revenue)}</span>
                           {(p.smart_actions||[]).map((a,i) => (
                             <SmartActionButton key={i} label={a.label}
                               icon={a.type==='promote' ? TrendingUp : a.type==='restock' ? Package : Zap}
@@ -276,14 +279,14 @@ export function AiHubSection({ dark }: { dark: boolean }) {
           </div>
 
           <div>
-            <p style={{ fontSize:12, fontWeight:800, color:'#ef4444', margin:'0 0 12px', textTransform:'uppercase', letterSpacing:'0.08em',
+            <p style={{ fontSize:12, fontWeight:800, color:ink('#ef4444', dark), margin:'0 0 12px', textTransform:'uppercase', letterSpacing:'0.08em',
               display:'flex', alignItems:'center', gap:6 }}>
               <AlertTriangle size={13}/> Stock Alerts ({data.inventory_alerts.length})
             </p>
             {data.inventory_alerts.length===0 ? (
               <div style={{ display:'flex', alignItems:'center', gap:8, padding:'12px 14px', background:'rgba(16,185,129,0.08)', borderRadius:10, border:'1px solid rgba(16,185,129,0.2)' }}>
                 <CheckCircle size={16} color="#10b981"/>
-                <p style={{ fontSize:13, color:'#10b981', margin:0, fontWeight:600 }}>You have enough stock for everything right now.</p>
+                <p style={{ fontSize:13, color:ink('#10b981', dark), margin:0, fontWeight:600 }}>You have enough stock for everything right now.</p>
               </div>
             ) : (
               <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
@@ -302,7 +305,7 @@ export function AiHubSection({ dark }: { dark: boolean }) {
                         <p style={{ fontSize:11, color:uc, fontWeight:700, margin:'0 0 2px' }}>{ul}</p>
                         <p style={{ fontSize:11, color:textMuted, margin:'0 0 8px', lineHeight:1.4 }}>{a.insight}</p>
                         <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-                          <span style={{ fontSize:11, fontWeight:700, color:'#ef4444' }}>Could lose {fmt(a.revenue_at_risk)}</span>
+                          <span style={{ fontSize:11, fontWeight:700, color:ink('#ef4444', dark) }}>Could lose {fmt(a.revenue_at_risk)}</span>
                           {(a.smart_actions||[]).map((ac,i) => (
                             <SmartActionButton key={i} label={ac.label}
                               icon={ac.type==='restock' ? Package : TrendingUp}
@@ -374,13 +377,13 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
   };
 
   const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const cardBg    = dark ? '#141209' : '#fff';
   const cardBdr   = dark ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.18)';
   const inputBg   = dark ? 'rgba(255,255,255,0.05)' : '#fafaf7';
   const inputBdr  = dark ? 'rgba(245,158,11,0.3)'   : 'rgba(245,158,11,0.35)';
 
-  // Streak flame color: gold for 1-2, orange for 3-4, red for 5+
+  // Streak flame color: ink(gold, dark) for 1-2, orange for 3-4, red for 5+
   const streakColor = (s: number) => s >= 5 ? '#ef4444' : s >= 3 ? '#f97316' : GOLD;
 
   return (
@@ -402,9 +405,9 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
       {loading && <LoadingSpinner />}
       {error && (
         <div style={{ textAlign: 'center', padding: '24px 0' }}>
-          <p style={{ color: '#ef4444', fontSize: 13 }}>{error}</p>
+          <p style={{ color: ink('#ef4444', dark), fontSize: 13 }}>{error}</p>
           <button onClick={load} style={{ marginTop: 8, padding: '8px 16px', borderRadius: 8,
-            background: `${GOLD}18`, border: `1px solid ${GOLD}33`, color: GOLD,
+            background: `${GOLD}18`, border: `1px solid ${GOLD}33`, color: ink(GOLD, dark),
             cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
             <RefreshCw size={12} style={{ display: 'inline', marginInlineEnd: 4 }}/> {t('retry')}
           </button>
@@ -438,7 +441,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                   {t('monthGoal', { month: monthLabel(data.current_month) })}
                 </p>
                 {data.current_goal > 0 ? (
-                  <p style={{ fontSize: 20, fontWeight: 900, color: GOLD, margin: 0 }}>
+                  <p style={{ fontSize: 20, fontWeight: 900, color: ink(GOLD, dark), margin: 0 }}>
                     {money(data.current_goal)}
                   </p>
                 ) : (
@@ -451,7 +454,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px',
                   borderRadius: 8, background: editing ? 'rgba(239,68,68,0.12)' : `${GOLD}15`,
                   border: `1px solid ${editing ? 'rgba(239,68,68,0.3)' : `${GOLD}30`}`,
-                  color: editing ? '#ef4444' : GOLD, cursor: 'pointer',
+                  color: editing ? ink('#ef4444', dark) : GOLD, cursor: 'pointer',
                   fontSize: 11, fontWeight: 800 }}>
                 {editing ? <><X size={11}/> {t('cancel')}</> : <><Pencil size={11}/> {data.current_goal > 0 ? t('edit') : t('setGoal')}</>}
               </button>
@@ -485,7 +488,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
             )}
 
             {saveMsg && (
-              <p style={{ fontSize: 12, color: saveMsg.ok ? '#10b981' : '#ef4444',
+              <p style={{ fontSize: 12, color: saveMsg.ok ? ink('#10b981', dark) : ink('#ef4444', dark),
                 fontWeight: 700, margin: '0 0 10px' }}>{saveMsg.text}</p>
             )}
 
@@ -497,7 +500,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                     {t('earned', { amount: money(data.current_revenue) })}
                   </span>
                   <span style={{ fontSize: 11, fontWeight: 800,
-                    color: data.on_track ? '#10b981' : data.progress_pct > 50 ? GOLD : '#ef4444' }}>
+                    color: data.on_track ? ink('#10b981', dark) : data.progress_pct > 50 ? GOLD : ink('#ef4444', dark) }}>
                     {number(data.progress_pct / 100, { style: 'percent', maximumFractionDigits: 1 })}
                   </span>
                 </div>
@@ -519,7 +522,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                   <span style={{ fontSize: 10, color: textMuted }}>
                     {t('daysLeft', { count: data.days_left })}
                   </span>
-                  <span style={{ fontSize: 10, color: data.on_track ? '#10b981' : textMuted, fontWeight: 700 }}>
+                  <span style={{ fontSize: 10, color: data.on_track ? ink('#10b981', dark) : textMuted, fontWeight: 700 }}>
                     {data.on_track ? `✅ ${t('onTrack')}` : t('needMore', { amount: money(Math.max(0, data.current_goal - data.current_revenue)) })}
                   </span>
                 </div>
@@ -533,19 +536,19 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
               {
                 label: t('stats.thisMonth'),
                 value: money(data.current_revenue),
-                color: GOLD,
+                color: ink(GOLD, dark),
                 icon: DollarSign,
               },
               {
                 label: t('stats.projected'),
                 value: money(data.projected),
-                color: data.projected >= (data.current_goal || 1) ? '#10b981' : '#f97316',
+                color: data.projected >= (data.current_goal || 1) ? ink('#10b981', dark) : ink('#f97316', dark),
                 icon: TrendingUp,
               },
               {
                 label: t('stats.lastMonth'),
                 value: money(data.last_revenue),
-                color: '#3b82f6',
+                color: ink('#3b82f6', dark),
                 icon: BarChart2,
               },
             ].map(({ label, value, color, icon: Ic }) => (
@@ -566,11 +569,11 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
               borderRadius: 10, background: `${GOLD}10`, border: `1px solid ${GOLD}20` }}>
               <Info size={13} color={GOLD} style={{ flexShrink: 0 }}/>
               <p style={{ fontSize: 12, color: textMain, margin: 0, fontWeight: 500 }}>
-                {t.rich('pace', { amount: money(data.daily_pace), b: (c) => <strong style={{ color: GOLD }}>{c}</strong> })}
+                {t.rich('pace', { amount: money(data.daily_pace), b: (c) => <strong style={{ color: ink(GOLD, dark) }}>{c}</strong> })}
                 {data.current_goal > 0 && (
                   <> {t.rich('paceNeeded', {
                     amount: money(Math.max(0, (data.current_goal - data.current_revenue) / Math.max(data.days_left, 1))),
-                    b: (c) => <strong style={{ color: GOLD }}>{c}</strong>,
+                    b: (c) => <strong style={{ color: ink(GOLD, dark) }}>{c}</strong>,
                   })}</>
                 )}
               </p>
@@ -599,7 +602,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                       <div style={{ display: 'flex', justifyContent: 'space-between',
                         alignItems: 'center', marginBottom: 7 }}>
                         <span style={{ fontSize: 11, fontWeight: 800,
-                          color: isCurrentMonth ? GOLD : textMain }}>
+                          color: isCurrentMonth ? ink(GOLD, dark) : textMain }}>
                           {monthLabel(m.month)}{isCurrentMonth ? ` · ${t('now')}` : ''}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -610,7 +613,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
                             <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 7px',
                               borderRadius: 999,
                               background: m.hit ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.12)',
-                              color: m.hit ? '#10b981' : '#ef4444',
+                              color: m.hit ? ink('#10b981', dark) : ink('#ef4444', dark),
                               border: `1px solid ${m.hit ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.25)'}` }}>
                               {m.hit ? `✓ ${t('goalHit')}` : number(m.pct / 100, { style: 'percent', maximumFractionDigits: 1 })}
                             </span>
@@ -702,7 +705,7 @@ export function VipLoungeSection({ dark }: { dark: boolean }) {
   };
 
   const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const inputBg   = dark ? 'rgba(255,255,255,0.05)' : '#f9f7f0';
   const inputBdr  = dark ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.25)';
   const cardBg    = dark ? '#141209' : '#fff';
@@ -730,14 +733,14 @@ export function VipLoungeSection({ dark }: { dark: boolean }) {
                 border:`1px solid ${sel ? `${GOLD}45` : inputBdr}`, cursor:'pointer',
               }}>
                 <div style={{ fontSize:20, marginBottom:4 }}>{cfg.icon}</div>
-                <p style={{ fontSize:11, fontWeight:800, color:sel ? GOLD : textMuted, margin:'0 0 2px' }}>{cfg.label}</p>
+                <p style={{ fontSize:11, fontWeight:800, color:sel ? ink(GOLD, dark) : textMuted, margin:'0 0 2px' }}>{cfg.label}</p>
                 <p style={{ fontSize:9, color:textMuted, margin:0, lineHeight:1.3 }}>{cfg.desc}</p>
               </button>
             );
           })}
         </div>
         <div>
-          <label style={{ fontSize:11, fontWeight:800, color:GOLD, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:6 }}>
+          <label style={{ fontSize:11, fontWeight:800, color:ink(GOLD, dark), textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:6 }}>
             Describe your request
           </label>
           <textarea value={form.message} onChange={e => setForm(f => ({ ...f, message:e.target.value }))}
@@ -747,11 +750,11 @@ export function VipLoungeSection({ dark }: { dark: boolean }) {
               resize:'vertical', outline:'none', boxSizing:'border-box' as const }}/>
           <p style={{ fontSize:10, color:textMuted, margin:'4px 0 0', textAlign: 'end' }}>{form.message.length} / 1000</p>
         </div>
-        {formError && <p style={{ fontSize:12, color:'#ef4444', margin:0, fontWeight:600 }}>{formError}</p>}
+        {formError && <p style={{ fontSize:12, color:ink('#ef4444', dark), margin:0, fontWeight:600 }}>{formError}</p>}
         {success && (
           <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', borderRadius:10, background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.25)' }}>
             <CheckCircle size={14} color="#10b981"/>
-            <p style={{ fontSize:12, color:'#10b981', margin:0, fontWeight:600 }}>{success}</p>
+            <p style={{ fontSize:12, color:ink('#10b981', dark), margin:0, fontWeight:600 }}>{success}</p>
           </div>
         )}
         <button onClick={handleSubmit} disabled={submitting} style={{
@@ -781,7 +784,7 @@ export function VipLoungeSection({ dark }: { dark: boolean }) {
                         <span style={{ fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:999, background:`${sc}15`, color:sc, border:`1px solid ${sc}28`, textTransform:'uppercase' as const }}>{req.status_label}</span>
                       </div>
                       <p style={{ fontSize:11, color:textMuted, margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{req.message}</p>
-                      {req.admin_note && <p style={{ fontSize:11, color:'#10b981', margin:0, fontWeight:600 }}>💬 {req.admin_note}</p>}
+                      {req.admin_note && <p style={{ fontSize:11, color:ink('#10b981', dark), margin:0, fontWeight:600 }}>💬 {req.admin_note}</p>}
                       <p style={{ fontSize:10, color:textMuted, margin:'4px 0 0' }}>
                         <Clock size={9} style={{ display:'inline', marginInlineEnd:3 }}/>
                         {new Date(req.created_at).toLocaleDateString('fr-TN')}

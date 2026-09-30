@@ -27,6 +27,7 @@ import {
 import { analyticsApi, type AnalyticsOverview, type ProductAnalytics, type CustomerAnalytics } from '@/lib/sellerAiApi';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
+import { ink } from '@/app/seller/ink';
 
 
 const SEGMENT_COLORS: Record<string, string> = {
@@ -53,20 +54,20 @@ function MiniKPI({
   const bg      = dark ? '#161b27' : '#ffffff';
   const border  = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const textM   = dark ? '#fff' : '#111';
-  const textMu  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMu  = dark ? 'rgba(255,255,255,0.4)' : '#5b6472';
   const { number } = useFormat();
 
   return (
     <div style={{ background: bg, borderRadius: 16, border: `1px solid ${border}`, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: `${accent}1a`, border: `1px solid ${accent}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: `${accent}1a`, border: `1px solid ${accent}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink(accent, dark) }}>
           <Icon size={16} />
         </div>
         {change !== undefined && (
           <span style={{
             display: 'flex', alignItems: 'center', gap: 3,
             fontSize: 10, fontWeight: 800,
-            color: change >= 0 ? '#10b981' : '#ef4444',
+            color: change >= 0 ? ink('#10b981', dark) : ink('#ef4444', dark),
             background: change >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
             padding: '2px 7px', borderRadius: 999,
           }}>
@@ -87,10 +88,10 @@ function SectionHeader({ icon: Icon, title, subtitle, accent, dark }: {
   icon: React.ElementType; title: string; subtitle: string; accent: string; dark: boolean;
 }) {
   const textM  = dark ? '#fff' : '#111';
-  const textMu = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMu = dark ? 'rgba(255,255,255,0.4)' : '#5b6472';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-      <div style={{ width: 36, height: 36, borderRadius: 10, background: `${accent}1a`, border: `1px solid ${accent}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, flexShrink: 0 }}>
+      <div style={{ width: 36, height: 36, borderRadius: 10, background: `${accent}1a`, border: `1px solid ${accent}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink(accent, dark), flexShrink: 0 }}>
         <Icon size={16} />
       </div>
       <div>
@@ -120,7 +121,7 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
   const cardBg   = dark ? '#161b27' : '#ffffff';
   const border   = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const textMain = dark ? '#fff'  : '#111';
-  const textMuted= dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted= dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const gridBg   = dark ? 'rgba(255,255,255,0.03)' : '#f9fafb';
 
   const load = async () => {
@@ -192,7 +193,7 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
             <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500 }}>{t('subtitle')}</p>
           </div>
         </div>
-        <span style={{ padding: '4px 10px', borderRadius: 999, background: 'rgba(219,20,46,0.12)', border: '1px solid rgba(219,20,46,0.3)', fontSize: 10, fontWeight: 800, color: '#f87171' }}>
+        <span style={{ padding: '4px 10px', borderRadius: 999, background: 'rgba(219,20,46,0.12)', border: '1px solid rgba(219,20,46,0.3)', fontSize: 10, fontWeight: 800, color: ink('#f87171', dark) }}>
           🔴 Red Pepper
         </span>
       </div>
@@ -307,9 +308,9 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
           {/* Stock health */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
             {[
-              { label: t('stock.healthy'), val: products.stock_health.healthy,   color: '#10b981', icon: Package },
-              { label: t('stock.low'),     val: products.stock_health.low_stock, color: '#f59e0b', icon: Package },
-              { label: t('stock.out'),     val: products.stock_health.out,       color: '#ef4444', icon: Package },
+              { label: t('stock.healthy'), val: products.stock_health.healthy,   color: ink('#10b981', dark), icon: Package },
+              { label: t('stock.low'),     val: products.stock_health.low_stock, color: ink('#f59e0b', dark), icon: Package },
+              { label: t('stock.out'),     val: products.stock_health.out,       color: ink('#ef4444', dark), icon: Package },
             ].map(({ label, val, color, icon }) => (
               <div key={label} style={{ background: cardBg, borderRadius: 14, border: `1px solid ${border}`, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: `${color}1a`, border: `1px solid ${color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color }}>
@@ -375,12 +376,12 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
                       <td style={{ padding: '10px 16px', textAlign: 'end', fontWeight: 800, color: '#db142e' }}>{fmt(p.total_revenue)}</td>
                       <td style={{ padding: '10px 16px', textAlign: 'end', color: textMain, fontWeight: 700 }}>{number(p.total_units)}</td>
                       <td style={{ padding: '10px 16px', textAlign: 'end' }}>
-                        <span style={{ color: p.conversion_rate > 5 ? '#10b981' : p.conversion_rate > 1 ? '#f59e0b' : textMuted, fontWeight: 700 }}>
+                        <span style={{ color: p.conversion_rate > 5 ? ink('#10b981', dark) : p.conversion_rate > 1 ? ink('#f59e0b', dark) : textMuted, fontWeight: 700 }}>
                           {pctOf(p.conversion_rate, 2)}
                         </span>
                       </td>
                       <td style={{ padding: '10px 16px', textAlign: 'end' }}>
-                        <span style={{ color: p.stock === 0 ? '#ef4444' : p.stock <= 10 ? '#f59e0b' : '#10b981', fontWeight: 700 }}>
+                        <span style={{ color: p.stock === 0 ? ink('#ef4444', dark) : p.stock <= 10 ? ink('#f59e0b', dark) : ink('#10b981', dark), fontWeight: 700 }}>
                           {p.stock}
                         </span>
                       </td>
@@ -448,7 +449,7 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
                           {t('daysAgo', { count: c.days_since_last })}
                         </td>
                         <td style={{ padding: '10px 16px', textAlign: 'end' }}>
-                          <span style={{ fontSize: 13, fontWeight: 900, color: c.rfm_score >= 4 ? '#10b981' : c.rfm_score >= 3 ? '#f59e0b' : '#ef4444' }}>
+                          <span style={{ fontSize: 13, fontWeight: 900, color: c.rfm_score >= 4 ? ink('#10b981', dark) : c.rfm_score >= 3 ? ink('#f59e0b', dark) : ink('#ef4444', dark) }}>
                             {c.rfm_score.toFixed(1)}
                           </span>
                         </td>

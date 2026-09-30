@@ -21,12 +21,15 @@ import { blackPepperApi, type AiHubData, type TrendingProduct, type InventoryAle
 import SmartActionButton from '@/app/components/seller/black/SmartActionButton';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
+import { ink } from '@/app/seller/ink';
+import { useTheme } from '@/app/seller/SellerShell';
 
 const GOLD = '#f59e0b';
 
 // ─── Signal badge ─────────────────────────────────────────────────────────────
 
 function SignalBadge({ signal }: { signal: 'hot' | 'rising' | 'warm' }) {
+  const { dark } = useTheme();
   const t = useTranslations('seller.aiHub');
   const cfg = {
     hot:    { color: '#ef4444', bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.35)',   label: `🔥 ${t('signal.hot')}` },
@@ -36,7 +39,7 @@ function SignalBadge({ signal }: { signal: 'hot' | 'rising' | 'warm' }) {
   return (
     <span style={{
       fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999,
-      background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`,
+      background: cfg.bg, color: ink(cfg.color, dark), border: `1px solid ${cfg.border}`,
       textTransform: 'uppercase' as const, letterSpacing: '0.06em', flexShrink: 0,
     }}>
       {cfg.label}
@@ -47,6 +50,7 @@ function SignalBadge({ signal }: { signal: 'hot' | 'rising' | 'warm' }) {
 // ─── Urgency badge ────────────────────────────────────────────────────────────
 
 function UrgencyBadge({ urgency }: { urgency: 'critical' | 'high' | 'medium' }) {
+  const { dark } = useTheme();
   const t = useTranslations('seller.aiHub');
   const cfg = {
     critical: { color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.35)', label: t('urgency.critical') },
@@ -56,7 +60,7 @@ function UrgencyBadge({ urgency }: { urgency: 'critical' | 'high' | 'medium' }) 
   return (
     <span style={{
       fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999,
-      background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`,
+      background: cfg.bg, color: ink(cfg.color, dark), border: `1px solid ${cfg.border}`,
       textTransform: 'uppercase' as const, letterSpacing: '0.06em', flexShrink: 0,
     }}>
       {cfg.label}
@@ -70,7 +74,7 @@ function TrendingRow({ item, dark }: { item: TrendingProduct; dark: boolean }) {
   const t = useTranslations('seller.aiHub');
   const { price, number } = useFormat();
   const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const innerBg   = dark ? 'rgba(255,255,255,0.03)' : '#f9f9f9';
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
 
@@ -116,9 +120,9 @@ function TrendingRow({ item, dark }: { item: TrendingProduct; dark: boolean }) {
       {/* 3 stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
         {[
-          { label: t('stats.thisWeek'),  value: t('stats.sold', { count: item.seven_day_units }), color: GOLD },
-          { label: t('stats.revenue'),   value: price(item.seven_day_revenue, { maximumFractionDigits: 0 }), color: '#34d399' },
-          { label: t('stats.stockLeft'), value: number(item.current_stock), color: item.current_stock <= 5 ? '#f87171' : textMuted },
+          { label: t('stats.thisWeek'),  value: t('stats.sold', { count: item.seven_day_units }), color: ink(GOLD, dark) },
+          { label: t('stats.revenue'),   value: price(item.seven_day_revenue, { maximumFractionDigits: 0 }), color: ink('#34d399', dark) },
+          { label: t('stats.stockLeft'), value: number(item.current_stock), color: item.current_stock <= 5 ? ink('#f87171', dark) : textMuted },
         ].map(({ label, value, color }) => (
           <div key={label} style={{
             background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
@@ -156,7 +160,7 @@ function AlertRow({ item, dark }: { item: InventoryAlert; dark: boolean }) {
   const t = useTranslations('seller.aiHub');
   const { price, number } = useFormat();
   const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const innerBg   = dark ? 'rgba(255,255,255,0.03)' : '#f9f9f9';
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const urgColor  = { critical: '#ef4444', high: GOLD, medium: '#60a5fa' }[item.urgency];
@@ -203,7 +207,7 @@ function AlertRow({ item, dark }: { item: InventoryAlert; dark: boolean }) {
         {[
           { label: t('stats.stockLeft'),   value: number(item.current_stock),  color: urgColor },
           { label: t('stats.daysLeft'),    value: number(item.days_remaining), color: urgColor },
-          { label: t('stats.revenueRisk'), value: price(item.revenue_at_risk, { maximumFractionDigits: 0 }), color: '#f87171' },
+          { label: t('stats.revenueRisk'), value: price(item.revenue_at_risk, { maximumFractionDigits: 0 }), color: ink('#f87171', dark) },
         ].map(({ label, value, color }) => (
           <div key={label} style={{
             background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
@@ -237,6 +241,7 @@ function AlertRow({ item, dark }: { item: InventoryAlert; dark: boolean }) {
 // ─── Market temperature badge ─────────────────────────────────────────────────
 
 function TempBadge({ temp }: { temp: 'hot' | 'warm' | 'cooling' | 'cold' }) {
+  const { dark } = useTheme();
   const t = useTranslations('seller.aiHub');
   const cfg = {
     hot:     { color: '#ef4444', label: `🔥 ${t('temp.hot')}` },
@@ -247,7 +252,7 @@ function TempBadge({ temp }: { temp: 'hot' | 'warm' | 'cooling' | 'cold' }) {
   return (
     <span style={{
       fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: 999,
-      background: `${cfg.color}15`, color: cfg.color, border: `1px solid ${cfg.color}30`,
+      background: `${cfg.color}15`, color: ink(cfg.color, dark), border: `1px solid ${cfg.color}30`,
     }}>{cfg.label}</span>
   );
 }
@@ -299,7 +304,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
   useEffect(() => { load(); }, [load]);
 
   const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const cardBg    = dark ? '#0f0d0a' : '#fffdf5';
   const border    = 'rgba(245,158,11,0.2)';
   const tabsBg    = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
@@ -330,7 +335,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
           <div style={{
             width: 38, height: 38, borderRadius: 11, flexShrink: 0,
             background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a78bfa',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink('#a78bfa', dark),
           }}>
             <Brain size={18} />
           </div>
@@ -340,7 +345,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
               {!loading && trendCount > 0 && (
                 <span style={{
                   fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999,
-                  background: 'rgba(245,158,11,0.15)', color: GOLD,
+                  background: 'rgba(245,158,11,0.15)', color: ink(GOLD, dark),
                   border: '1px solid rgba(245,158,11,0.35)', textTransform: 'uppercase' as const,
                 }}>
                   {t('trendingBadge', { count: trendCount })}
@@ -349,7 +354,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
               {!loading && critCount > 0 && (
                 <span style={{
                   fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999,
-                  background: 'rgba(239,68,68,0.15)', color: '#ef4444',
+                  background: 'rgba(239,68,68,0.15)', color: ink('#ef4444', dark),
                   border: '1px solid rgba(239,68,68,0.35)', textTransform: 'uppercase' as const,
                 }}>
                   {t('criticalBadge', { count: critCount })}
@@ -392,7 +397,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '7px 14px', borderRadius: 9,
                   background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)',
-                  color: GOLD, fontSize: 11, fontWeight: 700, cursor: loading ? 'wait' : 'pointer',
+                  color: ink(GOLD, dark), fontSize: 11, fontWeight: 700, cursor: loading ? 'wait' : 'pointer',
                   opacity: loading ? 0.6 : 1,
                 }}
               >
@@ -406,9 +411,9 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
 
           {!loading && error && (
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <p style={{ fontSize: 13, color: '#ef4444', margin: '0 0 10px' }}>{t('loadError')}</p>
+              <p style={{ fontSize: 13, color: ink('#ef4444', dark), margin: '0 0 10px' }}>{t('loadError')}</p>
               <button onClick={load} style={{
-                fontSize: 11, fontWeight: 700, color: GOLD,
+                fontSize: 11, fontWeight: 700, color: ink(GOLD, dark),
                 background: `${GOLD}12`, border: `1px solid ${GOLD}30`,
                 borderRadius: 7, padding: '5px 12px', cursor: 'pointer',
               }}>{t('retry')}</button>
@@ -433,7 +438,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
                       fontSize: 11, fontWeight: 800, cursor: 'pointer',
                       background: tab === key ? `${GOLD}20` : 'transparent',
                       border: tab === key ? `1px solid ${GOLD}35` : '1px solid transparent',
-                      color: tab === key ? GOLD : textMuted,
+                      color: tab === key ? ink(GOLD, dark) : textMuted,
                       transition: 'all 0.15s ease',
                     }}
                   >
@@ -452,7 +457,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
                       border: '1px solid rgba(16,185,129,0.2)',
                     }}>
                       <CheckCircle size={18} color="#10b981" />
-                      <p style={{ fontSize: 13, fontWeight: 700, color: '#10b981', margin: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: ink('#10b981', dark), margin: 0 }}>
                         {t('noTrends')}
                       </p>
                     </div>
@@ -474,7 +479,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
                       border: '1px solid rgba(16,185,129,0.2)',
                     }}>
                       <CheckCircle size={18} color="#10b981" />
-                      <p style={{ fontSize: 13, fontWeight: 700, color: '#10b981', margin: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: ink('#10b981', dark), margin: 0 }}>
                         {t('noAlerts')}
                       </p>
                     </div>
@@ -515,7 +520,7 @@ export default function AIHubCard({ dark, defaultOpen = false }: AIHubCardProps)
                   }}>
                     <Zap size={14} color={GOLD} style={{ flexShrink: 0, marginTop: 1 }} />
                     <div>
-                      <p style={{ fontSize: 10, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>
+                      <p style={{ fontSize: 10, fontWeight: 800, color: ink(GOLD, dark), textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>
                         {t('priorityAction')}
                       </p>
                       <p style={{ fontSize: 12.5, color: textMain, margin: 0, lineHeight: 1.55, fontWeight: 500 }}>

@@ -19,7 +19,7 @@ export default function AIIntelligencePage() {
   if (loading || !isBlack) return null;
 
   const txtMain = dark ? '#fff' : '#111';
-  const txtMut  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const txtMut  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

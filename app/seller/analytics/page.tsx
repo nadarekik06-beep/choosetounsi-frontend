@@ -19,7 +19,7 @@ export default function AnalyticsPage() {
   const tp = useTranslations('seller.pageHeaders');
 
   const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { useStatusLabel } from '@/lib/i18n/useStatusLabel';
 import { useWilayaLabel } from '@/lib/i18n/wilayas';
+import { ink } from '@/app/seller/ink';
 
 /* ─────────────── RESPONSIVE GRIDS ─────────────── */
 const RESPONSIVE_CSS = `
@@ -85,7 +86,7 @@ function KpiCard({ title, value, subtitle, change, icon: Icon, accent, dark }: {
   const bg        = dark ? '#161b27' : '#ffffff';
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const textMain  = dark ? '#fff'  : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   return (
     <div className="kpi-card" style={{
@@ -98,18 +99,18 @@ function KpiCard({ title, value, subtitle, change, icon: Icon, accent, dark }: {
     }}>
       <div style={{ position: 'absolute', top: -30, insetInlineEnd: -30, width: 100, height: 100, borderRadius: '50%', background: accent, opacity: dark ? 0.12 : 0.08, filter: 'blur(28px)', pointerEvents: 'none' }} />
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div style={{ width: 42, height: 42, borderRadius: 12, background: `${accent}22`, border: `1px solid ${accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, flexShrink: 0 }}>
+        <div style={{ width: 42, height: 42, borderRadius: 12, background: `${accent}22`, border: `1px solid ${accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink(accent, dark), flexShrink: 0 }}>
           <Icon size={19} />
         </div>
         {change !== undefined && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 800, color: change >= 0 ? '#10b981' : '#ef4444', background: change >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '3px 8px', borderRadius: 999 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 800, color: change >= 0 ? ink('#10b981', dark) : ink('#ef4444', dark), background: change >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '3px 8px', borderRadius: 999 }}>
             {change >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
             {Math.abs(change).toFixed(1)}%
           </span>
         )}
       </div>
       <p style={{ fontSize: 22, fontWeight: 900, color: textMain, margin: '0 0 4px', letterSpacing: '-0.02em', lineHeight: 1.1, overflowWrap: 'anywhere' }}>{value}</p>
-      <p style={{ fontSize: 11, fontWeight: 700, color: accent, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</p>
+      <p style={{ fontSize: 11, fontWeight: 700, color: ink(accent, dark), margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</p>
       {subtitle && <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 500, overflowWrap: 'anywhere' }}>{subtitle}</p>}
       <div className="rtl-flip" style={{ position: 'absolute', bottom: 0, insetInline: 0, height: 3, background: `linear-gradient(90deg,${accent},transparent)`, borderRadius: '0 0 18px 18px', opacity: 0.6 }} />
       <style>{`.kpi-card:hover{transform:translateY(-4px)!important;box-shadow:0 16px 40px rgba(0,0,0,0.15)!important}`}</style>
@@ -127,7 +128,7 @@ function TopProductCard({ product, rank, dark }: { product: TopProduct; rank: nu
   const bg        = dark ? '#161b27' : '#ffffff';
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const textMain  = dark ? '#ffffff' : '#0f172a';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#94a3b8';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const subBg     = dark ? 'rgba(255,255,255,0.05)' : '#f8fafc';
 
   const imgSrc     = product.primary_image_url ? (imgErr ? null : product.primary_image_url) : null;
@@ -140,7 +141,7 @@ function TopProductCard({ product, rank, dark }: { product: TopProduct; rank: nu
         {rank <= 3 ? <Star size={10} fill="#fff" stroke="none" /> : rank}
       </div>
       <div style={{ position: 'absolute', top: 10, insetInlineEnd: 10, display: 'flex', gap: 4, zIndex: 2 }}>
-        <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 999, background: product.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: product.is_active ? '#10b981' : '#ef4444', border: `1px solid ${product.is_active ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
+        <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 999, background: product.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: product.is_active ? ink('#10b981', dark) : ink('#ef4444', dark), border: `1px solid ${product.is_active ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
           {product.is_active ? tc('active') : tc('off')}
         </span>
       </div>
@@ -158,15 +159,15 @@ function TopProductCard({ product, rank, dark }: { product: TopProduct; rank: nu
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 15, fontWeight: 900, color: '#db142e', letterSpacing: '-0.01em' }}>{fmt(product.price)}</span>
-        <span style={{ fontSize: 11, fontWeight: 700, color: product.stock === 0 ? '#ef4444' : product.stock <= 10 ? '#f59e0b' : '#10b981' }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: product.stock === 0 ? ink('#ef4444', dark) : product.stock <= 10 ? ink('#f59e0b', dark) : ink('#10b981', dark) }}>
           {product.stock === 0 ? tc('outShort') : tc('inStock', { count: product.stock })}
         </span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 6 }}>
         {[
           { icon: ShoppingBag, label: t('sales'),   value: number(product.total_sales),   color: '#db142e' },
-          { icon: DollarSign,  label: t('revenue'), value: product.total_revenue > 0 ? t('thousandsShort', { value: number(product.total_revenue / 1000, { maximumFractionDigits: 1 }) }) : '0', color: '#10b981' },
-          { icon: Eye,         label: t('views'),   value: number(product.views),          color: '#3b82f6' },
+          { icon: DollarSign,  label: t('revenue'), value: product.total_revenue > 0 ? t('thousandsShort', { value: number(product.total_revenue / 1000, { maximumFractionDigits: 1 }) }) : '0', color: ink('#10b981', dark) },
+          { icon: Eye,         label: t('views'),   value: number(product.views),          color: ink('#3b82f6', dark) },
         ].map(({ icon: Icon, label, value, color }) => (
           <div key={label} style={{ background: subBg, borderRadius: 8, padding: '7px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, border: `1px solid ${border}`, minWidth: 0 }}>
             <Icon size={12} style={{ color, opacity: 0.9 }} />
@@ -188,7 +189,7 @@ function Skeleton({ dark, style = {} }: { dark: boolean; style?: React.CSSProper
 function ErrorState({ onRetry, dark }: { onRetry: () => void; dark: boolean }) {
   const tc = useTranslations('seller.common');
   const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
       <div style={{ textAlign: 'center', maxWidth: 340 }}>
@@ -237,7 +238,7 @@ export default function SellerDashboardPage() {
   const cardBg    = dark ? '#161b27' : '#ffffff';
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const textMain  = dark ? '#fff'  : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -317,7 +318,7 @@ export default function SellerDashboardPage() {
             { label: t('pendingApprovals'), val: animPendingApprovals, accent: '#db142e', icon: AlertCircle },
           ].map(({ label, val, accent, icon: Icon }) => (
             <div key={label} style={{ background: cardBg, borderRadius: 16, border: `1px solid ${border}`, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: `${accent}1a`, border: `1px solid ${accent}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, flexShrink: 0 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: `${accent}1a`, border: `1px solid ${accent}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink(accent, dark), flexShrink: 0 }}>
                 <Icon size={18} />
               </div>
               <div style={{ minWidth: 0 }}>
@@ -375,7 +376,7 @@ export default function SellerDashboardPage() {
         <div className={`fade-up ${visible?'show':''}`}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b', flexShrink: 0 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink('#f59e0b', dark), flexShrink: 0 }}>
                 <BarChart2 size={16} />
               </div>
               <div style={{ minWidth: 0 }}>
@@ -405,7 +406,7 @@ export default function SellerDashboardPage() {
         <div className={`fade-up sd-pair ${visible?'show':''}`}>
           <div className="sd-cell" style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6', flexShrink: 0 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink('#3b82f6', dark), flexShrink: 0 }}>
                 <Award size={16} />
               </div>
               <div>
@@ -417,7 +418,7 @@ export default function SellerDashboardPage() {
               ? <p style={{ color: textMuted, fontSize: 13, textAlign: 'center', padding: '28px 0' }}>{tc('noData')}</p>
               : top_clients.map((c, i) => (
                 <div key={c.id} className="client-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: `1px solid ${border}`, transition: 'background 0.15s ease' }}>
-                  <span style={{ width: 24, height: 24, borderRadius: '50%', background: i===0?'rgba(245,158,11,0.2)':i===1?'rgba(148,163,184,0.2)':'rgba(249,115,22,0.2)', color: i===0?'#f59e0b':i===1?'#94a3b8':'#f97316', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>
+                  <span style={{ width: 24, height: 24, borderRadius: '50%', background: i===0?'rgba(245,158,11,0.2)':i===1?'rgba(148,163,184,0.2)':'rgba(249,115,22,0.2)', color: i===0?ink('#f59e0b', dark):i===1?ink('#94a3b8', dark):ink('#f97316', dark), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>
                     {i+1}
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>

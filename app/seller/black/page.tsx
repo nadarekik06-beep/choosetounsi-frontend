@@ -26,6 +26,7 @@ import { blackPepperApi, type DailyBriefData } from '@/lib/blackPepperApi';
 import { dashboardApi } from '@/lib/sellerApi';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
+import { ink } from '@/app/seller/ink';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,7 +54,7 @@ function MetricCard({ label, value, icon: Icon, accent, dark }: {
   const bg      = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
   const border  = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
   const txtMain = dark ? '#fff' : '#111';
-  const txtSub  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const txtSub  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
 
   return (
     <div style={{
@@ -67,11 +68,11 @@ function MetricCard({ label, value, icon: Icon, accent, dark }: {
         <div style={{
           width: 34, height: 34, borderRadius: 10,
           background: `${accent}18`, border: `1px solid ${accent}30`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink(accent, dark),
         }}>
           <Icon size={16} />
         </div>
-        <span style={{ fontSize: 9, fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <span style={{ fontSize: 9, fontWeight: 800, color: ink(accent, dark), textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           {label}
         </span>
       </div>
@@ -91,7 +92,7 @@ function FeatureGatewayCard({ href, title, subtitle, icon: Icon, accent, badge, 
   const bg     = dark ? 'rgba(255,255,255,0.03)' : '#ffffff';
   const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const txtM   = dark ? '#fff' : '#111';
-  const txtS   = dark ? 'rgba(255,255,255,0.45)' : '#888';
+  const txtS   = dark ? 'rgba(255,255,255,0.45)' : '#5b6472';
   const t      = useTranslations('seller.black');
 
   return (
@@ -113,14 +114,14 @@ function FeatureGatewayCard({ href, title, subtitle, icon: Icon, accent, badge, 
         <div style={{
           width: 40, height: 40, borderRadius: 12,
           background: `${accent}18`, border: `1px solid ${accent}30`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink(accent, dark), flexShrink: 0,
         }}>
           <Icon size={18} />
         </div>
         {badge && (
           <span style={{
             fontSize: 9, fontWeight: 800, padding: '3px 8px', borderRadius: 999,
-            background: `${badge.color}18`, color: badge.color,
+            background: `${badge.color}18`, color: ink(badge.color, dark),
             border: `1px solid ${badge.color}35`, textTransform: 'uppercase' as const,
             letterSpacing: '0.06em', flexShrink: 0,
           }}>{badge.text}</span>
@@ -133,8 +134,8 @@ function FeatureGatewayCard({ href, title, subtitle, icon: Icon, accent, badge, 
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 'auto' }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: accent }}>{t('open')}</span>
-        <ArrowRight size={11} style={{ color: accent }} />
+        <span style={{ fontSize: 11, fontWeight: 700, color: ink(accent, dark) }}>{t('open')}</span>
+        <ArrowRight size={11} style={{ color: ink(accent, dark) }} />
       </div>
 
       {/* Bottom accent line */}
@@ -156,7 +157,7 @@ function QuickAction({ href, label, icon: Icon, accent, dark }: {
       display: 'flex', alignItems: 'center', gap: 7,
       padding: '10px 16px', borderRadius: 12, textDecoration: 'none',
       background: `${accent}15`, border: `1px solid ${accent}30`,
-      color: accent, fontSize: 12, fontWeight: 700,
+      color: ink(accent, dark), fontSize: 12, fontWeight: 700,
       transition: 'all 0.15s ease', flexShrink: 0,
     }}
       className="elite-quick-action"
@@ -205,7 +206,7 @@ export default function BlackOverviewPage() {
   const cardBg  = dark ? 'rgba(255,255,255,0.03)' : '#ffffff';
   const border  = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const txtMain = dark ? '#fff' : '#111';
-  const txtMut  = dark ? 'rgba(255,255,255,0.4)' : '#888';
+  const txtMut  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const GOLD    = '#f59e0b';
 
   const fmt = (n: number) => price(n, { maximumFractionDigits: 0 });
@@ -220,19 +221,19 @@ export default function BlackOverviewPage() {
     {
       label: t('metrics.orders'),
       value: dashStats ? number(dashStats.total_orders ?? 0) : '—',
-      color: '#60a5fa',
+      color: ink('#60a5fa', dark),
       icon: ShoppingBag,
     },
     {
       label: t('metrics.trending'),
       value: brief ? t('metrics.products', { count: brief.trending_count }) : '—',
-      color: '#34d399',
+      color: ink('#34d399', dark),
       icon: TrendingUp,
     },
     {
       label: t('metrics.atRisk'),
       value: brief ? t('metrics.products', { count: brief.risk_count }) : '—',
-      color: brief?.risk_count ? '#f87171' : '#34d399',
+      color: brief?.risk_count ? ink('#f87171', dark) : ink('#34d399', dark),
       icon: AlertTriangle,
     },
   ];
@@ -244,7 +245,7 @@ export default function BlackOverviewPage() {
       subtitle: t('features.ai.subtitle'),
       icon:     Brain,
       accent:   '#a78bfa',
-      badge:    brief?.trending_count ? { text: t('features.ai.badge', { count: brief.trending_count }), color: '#a78bfa' } : undefined,
+      badge:    brief?.trending_count ? { text: t('features.ai.badge', { count: brief.trending_count }), color: ink('#a78bfa', dark) } : undefined,
     },
     {
       href:     '/seller/black/visitor-insights',
@@ -280,7 +281,7 @@ export default function BlackOverviewPage() {
       subtitle: t('features.vip.subtitle'),
       icon:     Users,
       accent:   GOLD,
-      badge:    { text: t('features.vip.badge'), color: GOLD },
+      badge:    { text: t('features.vip.badge'), color: ink(GOLD, dark) },
     },
   ];
 
@@ -326,12 +327,12 @@ export default function BlackOverviewPage() {
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: ink(GOLD, dark), textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                     {t('brief.title')}
                   </span>
                   <span style={{
                     fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
-                    background: 'rgba(245,158,11,0.15)', color: GOLD,
+                    background: 'rgba(245,158,11,0.15)', color: ink(GOLD, dark),
                     border: '1px solid rgba(245,158,11,0.35)',
                   }}>⬛ BLACK ELITE</span>
                 </div>

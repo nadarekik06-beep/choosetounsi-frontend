@@ -18,6 +18,7 @@ import type { RegionalDemandResult, RegionalDemandRegion } from '@/lib/sellerFor
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { useWilayaLabel } from '@/lib/i18n/wilayas';
+import { ink } from '@/app/seller/ink';
 
 // Map spellings that differ from the shared wilaya list.
 const LABEL_ALIAS: Record<string, string> = { Manouba: 'La Manouba' };
@@ -95,7 +96,7 @@ export default function TunisiaHeatmap({ regional, dark = true }: Props) {
   const wl = useWilayaLabel();
   const name = (gov: string) => wl(LABEL_ALIAS[gov] ?? gov);
   const text  = dark ? '#f0f4ff' : '#0f172a';
-  const muted = dark ? 'rgba(180,200,255,0.45)' : '#64748b';
+  const muted = dark ? 'rgba(180,200,255,0.45)' : '#5b6472';
   const barBg = dark ? 'rgba(255,255,255,0.06)' : '#e2e8f0';
 
   const byName = useMemo(() => {
@@ -244,7 +245,7 @@ export default function TunisiaHeatmap({ regional, dark = true }: Props) {
           <div style={{ padding:'10px 12px', borderRadius:10,
             background:dark?'rgba(219,20,46,0.07)':'rgba(219,20,46,0.04)',
             border:'1px solid rgba(219,20,46,0.20)' }}>
-            <p style={{ fontSize:9, fontWeight:800, color:'#f87171', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'0.06em' }}>{t('topRegion')}</p>
+            <p style={{ fontSize:9, fontWeight:800, color:ink('#f87171', dark), margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'0.06em' }}>{t('topRegion')}</p>
             <p style={{ fontSize:13, fontWeight:900, color:text, margin:'0 0 1px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
               {top ? (resolve(top.wilaya) ? name(resolve(top.wilaya)!) : top.wilaya) : '—'}
             </p>
@@ -255,7 +256,7 @@ export default function TunisiaHeatmap({ regional, dark = true }: Props) {
           <div style={{ padding:'10px 12px', borderRadius:10,
             background:dark?'rgba(59,130,246,0.07)':'rgba(59,130,246,0.04)',
             border:'1px solid rgba(59,130,246,0.20)' }}>
-            <p style={{ fontSize:9, fontWeight:800, color:'#60a5fa', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'0.06em' }}>{t('coverage')}</p>
+            <p style={{ fontSize:9, fontWeight:800, color:ink('#60a5fa', dark), margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'0.06em' }}>{t('coverage')}</p>
             <p style={{ fontSize:13, fontWeight:900, color:text, margin:'0 0 1px' }}>{reached} / 24</p>
             <p style={{ fontSize:9, color:muted, margin:0 }}>{t('governorates')}</p>
           </div>

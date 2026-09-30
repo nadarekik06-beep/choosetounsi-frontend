@@ -26,6 +26,7 @@ import { Flame, Crown, ArrowRight, X } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
+import { ink } from '@/app/seller/ink';
 
 interface CommissionUpgradeNudgeProps {
   currentPlan:     string
@@ -66,7 +67,7 @@ export default function CommissionUpgradeNudge({
   const cardBg    = dark ? '#161b27' : '#ffffff'
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'
   const textMain  = dark ? '#ffffff' : '#0f172a'
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#94a3b8'
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472'
 
   const { icon: Icon, color, name, cost } = next
 
@@ -109,7 +110,7 @@ export default function CommissionUpgradeNudge({
             hl: (chunks) => <span style={{ color, fontWeight: 800 }}>{chunks}</span>,
           })}
           {netGain > 0 && (
-            <span style={{ fontWeight: 700, color: '#10b981' }}>
+            <span style={{ fontWeight: 700, color: ink('#10b981', dark) }}>
               {' '}{t('netGain', { cost: whole(cost), gain: whole(netGain) })}
             </span>
           )}

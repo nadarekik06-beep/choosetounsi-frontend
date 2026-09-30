@@ -10,6 +10,7 @@ import {
 import PackModal from '@/app/seller/packs/PackModal'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
+import { ink } from '@/app/seller/ink';
 
 function useFmt() {
   const { price } = useFormat()
@@ -31,7 +32,7 @@ export default function PacksPage() {
   const cardBg    = dark ? '#161b27' : '#ffffff'
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'
   const textMain  = dark ? '#fff'  : '#111'
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888'
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472'
 
   const load = () => {
     setLoading(true); setError(false)
@@ -176,7 +177,7 @@ function PackCard({
   const cardBg    = dark ? '#161b27' : '#ffffff'
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'
   const textMain  = dark ? '#fff'  : '#111'
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888'
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472'
   const subBg     = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc'
 
   const savings = pack.savings ?? Math.max(0, pack.original_price - pack.pack_price)
@@ -288,7 +289,7 @@ function PackCard({
             gap: 6, padding: '8px', borderRadius: 10,
             background: 'rgba(59,130,246,0.1)',
             border: '1px solid rgba(59,130,246,0.25)',
-            color: '#3b82f6', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+            color: ink('#3b82f6', dark), fontWeight: 700, fontSize: 12, cursor: 'pointer',
           }}
         >
           <Edit2 size={12} /> {t('edit')}
@@ -301,7 +302,7 @@ function PackCard({
             gap: 6, padding: '8px', borderRadius: 10,
             background: 'rgba(239,68,68,0.1)',
             border: '1px solid rgba(239,68,68,0.25)',
-            color: '#ef4444', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+            color: ink('#ef4444', dark), fontWeight: 700, fontSize: 12, cursor: 'pointer',
             opacity: deleting ? 0.5 : 1,
           }}
         >

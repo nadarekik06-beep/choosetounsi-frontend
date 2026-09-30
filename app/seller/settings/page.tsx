@@ -17,6 +17,7 @@ import { ImageUp, Loader2, CheckCircle2, AlertCircle, Store } from 'lucide-react
 import { storeProfileApi, storageUrl } from '@/lib/sellerApi'
 import { useTheme } from '../SellerShell'
 import { useTranslations } from 'next-intl'
+import { ink } from '@/app/seller/ink';
 
 const MAX_SIZE = 4 * 1024 * 1024 // 4MB — matches backend validation
 const ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
@@ -45,7 +46,7 @@ export default function SellerSettingsPage() {
   const cardBg    = dark ? '#161b27' : '#fff'
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'
   const textMain  = dark ? '#fff' : '#111'
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#6b7280'
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472'
 
   useEffect(() => {
     storeProfileApi.get()
@@ -172,17 +173,17 @@ export default function SellerSettingsPage() {
         />
 
         {validationErr && (
-          <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#f87171', margin: '10px 0 0' }}>
+          <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: ink('#f87171', dark), margin: '10px 0 0' }}>
             <AlertCircle size={13} /> {validationErr}
           </p>
         )}
         {uploadErr && (
-          <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#f87171', margin: '10px 0 0' }}>
+          <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: ink('#f87171', dark), margin: '10px 0 0' }}>
             <AlertCircle size={13} /> {uploadErr}
           </p>
         )}
         {uploadOk && (
-          <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#4ade80', margin: '10px 0 0' }}>
+          <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: ink('#4ade80', dark), margin: '10px 0 0' }}>
             <CheckCircle2 size={13} /> {t('updated')}
           </p>
         )}

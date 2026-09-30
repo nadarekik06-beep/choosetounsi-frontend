@@ -13,6 +13,7 @@ import PromotionModal, { type PromotionPrefill } from './PromotionModal'
 import CouponModal from './CouponModal'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
+import { ink } from '@/app/seller/ink';
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
   active:    { bg: 'rgba(16,185,129,0.12)',  color: '#10b981', icon: <CheckCircle size={10} /> },
@@ -30,7 +31,7 @@ export default function PromotionsPage() {
   const cardBg    = dark ? '#161b27' : '#ffffff'
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'
   const textMain  = dark ? '#fff'    : '#111'
-  const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#888'
+  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472'
   const subBg     = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc'
 
   const [section, setSection] = useState<'promotions' | 'coupons'>('promotions')
@@ -211,16 +212,16 @@ export default function PromotionsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
           {[
             { label: t('stats.total'),      value: stats.total,       color: textMain },
-            { label: t('stats.active'),     value: stats.active,      color: '#10b981' },
-            { label: t('stats.scheduled'),  value: stats.scheduled,   color: '#f59e0b' },
+            { label: t('stats.active'),     value: stats.active,      color: ink('#10b981', dark) },
+            { label: t('stats.scheduled'),  value: stats.scheduled,   color: ink('#f59e0b', dark) },
             { label: t('stats.flashSales'), value: stats.flash_sales, color: '#dc2626' },
-            { label: t('stats.discounts'),  value: stats.discounts,   color: '#059669' },
+            { label: t('stats.discounts'),  value: stats.discounts,   color: ink('#059669', dark) },
           ].map(s => (
             <div key={s.label} style={{
               background: cardBg, border: `1px solid ${border}`,
               borderRadius: 14, padding: '14px 16px', textAlign: 'center',
             }}>
-              <p style={{ fontSize: 22, fontWeight: 900, color: s.color, margin: '0 0 3px' }}>{s.value}</p>
+              <p style={{ fontSize: 22, fontWeight: 900, color: ink(s.color, dark), margin: '0 0 3px' }}>{s.value}</p>
               <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 600 }}>{s.label}</p>
             </div>
           ))}
@@ -252,7 +253,7 @@ export default function PromotionsPage() {
             background: statusFilter === s
               ? dark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.07)'
               : 'transparent',
-            color: statusFilter === s ? '#6366f1' : textMuted,
+            color: statusFilter === s ? ink('#6366f1', dark) : textMuted,
             cursor: 'pointer', transition: 'all 0.13s',
           }}>
             {t(`statusFilters.${s}`)}
@@ -337,12 +338,12 @@ export default function PromotionsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
           {[
             { label: t('couponStats.total'),       value: number(couponStats.total),             color: textMain },
-            { label: t('couponStats.active'),      value: number(couponStats.active),            color: '#10b981' },
-            { label: t('couponStats.redemptions'), value: number(couponStats.total_redemptions), color: '#6366f1' },
+            { label: t('couponStats.active'),      value: number(couponStats.active),            color: ink('#10b981', dark) },
+            { label: t('couponStats.redemptions'), value: number(couponStats.total_redemptions), color: ink('#6366f1', dark) },
             { label: t('couponStats.discount'),    value: price(couponStats.total_discount_given), color: '#dc2626' },
           ].map(s => (
             <div key={s.label} style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 14, padding: '14px 16px', textAlign: 'center' }}>
-              <p style={{ fontSize: 22, fontWeight: 900, color: s.color, margin: '0 0 3px' }}>{s.value}</p>
+              <p style={{ fontSize: 22, fontWeight: 900, color: ink(s.color, dark), margin: '0 0 3px' }}>{s.value}</p>
               <p style={{ fontSize: 11, color: textMuted, margin: 0, fontWeight: 600 }}>{s.label}</p>
             </div>
           ))}
@@ -415,6 +416,7 @@ function CouponCard({
 }) {
   const t = useTranslations('seller.promotions')
   const { price } = useFormat()
+  const { dark } = useTheme()
   return (
     <div
       className="promo-card"
@@ -436,7 +438,7 @@ function CouponCard({
             marginInlineStart: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4,
             fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999,
             background: coupon.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(100,116,139,0.12)',
-            color: coupon.is_active ? '#10b981' : '#64748b',
+            color: coupon.is_active ? ink('#10b981', dark) : '#64748b',
           }}>
             {coupon.is_active ? <CheckCircle size={10} /> : <Pause size={10} />} {coupon.is_active ? t('active') : t('paused')}
           </span>
@@ -525,7 +527,7 @@ function PromotionCard({
           <span style={{
             fontSize: 10, fontWeight: 900, padding: '3px 8px', borderRadius: 999,
             background: promo.type === 'flash_sale' ? 'rgba(220,38,38,0.1)' : 'rgba(5,150,105,0.1)',
-            color: promo.type === 'flash_sale' ? '#dc2626' : '#059669',
+            color: promo.type === 'flash_sale' ? '#dc2626' : ink('#059669', dark),
             textTransform: 'uppercase', letterSpacing: '0.06em',
           }}>
             {promo.type === 'flash_sale' ? t('flashSale') : t('discount')}
@@ -534,7 +536,7 @@ function PromotionCard({
             marginInlineStart: 'auto',
             display: 'inline-flex', alignItems: 'center', gap: 4,
             fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999,
-            background: st.bg, color: st.color,
+            background: st.bg, color: ink(st.color, dark),
           }}>
             {st.icon} {t.has(`status.${promo.status}`) ? t(`status.${promo.status}`) : promo.status}
           </span>
@@ -545,7 +547,7 @@ function PromotionCard({
           <h3 style={{ fontSize: 15, fontWeight: 900, color: textMain, margin: '0 0 4px' }}>
             {promo.name}
           </h3>
-          <p style={{ fontSize: 22, fontWeight: 900, margin: 0, color: promo.type === 'flash_sale' ? '#dc2626' : '#059669' }}>
+          <p style={{ fontSize: 22, fontWeight: 900, margin: 0, color: promo.type === 'flash_sale' ? '#dc2626' : ink('#059669', dark) }}>
             {promo.discount_label}
           </p>
         </div>
@@ -614,7 +616,7 @@ function PromotionCard({
             gap: 6, padding: '8px', borderRadius: 10,
             background: promo.status === 'expired' ? 'transparent' : 'rgba(59,130,246,0.1)',
             border: `1px solid ${promo.status === 'expired' ? border : 'rgba(59,130,246,0.25)'}`,
-            color: promo.status === 'expired' ? textMuted : '#3b82f6',
+            color: promo.status === 'expired' ? textMuted : ink('#3b82f6', dark),
             fontWeight: 700, fontSize: 12, cursor: promo.status === 'expired' ? 'not-allowed' : 'pointer',
             opacity: promo.status === 'expired' ? 0.5 : 1,
           }}
@@ -628,7 +630,7 @@ function PromotionCard({
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
             gap: 6, padding: '8px', borderRadius: 10,
             background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
-            color: '#ef4444', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+            color: ink('#ef4444', dark), fontWeight: 700, fontSize: 12, cursor: 'pointer',
             opacity: deleting ? 0.5 : 1,
           }}
         >

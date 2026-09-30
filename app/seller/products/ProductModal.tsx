@@ -188,14 +188,14 @@ function FreeDeliveryToggle({ value, onChange }: { value: boolean; onChange: (v:
             {value && (
               <span style={{
                 fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
-                background: 'rgba(16,185,129,0.12)', color: '#059669',
+                background: 'rgba(16,185,129,0.12)', color: '#047857',
                 border: '1px solid rgba(16,185,129,0.25)',
               }}>
                 {t('freeDeliveryOn')}
               </span>
             )}
           </div>
-          <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>
+          <p style={{ fontSize: 11, color: '#5b6472', margin: '2px 0 0' }}>
             {value ? t('freeDeliveryYes') : t('freeDeliveryNo', { fee })}
           </p>
         </div>
@@ -234,9 +234,9 @@ function Field({ label, required, error, hint, children, labelAction }: {
     <div>
       <label style={{
         display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 800,
-        textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6,
+        textTransform: 'uppercase', letterSpacing: '0.07em', color: '#5b6472', marginBottom: 6,
       }}>
-        {label} {required && <span style={{ color: '#ef4444' }}>*</span>}
+        {label} {required && <span style={{ color: '#b91c1c' }}>*</span>}
         {labelAction && (
           <span style={{ marginInlineStart: 'auto', textTransform: 'none', letterSpacing: 0, fontWeight: 400 }}>
             {labelAction}
@@ -244,8 +244,8 @@ function Field({ label, required, error, hint, children, labelAction }: {
         )}
       </label>
       {children}
-      {hint && !error && <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{hint}</p>}
-      {error && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{error}</p>}
+      {hint && !error && <p style={{ fontSize: 11, color: '#5b6472', marginTop: 4 }}>{hint}</p>}
+      {error && <p style={{ fontSize: 11, color: '#b91c1c', marginTop: 4 }}>{error}</p>}
     </div>
   )
 }
@@ -620,14 +620,14 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                 {isEdit ? t('editTitle') : t('addTitle')}
               </h2>
               {isLive && (
-                <p style={{ fontSize: 11, color: '#059669', margin: '3px 0 0', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                <p style={{ fontSize: 11, color: '#047857', margin: '3px 0 0', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
                   <Radio size={10} /> {t('liveNotice')}
                 </p>
               )}
-              {!isEdit && <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>{t('reviewNotice')}</p>}
+              {!isEdit && <p style={{ fontSize: 11, color: '#5b6472', margin: '3px 0 0' }}>{t('reviewNotice')}</p>}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button type="button" onClick={onClose} aria-label={t('close')} style={{ padding: 6, borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}>
+              <button type="button" onClick={onClose} aria-label={t('close')} style={{ padding: 6, borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: '#5b6472' }}>
                 <X size={18} />
               </button>
             </div>
@@ -644,7 +644,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
 
             {/* ── Basic Information ── */}
             <section>
-              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>{t('sections.basic')}</p>
+              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>{t('sections.basic')}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <Field label={t('name')} required error={errors.name}>
                   <input value={form.name} onChange={e => set('name', e.target.value)} placeholder={t('namePlaceholder')} className={inputCls(errors.name)} />
@@ -683,7 +683,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
 
             {/* ── Pricing & Inventory ── */}
             <section>
-              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>{t('sections.pricing')}</p>
+              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>{t('sections.pricing')}</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                 <Field label={t('basePrice', { currency })} required error={errors.price}
                   hint={isLive && pricing?.discount_rule ? t('priceLowerHint') : undefined}>
@@ -701,7 +701,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                       />
                       <span style={{
                         position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)',
-                        fontSize: 11, color: errors.price ? '#ef4444' : '#94a3b8', fontWeight: 600,
+                        fontSize: 11, color: errors.price ? '#b91c1c' : '#5b6472', fontWeight: 600,
                       }}>{currency}</span>
                     </div>
                     {errors.price && (
@@ -736,8 +736,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
               {/* Season Picker */}
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <label style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {t('seasons')} <span style={{ color: '#ef4444' }}>*</span>
+                  <label style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#5b6472', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {t('seasons')} <span style={{ color: '#b91c1c' }}>*</span>
                   </label>
                   {form.seasons.length > 0 && (
                     <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>
@@ -748,8 +748,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                 <div style={{ border: errors.seasons ? '1.5px solid #fca5a5' : '1.5px solid #e5e7eb', borderRadius: 14, padding: 10, background: errors.seasons ? '#fef2f2' : '#f8fafc' }}>
                   <SeasonPicker selected={form.seasons} onChange={seasons => set('seasons', seasons)} />
                 </div>
-                {errors.seasons && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.seasons}</p>}
-                <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 5 }}>{t('seasonsHint')}</p>
+                {errors.seasons && <p style={{ fontSize: 11, color: '#b91c1c', marginTop: 4 }}>{errors.seasons}</p>}
+                <p style={{ fontSize: 11, color: '#5b6472', marginTop: 5 }}>{t('seasonsHint')}</p>
               </div>
 
               {/* Is Pack */}
@@ -760,7 +760,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                   <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{t('isPack')}</span>
                   <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)', padding: '1px 7px', borderRadius: 4 }}>{t('packTag')}</span>
                 </label>
-                <p style={{ fontSize: 11, color: '#94a3b8', marginBlock: '4px 0', marginInlineStart: 26 }}>{t('isPackHint')}</p>
+                <p style={{ fontSize: 11, color: '#5b6472', marginBlock: '4px 0', marginInlineStart: 26 }}>{t('isPackHint')}</p>
               </div>
 
               {/* ── FIX: FreeDeliveryToggle is now a proper component called here ── */}
@@ -772,7 +772,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
 
             {/* ── Category ── */}
             <section>
-              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>{t('sections.category')}</p>
+              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>{t('sections.category')}</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <Field label={t('category')} required error={errors.category_id}>
                   <select value={form.category_id} onChange={e => { set('category_id', e.target.value); set('subcategory_id', ''); setAttrValues({}); setVariantRows([]); setVariantAxes([]); setInfoAxes([]); setStockMode('auto'); setVariantStockErrors({}) }}
@@ -794,8 +794,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
             {/* ── Informational Attributes ── */}
             {form.subcategory_id && !axesLoading && infoAxes.length > 0 && (
               <section>
-                <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
-                  {t('sections.details')} <span style={{ marginInlineStart: 8, fontSize: 9, fontWeight: 500, color: '#c4b5fd', textTransform: 'none' }}>{t('informational')}</span>
+                <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
+                  {t('sections.details')} <span style={{ marginInlineStart: 8, fontSize: 9, fontWeight: 500, color: '#6d28d9', textTransform: 'none' }}>{t('informational')}</span>
                 </p>
                 <DynamicAttributeSection subcategoryId={Number(form.subcategory_id)} values={attrValues} onChange={setAttrValues} disabled={saving} overrideAttributes={infoAxes} />
               </section>
@@ -805,20 +805,20 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
             {form.subcategory_id && (
               <section>
                 <div style={{ paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>{t('sections.variants')}</p>
-                  {axesLoading && <span style={{ fontSize: 10, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4 }}><Loader2 size={10} style={{ animation: 'spin 0.8s linear infinite' }} />{t('loading')}</span>}
-                  {!axesLoading && variantAxes.length > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '2px 8px', borderRadius: 4 }}>{t('axes', { list: variantAxes.map(a => a.name).join(', ') })}</span>}
+                  <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', margin: 0 }}>{t('sections.variants')}</p>
+                  {axesLoading && <span style={{ fontSize: 10, color: '#5b6472', display: 'flex', alignItems: 'center', gap: 4 }}><Loader2 size={10} style={{ animation: 'spin 0.8s linear infinite' }} />{t('loading')}</span>}
+                  {!axesLoading && variantAxes.length > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#4338ca', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '2px 8px', borderRadius: 4 }}>{t('axes', { list: variantAxes.map(a => a.name).join(', ') })}</span>}
                 </div>
-                {!axesLoading && variantAxes.length === 0 && <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#94a3b8' }}>{t('noVariantAxes')}</div>}
+                {!axesLoading && variantAxes.length === 0 && <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#5b6472' }}>{t('noVariantAxes')}</div>}
                 {!axesLoading && variantAxes.length > 0 && (
                   <>
                     <VariantBuilder axes={variantAxes} existingVariants={variantRows} onChange={rows => { setVariantRows(rows); setVariantStockErrors({}) }} basePrice={form.price} disabled={saving} externalStockErrors={variantStockErrors} />
                     {variantRows.length > 0 && (
                       <div style={{ marginTop: 14 }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(220,38,38,0.05)', border: '1.5px solid rgba(220,38,38,0.2)', borderRadius: 12, padding: '10px 16px' }}>
-                          <span style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('totalStock')}</span>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: '#5b6472', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('totalStock')}</span>
                           <span style={{ fontSize: 22, fontWeight: 900, color: '#db142e', lineHeight: 1 }}>{variantTotalStock}</span>
-                          <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{t('unitsAuto')}</span>
+                          <span style={{ fontSize: 11, color: '#5b6472', fontWeight: 500 }}>{t('unitsAuto')}</span>
                         </div>
                       </div>
                     )}
@@ -830,7 +830,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
             {/* ── Images: color groups (shared by all sizes) or a single gallery ── */}
             <section>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 14 }}>
-                <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', margin: 0 }}>
+                <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', margin: 0 }}>
                   {colorGroups ? t('sections.colorImages') : t('sections.images')}
                 </p>
                 {axesLoading && <Loader2 size={12} color="#94a3b8" style={{ animation: 'spin 0.8s linear infinite' }} />}

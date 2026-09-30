@@ -362,7 +362,7 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
       <div style={{ marginBottom: 20 }}>
         <p style={{
           fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-          letterSpacing: '0.1em', color: '#94a3b8', margin: '0 0 12px',
+          letterSpacing: '0.1em', color: '#5b6472', margin: '0 0 12px',
         }}>
           {t('step1')}
         </p>
@@ -387,7 +387,7 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
                   {colorAxis.name}
                   <span style={{
                     marginInlineStart: 8, fontSize: 9, fontWeight: 700,
-                    color: '#6366f1',
+                    color: '#4338ca',
                     background: 'rgba(99,102,241,0.08)',
                     border: '1px solid rgba(99,102,241,0.2)',
                     padding: '1px 6px', borderRadius: 4,
@@ -423,7 +423,7 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
                 <div style={{
                   border: '1px dashed #e5e7eb', borderRadius: 8,
                   padding: '12px', textAlign: 'center',
-                  fontSize: 12, color: '#94a3b8',
+                  fontSize: 12, color: '#5b6472',
                 }}>
                   {t.rich('noGroups', { b: (chunks) => <strong>{chunks}</strong> })}
                 </div>
@@ -456,7 +456,7 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
                         }}>
                           {t('group', { n: groupIdx + 1 })}
                           <span style={{
-                            marginInlineStart: 6, fontWeight: 500, color: '#94a3b8',
+                            marginInlineStart: 6, fontWeight: 500, color: '#5b6472',
                           }}>
                             ({selected.length}/{MAX_COLORS_PER_GROUP})
                           </span>
@@ -470,7 +470,7 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
                           style={{
                             display: 'inline-flex', alignItems: 'center', gap: 4,
                             fontSize: 10, fontWeight: 700,
-                            color: '#94a3b8',
+                            color: '#5b6472',
                             background: 'transparent',
                             border: '1px solid #e5e7eb',
                             borderRadius: 5, padding: '2px 7px',
@@ -597,7 +597,7 @@ opacity: atMax ? 0.4 : 1,
                 }}>
                   {axis.name}
                   <span style={{
-                    marginInlineStart: 8, fontWeight: 500, color: '#94a3b8',
+                    marginInlineStart: 8, fontWeight: 500, color: '#5b6472',
                     textTransform: 'none', letterSpacing: 0,
                   }}>
                     {t('selectedCount', { count: selected.length })}
@@ -645,7 +645,7 @@ opacity: atMax ? 0.4 : 1,
             background: '#eff6ff', border: '1px solid #bfdbfe',
             borderRadius: 10, padding: '8px 12px',
           }}>
-            <Info size={13} style={{ color: '#3b82f6', flexShrink: 0 }} />
+            <Info size={13} style={{ color: '#1d4ed8', flexShrink: 0 }} />
             <p style={{ fontSize: 12, color: '#1e40af', margin: 0 }}>
               {t('willGenerate', { count: totalCombinations })}
             </p>
@@ -661,7 +661,7 @@ opacity: atMax ? 0.4 : 1,
             background: '#fffbeb', border: '1px solid #fde68a',
             borderRadius: 10, padding: '8px 12px',
           }}>
-            <Info size={13} style={{ color: '#d97706', flexShrink: 0 }} />
+            <Info size={13} style={{ color: '#92400e', flexShrink: 0 }} />
             <p style={{ fontSize: 12, color: '#92400e', margin: 0 }}>
               {colorAxis
                 ? t('incompleteColor')
@@ -682,7 +682,7 @@ opacity: atMax ? 0.4 : 1,
           }}>
             <p style={{
               fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-              letterSpacing: '0.1em', color: '#94a3b8', margin: 0,
+              letterSpacing: '0.1em', color: '#5b6472', margin: 0,
             }}>
               Step 2 — Set stock & price per combination ({rows.length} variants)
             </p>
@@ -696,12 +696,12 @@ opacity: atMax ? 0.4 : 1,
               borderRadius: 8, padding: '4px 10px',
             }}>
               <span style={{
-                fontSize: 10, fontWeight: 700, color: '#94a3b8',
+                fontSize: 10, fontWeight: 700, color: '#5b6472',
                 textTransform: 'uppercase', letterSpacing: '0.05em',
               }}>{t('total')}</span>
               <span style={{
                 fontSize: 13, fontWeight: 900,
-                color: hasStockErrors ? '#ef4444' : '#10b981',
+                color: hasStockErrors ? '#b91c1c' : '#047857',
               }}>
                 {totalStock}
               </span>
@@ -733,7 +733,7 @@ opacity: atMax ? 0.4 : 1,
               <span key={h} style={{
                 fontSize: 9, fontWeight: 800, textTransform: 'uppercase',
                 letterSpacing: '0.08em',
-                color: h === 'stock' ? '#dc2626' : '#94a3b8',
+                color: h === 'stock' ? '#dc2626' : '#5b6472',
               }}>
                 {t(`cols.${h}`, { currency })}
               </span>
@@ -821,7 +821,7 @@ opacity: atMax ? 0.4 : 1,
                     style={inputStyle(!!stockError)}
                   />
                   {stockError && (
-                    <p style={{ fontSize: 10, color: '#ef4444', margin: '3px 0 0', fontWeight: 600 }}>
+                    <p style={{ fontSize: 10, color: '#b91c1c', margin: '3px 0 0', fontWeight: 600 }}>
                       {t(stockError as 'stockRequired' | 'stockWhole')}
                     </p>
                   )}
@@ -866,7 +866,7 @@ opacity: atMax ? 0.4 : 1,
             display: 'flex', gap: 10, marginTop: 10,
             flexWrap: 'wrap', alignItems: 'center',
           }}>
-            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('quickFill')}</span>
+            <span style={{ fontSize: 11, color: '#5b6472', fontWeight: 600 }}>{t('quickFill')}</span>
             <button
               type="button" disabled={disabled}
               onClick={() => {
@@ -876,7 +876,7 @@ opacity: atMax ? 0.4 : 1,
                 setRows(prev => prev.map(r => ({ ...r, stock })))
               }}
               style={{
-                fontSize: 11, fontWeight: 700, color: '#6366f1',
+                fontSize: 11, fontWeight: 700, color: '#4338ca',
                 background: 'rgba(99,102,241,0.08)',
                 border: '1px solid rgba(99,102,241,0.2)',
                 borderRadius: 6, padding: '4px 10px',
@@ -887,7 +887,7 @@ opacity: atMax ? 0.4 : 1,
               type="button" disabled={disabled}
               onClick={() => setRows(prev => prev.map(r => ({ ...r, is_active: true })))}
               style={{
-                fontSize: 11, fontWeight: 700, color: '#10b981',
+                fontSize: 11, fontWeight: 700, color: '#047857',
                 background: 'rgba(16,185,129,0.08)',
                 border: '1px solid rgba(16,185,129,0.2)',
                 borderRadius: 6, padding: '4px 10px',
@@ -898,7 +898,7 @@ opacity: atMax ? 0.4 : 1,
               type="button" disabled={disabled}
               onClick={() => setRows(prev => prev.map(r => ({ ...r, is_active: false })))}
               style={{
-                fontSize: 11, fontWeight: 700, color: '#ef4444',
+                fontSize: 11, fontWeight: 700, color: '#b91c1c',
                 background: 'rgba(239,68,68,0.08)',
                 border: '1px solid rgba(239,68,68,0.2)',
                 borderRadius: 6, padding: '4px 10px',
@@ -916,7 +916,7 @@ opacity: atMax ? 0.4 : 1,
         <div style={{
           background: '#f8fafc', border: '1px dashed #e5e7eb',
           borderRadius: 10, padding: 16,
-          textAlign: 'center', fontSize: 12, color: '#94a3b8',
+          textAlign: 'center', fontSize: 12, color: '#5b6472',
         }}>
           {colorAxis
             ? t('hintColor')

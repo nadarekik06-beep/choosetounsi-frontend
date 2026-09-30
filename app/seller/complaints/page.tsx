@@ -16,6 +16,7 @@ import { STATUS_CONFIG, COMPLAINT_TYPE_LABELS } from '@/types/complaint'
 import { useTheme } from '../SellerShell'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
+import { ink } from '@/app/seller/ink';
 
 /** Complaint type label (shared with the storefront complaint pages). */
 function useComplaintType() {
@@ -227,9 +228,9 @@ function useColors(dark: boolean) {
     borderHover: dark ? 'rgba(255,255,255,0.12)'      : 'rgba(0,0,0,0.15)',
     textMain:    dark ? '#ffffff'                     : '#0f172a',
     textSub:     dark ? 'rgba(255,255,255,0.75)'      : '#374151',
-    textMuted:   dark ? 'rgba(255,255,255,0.38)'      : '#6b7280',
-    textFaint:   dark ? 'rgba(255,255,255,0.28)'      : '#9ca3af',
-    iconMuted:   dark ? 'rgba(255,255,255,0.35)'      : '#9ca3af',
+    textMuted:   dark ? 'rgba(255,255,255,0.55)'      : '#5b6472',
+    textFaint:   dark ? 'rgba(255,255,255,0.55)'      : '#5b6472',
+    iconMuted:   dark ? 'rgba(255,255,255,0.55)'      : '#5b6472',
     drawerBg:    dark ? '#0d1117'                     : '#ffffff',
     drawerBgSub: dark ? 'rgba(255,255,255,0.03)'      : '#f8fafc',
     drawerBorder:dark ? 'rgba(255,255,255,0.07)'      : 'rgba(0,0,0,0.08)',
@@ -240,7 +241,7 @@ function useColors(dark: boolean) {
       ? 'linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.09) 50%,rgba(255,255,255,0.04) 75%)'
       : 'linear-gradient(90deg,rgba(0,0,0,0.04) 25%,rgba(0,0,0,0.08) 50%,rgba(0,0,0,0.04) 75%)',
     toastBg:     dark ? '#1a2235'                     : '#1e293b',
-    monoColor:   dark ? 'rgba(255,255,255,0.3)'       : '#6b7280',
+    monoColor:   dark ? 'rgba(255,255,255,0.55)'       : '#5b6472',
     labelColor:  dark ? 'rgba(255,255,255,0.55)'      : '#4b5563',
   }
 }
@@ -288,13 +289,14 @@ const GLOBAL_CSS = `
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: Complaint['status'] }) {
+  const { dark } = useTheme();
   const t = useTranslations('seller.complaints.status')
   const m = STATUS_META[status] ?? STATUS_META['pending']
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
       fontSize: 10, fontWeight: 700, padding: '4px 10px', borderRadius: 6,
-      background: m.bg, color: m.color, border: `1px solid ${m.border}`,
+      background: m.bg, color: ink(m.color, dark), border: `1px solid ${m.border}`,
       letterSpacing: '0.05em', whiteSpace: 'nowrap',
     }}>
       {m.icon}
@@ -693,7 +695,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
     display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6,
     fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999,
     background: REFUND_STATUS_CONFIG[complaint.refund_status]?.bg ?? 'rgba(168,85,247,0.1)',
-    color: REFUND_STATUS_CONFIG[complaint.refund_status]?.color ?? '#a855f7',
+    color: REFUND_STATUS_CONFIG[complaint.refund_status]?.color ?? ink('#a855f7', dark),
     border: `1px solid ${REFUND_STATUS_CONFIG[complaint.refund_status]?.color ?? '#a855f7'}30`,
   }}>
     ↩️ {t('refundLabel', { status: t.has(`refund.${complaint.refund_status}`) ? t(`refund.${complaint.refund_status}`) : complaint.refund_status })}
