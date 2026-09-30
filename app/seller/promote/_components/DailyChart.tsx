@@ -6,7 +6,10 @@ import { useFormat } from '@/lib/i18n/useFormat'
 import type { DailyPoint } from '@/lib/sellerAdsApi'
 import { usePalette } from './ui'
 
-/** Spend vs. sales per day, plus clicks — the ads home and campaign pages. */
+/**
+ * Spend vs. sales per day (left axis, TND), plus clicks (right axis, a count) —
+ * the ads home and campaign pages. The API sends every day of the period, zeros included.
+ */
 export default function DailyChart({ data, height = 220 }: { data: DailyPoint[]; height?: number }) {
   const t   = useTranslations('seller.ads')
   const fmt = useFormat()
@@ -21,11 +24,11 @@ export default function DailyChart({ data, height = 220 }: { data: DailyPoint[];
   return (
     <div style={{ width: '100%', height, direction: 'ltr' }}>
       <ResponsiveContainer>
-        <AreaChart data={rows} margin={{ top: 6, right: 6, left: -18, bottom: 0 }}>
+        <AreaChart data={rows} margin={{ top: 6, right: 0, left: -18, bottom: 0 }}>
           <CartesianGrid stroke={p.border} vertical={false} />
           <XAxis dataKey="label" tick={{ fontSize: 10, fill: p.muted }} tickLine={false} axisLine={false} minTickGap={16} />
           <YAxis yAxisId="money" tick={{ fontSize: 10, fill: p.muted }} tickLine={false} axisLine={false} width={48} />
-          <YAxis yAxisId="clicks" orientation="right" hide />
+          <YAxis yAxisId="clicks" orientation="right" allowDecimals={false} tick={{ fontSize: 10, fill: '#6366f1' }} tickLine={false} axisLine={false} width={32} />
           <Tooltip
             contentStyle={{ background: p.card, border: `1px solid ${p.border}`, borderRadius: 10, fontSize: 12, color: p.text }}
             formatter={(value, name) => [name === t('kpis.clicks') ? fmt.number(Number(value)) : fmt.price(Number(value)), name]}

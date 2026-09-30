@@ -124,7 +124,7 @@ export default function AdsHomePage() {
                   </div>
                 </div>
                 <div style={{ textAlign: 'end', fontSize: 12, color: p.muted }}>
-                  <p style={{ margin: 0, fontWeight: 800, color: p.text }}>{money(c.spent_total)}</p>
+                  <p style={{ margin: 0, fontWeight: 800, color: p.text }}>{money(c.stats.spend)}</p>
                   {c.status === 'active' && <p style={{ margin: 0 }}>{t('campaigns.today')}: {money(c.spent_today)}</p>}
                 </div>
               </Link>

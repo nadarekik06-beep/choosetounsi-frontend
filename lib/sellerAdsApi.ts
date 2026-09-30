@@ -35,7 +35,7 @@ export interface Campaign {
   tips_checked_at: string | null
   ad_copy: string | null
   tags: string[] | null
-  stats: { impressions: number; clicks: number; ctr: number | null; orders: number; revenue: number }
+  stats: { impressions: number; clicks: number; ctr: number | null; spend: number; orders: number; revenue: number }   // all time, same definitions as Summary
   can: { edit: boolean; pause: boolean; resume: boolean; cancel: boolean }
   created_at: string
 }
