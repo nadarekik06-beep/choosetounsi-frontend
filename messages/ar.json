@@ -3961,7 +3961,8 @@
           "sandbox": "دفع تجريبي (للتطوير فقط)",
           "manual": "تحويل D17 / بنكي",
           "konnect": "Konnect",
-          "flouci": "Flouci"
+          "flouci": "Flouci",
+          "whatsapp": "واتساب (D17 / تحويل بنكي)"
         },
         "reference": "مرجع التحويل",
         "manualHelp": "أرسل المبلغ إلى حساب D17 رقم {account}، ثم أدخل مرجع التحويل. تُشحن محفظتك بعد تأكيد التحويل.",
@@ -4161,5 +4162,46 @@
     "footerOff": "احصل كل أسبوع على رسالة بمنتجات مختارة لك.",
     "subscribe": "اشترك",
     "unsubscribe": "إلغاء الاشتراك"
+  },
+  "manualPayment": {
+    "whatsappTitle": "الدفع عبر واتساب",
+    "whatsapp": "واتساب",
+    "howItWorks": "نسجّل طلبك ثم يُفتح واتساب برسالة جاهزة للإرسال. بعد ذلك نتواصل معك للدفع (D17 أو تحويل بنكي).",
+    "submitTopUp": "المتابعة على واتساب",
+    "submitUpgrade": "اطلب هذه الخطة عبر واتساب",
+    "confirmTitle": "تم تسجيل الطلب",
+    "confirmBody": "تم تسجيل طلبك <b>{reference}</b>. أرسل رسالة واتساب وسنتواصل معك للدفع (D17 أو تحويل بنكي).",
+    "confirmHint": "لم يُفتح واتساب أو أغلقته؟ استخدم الزر أعلاه.",
+    "reopen": "إعادة فتح واتساب",
+    "close": "إغلاق",
+    "back": "رجوع",
+    "historyTitle": "طلبات الدفع",
+    "empty": "لا توجد طلبات بعد.",
+    "cancel": "إلغاء",
+    "cancelConfirm": "إلغاء الطلب {reference}؟",
+    "reason": "السبب: {reason}",
+    "billing": "الفوترة",
+    "limits": "بين {min} و {max}",
+    "disabled": "الدفع عبر واتساب غير متاح مؤقتًا. حاول لاحقًا أو تواصل مع الدعم.",
+    "pendingUpgrade": "الطلب {reference} قيد الانتظار: أرسل رسالة واتساب وسنفعّل خطتك فور استلام الدفع.",
+    "error": "حدث خطأ. حاول مرة أخرى.",
+    "status": {
+      "pending": "قيد الانتظار",
+      "approved": "مقبول",
+      "rejected": "مرفوض",
+      "cancelled": "ملغى"
+    },
+    "type": {
+      "wallet_topup": "شحن",
+      "plan_upgrade": "تغيير الخطة"
+    },
+    "period": {
+      "monthly": "شهري",
+      "yearly": "سنوي"
+    },
+    "periodLabel": {
+      "monthly": "شهري",
+      "yearly": "سنوي"
+    }
   }
 }

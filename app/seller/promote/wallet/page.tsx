@@ -1,8 +1,12 @@
 'use client'
 
 /**
- * Ad wallet: balance + free credit, top-up (gateway-driven — never a card form here),
- * pending top-ups and the ledger.
+ * Ad wallet: balance + free credit, top-up (never a card form here), payment
+ * requests, pending top-ups and the ledger.
+ *
+ * Top-up methods: WhatsApp (manual payment request — the default while it is switched on;
+ * it replaces the test and transfer-reference methods), plus any hosted gateway the
+ * backend reports as available (Konnect / Flouci once integrated).
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -11,13 +15,19 @@ import { useTranslations } from 'next-intl'
 import { ArrowLeft } from 'lucide-react'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { sellerAdsApi, type TopUp, type Wallet, type WalletTx } from '@/lib/sellerAdsApi'
+import { createAndOpenWhatsApp, paymentRequestsApi, type ManualPaymentConfig, type PaymentRequest } from '@/lib/paymentRequestsApi'
+import { ManualPaymentConfirmation, PaymentRequestHistory } from '@/app/components/seller/ManualPayment'
 import { Button, Kpi, Notice, PageFrame, Panel, usePalette, GOLD } from '../_components/ui'
 
 const RAW_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const API_URL = `${RAW_URL.replace(/\/api\/?$/, '')}/api`
 
+/** Gateways the WhatsApp method replaces while it is switched on. */
+const REPLACED_BY_WHATSAPP = ['sandbox', 'manual']
+
 export default function AdWalletPage() {
   const t   = useTranslations('seller.ads')
+  const tm  = useTranslations('manualPayment')
   const fmt = useFormat()
   const p   = usePalette()
 
@@ -26,6 +36,9 @@ export default function AdWalletPage() {
   const [page, setPage]       = useState(1)
   const [lastPage, setLastPage] = useState(1)
   const [topUps, setTopUps]   = useState<TopUp[]>([])
+  const [requests, setRequests] = useState<PaymentRequest[]>([])
+  const [manual, setManual]   = useState<ManualPaymentConfig | null>(null)
+  const [created, setCreated] = useState<PaymentRequest | null>(null)
   const [d17, setD17]         = useState('')
   const [amount, setAmount]   = useState('')
   const [gateway, setGateway] = useState('')
@@ -33,12 +46,23 @@ export default function AdWalletPage() {
   const [busy, setBusy]       = useState(false)
   const [notice, setNotice]   = useState<{ tone: 'success' | 'info' | 'error'; text: string } | null>(null)
 
-  const load = useCallback(async () => {
-    const [w, tx, tu] = await Promise.all([sellerAdsApi.wallet(), sellerAdsApi.transactions(1), sellerAdsApi.topUps()])
-    setWallet(w); setTxs(tx.data); setPage(1); setLastPage(tx.meta.last_page); setTopUps(tu)
-    setGateway(g => g || w.gateways?.[0] || '')
-    setAmount(a => a || String(w.min_top_up ?? ''))
+  const methodsFor = (w: Wallet | null, cfg: ManualPaymentConfig | null) => {
+    const gateways = w?.gateways ?? []
+    return cfg?.enabled ? ['whatsapp', ...gateways.filter(g => !REPLACED_BY_WHATSAPP.includes(g))] : gateways
+  }
+
+  const loadRequests = useCallback(async () => {
+    const res = await paymentRequestsApi.list('wallet_topup').catch(() => null)
+    setRequests(res?.data ?? []); setManual(res?.config ?? null)
+    return res?.config ?? null
   }, [])
+
+  const load = useCallback(async () => {
+    const [w, tx, tu, cfg] = await Promise.all([sellerAdsApi.wallet(), sellerAdsApi.transactions(1), sellerAdsApi.topUps(), loadRequests()])
+    setWallet(w); setTxs(tx.data); setPage(1); setLastPage(tx.meta.last_page); setTopUps(tu)
+    setGateway(g => g || methodsFor(w, cfg)[0] || '')
+    setAmount(a => a || String((cfg?.enabled ? cfg.min_top_up : w.min_top_up) ?? ''))
+  }, [loadRequests])
 
   useEffect(() => {
     load().catch(e => setNotice({ tone: 'error', text: e?.message ?? t('error') }))
@@ -47,23 +71,33 @@ export default function AdWalletPage() {
   }, [load, t])
 
   const money = (v: number | null | undefined) => (v == null ? '—' : fmt.price(v))
+  const methods = methodsFor(wallet, manual)
+  const viaWhatsApp = gateway === 'whatsapp'
+  const min = viaWhatsApp ? manual?.min_top_up : wallet?.min_top_up
+  const max = viaWhatsApp ? manual?.max_top_up : undefined
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault()
     setBusy(true); setNotice(null)
-    try {
-      const res = await sellerAdsApi.topUp({ amount: Number(amount), gateway, ...(gateway === 'manual' ? { reference } : {}) })
-      if (res.redirect_url) { window.location.href = res.redirect_url; return }
-      setNotice(res.status === 'paid'
-        ? { tone: 'success', text: t('walletPage.paid', { amount: money(res.top_up.amount) }) }
-        : { tone: 'info', text: t('walletPage.pending') })
-      setReference('')
-      await load()
-    } catch (err: any) {
-      setNotice({ tone: 'error', text: err?.message ?? t('error') })
-    } finally {
-      setBusy(false)
-    }
+    // WhatsApp: the chat opens from this click (a new tab on computers, the app on phones).
+    const run = viaWhatsApp ? submitWhatsApp() : submitGateway()
+    run.catch((err: any) => setNotice({ tone: 'error', text: err?.message ?? t('error') })).finally(() => setBusy(false))
+  }
+
+  const submitWhatsApp = async () => {
+    const req = await createAndOpenWhatsApp(() => paymentRequestsApi.topUp(Number(amount)))
+    setCreated(req)
+    await loadRequests()
+  }
+
+  const submitGateway = async () => {
+    const res = await sellerAdsApi.topUp({ amount: Number(amount), gateway, ...(gateway === 'manual' ? { reference } : {}) })
+    if (res.redirect_url) { window.location.href = res.redirect_url; return }
+    setNotice(res.status === 'paid'
+      ? { tone: 'success', text: t('walletPage.paid', { amount: money(res.top_up.amount) }) }
+      : { tone: 'info', text: t('walletPage.pending') })
+    setReference('')
+    await load()
   }
 
   const more = async () => {
@@ -80,6 +114,7 @@ export default function AdWalletPage() {
       title={t('walletPage.title')}
       subtitle={<Link href="/seller/promote" style={{ color: GOLD, textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}><ArrowLeft size={14} className="rtl-flip" />{t('detail.back')}</Link>}
     >
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
 
       <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))' }}>
@@ -93,21 +128,28 @@ export default function AdWalletPage() {
         </Panel>
 
         <Panel title={t('walletPage.topUp')}>
-          {wallet && !wallet.gateways?.length ? <Notice tone="warn">{t('walletPage.noMethod')}</Notice> : (
+          {created ? (
+            <ManualPaymentConfirmation request={created} palette={p} onClose={() => setCreated(null)} />
+          ) : wallet && !methods.length ? <Notice tone="warn">{manual && !manual.enabled ? tm('disabled') : t('walletPage.noMethod')}</Notice> : (
             <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <label style={{ fontSize: 12, fontWeight: 800, color: p.text }}>{t('walletPage.amount')}
-                <input type="number" inputMode="decimal" min={wallet?.min_top_up} step="1" required value={amount} onChange={e => setAmount(e.target.value)} style={{ ...inputStyle, marginTop: 6 }} />
-                <span style={{ fontSize: 11, color: p.muted, fontWeight: 500 }}>{t('walletPage.min', { min: money(wallet?.min_top_up) })}</span>
+                <input type="number" inputMode="decimal" min={min} max={max} step="1" required value={amount} onChange={e => setAmount(e.target.value)} style={{ ...inputStyle, marginTop: 6 }} />
+                <span style={{ fontSize: 11, color: p.muted, fontWeight: 500 }}>
+                  {max != null ? tm('limits', { min: money(min), max: money(max) }) : t('walletPage.min', { min: money(min) })}
+                </span>
               </label>
-              <fieldset style={{ border: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <legend style={{ fontSize: 12, fontWeight: 800, color: p.text, marginBottom: 6 }}>{t('walletPage.method')}</legend>
-                {(wallet?.gateways ?? []).map(g => (
-                  <label key={g} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, color: p.text, padding: '8px 10px', borderRadius: 10, border: `1px solid ${gateway === g ? GOLD : p.border}`, background: p.cardAlt, cursor: 'pointer' }}>
-                    <input type="radio" name="gateway" value={g} checked={gateway === g} onChange={() => setGateway(g)} />
-                    {t.has(`walletPage.methods.${g}`) ? t(`walletPage.methods.${g}`) : g}
-                  </label>
-                ))}
-              </fieldset>
+              {methods.length > 1 && (
+                <fieldset style={{ border: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <legend style={{ fontSize: 12, fontWeight: 800, color: p.text, marginBottom: 6 }}>{t('walletPage.method')}</legend>
+                  {methods.map(g => (
+                    <label key={g} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, color: p.text, padding: '8px 10px', borderRadius: 10, border: `1px solid ${gateway === g ? GOLD : p.border}`, background: p.cardAlt, cursor: 'pointer' }}>
+                      <input type="radio" name="gateway" value={g} checked={gateway === g} onChange={() => setGateway(g)} />
+                      {t.has(`walletPage.methods.${g}`) ? t(`walletPage.methods.${g}`) : g}
+                    </label>
+                  ))}
+                </fieldset>
+              )}
+              {viaWhatsApp && <p style={{ fontSize: 12, color: p.muted, margin: 0, lineHeight: 1.5 }}>{tm('howItWorks')}</p>}
               {gateway === 'manual' && (
                 <>
                   <p style={{ fontSize: 12, color: p.muted, margin: 0, lineHeight: 1.5 }}>{t('walletPage.manualHelp', { account: d17 || '—' })}</p>
@@ -116,11 +158,17 @@ export default function AdWalletPage() {
                   </label>
                 </>
               )}
-              <Button type="submit" disabled={busy || !gateway}>{t('walletPage.pay')}</Button>
+              <Button type="submit" disabled={busy || !gateway}>{viaWhatsApp ? tm('submitTopUp') : t('walletPage.pay')}</Button>
             </form>
           )}
         </Panel>
       </div>
+
+      {(requests.length > 0 || manual?.enabled) && (
+        <Panel title={tm('historyTitle')}>
+          <PaymentRequestHistory requests={requests} palette={p} onChanged={loadRequests} />
+        </Panel>
+      )}
 
       {pending.length > 0 && (
         <Panel title={t('walletPage.pendingTopUps')}>

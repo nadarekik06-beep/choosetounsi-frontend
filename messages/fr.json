@@ -3961,7 +3961,8 @@
           "sandbox": "Paiement de test (développement uniquement)",
           "manual": "Virement D17 / bancaire",
           "konnect": "Konnect",
-          "flouci": "Flouci"
+          "flouci": "Flouci",
+          "whatsapp": "WhatsApp (D17 / virement)"
         },
         "reference": "Référence du virement",
         "manualHelp": "Envoyez le montant au compte D17 {account}, puis saisissez la référence du virement. Votre portefeuille est crédité une fois le virement confirmé.",
@@ -4161,5 +4162,46 @@
     "footerOff": "Recevez chaque semaine un e-mail avec des produits choisis pour vous.",
     "subscribe": "S’abonner",
     "unsubscribe": "Se désabonner"
+  },
+  "manualPayment": {
+    "whatsappTitle": "Paiement via WhatsApp",
+    "whatsapp": "WhatsApp",
+    "howItWorks": "Nous enregistrons votre demande puis WhatsApp s'ouvre avec un message prêt à envoyer. Nous vous contactons ensuite pour le paiement (D17 ou virement).",
+    "submitTopUp": "Continuer sur WhatsApp",
+    "submitUpgrade": "Demander ce plan via WhatsApp",
+    "confirmTitle": "Demande enregistrée",
+    "confirmBody": "Votre demande <b>{reference}</b> a été enregistrée. Envoyez le message WhatsApp, nous vous contacterons pour le paiement (D17 ou virement).",
+    "confirmHint": "WhatsApp ne s’est pas ouvert ou vous l’avez fermé ? Utilisez le bouton ci-dessus.",
+    "reopen": "Rouvrir WhatsApp",
+    "close": "Fermer",
+    "back": "Retour",
+    "historyTitle": "Mes demandes de paiement",
+    "empty": "Aucune demande pour l’instant.",
+    "cancel": "Annuler",
+    "cancelConfirm": "Annuler la demande {reference} ?",
+    "reason": "Motif : {reason}",
+    "billing": "Facturation",
+    "limits": "Entre {min} et {max}",
+    "disabled": "Le paiement via WhatsApp est momentanément indisponible. Réessayez plus tard ou contactez le support.",
+    "pendingUpgrade": "Demande {reference} en attente : envoyez le message WhatsApp, nous activerons votre plan dès réception du paiement.",
+    "error": "Une erreur est survenue. Réessayez.",
+    "status": {
+      "pending": "En attente",
+      "approved": "Approuvée",
+      "rejected": "Refusée",
+      "cancelled": "Annulée"
+    },
+    "type": {
+      "wallet_topup": "Recharge",
+      "plan_upgrade": "Changement de plan"
+    },
+    "period": {
+      "monthly": "mensuel",
+      "yearly": "annuel"
+    },
+    "periodLabel": {
+      "monthly": "Mensuel",
+      "yearly": "Annuel"
+    }
   }
 }

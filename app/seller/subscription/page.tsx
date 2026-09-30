@@ -14,12 +14,13 @@
 import { useState, useEffect } from 'react'
 import {
   Leaf, Flame, Crown, Check, X, ArrowRight, ArrowDown,
-  CreditCard, Lock, CheckCircle, Loader2, AlertCircle,
-  Clock, Calendar, RefreshCw, Shield, ChevronRight,
+  CheckCircle, Loader2, MessageCircle,
+  Clock, Calendar, RefreshCw, ChevronRight,
   TrendingDown, AlertTriangle, History, BarChart2, Package,
 } from 'lucide-react'
 import { subscriptionApi, planMeta, planKeys, planRank, planTier, livePlan, type ActivePlan, type SubscriptionLifecycle, type PlanChange } from '@/lib/subscriptionApi'
-import { refreshUser } from '@/lib/auth'
+import { openWhatsApp, paymentRequestsApi, type PaymentRequest } from '@/lib/paymentRequestsApi'
+import { ManualPaymentConfirmation, PaymentRequestHistory, PlanUpgradeRequest } from '@/app/components/seller/ManualPayment'
 import { useTheme } from '../SellerShell'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -53,16 +54,6 @@ const PLAN_FEATURES: Record<ActivePlan, string[]> = {
   black: ['everythingRed', 'homepageBoost', 'freeSponsored', 'trendDetection', 'inventoryAlerts', 'reels', 'vipPromotion'],
 }
 
-// ── Helper: format card number ────────────────────────────────────────────────
-
-function formatCardNumber(v: string): string {
-  return v.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim()
-}
-function formatExpiry(v: string): string {
-  const d = v.replace(/\D/g, '').slice(0, 4)
-  return d.length >= 3 ? d.slice(0, 2) + '/' + d.slice(2) : d
-}
-
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function PlanBadge({ plan, size = 'md' }: { plan: string; size?: 'sm' | 'md' | 'lg' }) {
@@ -75,134 +66,6 @@ function PlanBadge({ plan, size = 'md' }: { plan: string; size?: 'sm' | 'md' | '
       <Icon size={s.icon} />
       {meta.name}
     </span>
-  )
-}
-
-// ── Payment form ──────────────────────────────────────────────────────────────
-
-interface PaymentFormProps {
-  targetPlan: string
-  onSuccess: (plan: string) => void
-  onCancel: () => void
-  dark: boolean
-}
-
-function PaymentForm({ targetPlan, onSuccess, onCancel, dark }: PaymentFormProps) {
-  const t = useTranslations('seller.subscription')
-  const { label: priceLabel } = usePlanPrice()
-  const [card, setCard]     = useState('')
-  const [expiry, setExpiry] = useState('')
-  const [cvv, setCvv]       = useState('')
-  const [name, setName]     = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError]   = useState<string | null>(null)
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-
-  const meta  = planMeta(targetPlan)
-  const Icon  = planIcon(targetPlan)
-  const cardBg = dark ? '#1a1f2e' : '#fff'
-  const borderColor = dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'
-
-  const validate = (): boolean => {
-    const errs: Record<string, string> = {}
-    if (card.replace(/\s/g, '').length < 13) errs.card = t('pay.errors.card')
-    if (!expiry.match(/^(0[1-9]|1[0-2])\/\d{2}$/)) errs.expiry = t('pay.errors.expiry')
-    if (!cvv.match(/^\d{3,4}$/)) errs.cvv = t('pay.errors.cvv')
-    if (name.trim().length < 2) errs.name = t('pay.errors.name')
-    setFieldErrors(errs)
-    return Object.keys(errs).length === 0
-  }
-
-  const handlePay = async () => {
-    if (!validate()) return
-    setLoading(true); setError(null)
-    try {
-      await subscriptionApi.upgrade({
-        plan:            targetPlan,
-        card_number:     card.replace(/\s/g, ''),
-        expiry_date:     expiry,
-        cvv,
-        cardholder_name: name.trim(),
-      })
-      await refreshUser()
-      onSuccess(targetPlan)
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? t('pay.failed'))
-      const be = err?.response?.data?.errors ?? {}
-      const mapped: Record<string, string> = {}
-      Object.entries(be).forEach(([k, v]) => { mapped[k] = Array.isArray(v) ? (v as string[])[0] : String(v) })
-      if (Object.keys(mapped).length) setFieldErrors(mapped)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const inputStyle = (hasErr: boolean): React.CSSProperties => ({
-    width: '100%', padding: '12px 16px', borderRadius: 10, boxSizing: 'border-box' as const,
-    border: `1.5px solid ${hasErr ? '#dc2626' : borderColor}`,
-    background: hasErr ? (dark ? '#2a1515' : '#fef2f2') : cardBg,
-    color: dark ? '#fff' : '#111', fontSize: 14, outline: 'none',
-  })
-
-  return (
-    <div style={{ background: cardBg, borderRadius: 16, border: `1.5px solid ${meta.color}30`, overflow: 'hidden' }}>
-      <div style={{ padding: '16px 20px', background: `${meta.color}12`, borderBottom: `1px solid ${meta.color}20`, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 10, background: `${meta.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon size={20} color={meta.accentColor} />
-        </div>
-        <div>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: meta.accentColor }}>{t('pay.upgradingTo')}</p>
-          <p style={{ margin: '2px 0 0', fontWeight: 900, fontSize: 15, color: dark ? '#fff' : '#111' }}>{meta.name} — {priceLabel(meta.price)}</p>
-        </div>
-      </div>
-      <div style={{ padding: 20, display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
-        <div style={{ position: 'relative' }}>
-          <input type="text" inputMode="numeric" dir="ltr" placeholder={t('pay.cardNumber')} value={card}
-            onChange={e => setCard(formatCardNumber(e.target.value))}
-            style={{ ...inputStyle(!!fieldErrors.card), paddingInlineStart: 44 }} />
-          <CreditCard size={16} color="#9ca3af" style={{ position: 'absolute', insetInlineStart: 14, top: '50%', transform: 'translateY(-50%)' }} />
-          {fieldErrors.card && <p style={{ fontSize: 11, color: '#dc2626', margin: '4px 0 0' }}>{fieldErrors.card}</p>}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div>
-            <input type="text" inputMode="numeric" dir="ltr" placeholder={t('pay.expiry')} value={expiry}
-              onChange={e => setExpiry(formatExpiry(e.target.value))}
-              style={inputStyle(!!fieldErrors.expiry)} />
-            {fieldErrors.expiry && <p style={{ fontSize: 11, color: '#dc2626', margin: '4px 0 0' }}>{fieldErrors.expiry}</p>}
-          </div>
-          <div>
-            <input type="text" inputMode="numeric" dir="ltr" placeholder={t('pay.cvv')} value={cvv} maxLength={4}
-              onChange={e => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-              style={inputStyle(!!fieldErrors.cvv)} />
-            {fieldErrors.cvv && <p style={{ fontSize: 11, color: '#dc2626', margin: '4px 0 0' }}>{fieldErrors.cvv}</p>}
-          </div>
-        </div>
-        <div>
-          <input type="text" placeholder={t('pay.name')} value={name}
-            onChange={e => setName(e.target.value)}
-            style={inputStyle(!!fieldErrors.name)} />
-          {fieldErrors.name && <p style={{ fontSize: 11, color: '#dc2626', margin: '4px 0 0' }}>{fieldErrors.name}</p>}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, background: 'rgba(25,143,65,0.08)', border: '1px solid rgba(25,143,65,0.2)' }}>
-          <Shield size={13} color="#198f41" />
-          <span style={{ fontSize: 11, color: '#198f41', fontWeight: 600 }}>{t('pay.secure')}</span>
-        </div>
-        {error && (
-          <div style={{ display: 'flex', gap: 8, padding: '10px 14px', borderRadius: 10, background: dark ? '#2a1515' : '#fef2f2', border: '1px solid #fecaca' }}>
-            <AlertCircle size={14} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
-            <p style={{ margin: 0, fontSize: 12, color: '#dc2626' }}>{error}</p>
-          </div>
-        )}
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={onCancel} style={{ flex: 1, padding: '12px', borderRadius: 10, background: 'transparent', border: `1.5px solid ${borderColor}`, color: dark ? 'rgba(255,255,255,0.5)' : '#6b7280', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-            {t('cancel')}
-          </button>
-          <button onClick={handlePay} disabled={loading} style={{ flex: 2, padding: '12px', borderRadius: 10, border: 'none', background: `linear-gradient(135deg, ${meta.accentColor}, ${meta.accentColor}cc)`, color: targetPlan === 'black' ? '#0f172a' : '#fff', fontSize: 13, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: loading ? 0.7 : 1 }}>
-            {loading ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />{t('pay.processing')}</> : <><Lock size={13} />{t('pay.pay', { price: priceLabel(meta.price) })}</>}
-          </button>
-        </div>
-      </div>
-    </div>
   )
 }
 
@@ -319,6 +182,7 @@ function DowngradeModal({ currentPlan, targetPlan, billingCycleEnd, daysRemainin
 export default function SellerSubscriptionPage() {
   const { dark } = useTheme()
   const t = useTranslations('seller.subscription')
+  const tm = useTranslations('manualPayment')
   const { date, number } = useFormat()
   const { label: priceLabel, short: priceShort } = usePlanPrice()
   const [status,       setStatus]       = useState<any>(null)
@@ -326,9 +190,10 @@ export default function SellerSubscriptionPage() {
   const [history,      setHistory]      = useState<PlanChange[]>([])
   const [historyOpen,  setHistoryOpen]  = useState(false)
 
-  // Upgrade flow state
+  // Upgrade flow state: pick a plan → WhatsApp payment request → admin activates it
   const [upgradeTarget, setUpgradeTarget] = useState<string | null>(null)
-  const [upgradeDone,   setUpgradeDone]   = useState(false)
+  const [requests,      setRequests]      = useState<PaymentRequest[]>([])
+  const [created,       setCreated]       = useState<PaymentRequest | null>(null)
 
   // Downgrade flow state
   const [downgradeTarget,  setDowngradeTarget]  = useState<string | null>(null)
@@ -342,6 +207,7 @@ export default function SellerSubscriptionPage() {
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'
   const textMain  = dark ? '#fff' : '#111'
   const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#6b7280'
+  const palette   = { text: textMain, muted: textMuted, border, card: cardBg, cardAlt: dark ? '#1a2030' : '#f8f9fb' }
 
   const loadStatus = async () => {
     setLoading(true)
@@ -359,13 +225,17 @@ export default function SellerSubscriptionPage() {
     } catch {}
   }
 
-  useEffect(() => { loadStatus() }, [])
+  const loadRequests = async () => {
+    try { setRequests((await paymentRequestsApi.list('plan_upgrade')).data) } catch {}
+  }
+
+  useEffect(() => { loadStatus(); loadRequests() }, [])
   useEffect(() => { if (historyOpen && history.length === 0) loadHistory() }, [historyOpen])
 
-  const handleUpgradeSuccess = async (plan: string) => {
+  const handleRequestCreated = (r: PaymentRequest) => {
     setUpgradeTarget(null)
-    setUpgradeDone(true)
-    await loadStatus()
+    setCreated(r)
+    loadRequests()
   }
 
   const handleDowngradeConfirm = async () => {
@@ -411,6 +281,7 @@ export default function SellerSubscriptionPage() {
   const offered      = planKeys()
   const currentLevel = planRank(currentPlan)
   const topLevel     = Math.max(...offered.map(planRank), currentLevel)
+  const pendingRequest = requests.find(r => r.status === 'pending') ?? null
 
   return (
     <>
@@ -439,11 +310,16 @@ export default function SellerSubscriptionPage() {
         </div>
 
         {/* ── Success banners ── */}
-        {upgradeDone && (
-          <div className="sub-enter" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 14, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}>
-            <CheckCircle size={18} color="#10b981" />
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#10b981' }}>{t('upgradeDone')}</p>
-            <button onClick={() => setUpgradeDone(false)} aria-label={t('close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#10b981', marginInlineStart: 'auto' }}><X size={14} /></button>
+        {created && <div className="sub-enter"><ManualPaymentConfirmation request={created} palette={palette} onClose={() => setCreated(null)} /></div>}
+        {!created && pendingRequest && (
+          <div className="sub-enter" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 14, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', flexWrap: 'wrap' }}>
+            <Clock size={18} color="#f59e0b" />
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#d97706', flex: '1 1 240px' }}>{tm('pendingUpgrade', { reference: pendingRequest.reference })}</p>
+            {pendingRequest.whatsapp_url && (
+              <button onClick={() => openWhatsApp(pendingRequest.whatsapp_url!)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, border: 'none', background: '#25D366', color: '#073b1c', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>
+                <MessageCircle size={13} />{tm('reopen')}
+              </button>
+            )}
           </div>
         )}
         {downgradeDone && (
@@ -544,11 +420,14 @@ export default function SellerSubscriptionPage() {
         {/* ── Upgrade form (shown when plan selected) ── */}
         {upgradeTarget && (
           <div className="sub-enter">
-            <PaymentForm
-              targetPlan={upgradeTarget}
-              onSuccess={handleUpgradeSuccess}
+            <PlanUpgradeRequest
+              plan={upgradeTarget}
+              planName={planMeta(upgradeTarget).name}
+              priceMonthly={planMeta(upgradeTarget).price}
+              priceYearly={livePlan(upgradeTarget)?.price_yearly ?? null}
+              palette={palette}
+              onCreated={handleRequestCreated}
               onCancel={() => setUpgradeTarget(null)}
-              dark={dark}
             />
           </div>
         )}
@@ -630,6 +509,14 @@ export default function SellerSubscriptionPage() {
                 )
               })}
             </div>
+          </div>
+        )}
+
+        {/* ── Payment requests (WhatsApp) ── */}
+        {requests.length > 0 && (
+          <div className="sub-enter" style={{ background: cardBg, borderRadius: 14, border: `1px solid ${border}`, padding: '14px 18px' }}>
+            <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: '0 0 6px' }}>{tm('historyTitle')}</p>
+            <PaymentRequestHistory requests={requests} palette={palette} onChanged={loadRequests} />
           </div>
         )}
 

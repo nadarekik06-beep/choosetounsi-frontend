@@ -96,20 +96,7 @@ export interface SubscriptionStatus {
   } | null
 }
 
-export interface UpgradePayload {
-  plan:            string
-  billing_period?: 'monthly' | 'yearly'
-  card_number:     string
-  expiry_date:     string
-  cvv:             string
-  cardholder_name: string
-}
-
-export interface UpgradeResult {
-  plan:       string
-  amount:     number
-  payment_id: number
-}
+// Paid plans are requested through lib/paymentRequestsApi.ts (paid via WhatsApp, activated by an admin).
 
 export interface DowngradeResult {
   pending_plan:   string
@@ -236,13 +223,6 @@ export const subscriptionApi = {
     ])
     setLivePlans(plans as Record<string, SellerPlanInfo> | null)
     return res.data ?? null
-  },
-
-  async upgrade(payload: UpgradePayload): Promise<UpgradeResult> {
-    const res = await jsonRequest<{ success: boolean; data: UpgradeResult }>(
-      'POST', '/seller/subscription/upgrade', payload
-    )
-    return res.data
   },
 
   /** Schedule a deferred downgrade — takes effect at end of billing cycle */

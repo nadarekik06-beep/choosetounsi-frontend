@@ -3961,7 +3961,8 @@
           "sandbox": "Test payment (development only)",
           "manual": "D17 / bank transfer",
           "konnect": "Konnect",
-          "flouci": "Flouci"
+          "flouci": "Flouci",
+          "whatsapp": "WhatsApp (D17 / bank transfer)"
         },
         "reference": "Transfer reference",
         "manualHelp": "Send the amount to D17 account {account}, then enter the transfer reference. Your wallet is credited once the transfer is confirmed.",
@@ -4161,5 +4162,46 @@
     "footerOff": "Get a weekly e-mail with products picked for you.",
     "subscribe": "Subscribe",
     "unsubscribe": "Unsubscribe"
+  },
+  "manualPayment": {
+    "whatsappTitle": "Payment via WhatsApp",
+    "whatsapp": "WhatsApp",
+    "howItWorks": "We save your request, then WhatsApp opens with a ready-to-send message. We then contact you for the payment (D17 or bank transfer).",
+    "submitTopUp": "Continue on WhatsApp",
+    "submitUpgrade": "Request this plan via WhatsApp",
+    "confirmTitle": "Request saved",
+    "confirmBody": "Your request <b>{reference}</b> has been saved. Send the WhatsApp message and we will contact you for the payment (D17 or bank transfer).",
+    "confirmHint": "WhatsApp didn’t open, or you closed it? Use the button above.",
+    "reopen": "Reopen WhatsApp",
+    "close": "Close",
+    "back": "Back",
+    "historyTitle": "My payment requests",
+    "empty": "No requests yet.",
+    "cancel": "Cancel",
+    "cancelConfirm": "Cancel request {reference}?",
+    "reason": "Reason: {reason}",
+    "billing": "Billing",
+    "limits": "Between {min} and {max}",
+    "disabled": "Payment via WhatsApp is temporarily unavailable. Try again later or contact support.",
+    "pendingUpgrade": "Request {reference} is pending: send the WhatsApp message, we will activate your plan as soon as the payment is received.",
+    "error": "Something went wrong. Please try again.",
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "type": {
+      "wallet_topup": "Top-up",
+      "plan_upgrade": "Plan change"
+    },
+    "period": {
+      "monthly": "monthly",
+      "yearly": "yearly"
+    },
+    "periodLabel": {
+      "monthly": "Monthly",
+      "yearly": "Yearly"
+    }
   }
 }

@@ -4,11 +4,12 @@
 import { useState, useRef } from 'react'
 import {
   Leaf, Flame, Crown, Check, X, ArrowRight,
-  CreditCard, Lock, CheckCircle, Loader2,
-  BarChart2, Package, AlertCircle, ChevronRight, Shield,
+  CheckCircle, MessageCircle,
+  BarChart2, Package,
 } from 'lucide-react'
-import { subscriptionApi, PLAN_META, ActivePlan } from '@/lib/subscriptionApi'
-import { refreshUser } from '@/lib/auth'
+import { PLAN_META, ActivePlan } from '@/lib/subscriptionApi'
+import type { PaymentRequest } from '@/lib/paymentRequestsApi'
+import { ManualPaymentConfirmation, PlanUpgradeRequest } from '@/app/components/seller/ManualPayment'
 import { useSellerPlans, formatCommission, type SellerPlans } from '@/lib/platformApi'
 import { useTranslations } from 'next-intl'
 import { usePlanPrice } from '@/lib/i18n/usePlanPrice'
@@ -103,18 +104,6 @@ function withLive<T extends { key: 'green' | 'red' | 'black' }>(plan: T, plans: 
 
 type LivePlan = ReturnType<typeof withLive<typeof UPGRADE_PLANS[number]>>
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatCardNumber(value: string): string {
-  return value.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim()
-}
-
-function formatExpiry(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 4)
-  if (digits.length >= 3) return digits.slice(0, 2) + '/' + digits.slice(2)
-  return digits
-}
-
 // ── Current Plan Badge ────────────────────────────────────────────────────────
 
 function CurrentPlanBadge({ plan }: { plan: ActivePlan }) {
@@ -142,256 +131,6 @@ function CurrentPlanBadge({ plan }: { plan: ActivePlan }) {
   )
 }
 
-// ── Payment Form ──────────────────────────────────────────────────────────────
-
-interface PaymentFormProps {
-  selectedPlan: LivePlan
-  onSuccess: (plan: 'red' | 'black') => void
-  onCancel: () => void
-}
-
-function PaymentForm({ selectedPlan, onSuccess, onCancel }: PaymentFormProps) {
-  const t = useTranslations('planUpgrade')
-  const { short } = usePlanPrice()
-  const priceText = selectedPlan.price === null ? '…' : short(selectedPlan.price)
-  const [cardNumber,     setCardNumber]     = useState('')
-  const [expiryDate,     setExpiryDate]     = useState('')
-  const [cvv,            setCvv]            = useState('')
-  const [cardholderName, setCardholderName] = useState('')
-  const [loading,        setLoading]        = useState(false)
-  const [error,          setError]          = useState<string | null>(null)
-  const [fieldErrors,    setFieldErrors]    = useState<Record<string, string>>({})
-
-  const validate = (): boolean => {
-    const errs: Record<string, string> = {}
-    const rawCard = cardNumber.replace(/\s/g, '')
-    if (rawCard.length < 13 || rawCard.length > 19) errs.card_number = t('errors.card')
-    if (!expiryDate.match(/^(0[1-9]|1[0-2])\/\d{2}$/))  errs.expiry_date = t('errors.expiry')
-    if (!cvv.match(/^\d{3,4}$/))                          errs.cvv = t('errors.cvv')
-    if (cardholderName.trim().length < 2)                 errs.cardholder_name = t('errors.name')
-    setFieldErrors(errs)
-    return Object.keys(errs).length === 0
-  }
-
-  const handlePay = async () => {
-  if (!validate()) return
-  setLoading(true)
-  setError(null)
-  try {
-    await subscriptionApi.upgrade({
-      plan:            selectedPlan.key,
-      card_number:     cardNumber.replace(/\s/g, ''),
-      expiry_date:     expiryDate,
-      cvv,
-      cardholder_name: cardholderName.trim(),
-    })
-    // ── CRITICAL FIX ──────────────────────────────────────────────────────
-    // Refresh user session so localStorage gets the new active_plan value.
-    // Without this, the seller layout still reads the stale 'free' plan
-    // from localStorage and never redirects to the red dashboard.
-    await refreshUser()
-    // ─────────────────────────────────────────────────────────────────────
-    onSuccess(selectedPlan.key)
-  } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string; errors?: Record<string, unknown> } } }
-      const msg = e?.response?.data?.message ?? t('errors.failed')
-      setError(msg)
-      const be = e?.response?.data?.errors ?? {}
-      const mapped: Record<string, string> = {}
-      Object.entries(be).forEach(([k, v]) => {
-        mapped[k] = Array.isArray(v) ? (v[0] as string) : String(v)
-      })
-      if (Object.keys(mapped).length) setFieldErrors(mapped)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const inputStyle = (hasError: boolean): React.CSSProperties => ({
-    width: '100%', padding: '13px 16px', borderRadius: 12, boxSizing: 'border-box',
-    border: `1.5px solid ${hasError ? '#dc2626' : '#e5e7eb'}`,
-    fontSize: '0.9rem', outline: 'none', fontFamily: 'Barlow, sans-serif',
-    background: hasError ? '#fef2f2' : 'white', color: '#111',
-    transition: 'border-color 0.15s ease',
-  })
-
-  const labelStyle: React.CSSProperties = {
-    display: 'block', fontSize: '0.78rem', fontWeight: 700,
-    color: '#374151', marginBottom: 6, letterSpacing: '0.02em',
-  }
-
-  const errStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 5,
-    fontSize: '0.72rem', color: '#dc2626', marginTop: 5,
-  }
-
-  return (
-    <div style={{
-      background: 'white', borderRadius: 20,
-      border: `2px solid ${selectedPlan.accentColor}30`,
-      boxShadow: `0 24px 56px ${selectedPlan.accentColor}15, 0 4px 16px rgba(0,0,0,0.06)`,
-      overflow: 'hidden',
-    }}>
-      {/* Header */}
-      <div style={{
-        padding: '20px 24px',
-        background: selectedPlan.dark
-          ? 'linear-gradient(135deg, #0f172a, #1e293b)'
-          : `${selectedPlan.accentColor}0a`,
-        borderBottom: `1px solid ${selectedPlan.accentColor}20`,
-        display: 'flex', alignItems: 'center', gap: 14,
-      }}>
-        <div style={{
-          width: 46, height: 46, borderRadius: 12, flexShrink: 0,
-          background: selectedPlan.dark ? 'rgba(245,158,11,0.15)' : `${selectedPlan.accentColor}18`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <selectedPlan.Icon size={22} color={selectedPlan.accentColor} />
-        </div>
-        <div>
-          <p style={{ margin: 0, fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: selectedPlan.accentColor }}>
-            {t('upgradingTo')}
-          </p>
-          <p style={{ margin: '2px 0 0', fontWeight: 900, fontSize: '1.05rem', color: selectedPlan.dark ? 'white' : '#111' }}>
-            {selectedPlan.name} — {priceText} {t(selectedPlan.priceSub)}
-          </p>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div style={{ padding: '24px' }}>
-
-        {/* Card number */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>{t('cardNumber')}</label>
-          <div style={{ position: 'relative' }}>
-            <input
-              type="text" inputMode="numeric" dir="ltr"
-              placeholder="1234 5678 9012 3456"
-              value={cardNumber}
-              onChange={e => setCardNumber(formatCardNumber(e.target.value))}
-              style={{ ...inputStyle(!!fieldErrors.card_number), paddingInlineStart: 44 }}
-              onFocus={e => { e.currentTarget.style.borderColor = selectedPlan.accentColor }}
-              onBlur={e => { e.currentTarget.style.borderColor = fieldErrors.card_number ? '#dc2626' : '#e5e7eb' }}
-            />
-            <CreditCard size={16} color="#9ca3af" style={{ position: 'absolute', insetInlineStart: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-          </div>
-          {fieldErrors.card_number && <p style={errStyle}><AlertCircle size={11} />{fieldErrors.card_number}</p>}
-        </div>
-
-        {/* Expiry + CVV */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
-          <div>
-            <label style={labelStyle}>{t('expiry')}</label>
-            <input
-              type="text" inputMode="numeric" dir="ltr" placeholder={t('expiryPlaceholder')}
-              value={expiryDate}
-              onChange={e => setExpiryDate(formatExpiry(e.target.value))}
-              style={inputStyle(!!fieldErrors.expiry_date)}
-              onFocus={e => { e.currentTarget.style.borderColor = selectedPlan.accentColor }}
-              onBlur={e => { e.currentTarget.style.borderColor = fieldErrors.expiry_date ? '#dc2626' : '#e5e7eb' }}
-            />
-            {fieldErrors.expiry_date && <p style={errStyle}><AlertCircle size={11} />{fieldErrors.expiry_date}</p>}
-          </div>
-          <div>
-            <label style={labelStyle}>{t('cvv')}</label>
-            <input
-              type="text" inputMode="numeric" dir="ltr" placeholder="123"
-              value={cvv} maxLength={4}
-              onChange={e => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-              style={inputStyle(!!fieldErrors.cvv)}
-              onFocus={e => { e.currentTarget.style.borderColor = selectedPlan.accentColor }}
-              onBlur={e => { e.currentTarget.style.borderColor = fieldErrors.cvv ? '#dc2626' : '#e5e7eb' }}
-            />
-            {fieldErrors.cvv && <p style={errStyle}><AlertCircle size={11} />{fieldErrors.cvv}</p>}
-          </div>
-        </div>
-
-        {/* Cardholder name */}
-        <div style={{ marginBottom: 22 }}>
-          <label style={labelStyle}>{t('cardholder')}</label>
-          <input
-            type="text" placeholder={t('cardholderPlaceholder')}
-            value={cardholderName}
-            onChange={e => setCardholderName(e.target.value)}
-            style={inputStyle(!!fieldErrors.cardholder_name)}
-            onFocus={e => { e.currentTarget.style.borderColor = selectedPlan.accentColor }}
-            onBlur={e => { e.currentTarget.style.borderColor = fieldErrors.cardholder_name ? '#dc2626' : '#e5e7eb' }}
-          />
-          {fieldErrors.cardholder_name && <p style={errStyle}><AlertCircle size={11} />{fieldErrors.cardholder_name}</p>}
-        </div>
-
-        {/* Security note */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '10px 14px', borderRadius: 10, marginBottom: 20,
-          background: 'rgba(25,143,65,0.06)', border: '1px solid rgba(25,143,65,0.2)',
-        }}>
-          <Shield size={13} color="#198f41" />
-          <span style={{ fontSize: '0.72rem', color: '#198f41', fontWeight: 600 }}>
-            {t('secure')}
-          </span>
-        </div>
-
-        {/* Global error */}
-        {error && (
-          <div style={{
-            display: 'flex', alignItems: 'flex-start', gap: 10,
-            padding: '12px 14px', borderRadius: 12, marginBottom: 18,
-            background: '#fef2f2', border: '1px solid #fecaca',
-          }}>
-            <AlertCircle size={15} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
-            <p style={{ margin: 0, fontSize: '0.8rem', color: '#dc2626' }}>{error}</p>
-          </div>
-        )}
-
-        {/* Buttons */}
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            onClick={onCancel}
-            style={{
-              flex: 1, padding: '13px 0', borderRadius: 12,
-              background: 'transparent', border: '1.5px solid #e5e7eb',
-              fontSize: '0.85rem', fontWeight: 700, color: '#6b7280',
-              cursor: 'pointer', fontFamily: 'Barlow, sans-serif',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-          >
-            <span className="rtl-flip" style={{ display: 'inline-block' }}>←</span> {t('back')}
-          </button>
-          <button
-            onClick={handlePay}
-            disabled={loading}
-            style={{
-              flex: 2, padding: '13px 0', borderRadius: 12, border: 'none',
-              background: selectedPlan.dark
-                ? 'linear-gradient(135deg, #f59e0b, #fbbf24)'
-                : `linear-gradient(135deg, ${selectedPlan.accentColor}, ${selectedPlan.accentColor}cc)`,
-              color: selectedPlan.dark ? '#0f172a' : 'white',
-              fontSize: '0.88rem', fontWeight: 800,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontFamily: 'Barlow, sans-serif', letterSpacing: '0.04em',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: `0 6px 20px ${selectedPlan.accentColor}44`,
-              opacity: loading ? 0.75 : 1,
-              transition: 'filter 0.15s ease',
-            }}
-            onMouseEnter={e => { if (!loading) e.currentTarget.style.filter = 'brightness(1.06)' }}
-            onMouseLeave={e => { e.currentTarget.style.filter = 'none' }}
-          >
-            {loading
-              ? <><Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />{t('processing')}</>
-              : <><Lock size={14} />{t('pay', { price: priceText })}</>
-            }
-          </button>
-        </div>
-
-      </div>
-    </div>
-  )
-}
-
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess }: Props) {
@@ -401,8 +140,7 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
   const paymentRef = useRef<HTMLDivElement>(null)
   const livePlans = useSellerPlans()
   const [selectedPlan, setSelectedPlan] = useState<LivePlan | null>(null)
-  const [upgraded,     setUpgraded]     = useState(false)
-  const [newPlan,      setNewPlan]      = useState<'red' | 'black' | null>(null)
+  const [created,      setCreated]      = useState<PaymentRequest | null>(null)
 
   const planHierarchy: Record<ActivePlan, number> = { free: 0, red: 1, black: 2 }
   const currentLevel   = planHierarchy[currentPlan]
@@ -417,13 +155,6 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
     setTimeout(() => {
       paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 80)
-  }
-
-  const handleSuccess = (plan: 'red' | 'black') => {
-    setNewPlan(plan)
-    setUpgraded(true)
-    onUpgradeSuccess(plan)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   // ── Already on highest plan ───────────────────────────────────────────────
@@ -450,66 +181,6 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
           <p style={{ color: '#6b7280', fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
             {t.rich('topBody', { b: (chunks) => <strong style={{ color: '#f59e0b' }}>{chunks}</strong> })}
           </p>
-        </div>
-      </div>
-    )
-  }
-
-  // ── Success screen ────────────────────────────────────────────────────────
-  if (upgraded && newPlan) {
-    const meta = PLAN_META[newPlan]
-    const Icon = newPlan === 'red' ? Flame : Crown
-    return (
-      <div style={{
-        minHeight: '60vh', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', padding: 24,
-        background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)',
-      }}>
-        <div style={{ textAlign: 'center', maxWidth: 440 }}>
-          <div style={{
-            width: 80, height: 80, borderRadius: '50%', margin: '0 auto 24px',
-            background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <CheckCircle size={44} color="#198f41" />
-          </div>
-          <h2 style={{
-            fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900,
-            fontSize: '2.2rem', color: '#111', margin: '0 0 12px', letterSpacing: '-0.02em',
-          }}>
-            {t('successTitle')}
-          </h2>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 10, margin: '0 0 16px',
-            padding: '10px 20px', borderRadius: 999,
-            background: `${meta.color}15`, border: `1.5px solid ${meta.color}35`,
-          }}>
-            <Icon size={18} color={meta.accentColor} />
-            <span style={{ fontWeight: 800, fontSize: '0.95rem', color: meta.accentColor }}>
-              {meta.name} — {label(meta.price)}
-            </span>
-          </div>
-          <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.7, margin: '0 0 28px' }}>
-            {t('successBody')}
-          </p>
-          <a
-            href="/seller/dashboard"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '13px 28px',
-              borderRadius: 14,
-              background: '#0f172a',
-              color: 'white',
-              fontWeight: 800,
-              fontSize: '0.88rem',
-              textDecoration: 'none',
-              fontFamily: 'Barlow, sans-serif',
-              letterSpacing: '0.04em',
-            }}
-          >
-            {t('goToDashboard')} <ChevronRight size={15} />
-          </a>
         </div>
       </div>
     )
@@ -906,18 +577,25 @@ export default function SubscriptionUpgradePage({ currentPlan, onUpgradeSuccess 
                   {t('completeUpgrade')}
                 </h2>
               </div>
-              <PaymentForm
-                selectedPlan={selectedPlan}
-                onSuccess={handleSuccess}
-                onCancel={() => setSelectedPlan(null)}
-              />
+              {created ? (
+                <ManualPaymentConfirmation request={created} onClose={() => { setCreated(null); setSelectedPlan(null) }} />
+              ) : (
+                <PlanUpgradeRequest
+                  plan={selectedPlan.key}
+                  planName={selectedPlan.name}
+                  priceMonthly={selectedPlan.price ?? 0}
+                  priceYearly={livePlans?.[selectedPlan.key]?.price_yearly ?? null}
+                  onCreated={setCreated}
+                  onCancel={() => setSelectedPlan(null)}
+                />
+              )}
             </div>
           ) : (
             <div style={{
               textAlign: 'center', padding: '32px 24px', borderRadius: 16,
               background: 'white', border: '2px dashed #e5e7eb', color: '#9ca3af',
             }}>
-              <CreditCard
+              <MessageCircle
                 size={28}
                 style={{ marginBottom: 10, opacity: 0.35, display: 'block', margin: '0 auto 10px' }}
               />
