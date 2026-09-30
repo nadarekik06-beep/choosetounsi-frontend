@@ -11,6 +11,7 @@ import {
   Bell, CheckCheck, RefreshCw,
   PackagePlus, PackageCheck, PackageX,
   CheckCircle, XCircle, Store, Package, AlertTriangle,
+  Megaphone, PauseCircle, Flag, Gauge, Wallet,
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/Usenotifications';
 import type { AppNotification } from '@/lib/notificationApi';
@@ -46,6 +47,12 @@ function NotifIcon({ icon }: { icon: string }) {
     'x-circle':        <XCircle        className={cls} />,
     'store':           <Store          className={cls} />,
     'alert-triangle':  <AlertTriangle  className={cls} />,  // ← NEW for low-stock
+    // Ad campaigns (App\Notifications\Ads\*)
+    'megaphone':       <Megaphone      className={cls} />,
+    'pause-circle':    <PauseCircle    className={cls} />,
+    'flag':            <Flag           className={cls} />,
+    'gauge':           <Gauge          className={cls} />,
+    'wallet':          <Wallet         className={cls} />,
   };
   return <>{map[icon] ?? <Package className={cls} />}</>;
 }

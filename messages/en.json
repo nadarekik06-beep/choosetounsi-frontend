@@ -3107,194 +3107,6 @@
         "atLeast1": "Must be at least 1."
       }
     },
-    "promote": {
-      "title": "Ads & Boost",
-      "subtitle": "Promote your products across homepage, categories & search",
-      "quotaFree": "{remaining}/{total} free",
-      "analytics": "Analytics",
-      "close": "Close",
-      "pts": "{n} pts",
-      "points": "+{n} points",
-      "clear": "Clear",
-      "clearAll": "Clear all",
-      "searchProducts": "Search products…",
-      "live": "Live",
-      "footerCount": "{products, plural, one {# product} other {# products}} · {active, plural, one {# active sponsorship} other {# active sponsorships}}",
-      "running": "Running ({count})",
-      "runningStats": "{views} views · {clicks} clicks",
-      "until": "until {date}",
-      "stop": "Stop",
-      "popular": "Popular",
-      "free": "FREE",
-      "boostHint": "Priority 1-5 is free. Each point above 5 adds <b>+{amount}</b> to your campaign.",
-      "lowReach": "Low reach",
-      "maxReach": "Max reach",
-      "surchargeLine": "Priority {priority}: +{amount} surcharge ({points, plural, one {# pt} other {# pts}} × {unit})",
-      "finalBoost": "Final boost:",
-      "boostFormula": "(base {base} × {priority}/10)",
-      "activeCount": "{count} active",
-      "regions": "Target Regions",
-      "categories": "Target Categories",
-      "preview": {
-        "title": "Live Preview",
-        "sponsored": "Sponsored",
-        "selectProduct": "Select a product to preview",
-        "productName": "Your product name",
-        "hint": "This is how buyers will see your ad"
-      },
-      "errors": {
-        "activate": "Failed to activate sponsorship.",
-        "cancel": "Cancel failed."
-      },
-      "successBanner": {
-        "title": "Sponsorship activated!",
-        "boost": "Boost:",
-        "expires": "Expires:",
-        "quotaUsed": "Free quota used ({left} left this week)",
-        "charged": "{amount} charged"
-      },
-      "steps": {
-        "product": "Select Product",
-        "duration": "Campaign Duration",
-        "boost": "Visibility Boost",
-        "audience": "Audience Targeting"
-      },
-      "empty": {
-        "noMatch": "No products match your search",
-        "none": "No approved products found",
-        "hint": "Make sure your products are approved by admin."
-      },
-      "gender": {
-        "title": "Gender",
-        "all": "All",
-        "male": "Men",
-        "female": "Women",
-        "unisex": "Unisex"
-      },
-      "budget": {
-        "title": "Target Budget Range",
-        "min": "Min",
-        "max": "Max",
-        "hint": "Users whose budget is in this range"
-      },
-      "summary": {
-        "product": "Product",
-        "duration": "Duration",
-        "boost": "Boost",
-        "baseRate": "Base rate",
-        "days": "{count, plural, one {# day} other {# days}}",
-        "freeQuota": "FREE (quota)",
-        "perDay": "{rate}/day",
-        "surcharge": "Boost surcharge",
-        "total": "Total"
-      },
-      "cta": {
-        "activating": "Activating…",
-        "already": "Already Sponsored",
-        "selectFirst": "Select a product first",
-        "pay": "Pay & Activate — {amount}",
-        "free": "Activate for Free",
-        "secure": "Secure payment · SSL encrypted"
-      },
-      "how": {
-        "title": "How it works",
-        "s1": "Pick a product from the list",
-        "s2": "Set duration & boost level",
-        "s3": "Fine-tune your audience targeting",
-        "s4": "Pay (if needed) & go live instantly"
-      },
-      "pay": {
-        "aria": "Card Payment",
-        "title": "Secure Payment",
-        "ssl": "SSL encrypted",
-        "sandbox": "⚡ SANDBOX MODE — Card pre-filled with test data. No real charge.",
-        "summary": "Order Summary",
-        "base": "Base ({rate}/day × {days}d)",
-        "surcharge": "Boost surcharge (priority > 5)",
-        "totalDue": "Total due",
-        "cardNumber": "Card Number",
-        "hide": "Hide",
-        "show": "Show",
-        "month": "Month",
-        "year": "Year",
-        "mm": "MM",
-        "yy": "YY",
-        "holder": "Cardholder Name",
-        "holderPlaceholder": "FIRST LAST",
-        "confirmAmount": "Confirm payment of {amount}",
-        "cardEnding": "Card ending in •••• {last4}",
-        "secureNote": "Your card data is encrypted and never stored on our servers.",
-        "processing": "Processing…",
-        "confirmPay": "Confirm & Pay {amount}",
-        "review": "Review Payment",
-        "success": "Payment successful!",
-        "activating": "Activating your sponsorship…",
-        "errors": {
-          "cardLength": "Card number must be 16 digits",
-          "cardInvalid": "Invalid card number",
-          "month": "Invalid month (MM)",
-          "year": "Invalid year (YY)",
-          "expired": "Card has expired",
-          "cvv": "CVV must be 3-4 digits",
-          "holder": "Cardholder name required",
-          "failed": "Payment failed. Please try again."
-        }
-      },
-      "durations": {
-        "d3": {
-          "label": "3 Days",
-          "sub": "Quick test"
-        },
-        "d7": {
-          "label": "1 Week",
-          "sub": "Most popular"
-        },
-        "d14": {
-          "label": "2 Weeks",
-          "sub": "Best value"
-        },
-        "d30": {
-          "label": "1 Month",
-          "sub": "Max exposure"
-        }
-      }
-    },
-    "promoteAnalytics": {
-      "back": "Back",
-      "title": "Sponsorship Analytics",
-      "loading": "Loading…",
-      "empty": "No sponsorships found.",
-      "free": "FREE",
-      "stats": {
-        "impressions": "Total Impressions",
-        "clicks": "Total Clicks",
-        "conversions": "Conversions",
-        "ctr": "Avg CTR"
-      },
-      "tabs": {
-        "all": "All",
-        "active": "Active",
-        "expired": "Expired"
-      },
-      "status": {
-        "active": "Active",
-        "expired": "Expired",
-        "cancelled": "Cancelled",
-        "pending": "Pending"
-      },
-      "cols": {
-        "product": "Product",
-        "plan": "Plan",
-        "status": "Status",
-        "boost": "Boost",
-        "period": "Period",
-        "impressions": "Impressions",
-        "clicks": "Clicks",
-        "ctr": "CTR",
-        "conversions": "Conversions",
-        "cost": "Cost"
-      }
-    },
     "revenueGoals": {
       "title": "Revenue Goals",
       "subtitle": "Set monthly targets, track your pace, build streaks",
@@ -3936,6 +3748,240 @@
       "loadFailed": "Couldn't load this order.",
       "notFound": "This order was not found.",
       "retry": "Try again"
+    },
+    "ads": {
+      "title": "Ads",
+      "subtitle": "Pay only for clicks. Your ads are shown to shoppers they're relevant to.",
+      "newCampaign": "New campaign",
+      "loading": "Loading…",
+      "retry": "Retry",
+      "error": "Something went wrong. Please try again.",
+      "wallet": {
+        "title": "Ad wallet",
+        "balance": "Balance",
+        "credit": "Free credit",
+        "creditExpires": "expires {date}",
+        "available": "Available",
+        "topUp": "Top up",
+        "history": "History",
+        "monthlyCredit": "Your plan includes {amount} of free ad credit every month, spent before your balance."
+      },
+      "kpis": {
+        "title": "Last 30 days",
+        "spend": "Spend",
+        "impressions": "Impressions",
+        "clicks": "Clicks",
+        "ctr": "Click rate",
+        "orders": "Orders",
+        "revenue": "Sales",
+        "roas": "Return on ad spend",
+        "costPerOrder": "Cost per order"
+      },
+      "campaigns": {
+        "title": "Campaigns",
+        "empty": "No campaigns yet. Boost a product to reach shoppers who are looking for it.",
+        "product": "Product",
+        "status": "Status",
+        "budget": "Daily budget",
+        "today": "Today",
+        "clicks": "Clicks",
+        "orders": "Orders",
+        "roas": "ROAS",
+        "view": "Open",
+        "perDay": "{amount}/day",
+        "legacy": "Prepaid (old system)"
+      },
+      "status": {
+        "draft": "Draft",
+        "active": "Running",
+        "paused": "Paused",
+        "completed": "Finished",
+        "cancelled": "Stopped",
+        "rejected": "Rejected",
+        "expired": "Ended"
+      },
+      "pauseReason": {
+        "manual": "Paused by you",
+        "budget_exhausted_today": "Today's budget spent — resumes tomorrow",
+        "wallet_empty": "Wallet empty — top up to resume",
+        "out_of_stock": "Out of stock — resumes after restock",
+        "plan_downgrade": "Your plan no longer includes ads",
+        "product_inactive": "Product inactive",
+        "admin": "Paused by Choose'Tounsi"
+      },
+      "suggestions": {
+        "title": "Worth boosting",
+        "subtitle": "Products selling faster than usual",
+        "boost": "Boost",
+        "boosted": "Boosted",
+        "est": "≈ +{amount}/week"
+      },
+      "wizard": {
+        "title": "New campaign",
+        "back": "Back",
+        "next": "Next",
+        "cancel": "Cancel",
+        "steps": {
+          "product": "Product",
+          "readiness": "Readiness",
+          "budget": "Budget",
+          "audience": "Audience",
+          "placements": "Placements",
+          "review": "Review"
+        },
+        "product": {
+          "search": "Search your products…",
+          "empty": "No approved, active products yet.",
+          "hasCampaign": "Already boosted"
+        },
+        "readiness": {
+          "score": "Boost readiness",
+          "passes": "Ready to boost",
+          "blocked": "Fix these before boosting",
+          "tipsTitle": "Tips to turn clicks into orders",
+          "recheck": "Check again",
+          "threshold": "Minimum {threshold}/100"
+        },
+        "budget": {
+          "daily": "Daily budget",
+          "dailyHint": "Minimum {min}. You pay per click, never more than this per day.",
+          "duration": "Duration",
+          "untilStopped": "Until I stop it",
+          "days": "{count} days",
+          "endDate": "Ends on {date}",
+          "maxCpc": "Maximum cost per click",
+          "maxCpcHint": "Suggested {suggested} (minimum {min}). You usually pay less: just enough to beat the next ad.",
+          "advanced": "Advanced",
+          "discount": "Your plan saves {pct}% on every click",
+          "totalBudget": "Total budget (optional)",
+          "totalHint": "The campaign ends when it has spent this much."
+        },
+        "audience": {
+          "auto": "Automatic (recommended)",
+          "autoHint": "We show your ad to shoppers interested in this kind of product.",
+          "manual": "Choose the audience",
+          "warning": "Narrow targeting reaches fewer shoppers.",
+          "gender": "Gender",
+          "genders": {
+            "any": "Everyone",
+            "male": "Men",
+            "female": "Women",
+            "unisex": "Unisex"
+          },
+          "wilayas": "Wilayas",
+          "categories": "Interested in",
+          "priceRange": "Shopper budget (DT)",
+          "priceMin": "Min",
+          "priceMax": "Max"
+        },
+        "placements": {
+          "all": "Everywhere it's relevant (recommended)",
+          "some": "Only these placements"
+        },
+        "review": {
+          "forecast": "Estimated per day",
+          "impressions": "Views",
+          "clicks": "Clicks",
+          "orders": "Orders",
+          "spend": "Spend",
+          "budgetLimited": "Your budget limits your reach — a bigger budget would bring more clicks.",
+          "basedOn": "Based on {source} · expected cost per click {cpc}",
+          "sourceHistory": "recent campaigns in this category",
+          "sourceTraffic": "shopper activity in this category",
+          "noUpfront": "Nothing is charged now: each click is paid from your ad wallet.",
+          "needWallet": "Your wallet needs at least one day of budget ({amount}).",
+          "topUpFirst": "Top up the wallet",
+          "launch": "Launch campaign",
+          "launching": "Launching…",
+          "launched": "Your campaign is live."
+        }
+      },
+      "placementNames": {
+        "home_row": "Homepage",
+        "home_inline": "Homepage rows",
+        "search_top": "Search results",
+        "category_top": "Category pages",
+        "product_similar": "Product pages",
+        "cart_cross_sell": "Cart",
+        "entry_popup": "Welcome popup",
+        "email_digest": "Weekly e-mail"
+      },
+      "codes": {
+        "not_listed": "The product isn't approved and active.",
+        "out_of_stock": "It's out of stock.",
+        "no_image": "Add at least one photo.",
+        "price_far_above_similar": "It costs far more than similar products (median {median} DT).",
+        "low_stock": "Only {stock} left — restock so the ad doesn't run dry.",
+        "add_images": "Add photos ({count} of {target}).",
+        "improve_description": "Write a fuller description ({length}/{target} characters) — try the AI generator.",
+        "price_above_similar": "A bit pricier than similar products (median {median} DT) — a small discount helps.",
+        "low_rating": "Rated {rating}/5 — answer reviews and fix recurring issues.",
+        "no_reach": "No views yet — raise the max cost per click or widen the audience.",
+        "low_ctr": "Few shoppers click — try better photos, a clearer title or a sharper price.",
+        "low_roas": "It spends more than it earns so far (ROAS {roas}) — lower the max CPC, improve the listing or add a discount.",
+        "placement_no_orders": "{clicks} clicks without an order in this placement — we now show it less there."
+      },
+      "actions": {
+        "edit_product": "Edit product",
+        "edit_images": "Add photos",
+        "ai_description": "AI description",
+        "restock": "Restock",
+        "discount": "Create a discount",
+        "reviews": "See reviews"
+      },
+      "detail": {
+        "back": "All campaigns",
+        "chart": "Last 30 days",
+        "placements": "By placement",
+        "noData": "No results yet — they appear once shoppers see your ad.",
+        "tips": "Tips",
+        "noTips": "Nothing to fix — the campaign is doing fine.",
+        "rejected": "Rejected: {reason}",
+        "adCopy": "Ad line",
+        "endsOn": "Ends {date}",
+        "noEnd": "Runs until you stop it",
+        "creditPart": "incl. {amount} free credit",
+        "edit": "Edit",
+        "save": "Save",
+        "discard": "Discard",
+        "pause": "Pause",
+        "resume": "Resume",
+        "stop": "Stop campaign",
+        "confirmStop": "Stop this campaign for good? Nothing is refunded because nothing was charged in advance — you only paid for clicks.",
+        "saved": "Saved."
+      },
+      "walletPage": {
+        "title": "Ad wallet",
+        "topUp": "Top up",
+        "amount": "Amount (DT)",
+        "min": "Minimum {min}",
+        "method": "Payment method",
+        "methods": {
+          "sandbox": "Test payment (development only)",
+          "manual": "D17 / bank transfer",
+          "konnect": "Konnect",
+          "flouci": "Flouci"
+        },
+        "reference": "Transfer reference",
+        "manualHelp": "Send the amount to D17 account {account}, then enter the transfer reference. Your wallet is credited once the transfer is confirmed.",
+        "pay": "Top up",
+        "paid": "{amount} added to your wallet.",
+        "pending": "Request received — your wallet is credited once the transfer is confirmed.",
+        "history": "History",
+        "pendingTopUps": "Pending top-ups",
+        "empty": "No transactions yet.",
+        "noMethod": "No payment method is available right now.",
+        "clicks": "{count} clicks · campaign #{id}",
+        "more": "Load more",
+        "types": {
+          "top_up": "Top-up",
+          "monthly_credit": "Monthly credit",
+          "click_charge": "Clicks",
+          "refund": "Refund",
+          "admin_adjust": "Adjustment",
+          "credit_expiry": "Credit expired"
+        }
+      }
     }
   },
   "invoice": {

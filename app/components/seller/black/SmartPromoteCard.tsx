@@ -13,6 +13,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Zap, TrendingUp, Star, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 import { blackPepperApi, type AutoPromoteSuggestion } from '@/lib/blackPepperApi';
+import { sellerAdsApi } from '@/lib/sellerAdsApi';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 
@@ -93,7 +94,7 @@ function SuggestionCard({
 
         {/* CTA */}
         {/* CTA */}
-<a href="/seller/promote" style={{
+<a href={`/seller/promote/new?product_id=${item.product_id}`} style={{
   width: '100%', padding: '11px 0', borderRadius: 11,
   background: 'linear-gradient(135deg,' + GOLD + ',' + GOLD2 + ')',
   color: '#000', fontSize: 13, fontWeight: 900,
@@ -115,7 +116,15 @@ export default function SmartPromoteCard({ dark }: { dark: boolean }) {
   const [error,      setError]      = useState(false);
   const [open,       setOpen]       = useState(false);
   const t = useTranslations('seller.smartPromote');
+  const tAds = useTranslations('seller.ads');
   const { price } = useFormat();
+  // Black Pepper's monthly ad credit (from the plan; spent before the paid balance).
+  const [credit, setCredit] = useState<{ monthly: number; left: number } | null>(null);
+  useEffect(() => {
+    Promise.all([sellerAdsApi.config(), sellerAdsApi.wallet()])
+      .then(([c, w]) => setCredit({ monthly: c.monthly_credit, left: w.credit_balance }))
+      .catch(() => setCredit(null));
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true); setError(false);
@@ -166,6 +175,11 @@ export default function SmartPromoteCard({ dark }: { dark: boolean }) {
               ? t('subtitle', { count: unspon.length, amount: price(totalBoost, { maximumFractionDigits: 0 }) })
               : t('allSponsored')}
           </p>
+          {credit && credit.monthly > 0 && (
+            <p style={{ fontSize: 11, color: GOLD, margin: '3px 0 0', fontWeight: 700 }}>
+              {tAds('wallet.credit')}: {price(credit.left)} · {tAds('wallet.monthlyCredit', { amount: price(credit.monthly) })}
+            </p>
+          )}
         </div>
         <div style={{ color: textMuted, flexShrink: 0 }}>
           {open ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
