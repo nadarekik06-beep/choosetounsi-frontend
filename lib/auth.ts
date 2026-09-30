@@ -24,6 +24,8 @@ export interface RegisterCredentials {
   password: string;
   password_confirmation: string;
   role?: 'client' | 'seller';
+  /** Marketing e-mails are opt-in (unchecked by default). */
+  marketing_opt_in?: boolean;
 }
 
 export interface LoginResponse {

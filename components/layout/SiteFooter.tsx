@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { LanguageInlineSelect } from '@/components/i18n/LanguageSwitcher'
+import MarketingConsentToggle from '@/components/marketing/MarketingConsentToggle'
 
 // Pages with their own chrome (dashboards, printable documents, auth callbacks) skip the footer.
 const HIDDEN_PREFIXES = ['/seller', '/invoice', '/settlement', '/auth/google', '/onboarding']
@@ -50,6 +51,8 @@ export default function SiteFooter() {
         <div className="sf-col">
           <p className="sf-h">{t('language')}</p>
           <LanguageInlineSelect tone="dark" />
+          {/* Newsletter / recommendations e-mail consent (signed-in shoppers only) */}
+          <div style={{ marginTop: 14 }}><MarketingConsentToggle variant="footer" /></div>
         </div>
       </div>
 

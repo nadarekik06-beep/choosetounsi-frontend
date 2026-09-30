@@ -794,7 +794,8 @@
       "signIn": "Sign in",
       "panelTitle": "Join",
       "perk1": "Shop local vendors",
-      "perk2": "Exclusive deals"
+      "perk2": "Exclusive deals",
+      "marketingOptIn": "Send me personalised picks and deals by e-mail (you can unsubscribe at any time)."
     },
     "forgot": {
       "metaTitle": "Forgot password",
@@ -4150,5 +4151,15 @@
       "close": "Close",
       "label": "Sponsored product"
     }
+  },
+  "marketingConsent": {
+    "title": "Recommendation e-mails",
+    "description": "A weekly e-mail with products picked for you, and the odd deal on something you were looking at. Sponsored products are always labelled.",
+    "saved": "Saved.",
+    "footerTitle": "Picked for you, by e-mail",
+    "footerOn": "You receive our weekly picks.",
+    "footerOff": "Get a weekly e-mail with products picked for you.",
+    "subscribe": "Subscribe",
+    "unsubscribe": "Unsubscribe"
   }
 }

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getUser, isAuthenticated, logout, AuthUser } from '@/lib/auth';
+import MarketingConsentToggle from '@/components/marketing/MarketingConsentToggle';
 import { useTranslations } from 'next-intl';
 
 /* ── palette ──────────────────────────────────────────────── */
@@ -474,6 +475,11 @@ export default function ProfilePage() {
               ))}
             </div>
           ))}
+
+          {/* Recommendation / marketing e-mails (opt-in) */}
+          <div className={`fade-in ${visible ? 'show' : ''}`}>
+            <MarketingConsentToggle variant="card" />
+          </div>
 
         </div>
       </div>

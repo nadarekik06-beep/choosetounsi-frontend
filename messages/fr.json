@@ -794,7 +794,8 @@
       "signIn": "Se connecter",
       "panelTitle": "Rejoignez",
       "perk1": "Achetez auprès de vendeurs locaux",
-      "perk2": "Des offres exclusives"
+      "perk2": "Des offres exclusives",
+      "marketingOptIn": "Recevoir par e-mail des sélections et offres personnalisées (désabonnement possible à tout moment)."
     },
     "forgot": {
       "metaTitle": "Mot de passe oublié",
@@ -4150,5 +4151,15 @@
       "close": "Fermer",
       "label": "Produit sponsorisé"
     }
+  },
+  "marketingConsent": {
+    "title": "E-mails de recommandations",
+    "description": "Un e-mail hebdomadaire avec des produits sélectionnés pour vous, et parfois une offre sur un article que vous regardiez. Les produits sponsorisés sont toujours signalés.",
+    "saved": "Enregistré.",
+    "footerTitle": "Sélectionné pour vous, par e-mail",
+    "footerOn": "Vous recevez notre sélection hebdomadaire.",
+    "footerOff": "Recevez chaque semaine un e-mail avec des produits choisis pour vous.",
+    "subscribe": "S’abonner",
+    "unsubscribe": "Se désabonner"
   }
 }

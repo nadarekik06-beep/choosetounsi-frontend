@@ -35,6 +35,7 @@ function RegisterForm() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error,         setError]         = useState('');
   const [checked,       setChecked]       = useState(false);
+  const [marketing,     setMarketing]     = useState(false);   // opt-in, unchecked by default
 
 useEffect(() => {
   // Always clear any stale session when landing on register page.
@@ -60,6 +61,7 @@ useEffect(() => {
         email: email.trim(),
         password,
         password_confirmation: confirm,
+        marketing_opt_in: marketing,
       });
       // Server no longer returns a token — redirect to verification page
       router.push(`/auth/verify-email?email=${encodeURIComponent(result.email)}`);
@@ -169,6 +171,12 @@ useEffect(() => {
                 )}
               </button>
             </div>
+
+            <label className="flex items-start gap-2.5 text-xs text-gray-500 leading-relaxed cursor-pointer select-none">
+              <input type="checkbox" checked={marketing} onChange={e => setMarketing(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-[#E63946] shrink-0" />
+              <span>{t('register.marketingOptIn')}</span>
+            </label>
 
             <button type="submit" disabled={loading || googleLoading}
               className="w-full py-3.5 mt-2 rounded-2xl bg-[#E63946] hover:bg-[#c1121f] active:scale-[0.98] text-white text-sm font-bold tracking-wide transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-500/25">
