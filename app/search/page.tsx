@@ -4,13 +4,13 @@ import { useEffect, useState, useRef, Suspense, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useFormat } from "@/lib/i18n/useFormat";
 import { fetchAds, fetchAdsConfig, withAdSlots, type AdCard } from "@/lib/adsApi";
 import SponsoredCard from "@/components/ads/SponsoredCard";
+import ProductPrice, { ProductPromoOverlay, promoPricing, type PricedProduct } from "@/app/components/promotions/ProductPrice";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-interface SearchProduct {
+interface SearchProduct extends PricedProduct {
   id:               number;
   name:             string;
   slug:             string;
@@ -152,7 +152,6 @@ function InlineSearchBar({ initialQuery }: { initialQuery: string }) {
 function ProductCard({ product, rank }: { product: SearchProduct; rank?: number }) {
   const t   = useTranslations("search");
   const tc  = useTranslations("common");
-  const fmt = useFormat();
   const [imgErr, setImgErr] = useState(false);
   const imageUrl = product.primary_image && !imgErr ? product.primary_image : null;
   const label    = product.subcategory_name ?? product.category_name;
@@ -164,7 +163,8 @@ function ProductCard({ product, rank }: { product: SearchProduct; rank?: number 
             ? <img src={imageUrl} alt={product.name} className="pcard-img" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", transition:"transform 0.4s ease" }} onError={() => setImgErr(true)}/>
             : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center" }}><PlaceholderImg/></div>
           }
-          <div style={{ position:"absolute", top:10, insetInlineStart:10, display:"flex", flexDirection:"column", gap:5 }}>
+          <ProductPromoOverlay product={product}/>
+          <div style={{ position:"absolute", top:10, insetInlineEnd:10, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:5 }}>
             {product.featured && <span style={{ background:"#dc2626", color:"#fff", fontSize:9, fontWeight:800, padding:"3px 8px", borderRadius:999, letterSpacing:"0.06em", textTransform:"uppercase" }}>{t("featured")}</span>}
             {rank && rank <= 3 && <span style={{ background:"#0f172a", color:"#fbbf24", fontSize:9, fontWeight:800, padding:"3px 8px", borderRadius:999, letterSpacing:"0.06em", textTransform:"uppercase" }}>{t("topN", { n: rank })}</span>}
           </div>
@@ -180,9 +180,7 @@ function ProductCard({ product, rank }: { product: SearchProduct; rank?: number 
             {product.name}
           </h3>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-            <span style={{ fontSize:16, fontWeight:900, color:"#dc2626", letterSpacing:"-0.02em" }}>
-              {fmt.price(product.price, { bare: true })} <span style={{ fontSize:11, fontWeight:700 }}>{fmt.currency}</span>
-            </span>
+            <ProductPrice product={product} size="md"/>
             <span style={{ fontSize:10, fontWeight:700, color: product.stock===0 ? "#94a3b8":"#16a34a", background: product.stock===0 ? "#f1f5f9":"rgba(22,163,74,0.08)", padding:"2px 8px", borderRadius:999 }}>
               {product.stock === 0 ? tc("outOfStock") : tc("inStock")}
             </span>
@@ -279,8 +277,9 @@ function EmptyState({ isImage, query }: { isImage: boolean; query: string }) {
 type SortKey = "relevance" | "price_asc" | "price_desc" | "popular";
 function applySort(products: SearchProduct[], sort: SortKey): SearchProduct[] {
   const c = [...products];
-  if (sort === "price_asc")  return c.sort((a,b) => a.price - b.price);
-  if (sort === "price_desc") return c.sort((a,b) => b.price - a.price);
+  const pay = (p: SearchProduct) => promoPricing(p).final;
+  if (sort === "price_asc")  return c.sort((a,b) => pay(a) - pay(b));
+  if (sort === "price_desc") return c.sort((a,b) => pay(b) - pay(a));
   if (sort === "popular")    return c.sort((a,b) => b.views - a.views);
   return c;
 }
@@ -344,6 +343,7 @@ function SearchPageContent() {
       .then(r => r.ok ? r.json() : null).then(data => {
         if (!data) return;
         setTrendingNow((data.data?.data ?? []).map((p: any) => ({
+          ...p,
           id:p.id, name:p.name, slug:p.slug, description:p.description??null,
           price:Number(p.price), stock:p.stock??0, views:p.views??0, featured:p.featured??false,
           category_name:p.category?.name??null, category_slug:p.category?.slug??null,
