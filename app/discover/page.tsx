@@ -56,7 +56,7 @@ interface OrganicProduct {
   category?: { name: string; slug: string };
   seller?: { name: string };
   variant_images?: string[]   // ← ADD
-
+  variants?: { id: number; stock: number }[]   // active variants (id + stock) from /api/products
 }
 
 type FeedItem = (OrganicProduct | AdCard) & {
@@ -268,7 +268,8 @@ function ProductCard({ item, index }: { item: FeedItem; index: number }) {
   const t   = useTranslations('discover');
   const tp  = useTranslations('productCard');
   const [imgErr, setImgErr]   = useState(false);
-  const { isFavorited, toggleFavorite } = useCart();
+  const { isFavorited, toggleFavorite, addToCart } = useCart();
+  const [adding, setAdding] = useState(false);
   const wished = isFavorited(item.id);
   const [hovered, setHovered] = useState(false);
   const [added, setAdded]     = useState(false);
@@ -301,10 +302,24 @@ const allImages = useMemo(() => {                     // ← NEW
     toggleFavorite(item.id);
   };
 
-  const handleAdd = (e: React.MouseEvent) => {
+  // Same rule as the category card: several variants → pick one on the product page
+  const handleAdd = async (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1800);
+    if (adding || (item as OrganicProduct).stock <= 0) return;
+    const variants = (item as OrganicProduct).variants ?? [];
+    if (variants.length > 1) {
+      window.location.href = `/products/${item.slug}`;
+      return;
+    }
+    setAdding(true);
+    try {
+      if (await addToCart(item.id, 1, variants.length === 1 ? variants[0].id : null)) {
+        setAdded(true);
+        setTimeout(() => setAdded(false), 1800);
+      }
+    } finally {
+      setAdding(false);
+    }
   };
 
 

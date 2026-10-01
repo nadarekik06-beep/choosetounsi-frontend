@@ -20,7 +20,7 @@ interface CartContextValue {
   subtotal: number
   cartLoading: boolean
   loadingItemId: number | null
-  addToCart: (productId: number, qty?: number, variantId?: number | null) => Promise<void>
+  addToCart: (productId: number, qty?: number, variantId?: number | null) => Promise<boolean>   // true once in the cart
   // NEW: add a pack bundle as a single cart entry
   addPackToCart: (packId: number, selections: PackSelection[]) => Promise<void>
   updateItem: (cartItemId: number, qty: number) => Promise<void>
@@ -122,17 +122,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     productId: number,
     qty = 1,
     variantId?: number | null,
-  ) => {
+  ): Promise<boolean> => {
     const lockKey = `product-${productId}-${variantId ?? 'base'}`
-    if (isLocked(lockKey)) return
+    if (isLocked(lockKey)) return false
     lock(lockKey)
     setCartLoading(true)
     try {
       await cartApi.add(productId, qty, variantId)
       await refreshCart()
       openDrawer()
+      return true
     } catch (err: any) {
       showFlash(err.message ?? t('addFailed'))
+      return false
     } finally {
       unlock(lockKey)
       setCartLoading(false)
