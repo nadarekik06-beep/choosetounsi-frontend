@@ -11,6 +11,8 @@
  *   <ProductPromoOverlay product={p} />   inside the image box (position: relative):
  *                                          -X% + FLASH/PROMO badges top-left,
  *                                          flash countdown along the bottom edge
+ *   <ProductPromoBadges product={p} inline />  the badges alone, for a card that
+ *                                          already has its own badge column
  *   <ProductPrice product={p} />          final price in red + crossed-out original
  *
  * Badges and colours match the /deals cards.
@@ -67,6 +69,7 @@ const SIZES = {
   sm: { price: 13,   orig: 9.5 },
   md: { price: 14.5, orig: 11 },
   lg: { price: 22,   orig: 14 },
+  xl: { price: 32,   orig: 18 },   // product detail page
 }
 
 export default function ProductPrice({ product, size = 'sm', className, style }: {
@@ -100,17 +103,18 @@ const BADGE: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 3, color: '#fff', lineHeight: 1.4,
 }
 
-/** -X% and FLASH / PROMO badges, top-left of the image. */
-export function ProductPromoBadges({ product, style }: { product: PricedProduct; style?: React.CSSProperties }) {
+/** -X% and FLASH / PROMO badges: top-left of the image, or `inline` in a caller's badge column. */
+export function ProductPromoBadges({ product, inline = false, style }: {
+  product: PricedProduct
+  inline?: boolean
+  style?: React.CSSProperties
+}) {
   const t = useTranslations('deals')
   const { hasDiscount, percent, isFlash } = promoPricing(product)
   if (!hasDiscount) return null
 
-  return (
-    <div style={{
-      position: 'absolute', top: 8, insetInlineStart: 8, zIndex: 5,
-      display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, pointerEvents: 'none', ...style,
-    }}>
+  const badges = (
+    <>
       {percent > 0 && (
         <span style={{ ...BADGE, fontSize: 9, padding: '3px 7px', background: isFlash ? '#db142e' : '#059669' }}>
           -{percent}%
@@ -126,16 +130,33 @@ export function ProductPromoBadges({ product, style }: { product: PricedProduct;
           🏷️ {t('discountBadge')}
         </span>
       )}
+    </>
+  )
+  if (inline) return badges
+
+  return (
+    <div style={{
+      position: 'absolute', top: 8, insetInlineStart: 8, zIndex: 5,
+      display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, pointerEvents: 'none', ...style,
+    }}>
+      {badges}
     </div>
   )
 }
 
-/** Badges + flash countdown, for a `position: relative; overflow: hidden` image box. */
-export function ProductPromoOverlay({ product, badgeStyle }: { product: PricedProduct; badgeStyle?: React.CSSProperties }) {
+/**
+ * Badges + flash countdown, for a `position: relative; overflow: hidden` image box.
+ * badges={false}: countdown only (the card shows <ProductPromoBadges inline /> itself).
+ */
+export function ProductPromoOverlay({ product, badges = true, badgeStyle }: {
+  product: PricedProduct
+  badges?: boolean
+  badgeStyle?: React.CSSProperties
+}) {
   const { isFlash, endsAt } = promoPricing(product)
   return (
     <>
-      <ProductPromoBadges product={product} style={badgeStyle} />
+      {badges && <ProductPromoBadges product={product} style={badgeStyle} />}
       {isFlash && <FlashCountdownBadge promotion={{ is_flash_sale: true, ends_at: endsAt }} />}
     </>
   )

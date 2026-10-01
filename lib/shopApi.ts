@@ -7,6 +7,7 @@
  */
 
 import { fallbackError } from '@/lib/i18n/clientLocale'
+import type { PricedProduct } from '@/app/components/promotions/ProductPrice'
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 
 function getToken(): string | null {
@@ -80,7 +81,11 @@ export interface CartItem {
   name: string
   slug: string
   sku: string | null
-  price: number
+  price: number                 // unit price after promotion (what checkout charges)
+  original_price?: number       // crossed-out reference price when discounted
+  discount_percent?: number
+  promo_type?: 'flash_sale' | 'promotion' | null
+  promotion?: { is_flash_sale?: boolean; ends_at?: string | null } | null
   quantity: number
   line_total: number
   stock: number
@@ -110,7 +115,8 @@ export interface CartResponse {
 
 // ─── Favorites types ──────────────────────────────────────────────────────────
 
-export interface FavoriteItem {
+/** A favorite carries the server's promotion pricing block (see PromotionService). */
+export interface FavoriteItem extends PricedProduct {
   id: number
   product_id: number | null
   variant_id: number | null

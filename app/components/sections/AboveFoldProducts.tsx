@@ -5,8 +5,7 @@ import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
 import { isAuthenticated } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
-import PriceDisplay from '@/app/components/promotions/PriceDisplay'
-import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
+import ProductPrice, { ProductPromoOverlay, type PricedProduct } from '@/app/components/promotions/ProductPrice'
 import { useTranslations } from 'next-intl'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
@@ -23,7 +22,7 @@ interface ActivePromotion {
   is_flash_sale: boolean
 }
 
-interface Product {
+interface Product extends PricedProduct {
   id: number
   name: string
   slug: string
@@ -104,14 +103,8 @@ function CompactProductCard({ product }: { product: Product }) {
           ? <img src={currentImage} alt={product.name} className="cpc-img" onError={() => setImgErr(true)} />
           : <div className="cpc-img-placeholder">🛍️</div>
         }
-        {/* rest unchanged */}
-        {product.promotion && product.effective_price != null &&
-          Number(product.effective_price) < Number(product.original_price ?? product.price) && (
-          <span className="cpc-discount">
-            -{Math.round(((Number(product.original_price ?? product.price) - Number(product.effective_price)) / Number(product.original_price ?? product.price)) * 100)}%
-          </span>
-        )}
-        <FlashCountdownBadge promotion={product.promotion} />
+        {/* -X% + FLASH / PROMO + flash countdown, same as /deals */}
+        <ProductPromoOverlay product={product} />
         {outOfStock && <div className="cpc-sold-overlay"><span>{t('soldOut')}</span></div>}
         <div className="cpc-hover-actions">
           <button className="cpc-btn" onClick={handleFav} title={t('wishlist')} aria-label={t('wishlist')} aria-pressed={favorited}>
@@ -129,7 +122,7 @@ function CompactProductCard({ product }: { product: Product }) {
       </div>
       <div className="cpc-info">
         <p className="cpc-name">{product.name}</p>
-        <PriceDisplay price={product.original_price ?? product.price} effectivePrice={product.effective_price} promotion={product.promotion} size="sm" />
+        <ProductPrice product={product} />
       </div>
     </Link>
   )

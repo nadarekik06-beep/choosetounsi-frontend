@@ -18,7 +18,7 @@ import { useCart } from '@/context/CartContext'
 import { isAuthenticated } from '@/lib/auth'
 import type { FavoriteItem } from '@/lib/shopApi'
 import { useTranslations } from 'next-intl'
-import { useFormat } from '@/lib/i18n/useFormat'
+import ProductPrice, { ProductPromoOverlay } from '@/app/components/promotions/ProductPrice'
 
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api$/, '')
 
@@ -33,8 +33,6 @@ function resolveImg(path: string | null | undefined): string | null {
 function FavoriteCard({ item, onRemove }: { item: FavoriteItem; onRemove: () => void }) {
   const t  = useTranslations('favorites')
   const tc = useTranslations('common')
-  const { price } = useFormat()
-  const fmt = (n: number) => price(n, { maximumFractionDigits: 3 })
   const { addToCart, cartLoading } = useCart()
   const [adding, setAdding] = useState(false)
 
@@ -67,8 +65,10 @@ function FavoriteCard({ item, onRemove }: { item: FavoriteItem; onRemove: () => 
               <Package size={28} color="#e2e8f0" />
             </div>
         }
+        {/* -X% + FLASH / PROMO + flash countdown, same as /deals */}
+        <ProductPromoOverlay product={item} />
         {item.stock <= 0 && (
-          <div style={{ position: 'absolute', top: 8, insetInlineStart: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999 }}>
+          <div style={{ position: 'absolute', top: 8, insetInlineEnd: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999 }}>
             {tc('outOfStock')}
           </div>
         )}
@@ -105,9 +105,7 @@ function FavoriteCard({ item, onRemove }: { item: FavoriteItem; onRemove: () => 
         )}
 
         {/* Price */}
-        <p style={{ fontSize: 16, fontWeight: 900, color: '#dc2626', margin: 0 }}>
-          {fmt(item.price)}
-        </p>
+        <ProductPrice product={item} size="md" />
 
         {/* Low stock */}
         {item.stock > 0 && item.stock <= 10 && (

@@ -13,32 +13,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
-import { useFormat } from '@/lib/i18n/useFormat'
-import type { PriceOptions } from '@/lib/i18n/format'
+import ProductPrice, { ProductPromoBadges, ProductPromoOverlay } from '@/app/components/promotions/ProductPrice'
 import type { FeedProduct } from '@/lib/homeFeedApi'
 import { recordAdClick } from '@/lib/adsApi'
 import { useAdImpression } from '@/components/ads/useAdImpression'
 import { trackClick } from '@/lib/tracking'
-
-type PriceFn = (v: number | string, o?: PriceOptions) => string
-
-/** Promotion-aware price for a card (shared with components/ads/SponsoredCard). */
-export function displayPrice(p: FeedProduct, price: PriceFn) {
-  const base      = Number(p.original_price ?? p.price)   // 30-day lowest when discounted
-  const effective = p.effective_price != null ? Number(p.effective_price) : base
-  if (!(effective < base - 0.001) || !p.promotion) {
-    return { display: base, original: null as number | null, badge: null as string | null, isFlash: false }
-  }
-  let badge: string | null = null
-  if (p.promotion.discount_type === 'percentage') {
-    const pct = Math.round(((base - effective) / base) * 100)
-    if (pct > 0) badge = `-${pct}%`
-  } else if (base - effective > 0) {
-    badge = `-${price(base - effective, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-  }
-  return { display: effective, original: base, badge, isFlash: p.promotion.is_flash_sale }
-}
 
 export type CardVariant = 'ranked' | 'bestseller'
 
@@ -56,7 +35,6 @@ export default function FeedProductCard({ product, index, section, variant }: {
   const t    = useTranslations('productCard')
   const tf   = useTranslations('homeFeed')
   const ta   = useTranslations('ads')
-  const fmt  = useFormat()
   const ref  = useRef<HTMLAnchorElement>(null)
   const tick = useRef<ReturnType<typeof setInterval> | null>(null)
   const [hovered,  setHovered]  = useState(false)
@@ -93,7 +71,6 @@ export default function FeedProductCard({ product, index, section, variant }: {
   }
 
   const image = images[imgIndex] ?? null
-  const { display, original, badge, isFlash } = displayPrice(product, fmt.price)
   const oos = product.stock <= 0
 
   return (
@@ -145,14 +122,10 @@ export default function FeedProductCard({ product, index, section, variant }: {
           {variant === 'bestseller' && index < 3 && !isPaid && (
             <span style={{ ...pill, background: 'linear-gradient(135deg,#ca8a04,#a16207)' }}>🏆 {tf('bestSellerRank', { rank: index + 1 })}</span>
           )}
-          {badge && (
-            <span style={{ ...pill, padding: '2px 6px', background: isFlash ? 'linear-gradient(135deg,#dc2626,#f97316)' : '#db142e' }}>
-              {badge}
-            </span>
-          )}
+          <ProductPromoBadges product={product} inline />
         </div>
 
-        <FlashCountdownBadge promotion={product.promotion} />
+        <ProductPromoOverlay product={product} badges={false} />
 
         {variant === 'ranked' && (
           <span aria-hidden className="feed-rank" style={{
@@ -199,12 +172,7 @@ export default function FeedProductCard({ product, index, section, variant }: {
         }}>
           {product.name}
         </p>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 13.5, fontWeight: 900, color: '#db142e' }}>{fmt.price(display)}</span>
-          {original !== null && (
-            <span style={{ fontSize: 10, color: '#bbb', textDecoration: 'line-through' }}>{fmt.price(original)}</span>
-          )}
-        </div>
+        <ProductPrice product={product} />
         {product.stock > 0 && product.stock <= 5 && (
           <p style={{ fontSize: 9.5, color: '#f97316', fontWeight: 700, margin: '4px 0 0' }}>
             {t('onlyLeft', { count: product.stock })}

@@ -13,7 +13,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronRight, Loader2, Store, Star, Zap, Heart } from 'lucide-react'
 import { getToken } from '@/lib/auth'
-import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
+import ProductPrice, { ProductPromoOverlay, promoPricing, type PricedProduct } from '@/app/components/promotions/ProductPrice'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
@@ -40,7 +40,7 @@ interface ActivePromotion {
   is_flash_sale: boolean
 }
 
-interface RecProduct {
+interface RecProduct extends PricedProduct {
   id: number
   name: string
   slug: string
@@ -77,21 +77,7 @@ function MiniCard({ product }: { product: RecProduct }) {
   const img        = resolveImg(product.primary_image_url)
   const outOfStock = product.stock <= 0
 
-  // Resolve effective vs original price
-  const originalPrice  = Number(product.original_price ?? product.price)
-  const effectivePrice = product.effective_price != null ? Number(product.effective_price) : originalPrice
-  const hasDiscount    = effectivePrice < originalPrice - 0.001
-
-  // Discount badge label
-  const badgeLabel = (() => {
-    if (!hasDiscount || !product.promotion) return null
-    if (product.promotion.discount_type === 'percentage') {
-      const pct = Math.round(((originalPrice - effectivePrice) / originalPrice) * 100)
-      return pct > 0 ? `-${pct}%` : null
-    }
-    const saved = originalPrice - effectivePrice
-    return saved > 0 ? `-${fmt(saved)}` : null
-  })()
+  const { final, original, hasDiscount } = promoPricing(product)
 
   return (
     <Link href={`/products/${product.slug}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
@@ -117,38 +103,11 @@ function MiniCard({ product }: { product: RecProduct }) {
             : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>📦</div>
           }
 
-          {/* Discount badge — top left */}
-          {hasDiscount && badgeLabel && (
-            <span style={{
-              position: 'absolute', top: 6, insetInlineStart: 6,
-              fontSize: 8, fontWeight: 900,
-              background: product.promotion?.is_flash_sale
-                ? 'linear-gradient(135deg,#dc2626,#f97316)'
-                : '#dc2626',
-              color: '#fff',
-              padding: '2px 6px', borderRadius: 999,
-              letterSpacing: '0.04em', textTransform: 'uppercase',
-            }}>
-              {badgeLabel}
-            </span>
-          )}
-
-          {/* Flash badge */}
-          {product.promotion?.is_flash_sale && (
-            <span style={{
-              position: 'absolute', top: hasDiscount ? 22 : 6, insetInlineStart: 6,
-              fontSize: 7, fontWeight: 900,
-              background: 'rgba(0,0,0,0.7)', color: '#fbbf24',
-              padding: '2px 5px', borderRadius: 999,
-              letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 2,
-            }}>
-              ⚡ {t('flash')}
-            </span>
-          )}
-          <FlashCountdownBadge promotion={product.promotion} />
+          {/* -X% + FLASH / PROMO + flash countdown, same as /deals */}
+          <ProductPromoOverlay product={product} badgeStyle={{ top: 6, insetInlineStart: 6 }} />
 
           {product.featured && (
-            <span style={{ position: 'absolute', top: 6, insetInlineStart: hasDiscount ? 'auto' : 6, fontSize: 8, fontWeight: 800, background: '#198f41', color: '#fff', padding: '2px 6px', borderRadius: 999, textTransform: 'uppercase' }}>
+            <span style={{ position: 'absolute', top: 6, insetInlineEnd: 6, fontSize: 8, fontWeight: 800, background: '#198f41', color: '#fff', padding: '2px 6px', borderRadius: 999, textTransform: 'uppercase' }}>
               {t('top')}
             </span>
           )}
@@ -171,17 +130,7 @@ function MiniCard({ product }: { product: RecProduct }) {
             {product.name}
           </p>
 
-          {/* ── FIXED price block ── */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 13, fontWeight: 900, color: '#dc2626' }}>
-              {fmt(effectivePrice)}
-            </span>
-            {hasDiscount && (
-              <span style={{ fontSize: 10, fontWeight: 500, color: '#9ca3af', textDecoration: 'line-through' }}>
-                {fmt(originalPrice)}
-              </span>
-            )}
-          </div>
+          <ProductPrice product={product} />
 
           {/* Savings pill */}
           {hasDiscount && (
@@ -190,7 +139,7 @@ function MiniCard({ product }: { product: RecProduct }) {
               background: '#f0fdf4', padding: '1px 5px',
               borderRadius: 999, display: 'inline-block', marginTop: 3,
             }}>
-              {t('save', { amount: fmt(originalPrice - effectivePrice) })}
+              {t('save', { amount: fmt(original - final) })}
             </p>
           )}
         </div>

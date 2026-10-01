@@ -15,7 +15,7 @@ import {
   SlidersHorizontal, Search, X, Check, Sparkles,
 } from 'lucide-react';
 import Navbar from '@/app/components/layout/Navbar';
-import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge';
+import ProductPrice, { ProductPromoOverlay, type PricedProduct } from '@/app/components/promotions/ProductPrice';
 import { fetchAds, recordAdClick, type AdCard } from '@/lib/adsApi';
 import { useAdImpression } from '@/components/ads/useAdImpression';
 import { useTranslations } from 'next-intl';
@@ -259,25 +259,6 @@ function FilterBar({
 
 
 
-function getDisplayPrice(item: FeedItem, price: (n: number) => string) {
-  const p         = item as any
-  const base      = Number(p.original_price ?? p.price ?? 0)   // 30-day lowest when discounted
-  const effective = p.effective_price != null ? Number(p.effective_price) : base
-  const hasDiscount = effective < base - 0.001
-  if (!hasDiscount || !p.promotion) {
-    return { display: base, original: null, badge: null, isFlash: false }
-  }
-  let badge: string | null = null
-  if (p.promotion.discount_type === 'percentage') {
-    const pct = Math.round(((base - effective) / base) * 100)
-    if (pct > 0) badge = `-${pct}%`
-  } else {
-    const saved = base - effective
-    if (saved > 0) badge = `-${price(saved)}`
-  }
-  return { display: effective, original: base, badge, isFlash: p.promotion.is_flash_sale }
-}
-
 /* ─────────────────────────────────────────────
    PREMIUM PRODUCT CARD
 ───────────────────────────────────────────── */
@@ -285,7 +266,6 @@ function getDisplayPrice(item: FeedItem, price: (n: number) => string) {
 function ProductCard({ item, index }: { item: FeedItem; index: number }) {
   const t   = useTranslations('discover');
   const tp  = useTranslations('productCard');
-  const fmt = useFormat();
   const [imgErr, setImgErr]   = useState(false);
   const [wished, setWished]   = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -325,7 +305,6 @@ const allImages = useMemo(() => {                     // ← NEW
     setTimeout(() => setAdded(false), 1800);
   };
 
-const { display, original, badge, isFlash } = getDisplayPrice(item, fmt.price);
 
 
 
@@ -405,18 +384,8 @@ onMouseLeave={() => {
               {ta('sponsored')}
             </div>
           )}
-          {badge && (
-  <span style={{
-    position: 'absolute', top: label ? 38 : 10, insetInlineStart: 10,
-    background: isFlash ? 'linear-gradient(135deg,#dc2626,#f97316)' : '#dc2626',
-    color: '#fff', fontSize: 9, fontWeight: 900,
-    padding: '2px 7px', borderRadius: 999,
-    textTransform: 'uppercase', letterSpacing: '0.04em',
-  }}>
-    {badge}
-  </span>
-)}
-          <FlashCountdownBadge promotion={item.promotion} />
+          {/* -X% + FLASH / PROMO + flash countdown, same as /deals */}
+          <ProductPromoOverlay product={item as PricedProduct} badgeStyle={{ top: label ? 38 : 10, insetInlineStart: 10 }} />
 
           {/* Wishlist button */}
           <button
@@ -484,14 +453,7 @@ onMouseLeave={() => {
           </p>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 15, fontWeight: 900, color: '#db142e', fontFamily: "'Barlow Condensed', sans-serif" }}>
-                {fmt.price(display, { bare: true })} <span style={{ fontSize: 10, fontWeight: 700 }}>{fmt.currency}</span>
-              </span>
-              {original !== null && (
-                <span style={{ fontSize: 11, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500, marginInlineStart: 4 }}>
-                  {fmt.price(original)}
-                </span>
-              )}
+            <ProductPrice product={item as PricedProduct} size="md" />
 
             {(item as any).stock !== undefined && (item as any).stock <= 5 && (item as any).stock > 0 && (
               <span style={{

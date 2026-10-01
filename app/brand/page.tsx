@@ -20,7 +20,7 @@ import { isAuthenticated } from '@/lib/auth'
 import { ShoppingCart, Heart, Star, Loader2, AlertCircle, Package } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { useTranslations } from 'next-intl'
-import { useFormat } from '@/lib/i18n/useFormat'
+import ProductPrice, { ProductPromoBadges, ProductPromoOverlay, type PricedProduct } from '@/app/components/promotions/ProductPrice'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -35,7 +35,7 @@ function resolveImg(path: string | null | undefined): string | null {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface BrandProduct {
+interface BrandProduct extends PricedProduct {
   id: number
   name: string
   slug: string
@@ -61,8 +61,6 @@ const HERO_SLIDES = [
 function ProductCard({ product }: { product: BrandProduct }) {
   const t  = useTranslations('brandPage')
   const tc = useTranslations('common')
-  const { price } = useFormat()
-  const fmt = (n: number) => price(n, { maximumFractionDigits: 3 })
   const { addToCart, isFavorited, toggleFavorite } = useCart()
   const router = useRouter()
   const [adding, setAdding] = useState(false)
@@ -103,12 +101,16 @@ function ProductCard({ product }: { product: BrandProduct }) {
             )
           }
 
-          {/* Featured badge */}
-          {product.featured && (
-            <div className="absolute top-3 start-3 flex items-center gap-1 bg-yellow-400 text-yellow-900 text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-widest">
-              <Star size={8} fill="currentColor" /> {t('featured')}
-            </div>
-          )}
+          {/* Featured + promotion badges (-X%, FLASH / PROMO as on /deals) */}
+          <div className="absolute top-3 start-3 z-[5] flex flex-col items-start gap-1 pointer-events-none">
+            {product.featured && (
+              <div className="flex items-center gap-1 bg-yellow-400 text-yellow-900 text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-widest">
+                <Star size={8} fill="currentColor" /> {t('featured')}
+              </div>
+            )}
+            <ProductPromoBadges product={product} inline />
+          </div>
+          <ProductPromoOverlay product={product} badges={false} />
 
           {/* Out of stock overlay */}
           {outOfStock && (
@@ -159,7 +161,7 @@ function ProductCard({ product }: { product: BrandProduct }) {
             {product.name}
           </p>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-base font-black text-red-600">{fmt(product.price)}</span>
+            <ProductPrice product={product} size="md" />
             {!outOfStock && product.stock <= 10 && (
               <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">
                 {t('left', { count: product.stock })}

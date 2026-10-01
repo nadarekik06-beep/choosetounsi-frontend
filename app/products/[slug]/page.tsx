@@ -15,7 +15,7 @@ import type { ProductVariant, SelectableAxis } from '@/lib/shopApi'
 import ProductRecommendations from 'app/components/ProductRecommendations'
 import AdStrip from '@/components/ads/AdStrip'
 import CountdownTimer from '@/app/components/promotions/CountdownTimer'
-import PromotionBadge from '@/app/components/promotions/PromotionBadge'
+import ProductPrice, { ProductPromoBadges, type PricedProduct } from '@/app/components/promotions/ProductPrice'
 import ProductReviewsSection from '@/app/components/reviews/ProductReviewsSection';
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -369,7 +369,6 @@ export default function ProductDetailPage() {
   const t      = useTranslations('product')
   const tc     = useTranslations('common')
   const format = useFormat()
-  const fmt    = (n: number | string) => format.price(n, { maximumFractionDigits: 3 })
   const params = useParams()
   const router = useRouter()
   const slug   = params?.slug as string
@@ -502,7 +501,13 @@ export default function ProductDetailPage() {
     ? Number(selectedVariant.original_price ?? selectedVariant.price)
     : Number(product?.original_price ?? product?.price ?? 0)
 
-  const hasPromoDiscount = activePromotion && Number(effectivePrice) < originalPrice
+  // The selected line (variant or product) as the shared price/badge components read it
+  const linePrice: PricedProduct = {
+    price:          effectivePrice,
+    final_price:    effectivePrice,
+    original_price: originalPrice,
+    promo_type:     activePromotion ? (activePromotion.is_flash_sale ? 'flash_sale' : 'promotion') : null,
+  }
 
   const outOfStock = effectiveStock <= 0
   const lowStock   = effectiveStock > 0 && effectiveStock <= 10
@@ -662,7 +667,10 @@ export default function ProductDetailPage() {
                 border: `1px solid ${activePromotion.is_flash_sale ? 'rgba(220,38,38,0.2)' : 'rgba(5,150,105,0.2)'}`,
                 borderRadius: 10,
               }}>
-                <PromotionBadge promotion={activePromotion} size="md" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <ProductPromoBadges product={linePrice} inline />
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>{activePromotion.name}</span>
                 {activePromotion.is_flash_sale && (
                   <>
                     <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{t('endsIn')}</span>
@@ -680,14 +688,7 @@ export default function ProductDetailPage() {
             {/* Price block */}
             <div style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                <span style={{ fontSize: 32, fontWeight: 900, color: '#dc2626', letterSpacing: '-0.02em', lineHeight: 1 }}>
-                  {fmt(effectivePrice)}
-                </span>
-                {hasPromoDiscount && (
-                  <span style={{ fontSize: 18, fontWeight: 600, color: '#94a3b8', textDecoration: 'line-through' }}>
-                    {fmt(originalPrice)}
-                  </span>
-                )}
+                <ProductPrice product={linePrice} size="xl" style={{ gap: 10 }} />
                 {selectedVariant?.price_override && !activePromotion && (
                   <span style={{ fontSize: 12, color: '#94a3b8' }}>{t('variantPrice')}</span>
                 )}

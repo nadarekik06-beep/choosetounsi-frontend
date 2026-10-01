@@ -13,9 +13,8 @@
 import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { useFormat } from '@/lib/i18n/useFormat'
 import { recordAdClick, type AdCard } from '@/lib/adsApi'
-import { displayPrice } from '@/app/components/home/FeedProductCard'
+import ProductPrice, { ProductPromoBadges, ProductPromoOverlay } from '@/app/components/promotions/ProductPrice'
 import { useAdImpression } from './useAdImpression'
 
 export function SponsoredLabel({ dark = false }: { dark?: boolean }) {
@@ -38,12 +37,10 @@ export default function SponsoredCard({ ad, index = 0, layout = 'grid', onNaviga
   layout?: 'grid' | 'row'
   onNavigate?: () => void
 }) {
-  const fmt = useFormat()
   const ref = useRef<HTMLAnchorElement>(null)
   const [imgErr, setImgErr] = useState(false)
   useAdImpression(ref, ad.ad_token)
 
-  const { display, original, badge } = displayPrice(ad, fmt.price)
   const image = !imgErr ? ad.primary_image_url : null
   const copy  = ad.sponsor_data?.ai_ad_copy
   const shop  = ad.seller?.business_name || ad.seller?.name
@@ -65,11 +62,10 @@ export default function SponsoredCard({ ad, index = 0, layout = 'grid', onNaviga
       {layout === 'grid' && (
         <div style={{ position: 'absolute', top: 7, insetInlineStart: 7, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
           <SponsoredLabel dark />
-          {badge && (
-            <span style={{ fontSize: 8, fontWeight: 900, padding: '2px 6px', borderRadius: 999, color: '#fff', background: '#db142e' }}>{badge}</span>
-          )}
+          <ProductPromoBadges product={ad} inline />
         </div>
       )}
+      {layout === 'grid' && <ProductPromoOverlay product={ad} badges={false} />}
     </div>
   )
 
@@ -95,10 +91,7 @@ export default function SponsoredCard({ ad, index = 0, layout = 'grid', onNaviga
           {copy}
         </p>
       )}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 13.5, fontWeight: 900, color: '#db142e' }}>{fmt.price(display)}</span>
-        {original !== null && <span style={{ fontSize: 10, color: '#bbb', textDecoration: 'line-through' }}>{fmt.price(original)}</span>}
-      </div>
+      <ProductPrice product={ad} />
     </div>
   )
 

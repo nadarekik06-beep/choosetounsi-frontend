@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import PriceDisplay from '@/app/components/promotions/PriceDisplay'
+import ProductPrice, { type PricedProduct } from '@/app/components/promotions/ProductPrice'
 import { useTranslations } from 'next-intl'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
-interface FlashProduct {
+interface FlashProduct extends PricedProduct {
   id: number
   name: string
   slug: string
@@ -17,7 +17,6 @@ interface FlashProduct {
   original_price: number
   effective_price: number
   discount_amount: number
-  promotion: Record<string, unknown> | null
     variant_images?: string[]   // ← ADD
 
 }
@@ -118,7 +117,7 @@ function FlashDealCard({ product, promo }: { product: FlashProduct; promo: Flash
       </div>
       <div className="fds-info">
         <p className="fds-name">{product.name}</p>
-        <PriceDisplay price={product.original_price} effectivePrice={product.effective_price} promotion={product.promotion as any} size="sm" />
+        <ProductPrice product={product} />
         {promo.flash_stock_remaining !== null && (
           <div className="fds-stock-bar">
             <div className="fds-stock-fill" style={{

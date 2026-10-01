@@ -11,7 +11,7 @@ import {
 } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
+import ProductPrice, { ProductPromoBadges, ProductPromoOverlay, type PricedProduct } from '@/app/components/promotions/ProductPrice'
 import { useCart } from '@/context/CartContext'
 
 import Navbar from '@/app/components/layout/Navbar'
@@ -19,7 +19,6 @@ import SponsoredCard from '@/components/ads/SponsoredCard'
 import { fetchAds, fetchAdsConfig, withAdSlots, type AdCard } from '@/lib/adsApi'
 import ProductFilterSidebar, { type F } from '@/app/components/filters/ProductFilterSidebar'
 import { useTranslations } from 'next-intl'
-import { useFormat } from '@/lib/i18n/useFormat'
 import { canScrollNext, canScrollPrev, scrollCarousel } from '@/lib/i18n/rtlScroll'
 
 const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
@@ -43,7 +42,7 @@ interface ActivePromotion {
   is_flash_sale: boolean
 }
 
-interface Product {
+interface Product extends PricedProduct {
   id: number; name: string; slug: string
   price: string                // ← original base price (ALWAYS present)
   stock: number
@@ -87,57 +86,12 @@ function galleryImgs(p: Product): string[] {
   return out.filter(Boolean)
 }
 
-/**
- * getDisplayPrices — resolves what to show on the card
- *
- * Returns:
- *   displayPrice   → the price shown large (effective/discounted)
- *   originalPrice  → shown crossed-out (only when truly discounted)
- *   discountBadge  → "-20%" label or null
- */
-function getDisplayPrices(p: Product, money: (v: number) => string): {
-  displayPrice: number
-  originalPrice: number | null
-  discountBadge: string | null
-  isFlashSale: boolean
-} {
-  // Crossed-out price: the lowest price of the last 30 days when discounted (equals price otherwise)
-  const base      = Number(p.original_price ?? p.price)
-  const effective = p.effective_price != null
-    ? Number(p.effective_price)
-    : base
-
-  const hasDiscount = effective < base - 0.001                    // float-safe
-
-  if (!hasDiscount || !p.promotion) {
-    return { displayPrice: base, originalPrice: null, discountBadge: null, isFlashSale: false }
-  }
-
-  // Build badge label
-  let badge: string | null = null
-  if (p.promotion.discount_type === 'percentage') {
-    const pct = Math.round(((base - effective) / base) * 100)
-    if (pct > 0) badge = `-${pct}%`
-  } else {
-    const saved = base - effective
-    if (saved > 0) badge = `-${money(saved)}`
-  }
-
-  return {
-    displayPrice:  effective,
-    originalPrice: base,
-    discountBadge: badge,
-    isFlashSale:   p.promotion.is_flash_sale,
-  }
-}
-
 // ══════════════════════════════════════════════════════════════════════════════
 //  PRODUCT CARD
 // ══════════════════════════════════════════════════════════════════════════════
 function Card({ p, idx }: { p: Product; idx: number }) {
   const t   = useTranslations('category')
   const tc  = useTranslations('productCard')
-  const { price: money } = useFormat()
   const { addToCart } = useCart()
   const gallery = useMemo(() => galleryImgs(p), [p])
 
@@ -153,9 +107,6 @@ function Card({ p, idx }: { p: Product; idx: number }) {
   const resetRef = useRef<ReturnType<typeof setTimeout>  | null>(null)
 
   const oos = p.stock <= 0
-
-  // ── FIXED: use promotion-aware price helper ────────────────────────────────
-  const { displayPrice, originalPrice, discountBadge, isFlashSale } = getDisplayPrices(p, money)
 
   const swatches    = p.color_swatches ?? []
   const maxSwatches = 5
@@ -233,42 +184,14 @@ function Card({ p, idx }: { p: Product; idx: number }) {
 
         {/* ── Badges ── */}
         <div className="shc-badges">
-          {/* ── FIXED: Discount badge from real promotion data ── */}
-          {discountBadge && (
-            <span
-              className="shc-badge shc-disc"
-              style={isFlashSale ? {
-                background: 'linear-gradient(135deg,#dc2626,#f97316)',
-              } : undefined}
-            >
-              {discountBadge}
-            </span>
-          )}
+          {/* -X% + FLASH / PROMO, same as /deals */}
+          <ProductPromoBadges product={p} inline />
 
           {p.is_new        && <span className="shc-badge shc-new">{t('badgeNew')}</span>}
           {p.is_bestseller && <span className="shc-badge shc-hot">{t('badgeTop')}</span>}
-
-          {/* ── Flash sale indicator ── */}
-          {p.promotion?.is_flash_sale && (
-            <span className="shc-badge" style={{
-              background: 'rgba(0,0,0,0.7)',
-              color: '#fff',
-              backdropFilter: 'blur(4px)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 3,
-            }}>
-              <span style={{
-                width: 5, height: 5, borderRadius: '50%',
-                background: '#fbbf24', display: 'inline-block',
-                animation: 'shcPulse 1.4s ease-in-out infinite',
-              }} />
-              ⚡ {t('badgeFlash')}
-            </span>
-          )}
         </div>
 
-        <FlashCountdownBadge promotion={p.promotion} />
+        <ProductPromoOverlay product={p} badges={false} />
 
         {oos && <div className="shc-oos"><span>{tc('soldOut')}</span></div>}
 
@@ -310,17 +233,7 @@ function Card({ p, idx }: { p: Product; idx: number }) {
           <p className="shc-desc">{p.short_description}</p>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════
-            FIXED PRICE BLOCK
-            Before: used p.original_price (never populated from listing API)
-            After:  uses effective_price (discounted) + price (original)
-        ══════════════════════════════════════════════════════════════ */}
-        <div className="shc-prices">
-          <span className="shc-price">{money(displayPrice)}</span>
-          {originalPrice !== null && (
-            <span className="shc-orig">{money(originalPrice)}</span>
-          )}
-        </div>
+        <ProductPrice product={p} className="shc-prices" />
 
         {/* Color swatches */}
         {visSwatches.length > 0 && (
@@ -349,14 +262,10 @@ function Card({ p, idx }: { p: Product; idx: number }) {
 function ListCard({ p, idx }: { p: Product; idx: number }) {
   const t   = useTranslations('category')
   const tc  = useTranslations('productCard')
-  const { price: money } = useFormat()
   const { addToCart } = useCart()
   const [cs, setCs] = useState<'idle' | 'busy' | 'done'>('idle')
   const [err, setErr] = useState(false)
   const pri = primaryImg(p)
-
-  // ── FIXED ───────────────────────────────────────────────────────────────────
-  const { displayPrice, originalPrice, discountBadge, isFlashSale } = getDisplayPrices(p, money)
 
   const handle = async (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation()
@@ -380,31 +289,14 @@ function ListCard({ p, idx }: { p: Product; idx: number }) {
           ? <img src={pri} alt={p.name} style={{ width:'100%',height:'100%',objectFit:'cover' }} onError={() => setErr(true)} />
           : <div className="shc-noimg" />
         }
-        {discountBadge && (
-          <span
-            className="shc-badge shc-disc"
-            style={{
-              position:'absolute', top:8, insetInlineStart:8, zIndex:2,
-              ...(isFlashSale ? { background: 'linear-gradient(135deg,#dc2626,#f97316)' } : {}),
-            }}
-          >
-            {discountBadge}
-          </span>
-        )}
-        <FlashCountdownBadge promotion={p.promotion} />
+        <ProductPromoOverlay product={p} />
       </div>
       <div className="shlc-body">
         {p.seller?.name && <p className="shc-seller">{p.seller.name}</p>}
         <p className="shlc-name">{p.name}</p>
         {p.short_description && <p className="shlc-desc">{p.short_description}</p>}
         <div className="shlc-foot">
-          {/* ── FIXED price block ── */}
-          <div className="shc-prices">
-            <span className="shc-price">{money(displayPrice)}</span>
-            {originalPrice !== null && (
-              <span className="shc-orig">{money(originalPrice)}</span>
-            )}
-          </div>
+          <ProductPrice product={p} className="shc-prices" />
           <button
             className={`shc-add shc-add-sm${cs === 'done' ? ' done' : ''}`}
             onClick={handle}

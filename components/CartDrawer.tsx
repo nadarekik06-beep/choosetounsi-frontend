@@ -22,6 +22,7 @@ import type { CartItem as BaseCartItem } from '@/lib/shopApi'
 import AdStrip from '@/components/ads/AdStrip'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
+import ProductPrice from '@/app/components/promotions/ProductPrice'
 
 // ─── Extend CartItem with sponsored + pack fields ─────────────────────────────
 type CartItem = BaseCartItem & {
@@ -167,9 +168,7 @@ function CartRow({
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: '#dc2626' }}>
-            {fmt(item.price)}
-          </span>
+          <ProductPrice product={item} size="md" />
           <div style={{
             display: 'flex', alignItems: 'center', gap: 0,
             border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden',

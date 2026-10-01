@@ -15,10 +15,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useFormat } from '@/lib/i18n/useFormat'
 import { fetchAdsConfig, fetchPopupAd, recordAdClick, type AdCard } from '@/lib/adsApi'
 import { acquireOverlay, releaseOverlay, useOverlayOwner } from '@/lib/overlayStore'
-import { displayPrice } from '@/app/components/home/FeedProductCard'
+import ProductPrice, { promoPricing } from '@/app/components/promotions/ProductPrice'
 import { SponsoredLabel } from './SponsoredCard'
 import { useAdImpression } from './useAdImpression'
 
@@ -41,7 +40,6 @@ function readDismiss(): { until: number; count: number } {
 
 export default function EntryPopup() {
   const t        = useTranslations('ads')
-  const fmt      = useFormat()
   const router   = useRouter()
   const pathname = usePathname()
   const owner    = useOverlayOwner()
@@ -128,7 +126,7 @@ export default function EntryPopup() {
 
   if (!open || !ad) return null
 
-  const { display, original, badge } = displayPrice(ad, fmt.price)
+  const { hasDiscount, percent } = promoPricing(ad)
   const goToProduct = (e: React.MouseEvent) => {
     e.preventDefault()
     recordAdClick(ad.ad_token)
@@ -171,8 +169,8 @@ export default function EntryPopup() {
         <div ref={cardRef} style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           <div style={{ width: 96, height: 96, borderRadius: 12, overflow: 'hidden', background: '#f5f5f5', flexShrink: 0, position: 'relative' }}>
             {ad.primary_image_url && <img src={ad.primary_image_url} alt={ad.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-            {badge && (
-              <span style={{ position: 'absolute', top: 5, insetInlineStart: 5, fontSize: 9, fontWeight: 900, padding: '2px 6px', borderRadius: 999, color: '#fff', background: '#db142e' }}>{badge}</span>
+            {hasDiscount && percent > 0 && (
+              <span style={{ position: 'absolute', top: 5, insetInlineStart: 5, fontSize: 9, fontWeight: 900, padding: '2px 6px', borderRadius: 999, color: '#fff', background: '#db142e' }}>-{percent}%</span>
             )}
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
@@ -184,10 +182,7 @@ export default function EntryPopup() {
                 {ad.sponsor_data.ai_ad_copy}
               </p>
             )}
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 16, fontWeight: 900, color: '#db142e' }}>{fmt.price(display)}</span>
-              {original !== null && <span style={{ fontSize: 11, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt.price(original)}</span>}
-            </div>
+            <ProductPrice product={ad} size="md" />
           </div>
         </div>
 

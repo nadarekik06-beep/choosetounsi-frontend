@@ -7,8 +7,7 @@ import {
   ChevronRight, MapPin, Package, Loader2, Store, Heart, Users, Search,
   Star, Truck, Tag, Copy, Check, Zap, Home as HomeIcon,
 } from 'lucide-react'
-import PriceDisplay from '@/app/components/promotions/PriceDisplay'
-import FlashCountdownBadge from '@/app/components/promotions/FlashCountdownBadge'
+import ProductPrice, { ProductPromoOverlay, type PricedProduct } from '@/app/components/promotions/ProductPrice'
 import type { ActivePromotion } from '@/lib/promotionsApi'
 import { getToken, isAuthenticated } from '@/lib/auth'
 import ProductFilterSidebar, { DEFAULT_FILTERS, type F } from '@/app/components/filters/ProductFilterSidebar'
@@ -75,12 +74,10 @@ interface SellerProfile {
   coupons: CouponSummary[]
 }
 
-interface GridProduct {
+interface GridProduct extends PricedProduct {
   id: number; name: string; slug: string
   price: number | string; stock: number
   primary_image_url: string | null
-  effective_price?: number
-  original_price?: number
   promotion?: ActivePromotion | null
 }
 
@@ -107,10 +104,9 @@ function promoToActivePromotion(promo: SellerPromotion): ActivePromotion {
 }
 
 function promoProductsToGrid(promo: SellerPromotion): GridProduct[] {
+  // Products carry the server's pricing block (final_price, original_price, discount_percent…)
   return promo.products.map(p => ({
-    id: p.id, name: p.name, slug: p.slug, stock: p.stock,
-    primary_image_url: p.primary_image_url,
-    price: p.original_price, effective_price: p.effective_price,
+    ...p,
     promotion: promoToActivePromotion(promo),
   }))
 }
@@ -118,7 +114,6 @@ function promoProductsToGrid(promo: SellerPromotion): GridProduct[] {
 // ─── Product card — one shared design everywhere on this page ─────────────────
 
 function ProductCard({ product }: { product: GridProduct }) {
-  const t  = useTranslations('storefront')
   const tc = useTranslations('productCard')
   const [imgErr, setImgErr] = useState(false)
   const img = resolveImg(product.primary_image_url)
@@ -139,16 +134,8 @@ function ProductCard({ product }: { product: GridProduct }) {
             ? <img src={img} alt={product.name} onError={() => setImgErr(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, opacity: 0.4 }}>📦</div>
           }
-          {product.promotion?.is_flash_sale && (
-            <span style={{
-              position: 'absolute', top: 10, insetInlineStart: 10, fontSize: 9, fontWeight: 800,
-              background: 'rgba(17,17,17,0.75)', color: '#fff', padding: '3px 8px', borderRadius: 999,
-              letterSpacing: '0.05em', backdropFilter: 'blur(2px)',
-            }}>
-              ⚡ {t('flash')}
-            </span>
-          )}
-          <FlashCountdownBadge promotion={product.promotion} />
+          {/* -X% + FLASH / PROMO + flash countdown, same as /deals */}
+          <ProductPromoOverlay product={product} badgeStyle={{ top: 10, insetInlineStart: 10 }} />
           {outOfStock && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontSize: 10, fontWeight: 800, background: '#111', color: '#fff', padding: '4px 10px', borderRadius: 999, letterSpacing: '0.05em' }}>{tc('soldOut')}</span>
@@ -162,7 +149,7 @@ function ProductCard({ product }: { product: GridProduct }) {
           }}>
             {product.name}
           </p>
-          <PriceDisplay price={product.original_price ?? product.price} effectivePrice={product.effective_price} promotion={product.promotion} size="sm" />
+          <ProductPrice product={product} />
         </div>
       </div>
     </Link>

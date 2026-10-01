@@ -6,16 +6,15 @@ import { useCart } from '@/context/CartContext'
 import { isAuthenticated } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useFormat } from '@/lib/i18n/useFormat'
+import ProductPrice, { ProductPromoOverlay, type PricedProduct } from '@/app/components/promotions/ProductPrice'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
-interface Product {
+interface Product extends PricedProduct {
   id: number
   name: string
   slug: string
   price: number | string
-  original_price?: number | string | null
   stock: number
   primary_image_url: string | null
   category?: { name: string; slug: string } | null
@@ -27,7 +26,6 @@ interface Product {
 
 function BrandProductCard({ product, index }: { product: Product; index: number }) {
   const t   = useTranslations('productCard')
-  const fmt = useFormat()
   const { addToCart, isFavorited, toggleFavorite } = useCart()
   const router = useRouter()
   const [imgErr, setImgErr] = useState(false)
@@ -36,9 +34,6 @@ function BrandProductCard({ product, index }: { product: Product; index: number 
 
   const favorited = isFavorited(product.id)
   const outOfStock = product.stock <= 0
-  const discount = product.original_price
-    ? Math.round((1 - Number(product.price) / Number(product.original_price)) * 100)
-    : null
 
   const handleCart = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -115,8 +110,8 @@ onMouseLeave={() => {
           {t('official')}
         </div>
 
-        {/* Discount badge */}
-        {discount && <div className="bpc-discount-badge">-{discount}%</div>}
+        {/* -X% + FLASH / PROMO (below the official badge) + flash countdown, same as /deals */}
+        <ProductPromoOverlay product={product} badgeStyle={{ top: 36, insetInlineStart: 10 }} />
 
         {/* Out of stock overlay */}
         {outOfStock && (
@@ -163,10 +158,7 @@ onMouseLeave={() => {
         )}
         <p className="bpc-name">{product.name}</p>
         <div className="bpc-price-row">
-          <span className="bpc-price">{fmt.price(product.price, { bare: true })} <span className="bpc-currency">{fmt.currency}</span></span>
-          {product.original_price && (
-            <span className="bpc-original">{fmt.price(product.original_price)}</span>
-          )}
+          <ProductPrice product={product} size="md" />
         </div>
       </div>
     </Link>
