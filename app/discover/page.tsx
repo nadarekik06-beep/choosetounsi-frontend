@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import Navbar from '@/app/components/layout/Navbar';
 import ProductPrice, { ProductPromoOverlay, type PricedProduct } from '@/app/components/promotions/ProductPrice';
+import { useCart } from '@/context/CartContext';
 import { fetchAds, recordAdClick, type AdCard } from '@/lib/adsApi';
 import { useAdImpression } from '@/components/ads/useAdImpression';
 import { useTranslations } from 'next-intl';
@@ -267,7 +268,8 @@ function ProductCard({ item, index }: { item: FeedItem; index: number }) {
   const t   = useTranslations('discover');
   const tp  = useTranslations('productCard');
   const [imgErr, setImgErr]   = useState(false);
-  const [wished, setWished]   = useState(false);
+  const { isFavorited, toggleFavorite } = useCart();
+  const wished = isFavorited(item.id);
   const [hovered, setHovered] = useState(false);
   const [added, setAdded]     = useState(false);
   const [imgIndex, setImgIndex] = useState(0);          // ← NEW
@@ -296,7 +298,7 @@ const allImages = useMemo(() => {                     // ← NEW
 
   const handleWish = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
-    setWished(w => !w);
+    toggleFavorite(item.id);
   };
 
   const handleAdd = (e: React.MouseEvent) => {

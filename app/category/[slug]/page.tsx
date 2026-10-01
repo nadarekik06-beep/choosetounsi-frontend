@@ -92,14 +92,14 @@ function galleryImgs(p: Product): string[] {
 function Card({ p, idx }: { p: Product; idx: number }) {
   const t   = useTranslations('category')
   const tc  = useTranslations('productCard')
-  const { addToCart } = useCart()
+  const { addToCart, isFavorited, toggleFavorite } = useCart()
   const gallery = useMemo(() => galleryImgs(p), [p])
 
   const [cur,    setCur]   = useState(0)
   const [prev,   setPrev]  = useState<number | null>(null)
   const [sliding,setSlide] = useState(false)
   const [hov,    setHov]   = useState(false)
-  const [wish,   setWish]  = useState(false)
+  const wish = isFavorited(p.id)
   const [cs,     setCs]    = useState<'idle' | 'busy' | 'done'>('idle')
   const [imgErr, setErr]   = useState(false)
 
@@ -196,7 +196,7 @@ function Card({ p, idx }: { p: Product; idx: number }) {
         {oos && <div className="shc-oos"><span>{tc('soldOut')}</span></div>}
 
         <button className={`shc-wish${wish ? ' on' : ''}`}
-          onClick={e => { e.preventDefault(); e.stopPropagation(); setWish(v => !v) }}
+          onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.id) }}
           aria-label={tc('wishlist')} aria-pressed={wish}>
           <svg width="14" height="14" fill={wish ? '#db142e' : 'none'} stroke={wish ? '#db142e' : '#666'} strokeWidth="2.1" viewBox="0 0 24 24">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>

@@ -102,12 +102,21 @@ export function saveSession(token: string, user: AuthUser): void {
   document.cookie = 'ct_token_exists=1; path=/; max-age=86400; SameSite=Lax';
   // Carry what they browsed as a guest into their personalized homepage.
   mergeGuestHistory(token);
+  notifyAuthChange();
+}
+
+/** Fired on login / logout so session-bound state (cart, favorites) reloads without a page refresh. */
+export const AUTH_CHANGE_EVENT = 'ct-auth-change';
+
+function notifyAuthChange(): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
 }
 
 function clearSession(): void {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
   document.cookie = 'ct_token_exists=; path=/; max-age=0; SameSite=Lax';
+  notifyAuthChange();
 }
 
 export function clearLocalSession(): void {
@@ -115,6 +124,7 @@ export function clearLocalSession(): void {
   localStorage.removeItem('ct_auth_token');
   localStorage.removeItem('ct_auth_user');
   document.cookie = 'ct_token_exists=; path=/; max-age=0; SameSite=Lax';
+  notifyAuthChange();
 }
 
 /**

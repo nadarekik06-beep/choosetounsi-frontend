@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ChevronRight, ChevronLeft, Heart, ShoppingCart,
+  ChevronRight, ChevronLeft, ShoppingCart,
   Zap, CheckCircle, Loader2, Shield, Truck,
   RotateCcw, Package2, TrendingDown, ZoomIn,
   AlertCircle, Tag,
@@ -395,7 +395,7 @@ export default function PackDetailPage() {
   const slug   = params?.slug as string
 
   // ← FIX: destructure addPackToCart instead of addToCart
-  const { addPackToCart, cartLoading, isFavorited, toggleFavorite } = useCart()
+  const { addPackToCart, cartLoading } = useCart()
 
   const [pack,          setPack]          = useState<PackDetail | null>(null)
   const [loading,       setLoading]       = useState(true)
@@ -536,7 +536,7 @@ export default function PackDetailPage() {
     </div>
   )
 
-  const favorited = isFavorited(pack.id)
+  // No heart here: favorites hold products, and a pack id is not a product id
 
   return (
     <>
@@ -547,7 +547,6 @@ export default function PackDetailPage() {
         .pd-thumb:hover { border-color: #db142e !important; }
         .pd-tab:hover   { color: #db142e !important; }
         .buy-btn:hover:not(:disabled) { background: rgba(219,20,46,0.06) !important; border-color: #b91c1c !important; }
-        .fav-btn:hover { transform: scale(1.1) !important; }
         @media(max-width:900px) { .pd-grid { grid-template-columns: 1fr !important; } }
       `}</style>
 
@@ -607,21 +606,6 @@ export default function PackDetailPage() {
               <h1 style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', margin: 0, lineHeight: 1.25, flex: 1 }}>
                 {pack.name}
               </h1>
-              <button
-                className="fav-btn"
-                onClick={() => toggleFavorite(pack.id)}
-                aria-label={favorited ? tp('removeFavorite') : tp('addFavorite')}
-                aria-pressed={favorited}
-                style={{
-                  width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-                  border: `2px solid ${favorited ? '#db142e' : '#e5e7eb'}`,
-                  background: favorited ? 'rgba(219,20,46,0.06)' : '#fff',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.2s',
-                }}
-              >
-                <Heart size={17} fill={favorited ? '#db142e' : 'none'} stroke={favorited ? '#db142e' : '#94a3b8'} strokeWidth={2} />
-              </button>
             </div>
 
             {/* Seller */}
@@ -771,23 +755,6 @@ export default function PackDetailPage() {
                 }
               </button>
 
-              {/* Favorite */}
-              <button
-                className="fav-btn"
-                onClick={() => toggleFavorite(pack.id)}
-                aria-label={favorited ? tp('removeFavorite') : tp('addFavorite')}
-                aria-pressed={favorited}
-                style={{
-                  width: 52, height: 52, flexShrink: 0,
-                  borderRadius: '50%',
-                  border: `2px solid ${favorited ? '#db142e' : '#e5e7eb'}`,
-                  background: favorited ? 'rgba(219,20,46,0.06)' : '#fff',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.2s',
-                }}
-              >
-                <Heart size={20} fill={favorited ? '#db142e' : 'none'} stroke={favorited ? '#db142e' : '#94a3b8'} strokeWidth={2} />
-              </button>
             </div>
 
             {/* Trust badges */}

@@ -5,7 +5,7 @@ import {
   useCallback, useRef, ReactNode
 } from 'react'
 import { cartApi, favoritesApi, type CartItem, type FavoriteItem } from '@/lib/shopApi'
-import { isAuthenticated } from '@/lib/auth'
+import { AUTH_CHANGE_EVENT, isAuthenticated } from '@/lib/auth'
 import { useLocale, useTranslations } from 'next-intl'
 
 // ─── Pack selection type ──────────────────────────────────────────────────────
@@ -83,7 +83,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const refreshFavorites = useCallback(async () => {
-    if (!isAuthenticated()) return
+    if (!isAuthenticated()) { setFavorites([]); return }
     try {
       const res = await favoritesApi.get()
       setFavorites((res.data ?? []).filter(Boolean))
@@ -95,6 +95,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
     refreshCart()
     refreshFavorites()
   }, [refreshCart, refreshFavorites, locale])
+
+  // Login / logout happen without a page reload (and may happen in another tab):
+  // reload what belongs to the session. Favorites also resync when the tab
+  // regains focus, so a change made elsewhere never leaves the hearts stale.
+  useEffect(() => {
+    const onAuth = () => {
+      if (!isAuthenticated()) { setItems([]); setCount(0); setSubtotal(0) }
+      refreshCart()
+      refreshFavorites()
+    }
+    const onStorage = (e: StorageEvent) => { if (e.key === null || e.key.startsWith('ct_auth')) onAuth() }
+    const onFocus   = () => { refreshFavorites() }
+    window.addEventListener(AUTH_CHANGE_EVENT, onAuth)
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      window.removeEventListener(AUTH_CHANGE_EVENT, onAuth)
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [refreshCart, refreshFavorites])
 
   // ── addToCart — original, completely unchanged ────────────────────────────
   const addToCart = useCallback(async (
@@ -200,15 +221,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
           : prev.filter(f => f.product_id !== productId)
         )
       } else {
-        // POST /favorites toggles: when our list was stale the server removed it
-        // instead (favorited: false, data: null) — mirror that, never store null
+        // POST /favorites only ever adds (idempotent), and answers with the saved row
         const res = await favoritesApi.add(productId, variantId)
-        const added = res.favorited ? res.data : null
+        const added = res.data
         if (added) {
           setFavorites(prev => [...prev.filter(f => !(f.product_id === productId && f.variant_id === added.variant_id)), added])
           showFlash(t('savedToFavorites'))
         } else {
-          setFavorites(prev => prev.filter(f => !(f.product_id === productId && (variantId == null || f.variant_id === variantId))))
+          await refreshFavorites()
         }
       }
     } catch (err: any) {
@@ -216,7 +236,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } finally {
       setFavLoading(false)
     }
-  }, [isFavorited, showFlash, t])
+  }, [isFavorited, refreshFavorites, showFlash, t])
 
   return (
     <CartContext.Provider value={{
