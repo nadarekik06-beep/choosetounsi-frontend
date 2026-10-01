@@ -626,25 +626,20 @@ export default function CheckoutPage() {
 
 const summarySubtotal = isBuyNow ? bnLineTotal : subtotal
  
-// Delivery fee logic — mirrors backend resolveCartDeliveryFee() exactly
+// Delivery fee — mirrors backend Product::orderDeliveryFee(): one shipment per order,
+// free only when every product ships free, otherwise the highest fee among the
+// others (a seller's custom fee or the platform default; packs count at the default).
 const PLATFORM_DELIVERY_FEE = 8
- 
-const isFreeDelivery = (() => {
-  if (isBuyNow) {
-    // For buy-now, check the product's is_free_delivery flag
-    return (bnProduct as any)?.is_free_delivery === true
-  }
-  // For cart: free only when ALL items (non-pack) have free delivery
-  if (items.length === 0) return false
-  const hasPack = items.some(i => (i as any).is_pack)
-  if (hasPack) return false
-  return items.every(i => (i as any).is_free_delivery === true)
+
+const deliveryFee = (() => {
+  const lines: { free: boolean; fee: number }[] = isBuyNow
+    ? (bnProduct ? [{ free: bnProduct.is_free_delivery === true, fee: Number(bnProduct.effective_delivery_fee ?? PLATFORM_DELIVERY_FEE) }] : [])
+    : items.map(i => i.is_pack
+        ? { free: false, fee: PLATFORM_DELIVERY_FEE }
+        : { free: i.is_free_delivery === true, fee: Number(i.delivery_fee ?? PLATFORM_DELIVERY_FEE) })
+  return round3(lines.reduce((max, l) => l.free ? max : Math.max(max, l.fee), 0))
 })()
- 
-// Buy-now charges the product's own fee (seller-set or platform default)
-const deliveryFee     = isFreeDelivery ? 0
-  : isBuyNow && bnProduct?.effective_delivery_fee != null ? Number(bnProduct.effective_delivery_fee)
-  : PLATFORM_DELIVERY_FEE
+const isFreeDelivery = deliveryFee === 0
 const summaryTotal    = round3(Math.max(0, summarySubtotal - totalDiscount) + deliveryFee)
 const walletInsufficient = walletBalance !== null && walletBalance < summaryTotal
 
