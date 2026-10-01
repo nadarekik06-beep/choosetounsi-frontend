@@ -365,7 +365,10 @@
     "new": "جديد",
     "featured": "مميّز",
     "flashSale": "تخفيض سريع",
-    "noImage": "لا توجد صورة"
+    "noImage": "لا توجد صورة",
+    "pack": "عبوة",
+    "packQty": "عبوة ×{count}",
+    "perUnit": "{price} / للوحدة"
   },
   "countdown": {
     "ended": "انتهى",
@@ -519,8 +522,10 @@
     "rangeOver": "أكثر من {amount}",
     "availability": "التوفّر",
     "inStockOnly": "المتوفر فقط",
-    "packsOnly": "الباقات فقط",
-    "apply": "تطبيق الفلاتر"
+    "apply": "تطبيق الفلاتر",
+    "multiPacks": "العبوات المتعددة فقط",
+    "occasion": "الموسم / المناسبة",
+    "clearFilters": "مسح الفلاتر"
   },
   "category": {
     "sponsored": "مُموَّل",
@@ -593,7 +598,8 @@
     "units": "{count, plural, one {وحدة واحدة} two {وحدتان} few {# وحدات} many {# وحدة} other {# وحدة}}",
     "platformSeller": "CHOOSE'Tounsi الرسمي",
     "metaFallbackTitle": "منتج",
-    "metaDescription": "اشترِ {name} على ChooseTounsi — توصيل إلى كامل أنحاء تونس."
+    "metaDescription": "اشترِ {name} على ChooseTounsi — توصيل إلى كامل أنحاء تونس.",
+    "packContents": "في هذه العبوة"
   },
   "recommendations": {
     "flash": "فلاش",
@@ -2150,12 +2156,9 @@
       "descriptionPlaceholder": "صف منتجك بالتفصيل…",
       "basePrice": "السعر الأساسي ({currency})",
       "status": "الحالة",
-      "seasons": "مواسم المنتج",
       "selectedCount": "{count} مختارة",
-      "seasonsHint": "اختر المواسم التي يُباع فيها هذا المنتج أكثر. تعتمد عليها توقعات الذكاء الاصطناعي.",
-      "isPack": "هذا المنتج حزمة",
-      "packTag": "حزمة",
-      "isPackHint": "حدّد هذا الخيار إذا كان المنتج يضم عدة قطع مجمّعة.",
+      "isPack": "عبوة متعددة",
+      "isPackHint": "عدة وحدات من نفس المنتج تُباع معاً (مثلاً 3 قمصان). ليست حزمة من منتجات مختلفة.",
       "category": "القسم",
       "loading": "جارٍ التحميل…",
       "selectCategory": "— اختر القسم —",
@@ -2187,10 +2190,12 @@
         "category": "يرجى اختيار القسم.",
         "priceRequired": "السعر مطلوب — أدخل رقماً (مثال: 29.900).",
         "pricePositive": "يجب أن يكون السعر أكبر من 0.",
-        "seasons": "اختر موسماً واحداً على الأقل.",
         "variants": "صحّح أخطاء مخزون الخيارات أدناه.",
         "stock": "أدخل كمية مخزون صحيحة.",
-        "saveFailed": "فشل الحفظ. يرجى المحاولة مرة أخرى."
+        "saveFailed": "فشل الحفظ. يرجى المحاولة مرة أخرى.",
+        "occasions": "اختر موسماً / مناسبة واحدة على الأقل.",
+        "packQuantity": "أدخل عدداً صحيحاً من الوحدات، 2 على الأقل.",
+        "packContents": "يجب ألا يتجاوز محتوى العبوة 500 حرف."
       },
       "liveNotice": "منتج معروض — تُنشر تعديلاتك فور الحفظ",
       "priceLowerHint": "لتخفيض السعر، أنشئ تخفيضًا ليرى العملاء السعر القديم مشطوبًا.",
@@ -2208,19 +2213,13 @@
       "colorImagesRequired": "أضف صورة واحدة على الأقل لكل لون: {colors}.",
       "confirmRemovedColors": "سيتم حذف صور الألوان المُزالة ({colors}). هل تريد المتابعة؟",
       "uploadingImages": "جارٍ رفع الصور… {percent}%",
-      "savingProduct": "جارٍ الحفظ…"
-    },
-    "seasons": {
-      "all_seasons": "كل المواسم",
-      "summer": "الصيف",
-      "winter": "الشتاء",
-      "spring": "الربيع",
-      "autumn": "الخريف",
-      "ramadan": "رمضان",
-      "eid_al_fitr": "عيد الفطر",
-      "eid_al_adha": "عيد الأضحى",
-      "back_to_school": "العودة المدرسية",
-      "new_year": "رأس السنة"
+      "savingProduct": "جارٍ الحفظ…",
+      "occasions": "الموسم / المناسبة",
+      "occasionsHint": "متى يُباع هذا المنتج أكثر؟ يمكن للزبائن التصفية حسبه وتعتمد عليه توقعات الذكاء الاصطناعي.",
+      "packQuantity": "عدد الوحدات في العبوة",
+      "packQuantityHint": "2 على الأقل",
+      "packContents": "محتوى العبوة (اختياري)",
+      "packContentsPlaceholder": "مثلاً 3 قمصان قطنية: أبيض، أسود، رمادي"
     },
     "variants": {
       "stockRequired": "المخزون مطلوب.",
@@ -4216,5 +4215,14 @@
       "monthly": "شهري",
       "yearly": "سنوي"
     }
+  },
+  "occasions": {
+    "all_season": "كل المواسم",
+    "summer": "الصيف",
+    "winter": "الشتاء",
+    "ramadan": "رمضان",
+    "aid": "العيد",
+    "back_to_school": "العودة المدرسية",
+    "wedding_season": "موسم الأعراس"
   }
 }

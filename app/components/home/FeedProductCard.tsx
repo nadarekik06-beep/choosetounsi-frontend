@@ -172,7 +172,7 @@ export default function FeedProductCard({ product, index, section, variant }: {
         }}>
           {product.name}
         </p>
-        <ProductPrice product={product} />
+        <ProductPrice product={product} pack />
         {product.stock > 0 && product.stock <= 5 && (
           <p style={{ fontSize: 9.5, color: '#f97316', fontWeight: 700, margin: '4px 0 0' }}>
             {t('onlyLeft', { count: product.stock })}

@@ -365,7 +365,10 @@
     "new": "Nouveau",
     "featured": "À la une",
     "flashSale": "Vente flash",
-    "noImage": "Pas d'image"
+    "noImage": "Pas d'image",
+    "pack": "Pack",
+    "packQty": "Pack ×{count}",
+    "perUnit": "{price} / unité"
   },
   "countdown": {
     "ended": "Terminée",
@@ -519,8 +522,10 @@
     "rangeOver": "Plus de {amount}",
     "availability": "Disponibilité",
     "inStockOnly": "En stock uniquement",
-    "packsOnly": "Packs uniquement",
-    "apply": "Appliquer les filtres"
+    "apply": "Appliquer les filtres",
+    "multiPacks": "Multi-packs uniquement",
+    "occasion": "Saison / occasion",
+    "clearFilters": "Effacer les filtres"
   },
   "category": {
     "sponsored": "Sponsorisé",
@@ -593,7 +598,8 @@
     "units": "{count, plural, one {# unité} other {# unités}}",
     "platformSeller": "CHOOSE'Tounsi Officiel",
     "metaFallbackTitle": "Produit",
-    "metaDescription": "Achetez {name} sur ChooseTounsi — livraison partout en Tunisie."
+    "metaDescription": "Achetez {name} sur ChooseTounsi — livraison partout en Tunisie.",
+    "packContents": "Dans ce pack"
   },
   "recommendations": {
     "flash": "FLASH",
@@ -2150,12 +2156,9 @@
       "descriptionPlaceholder": "Décrivez votre produit en détail…",
       "basePrice": "Prix de base ({currency})",
       "status": "Statut",
-      "seasons": "Saison(s) du produit",
       "selectedCount": "{count, plural, one {# sélectionnée} other {# sélectionnées}}",
-      "seasonsHint": "Choisissez les saisons où ce produit se vend le mieux. Les prévisions IA s'en servent.",
-      "isPack": "C'est un pack",
-      "packTag": "Pack",
-      "isPackHint": "Cochez si le produit regroupe plusieurs articles.",
+      "isPack": "Multi-pack",
+      "isPackHint": "Plusieurs unités du même produit vendues ensemble (ex. 3 t-shirts). Ce n'est pas un coffret de produits différents.",
       "category": "Catégorie",
       "loading": "Chargement…",
       "selectCategory": "— Choisir une catégorie —",
@@ -2187,10 +2190,12 @@
         "category": "Veuillez choisir une catégorie.",
         "priceRequired": "Le prix est obligatoire — saisissez un nombre (ex. 29,900).",
         "pricePositive": "Le prix doit être supérieur à 0.",
-        "seasons": "Choisissez au moins une saison.",
         "variants": "Corrigez les erreurs de stock des variantes ci-dessous.",
         "stock": "Saisissez une quantité en stock valide.",
-        "saveFailed": "Échec de l'enregistrement. Veuillez réessayer."
+        "saveFailed": "Échec de l'enregistrement. Veuillez réessayer.",
+        "occasions": "Choisissez au moins une saison / occasion.",
+        "packQuantity": "Indiquez un nombre entier d'unités, au moins 2.",
+        "packContents": "Le contenu du pack doit faire moins de 500 caractères."
       },
       "liveNotice": "Produit en ligne — vos modifications sont publiées dès l’enregistrement",
       "priceLowerHint": "Pour baisser le prix, créez une réduction : les clients verront l’ancien prix barré.",
@@ -2208,19 +2213,13 @@
       "colorImagesRequired": "Ajoutez au moins une photo pour chaque couleur : {colors}.",
       "confirmRemovedColors": "Les photos des couleurs retirées ({colors}) seront supprimées. Continuer ?",
       "uploadingImages": "Envoi des images… {percent} %",
-      "savingProduct": "Enregistrement…"
-    },
-    "seasons": {
-      "all_seasons": "Toutes saisons",
-      "summer": "Été",
-      "winter": "Hiver",
-      "spring": "Printemps",
-      "autumn": "Automne",
-      "ramadan": "Ramadan",
-      "eid_al_fitr": "Aïd el-Fitr",
-      "eid_al_adha": "Aïd el-Kébir",
-      "back_to_school": "Rentrée scolaire",
-      "new_year": "Nouvel An"
+      "savingProduct": "Enregistrement…",
+      "occasions": "Saison / Occasion",
+      "occasionsHint": "Quand ce produit se vend-il le mieux ? Les clients peuvent filtrer dessus et les prévisions IA s'en servent.",
+      "packQuantity": "Unités par pack",
+      "packQuantityHint": "Au moins 2",
+      "packContents": "Contenu du pack (facultatif)",
+      "packContentsPlaceholder": "ex. 3 t-shirts en coton : blanc, noir, gris"
     },
     "variants": {
       "stockRequired": "Le stock est obligatoire.",
@@ -4216,5 +4215,14 @@
       "monthly": "Mensuel",
       "yearly": "Annuel"
     }
+  },
+  "occasions": {
+    "all_season": "Toute saison",
+    "summer": "Été",
+    "winter": "Hiver",
+    "ramadan": "Ramadan",
+    "aid": "Aïd",
+    "back_to_school": "Rentrée scolaire",
+    "wedding_season": "Saison des mariages"
   }
 }

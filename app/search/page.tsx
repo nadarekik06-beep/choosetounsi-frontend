@@ -180,7 +180,7 @@ function ProductCard({ product, rank }: { product: SearchProduct; rank?: number 
             {product.name}
           </h3>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-            <ProductPrice product={product} size="md"/>
+            <ProductPrice product={product} size="md" pack/>
             <span style={{ fontSize:10, fontWeight:700, color: product.stock===0 ? "#94a3b8":"#16a34a", background: product.stock===0 ? "#f1f5f9":"rgba(22,163,74,0.08)", padding:"2px 8px", borderRadius:999 }}>
               {product.stock === 0 ? tc("outOfStock") : tc("inStock")}
             </span>

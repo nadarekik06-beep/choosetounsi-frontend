@@ -365,7 +365,10 @@
     "new": "New",
     "featured": "Featured",
     "flashSale": "Flash sale",
-    "noImage": "No image"
+    "noImage": "No image",
+    "pack": "Pack",
+    "packQty": "Pack ×{count}",
+    "perUnit": "{price} / unit"
   },
   "countdown": {
     "ended": "Ended",
@@ -519,8 +522,10 @@
     "rangeOver": "Over {amount}",
     "availability": "Availability",
     "inStockOnly": "In stock only",
-    "packsOnly": "Packs only",
-    "apply": "Apply filters"
+    "apply": "Apply filters",
+    "multiPacks": "Multi-packs only",
+    "occasion": "Season / occasion",
+    "clearFilters": "Clear filters"
   },
   "category": {
     "sponsored": "Sponsored",
@@ -593,7 +598,8 @@
     "units": "{count, plural, one {# unit} other {# units}}",
     "platformSeller": "CHOOSE'Tounsi Official",
     "metaFallbackTitle": "Product",
-    "metaDescription": "Buy {name} on ChooseTounsi — delivered across Tunisia."
+    "metaDescription": "Buy {name} on ChooseTounsi — delivered across Tunisia.",
+    "packContents": "In this pack"
   },
   "recommendations": {
     "flash": "FLASH",
@@ -2150,12 +2156,9 @@
       "descriptionPlaceholder": "Describe your product in detail…",
       "basePrice": "Base Price ({currency})",
       "status": "Status",
-      "seasons": "Product Season(s)",
       "selectedCount": "{count} selected",
-      "seasonsHint": "Select all seasons when this product sells best. AI predictions use this.",
-      "isPack": "This is a pack",
-      "packTag": "Pack",
-      "isPackHint": "Check this if the product contains multiple items bundled together.",
+      "isPack": "Multi-pack",
+      "isPackHint": "Several units of the same product sold together (e.g. 3 t-shirts). Not a bundle of different products.",
       "category": "Category",
       "loading": "Loading…",
       "selectCategory": "— Select category —",
@@ -2187,10 +2190,12 @@
         "category": "Please select a category.",
         "priceRequired": "Price is required — enter a number (e.g. 29.900).",
         "pricePositive": "Price must be greater than 0.",
-        "seasons": "Select at least one season.",
         "variants": "Fix variant stock errors below.",
         "stock": "Enter a valid stock quantity.",
-        "saveFailed": "Failed to save. Please try again."
+        "saveFailed": "Failed to save. Please try again.",
+        "occasions": "Select at least one season / occasion.",
+        "packQuantity": "Enter a whole number of units, at least 2.",
+        "packContents": "Keep the pack contents under 500 characters."
       },
       "liveNotice": "Live product — your changes go online as soon as you save",
       "priceLowerHint": "To lower the price, create a discount so customers see the old price crossed out.",
@@ -2208,19 +2213,13 @@
       "colorImagesRequired": "Add at least one photo for each color: {colors}.",
       "confirmRemovedColors": "The photos of the removed colors ({colors}) will be deleted. Continue?",
       "uploadingImages": "Uploading images… {percent}%",
-      "savingProduct": "Saving…"
-    },
-    "seasons": {
-      "all_seasons": "All Seasons",
-      "summer": "Summer",
-      "winter": "Winter",
-      "spring": "Spring",
-      "autumn": "Autumn",
-      "ramadan": "Ramadan",
-      "eid_al_fitr": "Eid al-Fitr",
-      "eid_al_adha": "Eid al-Adha",
-      "back_to_school": "Back to School",
-      "new_year": "New Year"
+      "savingProduct": "Saving…",
+      "occasions": "Season / Occasion",
+      "occasionsHint": "When does this product sell best? Shoppers can filter by it and AI forecasts use it.",
+      "packQuantity": "Units per pack",
+      "packQuantityHint": "At least 2",
+      "packContents": "Pack contents (optional)",
+      "packContentsPlaceholder": "e.g. 3 cotton t-shirts: white, black, grey"
     },
     "variants": {
       "stockRequired": "Stock is required.",
@@ -4216,5 +4215,14 @@
       "monthly": "Monthly",
       "yearly": "Yearly"
     }
+  },
+  "occasions": {
+    "all_season": "All season",
+    "summer": "Summer",
+    "winter": "Winter",
+    "ramadan": "Ramadan",
+    "aid": "Eid",
+    "back_to_school": "Back to school",
+    "wedding_season": "Wedding season"
   }
 }

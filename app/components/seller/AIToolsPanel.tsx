@@ -690,33 +690,27 @@ useEffect(() => {
 // TOOL 2 — SALES PREDICTOR — UPGRADED WITH PRODUCT DNA STRIP
 // ═════════════════════════════════════════════════════════════════════════════
 
-// CHANGE 1: Only one SEASON_META — using DB slugs as keys
+// Keys = product_occasions values (backend App\Support\Occasions)
 const ALL_SEASONS = [
-  { value: 'all_seasons',    label: 'All Seasons',    emoji: '📅' },
+  { value: 'all_season',     label: 'All season',     emoji: '📅' },
   { value: 'summer',         label: 'Summer',         emoji: '☀️' },
   { value: 'winter',         label: 'Winter',         emoji: '❄️' },
-  { value: 'spring',         label: 'Spring',         emoji: '🌸' },
-  { value: 'autumn',         label: 'Autumn',         emoji: '🍂' },
   { value: 'ramadan',        label: 'Ramadan',        emoji: '🌙' },
-  { value: 'eid_al_fitr',    label: 'Eid al-Fitr',   emoji: '🎉' },
-  { value: 'eid_al_adha',    label: 'Eid al-Adha',   emoji: '🐑' },
-  { value: 'back_to_school', label: 'Back to School', emoji: '📚' },
-  { value: 'new_year',       label: 'New Year',       emoji: '🎆' },
+  { value: 'aid',            label: 'Eid',            emoji: '🎉' },
+  { value: 'back_to_school', label: 'Back to school', emoji: '📚' },
+  { value: 'wedding_season', label: 'Wedding season', emoji: '💍' },
 ] as const;
 
 const SEASON_MAP = Object.fromEntries(ALL_SEASONS.map(s => [s.value, s]));
 
 const SEASON_META: Record<string, { emoji: string; color: string; desc: string }> = {
-  all_seasons:   { emoji: '📅', color: '#6b7280', desc: 'Regular period' },
-  ramadan:       { emoji: '🌙', color: '#8b5cf6', desc: 'Peak demand' },
-  eid_al_fitr:   { emoji: '🎉', color: '#f59e0b', desc: 'Shopping surge' },
-  eid_al_adha:   { emoji: '🐑', color: '#10b981', desc: 'Gift buying' },
-  summer:        { emoji: '☀️', color: '#f97316', desc: 'Holiday mood' },
-  back_to_school:{ emoji: '📚', color: '#3b82f6', desc: 'School rush' },
-  winter:        { emoji: '❄️', color: '#06b6d4', desc: 'Cold season' },
-  spring:        { emoji: '🌸', color: '#ec4899', desc: 'New arrivals' },
-  autumn:        { emoji: '🍂', color: '#a16207', desc: 'Harvest period' },
-  new_year:      { emoji: '🎆', color: '#db142e', desc: 'Celebration surge' },
+  all_season:     { emoji: '📅', color: '#6b7280', desc: 'Regular period' },
+  ramadan:        { emoji: '🌙', color: '#8b5cf6', desc: 'Peak demand' },
+  aid:            { emoji: '🎉', color: '#f59e0b', desc: 'Shopping surge' },
+  summer:         { emoji: '☀️', color: '#f97316', desc: 'Holiday mood' },
+  back_to_school: { emoji: '📚', color: '#3b82f6', desc: 'School rush' },
+  winter:         { emoji: '❄️', color: '#06b6d4', desc: 'Cold season' },
+  wedding_season: { emoji: '💍', color: '#db142e', desc: 'Celebration surge' },
 };
 function SeasonSelector({
   productSeasons, selected, onChange, dark,
@@ -726,11 +720,11 @@ function SeasonSelector({
 }) {
   const muted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
   const toggle = (slug: string) => {
-    if (slug === 'all_seasons') {
-      onChange(selected.includes('all_seasons') ? [] : ['all_seasons']);
+    if (slug === 'all_season') {
+      onChange(selected.includes('all_season') ? [] : ['all_season']);
       return;
     }
-    const without = selected.filter(s => s !== 'all_seasons');
+    const without = selected.filter(s => s !== 'all_season');
     if (without.includes(slug)) {
       const next = without.filter(s => s !== slug);
       onChange(next.length > 0 ? next : []);
@@ -742,7 +736,7 @@ function SeasonSelector({
     .map(slug => SEASON_MAP[slug as keyof typeof SEASON_MAP])
     .filter(Boolean);
   if (availableSeasons.length === 0) return null;
-  if (availableSeasons.length === 1 && availableSeasons[0].value === 'all_seasons') return null;
+  if (availableSeasons.length === 1 && availableSeasons[0].value === 'all_season') return null;
   return (
     <div>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
@@ -1068,8 +1062,8 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
 
   const r   = result?.ai_result   ?? null;
   const ctx = result?.data_context ?? null;
-  const primarySeason = ctx?.season ?? 'all_seasons';
-  const sm = SEASON_META[primarySeason] ?? SEASON_META['all_seasons'];
+  const primarySeason = ctx?.season ?? 'all_season';
+  const sm = SEASON_META[primarySeason] ?? SEASON_META['all_season'];
   const trendColor = r ? (TREND_COLORS[r.trend] ?? '#3b82f6') : '#3b82f6';
   const confColor  = r ? (CONFIDENCE_COLORS[r.confidence] ?? '#94a3b8') : '#94a3b8';
 
@@ -1099,7 +1093,7 @@ function SalesPredictorTool({ products, dark, initialProductId }: { products: Ar
 
         <ProdSelect products={products} value={selectedId} onChange={id => { setSelectedId(id); setResult(null); setTargetSeasons([]); setProductSeasons([]); }} dark={dark} />
 
-        {productSeasons.length > 0 && !(productSeasons.length === 1 && productSeasons[0] === 'all_seasons') && (
+        {productSeasons.length > 0 && !(productSeasons.length === 1 && productSeasons[0] === 'all_season') && (
           <div style={{ padding:'12px 14px', borderRadius:12, background: dark?'rgba(255,255,255,0.02)':'rgba(0,0,0,0.02)', border:`1px solid ${border}` }}>
             <SeasonSelector productSeasons={productSeasons} selected={targetSeasons} onChange={setTargetSeasons} dark={dark} />
           </div>

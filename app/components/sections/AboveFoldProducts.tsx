@@ -122,7 +122,7 @@ function CompactProductCard({ product }: { product: Product }) {
       </div>
       <div className="cpc-info">
         <p className="cpc-name">{product.name}</p>
-        <ProductPrice product={product} />
+        <ProductPrice product={product} pack />
       </div>
     </Link>
   )

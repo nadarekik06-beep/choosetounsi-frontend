@@ -10,7 +10,7 @@ import {
 import ProductPrice, { ProductPromoOverlay, type PricedProduct } from '@/app/components/promotions/ProductPrice'
 import type { ActivePromotion } from '@/lib/promotionsApi'
 import { getToken, isAuthenticated } from '@/lib/auth'
-import ProductFilterSidebar, { DEFAULT_FILTERS, type F } from '@/app/components/filters/ProductFilterSidebar'
+import ProductFilterSidebar, { DEFAULT_FILTERS, appendFilterParams, hasActiveFilters, type F } from '@/app/components/filters/ProductFilterSidebar'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { useWilayaLabel } from '@/lib/i18n/wilayas'
@@ -149,7 +149,7 @@ function ProductCard({ product }: { product: GridProduct }) {
           }}>
             {product.name}
           </p>
-          <ProductPrice product={product} />
+          <ProductPrice product={product} pack />
         </div>
       </div>
     </Link>
@@ -316,6 +316,7 @@ function FilterChipsRow({ chips, setChips, hasCoupons }: {
 export default function SellerStorefrontPage() {
   const t   = useTranslations('storefront')
   const tc  = useTranslations('common')
+  const tf  = useTranslations('filters')
   const wilayaLabel = useWilayaLabel()
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -400,12 +401,10 @@ export default function SellerStorefrontPage() {
     return () => clearTimeout(timer)
   }, [f.q])
 
-  const attrQP = useMemo(
-    () => Object.entries(f.attrs).filter(([, v]) => v.length).map(([s, ids]) => `${s}:${ids.join(',')}`).join('|'),
-    [f.attrs]
-  )
+  // Every server-side sidebar filter: a change refetches and goes back to page 1
+  const filterKey = JSON.stringify([f.pMin, f.pMax, f.inStock, f.isPack, f.occasions, f.attrs])
 
-  useEffect(() => { setPage(1) }, [tab, f.sort, f.pMin, f.pMax, f.inStock, f.isPack, attrQP, debouncedSearch, chips])
+  useEffect(() => { setPage(1) }, [tab, f.sort, filterKey, debouncedSearch, chips])
 
   useEffect(() => {
     if (!id || tab !== 'products') return
@@ -416,11 +415,7 @@ export default function SellerStorefrontPage() {
     qp.set('page', String(page))
     qp.set('per_page', '20')
     if (debouncedSearch) qp.set('search', debouncedSearch)
-    if (f.pMin) qp.set('price_min', f.pMin)
-    if (f.pMax) qp.set('price_max', f.pMax)
-    if (f.inStock) qp.set('in_stock', '1')
-    if (f.isPack) qp.set('is_pack', '1')
-    Object.entries(f.attrs).forEach(([s, ids]) => ids.forEach(v => qp.append(`attrs[${s}][]`, String(v))))
+    appendFilterParams(qp, f)
     if (chips.topRated) qp.set('min_rating', '4')
     if (chips.freeShipping) qp.set('free_delivery', '1')
     if (chips.couponDeals) qp.set('has_coupon', '1')
@@ -435,7 +430,8 @@ export default function SellerStorefrontPage() {
       })
       .catch(() => {})
       .finally(() => setProductsLoading(false))
-  }, [id, tab, page, f.sort, f.pMin, f.pMax, f.inStock, f.isPack, attrQP, debouncedSearch, chips])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- filterKey covers f's server-side filters
+  }, [id, tab, page, f.sort, filterKey, debouncedSearch, chips])
 
   const flashPromos    = useMemo(() => seller?.promotions.filter(p => p.type === 'flash_sale') ?? [], [seller])
   const discountPromos = useMemo(() => seller?.promotions.filter(p => p.type === 'discount') ?? [], [seller])
@@ -670,7 +666,15 @@ export default function SellerStorefrontPage() {
             <FilterChipsRow chips={chips} setChips={setChips} hasCoupons={hasCoupons} />
 
             {products.length === 0 && !productsLoading ? (
-              <p style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>{t('noMatch')}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <p style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>{t('noMatch')}</p>
+                {(hasActiveFilters(f) || f.q !== '') && (
+                  <button type="button" onClick={() => setF({ ...DEFAULT_FILTERS, sort: f.sort })}
+                    style={{ fontSize: 12, fontWeight: 700, padding: '7px 14px', borderRadius: 999, border: '1.5px solid #db142e', background: '#fff', color: '#db142e', cursor: 'pointer' }}>
+                    {tf('clearFilters')}
+                  </button>
+                )}
+              </div>
             ) : (
               <div className="seller-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 22 }}>
                 {products.map(p => <ProductCard key={p.id} product={p} />)}

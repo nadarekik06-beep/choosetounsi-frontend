@@ -7,8 +7,8 @@
  * it can be reused on other product-grid pages (e.g. the seller storefront's
  * "All Products" tab) instead of being duplicated a second time.
  *
- * This component owns sort / price range / in-stock / pack / dynamic
- * attribute filters — NOT category selection (that's handled by whatever
+ * This component owns sort / price range / in-stock / multi-pack / season-occasion /
+ * dynamic attribute filters — NOT category selection (that's handled by whatever
  * routes the consuming page to a category, same as before).
  *
  * Attribute options are fetched from the category's filter-attributes
@@ -22,6 +22,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
+import { OCCASIONS, DEFAULT_OCCASION, useOccasionCategories } from '@/lib/occasions'
 
 const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API    = `${ORIGIN}/api`
@@ -30,13 +31,31 @@ export type Sort = 'created_at' | 'views' | 'price_asc' | 'price_desc'
 
 export interface F {
   q: string; pMin: string; pMax: string; inStock: boolean; isPack: boolean
+  occasions: string[]
   sort: Sort; attrs: Record<string, number[]>
 }
+
+/** Query params for the filters shared by every product grid (GET /api/products). */
+export function appendFilterParams(qp: URLSearchParams, f: F): void {
+  if (f.pMin) qp.set('price_min', f.pMin)
+  if (f.pMax) qp.set('price_max', f.pMax)
+  if (f.inStock) qp.set('in_stock', '1')
+  if (f.isPack) qp.set('is_pack', '1')
+  f.occasions.forEach(o => qp.append('occasions[]', o))
+  Object.entries(f.attrs).forEach(([s, ids]) => ids.forEach(v => qp.append(`attrs[${s}][]`, String(v))))
+}
+
+/** True when the shopper narrowed the grid (sort and search box excluded). */
+export const hasActiveFilters = (f: F) =>
+  !!(f.inStock || f.isPack || f.pMin || f.pMax || f.occasions.length || Object.values(f.attrs).some(v => v.length))
 
 export interface AOpt { id: number; value: string; color_hex?: string | null }
 export interface Attr { id: number; slug: string; name: string; type: string; options: AOpt[] }
 
-export const DEFAULT_FILTERS: F = { q: '', pMin: '', pMax: '', inStock: false, isPack: false, sort: 'created_at', attrs: {} }
+export const DEFAULT_FILTERS: F = { q: '', pMin: '', pMax: '', inStock: false, isPack: false, occasions: [], sort: 'created_at', attrs: {} }
+
+// "All season" is the default tag, not something shoppers look for
+const OCCASION_FILTERS = OCCASIONS.filter(o => o.value !== DEFAULT_OCCASION)
 
 // `l` is a message key in the `filters` namespace.
 export const SORTS: { k: Sort; l: string }[] = [
@@ -71,6 +90,10 @@ export default function ProductFilterSidebar({
   f, setF, total, catSlug = '', subSlug = '', sellerId, searchPlaceholder, hideSearch = false, mOpen, setMOpen,
 }: Props) {
   const t   = useTranslations('filters')
+  const to  = useTranslations('occasions')
+  const occasionCategories = useOccasionCategories()
+  // Without a category (e.g. a seller storefront) the grid can mix categories
+  const showOccasions = !catSlug || !!occasionCategories?.includes(catSlug)
   const fmt = useFormat()
   const whole = (v: string) => fmt.price(v, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
   const rangeLabel = (mn: string, mx: string) =>
@@ -111,7 +134,8 @@ export default function ProductFilterSidebar({
   const setA1 = (slug: string, id: number) => { const c = f.attrs[slug] ?? []; upd({ attrs: { ...f.attrs, [slug]: c.includes(id) ? [] : [id] } }) }
   const isR   = (mn: string, mx: string) => f.pMin === mn && f.pMax === mx
   const applyR = (mn: string, mx: string) => isR(mn, mx) ? upd({ pMin: '', pMax: '' }) : upd({ pMin: mn, pMax: mx })
-  const hasAny = !!(f.q || f.inStock || f.pMin || f.pMax || Object.values(f.attrs).some(v => v.length))
+  const togO  = (o: string) => upd({ occasions: f.occasions.includes(o) ? f.occasions.filter(x => x !== o) : [...f.occasions, o] })
+  const hasAny = !!f.q || hasActiveFilters(f)
 
   const Acc = ({ k, label }: { k: string; label: string }) => (
     <button className="pfs-head" onClick={() => tog(k)} aria-expanded={open.has(k)}>
@@ -165,11 +189,30 @@ export default function ProductFilterSidebar({
             <div className={`pfs-tgl${f.inStock ? ' on' : ''}`} onClick={() => upd({ inStock: !f.inStock })}><div className="pfs-tgl-k" /></div>
           </label>
           <label className="pfs-trow">
-            <span>{t('packsOnly')}</span>
+            <span>{t('multiPacks')}</span>
             <div className={`pfs-tgl${f.isPack ? ' on' : ''}`} onClick={() => upd({ isPack: !f.isPack })}><div className="pfs-tgl-k" /></div>
           </label>
         </div>}
       </div>
+      {showOccasions && (
+        <div className="pfs-acc">
+          <button className="pfs-head" onClick={() => tog('occasion')} aria-expanded={open.has('occasion')}>
+            <span>{t('occasion')}{f.occasions.length > 0 && <span className="pfs-badge">{f.occasions.length}</span>}</span>
+            <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
+              style={{ transform: open.has('occasion') ? 'rotate(180deg)' : 'none', transition: 'transform .2s', flexShrink: 0 }}>
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+          {open.has('occasion') && <div className="pfs-body">
+            <div className="pfs-checks">{OCCASION_FILTERS.map(o => { const on = f.occasions.includes(o.value); return (
+              <label key={o.value} className={`pfs-chk${on ? ' on' : ''}`} onClick={() => togO(o.value)}>
+                <div className={`pfs-cb${on ? ' on' : ''}`}>{on && <svg width="8" height="8" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" /></svg>}</div>
+                <span aria-hidden="true">{o.emoji}</span> {to(o.value)}
+              </label>
+            )})}</div>
+          </div>}
+        </div>
+      )}
       {aLoad && [1, 2].map(k => (
         <div key={k} className="pfs-acc" style={{ padding: '11px 16px' }}>
           <div className="pfs-skln" style={{ width: '54%', height: 9, marginBottom: 7 }} />

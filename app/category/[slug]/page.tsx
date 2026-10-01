@@ -17,7 +17,7 @@ import { useCart } from '@/context/CartContext'
 import Navbar from '@/app/components/layout/Navbar'
 import SponsoredCard from '@/components/ads/SponsoredCard'
 import { fetchAds, fetchAdsConfig, withAdSlots, type AdCard } from '@/lib/adsApi'
-import ProductFilterSidebar, { type F } from '@/app/components/filters/ProductFilterSidebar'
+import ProductFilterSidebar, { type F, DEFAULT_FILTERS, appendFilterParams, hasActiveFilters } from '@/app/components/filters/ProductFilterSidebar'
 import { useTranslations } from 'next-intl'
 import { canScrollNext, canScrollPrev, scrollCarousel } from '@/lib/i18n/rtlScroll'
 
@@ -233,7 +233,7 @@ function Card({ p, idx }: { p: Product; idx: number }) {
           <p className="shc-desc">{p.short_description}</p>
         )}
 
-        <ProductPrice product={p} className="shc-prices" />
+        <ProductPrice product={p} pack className="shc-prices" />
 
         {/* Color swatches */}
         {visSwatches.length > 0 && (
@@ -296,7 +296,7 @@ function ListCard({ p, idx }: { p: Product; idx: number }) {
         <p className="shlc-name">{p.name}</p>
         {p.short_description && <p className="shlc-desc">{p.short_description}</p>}
         <div className="shlc-foot">
-          <ProductPrice product={p} className="shc-prices" />
+          <ProductPrice product={p} pack className="shc-prices" />
           <button
             className={`shc-add shc-add-sm${cs === 'done' ? ' done' : ''}`}
             onClick={handle}
@@ -390,6 +390,7 @@ function Pages({ cur, total, go }: { cur:number; total:number; go:(p:number)=>vo
 function Inner() {
   const t       = useTranslations('category')
   const tMega   = useTranslations('mega')
+  const tf      = useTranslations('filters')
   const params  = useParams()
   const sp      = useSearchParams()
   const slug    = params?.slug as string
@@ -404,7 +405,7 @@ function Inner() {
   const [page, setPage]  = useState(1)
   const [view, setView]  = useState<View>('grid')
   const [mOpen,setMOpen] = useState(false)
-  const [f, setF] = useState<F>({ q:'',pMin:'',pMax:'',inStock:false,isPack:false,sort:'created_at',attrs:{} })
+  const [f, setF] = useState<F>(DEFAULT_FILTERS)
 
   useEffect(() => {
     const measure = () => {
@@ -428,7 +429,8 @@ function Inner() {
       .catch(()=>{})
   },[])
 
-  const attrQP=useMemo(()=>Object.entries(f.attrs).filter(([,v])=>v.length).map(([s,ids])=>`${s}:${ids.join(',')}`).join('|'),[f.attrs])
+  // Every server-side filter: a change refetches and goes back to page 1
+  const filterKey=JSON.stringify([f.pMin,f.pMax,f.inStock,f.isPack,f.occasions,f.attrs])
 
   const fetchP=useCallback(async()=>{
     if(!slug) return; setLoad(true)
@@ -436,16 +438,13 @@ function Inner() {
       const qp=new URLSearchParams()
       qp.set('page',String(page)); qp.set('sort',f.sort); qp.set('category_slug',slug)
       if(subSlug) qp.set('subcategory_slug',subSlug)
-      if(f.pMin)  qp.set('price_min',f.pMin)
-      if(f.pMax)  qp.set('price_max',f.pMax)
-      if(f.inStock) qp.set('in_stock','1')
-      if(f.isPack) qp.set('is_pack','1')
-      Object.entries(f.attrs).forEach(([s,ids])=>ids.forEach(id=>qp.append(`attrs[${s}][]`,String(id))))
+      appendFilterParams(qp,f)
       const r=await fetch(`${API}/products?${qp}`,{headers:{Accept:'application/json'}})
       if(!r.ok) throw new Error()
       setProds((await r.json()).data)
     } catch { setProds(null) } finally { setLoad(false) }
-  },[slug,subSlug,f.sort,f.pMin,f.pMax,f.inStock,attrQP,page])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- filterKey covers f's server-side filters
+  },[slug,subSlug,f.sort,filterKey,page])
 
   useEffect(()=>{ fetchP() },[fetchP])
   useEffect(()=>{
@@ -456,7 +455,7 @@ function Inner() {
       .then(([list,cfg])=>{ setAds(list); setAdSlots(cfg?.reserved_slots??[]) })
     return ()=>ctrl.abort()
   },[slug,load,prods])
-  useEffect(()=>{ setPage(1) },[f.sort,f.pMin,f.pMax,f.inStock,attrQP,subSlug])
+  useEffect(()=>{ setPage(1) },[f.sort,filterKey,subSlug])
 
   const displayed=useMemo(()=>{
     if(!prods?.data) return []
@@ -465,7 +464,8 @@ function Inner() {
   },[prods,f.q])
 
   const subLabel=tMega.has(`items.${subSlug}`)?tMega(`items.${subSlug}`):subSlug.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
-  const fCount=[f.q!=='',f.inStock,f.isPack,f.pMin!==''||f.pMax!=='',subSlug!=='',Object.values(f.attrs).some(v=>v.length)].filter(Boolean).length
+  const fCount=[f.q!=='',f.inStock,f.isPack,f.occasions.length>0,f.pMin!==''||f.pMax!=='',subSlug!=='',Object.values(f.attrs).some(v=>v.length)].filter(Boolean).length
+  const filtered=hasActiveFilters(f)||f.q!==''
 
   return (
     <>
@@ -653,9 +653,11 @@ function Inner() {
             {!load&&displayed.length===0&&(
               <div className="shempty">
                 <span className="shempty-ico">🛍️</span>
-                <p className="shempty-ttl">{Object.values(f.attrs).some(v=>v.length)||f.inStock||f.pMin||f.pMax?t('emptyFiltered'):subSlug?t('emptySub',{name:subLabel}):t('empty')}</p>
+                <p className="shempty-ttl">{filtered?t('emptyFiltered'):subSlug?t('emptySub',{name:subLabel}):t('empty')}</p>
                 <p className="shempty-sub">{t('emptyHint')}</p>
-                <Link href="/shop" className="shempty-cta">{t('browseAll')}<svg className="rtl-flip" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></Link>
+                {filtered
+                  ?<button type="button" className="shempty-cta" onClick={()=>setF({...DEFAULT_FILTERS,sort:f.sort})}>{tf('clearFilters')}</button>
+                  :<Link href="/shop" className="shempty-cta">{t('browseAll')}<svg className="rtl-flip" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></Link>}
               </div>
             )}
             {!load&&displayed.length>0&&(

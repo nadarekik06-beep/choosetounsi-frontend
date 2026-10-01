@@ -14,6 +14,9 @@
  *   <ProductPromoBadges product={p} inline />  the badges alone, for a card that
  *                                          already has its own badge column
  *   <ProductPrice product={p} />          final price in red + crossed-out original
+ *   <ProductPrice product={p} pack />     + "Pack ×N" badge and per-unit price for
+ *                                          multi-pack products (opt-in: cart bundle
+ *                                          rows also carry an unrelated is_pack)
  *
  * Badges and colours match the /deals cards.
  */
@@ -34,6 +37,9 @@ export interface PricedProduct {
   promo_label?: string | null
   ends_at?: string | null
   promotion?: { is_flash_sale?: boolean; ends_at?: string | null } | null
+  // Multi-pack (products.is_pack / pack_quantity); quantity is null for legacy packs
+  is_pack?: boolean | null
+  pack_quantity?: number | null
 }
 
 export interface PromoPricing {
@@ -72,15 +78,18 @@ const SIZES = {
   xl: { price: 32,   orig: 18 },   // product detail page
 }
 
-export default function ProductPrice({ product, size = 'sm', className, style }: {
+export default function ProductPrice({ product, size = 'sm', pack = false, className, style }: {
   product: PricedProduct
   size?: keyof typeof SIZES
+  /** Show the multi-pack badge + per-unit price (product cards and detail page only). */
+  pack?: boolean
   className?: string
   style?: React.CSSProperties
 }) {
   const fmt = useFormat()
   const { final, original, hasDiscount } = promoPricing(product)
   const s = SIZES[size]
+  const qty = pack && product.is_pack ? (product.pack_quantity ?? null) : null
 
   return (
     <div className={className} style={{ display: 'flex', alignItems: 'baseline', gap: 5, flexWrap: 'wrap', ...style }}>
@@ -92,7 +101,31 @@ export default function ProductPrice({ product, size = 'sm', className, style }:
           {fmt.price(original)}
         </span>
       )}
+      {pack && product.is_pack && <PackBadge quantity={qty} />}
+      {qty !== null && qty >= 2 && <PackUnitPrice total={final} quantity={qty} size={s.orig} />}
     </div>
+  )
+}
+
+/** "Pack" or "Pack ×N" pill for multi-pack products. */
+export function PackBadge({ quantity, style }: { quantity?: number | null; style?: React.CSSProperties }) {
+  const t = useTranslations('productCard')
+  return (
+    <span style={{
+      ...BADGE, alignSelf: 'center', background: '#1f2937', fontSize: 9, padding: '2px 7px', ...style,
+    }}>
+      {quantity && quantity >= 2 ? t('packQty', { count: quantity }) : t('pack')}
+    </span>
+  )
+}
+
+function PackUnitPrice({ total, quantity, size }: { total: number; quantity: number; size: number }) {
+  const t = useTranslations('productCard')
+  const fmt = useFormat()
+  return (
+    <span style={{ flexBasis: '100%', fontSize: size, fontWeight: 600, color: '#6b7280', lineHeight: 1.3 }}>
+      {t('perUnit', { price: fmt.price(total / quantity) })}
+    </span>
   )
 }
 

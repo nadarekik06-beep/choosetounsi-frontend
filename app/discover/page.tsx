@@ -470,7 +470,7 @@ onMouseLeave={() => {
           </p>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <ProductPrice product={item as PricedProduct} size="md" />
+            <ProductPrice product={item as PricedProduct} size="md" pack />
 
             {(item as any).stock !== undefined && (item as any).stock <= 5 && (item as any).stock > 0 && (
               <span style={{

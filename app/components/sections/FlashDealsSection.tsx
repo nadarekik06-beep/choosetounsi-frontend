@@ -117,7 +117,7 @@ function FlashDealCard({ product, promo }: { product: FlashProduct; promo: Flash
       </div>
       <div className="fds-info">
         <p className="fds-name">{product.name}</p>
-        <ProductPrice product={product} />
+        <ProductPrice product={product} pack />
         {promo.flash_stock_remaining !== null && (
           <div className="fds-stock-bar">
             <div className="fds-stock-fill" style={{

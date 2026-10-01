@@ -161,7 +161,7 @@ function ProductCard({ product }: { product: BrandProduct }) {
             {product.name}
           </p>
           <div className="flex items-center justify-between gap-2">
-            <ProductPrice product={product} size="md" />
+            <ProductPrice product={product} pack size="md" />
             {!outOfStock && product.stock <= 10 && (
               <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">
                 {t('left', { count: product.stock })}

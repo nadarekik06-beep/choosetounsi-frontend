@@ -158,7 +158,7 @@ onMouseLeave={() => {
         )}
         <p className="bpc-name">{product.name}</p>
         <div className="bpc-price-row">
-          <ProductPrice product={product} size="md" />
+          <ProductPrice product={product} pack size="md" />
         </div>
       </div>
     </Link>

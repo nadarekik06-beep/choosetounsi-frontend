@@ -130,7 +130,7 @@ function MiniCard({ product }: { product: RecProduct }) {
             {product.name}
           </p>
 
-          <ProductPrice product={product} />
+          <ProductPrice product={product} pack />
 
           {/* Savings pill */}
           {hasDiscount && (

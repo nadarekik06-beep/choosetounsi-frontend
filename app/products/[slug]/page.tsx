@@ -94,7 +94,12 @@ interface Product {
     })[]
   })[]
   color_images: Record<string, string[]>
-  is_free_delivery?: boolean    
+  is_free_delivery?: boolean
+  // Multi-pack: pack_quantity is null for packs saved before it existed
+  is_pack?: boolean
+  pack_quantity?: number | null
+  pack_contents?: string | null
+  occasions?: string[]
 }
 
 // ─── Attribute Display ────────────────────────────────────────────────────────
@@ -507,6 +512,8 @@ export default function ProductDetailPage() {
     final_price:    effectivePrice,
     original_price: originalPrice,
     promo_type:     activePromotion ? (activePromotion.is_flash_sale ? 'flash_sale' : 'promotion') : null,
+    is_pack:        product?.is_pack ?? false,
+    pack_quantity:  product?.pack_quantity ?? null,
   }
 
   const outOfStock = effectiveStock <= 0
@@ -688,11 +695,16 @@ export default function ProductDetailPage() {
             {/* Price block */}
             <div style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                <ProductPrice product={linePrice} size="xl" style={{ gap: 10 }} />
+                <ProductPrice product={linePrice} size="xl" pack style={{ gap: 10 }} />
                 {selectedVariant?.price_override && !activePromotion && (
                   <span style={{ fontSize: 12, color: '#94a3b8' }}>{t('variantPrice')}</span>
                 )}
               </div>
+              {product.is_pack && product.pack_contents && (
+                <p style={{ fontSize: 13, color: '#374151', marginTop: 6 }}>
+                  <span style={{ fontWeight: 700 }}>{t('packContents')}:</span> {product.pack_contents}
+                </p>
+              )}
               {(product as any).is_free_delivery && (
                 <div style={{
                   display: 'inline-flex', alignItems: 'center', gap: 6,

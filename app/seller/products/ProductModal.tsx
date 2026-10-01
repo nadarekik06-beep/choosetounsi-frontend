@@ -23,20 +23,7 @@ import AiDescriptionPanel from '../components/AiDescriptionPanel';
 import CommissionPreview from '@/app/seller/components/CommissionPreview'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
-
-// Labels live in seller.seasons.<value>
-const SEASONS = [
-  { value: 'all_seasons',    emoji: '🌍' },
-  { value: 'summer',         emoji: '☀️' },
-  { value: 'winter',         emoji: '❄️' },
-  { value: 'spring',         emoji: '🌸' },
-  { value: 'autumn',         emoji: '🍂' },
-  { value: 'ramadan',        emoji: '🌙' },
-  { value: 'eid_al_fitr',    emoji: '🎉' },
-  { value: 'eid_al_adha',    emoji: '🐑' },
-  { value: 'back_to_school', emoji: '📚' },
-  { value: 'new_year',       emoji: '🎆' },
-]
+import { OCCASIONS, normalizeOccasions, useOccasionCategories, type Occasion } from '@/lib/occasions'
 
 interface FullProduct {
   id: number
@@ -78,19 +65,6 @@ function serializeAttributes(values: AttributeValues): Record<string, string> {
   return out
 }
 
-function parseSeasons(raw: unknown): string[] {
-  if (!raw) return ['all_seasons']
-  if (Array.isArray(raw)) return raw.length > 0 ? raw : ['all_seasons']
-  if (typeof raw === 'string') {
-    try {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) return parsed.length > 0 ? parsed : ['all_seasons']
-    } catch { }
-    return [raw]
-  }
-  return ['all_seasons']
-}
-
 interface ServerVariantRow extends VariantRow {
   label?: string
   option_map?: Record<string, {
@@ -100,14 +74,14 @@ interface ServerVariantRow extends VariantRow {
   existing_images?: Array<{ id: number; url: string; is_primary?: boolean }>
 }
 
-function SeasonPicker({ selected, onChange }: { selected: string[]; onChange: (seasons: string[]) => void }) {
-  const ts = useTranslations('seller.seasons')
-  const toggle = (value: string) => {
-    if (value === 'all_seasons') {
-      onChange(selected.includes('all_seasons') ? [] : ['all_seasons'])
+function OccasionPicker({ selected, onChange }: { selected: Occasion[]; onChange: (v: Occasion[]) => void }) {
+  const to = useTranslations('occasions')
+  const toggle = (value: Occasion) => {
+    if (value === 'all_season') {
+      onChange(selected.includes('all_season') ? [] : ['all_season'])
       return
     }
-    const without = selected.filter(s => s !== 'all_seasons')
+    const without = selected.filter(s => s !== 'all_season')
     if (without.includes(value)) {
       const next = without.filter(s => s !== value)
       onChange(next.length > 0 ? next : [])
@@ -116,8 +90,8 @@ function SeasonPicker({ selected, onChange }: { selected: string[]; onChange: (s
     }
   }
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 7 }}>
-      {SEASONS.map(season => {
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: 7 }}>
+      {OCCASIONS.map(season => {
         const isChecked = selected.includes(season.value)
         return (
           <button key={season.value} type="button" onClick={() => toggle(season.value)} style={{
@@ -140,7 +114,7 @@ function SeasonPicker({ selected, onChange }: { selected: string[]; onChange: (s
             )}
             <span style={{ fontSize: 18, lineHeight: 1 }}>{season.emoji}</span>
             <span style={{ fontSize: 9, fontWeight: isChecked ? 800 : 600, color: isChecked ? '#dc2626' : '#64748b', textAlign: 'center', lineHeight: 1.2 }}>
-              {ts(season.value)}
+              {to(season.value)}
             </span>
           </button>
         )
@@ -285,7 +259,9 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     subcategory_id:    p?.subcategory_id != null ? String(p.subcategory_id) : '',
     is_active:         p?.is_active ?? true,
     is_pack:           !!(p as any)?.is_pack,
-    seasons:           parseSeasons((p as any)?.seasons ?? (p as any)?.season),
+    pack_quantity:     (p as any)?.pack_quantity != null ? String((p as any).pack_quantity) : '',
+    pack_contents:     ((p as any)?.pack_contents ?? '') as string,
+    occasions:         normalizeOccasions((p as any)?.occasions),
     // FIX: initialise free_delivery from existing product data
     free_delivery:     (p as any)?.delivery_fee !== undefined &&
                        (p as any)?.delivery_fee !== null &&
@@ -325,6 +301,11 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const [apiError,    setApiError]        = useState('')
 
   const set = (field: string, value: unknown) => setForm(f => ({ ...f, [field]: value }))
+
+  // Season / Occasion only for the categories listed by the backend (App\Support\Occasions)
+  const occasionCategories = useOccasionCategories()
+  const categorySlug       = categories.find(c => c.id === Number(form.category_id))?.slug
+  const occasionsApply     = !!categorySlug && !!occasionCategories?.includes(categorySlug)
 
   useEffect(() => {
     categoriesApi.getAll()
@@ -410,7 +391,13 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     e.price = t('errors.pricePositive')
   }
 
-  if (form.seasons.length === 0) e.seasons = t('errors.seasons')
+  if (occasionsApply && form.occasions.length === 0) e.occasions = t('errors.occasions')
+
+  if (form.is_pack) {
+    const qty = Number(form.pack_quantity)
+    if (!/^\d+$/.test(form.pack_quantity.trim()) || qty < 2 || qty > 1000) e.pack_quantity = t('errors.packQuantity')
+  }
+  if (form.pack_contents.length > 500) e.pack_contents = t('errors.packContents')
 
   if (hasVariantRows) {
     const varStockErrs = validateVariantStocks(variantRows)
@@ -505,7 +492,10 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         short_description: form.short_description.trim() || undefined,
         is_active:         form.is_active,
         is_pack:           form.is_pack ? 1 : 0,
-        seasons:           JSON.stringify(form.seasons),
+        pack_quantity:     form.is_pack ? form.pack_quantity.trim() : '',
+        pack_contents:     form.is_pack ? form.pack_contents.trim() : '',
+        // Other categories are stored as all_season by the backend
+        occasions:         occasionsApply ? form.occasions : undefined,
         // FIX: map free_delivery boolean to delivery_fee value for the backend
         delivery_fee:      form.free_delivery ? '0' : '',
         ...buildImageManifest(images, groupKeys),
@@ -541,7 +531,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         Object.entries(data.errors).forEach(([key, msgs]) => {
           // images.color_groups.N… → the card of that color group
           const m = key.match(/^images\.color_groups\.(\d+)/)
-          const k = m && groupKeys?.[Number(m[1])] ? `images.color.${groupKeys[Number(m[1])]}` : key
+          const k = m && groupKeys?.[Number(m[1])] ? `images.color.${groupKeys[Number(m[1])]}`
+            : key.startsWith('occasions.') ? 'occasions' : key
           mapped[k] ??= (msgs as string[])[0]
         })
         setErrors(mapped)
@@ -733,34 +724,47 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                 </Field>
               </div>
 
-              {/* Season Picker */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <label style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#5b6472', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {t('seasons')} <span style={{ color: '#b91c1c' }}>*</span>
-                  </label>
-                  {form.seasons.length > 0 && (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>
-                      {t('selectedCount', { count: form.seasons.length })}
-                    </span>
-                  )}
+              {/* Season / Occasion — only for the categories that use it */}
+              {occasionsApply && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <label style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#5b6472', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {t('occasions')} <span style={{ color: '#b91c1c' }}>*</span>
+                    </label>
+                    {form.occasions.length > 0 && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 8px', borderRadius: 999 }}>
+                        {t('selectedCount', { count: form.occasions.length })}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ border: errors.occasions ? '1.5px solid #fca5a5' : '1.5px solid #e5e7eb', borderRadius: 14, padding: 10, background: errors.occasions ? '#fef2f2' : '#f8fafc' }}>
+                    <OccasionPicker selected={form.occasions} onChange={v => set('occasions', v)} />
+                  </div>
+                  {errors.occasions && <p style={{ fontSize: 11, color: '#b91c1c', marginTop: 4 }}>{errors.occasions}</p>}
+                  <p style={{ fontSize: 11, color: '#5b6472', marginTop: 5 }}>{t('occasionsHint')}</p>
                 </div>
-                <div style={{ border: errors.seasons ? '1.5px solid #fca5a5' : '1.5px solid #e5e7eb', borderRadius: 14, padding: 10, background: errors.seasons ? '#fef2f2' : '#f8fafc' }}>
-                  <SeasonPicker selected={form.seasons} onChange={seasons => set('seasons', seasons)} />
-                </div>
-                {errors.seasons && <p style={{ fontSize: 11, color: '#b91c1c', marginTop: 4 }}>{errors.seasons}</p>}
-                <p style={{ fontSize: 11, color: '#5b6472', marginTop: 5 }}>{t('seasonsHint')}</p>
-              </div>
+              )}
 
-              {/* Is Pack */}
+              {/* Multi-pack */}
               <div style={{ marginTop: 14 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none', width: 'fit-content' }}>
                   <input type="checkbox" checked={form.is_pack} onChange={e => set('is_pack', e.target.checked)}
                     style={{ width: 16, height: 16, accentColor: '#dc2626', cursor: 'pointer', flexShrink: 0 }} />
                   <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{t('isPack')}</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)', padding: '1px 7px', borderRadius: 4 }}>{t('packTag')}</span>
                 </label>
                 <p style={{ fontSize: 11, color: '#5b6472', marginBlock: '4px 0', marginInlineStart: 26 }}>{t('isPackHint')}</p>
+                {form.is_pack && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, 160px) 1fr', gap: 12, marginTop: 10, marginInlineStart: 26 }}>
+                    <Field label={t('packQuantity')} required error={errors.pack_quantity} hint={t('packQuantityHint')}>
+                      <input type="number" min={2} max={1000} step={1} inputMode="numeric" value={form.pack_quantity}
+                        onChange={e => set('pack_quantity', e.target.value)} className={inputCls(errors.pack_quantity)} />
+                    </Field>
+                    <Field label={t('packContents')} error={errors.pack_contents}>
+                      <input value={form.pack_contents} maxLength={500} onChange={e => set('pack_contents', e.target.value)}
+                        placeholder={t('packContentsPlaceholder')} className={inputCls(errors.pack_contents)} />
+                    </Field>
+                  </div>
+                )}
               </div>
 
               {/* ── FIX: FreeDeliveryToggle is now a proper component called here ── */}

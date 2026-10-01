@@ -8,8 +8,8 @@
  *   1. Added `restockApi` — direct stock updates (no admin approval)
  *   2. (removed) product update requests — sellers now edit live products directly
  *   3. color_images key typed as string (was already done, kept)
- *   4. ProductPayload: season → seasons (JSON-stringified array)
- *   5. buildFormData updated: seasons handling, is_pack, variant_images
+ *   4. ProductPayload: occasions (array, sent as occasions[]) + multi-pack fields
+ *   5. buildFormData updated: occasions, is_pack / pack_quantity / pack_contents, variant_images
  *
  * Everything else is IDENTICAL to the original.
  */
@@ -125,8 +125,6 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
   if (isUpdate) fd.append('_method', 'PUT')
 
   // ── Scalar fields ──────────────────────────────────────────────────────────
-  // 'season' is intentionally NOT in this list — it arrives as a JSON array
-  // string under the key 'seasons' and is handled separately below.
   const scalars: string[] = [
     'name', 'slug', 'sku', 'description', 'short_description',
     'price', 'stock', 'category_id', 'subcategory_id', 'delivery_fee',
@@ -138,24 +136,19 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
     }
   })
 
-  // ── Seasons (JSON array string) ────────────────────────────────────────────
-  // ProductModal sends:  seasons: JSON.stringify(['summer', 'winter'])
-  // Backend parseSeasons() expects the 'seasons' key with a JSON string value.
-  if (payload.seasons !== undefined && payload.seasons !== null) {
-    // Already JSON.stringify'd by the modal — just forward it
-    fd.append('seasons', payload.seasons)
-  } else if ((payload as any).season !== undefined) {
-    // Legacy fallback: a plain string value under the old 'season' key.
-    // Wrap it in an array so the backend parser always receives valid JSON.
-    fd.append('seasons', JSON.stringify([(payload as any).season]))
+  // ── Season / Occasion (omitted → backend keeps the stored value, or all_season) ──
+  if (payload.occasions) {
+    payload.occasions.forEach(o => fd.append('occasions[]', o))
   }
-  // If neither is present the backend falls back to ['all_seasons'] (correct).
 
   // ── Boolean fields ─────────────────────────────────────────────────────────
   fd.append('is_active', payload.is_active === false ? '0' : '1')
 
   if (payload.is_pack !== undefined) {
     fd.append('is_pack', payload.is_pack ? '1' : '0')
+    // Sent even when empty so the backend validates (and clears) them with is_pack
+    fd.append('pack_quantity', payload.is_pack ? String(payload.pack_quantity ?? '') : '')
+    fd.append('pack_contents', payload.is_pack ? (payload.pack_contents ?? '') : '')
   }
 
   // ── Images ─────────────────────────────────────────────────────────────────
@@ -251,7 +244,9 @@ export interface ProductPayload {
   subcategory_id?: number | string | null
   is_active?: boolean
   is_pack?: boolean | number
-  seasons?: string  
+  pack_quantity?: number | string
+  pack_contents?: string
+  occasions?: string[]
   delivery_fee?: string      
   images?: File[]
   delete_image_ids?: number[]
