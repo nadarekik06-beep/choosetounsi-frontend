@@ -133,6 +133,8 @@ export interface FavoriteItem extends PricedProduct {
 // ─── Checkout types ───────────────────────────────────────────────────────────
 
 export interface CheckoutPayload {
+  /** Total shown to the customer; the server answers 409 price_changed instead of charging a different one. */
+  expected_total?: number
   wilaya: string
   address: string
   phone: string
@@ -143,6 +145,7 @@ export interface CheckoutPayload {
 }
 
 export interface BuyNowPayload {
+  expected_total?: number
   product_id: number
   variant_id?: number | null
   quantity: number

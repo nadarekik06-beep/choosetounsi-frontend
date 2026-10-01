@@ -10,7 +10,7 @@
  * This eliminates the race condition where filter() ran on an empty array.
  */
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -54,14 +54,19 @@ function getToken(): string | null {
 
 type PaymentMethod = 'cod' | 'card' | 'd17' | 'wallet'
 
+/** Millime precision, as the server rounds totals. */
+const round3 = (n: number) => Math.round(n * 1000) / 1000
+
 interface BuyNowProduct {
   id: number
   name: string
   price: string | number
+  final_price?: string | number          // after promotion: what buy-now charges
   primary_image_url: string | null
   is_free_delivery?: boolean
+  effective_delivery_fee?: string | number
   images?: { image_path: string; url?: string; color_option_id?: number | null }[]
-  variants?: { id: number; price: string | number; sku: string | null; image_urls: string[] }[]
+  variants?: { id: number; price: string | number; final_price?: string | number; effective_price?: string | number; sku: string | null; image_urls: string[] }[]
   seller?: { id: number; name: string } | null
 }
 
@@ -491,6 +496,11 @@ export default function CheckoutPage() {
   const clearCoupon = (sellerId: number) =>
     setCouponStates(prev => ({ ...prev, [sellerId]: { input: '', applied: null, loading: false, error: null, discount: 0 } }))
 
+  // The lines this checkout places, so the coupon preview prices exactly them
+  const checkoutLines = () => isBuyNow
+    ? { product_id: bnProduct?.id, variant_id: bnVariantId, quantity: bnQuantity }
+    : (selectedIdsRef.current && selectedIdsRef.current.size > 0 ? { item_ids: [...selectedIdsRef.current] } : {})
+
   const applyCoupon = async (sellerId: number) => {
     const cur = couponState(sellerId)
     if (!cur.input.trim()) return
@@ -499,7 +509,7 @@ export default function CheckoutPage() {
       const res = await fetch(`${API_URL}/coupons/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ code: cur.input.trim() }),
+        body: JSON.stringify({ code: cur.input.trim(), ...checkoutLines() }),
       })
       const json = await res.json()
       if (json.success && json.seller_id === sellerId) {
@@ -551,16 +561,21 @@ export default function CheckoutPage() {
       .finally(() => setAddressesLoading(false))
   }, [])
 
-  useEffect(() => {
-    if (!isBuyNow || !bnSlug || bnFetchedRef.current) return
-    bnFetchedRef.current = true
+  const loadBuyNowProduct = useCallback(() => {
+    if (!bnSlug) return Promise.resolve()
     setBnLoading(true)
-    fetch(`${API_URL}/products/${bnSlug}`, { headers: { Accept: 'application/json' } })
+    return fetch(`${API_URL}/products/${bnSlug}`, { headers: { Accept: 'application/json' } })
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(json => setBnProduct(json.data))
       .catch(() => setBnError(true))
       .finally(() => setBnLoading(false))
-  }, [isBuyNow, bnSlug])
+  }, [bnSlug])
+
+  useEffect(() => {
+    if (!isBuyNow || !bnSlug || bnFetchedRef.current) return
+    bnFetchedRef.current = true
+    loadBuyNowProduct()
+  }, [isBuyNow, bnSlug, loadBuyNowProduct])
 
   const set = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }))
 
@@ -593,8 +608,11 @@ export default function CheckoutPage() {
 }
 
   const bnVariant        = bnProduct?.variants?.find(v => v.id === bnVariantId) ?? null
-  const bnEffectivePrice = bnVariant ? Number(bnVariant.price) : bnProduct ? Number(bnProduct.price) : 0
-  const bnLineTotal      = bnEffectivePrice * bnQuantity
+  // Unit price after promotion, from the server (same number buy-now charges)
+  const bnEffectivePrice = bnVariant
+    ? Number(bnVariant.final_price ?? bnVariant.effective_price ?? bnVariant.price)
+    : bnProduct ? Number(bnProduct.final_price ?? bnProduct.price) : 0
+  const bnLineTotal      = round3(bnEffectivePrice * bnQuantity)
   const bnImage = (() => {
     if (!bnProduct) return null
     if (bnVariant && bnVariant.image_urls?.length > 0) return bnVariant.image_urls[0]
@@ -623,8 +641,11 @@ const isFreeDelivery = (() => {
   return items.every(i => (i as any).is_free_delivery === true)
 })()
  
-const deliveryFee     = isFreeDelivery ? 0 : PLATFORM_DELIVERY_FEE
-const summaryTotal    = Math.max(0, summarySubtotal - totalDiscount) + deliveryFee
+// Buy-now charges the product's own fee (seller-set or platform default)
+const deliveryFee     = isFreeDelivery ? 0
+  : isBuyNow && bnProduct?.effective_delivery_fee != null ? Number(bnProduct.effective_delivery_fee)
+  : PLATFORM_DELIVERY_FEE
+const summaryTotal    = round3(Math.max(0, summarySubtotal - totalDiscount) + deliveryFee)
 const walletInsufficient = walletBalance !== null && walletBalance < summaryTotal
 
   // ── Submit ────────────────────────────────────────────────────────────────
@@ -644,6 +665,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
         if (!bnProduct) throw new Error(t('errors.productMissing'))
         const bnCoupon = bnProduct.seller ? couponState(bnProduct.seller.id) : null
         const payload: BuyNowPayload = {
+          expected_total: summaryTotal,
           product_id:     bnProduct.id,
           quantity:       bnQuantity,
           wilaya:         form.wilaya,
@@ -661,6 +683,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
         const appliedCodes = Object.values(couponStates).filter(c => c.applied).map(c => c.applied as string)
 
         res = await checkoutApi.place({
+          expected_total: summaryTotal,
           wilaya:         form.wilaya,
           address:        form.address,
           phone:          cleanForm.phone,
@@ -687,6 +710,12 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
       })
     } catch (err: any) {
       setApiError(err.message ?? t('errors.placeFailed'))
+      if (err.data?.code === 'price_changed' || err.data?.code === 'flash_sold_out') {
+        await (isBuyNow ? loadBuyNowProduct() : refreshCart())
+        for (const [sid, c] of Object.entries(couponStates)) {
+          if (c.applied) await applyCoupon(Number(sid))
+        }
+      }
     } finally {
       setLoading(false)
     }
