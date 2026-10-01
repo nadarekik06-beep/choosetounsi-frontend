@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { logout, isAuthenticated, getUser, AuthUser } from "@/lib/auth";
 import { useCart } from "@/context/CartContext";
 import { Heart, ShoppingBag, ClipboardList, AlertCircle } from "lucide-react";
-import Image from 'next/image'
+import BrandLogoCircle from "@/components/BrandLogoCircle";
 import { useTranslations } from "next-intl";
 // Organic popular products (same card fields as the listing API). No ads here: paid
 // placements are only shown where they carry a visible "Sponsored" label.
@@ -138,8 +138,8 @@ function AskAIPill({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       title={t("askAiTitle")}
       style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        paddingBlock: 6, paddingInline: '8px 12px', borderRadius: 999,
+        display: 'flex', alignItems: 'center', gap: 7,
+        paddingBlock: 2, paddingInline: '3px 12px', borderRadius: 999,
         background: 'linear-gradient(135deg, #db142e 0%, #9b0f1f 100%)',
         border: '1.5px solid #198f41', cursor: 'pointer',
         fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
@@ -150,7 +150,7 @@ function AskAIPill({ onClick }: { onClick: () => void }) {
       onMouseEnter={e => { const el = e.currentTarget as HTMLButtonElement; el.style.transform='scale(1.05) translateY(-1px)'; el.style.boxShadow='0 6px 20px rgba(219,20,46,0.4)'; }}
       onMouseLeave={e => { const el = e.currentTarget as HTMLButtonElement; el.style.transform='scale(1) translateY(0)'; el.style.boxShadow='0 2px 10px rgba(219,20,46,0.25)'; }}
     >
-      <Image src="/images/logo-chili.png" alt={t("aiAlt")} width={18} height={18} style={{ objectFit:'contain', filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.3))' }}/>
+      <BrandLogoCircle size={27} alt={t("aiAlt")} style={{ boxShadow:'0 1px 3px rgba(0,0,0,0.25)' }}/>
       {t("askAi")}
     </button>
   );
@@ -1135,8 +1135,8 @@ export default function Navbar() {
             <button onClick={()=>{setMenuOpen(false);setMegaOpen(true);}} style={{fontSize:14,fontWeight:600,color:"#374151",background:"none",border:"none",cursor:"pointer",textAlign:"start",padding:"8px 0",borderBottom:"1px solid #f5f5f5",display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}>
               <MenuIcon/>{t("categories")}
             </button>
-            <button onClick={()=>{setMenuOpen(false);handleSupport();}} style={{fontSize:14,fontWeight:700,color:"#dc2626",background:"none",border:"none",cursor:"pointer",textAlign:"start",padding:"8px 0",borderBottom:"1px solid #f5f5f5",fontFamily:"inherit"}}>
-              {t("askAi")}
+            <button onClick={()=>{setMenuOpen(false);handleSupport();}} style={{fontSize:14,fontWeight:700,color:"#dc2626",background:"none",border:"none",cursor:"pointer",textAlign:"start",padding:"8px 0",borderBottom:"1px solid #f5f5f5",fontFamily:"inherit",display:"flex",alignItems:"center",gap:8}}>
+              <BrandLogoCircle size={22} ring="1.5px solid #db142e"/>{t("askAi")}
             </button>
             {([{key:"shop",href:"/shop"},{key:"brand",href:"/brand"},{key:"deals",href:"/deals"},{key:"myOrders",href:"/orders"},{key:"myComplaints",href:"/complaints"},{key:"helpComplaint",href:"/complaints/new"},{key:"favorites",href:"/favorites"}] as const).map(l=>(
               <Link key={l.href} href={l.href} onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>{t(l.key)}</Link>

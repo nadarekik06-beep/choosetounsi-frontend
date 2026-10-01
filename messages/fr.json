@@ -406,7 +406,18 @@
     "openStore": "Ouvrir ma boutique",
     "trust1": "Gratuit",
     "trust2": "Sans carte bancaire",
-    "trust3": "Prêt en 2 minutes"
+    "trust3": "Prêt en 2 minutes",
+    "badgeRating": "4,8/5",
+    "badgeDelivery": "Livraison 24–48h",
+    "badgeLocal": "100 % local",
+    "storeSign": "Ma Boutique",
+    "storeOpen": "OUVERT",
+    "chipSellers": "+120 vendeurs",
+    "chipVerified": "Badge vérifié",
+    "chipOrder": "Commande reçue",
+    "chipOrderSub": "Vase en céramique · Nabeul",
+    "becomeSeller": "Devenir vendeur",
+    "orLabel": "ou"
   },
   "cartDrawer": {
     "title": "Mon panier",

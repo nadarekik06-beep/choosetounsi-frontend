@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+import BrandLogoCircle from './BrandLogoCircle'
 import { useCart } from '@/context/CartContext'
 import ChatProductCard, { CHAT_PRODUCT_CARD_CSS, type ChatLang, type ChatProduct } from './chat/ChatProductCard'
 import ChatStepsCard, { type ChatStep } from './chat/ChatStepsCard'
@@ -294,7 +294,7 @@ function uid(): string {
 
 /* ─────────────────────────────────────────────────────────────
    PEPPER FAB BUTTON  (NEW)
-   Uses /images/logo-chili.png from public/images/
+   Brand mark rendered through BrandLogoCircle
 ───────────────────────────────────────────────────────────── */
 function PepperFAB({
   onClick,
@@ -412,15 +412,11 @@ function PepperFAB({
           padding: 0,
         }}
       >
-        {/* Chili image — uses logo-chili.png from public/images/ */}
-        <Image
-          src="/images/logo-chili.png"
+        <BrandLogoCircle
+          size={44}
           alt={t('assistantAlt')}
-          width={36}
-          height={36}
-          style={{
-            objectFit: 'contain',
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+          style={{ boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.25)' }}
+          imageStyle={{
             transform: hovered ? 'rotate(-12deg) scale(1.08)' : 'rotate(0deg) scale(1)',
             transition: 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)',
           }}
@@ -481,22 +477,7 @@ function Bubble({ msg, onRetry, onQuickReply, onNavigate, onOpenCart, busy }: { 
       animation: 'ct-fadein 0.22s ease both',
     }}>
       {isBot && (
-        <div style={{
-          width: 28, height: 28, borderRadius: '50%',
-          background: `linear-gradient(135deg, ${RED}, ${DARK})`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginBottom: 2, overflow: 'hidden',
-          border: `1.5px solid ${GREEN}`,
-          flexShrink: 0,
-        }}>
-          <Image
-            src="/images/logo-chili.png"
-            alt=""
-            width={18}
-            height={18}
-            style={{ objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
-          />
-        </div>
+        <BrandLogoCircle size={28} ring={`1.5px solid ${GREEN}`} style={{ marginBottom: 2 }} />
       )}
 
       <div style={{
@@ -787,21 +768,12 @@ function PanelHeader({
       flexShrink: 0,
     }}>
       {/* Chili avatar */}
-      <div style={{
-        width: 42, height: 42, borderRadius: '50%',
-        background: 'rgba(255,255,255,0.15)',
-        border: '2px solid rgba(255,255,255,0.3)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, overflow: 'hidden',
-      }}>
-        <Image
-          src="/images/logo-chili.png"
-          alt={t('assistantAlt')}
-          width={28}
-          height={28}
-          style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))' }}
-        />
-      </div>
+      <BrandLogoCircle
+        size={42}
+        alt={t('assistantAlt')}
+        ring="2px solid rgba(255,255,255,0.3)"
+        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}
+      />
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: 14, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.01em' }}>

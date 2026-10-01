@@ -406,7 +406,18 @@
     "openStore": "Open your store",
     "trust1": "Free forever",
     "trust2": "No credit card",
-    "trust3": "Start in 2 minutes"
+    "trust3": "Start in 2 minutes",
+    "badgeRating": "4.8/5",
+    "badgeDelivery": "24–48h delivery",
+    "badgeLocal": "100% local",
+    "storeSign": "My Store",
+    "storeOpen": "OPEN",
+    "chipSellers": "120+ sellers",
+    "chipVerified": "Verified badge",
+    "chipOrder": "New order",
+    "chipOrderSub": "Ceramic vase · Nabeul",
+    "becomeSeller": "Become a seller",
+    "orLabel": "or"
   },
   "cartDrawer": {
     "title": "Your Cart",

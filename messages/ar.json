@@ -406,7 +406,18 @@
     "openStore": "افتح متجرك",
     "trust1": "مجاني",
     "trust2": "بدون بطاقة بنكية",
-    "trust3": "جاهز في دقيقتين"
+    "trust3": "جاهز في دقيقتين",
+    "badgeRating": "4.8/5",
+    "badgeDelivery": "توصيل خلال 24–48 ساعة",
+    "badgeLocal": "محلي 100%",
+    "storeSign": "متجري",
+    "storeOpen": "مفتوح",
+    "chipSellers": "+120 بائع",
+    "chipVerified": "شارة موثّقة",
+    "chipOrder": "طلب جديد",
+    "chipOrderSub": "مزهرية خزفية · نابل",
+    "becomeSeller": "كن بائعاً",
+    "orLabel": "أو"
   },
   "cartDrawer": {
     "title": "سلة التسوق",

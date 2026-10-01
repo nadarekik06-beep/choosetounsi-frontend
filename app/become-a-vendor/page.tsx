@@ -738,7 +738,18 @@ export default function BecomeVendorPage() {
 
   // ── Render guards ─────────────────────────────────────────────────────
 
-  if (!mounted || !sellerState.checked) return null
+  // Hold the page's full height (hero-coloured) while the seller status loads,
+  // otherwise the root layout's footer is briefly the only thing on screen.
+  if (!mounted || !sellerState.checked) {
+    return (
+      <div className="min-h-screen" style={{ background: '#f8f8f6' }} role="status" aria-live="polite">
+        <div className="flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f172a 100%)', minHeight: '520px' }}>
+          <Loader2 size={28} className="animate-spin text-white/70" aria-hidden="true" />
+          <span className="sr-only">{tc('loading')}</span>
+        </div>
+      </div>
+    )
+  }
 
   if (sellerState.isApprovedSeller) {
     return (

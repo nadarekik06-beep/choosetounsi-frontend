@@ -6,7 +6,7 @@
 import Navbar from "./components/layout/Navbar";
 import HomeFeed from "@/app/components/home/HomeFeed";
 import HomeCategoryCarousel from "@/app/components/sections/HomeCategoryCarousel";
-import HomeCtaSection from "@/app/components/sections/HomeCtaSection";
+import DualCTASection from "@/app/components/home/DualCTASection";
 import FlashDealsSection from "@/app/components/sections/FlashDealsSection";
 import BrandCollectionSection from "./components/sections/BrandCollectionSection";
 import PacksSection from "./components/sections/PacksSection";
@@ -20,7 +20,7 @@ export default function HomePage() {
       <FlashDealsSection />
       <PacksSection />
       <BrandCollectionSection />
-      <HomeCtaSection />
+      <DualCTASection />
     </main>
   );
 }
