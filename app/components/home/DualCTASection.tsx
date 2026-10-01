@@ -8,7 +8,6 @@
  * - The seller CTA always leads to /become-a-vendor (that page handles login itself).
  */
 
-import { useId } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useInView } from '@/app/hooks/useInView'
@@ -16,6 +15,7 @@ import CountUp from './CountUp'
 import AnimatedDiscoverBag from './illustrations/AnimatedDiscoverBag'
 import AnimatedStore from './illustrations/AnimatedStore'
 import AnimatedPepper, { PEPPER_CSS } from './illustrations/AnimatedPepper'
+import TunisianPattern from './illustrations/TunisianPattern'
 
 function TunisiaFlag({ size = 18 }: { size?: number }) {
   return (
@@ -25,25 +25,6 @@ function TunisiaFlag({ size = 18 }: { size?: number }) {
       <circle cx="15.6" cy="10" r="4.4" fill="#e70013" />
       <circle cx="16.8" cy="10" r="3.6" fill="#fff" />
       <path d="M15.6 10 l3.9 -1.3 -2.4 3.3 v-4 l2.4 3.3z" fill="#e70013" />
-    </svg>
-  )
-}
-
-/** Faint khatem (8-point star) lattice, ~4% opacity in the panel's accent colour. */
-function TunisianPattern({ color }: { color: string }) {
-  const id = `dcta-pat-${useId().replace(/[^a-zA-Z0-9]/g, '')}`
-  return (
-    <svg className="dcta-pattern" aria-hidden="true" focusable="false">
-      <defs>
-        <pattern id={id} width="56" height="56" patternUnits="userSpaceOnUse">
-          <g fill="none" stroke={color} strokeWidth="1.3">
-            <rect x="18" y="18" width="20" height="20" />
-            <rect x="18" y="18" width="20" height="20" transform="rotate(45 28 28)" />
-            <path d="M0 0 l6 6 M56 0 l-6 6 M0 56 l6 -6 M56 56 l-6 -6" />
-          </g>
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill={`url(#${id})`} />
     </svg>
   )
 }

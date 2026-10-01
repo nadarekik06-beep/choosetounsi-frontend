@@ -25,7 +25,12 @@ import {
 } from 'lucide-react'
 import { isAuthenticated } from '@/lib/auth'
 import { useTranslations } from 'next-intl'
-import { WILAYAS, useWilayaLabel } from '@/lib/i18n/wilayas'
+import { useWilayaLabel } from '@/lib/i18n/wilayas'
+import ShippingAddressFields from '@/components/address/ShippingAddressFields'
+import {
+  emptyShippingAddress, shippingAddressFrom, validateShippingAddress, isCompleteShippingAddress,
+  shippingAddressPayload, formatShippingAddress, type ShippingAddressForm,
+} from '@/lib/shippingAddress'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 
@@ -47,26 +52,25 @@ function useAddressLabel() {
 export interface UserAddress {
   id: number
   label: string
+  // Structured fields (2026-10) are null on addresses saved before them
+  recipient_name: string | null
   wilaya: string
+  delegation: string | null
   address: string
+  postal_code: string | null
   phone: string
+  phone_secondary: string | null
   notes: string | null
   is_default: boolean
   created_at: string
 }
 
-type FormState = {
+type FormState = ShippingAddressForm & {
   label: string
-  wilaya: string
-  address: string
-  phone: string
-  notes: string
   is_default: boolean
 }
 
-const emptyForm = (): FormState => ({
-  label: 'Home', wilaya: '', address: '', phone: '', notes: '', is_default: false,
-})
+const emptyForm = (): FormState => ({ ...emptyShippingAddress(), label: 'Home', is_default: false })
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
 
@@ -103,6 +107,7 @@ function AddressCard({
   settingDefault: number | null
 }) {
   const t = useTranslations('addresses')
+  const tsa = useTranslations('shippingAddress')
   const labelText = useAddressLabel()
   const wilayaLabel = useWilayaLabel()
   const labelIcon = addr.label.toLowerCase().includes('work')
@@ -148,15 +153,18 @@ function AddressCard({
       </div>
 
       {/* Info */}
-      <p style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>
-        {wilayaLabel(addr.wilaya)}
+      <p dir="auto" style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>
+        {addr.recipient_name || wilayaLabel(addr.wilaya)}
       </p>
-      <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 4px', lineHeight: 1.5 }}>
-        {addr.address}
+      <p dir="auto" style={{ fontSize: 13, color: '#64748b', margin: '0 0 4px', lineHeight: 1.5 }}>
+        {formatShippingAddress({ address: addr.address, delegation: addr.delegation ?? '', postal_code: addr.postal_code ?? '', wilaya: addr.wilaya }, wilayaLabel)}
       </p>
       <p style={{ fontSize: 12, color: '#94a3b8', margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-        <Phone size={11} /> <span dir="ltr">{addr.phone}</span>
+        <Phone size={11} /> <span dir="ltr">{addr.phone}{addr.phone_secondary ? ` / ${addr.phone_secondary}` : ''}</span>
       </p>
+      {!isCompleteShippingAddress(shippingAddressFrom(addr)) && (
+        <p style={{ fontSize: 11, color: '#b45309', margin: '6px 0 0', fontWeight: 600 }}>{tsa('completeSaved')}</p>
+      )}
       {addr.notes && (
         <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0', fontStyle: 'italic' }}>
           {addr.notes}
@@ -238,18 +246,15 @@ function AddressForm({
   const t  = useTranslations('addresses')
   const tc = useTranslations('common')
   const labelText = useAddressLabel()
-  const wilayaLabel = useWilayaLabel()
   const [form, setForm] = useState<FormState>(initial)
   const [errs, setErrs] = useState<Record<string, string>>({})
 
   const set = (k: keyof FormState, v: string | boolean) =>
     setForm(f => ({ ...f, [k]: v }))
 
+  // Same rules as checkout (lib/shippingAddress.ts): a saved address always passes checkout
   const validate = () => {
-    const e: Record<string, string> = {}
-    if (!form.wilaya.trim())  e.wilaya  = t('errors.wilaya')
-    if (!form.address.trim()) e.address = t('errors.address')
-    if (!form.phone.trim())   e.phone   = t('errors.phone')
+    const e = validateShippingAddress(form) as Record<string, string>
     setErrs(e)
     return Object.keys(e).length === 0
   }
@@ -310,55 +315,11 @@ function AddressForm({
           </div>
         </div>
 
-        {/* Wilaya */}
-        <div>
-          <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 6 }}>
-            {t('wilaya')} <span style={{ color: '#ef4444' }}>*</span>
-          </label>
-          <select value={form.wilaya} onChange={e => set('wilaya', e.target.value)} aria-label={t('wilaya')}
-            style={{ ...inputStyle(errs.wilaya), color: form.wilaya ? '#0f172a' : '#94a3b8' }}>
-            <option value="">{t('selectWilaya')}</option>
-            {WILAYAS.map(w => <option key={w} value={w}>{wilayaLabel(w)}</option>)}
-          </select>
-          {errs.wilaya && <p style={{ fontSize: 11, color: '#ef4444', margin: '3px 0 0' }}>{errs.wilaya}</p>}
-        </div>
-
-        {/* Address */}
-        <div>
-          <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 6 }}>
-            {t('fullAddress')} <span style={{ color: '#ef4444' }}>*</span>
-          </label>
-          <textarea rows={2} value={form.address}
-            onChange={e => set('address', e.target.value)}
-            aria-label={t('fullAddress')}
-            placeholder={t('addressPlaceholder')}
-            style={{ ...inputStyle(errs.address), resize: 'none' }} />
-          {errs.address && <p style={{ fontSize: 11, color: '#ef4444', margin: '3px 0 0' }}>{errs.address}</p>}
-        </div>
-
-        {/* Phone */}
-        <div>
-          <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 6 }}>
-            {t('phone')} <span style={{ color: '#ef4444' }}>*</span>
-          </label>
-          <input type="tel" dir="ltr" value={form.phone}
-            onChange={e => set('phone', e.target.value)}
-            aria-label={t('phone')}
-            placeholder={t('phonePlaceholder')}
-            style={inputStyle(errs.phone)} />
-          {errs.phone && <p style={{ fontSize: 11, color: '#ef4444', margin: '3px 0 0' }}>{errs.phone}</p>}
-        </div>
-
-        {/* Notes */}
-        <div>
-          <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 6 }}>
-            {t('notes')} <span style={{ fontSize: 9, fontWeight: 500, textTransform: 'none' }}>({tc('optional')})</span>
-          </label>
-          <input value={form.notes} onChange={e => set('notes', e.target.value)}
-            aria-label={t('notes')}
-            placeholder={t('notesPlaceholder')}
-            style={inputStyle()} />
-        </div>
+        <ShippingAddressFields
+          value={form}
+          errors={errs}
+          onChange={(k, v) => { set(k, v); if (errs[k]) setErrs(prev => ({ ...prev, [k]: '' })) }}
+        />
 
         {/* Set as default checkbox */}
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
@@ -432,14 +393,14 @@ export default function AddressesPage() {
     setFormError('')
     try {
       if (editingAddress) {
-        await apiRequest('PUT', `/addresses/${editingAddress.id}`, data)
+        await apiRequest('PUT', `/addresses/${editingAddress.id}`, { ...shippingAddressPayload(data), label: data.label })
         // If user checked is_default while editing, set it separately
         if (data.is_default && !editingAddress.is_default) {
           await apiRequest('PATCH', `/addresses/${editingAddress.id}/default`)
         }
         showToast(t('toast.updated'))
       } else {
-        await apiRequest('POST', '/addresses', data)
+        await apiRequest('POST', '/addresses', { ...shippingAddressPayload(data), label: data.label, is_default: data.is_default })
         showToast(t('toast.saved'))
       }
       setShowForm(false)
@@ -585,11 +546,8 @@ export default function AddressesPage() {
                   <div key={addr.id} style={{ animation: 'fadeUp 0.25s ease both' }}>
                     <AddressForm
                       initial={{
+                        ...shippingAddressFrom(addr),
                         label:      addr.label,
-                        wilaya:     addr.wilaya,
-                        address:    addr.address,
-                        phone:      addr.phone,
-                        notes:      addr.notes ?? '',
                         is_default: addr.is_default,
                       }}
                       onSave={handleSave}

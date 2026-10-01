@@ -75,9 +75,9 @@ function parseCount(raw: any): number {
 // ─── Seller notification API (/api/notifications) ─────────────────────────────
 
 export const sellerNotificationApi = {
-  async getAll(page = 1): Promise<NotificationListResponse> {
+  async getAll(page = 1, unreadOnly = false): Promise<NotificationListResponse> {
     // api.get returns raw JSON — e.g. { success, data: [...], meta: {...} }
-    const raw = await api.get(`/notifications?page=${page}&per_page=20`)
+    const raw = await api.get(`/notifications?page=${page}&per_page=20${unreadOnly ? '&unread=1' : ''}`)
     return parseListResponse(raw)
   },
 
@@ -93,6 +93,13 @@ export const sellerNotificationApi = {
   async markAllRead(): Promise<void> {
     await api.patch('/notifications/read-all')
   },
+}
+
+// Fired after read-state changes made outside the bell (e.g. the notifications
+// page) so every mounted bell refreshes right away instead of on its next poll.
+export const NOTIFICATIONS_CHANGED = 'ct:notifications-changed'
+export function announceNotificationsChanged() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED))
 }
 
 // ─── Admin notification API (/api/admin/notifications) ────────────────────────

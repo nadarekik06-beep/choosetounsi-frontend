@@ -478,6 +478,22 @@ export const storeProfileApi = {
     fd.append('cover_photo', file)
     return formRequest<any>('POST', '/seller/store-profile/cover-photo', fd)
   },
+
+  /** GET /api/seller/pickup-address — where the courier collects parcels (+ missing fields) */
+  getPickup: () => jsonRequest<any>('GET', '/seller/pickup-address'),
+
+  /** PUT /api/seller/pickup-address — pickup fields only, no re-review */
+  updatePickup: (data: PickupAddressInput) => jsonRequest<any>('PUT', '/seller/pickup-address', data),
+}
+
+export interface PickupAddressInput {
+  full_name:          string
+  phone_number:       string
+  pickup_address:     string
+  city:               string
+  pickup_postal_code: string
+  wilaya:             string
+  pickup_notes?:      string
 }
 
 export default api

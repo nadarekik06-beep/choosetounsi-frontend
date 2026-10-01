@@ -135,9 +135,14 @@ export interface FavoriteItem extends PricedProduct {
 export interface CheckoutPayload {
   /** Total shown to the customer; the server answers 409 price_changed instead of charging a different one. */
   expected_total?: number
-  wilaya: string
-  address: string
+  // Shipping address snapshot — see lib/shippingAddress.ts
+  recipient_name: string
   phone: string
+  phone_secondary?: string
+  wilaya: string
+  delegation: string
+  address: string
+  postal_code: string
   notes?: string
   payment_method?: 'cod' | 'card' | 'd17' | 'wallet'
   item_ids?: number[]   // ← ADD THIS LINE
@@ -149,9 +154,14 @@ export interface BuyNowPayload {
   product_id: number
   variant_id?: number | null
   quantity: number
-  wilaya: string
-  address: string
+  // Shipping address snapshot — see lib/shippingAddress.ts
+  recipient_name: string
   phone: string
+  phone_secondary?: string
+  wilaya: string
+  delegation: string
+  address: string
+  postal_code: string
   notes?: string
   payment_method?: 'cod' | 'card' | 'd17' | 'wallet'
   coupon_code?: string

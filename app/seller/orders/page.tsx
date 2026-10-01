@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ordersApi } from '@/lib/sellerApi';
 import {
   Search, Eye, ChevronLeft, ChevronRight, X, Loader2,
@@ -521,6 +522,13 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
   );
 }
 
+/** Opens the order from `?order=<id>` (links in seller e-mails and the notification bell). */
+function OpenOrderFromQuery({ onOpen }: { onOpen: (id: number) => void }) {
+  const id = Number(useSearchParams().get('order'));
+  useEffect(() => { if (id > 0) onOpen(id); }, [id, onOpen]);
+  return null;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ORDERS PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -542,6 +550,15 @@ export default function OrdersPage() {
   const [selectedId,    setSelectedId]    = useState<number | null>(null);
   const [earningsOrder, setEarningsOrder] = useState<Order | null>(null);
   const tDrawer = useTranslations('seller.orderDrawer');
+  const router  = useRouter();
+
+  // Closing a deep-linked order drops ?order= so the same link can open it again.
+  const closeDetail = () => {
+    setSelectedId(null);
+    if (new URLSearchParams(window.location.search).has('order')) {
+      router.replace('/seller/orders', { scroll: false });
+    }
+  };
 
   const empty: PaginatedResponse<Order> = { data: [], current_page: 1, last_page: 1, per_page: 12, total: 0, from: 0, to: 0 };
 
@@ -587,6 +604,10 @@ export default function OrdersPage() {
           50%     { box-shadow: 0 0 0 6px rgba(59,130,246,0); }
         }
       `}</style>
+
+      <Suspense fallback={null}>
+        <OpenOrderFromQuery onOpen={setSelectedId} />
+      </Suspense>
 
       {/* Header */}
       <div>
@@ -716,7 +737,7 @@ export default function OrdersPage() {
       </div>
 
       {selectedId !== null && (
-        <OrderDetailModal orderId={selectedId} onClose={() => setSelectedId(null)} onUpdated={fetchData} dark={dark} />
+        <OrderDetailModal orderId={selectedId} onClose={closeDetail} onUpdated={fetchData} dark={dark} />
       )}
 
       {earningsOrder && (

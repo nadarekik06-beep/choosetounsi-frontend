@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { SubscriptionBadge } from '@/app/components/seller/SubscriptionBadge';
 import CommissionUpgradeNudge from './components/CommissionUpgradeNudge';
+import PickupAddressBanner from './components/PickupAddressBanner';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { useStatusLabel } from '@/lib/i18n/useStatusLabel';
@@ -328,6 +329,9 @@ export default function SellerDashboardPage() {
             </div>
           ))}
         </div>
+
+        {/* ─── PICKUP ADDRESS MISSING (courier can't collect) ─── */}
+        <PickupAddressBanner dark={dark} />
 
         {/* ─── UPGRADE NUDGE (free/red plan sellers only) ─── */}
         <div className={`fade-up ${visible?'show':''}`}>

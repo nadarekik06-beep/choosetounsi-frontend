@@ -1863,7 +1863,136 @@
     "submit": "Submit application",
     "ctaTitle": "READY TO START SELLING? 🇹🇳",
     "ctaBody": "Join hundreds of Tunisian entrepreneurs already building their online business with ChooseTounsi.",
-    "applyNow": "Apply now"
+    "applyNow": "Apply now",
+    "landing": {
+      "sticky": "Become a seller",
+      "hero": {
+        "eyebrow": "ChooseTounsi seller programme",
+        "title1": "Your craft deserves",
+        "title2": "a storefront",
+        "subtitle": "Open your shop for free and sell all over Tunisia.",
+        "ctaPrimary": "Open my shop",
+        "ctaStatus": "Track my application",
+        "ctaSecondary": "See the plans",
+        "trust1": "Free sign-up",
+        "trust2": "Approved in 2–3 days",
+        "trust3": "Paid every 14 days",
+        "toastTitle": "New order",
+        "revenueLabel": "Today's sales",
+        "order1": "Ceramic vase · Nabeul",
+        "order2": "Hand-woven fouta · Mahdia",
+        "order3": "Organic olive oil · Sfax",
+        "order4": "Artisan harissa · Tunis"
+      },
+      "stats": {
+        "label": "ChooseTounsi in numbers",
+        "sellers": "Active sellers",
+        "orders": "Orders delivered",
+        "wilayas": "Governorates served",
+        "rating": "Average rating"
+      },
+      "why": {
+        "eyebrow": "Why ChooseTounsi",
+        "title1": "Everything to sell,",
+        "title2": "nothing to manage",
+        "visibility": {
+          "title": "Nationwide reach",
+          "desc": "Your products in front of buyers across Tunisia.",
+          "pill": "24 governorates"
+        },
+        "ai": {
+          "title": "AI tools",
+          "desc": "Descriptions, pricing and trends, from the Red plan."
+        },
+        "delivery": {
+          "title": "Delivery handled",
+          "desc": "A courier picks up your parcels at your door."
+        },
+        "payments": {
+          "title": "Secure payouts",
+          "desc": "Your earnings paid every 14 days."
+        },
+        "verified": {
+          "title": "Verified badge",
+          "desc": "Buyer trust from day one."
+        }
+      },
+      "how": {
+        "eyebrow": "How it works",
+        "title1": "Three steps,",
+        "title2": "zero hassle",
+        "s1": {
+          "title": "Sign up",
+          "desc": "One form, a few minutes."
+        },
+        "s2": {
+          "title": "Shop",
+          "desc": "Approved within 2–3 business days."
+        },
+        "s3": {
+          "title": "Sales",
+          "desc": "You get the orders, we deliver."
+        }
+      },
+      "plans": {
+        "eyebrow": "Our plans",
+        "title1": "Pick your",
+        "title2": "pepper",
+        "subtitle": "Start free, upgrade once approved.",
+        "popular": "Popular",
+        "afterApproval": "Available after approval",
+        "noCard": "No credit card needed",
+        "notIncluded": "Not included",
+        "note": "Everyone starts on Green Pepper, then upgrades in one click.",
+        "dotsLabel": "Choose a plan",
+        "dot": "Plan {n}",
+        "features": {
+          "promotions": "Promotions and flash sales",
+          "coupons": "Promo codes",
+          "sponsorships": "Sponsored products",
+          "analytics": "Advanced analytics",
+          "ai_tools": "AI tools",
+          "black_hub": "Black Hub: advanced AI and VIP lounge"
+        }
+      },
+      "showcase": {
+        "eyebrow": "Already selling here",
+        "title1": "Shops that are",
+        "title2": "100% Tunisian",
+        "visit": "Visit the shop"
+      },
+      "form": {
+        "title1": "Open your",
+        "title2": "shop"
+      },
+      "faq": {
+        "eyebrow": "FAQ",
+        "title1": "All your questions,",
+        "title2": "answered",
+        "rulesTitle": "Platform rules",
+        "q": {
+          "cost": "How much does it cost to join?",
+          "review": "How long does approval take?",
+          "payout": "When do I get paid?",
+          "delivery": "Who handles delivery?",
+          "upgrade": "Can I change plans?"
+        },
+        "a": {
+          "cost": "Nothing. The {plan} plan is free forever: up to {count} products and {rate} commission per sale.",
+          "review": "Our team reviews every application within 2–3 business days.",
+          "payout": "Your earnings are paid out every 14 days.",
+          "delivery": "A courier collects your parcels from your pickup address and delivers them across Tunisia.",
+          "upgrade": "Yes. Once approved, switch to Red or Black Pepper in one click from your seller space.",
+          "costUnlimited": "Nothing. The {plan} plan is free forever: unlimited products and {rate} commission per sale."
+        }
+      },
+      "final": {
+        "title1": "Ready to open",
+        "title2": "your shop?",
+        "subtitle": "Join the 100% Tunisian marketplace.",
+        "cta": "Open my shop"
+      }
+    }
   },
   "seller": {
     "nav": {
@@ -2071,7 +2200,8 @@
       "refresh": "Refresh",
       "loading": "Loading…",
       "empty": "No notifications yet",
-      "emptyHint": "You'll see activity here when things happen."
+      "emptyHint": "You'll see activity here when things happen.",
+      "viewAll": "View all notifications"
     },
     "settings": {
       "title": "Store Settings",
@@ -3996,6 +4126,20 @@
           "credit_expiry": "Credit expired"
         }
       }
+    },
+    "notificationsPage": {
+      "title": "Notifications",
+      "subtitle": "Orders, stock alerts, reviews and account updates",
+      "all": "All",
+      "unread": "Unread",
+      "markAllRead": "Mark all as read",
+      "markRead": "Mark as read",
+      "empty": "No notifications yet",
+      "emptyUnread": "You are all caught up",
+      "loadMore": "Load more",
+      "loading": "Loading…",
+      "error": "Could not load notifications.",
+      "retry": "Retry"
     }
   },
   "invoice": {
@@ -4224,5 +4368,58 @@
     "aid": "Eid",
     "back_to_school": "Back to school",
     "wedding_season": "Wedding season"
+  },
+  "shippingAddress": {
+    "recipientName": "Recipient full name",
+    "recipientPlaceholder": "Who will receive the parcel?",
+    "phone": "Phone number",
+    "secondPhone": "Second phone",
+    "secondPhoneHelp": "In case the courier can’t reach the first number.",
+    "wilaya": "Governorate",
+    "selectWilaya": "Select your governorate",
+    "delegation": "Delegation / city",
+    "delegationPlaceholder": "e.g. El Mourouj, Menzah 6",
+    "street": "Street address",
+    "streetPlaceholder": "Number, street, building, floor…",
+    "postalCode": "Postal code",
+    "notes": "Landmark / delivery notes",
+    "notesPlaceholder": "e.g. Opposite the pharmacy, 2nd floor, call before coming",
+    "completeSaved": "This saved address is missing details the courier needs (recipient, delegation or postal code). Please complete it below — we’ll save it for next time.",
+    "errors": {
+      "recipient": "Please enter the recipient’s full name.",
+      "phoneRequired": "Phone number is required.",
+      "phoneInvalid": "Invalid Tunisian number. Enter 8 digits starting with 2, 4, 5 or 9.",
+      "phoneSame": "The second phone must be different from the first.",
+      "wilaya": "Please select your governorate.",
+      "delegation": "Please enter your delegation or city.",
+      "address": "Please enter your street address.",
+      "postalCode": "Postal code must be 4 digits."
+    }
+  },
+  "sellerPickup": {
+    "title": "Pickup address",
+    "subtitle": "Where our courier collects your parcels. It is printed on every delivery slip.",
+    "incomplete": "Your pickup address is incomplete — the courier can’t collect your orders until it is complete.",
+    "complete": "Pickup address complete",
+    "contact": "Contact person",
+    "phone": "Phone",
+    "street": "Street address",
+    "streetPlaceholder": "Number, street, industrial zone, building…",
+    "city": "Delegation / city",
+    "postalCode": "Postal code",
+    "wilaya": "Governorate",
+    "notes": "Notes for the courier",
+    "notesPlaceholder": "Opening hours, landmark…",
+    "save": "Save pickup address",
+    "saved": "Pickup address saved.",
+    "loadFailed": "Could not load your pickup address.",
+    "errors": {
+      "contact": "Please enter a contact person.",
+      "phone": "Invalid Tunisian number. Enter 8 digits starting with 2, 4, 5 or 9.",
+      "street": "Please enter the street address.",
+      "city": "Please enter the delegation or city.",
+      "postalCode": "Postal code must be 4 digits.",
+      "wilaya": "Please select the governorate."
+    }
   }
 }

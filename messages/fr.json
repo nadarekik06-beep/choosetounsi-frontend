@@ -1863,7 +1863,136 @@
     "submit": "Envoyer ma candidature",
     "ctaTitle": "PRÊT À VENDRE ? 🇹🇳",
     "ctaBody": "Rejoignez des centaines d'entrepreneurs tunisiens qui développent déjà leur activité en ligne avec ChooseTounsi.",
-    "applyNow": "Postuler"
+    "applyNow": "Postuler",
+    "landing": {
+      "sticky": "Devenir vendeur",
+      "hero": {
+        "eyebrow": "Programme vendeurs ChooseTounsi",
+        "title1": "Votre talent mérite",
+        "title2": "une vitrine",
+        "subtitle": "Ouvrez votre boutique gratuitement et vendez partout en Tunisie.",
+        "ctaPrimary": "Ouvrir ma boutique",
+        "ctaStatus": "Suivre ma candidature",
+        "ctaSecondary": "Voir les plans",
+        "trust1": "Inscription gratuite",
+        "trust2": "Validation en 2–3 jours",
+        "trust3": "Versements tous les 14 jours",
+        "toastTitle": "Nouvelle commande",
+        "revenueLabel": "Ventes du jour",
+        "order1": "Vase en céramique · Nabeul",
+        "order2": "Fouta tissée main · Mahdia",
+        "order3": "Huile d'olive bio · Sfax",
+        "order4": "Harissa artisanale · Tunis"
+      },
+      "stats": {
+        "label": "ChooseTounsi en chiffres",
+        "sellers": "Vendeurs actifs",
+        "orders": "Commandes livrées",
+        "wilayas": "Gouvernorats livrés",
+        "rating": "Note moyenne"
+      },
+      "why": {
+        "eyebrow": "Pourquoi ChooseTounsi",
+        "title1": "Tout pour vendre,",
+        "title2": "rien à gérer",
+        "visibility": {
+          "title": "Visibilité nationale",
+          "desc": "Vos produits devant des acheteurs de toute la Tunisie.",
+          "pill": "24 gouvernorats"
+        },
+        "ai": {
+          "title": "Outils IA",
+          "desc": "Descriptions, prix et tendances, dès l’offre Red."
+        },
+        "delivery": {
+          "title": "Livraison gérée",
+          "desc": "Un coursier récupère vos colis chez vous."
+        },
+        "payments": {
+          "title": "Paiements sécurisés",
+          "desc": "Vos gains versés tous les 14 jours."
+        },
+        "verified": {
+          "title": "Badge vérifié",
+          "desc": "La confiance des acheteurs dès le premier jour."
+        }
+      },
+      "how": {
+        "eyebrow": "Comment ça marche",
+        "title1": "Trois étapes,",
+        "title2": "zéro prise de tête",
+        "s1": {
+          "title": "Inscription",
+          "desc": "Un formulaire, quelques minutes."
+        },
+        "s2": {
+          "title": "Boutique",
+          "desc": "Validée sous 2 à 3 jours ouvrés."
+        },
+        "s3": {
+          "title": "Ventes",
+          "desc": "Vous recevez les commandes, on livre."
+        }
+      },
+      "plans": {
+        "eyebrow": "Nos offres",
+        "title1": "Choisissez votre",
+        "title2": "piment",
+        "subtitle": "Commencez gratuitement, évoluez après validation.",
+        "popular": "Populaire",
+        "afterApproval": "Disponible après validation",
+        "noCard": "Sans carte bancaire",
+        "notIncluded": "Non inclus",
+        "note": "Tout le monde démarre en Green Pepper, puis évolue en un clic.",
+        "dotsLabel": "Choisir une offre",
+        "dot": "Offre {n}",
+        "features": {
+          "promotions": "Promotions et ventes flash",
+          "coupons": "Codes promo",
+          "sponsorships": "Produits sponsorisés",
+          "analytics": "Statistiques avancées",
+          "ai_tools": "Outils IA",
+          "black_hub": "Black Hub : IA avancée et salon VIP"
+        }
+      },
+      "showcase": {
+        "eyebrow": "Ils vendent déjà ici",
+        "title1": "Des boutiques",
+        "title2": "100 % tunisiennes",
+        "visit": "Voir la boutique"
+      },
+      "form": {
+        "title1": "Ouvrez votre",
+        "title2": "boutique"
+      },
+      "faq": {
+        "eyebrow": "Questions fréquentes",
+        "title1": "On répond",
+        "title2": "à tout",
+        "rulesTitle": "Règles de la plateforme",
+        "q": {
+          "cost": "Combien coûte l’inscription ?",
+          "review": "Combien de temps pour être validé ?",
+          "payout": "Quand suis-je payé ?",
+          "delivery": "Qui s’occupe de la livraison ?",
+          "upgrade": "Puis-je changer d’offre ?"
+        },
+        "a": {
+          "cost": "Rien. L’offre {plan} est gratuite à vie : jusqu’à {count} produits et {rate} de commission par vente.",
+          "review": "Notre équipe examine chaque candidature sous 2 à 3 jours ouvrés.",
+          "payout": "Vos gains sont versés tous les 14 jours.",
+          "delivery": "Un coursier récupère vos colis à votre adresse d’enlèvement et les livre partout en Tunisie.",
+          "upgrade": "Oui. Une fois validé, passez à Red ou Black Pepper en un clic depuis votre espace vendeur.",
+          "costUnlimited": "Rien. L’offre {plan} est gratuite à vie : produits illimités et {rate} de commission par vente."
+        }
+      },
+      "final": {
+        "title1": "Prêt à ouvrir",
+        "title2": "votre boutique ?",
+        "subtitle": "Rejoignez la marketplace 100 % tunisienne.",
+        "cta": "Ouvrir ma boutique"
+      }
+    }
   },
   "seller": {
     "nav": {
@@ -2071,7 +2200,8 @@
       "refresh": "Actualiser",
       "loading": "Chargement…",
       "empty": "Aucune notification pour l'instant",
-      "emptyHint": "L'activité de votre boutique apparaîtra ici."
+      "emptyHint": "L'activité de votre boutique apparaîtra ici.",
+      "viewAll": "Voir toutes les notifications"
     },
     "settings": {
       "title": "Paramètres de la boutique",
@@ -3996,6 +4126,20 @@
           "credit_expiry": "Crédit expiré"
         }
       }
+    },
+    "notificationsPage": {
+      "title": "Notifications",
+      "subtitle": "Commandes, alertes de stock, avis et mises à jour du compte",
+      "all": "Toutes",
+      "unread": "Non lues",
+      "markAllRead": "Tout marquer comme lu",
+      "markRead": "Marquer comme lu",
+      "empty": "Aucune notification pour l’instant",
+      "emptyUnread": "Vous êtes à jour",
+      "loadMore": "Voir plus",
+      "loading": "Chargement…",
+      "error": "Impossible de charger les notifications.",
+      "retry": "Réessayer"
     }
   },
   "invoice": {
@@ -4224,5 +4368,58 @@
     "aid": "Aïd",
     "back_to_school": "Rentrée scolaire",
     "wedding_season": "Saison des mariages"
+  },
+  "shippingAddress": {
+    "recipientName": "Nom complet du destinataire",
+    "recipientPlaceholder": "Qui va recevoir le colis ?",
+    "phone": "Numéro de téléphone",
+    "secondPhone": "Deuxième téléphone",
+    "secondPhoneHelp": "Au cas où le livreur ne joint pas le premier numéro.",
+    "wilaya": "Gouvernorat",
+    "selectWilaya": "Choisissez votre gouvernorat",
+    "delegation": "Délégation / ville",
+    "delegationPlaceholder": "ex. El Mourouj, Menzah 6",
+    "street": "Adresse (rue)",
+    "streetPlaceholder": "Numéro, rue, immeuble, étage…",
+    "postalCode": "Code postal",
+    "notes": "Repère / indications de livraison",
+    "notesPlaceholder": "ex. En face de la pharmacie, 2e étage, appeler avant de venir",
+    "completeSaved": "Il manque à cette adresse des informations nécessaires au livreur (destinataire, délégation ou code postal). Complétez-la ci-dessous — nous l’enregistrerons pour la prochaine fois.",
+    "errors": {
+      "recipient": "Veuillez saisir le nom complet du destinataire.",
+      "phoneRequired": "Le numéro de téléphone est obligatoire.",
+      "phoneInvalid": "Numéro tunisien invalide : 8 chiffres commençant par 2, 4, 5 ou 9.",
+      "phoneSame": "Le deuxième numéro doit être différent du premier.",
+      "wilaya": "Veuillez choisir votre gouvernorat.",
+      "delegation": "Veuillez saisir votre délégation ou ville.",
+      "address": "Veuillez saisir votre adresse.",
+      "postalCode": "Le code postal doit comporter 4 chiffres."
+    }
+  },
+  "sellerPickup": {
+    "title": "Adresse d’enlèvement",
+    "subtitle": "Là où notre livreur récupère vos colis. Elle figure sur chaque bordereau de livraison.",
+    "incomplete": "Votre adresse d’enlèvement est incomplète — le livreur ne peut pas récupérer vos commandes tant qu’elle n’est pas complétée.",
+    "complete": "Adresse d’enlèvement complète",
+    "contact": "Personne à contacter",
+    "phone": "Téléphone",
+    "street": "Adresse (rue)",
+    "streetPlaceholder": "Numéro, rue, zone industrielle, immeuble…",
+    "city": "Délégation / ville",
+    "postalCode": "Code postal",
+    "wilaya": "Gouvernorat",
+    "notes": "Indications pour le livreur",
+    "notesPlaceholder": "Horaires d’ouverture, repère…",
+    "save": "Enregistrer l’adresse",
+    "saved": "Adresse d’enlèvement enregistrée.",
+    "loadFailed": "Impossible de charger votre adresse d’enlèvement.",
+    "errors": {
+      "contact": "Veuillez saisir une personne à contacter.",
+      "phone": "Numéro tunisien invalide : 8 chiffres commençant par 2, 4, 5 ou 9.",
+      "street": "Veuillez saisir l’adresse.",
+      "city": "Veuillez saisir la délégation ou la ville.",
+      "postalCode": "Le code postal doit comporter 4 chiffres.",
+      "wilaya": "Veuillez choisir le gouvernorat."
+    }
   }
 }

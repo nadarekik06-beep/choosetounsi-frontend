@@ -37,7 +37,7 @@ function playSound() {
 }
 
 // ─── icon map — ADDED alert-triangle for low-stock ───────────────
-function NotifIcon({ icon }: { icon: string }) {
+export function NotifIcon({ icon }: { icon: string }) {
   const cls = 'w-4 h-4 flex-shrink-0';
   const map: Record<string, React.ReactNode> = {
     'package-plus':    <PackagePlus    className={cls} />,
@@ -60,12 +60,13 @@ function NotifIcon({ icon }: { icon: string }) {
 // ─── accent colour per action — ADDED stock actions ───────────────
 // low_stock   → amber  (same as 'submitted' — caution tone)
 // out_of_stock → red   (same as 'rejected' — urgent tone)
-function accent(action: string): string {
+export function accent(action: string): string {
   if (action === 'approved')      return '#10b981';
   if (action === 'rejected')      return '#ef4444';
   if (action === 'deleted')       return '#ef4444';
   if (action === 'out_of_stock')  return '#ef4444';  // ← NEW
   if (action === 'low_stock')     return '#f59e0b';  // ← NEW
+  if (action === 'reminder')      return '#f59e0b';  // seller order: not ready for pickup yet
   if (action === 'submitted')     return '#f59e0b';
   if (action === 'created')       return '#3b82f6';
   if (action === 'updated')       return '#a855f7';
@@ -205,6 +206,8 @@ interface NotificationBellProps {
   dark?: boolean;
   onNavigate?: (path: string) => void;
   pollInterval?: number;
+  /** Page listing every notification, linked from the dropdown footer. */
+  viewAllHref?: string;
 }
 
 export default function NotificationBell({
@@ -212,6 +215,7 @@ export default function NotificationBell({
   dark = true,
   onNavigate,
   pollInterval = 30_000,
+  viewAllHref,
 }: NotificationBellProps) {
 
   const t = useTranslations('seller.bell');
@@ -360,6 +364,21 @@ export default function NotificationBell({
           ))
         )}
       </div>
+
+      {/* footer: full list */}
+      {onNavigate && viewAllHref && (
+        <button
+          onClick={() => { setOpen(false); onNavigate(viewAllHref); }}
+          style={{
+            width: '100%', padding: mobile ? '0 14px' : '11px 14px',
+            ...(mobile ? { minHeight: 44, flexShrink: 0 } : {}),
+            background: 'transparent', border: 'none', borderTop: `1px solid ${border}`,
+            cursor: 'pointer', fontSize: 12, fontWeight: 800, color: '#db142e',
+          }}
+        >
+          {t('viewAll')}
+        </button>
+      )}
     </>
   );
 

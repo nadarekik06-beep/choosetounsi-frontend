@@ -3,7 +3,7 @@
 /**
  * app/seller/settings/page.tsx
  *
- * Store profile settings. Currently scoped to the storefront cover photo —
+ * Store profile settings: pickup address (for the courier) and the storefront cover photo —
  * business name/avatar are shown read-only here (they're edited through the
  * seller application flow, which forces a re-review; this page must NOT
  * trigger that).
@@ -18,6 +18,7 @@ import { storeProfileApi, storageUrl } from '@/lib/sellerApi'
 import { useTheme } from '../SellerShell'
 import { useTranslations } from 'next-intl'
 import { ink } from '@/app/seller/ink';
+import PickupAddressCard from './PickupAddressCard'
 
 const MAX_SIZE = 4 * 1024 * 1024 // 4MB — matches backend validation
 const ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
@@ -136,6 +137,9 @@ export default function SellerSettingsPage() {
           </p>
         </div>
       </div>
+
+      {/* Pickup address (courier collection point) */}
+      <PickupAddressCard dark={dark} cardBg={cardBg} border={border} textMain={textMain} textMuted={textMuted} />
 
       {/* Cover photo */}
       <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 14, padding: 18 }}>

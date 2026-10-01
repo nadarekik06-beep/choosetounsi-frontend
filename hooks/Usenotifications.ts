@@ -3,7 +3,7 @@
 // Shared hook for NotificationBell — works for both seller and admin.
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { AppNotification, NotificationListResponse } from '@/lib/notificationApi'
+import { NOTIFICATIONS_CHANGED, type AppNotification, type NotificationListResponse } from '@/lib/notificationApi'
 
 interface NotificationApi {
   getAll(page?: number): Promise<NotificationListResponse>
@@ -68,6 +68,8 @@ export function useNotifications({
 
   // ── Poll unread count (lightweight) ──────────────────────────────────────
   const pollCount = useCallback(async () => {
+    // Background tab: skip this tick (the next visible one catches up).
+    if (typeof document !== 'undefined' && document.hidden) return
     try {
       const count = await api.getUnreadCount()
       if (!mounted.current) return
@@ -100,6 +102,14 @@ export function useNotifications({
     const id = setInterval(pollCount, pollInterval)
     return () => clearInterval(id)
   }, [pollCount, pollInterval])
+
+  // ── Read state changed elsewhere (notifications page) ──────────────────────
+  useEffect(() => {
+    // List for the dropdown, exact count for the badge (the list holds 20 rows max).
+    const refresh = () => { fetchAll().then(pollCount) }
+    window.addEventListener(NOTIFICATIONS_CHANGED, refresh)
+    return () => window.removeEventListener(NOTIFICATIONS_CHANGED, refresh)
+  }, [fetchAll, pollCount])
 
   // ── Fetch list when dropdown opens ────────────────────────────────────────
   useEffect(() => {

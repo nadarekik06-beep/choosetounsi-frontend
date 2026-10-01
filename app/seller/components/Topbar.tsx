@@ -274,6 +274,7 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
             dark={dark}
             onNavigate={router.push}
             pollInterval={30_000}
+            viewAllHref="/seller/notifications"
           />
 
           <div className="hidden sm:block" style={{ width: 1, height: 28, background: border }} />

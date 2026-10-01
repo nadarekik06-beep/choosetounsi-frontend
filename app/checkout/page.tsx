@@ -26,7 +26,12 @@ import { fetchPaymentInfo } from '@/lib/platformApi'
 import type { UserAddress } from '@/app/account/addresses/page'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
-import { WILAYAS, useWilayaLabel } from '@/lib/i18n/wilayas'
+import { useWilayaLabel } from '@/lib/i18n/wilayas'
+import ShippingAddressFields from '@/components/address/ShippingAddressFields'
+import {
+  emptyShippingAddress, shippingAddressFrom, validateShippingAddress, isCompleteShippingAddress,
+  shippingAddressPayload, formatShippingAddress, type ShippingAddressForm,
+} from '@/lib/shippingAddress'
 
 function usePrice() {
   const { price } = useFormat()
@@ -123,32 +128,6 @@ function CouponBox({
     </div>
   )
 }
-// ─── Tunisian phone validation ────────────────────────────────────────────────
-// `hint` is a message key in the `checkout.phone` namespace (with optional values).
-function validateTunisianPhone(raw: string): { clean: string; valid: boolean; hint: string; hintValues?: Record<string, number> } {
-  // Strip spaces, dashes, dots
-  const stripped = raw.replace(/[\s\-\.]/g, '')
-  // Remove country code prefix if present
-  const withoutPrefix = stripped.replace(/^(\+216|00216)/, '')
-  
-  const isValid = /^[2459][0-9]{7}$/.test(withoutPrefix)
-  
-  let hint = ''
-  let hintValues: Record<string, number> | undefined
-  if (raw.trim() === '') {
-    hint = ''
-  } else if (withoutPrefix.length < 8) {
-    hint = 'hintDigits'
-    hintValues = { count: withoutPrefix.replace(/\D/g, '').length }
-  } else if (withoutPrefix.length > 8) {
-    hint = 'hintTooMany'
-  } else if (!/^[2459]/.test(withoutPrefix)) {
-    hint = 'hintPrefix'
-  }
-  
-  return { clean: withoutPrefix, valid: isValid, hint, hintValues }
-}
-
 // ─── Payment Method Card ──────────────────────────────────────────────────────
 
 function PaymentMethodCard({
@@ -353,7 +332,7 @@ function AddressSelector({
 export default function CheckoutPage() {
   const t            = useTranslations('checkout')
   const tc           = useTranslations('common')
-  const tp           = useTranslations('checkout.phone')
+  const tsa          = useTranslations('shippingAddress')
   const fmt          = usePrice()
   const wilayaLabel  = useWilayaLabel()
   const router       = useRouter()
@@ -424,7 +403,6 @@ export default function CheckoutPage() {
     // Filter to only the IDs the user selected in the drawer
     return allCartItems.filter(i => sel.has(i.id))
   }, [allCartItems, isBuyNow])
-  const [phoneTouched, setPhoneTouched] = useState(false)
   // For the partial-selection info banner
   const hasPartialSelection =
     !isBuyNow &&
@@ -465,7 +443,9 @@ export default function CheckoutPage() {
 
   const [stripeLoading,      setStripeLoading]      = useState(false)
 
-  const [form,     setForm]     = useState({ wilaya: '', address: '', phone: '', notes: '' })
+  const [form,     setForm]     = useState<ShippingAddressForm>(emptyShippingAddress())
+  // The selected saved address predates structured addresses: show the form to complete it
+  const [savedNeedsCompletion, setSavedNeedsCompletion] = useState(false)
   const [errors,   setErrors]   = useState<Record<string, string>>({})
   const [loading,  setLoading]  = useState(false)
   const [success,  setSuccess]  = useState<{ order_number: string; total: number; payment_method: PaymentMethod } | null>(null)
@@ -551,8 +531,10 @@ export default function CheckoutPage() {
         setSavedAddresses(addrs)
         const def = addrs.find(a => a.is_default) ?? addrs[0] ?? null
         if (def) {
+          const f = shippingAddressFrom(def)
           setSelectedAddressId(def.id)
-          setForm({ wilaya: def.wilaya, address: def.address, phone: def.phone, notes: def.notes ?? '' })
+          setForm(f)
+          setSavedNeedsCompletion(!isCompleteShippingAddress(f))
         } else {
           setSelectedAddressId(null)
         }
@@ -577,35 +559,32 @@ export default function CheckoutPage() {
     loadBuyNowProduct()
   }, [isBuyNow, bnSlug, loadBuyNowProduct])
 
-  const set = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }))
+  const set = (field: keyof ShippingAddressForm, value: string) => {
+    setForm(f => ({ ...f, [field]: value }))
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }))
+  }
 
   const handleSelectAddress = (addr: UserAddress) => {
+    const f = shippingAddressFrom(addr)
     setSelectedAddressId(addr.id)
-    setForm({ wilaya: addr.wilaya, address: addr.address, phone: addr.phone, notes: addr.notes ?? '' })
+    setForm(f)
+    setSavedNeedsCompletion(!isCompleteShippingAddress(f))
     setErrors({})
   }
 
   const handleUseNew = () => {
     setSelectedAddressId(null)
-    setForm({ wilaya: '', address: '', phone: '', notes: '' })
+    setForm(emptyShippingAddress())
+    setSavedNeedsCompletion(false)
     setErrors({})
   }
 
+  // Same rules as the server (App\Support\ShippingAddress); errors are message keys
   const validate = (): boolean => {
-  const e: Record<string, string> = {}
-  if (!form.wilaya.trim())  e.wilaya  = t('errors.wilaya')
-  if (!form.address.trim()) e.address = t('errors.address')
-  
-  const phoneCheck = validateTunisianPhone(form.phone)
-  if (!form.phone.trim()) {
-    e.phone = t('errors.phoneRequired')
-  } else if (!phoneCheck.valid) {
-    e.phone = t('errors.phoneInvalid')
+    const e = validateShippingAddress(form) as Record<string, string>
+    setErrors(e)
+    return Object.keys(e).length === 0
   }
-  
-  setErrors(e)
-  return Object.keys(e).length === 0
-}
 
   const bnVariant        = bnProduct?.variants?.find(v => v.id === bnVariantId) ?? null
   // Unit price after promotion, from the server (same number buy-now charges)
@@ -648,8 +627,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
-    const { clean: cleanPhone } = validateTunisianPhone(form.phone)
-  const cleanForm = { ...form, phone: cleanPhone }
+    const address = shippingAddressPayload(form)
     setLoading(true)
     setApiError('')
 
@@ -663,10 +641,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
           expected_total: summaryTotal,
           product_id:     bnProduct.id,
           quantity:       bnQuantity,
-          wilaya:         form.wilaya,
-          address:        form.address,
-          phone:          cleanForm.phone,
-          notes:          form.notes || undefined,
+          ...address,
           payment_method: paymentMethod,
           ...(bnCoupon?.applied ? { coupon_code: bnCoupon.applied } : {}),
         }
@@ -679,15 +654,21 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
 
         res = await checkoutApi.place({
           expected_total: summaryTotal,
-          wilaya:         form.wilaya,
-          address:        form.address,
-          phone:          cleanForm.phone,
-          notes:          form.notes || undefined,
+          ...address,
           payment_method: paymentMethod,
           ...(selectedItemIds ? { item_ids: selectedItemIds } : {}),
           ...(appliedCodes.length > 0 ? { coupon_codes: appliedCodes } : {}),
         })
         await refreshCart()
+      }
+
+      if (savedNeedsCompletion && selectedAddressId !== null) {
+        const saved = savedAddresses.find(a => a.id === selectedAddressId)
+        fetch(`${API_URL}/addresses/${selectedAddressId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${getToken()}` },
+          body: JSON.stringify({ ...address, label: saved?.label }),
+        }).catch(() => {})
       }
 
       if (paymentMethod === 'card' && res.needs_payment) {
@@ -811,7 +792,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
   }
 
   const hasSavedAddresses = !addressesLoading && savedAddresses.length > 0
-  const showManualForm    = !hasSavedAddresses || selectedAddressId === null
+  const showManualForm    = !hasSavedAddresses || selectedAddressId === null || savedNeedsCompletion
   const summaryCount      = isBuyNow ? bnQuantity : count
 
   return (
@@ -887,158 +868,22 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
                 )}
                 {showManualForm && (
                   <>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
-                        {t('wilaya')} <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <select value={form.wilaya} onChange={e => set('wilaya', e.target.value)} aria-label={t('wilaya')} aria-invalid={!!errors.wilaya}
-                        style={{ width: '100%', border: `1.5px solid ${errors.wilaya ? '#ef4444' : '#e5e7eb'}`, borderRadius: 10, padding: '10px 14px', fontSize: 14, fontFamily: 'inherit', color: form.wilaya ? '#0f172a' : '#94a3b8', background: errors.wilaya ? '#fef2f2' : '#fff', outline: 'none' }}>
-                        <option value="">{t('selectWilaya')}</option>
-                        {WILAYAS.map(w => <option key={w} value={w}>{wilayaLabel(w)}</option>)}
-                      </select>
-                      {errors.wilaya && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.wilaya}</p>}
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
-                        {t('fullAddress')} <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <textarea rows={3} value={form.address} onChange={e => set('address', e.target.value)}
-                        aria-label={t('fullAddress')} aria-invalid={!!errors.address}
-                        placeholder={t('addressPlaceholder')}
-                        style={{ resize: 'none', border: `1.5px solid ${errors.address ? '#ef4444' : '#e5e7eb'}`, borderRadius: 10, padding: '10px 14px', fontSize: 14, fontFamily: 'inherit', color: '#0f172a', background: errors.address ? '#fef2f2' : '#fff', outline: 'none', width: '100%' }} />
-                      {errors.address && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.address}</p>}
-                    </div>
-                    <div>
-  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
-    {t('phoneNumber')} <span style={{ color: '#ef4444' }}>*</span>
-  </label>
-  
-  {/* Country code prefix badge + input */}
-  <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
-    <div dir="ltr" style={{
-      display: 'flex', alignItems: 'center', gap: 6,
-      padding: '0 12px', borderRadius: 10, flexShrink: 0,
-      border: '1.5px solid #e5e7eb', background: '#f8fafc',
-      fontSize: 13, fontWeight: 700, color: '#64748b',
-      whiteSpace: 'nowrap',
-    }}>
-      🇹🇳 +216
-    </div>
-    <div style={{ position: 'relative', flex: 1 }}>
-      {(() => {
-        const phoneCheck = phoneTouched ? validateTunisianPhone(form.phone) : { valid: false, hint: '', clean: '' }
-        const showSuccess = phoneTouched && form.phone.trim() !== '' && phoneCheck.valid
-        const showWarning = phoneTouched && form.phone.trim() !== '' && !phoneCheck.valid
-        const borderColor = errors.phone ? '#ef4444' : showSuccess ? '#10b981' : showWarning ? '#f59e0b' : '#e5e7eb'
-        const bgColor     = errors.phone ? '#fef2f2' : showSuccess ? '#f0fdf4' : '#fff'
-        
-        return (
-          <>
-            <input
-              type="tel"
-              dir="ltr"
-              aria-label={t('phoneNumber')}
-              aria-invalid={!!errors.phone}
-              value={form.phone}
-              onChange={e => {
-                // Only allow digits, spaces, dashes, plus
-                const val = e.target.value.replace(/[^0-9\s\-\+\.]/g, '')
-                set('phone', val)
-                if (errors.phone) setErrors(prev => ({ ...prev, phone: '' }))
-              }}
-              onBlur={() => setPhoneTouched(true)}
-              onFocus={() => setPhoneTouched(true)}
-              placeholder="20 123 456"
-              maxLength={15}
-              style={{
-                width: '100%', border: `1.5px solid ${borderColor}`,
-                borderRadius: 10, padding: '10px 36px 10px 14px',
-                fontSize: 14, fontFamily: 'inherit', color: '#0f172a',
-                background: bgColor, outline: 'none',
-                transition: 'border-color 0.15s, background 0.15s',
-              }}
-            />
-            {/* Live status icon */}
-            <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-              {showSuccess && (
-                <svg width="16" height="16" fill="none" stroke="#10b981" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path d="M20 6 9 17l-5-5"/>
-                </svg>
-              )}
-              {showWarning && (
-                <svg width="16" height="16" fill="none" stroke="#f59e0b" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-              )}
-            </div>
-          </>
-        )
-      })()}
-    </div>
-  </div>
-  
-  {/* Hint text — shown live while typing, before submit */}
-  {(() => {
-    const phoneCheck = phoneTouched ? validateTunisianPhone(form.phone) : { valid: false, hint: '', clean: '' }
-    if (errors.phone) {
-      return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5 }}>
-          <svg width="12" height="12" fill="none" stroke="#ef4444" strokeWidth="2" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          <p style={{ fontSize: 11, color: '#ef4444', margin: 0, fontWeight: 600 }}>{errors.phone}</p>
-        </div>
-      )
-    }
-    if (phoneTouched && phoneCheck.hint) {
-      return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5 }}>
-          <svg width="12" height="12" fill="none" stroke="#f59e0b" strokeWidth="2" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          <p style={{ fontSize: 11, color: '#d97706', margin: 0, fontWeight: 600 }}>{tp(phoneCheck.hint, phoneCheck.hintValues)}</p>
-        </div>
-      )
-    }
-    if (phoneTouched && form.phone.trim() && phoneCheck.valid) {
-      return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5 }}>
-          <svg width="12" height="12" fill="none" stroke="#10b981" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M20 6 9 17l-5-5"/>
-          </svg>
-          <p style={{ fontSize: 11, color: '#059669', margin: 0, fontWeight: 600 }}>{tp('valid')}</p>
-        </div>
-      )
-    }
-    return (
-      <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 5 }}>
-        {t.rich('phone.help', { b: c => <strong dir="ltr">{c}</strong> })}
-      </p>
-    )
-  })()}
-</div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>
-                        {t('orderNotes')} <span style={{ fontSize: 10, fontWeight: 500, textTransform: 'none' }}>({tc('optional')})</span>
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <FileText size={13} style={{ position: 'absolute', insetInlineStart: 12, top: 12, color: '#94a3b8', pointerEvents: 'none' }} />
-                        <textarea rows={2} value={form.notes} onChange={e => set('notes', e.target.value)}
-                          aria-label={t('orderNotes')}
-                          placeholder={t('notesPlaceholder')}
-                          style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 10, paddingBlock: 10, paddingInline: '34px 14px', fontSize: 14, fontFamily: 'inherit', color: '#0f172a', background: '#fff', outline: 'none', resize: 'none' }} />
+                    {savedNeedsCompletion && selectedAddressId !== null && (
+                      <div role="status" style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#92400e', fontWeight: 600, display: 'flex', gap: 8 }}>
+                        <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} /> {tsa('completeSaved')}
                       </div>
-                    </div>
+                    )}
+                    <ShippingAddressFields value={form} errors={errors} onChange={set} />
                   </>
                 )}
-                {hasSavedAddresses && selectedAddressId !== null && (
+                {hasSavedAddresses && selectedAddressId !== null && !savedNeedsCompletion && (
                   <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', border: '1px solid #e5e7eb' }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 5 }}>
                       <CheckCircle size={11} color="#10b981" /> {t('deliveringTo')}
                     </p>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 2px' }}>{wilayaLabel(form.wilaya)}</p>
-                    <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 2px' }}>{form.address}</p>
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}><Phone size={10} /> <span dir="ltr">{form.phone}</span></p>
+                    <p dir="auto" style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 2px' }}>{form.recipient_name}</p>
+                    <p dir="auto" style={{ fontSize: 12, color: '#64748b', margin: '0 0 2px' }}>{formatShippingAddress(form, wilayaLabel)}</p>
+                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}><Phone size={10} /> <span dir="ltr">{form.phone}{form.phone_secondary ? ` / ${form.phone_secondary}` : ''}</span></p>
                   </div>
                 )}
               </div>
