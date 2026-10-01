@@ -173,7 +173,7 @@ export default function FavoritesPage() {
     }
   }, [router])
 
-  const items = favorites as FavoriteItem[]
+  const items = (favorites as (FavoriteItem | null)[]).filter((f): f is FavoriteItem => f != null)
 
   return (
     <>

@@ -207,7 +207,7 @@ export const favoritesApi = {
     request<{ success: boolean; data: FavoriteItem[] }>('GET', '/favorites'),
 
   add: (productId: number, variantId?: number | null) =>
-    request<{ success: boolean; favorited: boolean; data: FavoriteItem }>('POST', '/favorites', {
+    request<{ success: boolean; favorited: boolean; data: FavoriteItem | null }>('POST', '/favorites', {
       product_id: productId,
       ...(variantId != null ? { variant_id: variantId } : {}),
     }),

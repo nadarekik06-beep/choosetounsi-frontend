@@ -86,7 +86,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!isAuthenticated()) return
     try {
       const res = await favoritesApi.get()
-      setFavorites(res.data)
+      setFavorites((res.data ?? []).filter(Boolean))
     } catch {}
   }, [])
 
@@ -200,9 +200,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
           : prev.filter(f => f.product_id !== productId)
         )
       } else {
+        // POST /favorites toggles: when our list was stale the server removed it
+        // instead (favorited: false, data: null) — mirror that, never store null
         const res = await favoritesApi.add(productId, variantId)
-        setFavorites(prev => [...prev, res.data])
-        showFlash(t('savedToFavorites'))
+        const added = res.favorited ? res.data : null
+        if (added) {
+          setFavorites(prev => [...prev.filter(f => !(f.product_id === productId && f.variant_id === added.variant_id)), added])
+          showFlash(t('savedToFavorites'))
+        } else {
+          setFavorites(prev => prev.filter(f => !(f.product_id === productId && (variantId == null || f.variant_id === variantId))))
+        }
       }
     } catch (err: any) {
       showFlash(err.message ?? t('favoritesFailed'))
