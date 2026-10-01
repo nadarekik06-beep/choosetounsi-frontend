@@ -1298,6 +1298,8 @@
   "search": {
     "metaTitle": "Recherche",
     "didYouMean": "Vouliez-vous dire ?",
+    "closestTitle": "Produits les plus proches",
+    "closestSub": "Aucun produit ne correspond exactement à « {query} ». Voici les plus proches.",
     "showingFor": "Résultats pour",
     "insteadOf": "au lieu de",
     "quoted": "« {query} »",

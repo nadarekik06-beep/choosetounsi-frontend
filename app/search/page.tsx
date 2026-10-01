@@ -309,6 +309,8 @@ function SearchPageContent() {
   const [sort,            setSort]            = useState<SortKey>("relevance");
   const [trendingNow,     setTrendingNow]     = useState<SearchProduct[]>([]);
   const [didYouMean,      setDidYouMean]      = useState<string | null>(null);
+  // No real match: the backend sends the closest products in `related` with alternatives=true
+  const [alternatives,    setAlternatives]    = useState(false);
   const [originalQuery,   setOriginalQuery]   = useState("");
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [ads,             setAds]             = useState<AdCard[]>([]);
@@ -328,7 +330,7 @@ function SearchPageContent() {
 
   // Reset on new query
   useEffect(() => {
-    setBannerDismissed(false); setDidYouMean(null);
+    setBannerDismissed(false); setDidYouMean(null); setAlternatives(false);
     setDirectHits([]); setSameCategory([]); setRelated([]); setFlatProducts([]);
   }, [queryParam]);
 
@@ -390,6 +392,7 @@ function SearchPageContent() {
       }
 
       setSource(data.source ?? "ai");
+      setAlternatives(!!data.alternatives);
 
       if (data.did_you_mean && data.did_you_mean !== q) {
         setDidYouMean(data.did_you_mean); setBannerDismissed(false);
@@ -575,17 +578,17 @@ function SearchPageContent() {
                 </>
               )}
 
-              {/* Section 3 — Related */}
+              {/* Section 3 — Related (or the closest products when nothing matched) */}
               {related.length > 0 && (
                 <>
-                  <Divider label={t("alsoLike")}/>
+                  {!alternatives && <Divider label={t("alsoLike")}/>}
                   <section>
                     <SectionHeader
                       icon={<svg width="20" height="20" fill="none" stroke="#6366f1" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>}
-                      title={t("alsoLike")}
+                      title={alternatives ? t("closestTitle") : t("alsoLike")}
                       count={related.length}
                       accentColor="#6366f1"
-                      subtitle={t("alsoLikeSub")}
+                      subtitle={alternatives ? t("closestSub", { query: queryParam }) : t("alsoLikeSub")}
                     />
                     <ProductGrid products={applySort(related, sort)} {...(directHits.length === 0 && sameCategory.length === 0 ? { ads, slots: adSlots } : {})}/>
                   </section>

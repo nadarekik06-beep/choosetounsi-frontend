@@ -1298,6 +1298,8 @@
   "search": {
     "metaTitle": "البحث",
     "didYouMean": "هل تقصد؟",
+    "closestTitle": "أقرب المنتجات",
+    "closestSub": "لا يوجد منتج يطابق «{query}» تماماً. هذه أقرب المنتجات المتوفرة.",
     "showingFor": "عرض النتائج لـ",
     "insteadOf": "بدلاً من",
     "quoted": "«{query}»",
