@@ -145,21 +145,6 @@ export interface PriceOptimizerDataContext {
   market_report:   MarketReport;
 }
 
-export interface SalesPredictorResult {
-  predicted_units:      number;
-  growth_pct:           number;
-  trend:                'up' | 'down' | 'stable';
-  confidence:           'high' | 'medium' | 'low';
-  key_factor:           string;
-  advice:               string;
-  stock_recommendation: string;
-  promotion_ideas:      string[];
-  best_selling_week:    string;
-  weekly_breakdown:     Array<{ week: string; predicted: number; baseline: number }>;
-  risk_factors:         string[];
-  opportunity:          string;
-}
-
 export interface DescriptionResult {
   title:             string;
   short_description: string;
@@ -199,8 +184,6 @@ export const sellerAiApi = {
       'POST', '/seller/ai/price-optimizer', { product_id: productId }
     ),
 
-salesPredictor: (productId: number, targetSeasons: string[] = []) =>
-  jsonRequest<AIResponse<SalesPredictorResult>>('POST', '/seller/ai/sales-predictor', { product_id: productId, target_seasons: targetSeasons }),
   descriptionGenerator: (productId: number, tone = 'professional', language = 'fr') =>
     jsonRequest<AIResponse<DescriptionResult>>('POST', '/seller/ai/description-generator', { product_id: productId, tone, language }),
 

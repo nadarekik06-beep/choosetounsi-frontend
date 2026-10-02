@@ -3663,115 +3663,196 @@
     },
     "forecast": {
       "title": "Prévision des ventes",
-      "subtitle": "6 mois · calibrée pour la Tunisie",
-      "justNow": "à l'instant",
-      "updated": "Mis à jour {age}",
-      "refreshing": "Actualisation…",
-      "selectOption": "— Choisir un produit à prévoir —",
-      "forecasting": "Prévision…",
+      "subtitle": "Basée sur vos ventes réelles, recalculée chaque nuit",
+      "updated": "calculée le {date}",
+      "settingsBtn": "Réglages",
       "refresh": "Actualiser",
-      "autoRefresh": "Actualisation auto toutes les 60 s · mise à jour immédiate au retour sur l'onglet",
-      "failed": "La prévision a échoué",
-      "kpi": {
-        "forecast": "Prévision 6 mois",
-        "forecastSub": "unités prévues",
-        "revenue": "Revenus prévus",
-        "revenueSub": "potentiel sur 6 mois",
-        "peak": "Mois record",
-        "peakSub": "{count, plural, one {# unité attendue} other {# unités attendues}}",
-        "stock": "Stock nécessaire (3 mois)",
-        "stockSub": "unités (marge de 30 %)"
+      "refreshing": "Calcul…",
+      "refreshIn": "Actualisable dans {minutes} min",
+      "selectLabel": "Produit à prévoir",
+      "shop": "Toute la boutique",
+      "offline": "hors ligne",
+      "stockoutIn": "rupture dans {n, plural, =0 {0 jour} one {# jour} other {# jours}}",
+      "failed": "Impossible de charger la prévision.",
+      "retry": "Réessayer",
+      "noProducts": "Ajoutez des produits pour voir leurs prévisions.",
+      "notLive": "Ce produit n’est pas en ligne : il ne peut pas se vendre tant qu’il est masqué ou en attente de validation.",
+      "promo": "Pendant vos promotions passées, ce produit s’est vendu ×{factor} plus vite ({days} jours de promo). Ces jours sont exclus de la prévision de base.",
+      "tier": {
+        "shopTitle": "Toute la boutique",
+        "shop": "Somme des prévisions de vos produits en ligne — {own} sur {total} ont assez d’historique pour leur propre modèle.",
+        "insufficient": {
+          "title": "Pas assez de données",
+          "text": "Aucune vente pour l’instant et trop peu de produits comparables sur la marketplace : nous préférons ne pas inventer de chiffres. Voici ce qui aide à obtenir les premières ventes."
+        },
+        "category": {
+          "title": "Estimation basée sur la catégorie",
+          "text": "Vous n’avez pas encore de vente : cette fourchette vient de {products} produits similaires de {sellers} boutiques (même catégorie, prix proche), ajustée à vos {days} jours en ligne. Elle s’affinera dès vos premières commandes."
+        },
+        "blend": {
+          "title": "Vos ventes + la catégorie",
+          "text": "Encore peu de ventes : la prévision combine vos données ({own} %) et celles de produits similaires ({prior} %). Votre part augmente à chaque commande."
+        },
+        "limited": {
+          "title": "Très peu de données",
+          "text": "Prévision basée uniquement sur vos quelques ventes (pas assez de produits comparables) : la fourchette est donc large."
+        },
+        "own": {
+          "title": "Basée sur votre historique",
+          "text": "Modèle choisi automatiquement en testant les prévisions sur vos semaines passées : {model}."
+        }
+      },
+      "models": {
+        "mean": "moyenne des 8 dernières semaines",
+        "ses": "lissage exponentiel",
+        "holt": "tendance amortie (Holt)",
+        "sba": "demande intermittente (Croston-SBA)",
+        "croston": "demande intermittente (Croston)",
+        "seasonal_naive": "même période l’an dernier",
+        "holt_winters": "saisonnalité annuelle (Holt-Winters)"
       },
       "confidence": {
-        "high": "Confiance élevée",
-        "medium": "Confiance moyenne",
-        "low": "Confiance faible"
+        "label": "Fiabilité",
+        "levels": {
+          "high": "élevée",
+          "medium": "moyenne",
+          "low": "faible",
+          "none": "nulle"
+        },
+        "line": "Basé sur {orders, plural, =0 {aucune commande} one {# commande} other {# commandes}} sur {days, plural, one {# jour} other {# jours}} — fiabilité {level}",
+        "category": "Basé sur {products} produits similaires, aucune vente propre — fiabilité {level}",
+        "shop": "Moyenne de vos produits, pondérée par leurs ventes prévues — fiabilité {level}",
+        "error": "Écart moyen lors des tests sur vos semaines passées : {pct} %",
+        "noBacktest": "Pas encore assez de semaines pour tester le modèle."
       },
-      "basedOn": "{count, plural, one {Basé sur # commande réelle} other {Basé sur # commandes réelles}}",
-      "trend": {
-        "up": "Tendance à la hausse",
-        "down": "Tendance à la baisse",
-        "stable": "Tendance stable"
-      },
-      "slope": "pente : {value} unités/mois",
-      "unitsWord": "unités",
-      "eventTag": "événement",
-      "tunisia": "Tunisie",
-      "similarCount": "{count, plural, one {# similaire} other {# similaires}}",
-      "poweredBy": "Propulsé par Groq",
-      "cards": {
-        "chart": "Graphique de prévision sur 6 mois",
-        "regional": "Demande par région",
-        "events": "Calendrier des événements en Tunisie",
-        "market": "Comparaison avec le marché",
-        "ai": "Analyse IA"
+      "kpi": {
+        "forecast": "Ventes · 4 semaines",
+        "units": "{low}–{high} unités",
+        "noForecast": "Pas de prévision",
+        "stock": "Stock actuel",
+        "stockUnits": "{n, plural, =0 {Rupture} one {# unité} other {# unités}}",
+        "stockShop": "tous produits en ligne",
+        "variantsSum": "somme des {n} variantes",
+        "atRisk": "À réapprovisionner",
+        "atRiskNone": "Aucune rupture prévue prochainement",
+        "days": "{n, plural, =0 {épuisé} one {# jour} other {# jours}}",
+        "daysLeft": "Jours de stock",
+        "over7Months": "+ de 7 mois",
+        "stockoutOn": "Rupture prévue vers le {date}",
+        "noStockout": "Pas de rupture prévue",
+        "reorder": "Réapprovisionner",
+        "reorderQty": "{n} unités",
+        "reorderBy": "à commander avant le {date}",
+        "reorderNow": "à commander dès maintenant",
+        "reorderNone": "Rien à commander",
+        "reorderNoneText": "Délai fournisseur {lead} j + marge {safety} j couverts"
       },
       "chart": {
+        "title": "90 derniers jours et 4 prochaines semaines",
+        "today": "Aujourd’hui",
+        "actual": "Ventes réelles",
+        "promo": "Semaine avec promotion",
+        "range": "Prévision (fourchette 80 %)",
+        "events": "Événement",
+        "unitsPerWeek": "unités / semaine"
+      },
+      "months": {
+        "title": "6 prochains mois",
+        "note": "Fourchettes à 80 % : la vente réelle devrait tomber dedans environ 8 fois sur 10. Plus on regarde loin, plus elles s’élargissent."
+      },
+      "variants": {
+        "title": "Par variante",
+        "variant": "Variante",
+        "stock": "Stock",
+        "share": "Part",
+        "next28": "4 semaines",
+        "daysLeft": "Jours · rupture",
+        "reorder": "À commander",
         "now": "maintenant",
-        "history": "Historique",
-        "forecast": "Prévision",
-        "eventBoost": "Pic d'événement"
+        "note": "Les variantes se partagent la prévision du produit selon leurs ventes des 6 derniers mois."
       },
-      "demand": {
-        "high": "Forte demande",
-        "moderate": "Modérée",
-        "low": "Faible demande",
-        "score": "Score de demande"
-      },
-      "stock": {
-        "shortTitle": "Stock insuffisant détecté",
-        "shortText": "Il vous faut <b>{need} unités</b> mais vous n'en avez que <b>{have}</b>. Réapprovisionnez <r>{missing} unités</r> dès maintenant.",
-        "unitsShort": "unités manquantes",
-        "okTitle": "Le niveau de stock est suffisant",
-        "okText": "Le stock actuel ({have} unités) couvre la prévision sur 3 mois ({need} nécessaires)."
-      },
-      "computedAt": "Calculé le {date}",
-      "cached": "En cache",
-      "fresh": "Récent",
-      "emptyTitle": "Choisissez un produit à prévoir",
-      "emptyText": "L'IA analysera votre historique de ventes, la saisonnalité tunisienne et les événements à venir pour générer une prévision sur 6 mois avec une carte de la demande régionale en direct.",
-      "events": {
-        "empty": "Aucun événement à venir pour cette catégorie de produits.",
-        "source": {
-          "real": "Données réelles",
-          "category": "Modèle de catégorie",
-          "tunisia": "Référence Tunisie"
+      "actions": {
+        "title": "Actions recommandées",
+        "empty": "Rien d’urgent pour l’instant.",
+        "severity": {
+          "1": "Urgent",
+          "2": "Ce mois-ci",
+          "3": "Conseil"
         },
-        "now": "Maintenant",
-        "inDays": "dans {count} j",
-        "demand": "{pct} % de demande",
-        "units": "{count, plural, one {# unité} other {# unités}}",
-        "confidence": "{pct} % de confiance",
-        "bestRegions": "Meilleures régions :"
-      },
-      "similar": {
-        "empty": "Aucun produit similaire dans cette sous-catégorie pour l'instant.",
-        "yourMonthly": "Vos ventes/mois",
-        "median": "Médiane du marché",
-        "avgPrice": "Prix moyen du marché",
-        "perMonth": "{count}/mois"
+        "out_of_stock": "{name} est en rupture → réapprovisionner {qty} unités dès maintenant.",
+        "stockout": "Rupture de {name} prévue dans {days, plural, one {# jour} other {# jours}} → réapprovisionner {qty} unités avant le {date}.",
+        "stockoutNow": "Rupture de {name} prévue dans {days, plural, one {# jour} other {# jours}} → réapprovisionner {qty} unités dès maintenant.",
+        "stockoutNoQty": "Rupture de {name} prévue dans {days, plural, one {# jour} other {# jours}}.",
+        "event": "{event} dans {days, plural, =0 {moins d’un jour} one {# jour} other {# jours}} → préparez votre stock et programmez une promotion.",
+        "eventEffect": "{event} dans {days, plural, one {# jour} other {# jours}} : en {year}, {pct} % de ventes dans votre catégorie ({orders} commandes) → préparez le stock et programmez une promotion.",
+        "eventEffectWeak": "{event} dans {days, plural, one {# jour} other {# jours}} → préparez votre stock et programmez une promotion. (L’effet mesuré l’an dernier repose sur trop peu de commandes, {orders}, pour être pris en compte.)",
+        "sales_drop": "{name} : {actual} vendus en 14 jours alors que nous en attendions au moins {low} → vérifiez le prix, les photos ou lancez une promotion.",
+        "low_cart": "{name} : {views} vues mais seulement {rate} % d’ajouts au panier → vérifiez le prix, les photos et la description.",
+        "low_cart_cat": "(moyenne de la catégorie : {rate} %)",
+        "dormant": "Stock dormant : {stock} unités de {name} sans vente depuis {days} jours → promotion ou pack.",
+        "dormantNever": "Stock dormant : {stock} unités de {name}, aucune vente en {days} jours → promotion ou pack.",
+        "no_data": "{name} n’a pas encore de vente : soignez les photos et la description, vérifiez le prix et faites-le connaître.",
+        "low_views": "{name} est peu vu ({views} vues en 30 jours) : plus de visibilité, c’est plus de ventes et une prévision plus fiable.",
+        "links": {
+          "restock": "Réapprovisionner",
+          "discount": "Programmer une promotion",
+          "price": "Optimiseur de prix",
+          "description": "Améliorer la description",
+          "packs": "Créer un pack",
+          "promote": "Sponsoriser"
+        }
       },
       "ai": {
-        "loading": "L'IA analyse votre prévision…",
-        "summary": "Résumé",
-        "opportunity": "Opportunité",
-        "risk": "Risque",
-        "seasonTip": "Conseil saisonnier"
+        "title": "En bref",
+        "loading": "Rédaction du résumé…",
+        "sourceAi": "Rédigé par l’IA à partir des chiffres ci-dessus",
+        "sourceTemplate": "Résumé automatique",
+        "unavailable": "Résumé indisponible pour le moment — les chiffres ci-dessus restent à jour."
+      },
+      "accuracy": {
+        "title": "Précision passée",
+        "product": "Le {date}, nous prévoyions {low}–{high} unités pour les 4 semaines suivantes. Vendu en réalité : {actual}.",
+        "within": "Dans la fourchette ✓",
+        "outside": "Hors fourchette",
+        "none": "Disponible 4 semaines après la première prévision : vous pourrez comparer ce que nous avions prévu avec ce qui s’est vendu.",
+        "record": "Sur 6 mois : {coverage} % des ventes réelles sont tombées dans la fourchette prévue ({n} prévisions, écart moyen {wape} %).",
+        "recordNoWape": "Sur 6 mois : {coverage} % des ventes réelles sont tombées dans la fourchette prévue ({n} prévisions)."
+      },
+      "signals": {
+        "title": "Signaux · 30 jours",
+        "views": "Vues",
+        "carts": "Ajouts au panier",
+        "favorites": "Favoris",
+        "cartRate": "Taux d’ajout",
+        "conversion": "Conversion",
+        "hint": "Quand les ventes sont rares, ces signaux montrent si le produit intéresse."
+      },
+      "events": {
+        "title": "Calendrier",
+        "inDays": "dans {n} j",
+        "now": "en cours",
+        "measured": "{pct} % en {year} ({orders} cmd)",
+        "measuredWeak": "effet mesuré sur trop peu de commandes ({orders})",
+        "note": "Les événements servent de repères et de rappels. Ils ne modifient la prévision que si leur effet a été mesuré sur assez de commandes dans votre catégorie."
+      },
+      "settings": {
+        "title": "Réglages de prévision",
+        "leadTime": "Délai fournisseur (jours)",
+        "leadHint": "Temps entre votre commande au fournisseur et la réception du stock.",
+        "safety": "Marge de sécurité (jours)",
+        "safetyHint": "Jours de stock en plus pour absorber les imprévus.",
+        "productOverride": "Délai et marge pour ce produit",
+        "productOverrideHint": "Laissez vide pour utiliser le réglage de la boutique.",
+        "alerts": "Alertes de prévision",
+        "alertsHint": "Rupture prévue, événement à venir, ventes en baisse (dans les notifications).",
+        "alertsEmail": "Recevoir aussi les alertes par e-mail",
+        "window": "Alerter si rupture dans moins de (jours)",
+        "digest": "Résumé hebdomadaire par e-mail (lundi)",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…",
+        "saved": "Enregistré",
+        "error": "Échec de l’enregistrement"
       }
-    },
-    "heatmap": {
-      "noData": "Pas encore de données régionales — les commandes avec une wilaya rempliront cette carte.",
-      "aria": "Carte de la demande régionale en Tunisie",
-      "units": "{count, plural, one {{n} unité} other {{n} unités}}",
-      "orders": "{count, plural, one {# commande} other {# commandes}}",
-      "noOrders": "Aucune commande pour l'instant",
-      "legendNone": "Aucune commande",
-      "legendPeak": "Pic",
-      "noWilaya": "Pas encore de données par wilaya.",
-      "topRegion": "Région en tête",
-      "coverage": "Couverture",
-      "governorates": "gouvernorats",
-      "untapped": "{count, plural, one {# région inexploitée} other {# régions inexploitées}} — pensez à des promotions pour {a}, {b} et {c}."
     },
     "advanced": {
       "title": "Statistiques avancées",

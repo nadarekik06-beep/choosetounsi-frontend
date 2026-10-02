@@ -3662,116 +3662,197 @@
       }
     },
     "forecast": {
-      "title": "Sales Forecast",
-      "subtitle": "6-month · Tunisia-calibrated",
-      "justNow": "just now",
-      "updated": "Updated {age}",
-      "refreshing": "Refreshing…",
-      "selectOption": "— Select a product to forecast —",
-      "forecasting": "Forecasting…",
+      "title": "Sales forecast",
+      "subtitle": "Based on your real sales, recomputed every night",
+      "updated": "computed {date}",
+      "settingsBtn": "Settings",
       "refresh": "Refresh",
-      "autoRefresh": "Auto-refreshes every 60s · Updates instantly when tab regains focus",
-      "failed": "Forecast failed",
-      "kpi": {
-        "forecast": "6-Month Forecast",
-        "forecastSub": "units predicted",
-        "revenue": "Predicted Revenue",
-        "revenueSub": "6-month potential",
-        "peak": "Peak Month",
-        "peakSub": "{count, plural, one {# unit expected} other {# units expected}}",
-        "stock": "Stock Needed (3m)",
-        "stockSub": "units (30% buffer)"
+      "refreshing": "Computing…",
+      "refreshIn": "Refresh available in {minutes} min",
+      "selectLabel": "Product to forecast",
+      "shop": "Whole shop",
+      "offline": "offline",
+      "stockoutIn": "out of stock in {n, plural, =0 {0 days} one {# day} other {# days}}",
+      "failed": "Could not load the forecast.",
+      "retry": "Try again",
+      "noProducts": "Add products to see their forecasts.",
+      "notLive": "This product is not online: it can’t sell while it is hidden or awaiting approval.",
+      "promo": "During your past promotions this product sold ×{factor} faster ({days} promo days). Those days are left out of the baseline forecast.",
+      "tier": {
+        "shopTitle": "Whole shop",
+        "shop": "Sum of your online products’ forecasts — {own} of {total} have enough history for their own model.",
+        "insufficient": {
+          "title": "Not enough data",
+          "text": "No sales yet and too few comparable products on the marketplace: we’d rather not make numbers up. Here is what helps get the first sales."
+        },
+        "category": {
+          "title": "Estimate based on the category",
+          "text": "You have no sales yet: this range comes from {products} similar products from {sellers} shops (same category, similar price), adjusted to your {days} days online. It will narrow with your first orders."
+        },
+        "blend": {
+          "title": "Your sales + the category",
+          "text": "Few sales so far: the forecast combines your data ({own} %) with similar products ({prior} %). Your share grows with every order."
+        },
+        "limited": {
+          "title": "Very little data",
+          "text": "Forecast based only on your few sales (not enough comparable products), so the range is wide."
+        },
+        "own": {
+          "title": "Based on your history",
+          "text": "Model chosen automatically by testing forecasts on your past weeks: {model}."
+        }
+      },
+      "models": {
+        "mean": "average of the last 8 weeks",
+        "ses": "exponential smoothing",
+        "holt": "damped trend (Holt)",
+        "sba": "intermittent demand (Croston-SBA)",
+        "croston": "intermittent demand (Croston)",
+        "seasonal_naive": "same period last year",
+        "holt_winters": "yearly seasonality (Holt-Winters)"
       },
       "confidence": {
-        "high": "High confidence",
-        "medium": "Medium confidence",
-        "low": "Low confidence"
+        "label": "Reliability",
+        "levels": {
+          "high": "high",
+          "medium": "medium",
+          "low": "low",
+          "none": "none"
+        },
+        "line": "Based on {orders, plural, =0 {no orders} one {# order} other {# orders}} over {days, plural, one {# day} other {# days}} — {level} reliability",
+        "category": "Based on {products} similar products, no sales of your own — {level} reliability",
+        "shop": "Average of your products, weighted by their expected sales — {level} reliability",
+        "error": "Average error when tested on your past weeks: {pct} %",
+        "noBacktest": "Not enough weeks yet to test the model."
       },
-      "basedOn": "{count, plural, one {Based on # real order} other {Based on # real orders}}",
-      "trend": {
-        "up": "Growing trend",
-        "down": "Declining trend",
-        "stable": "Stable trend"
-      },
-      "slope": "slope: {value} units/mo",
-      "unitsWord": "units",
-      "eventTag": "event",
-      "tunisia": "Tunisia",
-      "similarCount": "{count} similar",
-      "poweredBy": "Powered by Groq",
-      "cards": {
-        "chart": "6-Month Forecast Chart",
-        "regional": "Regional Demand",
-        "events": "Tunisia Events Calendar",
-        "market": "Market Comparison",
-        "ai": "AI Analysis"
+      "kpi": {
+        "forecast": "Sales · 4 weeks",
+        "units": "{low}–{high} units",
+        "noForecast": "No forecast",
+        "stock": "Current stock",
+        "stockUnits": "{n, plural, =0 {Out of stock} one {# unit} other {# units}}",
+        "stockShop": "all online products",
+        "variantsSum": "sum of {n} variants",
+        "atRisk": "To restock",
+        "atRiskNone": "No stock-out expected soon",
+        "days": "{n, plural, =0 {sold out} one {# day} other {# days}}",
+        "daysLeft": "Days of stock",
+        "over7Months": "7+ months",
+        "stockoutOn": "Stock-out expected around {date}",
+        "noStockout": "No stock-out expected",
+        "reorder": "Reorder",
+        "reorderQty": "{n} units",
+        "reorderBy": "order before {date}",
+        "reorderNow": "order now",
+        "reorderNone": "Nothing to order",
+        "reorderNoneText": "Supplier lead time {lead} d + margin {safety} d covered"
       },
       "chart": {
+        "title": "Last 90 days and next 4 weeks",
+        "today": "Today",
+        "actual": "Actual sales",
+        "promo": "Week with a promotion",
+        "range": "Forecast (80 % range)",
+        "events": "Event",
+        "unitsPerWeek": "units / week"
+      },
+      "months": {
+        "title": "Next 6 months",
+        "note": "80 % ranges: actual sales should land inside about 8 times out of 10. The further ahead, the wider they get."
+      },
+      "variants": {
+        "title": "By variant",
+        "variant": "Variant",
+        "stock": "Stock",
+        "share": "Share",
+        "next28": "4 weeks",
+        "daysLeft": "Days · stock-out",
+        "reorder": "To order",
         "now": "now",
-        "history": "History",
-        "forecast": "Forecast",
-        "eventBoost": "Event boost"
+        "note": "Variants share the product forecast according to their sales over the last 6 months."
       },
-      "demand": {
-        "high": "High Demand",
-        "moderate": "Moderate",
-        "low": "Low Demand",
-        "score": "Demand Score"
-      },
-      "stock": {
-        "shortTitle": "Stock shortfall detected",
-        "shortText": "You need <b>{need} units</b> but only have <b>{have}</b>. Restock <r>{missing} units</r> now.",
-        "unitsShort": "units short",
-        "okTitle": "Stock level is sufficient",
-        "okText": "Current stock ({have} units) covers the 3-month forecast ({need} needed)."
-      },
-      "computedAt": "Computed at {date}",
-      "cached": "Cached",
-      "fresh": "Fresh",
-      "emptyTitle": "Select a product to forecast",
-      "emptyText": "The AI will analyze your sales history, Tunisia seasonal patterns, and upcoming events to generate a 6-month forward forecast with live regional demand heatmap.",
-      "events": {
-        "empty": "No upcoming events for this product category.",
-        "source": {
-          "real": "Real data",
-          "category": "Category model",
-          "tunisia": "Tunisia baseline"
+      "actions": {
+        "title": "Recommended actions",
+        "empty": "Nothing urgent for now.",
+        "severity": {
+          "1": "Urgent",
+          "2": "This month",
+          "3": "Tip"
         },
-        "now": "Now",
-        "inDays": "in {count}d",
-        "demand": "{pct}% demand",
-        "units": "{count, plural, one {# unit} other {# units}}",
-        "confidence": "{pct}% confidence",
-        "bestRegions": "Best regions:"
-      },
-      "similar": {
-        "empty": "No similar products found in this subcategory yet.",
-        "yourMonthly": "Your Monthly",
-        "median": "Market Median",
-        "avgPrice": "Market Avg Price",
-        "perMonth": "{count}/mo"
+        "out_of_stock": "{name} is out of stock → reorder {qty} units now.",
+        "stockout": "{name} expected to run out in {days, plural, one {# day} other {# days}} → reorder {qty} units before {date}.",
+        "stockoutNow": "{name} expected to run out in {days, plural, one {# day} other {# days}} → reorder {qty} units now.",
+        "stockoutNoQty": "{name} expected to run out in {days, plural, one {# day} other {# days}}.",
+        "event": "{event} in {days, plural, =0 {less than a day} one {# day} other {# days}} → prepare your stock and schedule a promotion.",
+        "eventEffect": "{event} in {days, plural, one {# day} other {# days}}: in {year}, sales in your category changed by {pct} % ({orders} orders) → prepare stock and schedule a promotion.",
+        "eventEffectWeak": "{event} in {days, plural, one {# day} other {# days}} → prepare your stock and schedule a promotion. (Last year’s measured effect rests on too few orders, {orders}, to be used.)",
+        "sales_drop": "{name}: {actual} sold in 14 days while we expected at least {low} → check the price and photos, or run a promotion.",
+        "low_cart": "{name}: {views} views but only {rate} % add-to-cart → check the price, photos and description.",
+        "low_cart_cat": "(category average: {rate} %)",
+        "dormant": "Dormant stock: {stock} units of {name} with no sale for {days} days → promotion or bundle.",
+        "dormantNever": "Dormant stock: {stock} units of {name}, no sale in {days} days → promotion or bundle.",
+        "no_data": "{name} has no sales yet: polish the photos and description, check the price and get it seen.",
+        "low_views": "{name} gets few views ({views} in 30 days): more visibility means more sales and a more reliable forecast.",
+        "links": {
+          "restock": "Restock",
+          "discount": "Schedule a promotion",
+          "price": "Price optimizer",
+          "description": "Improve description",
+          "packs": "Create a bundle",
+          "promote": "Sponsor"
+        }
       },
       "ai": {
-        "loading": "AI is analyzing your forecast…",
-        "summary": "Summary",
-        "opportunity": "Opportunity",
-        "risk": "Risk",
-        "seasonTip": "Season Tip"
+        "title": "In short",
+        "loading": "Writing the summary…",
+        "sourceAi": "Written by AI from the numbers above",
+        "sourceTemplate": "Automatic summary",
+        "unavailable": "Summary unavailable right now — the numbers above are up to date."
+      },
+      "accuracy": {
+        "title": "Past accuracy",
+        "product": "On {date} we forecast {low}–{high} units for the next 4 weeks. Actually sold: {actual}.",
+        "within": "Within the range ✓",
+        "outside": "Outside the range",
+        "none": "Available 4 weeks after the first forecast: you’ll be able to compare what we forecast with what sold.",
+        "record": "Over 6 months: {coverage} % of actual sales landed in the forecast range ({n} forecasts, average error {wape} %).",
+        "recordNoWape": "Over 6 months: {coverage} % of actual sales landed in the forecast range ({n} forecasts)."
+      },
+      "signals": {
+        "title": "Signals · 30 days",
+        "views": "Views",
+        "carts": "Add-to-carts",
+        "favorites": "Favourites",
+        "cartRate": "Add-to-cart rate",
+        "conversion": "Conversion",
+        "hint": "When sales are rare, these signals show whether the product draws interest."
+      },
+      "events": {
+        "title": "Calendar",
+        "inDays": "in {n} d",
+        "now": "ongoing",
+        "measured": "{pct} % in {year} ({orders} orders)",
+        "measuredWeak": "effect measured on too few orders ({orders})",
+        "note": "Events are landmarks and reminders. They change the forecast only when their effect was measured on enough orders in your category."
+      },
+      "settings": {
+        "title": "Forecast settings",
+        "leadTime": "Supplier lead time (days)",
+        "leadHint": "Time between ordering from your supplier and receiving the stock.",
+        "safety": "Safety margin (days)",
+        "safetyHint": "Extra days of stock to absorb the unexpected.",
+        "productOverride": "Lead time and margin for this product",
+        "productOverrideHint": "Leave empty to use the shop setting.",
+        "alerts": "Forecast alerts",
+        "alertsHint": "Expected stock-out, upcoming event, falling sales (in notifications).",
+        "alertsEmail": "Also receive alerts by e-mail",
+        "window": "Alert when stock-out is less than (days) away",
+        "digest": "Weekly summary by e-mail (Monday)",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "error": "Could not save"
       }
-    },
-    "heatmap": {
-      "noData": "No regional data yet — orders with a wilaya will populate this map.",
-      "aria": "Tunisia regional demand map",
-      "units": "{count, plural, one {{n} unit} other {{n} units}}",
-      "orders": "{count, plural, one {# order} other {# orders}}",
-      "noOrders": "No orders yet",
-      "legendNone": "No orders",
-      "legendPeak": "Peak",
-      "noWilaya": "No wilaya data yet.",
-      "topRegion": "Top region",
-      "coverage": "Coverage",
-      "governorates": "governorates",
-      "untapped": "{count, plural, one {# region} other {# regions}} untapped — consider promotions for {a}, {b} & {c}."
     },
     "advanced": {
       "title": "Advanced Analytics",

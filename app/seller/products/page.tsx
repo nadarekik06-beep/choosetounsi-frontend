@@ -161,6 +161,14 @@ export default function ProductsPage() {
     }
   };
 
+  // Opened from Outils IA → Ventes ("Réapprovisionner"): /seller/products?restock=<id>
+  useEffect(() => {
+    const id = Number(new URLSearchParams(window.location.search).get('restock'));
+    if (!id) return;
+    window.history.replaceState(null, '', window.location.pathname);
+    handleRestock({ id } as Product);
+  }, []);
+
   // ── Theme ──────────────────────────────────────────────────────────────────
   const cardBg    = dark ? '#161b27' : '#ffffff';
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';

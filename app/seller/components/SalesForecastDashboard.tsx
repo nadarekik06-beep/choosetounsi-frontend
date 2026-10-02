@@ -1,1195 +1,828 @@
 'use client';
 
 /**
- * SalesForecastDashboard.tsx — AUTO-RELOAD VERSION
+ * Outils IA → Ventes — sales forecast.
  *
- * Changes vs previous version:
- *  1. Auto-reloads regional + similar data every 60 seconds (polling)
- *  2. Re-fetches ALL data when browser tab regains focus (visibilitychange)
- *  3. runForecast() always sends refresh=true (never serves stale cache)
- *  4. "Last updated X min ago" indicator so seller knows data freshness
- *  5. Manual refresh button always forces recompute
+ * Every number comes from the server's statistics (App\Services\Forecast);
+ * the short "En bref" text is written by Groq from those numbers, or by a
+ * template when Groq is unavailable. Forecasts are read from nightly snapshots:
+ * no auto-refresh; "Actualiser" recomputes at most once per 10 minutes.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 import {
-  TrendingUp, TrendingDown, Minus, Brain, Package,
-  MapPin, Calendar, AlertTriangle, Loader2,
-  RefreshCw, ChevronDown, Info, Layers, BarChart3,
+  AlertTriangle, BarChart3, Brain, CalendarDays, CheckCircle2, ChevronDown, Eye, Info,
+  Loader2, Package, RefreshCw, Settings2, ShoppingCart, Sparkles, Target, Timer, TrendingDown, Truck, XCircle,
 } from 'lucide-react';
 
 import {
   forecastApi,
-  type ForecastResult,
-  type RegionalDemandResult,
-  type SimilarProductsResult,
-  type EventSignal,
-  type AIExplanation,
+  type Explanation, type Forecast, type ForecastAction, type ForecastEvent, type ForecastResponse,
+  type ApiError, type ForecastSettings, type Labels, type SettingsBody, type TrackRecord, type VariantView,
 } from '@/lib/sellerForecastApi';
-import { productsApi } from '@/lib/sellerApi';
-import TunisiaHeatmap from '@/app/components/seller/TunisiaHeatmap';
-import { useLocale, useTranslations } from 'next-intl';
-import { useWilayaLabel } from '@/lib/i18n/wilayas';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { ink } from '@/app/seller/ink';
 
-/** Short month name ("sept.", "سبتمبر") from a YYYY-MM key, falling back to the API label. */
-function useMonthShort() {
-  const { date } = useFormat();
-  return (month: string | undefined, label: string | undefined) =>
-    month && /^\d{4}-\d{2}/.test(month) ? date(`${month.slice(0, 7)}-01T12:00:00`, { month: 'short' }) : (label ?? '');
-}
-function useTnd() {
-  const { price } = useFormat();
-  return (n: number) => price(n, { maximumFractionDigits: 3 });
-}
+type Locale = 'fr' | 'en' | 'ar';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const CONF_COLORS  = { high: '#10b981', medium: '#f59e0b', low: '#ef4444' } as const;
-const TREND_COLORS = { up: '#10b981', down: '#ef4444', stable: '#3b82f6' } as const;
-const EVENT_COLORS: Record<string, string> = {
-  ramadan: '#8b5cf6', eid: '#f59e0b', summer: '#f97316',
-  school: '#3b82f6', economy: '#10b981', tourism: '#06b6d4',
-};
-const EVENT_EMOJIS: Record<string, string> = {
-  ramadan: '🌙', eid: '🎉', summer: '☀️', school: '📚', economy: '💰', tourism: '🌍',
+const SEVERITY_COLOR: Record<number, string> = { 1: '#ef4444', 2: '#f59e0b', 3: '#3b82f6' };
+const LEVEL_COLOR: Record<string, string> = { high: '#10b981', medium: '#f59e0b', low: '#ef4444', none: '#94a3b8' };
+const ACTION_ICON: Record<ForecastAction['type'], React.ElementType> = {
+  out_of_stock: XCircle, stockout: Package, event: CalendarDays, sales_drop: TrendingDown,
+  low_cart: ShoppingCart, dormant: Timer, no_data: Sparkles, low_views: Eye,
 };
 
-// ─── Auto-reload interval (ms) ────────────────────────────────────────────────
-const LIVE_POLL_INTERVAL = 60_000; // 60 seconds — refresh regional + similar
+function usePalette(dark: boolean) {
+  return {
+    bg:     dark ? '#161b27' : '#ffffff',
+    sub:    dark ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+    border: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    text:   dark ? '#ffffff' : '#111111',
+    muted:  dark ? 'rgba(255,255,255,0.6)' : '#5b6472',
+  };
+}
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// Building blocks
+// ═════════════════════════════════════════════════════════════════════════════
 
-function Skeleton({ dark, h = 120 }: { dark: boolean; h?: number }) {
+function Panel({ title, icon: Icon, accent = '#3b82f6', dark, right, children }: {
+  title: string; icon: React.ElementType; accent?: string; dark: boolean; right?: React.ReactNode; children: React.ReactNode;
+}) {
+  const p = usePalette(dark);
   return (
-    <div style={{
-      height: h, borderRadius: 16,
-      background: dark ? 'rgba(255,255,255,0.05)' : '#e5e7eb',
-      animation: 'shimmer 1.4s infinite linear',
-    }} />
+    <section style={{ background: p.bg, borderRadius: 16, border: `1px solid ${p.border}`, minWidth: 0 }}>
+      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '12px 16px', borderBottom: `1px solid ${p.border}`, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          <span style={{ width: 28, height: 28, borderRadius: 8, background: `${accent}1a`, color: ink(accent, dark), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon size={14} />
+          </span>
+          <h3 style={{ margin: 0, fontSize: 13, fontWeight: 800, color: p.text }}>{title}</h3>
+        </div>
+        {right}
+      </header>
+      <div style={{ padding: '14px 16px' }}>{children}</div>
+    </section>
   );
 }
 
-function LiveBadge({ lastUpdated, dark }: { lastUpdated: Date | null; dark: boolean }) {
-  const t = useTranslations('seller.forecast');
-  const { relative } = useFormat();
-  const [age, setAge] = useState<string>('');
-  const muted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
-
-  useEffect(() => {
-    if (!lastUpdated) return;
-    const update = () => {
-      const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 1000);
-      setAge(diff < 10 ? t('justNow') : relative(lastUpdated));
-    };
-    update();
-    const timer = setInterval(update, 10_000);
-    return () => clearInterval(timer);
-  }, [lastUpdated, t, relative]);
-
-  if (!lastUpdated) return null;
-
+function Kpi({ label, value, sub, color, dark, icon: Icon }: {
+  label: string; value: React.ReactNode; sub?: React.ReactNode; color: string; dark: boolean; icon: React.ElementType;
+}) {
+  const p = usePalette(dark);
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      fontSize: 9, fontWeight: 700, color: muted,
-    }}>
-      <span style={{
-        width: 6, height: 6, borderRadius: '50%',
-        background: '#10b981',
-        animation: 'pulse-green 2s infinite',
-      }}/>
-      {t('updated', { age })}
+    <div style={{ background: p.bg, borderRadius: 14, border: `1px solid ${p.border}`, padding: '12px 14px', minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+        <Icon size={13} style={{ color: ink(color, dark), flexShrink: 0 }} />
+        <span style={{ fontSize: 10, fontWeight: 800, color: p.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+      </div>
+      <div style={{ fontSize: 20, fontWeight: 900, color: ink(color, dark), lineHeight: 1.15, letterSpacing: '-0.02em', overflowWrap: 'anywhere' }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, color: p.muted, marginTop: 4, lineHeight: 1.4 }}>{sub}</div>}
+    </div>
+  );
+}
+
+function Chip({ children, color, dark }: { children: React.ReactNode; color: string; dark: boolean }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 999, background: `${color}18`, border: `1px solid ${color}33`, fontSize: 11, fontWeight: 800, color: ink(color, dark), whiteSpace: 'nowrap' }}>
+      {children}
     </span>
   );
 }
 
-function DemandScoreGauge({ score, dark }: { score: number; dark: boolean }) {
-  const color = score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
-  const t = useTranslations('seller.forecast');
-  const label = score >= 70 ? t('demand.high') : score >= 40 ? t('demand.moderate') : t('demand.low');
-  const circ  = 2 * Math.PI * 40;
-  const dash  = (score / 100) * circ;
-  const muted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-      <div style={{ position: 'relative', width: 100, height: 100 }}>
-        <svg width="100" height="100" style={{ transform: 'rotate(-90deg)' }}>
-          <circle cx="50" cy="50" r="40" fill="none" stroke={dark ? 'rgba(255,255,255,0.07)' : '#e5e7eb'} strokeWidth="10"/>
-          <circle cx="50" cy="50" r="40" fill="none" stroke={color} strokeWidth="10"
-            strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
-            style={{ transition: 'stroke-dasharray 1s ease' }}/>
-        </svg>
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: 20, fontWeight: 900, color, lineHeight: 1 }}>{score}</span>
-          <span style={{ fontSize: 9, color: muted, fontWeight: 700 }}>/100</span>
-        </div>
-      </div>
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ fontSize: 11, fontWeight: 800, color, margin: '0 0 2px' }}>{label}</p>
-        <p style={{ fontSize: 9, color: muted, margin: 0, fontWeight: 600 }}>{t('demand.score')}</p>
-      </div>
-    </div>
-  );
-}
-function ForecastLineChart({ history, projections, dark }: {
-  history: ForecastResult['history'];
-  projections: ForecastResult['projections'];
-  dark: boolean;
-}) {
-  const t = useTranslations('seller.forecast');
-  const monthShort = useMonthShort();
-  if (projections.length === 0) return null;
- 
-  const W     = 700;
-  const H     = 230;
-  const PAD_L = 44;   // left — Y axis labels
-  const PAD_R = 16;
-  const PAD_T = 32;   // top — value labels above dots
-  const PAD_B = 32;   // bottom — X month labels
-  const innerW = W - PAD_L - PAD_R;
-  const innerH = H - PAD_T - PAD_B;
- 
-  // ── Y scale ──────────────────────────────────────────────────────────
-  const histVals = history.map(h => h.units);
-  const foreVals = projections.map(p => p.predicted_units);
-  const allVals  = [...histVals, ...foreVals];
-  const rawMax   = Math.max(...allVals, 1);
-  const rawMin   = Math.min(...allVals, 0);
- 
-  // Enforce minimum visible span so close values (5,5,6,7) still show slope
-  const minSpan  = Math.max(3, rawMax * 0.45);
-  const maxVal   = rawMax + minSpan * 0.18;
-  const minVal   = Math.max(0, rawMin - minSpan * 0.05);
-  const ySpan    = Math.max(minSpan, maxVal - minVal);
- 
-  const toY = (v: number) =>
-    PAD_T + innerH - ((v - minVal) / ySpan) * innerH;
- 
-  // ── X zones ───────────────────────────────────────────────────────────
-  // History zone: PAD_L → PAD_L + histZoneW
-  // Gap zone:     PAD_L + histZoneW → PAD_L + histZoneW + gapW
-  // Forecast zone: PAD_L + histZoneW + gapW → PAD_L + innerW
- 
-  const hasHistory  = history.length > 0;
-  const histZoneW   = hasHistory ? innerW * 0.18 : 0;   // 18% for history
-  const gapW        = hasHistory ? innerW * 0.08 : 0;   // 8% gap
-  const foreZoneW   = innerW - histZoneW - gapW;        // rest for forecast
- 
-  // X coordinate within history zone
-  const histX = (i: number) => {
-    if (history.length === 1) return PAD_L + histZoneW * 0.5;
-    return PAD_L + (i / (history.length - 1)) * histZoneW;
-  };
- 
-  // X coordinate within forecast zone
-  const foreX = (i: number) => {
-    const zoneStart = PAD_L + histZoneW + gapW;
-    if (projections.length === 1) return zoneStart + foreZoneW * 0.5;
-    return zoneStart + (i / (projections.length - 1)) * foreZoneW;
-  };
- 
-  // ── Coordinate arrays ─────────────────────────────────────────────────
-  const hCoords = history.map((h, i) => ({
-    x: histX(i),
-    y: toY(h.units),
-    value: h.units,
-    label: monthShort(h.month, h.label),
-  }));
- 
-  const fCoords = projections.map((p, i) => ({
-    x: foreX(i),
-    y: toY(p.predicted_units),
-    value: p.predicted_units,
-    label: monthShort(p.month, p.label),
-    eventBoost: p.event_boost ?? 1.0,
-    eventName: p.event_name ?? null,
-    confidence: p.confidence,
-  }));
- 
-  // ── SVG path helpers ──────────────────────────────────────────────────
-  const makePath = (pts: Array<{x: number; y: number}>) =>
-    pts.map(({ x, y }, i) =>
-      `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`
-    ).join(' ');
- 
-  const makeArea = (pts: Array<{x: number; y: number}>) => {
-    if (pts.length < 2) return '';
-    const base = PAD_T + innerH;
-    return `${makePath(pts)} L ${pts[pts.length-1].x.toFixed(1)} ${base} L ${pts[0].x.toFixed(1)} ${base} Z`;
-  };
- 
-  const hPath     = hCoords.length >= 2 ? makePath(hCoords) : '';
-  const hAreaPath = hCoords.length >= 2 ? makeArea(hCoords) : '';
-  const fPath     = fCoords.length >= 2 ? makePath(fCoords) : '';
-  const fAreaPath = fCoords.length >= 2 ? makeArea(fCoords) : '';
- 
-  // Connector from last history → first forecast (crosses the gap zone)
-  const lastH = hCoords[hCoords.length - 1];
-  const firstF = fCoords[0];
-  const connectorPath = (lastH && firstF)
-    ? `M ${lastH.x.toFixed(1)} ${lastH.y.toFixed(1)} L ${firstF.x.toFixed(1)} ${firstF.y.toFixed(1)}`
-    : '';
- 
-  // Divider line x position = middle of the gap zone
-  const dividerX = hasHistory
-    ? PAD_L + histZoneW + gapW * 0.5
-    : null;
- 
-  // ── Grid ──────────────────────────────────────────────────────────────
-  const gridLines = [0, 0.25, 0.5, 0.75, 1].map(pct => ({
-    pct,
-    value: Math.round(minVal + pct * ySpan),
-    y: PAD_T + innerH - pct * innerH,
-  }));
- 
-  const tc = dark ? 'rgba(255,255,255,0.45)' : '#5b6472';
-  const gc = dark ? 'rgba(255,255,255,0.05)' : '#f0f4f8';
- 
-  return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      direction="ltr"
-      style={{ width: '100%', height: 'auto', overflow: 'visible', direction: 'ltr' }}
-    >
-      <defs>
-        <linearGradient id="hGrad2" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.22" />
-          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.01" />
-        </linearGradient>
-        <linearGradient id="fGrad2" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#10b981" stopOpacity="0.16" />
-          <stop offset="100%" stopColor="#10b981" stopOpacity="0.01" />
-        </linearGradient>
-      </defs>
- 
-      {/* Grid */}
-      {gridLines.map(({ pct, value, y }) => (
-        <g key={pct}>
-          <line x1={PAD_L} y1={y} x2={PAD_L + innerW} y2={y}
-            stroke={gc} strokeWidth="1" />
-          <text x={PAD_L - 5} y={y + 4}
-            textAnchor="end" fontSize="9" fill={tc}>{value}</text>
-        </g>
-      ))}
- 
-      {/* NOW divider in gap zone */}
-      {dividerX !== null && (
-        <>
-          <line
-            x1={dividerX} y1={PAD_T}
-            x2={dividerX} y2={PAD_T + innerH}
-            stroke={dark ? 'rgba(255,255,255,0.12)' : '#cbd5e1'}
-            strokeWidth="1" strokeDasharray="4 4" />
-          <text
-            x={dividerX} y={PAD_T - 6}
-            textAnchor="middle" fontSize="8"
-            fill={dark ? 'rgba(255,255,255,0.55)' : '#5b6472'}
-            fontStyle="italic">
-            {t('chart.now')}
-          </text>
-        </>
-      )}
- 
-      {/* ── HISTORY ── */}
- 
-      {/* History area */}
-      {hAreaPath && <path d={hAreaPath} fill="url(#hGrad2)" />}
- 
-      {/* History line (multi-point) */}
-      {hPath && (
-        <path d={hPath} fill="none"
-          stroke="#3b82f6" strokeWidth="2.5"
-          strokeLinecap="round" strokeLinejoin="round" />
-      )}
- 
-      {/* History: single point */}
-      {hCoords.length === 1 && (
-        <g>
-          <line x1={hCoords[0].x} y1={hCoords[0].y}
-            x2={hCoords[0].x} y2={PAD_T + innerH}
-            stroke="#3b82f6" strokeWidth="1.5"
-            strokeDasharray="2 3" opacity="0.35" />
-          <circle cx={hCoords[0].x} cy={hCoords[0].y}
-            r="8" fill="#3b82f6" opacity="0.15" />
-          <circle cx={hCoords[0].x} cy={hCoords[0].y}
-            r="5" fill="#3b82f6"
-            stroke={dark ? '#161b27' : '#fff'} strokeWidth="2" />
-          <text x={hCoords[0].x} y={hCoords[0].y - 13}
-            textAnchor="middle" fontSize="11"
-            fill="#60a5fa" fontWeight="bold">
-            {hCoords[0].value}
-          </text>
-        </g>
-      )}
- 
-      {/* History dots + labels (multi-point) */}
-      {hCoords.length >= 2 && hCoords.map(({ x, y, value }, i) => (
-        <g key={`hd${i}`}>
-          <circle cx={x} cy={y} r="4"
-            fill="#3b82f6"
-            stroke={dark ? '#161b27' : '#fff'} strokeWidth="1.5" />
-          <text x={x} y={y - 9}
-            textAnchor="middle" fontSize="9"
-            fill="#60a5fa" fontWeight="bold">{value}</text>
-        </g>
-      ))}
- 
-      {/* Connector history → forecast */}
-      {connectorPath && (
-        <path d={connectorPath} fill="none"
-          stroke={dark ? 'rgba(255,255,255,0.12)' : '#e2e8f0'}
-          strokeWidth="1.5" strokeDasharray="3 4" />
-      )}
- 
-      {/* ── FORECAST ── */}
- 
-      {/* Forecast area */}
-      {fAreaPath && <path d={fAreaPath} fill="url(#fGrad2)" />}
- 
-      {/* Forecast dashed line */}
-      {fPath && (
-        <path d={fPath} fill="none"
-          stroke="#10b981" strokeWidth="2.5"
-          strokeLinecap="round" strokeLinejoin="round"
-          strokeDasharray="6 4" />
-      )}
- 
-      {/* Forecast dots + value labels (non-event months) */}
-      {fCoords.map(({ x, y, value, eventBoost }, i) => {
-        if (eventBoost > 1.0) return null; // event dots rendered on top
-        return (
-          <g key={`fd${i}`}>
-            <circle cx={x} cy={y} r="3.5"
-              fill="#10b981"
-              stroke={dark ? '#161b27' : '#fff'} strokeWidth="1.5" />
-            <text x={x} y={y - 9}
-              textAnchor="middle" fontSize="9"
-              fill="#10b981" fontWeight="bold">{value}</text>
-          </g>
-        );
-      })}
- 
-      {/* X-axis: history labels */}
-      {hCoords.map(({ x, label }, i) => (
-        <text key={`hxl${i}`} x={x} y={PAD_T + innerH + 16}
-          textAnchor="middle" fontSize="9" fill={tc}>
-          {label}
-        </text>
-      ))}
- 
-      {/* X-axis: forecast labels */}
-      {fCoords.map(({ x, label }, i) => (
-        <text key={`fxl${i}`} x={x} y={PAD_T + innerH + 16}
-          textAnchor="middle" fontSize="9" fill={tc}>
-          {label}
-        </text>
-      ))}
- 
-      {/* ── EVENT BOOST DOTS — always on top ── */}
-      {fCoords
-        .filter(d => d.eventBoost > 1.0 || !!d.eventName)
-        .map(({ x, y, value, eventBoost, eventName }, i) => (
-          <g key={`ev${i}`}>
-            <circle cx={x} cy={y} r="15" fill="#f59e0b" opacity="0.08" />
-            <circle cx={x} cy={y} r="9"  fill="#f59e0b" opacity="0.18" />
-            <circle cx={x} cy={y} r="5.5"
-              fill="#f59e0b"
-              stroke={dark ? '#161b27' : '#fff'} strokeWidth="2" />
-            <text x={x} y={y - 13}
-              textAnchor="middle" fontSize="10"
-              fill="#f59e0b" fontWeight="900">{value}</text>
-            <text x={x} y={y - 23}
-              textAnchor="middle" fontSize="8"
-              fill="#f59e0b" opacity="0.9">
-              ⚡ ×{eventBoost.toFixed(2)}
-            </text>
-            {eventName && (
-              <text x={x} y={y + 20}
-                textAnchor="middle" fontSize="7"
-                fill="#f59e0b" opacity="0.75">
-                {eventName.split(' ').slice(0, 3).join(' ')}
-              </text>
-            )}
-          </g>
-        ))
-      }
- 
-      {/* Legend */}
-      <g transform={`translate(${PAD_L}, ${PAD_T + innerH + 22})`}>
-        <line x1="0" y1="0" x2="18" y2="0"
-          stroke="#3b82f6" strokeWidth="2.5" />
-        <text x="22" y="4" fontSize="9" fill={tc}>{t('chart.history')}</text>
-        <line x1="68" y1="0" x2="86" y2="0"
-          stroke="#10b981" strokeWidth="2.5" strokeDasharray="4 3" />
-        <text x="90" y="4" fontSize="9" fill={tc}>{t('chart.forecast')}</text>
-        <circle cx="148" cy="0" r="5" fill="#f59e0b" />
-        <text x="156" y="4" fontSize="9" fill={tc}>{t('chart.eventBoost')}</text>
-      </g>
-    </svg>
-  );
-}
-function EventsCalendar({ events, dark }: { events: EventSignal[]; dark: boolean }) {
-  const t = useTranslations('seller.forecast.events');
-  const { date, number } = useFormat();
-  const wl = useWilayaLabel();
-  const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
-  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
-  const text   = dark ? '#fff' : '#111';
- 
-  if (events.length === 0) {
-    return (
-      <p style={{ fontSize: 12, color: muted, margin: 0, textAlign: 'center', padding: '20px 0' }}>
-        {t('empty')}
-      </p>
-    );
-  }
- 
-  // Confidence badge colours
-  const confColors: Record<string, string> = {
-    high:   '#10b981',
-    medium: '#f59e0b',
-    low:    '#ef4444',
-  };
- 
-  // Multiplier source badge copy
-  const sourceLabel: Record<string, string> = {
-    real_data:          `✓ ${t('source.real')}`,
-    category_baseline:  `📊 ${t('source.category')}`,
-    tunisia_baseline:   `🇹🇳 ${t('source.tunisia')}`,
-  };
- 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {events.map(ev => {
-        const color   = EVENT_COLORS[ev.type] ?? '#6b7280';
-        const emoji   = EVENT_EMOJIS[ev.type] ?? '📅';
-        const urgent  = ev.days_until <= 14;
-        const mult    = ev.dynamic_multiplier ?? ev.boost_score;
-        const confCol = confColors[ev.confidence_label ?? 'low'] ?? '#6b7280';
- 
-        // Demand increase sign + colour
-        const demandPct = ev.demand_increase_pct ?? Math.round((mult - 1) * 100);
-        const isPositive = demandPct >= 0;
-        const demandColor = isPositive ? '#10b981' : '#ef4444';
-        const demandSign  = isPositive ? '+' : '';
- 
-        return (
-          <div
-            key={ev.slug}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 0,
-              borderRadius: 14,
-              background: urgent
-                ? (dark ? `${color}12` : `${color}08`)
-                : (dark ? 'rgba(255,255,255,0.03)' : '#fafafa'),
-              border: urgent ? `1px solid ${color}30` : `1px solid ${border}`,
-              overflow: 'hidden',
-            }}
-          >
-            {/* ── Row 1: original card content (UNCHANGED layout) ── */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
-              <span style={{ fontSize: 22, flexShrink: 0 }}>{emoji}</span>
- 
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 12, fontWeight: 800, color, margin: '0 0 2px' }}>
-                  {ev.name}
-                </p>
-                <p style={{ fontSize: 9, color: muted, margin: 0 }}>
-                  {date(ev.starts_at, 'short')}
-                  {' '}<span className="rtl-flip" style={{ display: 'inline-block' }}>→</span>{' '}
-                  {date(ev.ends_at, 'short')}
-                </p>
-              </div>
- 
-              {/* Multiplier — now dynamic, highlighted */}
-              <div style={{ textAlign: 'end', flexShrink: 0 }}>
-                <p
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 900,
-                    color,
-                    margin: '0 0 2px',
-                    letterSpacing: '-0.02em',
-                  }}
-                >
-                  ×{mult.toFixed(2)}
-                </p>
-                <p style={{ fontSize: 9, color: muted, margin: 0 }}>
-                  {ev.days_until === 0 ? `🔴 ${t('now')}` : t('inDays', { count: ev.days_until })}
-                </p>
-              </div>
-            </div>
- 
-            {/* ── Row 2: NEW enrichment strip ── */}
-            <div
-              style={{
-                background: dark ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.03)',
-                borderTop: `1px solid ${color}18`,
-                padding: '10px 14px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-              }}
-            >
-              {/* Stat pills row */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
- 
-                {/* Demand increase */}
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: '3px 9px',
-                    borderRadius: 999,
-                    background: `${demandColor}14`,
-                    border: `1px solid ${demandColor}30`,
-                    fontSize: 11,
-                    fontWeight: 900,
-                    color: demandColor,
-                  }}
-                >
-                  {t('demand', { pct: `${demandSign}${number(demandPct)}` })}
-                </span>
- 
-                {/* Predicted units — only when product selected */}
-                {ev.predicted_units != null && (
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '3px 9px',
-                      borderRadius: 999,
-                      background: `${color}14`,
-                      border: `1px solid ${color}30`,
-                      fontSize: 11,
-                      fontWeight: 900,
-                      color,
-                    }}
-                  >
-                    📦 {t('units', { count: ev.predicted_units })}
-                  </span>
-                )}
- 
-                {/* Confidence */}
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: '3px 9px',
-                    borderRadius: 999,
-                    background: `${confCol}12`,
-                    border: `1px solid ${confCol}25`,
-                    fontSize: 10,
-                    fontWeight: 800,
-                    color: confCol,
-                  }}
-                >
-                  {ev.confidence_label === 'high' ? '✓' : ev.confidence_label === 'medium' ? '◎' : '○'}
-                  {' '}{t('confidence', { pct: ev.confidence_score ?? 0 })}
-                </span>
- 
-                {/* Data source */}
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: '3px 9px',
-                    borderRadius: 999,
-                    background: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-                    border: `1px solid ${border}`,
-                    fontSize: 9,
-                    fontWeight: 700,
-                    color: muted,
-                  }}
-                >
-                  {sourceLabel[ev.multiplier_source ?? 'tunisia_baseline'] ?? sourceLabel.tunisia_baseline}
-                </span>
-              </div>
- 
-              {/* Top regions */}
-              {ev.top_regions && ev.top_regions.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    🗺️ {t('bestRegions')}
-                  </span>
-                  {ev.top_regions.slice(0, 4).map((region: string) => (
-                    <span
-                      key={region}
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        padding: '2px 7px',
-                        borderRadius: 999,
-                        background: `${color}10`,
-                        border: `1px solid ${color}20`,
-                        color,
-                      }}
-                    >
-                      {wl(region)}
-                    </span>
-                  ))}
-                </div>
-              )}
- 
-              {/* Stock action */}
-              {ev.stock_action && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '6px 10px',
-                    borderRadius: 8,
-                    background: urgent
-                      ? `${color}10`
-                      : (dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'),
-                    border: `1px solid ${urgent ? color + '25' : border}`,
-                  }}
-                >
-                  <span style={{ fontSize: 12 }}>📦</span>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: urgent ? color : muted, margin: 0 }}>
-                    {ev.stock_action}
-                  </p>
-                </div>
-              )}
- 
-              {/* AI explanation */}
-              {ev.ai_explanation && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 7,
-                    padding: '7px 10px',
-                    borderRadius: 8,
-                    background: dark ? 'rgba(139,92,246,0.06)' : 'rgba(139,92,246,0.04)',
-                    border: '1px solid rgba(139,92,246,0.15)',
-                  }}
-                >
-                  <span style={{ fontSize: 11, flexShrink: 0, marginTop: 1 }}>🧠</span>
-                  <p
-                    style={{
-                      fontSize: 10,
-                      color: dark ? 'rgba(255,255,255,0.75)' : '#444',
-                      margin: 0,
-                      lineHeight: 1.5,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {ev.ai_explanation}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function SimilarProductsList({ data, dark }: { data: SimilarProductsResult; dark: boolean }) {
-  const t = useTranslations('seller.forecast.similar');
-  const fmtTND = useTnd();
-  const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
-  const text   = dark ? '#fff' : '#111';
-  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
-  if (!data.has_data || data.similar.length === 0) return <p style={{ fontSize: 12, color: muted, margin: 0, textAlign: 'center', padding: '20px 0' }}>{t('empty')}</p>;
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, padding: '12px 14px', borderRadius: 12, background: dark ? 'rgba(255,255,255,0.03)' : '#f8fafc', border: `1px solid ${border}` }}>
-        {[
-          { label: t('yourMonthly'),  val: `${data.own_monthly_units}`,                color: '#db142e' },
-          { label: t('median'),       val: `${data.market_median_monthly_units}`,      color: ink('#3b82f6', dark) },
-          { label: t('avgPrice'),     val: fmtTND(data.market_avg_price),             color: ink('#10b981', dark) },
-        ].map(({ label, val, color }) => (
-          <div key={label} style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: 14, fontWeight: 900, color, margin: '0 0 2px' }}>{val}</p>
-            <p style={{ fontSize: 9, color: muted, margin: 0, fontWeight: 600 }}>{label}</p>
-          </div>
-        ))}
-      </div>
-      {data.insights.map((ins, i) => {
-        const bg  = ins.type === 'warning' ? 'rgba(239,68,68,0.06)' : ins.type === 'positive' ? 'rgba(16,185,129,0.06)' : ins.type === 'opportunity' ? 'rgba(245,158,11,0.06)' : (dark ? 'rgba(255,255,255,0.03)' : '#f8fafc');
-        const bd  = ins.type === 'warning' ? 'rgba(239,68,68,0.18)' : ins.type === 'positive' ? 'rgba(16,185,129,0.18)' : ins.type === 'opportunity' ? 'rgba(245,158,11,0.18)' : border;
-        const ico = ins.type === 'warning' ? '⚠️' : ins.type === 'positive' ? '✅' : ins.type === 'opportunity' ? '💡' : 'ℹ️';
-        return (
-          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', borderRadius: 10, background: bg, border: `1px solid ${bd}` }}>
-            <span style={{ fontSize: 14, flexShrink: 0 }}>{ico}</span>
-            <p style={{ fontSize: 11, color: dark ? 'rgba(255,255,255,0.8)' : '#333', margin: 0, lineHeight: 1.5 }}>{ins.message}</p>
-          </div>
-        );
-      })}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {data.similar.slice(0, 5).map((p, i) => (
-          <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 10, background: dark ? 'rgba(255,255,255,0.03)' : '#fafafa', border: `1px solid ${border}` }}>
-            <span style={{ fontSize: 10, fontWeight: 800, color: muted, minWidth: 16 }}>#{i+1}</span>
-            {p.primary_image && <img src={p.primary_image} alt={p.name} style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }}/>}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: text, margin: '0 0 1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</p>
-              <p style={{ fontSize: 9, color: muted, margin: 0 }}>{fmtTND(p.price)}</p>
-            </div>
-            <span style={{ fontSize: 11, fontWeight: 800, color: ink('#10b981', dark), flexShrink: 0 }}>{t('perMonth', { count: p.monthly_units })}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function AIExplanationPanel({ explanation, loading, dark }: { explanation: AIExplanation | null; loading: boolean; dark: boolean }) {
-  const muted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
-  const t = useTranslations('seller.forecast.ai');
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px' }}>
-      <Loader2 size={16} style={{ color: ink('#8b5cf6', dark), animation: 'spin 1s linear infinite', flexShrink: 0 }}/>
-      <p style={{ fontSize: 12, color: muted, margin: 0 }}>{t('loading')}</p>
-    </div>
-  );
-  if (!explanation) return null;
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {[
-        { icon: '📊', label: t('summary'),     content: explanation.summary,          color: ink('#3b82f6', dark) },
-        { icon: '💡', label: t('opportunity'), content: explanation.main_opportunity,  color: ink('#10b981', dark) },
-        { icon: '⚠️', label: t('risk'),        content: explanation.main_risk,         color: ink('#f59e0b', dark) },
-        { icon: '🌙', label: t('seasonTip'),   content: explanation.seasonal_tip,      color: ink('#8b5cf6', dark) },
-      ].map(({ icon, label, content, color }) => (
-        <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', borderRadius: 10, background: `${color}06`, border: `1px solid ${color}18` }}>
-          <span style={{ fontSize: 16, flexShrink: 0 }}>{icon}</span>
-          <div>
-            <p style={{ fontSize: 9, fontWeight: 800, color, margin: '0 0 3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
-            <p style={{ fontSize: 11, color: dark ? 'rgba(255,255,255,0.82)' : '#333', margin: 0, lineHeight: 1.6 }}>{content}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Card({ title, icon: Icon, accent = '#db142e', children, dark, badge, rightSlot }: {
-  title: string; icon: React.ElementType; accent?: string;
-  children: React.ReactNode; dark: boolean;
-  badge?: React.ReactNode; rightSlot?: React.ReactNode;
-}) {
-  const bg     = dark ? '#161b27' : '#ffffff';
-  const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
-  const text   = dark ? '#fff' : '#111';
-  return (
-    <div style={{ background: bg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: `1px solid ${border}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 10, background: `${accent}18`, border: `1px solid ${accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: ink(accent, dark), flexShrink: 0 }}>
-            <Icon size={15}/>
-          </div>
-          <p style={{ fontWeight: 800, fontSize: 13, color: text, margin: 0 }}>{title}</p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {rightSlot}
-          {badge}
-        </div>
-      </div>
-      <div style={{ padding: '16px 18px' }}>{children}</div>
-    </div>
-  );
+function Skeleton({ dark, h }: { dark: boolean; h: number }) {
+  return <div style={{ height: h, borderRadius: 14, background: dark ? 'rgba(255,255,255,0.05)' : '#eef1f5', animation: 'fc-shimmer 1.4s infinite linear' }} />;
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// MAIN DASHBOARD
+// Chart: last 13 weeks (bars) + next 4 weeks (80 % band + point) + event markers
 // ═════════════════════════════════════════════════════════════════════════════
 
-export default function SalesForecastDashboard({ dark }: { dark: boolean }) {
-  const [products,    setProducts]    = useState<Array<{ id: number; name: string }>>([]);
-  const [selectedId,  setSelectedId]  = useState<number | null>(null);
-  const [forecast,    setForecast]    = useState<ForecastResult | null>(null);
-  const [regional,    setRegional]    = useState<RegionalDemandResult | null>(null);
-  const [similar,     setSimilar]     = useState<SimilarProductsResult | null>(null);
-  const [events,      setEvents]      = useState<EventSignal[]>([]);
-  const [explanation, setExplanation] = useState<AIExplanation | null>(null);
-
-  const [loadingFull,    setLoadingFull]    = useState(false);
-  const [loadingLive,    setLoadingLive]    = useState(false); // silent live refresh
-  const [loadingExplain, setLoadingExplain] = useState(false);
-  const [error,          setError]          = useState<string | null>(null);
-  const [lastUpdated,    setLastUpdated]    = useState<Date | null>(null);
-  const t      = useTranslations('seller.forecast');
-  const locale = useLocale() as 'fr' | 'ar' | 'en';
-  const fmtTND = useTnd();
-  const monthShort = useMonthShort();
+function ForecastChart({ f, dark, locale }: { f: Forecast; dark: boolean; locale: Locale }) {
+  const t = useTranslations('seller.forecast.chart');
   const { date } = useFormat();
+  const p = usePalette(dark);
 
-  // Refs to avoid stale closure in intervals
-  const selectedIdRef  = useRef<number | null>(null);
-  const pollTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  selectedIdRef.current = selectedId;
-
-  const bg     = dark ? '#161b27' : '#ffffff';
-  const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
-  const text   = dark ? '#fff' : '#111';
-  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
-  const subBg  = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
-  const trendColor = forecast ? (TREND_COLORS[forecast.overall_trend] ?? '#3b82f6') : '#3b82f6';
-
-  // ── Load product list ─────────────────────────────────────────────────────
-  useEffect(() => {
-    productsApi.getAll({ per_page: 50 })
-      .then(res => {
-        const list: any[] = res?.data?.data ?? res?.data ?? [];
-        setProducts(list.map((p: any) => ({ id: p.id, name: p.name })));
-      })
-      .catch(() => {});
-  }, []);
-
-  // ── Full forecast (heavy — runs on product select + manual refresh) ───────
-  const runFullForecast = useCallback(async (productId: number) => {
-    setLoadingFull(true);
-    setError(null);
-    setForecast(null);
-    setRegional(null);
-    setSimilar(null);
-    setExplanation(null);
-    setEvents([]);
-
-    try {
-      // Always send refresh=true — never serve stale cache
-      const [forecastRes, regionalRes, similarRes] = await Promise.all([
-        forecastApi.getForecast(productId, 6, false), // useCache=false → refresh=true
-        forecastApi.getRegional(productId),
-        forecastApi.getSimilar(productId),
-      ]);
-
-      setForecast(forecastRes.data);
-      setRegional(regionalRes.data);
-      setSimilar(similarRes.data);
-      setLastUpdated(new Date());
-      setLoadingFull(false);
-
-      // Events
-      try {
-        const catSlug   = (forecastRes.data as any).category_slug;
-        const eventsRes = await forecastApi.getEvents(catSlug, productId);
-        setEvents(eventsRes.data);
-      } catch { /* events are non-critical */ }
-
-      // AI explanation (non-blocking)
-      setLoadingExplain(true);
-      forecastApi.getAIExplanation(productId, forecastRes.data, regionalRes.data, locale)
-        .then(r => setExplanation(r.data))
-        .catch(() => {})
-        .finally(() => setLoadingExplain(false));
-
-    } catch (e: any) {
-      setError(e.message ?? t('failed'));
-      setLoadingFull(false);
-    }
-  }, [locale, t]);
-
-  // ── Live refresh (lightweight — only regional + similar, silent) ──────────
-  const runLiveRefresh = useCallback(async (productId: number) => {
-    setLoadingLive(true);
-    try {
-      const [regionalRes, similarRes] = await Promise.all([
-        forecastApi.getRegional(productId),
-        forecastApi.getSimilar(productId),
-      ]);
-      setRegional(regionalRes.data);
-      setSimilar(similarRes.data);
-      setLastUpdated(new Date());
-    } catch {
-      // Silent — don't show error for background refresh
-    } finally {
-      setLoadingLive(false);
-    }
-  }, []);
-
-  // ── Auto-run when product selected ───────────────────────────────────────
-  useEffect(() => {
-    if (!selectedId) return;
-    runFullForecast(selectedId);
-  }, [selectedId, runFullForecast]);
-
-  // ── Polling: every 60s refresh live data silently ─────────────────────────
-  useEffect(() => {
-    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-    if (!selectedId) return;
-
-    pollTimerRef.current = setInterval(() => {
-      const id = selectedIdRef.current;
-      if (id) runLiveRefresh(id);
-    }, LIVE_POLL_INTERVAL);
-
-    return () => {
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-    };
-  }, [selectedId, runLiveRefresh]);
-
-  // ── Visibility API: re-fetch when tab regains focus ───────────────────────
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') {
-        const id = selectedIdRef.current;
-        if (!id) return;
-        // If tab was hidden for >30s, refresh live data immediately
-        runLiveRefresh(id);
-      }
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [runLiveRefresh]);
-
-  // ── Also refresh when window regains focus ────────────────────────────────
-  useEffect(() => {
-    const onFocus = () => {
-      const id = selectedIdRef.current;
-      if (id) runLiveRefresh(id);
-    };
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, [runLiveRefresh]);
+  const W = 720, H = 250, L = 36, R = 12, T = 30, B = 34;
+  const slots = f.history.length + f.weeks.length;
+  const slotW = (W - L - R) / Math.max(1, slots);
+  const maxY = Math.max(1, ...f.history.map(h => h.units), ...f.weeks.map(w => w.high)) * 1.15;
+  const y = (v: number) => T + (H - T - B) * (1 - v / maxY);
+  const xSlot = (i: number) => L + i * slotW;
+  const chartStart = f.history[0] ? new Date(f.history[0].start + 'T00:00:00') : new Date();
+  const xDate = (iso: string) => L + ((new Date(iso + 'T00:00:00').getTime() - chartStart.getTime()) / 86400000 / 7) * slotW;
+  const xEnd = W - R;
+  const todayX = xSlot(f.history.length);
+  const ticks = [0, 0.5, 1].map(r => Math.round(maxY / 1.15 * r));
+  const events = f.events.filter(e => xDate(e.ends_on) >= L && xDate(e.starts_on) <= xEnd);
+  const grid = dark ? 'rgba(255,255,255,0.07)' : '#edf0f4';
+  const band = f.weeks.map((w, i) => ({ x: xSlot(f.history.length + i) + slotW / 2, ...w }));
+  const bandPath = band.length
+    ? `M ${band.map(b => `${b.x} ${y(b.high)}`).join(' L ')} L ${[...band].reverse().map(b => `${b.x} ${y(b.low)}`).join(' L ')} Z`
+    : '';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('title')} style={{ width: '100%', height: 'auto', direction: 'ltr', display: 'block' }}>
+        {ticks.map(v => (
+          <g key={v}>
+            <line x1={L} x2={xEnd} y1={y(v)} y2={y(v)} stroke={grid} />
+            <text x={L - 6} y={y(v) + 3} textAnchor="end" fontSize="10" fill={p.muted}>{v}</text>
+          </g>
+        ))}
+
+        {/* Event markers */}
+        {events.map(e => {
+          const x1 = Math.max(L, xDate(e.starts_on));
+          const x2 = Math.min(xEnd, xDate(e.ends_on) + slotW / 7);
+          return (
+            <g key={e.id}>
+              <rect x={x1} y={T - 4} width={Math.max(2, x2 - x1)} height={H - T - B + 4} fill="#8b5cf6" opacity={dark ? 0.12 : 0.08} />
+              <line x1={x1} x2={x1} y1={T - 4} y2={H - B} stroke="#8b5cf6" strokeDasharray="3 3" opacity={0.7} />
+              <text x={Math.min(x1 + 3, xEnd - 4)} y={T - 8} fontSize="9.5" fontWeight="700" fill={ink('#8b5cf6', dark)} textAnchor={x1 > xEnd - 80 ? 'end' : 'start'}>
+                {(e.names[locale] ?? e.names.fr).slice(0, 22)}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Actual weekly sales */}
+        {f.history.map((h, i) => {
+          const barH = (H - T - B) * (h.units / maxY);
+          return (
+            <g key={h.start}>
+              <rect x={xSlot(i) + slotW * 0.18} y={y(h.units)} width={slotW * 0.64} height={barH} rx={3}
+                fill={h.promo ? '#f59e0b' : '#3b82f6'} opacity={0.85}>
+                <title>{`${date(h.start, { day: 'numeric', month: 'short' })}: ${h.units}`}</title>
+              </rect>
+            </g>
+          );
+        })}
+
+        {/* Today divider */}
+        <line x1={todayX} x2={todayX} y1={T - 4} y2={H - B} stroke={p.muted} strokeDasharray="4 4" opacity={0.6} />
+        <text x={todayX + 4} y={H - B - 6} fontSize="9.5" fill={p.muted}>{t('today')}</text>
+
+        {/* Forecast band + point */}
+        {bandPath && <path d={bandPath} fill="#10b981" opacity={dark ? 0.22 : 0.16} />}
+        {band.length > 1 && <path d={`M ${band.map(b => `${b.x} ${y(b.point)}`).join(' L ')}`} fill="none" stroke="#10b981" strokeWidth={2.5} strokeDasharray="6 4" />}
+        {band.map(b => (
+          <g key={b.start}>
+            <circle cx={b.x} cy={y(b.point)} r={3.5} fill="#10b981" stroke={p.bg} strokeWidth={1.5} />
+            <text x={b.x} y={y(b.high) - 5} textAnchor="middle" fontSize="9.5" fontWeight="700" fill={ink('#10b981', dark)}>{`${b.low}–${b.high}`}</text>
+          </g>
+        ))}
+
+        {/* X labels: every other history week + forecast weeks */}
+        {[...f.history.map(h => h.start), ...f.weeks.map(w => w.start)].map((d, i) => (
+          i % 2 === (slots % 2) || i >= f.history.length
+            ? <text key={d} x={xSlot(i) + slotW / 2} y={H - B + 14} textAnchor="middle" fontSize="9" fill={p.muted}>{date(d, { day: 'numeric', month: 'short' })}</text>
+            : null
+        ))}
+      </svg>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 6, fontSize: 11, color: p.muted }}>
+        <Legend color="#3b82f6" label={t('actual')} />
+        <Legend color="#f59e0b" label={t('promo')} />
+        <Legend color="#10b981" label={t('range')} band />
+        {events.length > 0 && <Legend color="#8b5cf6" label={t('events')} band />}
+        <span style={{ marginInlineStart: 'auto' }}>{t('unitsPerWeek')}</span>
+      </div>
+    </div>
+  );
+}
+
+function Legend({ color, label, band }: { color: string; label: string; band?: boolean }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+      <span style={{ width: 12, height: band ? 8 : 10, borderRadius: band ? 2 : 3, background: color, opacity: band ? 0.4 : 0.85 }} />
+      {label}
+    </span>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Sections
+// ═════════════════════════════════════════════════════════════════════════════
+
+function TierBanner({ f, dark }: { f: Forecast; dark: boolean }) {
+  const t = useTranslations('seller.forecast.tier');
+  const tm = useTranslations('seller.forecast.models');
+  const p = usePalette(dark);
+  const color = f.tier === 'own' ? '#10b981' : f.tier === 'insufficient' ? '#94a3b8' : '#f59e0b';
+  const own = Math.round((f.weight_own ?? 0) * 100);
+  const text = f.scope === 'shop'
+    ? t('shop', { own: f.tiers?.own ?? 0, total: f.products_count ?? 0 })
+    : t(`${f.tier}.text`, {
+        products: f.prior?.products ?? 0, sellers: f.prior?.sellers ?? 0, own, prior: 100 - own,
+        model: f.model && tm.has(f.model) ? tm(f.model) : '', days: f.data?.days ?? 0,
+      });
+  return (
+    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px', borderRadius: 14, background: `${color}10`, border: `1px solid ${color}33` }}>
+      <Info size={16} style={{ color: ink(color, dark), flexShrink: 0, marginTop: 1 }} />
+      <div style={{ minWidth: 0 }}>
+        <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 800, color: ink(color, dark) }}>
+          {f.scope === 'shop' ? t('shopTitle') : t(`${f.tier}.title`)}
+        </p>
+        <p style={{ margin: 0, fontSize: 12, color: p.muted, lineHeight: 1.5 }}>{text}</p>
+      </div>
+    </div>
+  );
+}
+
+function ConfidenceLine({ f, dark }: { f: Forecast; dark: boolean }) {
+  const t = useTranslations('seller.forecast.confidence');
+  const p = usePalette(dark);
+  const c = f.confidence;
+  const level = t(`levels.${c.level}`);
+  let line: string;
+  if (f.scope === 'shop') line = t('shop', { level });
+  else if (f.tier === 'category') line = t('category', { products: f.prior?.products ?? 0, level });
+  else line = t('line', { orders: c.orders ?? 0, days: c.days ?? 0, level });
+  const color = LEVEL_COLOR[c.level];
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <Chip color={color} dark={dark}><Target size={11} /> {t('label')} {c.score}/100</Chip>
+      <span style={{ fontSize: 12, color: p.text, fontWeight: 600 }}>{line}</span>
+      {f.scope === 'product' && f.tier === 'own' && (
+        <span style={{ fontSize: 11, color: p.muted }}>
+          {c.error_pct != null ? t('error', { pct: c.error_pct }) : t('noBacktest')}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function KpiRow({ f, dark }: { f: Forecast; dark: boolean }) {
+  const t = useTranslations('seller.forecast.kpi');
+  const { price, date } = useFormat();
+  const money = (n: number) => price(n, { maximumFractionDigits: 0 });
+  const s = f.stock;
+  const lead = s.lead_time_days + s.safety_days + 7;
+
+  // Nearest stock-out among the product and its variants
+  const rows = f.variants?.length ? f.variants.map(v => v.stock) : [s];
+  const soon = rows.filter(r => r.days_left !== null).sort((a, b) => (a.days_left! - b.days_left!))[0] ?? null;
+  const reorder = rows.filter(r => r.reorder_qty > 0).sort((a, b) => (a.reorder_by ?? '').localeCompare(b.reorder_by ?? ''));
+  const reorderQty = reorder.reduce((sum, r) => sum + r.reorder_qty, 0);
+  const reorderBy = reorder[0]?.reorder_by ?? null;
+  const today = f.snapshot_date;
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10 }}>
+      <Kpi dark={dark} icon={BarChart3} color="#10b981" label={t('forecast')}
+        value={f.next28 ? t('units', { low: f.next28.low, high: f.next28.high }) : '—'}
+        sub={f.next28 ? `${money(f.next28.revenue_low)} – ${money(f.next28.revenue_high)}` : t('noForecast')} />
+
+      <Kpi dark={dark} icon={Package} color="#3b82f6" label={t('stock')}
+        value={t('stockUnits', { n: s.current })}
+        sub={f.scope === 'shop' ? t('stockShop') : f.variants?.length ? t('variantsSum', { n: f.variants.length }) : undefined} />
+
+      {f.scope === 'shop' ? (
+        <Kpi dark={dark} icon={AlertTriangle} color={(s.at_risk?.length ?? 0) > 0 ? '#ef4444' : '#10b981'} label={t('atRisk')}
+          value={s.at_risk?.length ?? 0}
+          sub={(s.at_risk?.length ?? 0) > 0 ? s.at_risk!.slice(0, 2).map(r => `${r.name} (${t('days', { n: r.days_left })})`).join(' · ') : t('atRiskNone')} />
+      ) : (
+        <Kpi dark={dark} icon={Timer} color={soon && soon.days_left! <= lead ? '#ef4444' : '#10b981'} label={t('daysLeft')}
+          value={!f.next28 ? '—' : soon ? t('days', { n: soon.days_left ?? 0 }) : t('over7Months')}
+          sub={!f.next28 ? t('noForecast') : soon?.stockout_date ? t('stockoutOn', { date: date(soon.stockout_date, { day: 'numeric', month: 'long' }) }) : t('noStockout')} />
+      )}
+
+      {f.scope === 'product' && (
+        <Kpi dark={dark} icon={Truck} color={reorderQty > 0 ? '#f59e0b' : '#10b981'} label={t('reorder')}
+          value={reorderQty > 0 ? t('reorderQty', { n: reorderQty }) : t('reorderNone')}
+          sub={reorderQty > 0
+            ? (reorderBy && reorderBy > today ? t('reorderBy', { date: date(reorderBy, { day: 'numeric', month: 'long' }) }) : t('reorderNow'))
+            : t('reorderNoneText', { lead: s.lead_time_days, safety: s.safety_days })} />
+      )}
+    </div>
+  );
+}
+
+function MonthsGrid({ f, dark }: { f: Forecast; dark: boolean }) {
+  const t = useTranslations('seller.forecast.months');
+  const { date, price } = useFormat();
+  const p = usePalette(dark);
+  if (!f.months.length) return null;
+  return (
+    <Panel title={t('title')} icon={CalendarDays} accent="#10b981" dark={dark}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: 8 }}>
+        {f.months.map(m => (
+          <div key={m.month} style={{ background: p.sub, border: `1px solid ${p.border}`, borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: p.muted, textTransform: 'capitalize' }}>{date(`${m.month}-15`, { month: 'short', year: '2-digit' })}</div>
+            <div style={{ fontSize: 16, fontWeight: 900, color: ink('#10b981', dark), margin: '3px 0 1px' }}>{m.low}–{m.high}</div>
+            <div style={{ fontSize: 10, color: p.muted }}>{price(m.revenue_low, { maximumFractionDigits: 0 })} – {price(m.revenue_high, { maximumFractionDigits: 0 })}</div>
+          </div>
+        ))}
+      </div>
+      <p style={{ margin: '10px 0 0', fontSize: 11, color: p.muted }}>{t('note')}</p>
+    </Panel>
+  );
+}
+
+function VariantsTable({ variants, dark, locale, today }: { variants: VariantView[]; dark: boolean; locale: Locale; today: string }) {
+  const t = useTranslations('seller.forecast.variants');
+  const { date } = useFormat();
+  const p = usePalette(dark);
+  const th: React.CSSProperties = { textAlign: 'start', padding: '6px 8px', fontSize: 10, fontWeight: 800, color: p.muted, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' };
+  const td: React.CSSProperties = { padding: '8px', fontSize: 12, color: p.text, borderTop: `1px solid ${p.border}`, whiteSpace: 'nowrap' };
+  return (
+    <Panel title={t('title')} icon={Package} accent="#8b5cf6" dark={dark}>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr>
+            <th style={th}>{t('variant')}</th><th style={th}>{t('stock')}</th><th style={th}>{t('share')}</th>
+            <th style={th}>{t('next28')}</th><th style={th}>{t('daysLeft')}</th><th style={th}>{t('reorder')}</th>
+          </tr></thead>
+          <tbody>
+            {variants.map(v => {
+              const s = v.stock;
+              const urgent = s.days_left !== null && s.days_left <= s.lead_time_days + s.safety_days + 7;
+              return (
+                <tr key={v.variant_id}>
+                  <td style={{ ...td, fontWeight: 800 }}>{v.labels[locale] || v.labels.fr}</td>
+                  <td style={td}>{s.current}</td>
+                  <td style={td}>{Math.round(v.share * 100)} %</td>
+                  <td style={td}>{v.next28.low}–{v.next28.high}</td>
+                  <td style={{ ...td, color: urgent ? ink('#ef4444', dark) : p.text, fontWeight: urgent ? 800 : 500 }}>
+                    {s.days_left === null ? '—' : `${s.days_left} · ${date(s.stockout_date!, { day: 'numeric', month: 'short' })}`}
+                  </td>
+                  <td style={td}>
+                    {s.reorder_qty > 0
+                      ? `${s.reorder_qty} · ${s.reorder_by && s.reorder_by > today ? date(s.reorder_by, { day: 'numeric', month: 'short' }) : t('now')}`
+                      : '—'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p style={{ margin: '10px 0 0', fontSize: 11, color: p.muted }}>{t('note')}</p>
+    </Panel>
+  );
+}
+
+function ActionText({ a, locale, today }: { a: ForecastAction; locale: Locale; today: string }) {
+  const t = useTranslations('seller.forecast.actions');
+  const { date, number } = useFormat();
+  const pr = a.params;
+  const n = (v?: number | null) => v ?? 0;
+  const label = (l?: Labels | null) => (l ? l[locale] || l.fr : '');
+  const name = pr.product_name ? (pr.variant ? `${pr.product_name} (${label(pr.variant)})` : pr.product_name) : '';
+  const d = (iso?: string | null) => (iso ? date(iso, { day: '2-digit', month: '2-digit' }) : '');
+  switch (a.type) {
+    case 'out_of_stock': return <>{t('out_of_stock', { name, qty: n(pr.reorder_qty) })}</>;
+    case 'stockout': {
+      const days = n(pr.days_left), qty = n(pr.reorder_qty);
+      if (qty <= 0) return <>{t('stockoutNoQty', { name, days })}</>;
+      return <>{pr.reorder_by && pr.reorder_by > today
+        ? t('stockout', { name, days, qty, date: d(pr.reorder_by) })
+        : t('stockoutNow', { name, days, qty })}</>;
+    }
+    case 'event': {
+      const event = label(pr.event), days = n(pr.days_until);
+      if (pr.change_pct != null) {
+        const pct = `${pr.change_pct > 0 ? '+' : ''}${Math.round(pr.change_pct)}`;
+        return <>{t(pr.effect_reliable ? 'eventEffect' : 'eventEffectWeak', { event, days, pct, year: n(pr.effect_year), orders: n(pr.effect_orders) })}</>;
+      }
+      return <>{t('event', { event, days })}</>;
+    }
+    case 'sales_drop': return <>{t('sales_drop', { name, actual: n(pr.actual), low: n(pr.expected_low) })}</>;
+    case 'low_cart':
+      return <>{t('low_cart', { name, views: n(pr.views), rate: number(n(pr.cart_rate_pct)) })}{pr.category_rate_pct != null ? ` ${t('low_cart_cat', { rate: number(pr.category_rate_pct) })}` : ''}</>;
+    case 'dormant': return <>{t(pr.never_sold ? 'dormantNever' : 'dormant', { name, stock: n(pr.stock), days: n(pr.days_without_sale) })}</>;
+    case 'no_data': return <>{t('no_data', { name })}</>;
+    case 'low_views': return <>{t('low_views', { name, views: n(pr.views) })}</>;
+  }
+}
+
+function ActionsList({ actions, dark, locale, today }: { actions: ForecastAction[]; dark: boolean; locale: Locale; today: string }) {
+  const t = useTranslations('seller.forecast.actions');
+  const p = usePalette(dark);
+  return (
+    <Panel title={t('title')} icon={CheckCircle2} accent="#db142e" dark={dark}>
+      {actions.length === 0 ? (
+        <p style={{ margin: 0, fontSize: 12, color: p.muted }}>{t('empty')}</p>
+      ) : (
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {actions.map((a, i) => {
+            const Icon = ACTION_ICON[a.type] ?? Info;
+            const color = SEVERITY_COLOR[a.severity];
+            return (
+              <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', borderRadius: 12, background: p.sub, border: `1px solid ${p.border}`, borderInlineStart: `3px solid ${color}` }}>
+                <Icon size={16} style={{ color: ink(color, dark), flexShrink: 0, marginTop: 2 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                    <span style={{ fontSize: 9, fontWeight: 800, color: ink(color, dark), textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t(`severity.${a.severity}`)}</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 12.5, color: p.text, lineHeight: 1.5 }}><ActionText a={a} locale={locale} today={today} /></p>
+                  {a.links.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                      {a.links.map(l => (
+                        <Link key={l.kind + l.href} href={l.href} style={{ fontSize: 11, fontWeight: 700, padding: '5px 10px', borderRadius: 8, border: `1px solid ${p.border}`, background: dark ? 'rgba(255,255,255,0.06)' : '#fff', color: p.text, textDecoration: 'none' }}>
+                          {t(`links.${l.kind}`)}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Panel>
+  );
+}
+
+function AiSummary({ explanation, loading, dark }: { explanation: Explanation | null; loading: boolean; dark: boolean }) {
+  const t = useTranslations('seller.forecast.ai');
+  const p = usePalette(dark);
+  return (
+    <Panel title={t('title')} icon={Brain} accent="#8b5cf6" dark={dark}
+      right={explanation ? <span style={{ fontSize: 10, color: p.muted }}>{explanation.source === 'ai' ? t('sourceAi') : t('sourceTemplate')}</span> : undefined}>
+      {loading ? (
+        <p style={{ margin: 0, fontSize: 12, color: p.muted, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Loader2 size={13} style={{ animation: 'fc-spin 1s linear infinite' }} /> {t('loading')}
+        </p>
+      ) : (
+        <p style={{ margin: 0, fontSize: 13, color: p.text, lineHeight: 1.65 }}>{explanation?.text ?? t('unavailable')}</p>
+      )}
+    </Panel>
+  );
+}
+
+function AccuracyPanel({ f, record, dark }: { f: Forecast; record: TrackRecord; dark: boolean }) {
+  const t = useTranslations('seller.forecast.accuracy');
+  const { date } = useFormat();
+  const p = usePalette(dark);
+  const a = f.accuracy;
+  return (
+    <Panel title={t('title')} icon={Target} accent="#06b6d4" dark={dark}>
+      {a ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <p style={{ margin: 0, fontSize: 12.5, color: p.text, lineHeight: 1.5 }}>
+            {t('product', { date: date(a.snapshot_date, { day: 'numeric', month: 'long' }), low: a.low, high: a.high, actual: a.actual })}
+          </p>
+          <div><Chip color={a.within ? '#10b981' : '#f59e0b'} dark={dark}>{a.within ? t('within') : t('outside')}</Chip></div>
+        </div>
+      ) : (
+        <p style={{ margin: 0, fontSize: 12, color: p.muted }}>{t('none')}</p>
+      )}
+      {record.forecasts > 0 && (
+        <p style={{ margin: '10px 0 0', fontSize: 11.5, color: p.muted, lineHeight: 1.5 }}>
+          {record.wape_pct != null
+            ? t('record', { coverage: record.coverage_pct ?? 0, n: record.forecasts, wape: record.wape_pct })
+            : t('recordNoWape', { coverage: record.coverage_pct ?? 0, n: record.forecasts })}
+        </p>
+      )}
+    </Panel>
+  );
+}
+
+function SignalsPanel({ f, dark }: { f: Forecast; dark: boolean }) {
+  const t = useTranslations('seller.forecast.signals');
+  const { number } = useFormat();
+  const p = usePalette(dark);
+  const s = f.signals;
+  const pct = (v: number | null) => (v == null ? '—' : `${number(v * 100, { maximumFractionDigits: 1 })} %`);
+  const items = [
+    { label: t('views'), value: number(s.views_30d) },
+    { label: t('carts'), value: number(s.cart_adds_30d) },
+    { label: t('favorites'), value: number(s.favorites_30d) },
+    { label: t('cartRate'), value: pct(s.cart_rate) },
+    { label: t('conversion'), value: pct(s.conversion_rate) },
+  ];
+  return (
+    <Panel title={t('title')} icon={Eye} accent="#f59e0b" dark={dark}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 8 }}>
+        {items.map(i => (
+          <div key={i.label} style={{ background: p.sub, borderRadius: 10, padding: '8px 10px', border: `1px solid ${p.border}` }}>
+            <div style={{ fontSize: 15, fontWeight: 900, color: p.text }}>{i.value}</div>
+            <div style={{ fontSize: 10, color: p.muted, fontWeight: 600 }}>{i.label}</div>
+          </div>
+        ))}
+      </div>
+      <p style={{ margin: '10px 0 0', fontSize: 11, color: p.muted }}>{t('hint')}</p>
+    </Panel>
+  );
+}
+
+function EventsPanel({ events, dark, locale }: { events: ForecastEvent[]; dark: boolean; locale: Locale }) {
+  const t = useTranslations('seller.forecast.events');
+  const { date } = useFormat();
+  const p = usePalette(dark);
+  const upcoming = events.filter(e => e.days_until >= 0 || e.ends_on >= new Date().toISOString().slice(0, 10)).slice(0, 5);
+  if (!upcoming.length) return null;
+  return (
+    <Panel title={t('title')} icon={CalendarDays} accent="#8b5cf6" dark={dark}>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {upcoming.map(e => (
+          <li key={e.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', fontSize: 12, color: p.text }}>
+            <span style={{ fontWeight: 700 }}>
+              {e.names[locale] || e.names.fr}
+              <span style={{ fontWeight: 500, color: p.muted }}> · {date(e.starts_on, { day: 'numeric', month: 'short' })}</span>
+            </span>
+            <span style={{ color: p.muted }}>
+              {e.days_until > 0 ? t('inDays', { n: e.days_until }) : t('now')}
+              {e.effect?.change_pct != null && (
+                <> · {e.applied
+                  ? t('measured', { pct: `${e.effect.change_pct > 0 ? '+' : ''}${Math.round(e.effect.change_pct)}`, year: e.effect.year, orders: e.effect.event_orders })
+                  : t('measuredWeak', { orders: e.effect.event_orders })}</>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p style={{ margin: '10px 0 0', fontSize: 11, color: p.muted }}>{t('note')}</p>
+    </Panel>
+  );
+}
+
+function SettingsPanel({ settings, productId, dark, onSave }: {
+  settings: ForecastSettings; productId: number | null; dark: boolean;
+  onSave: (body: SettingsBody) => Promise<void>;
+}) {
+  const t = useTranslations('seller.forecast.settings');
+  const p = usePalette(dark);
+  const [form, setForm] = useState(settings);
+  const [override, setOverride] = useState<{ lead: string; safety: string }>({
+    lead: settings.product?.lead_time_days?.toString() ?? '', safety: settings.product?.safety_days?.toString() ?? '',
+  });
+  const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  const input: React.CSSProperties = { width: 90, padding: '7px 10px', borderRadius: 8, border: `1px solid ${p.border}`, background: p.sub, color: p.text, fontSize: 13, colorScheme: dark ? 'dark' : 'light' };
+  const row: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '8px 0', borderTop: `1px solid ${p.border}` };
+  const label = (text: string, hint?: string) => (
+    <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: p.text }}>{text}</div>
+      {hint && <div style={{ fontSize: 11, color: p.muted, marginTop: 2 }}>{hint}</div>}
+    </div>
+  );
+  const toggle = (key: 'alerts_enabled' | 'alerts_email' | 'weekly_digest', disabled = false) => (
+    <input type="checkbox" checked={form[key]} disabled={disabled} onChange={e => setForm({ ...form, [key]: e.target.checked })} style={{ width: 18, height: 18, accentColor: '#db142e' }} />
+  );
+  const int = (v: string) => (v === '' ? null : Math.max(0, Math.min(180, parseInt(v, 10) || 0)));
+
+  const save = async () => {
+    setState('saving');
+    try {
+      await onSave({
+        lead_time_days: form.lead_time_days, safety_days: form.safety_days, alerts_enabled: form.alerts_enabled,
+        alerts_email: form.alerts_email, weekly_digest: form.weekly_digest, stockout_alert_days: form.stockout_alert_days,
+        view_product_id: productId,
+      });
+      if (productId) await onSave({ product_id: productId, lead_time_days: int(override.lead), safety_days: int(override.safety) });
+      setState('saved');
+      setTimeout(() => setState('idle'), 2500);
+    } catch {
+      setState('error');
+    }
+  };
+
+  return (
+    <Panel title={t('title')} icon={Settings2} accent="#64748b" dark={dark}>
+      <div style={row}>
+        {label(t('leadTime'), t('leadHint'))}
+        <input type="number" min={0} max={180} value={form.lead_time_days} onChange={e => setForm({ ...form, lead_time_days: int(e.target.value) ?? 0 })} style={input} />
+      </div>
+      <div style={row}>
+        {label(t('safety'), t('safetyHint'))}
+        <input type="number" min={0} max={90} value={form.safety_days} onChange={e => setForm({ ...form, safety_days: int(e.target.value) ?? 0 })} style={input} />
+      </div>
+      {productId && (
+        <div style={row}>
+          {label(t('productOverride'), t('productOverrideHint'))}
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input type="number" min={0} max={180} placeholder={String(form.lead_time_days)} aria-label={t('leadTime')} value={override.lead} onChange={e => setOverride({ ...override, lead: e.target.value })} style={input} />
+            <input type="number" min={0} max={90} placeholder={String(form.safety_days)} aria-label={t('safety')} value={override.safety} onChange={e => setOverride({ ...override, safety: e.target.value })} style={input} />
+          </div>
+        </div>
+      )}
+      <div style={row}>{label(t('alerts'), t('alertsHint'))}{toggle('alerts_enabled')}</div>
+      <div style={row}>{label(t('alertsEmail'))}{toggle('alerts_email', !form.alerts_enabled)}</div>
+      <div style={row}>
+        {label(t('window'))}
+        <input type="number" min={1} max={60} value={form.stockout_alert_days} disabled={!form.alerts_enabled}
+          onChange={e => setForm({ ...form, stockout_alert_days: Math.max(1, Math.min(60, parseInt(e.target.value, 10) || 1)) })} style={input} />
+      </div>
+      <div style={row}>{label(t('digest'))}{toggle('weekly_digest')}</div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, paddingTop: 10 }}>
+        {state === 'saved' && <span style={{ fontSize: 12, color: ink('#10b981', dark), fontWeight: 700 }}>{t('saved')}</span>}
+        {state === 'error' && <span style={{ fontSize: 12, color: ink('#ef4444', dark), fontWeight: 700 }}>{t('error')}</span>}
+        <button onClick={save} disabled={state === 'saving'} style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: '#db142e', color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', opacity: state === 'saving' ? 0.6 : 1 }}>
+          {state === 'saving' ? t('saving') : t('save')}
+        </button>
+      </div>
+    </Panel>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Main
+// ═════════════════════════════════════════════════════════════════════════════
+
+export default function SalesForecastDashboard({ dark, initialProductId }: { dark: boolean; initialProductId?: number }) {
+  const t      = useTranslations('seller.forecast');
+  const locale = (useLocale() as Locale) ?? 'fr';
+  const { date } = useFormat();
+  const p = usePalette(dark);
+
+  const [productId, setProductId]     = useState<number | null>(initialProductId ?? null);
+  const [data, setData]               = useState<ForecastResponse | null>(null);
+  const [loading, setLoading]         = useState(true);
+  const [refreshing, setRefreshing]   = useState(false);
+  const [error, setError]             = useState<string | null>(null);
+  const [notice, setNotice]           = useState<string | null>(null);
+  const [explanation, setExplanation] = useState<Explanation | null>(null);
+  const [explLoading, setExplLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [, setTick] = useState(0);
+
+  const loadExplanation = useCallback((pid: number | null) => {
+    setExplLoading(true);
+    setExplanation(null);
+    forecastApi.explain(pid, locale)
+      .then(setExplanation)
+      .catch(() => setExplanation(null))   // the page never depends on the AI text
+      .finally(() => setExplLoading(false));
+  }, [locale]);
+
+  const apply = useCallback((res: ForecastResponse, pid: number | null) => {
+    setData(res);
+    setCooldownUntil(res.refresh_in > 0 ? Date.now() + res.refresh_in * 1000 : 0);
+    if (res.forecast) loadExplanation(pid);
+  }, [loadExplanation]);
+
+  const load = useCallback(async (pid: number | null) => {
+    setLoading(true);
+    setError(null);
+    setNotice(null);
+    try {
+      apply(await forecastApi.get(pid), pid);
+    } catch (err) {
+      const e = err as ApiError;
+      if (e.response?.status === 404 && pid) { setProductId(null); return; }
+      setError(e.response?.data?.message ?? t('failed'));
+    } finally {
+      setLoading(false);
+    }
+  }, [apply, t]);
+
+  useEffect(() => { load(productId); }, [productId, load]);
+
+  // Countdown label only (no request): re-render twice a minute while cooling down.
+  useEffect(() => {
+    if (cooldownUntil <= Date.now()) return;
+    const id = setInterval(() => setTick(x => x + 1), 30_000);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
+
+  const refresh = async () => {
+    setRefreshing(true);
+    setNotice(null);
+    try {
+      apply(await forecastApi.refresh(productId), productId);
+    } catch (err) {
+      const e = err as ApiError;
+      if (e.response?.status === 429) {
+        setCooldownUntil(Date.now() + (e.response.data.retry_in ?? 600) * 1000);
+        setNotice(e.response.data.message ?? null);
+      } else {
+        setNotice(t('failed'));
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const saveSettings = async (body: SettingsBody) => {
+    const res = await forecastApi.saveSettings(body);
+    setData(res);
+  };
+
+  const f = data?.forecast ?? null;
+  const cooldownMin = Math.ceil(Math.max(0, cooldownUntil - Date.now()) / 60000);
+  const products = data?.products ?? [];
+  const selectLabel = useMemo(() => (row: (typeof products)[number]) => {
+    if (!row.live) return `${row.name} — ${t('offline')}`;
+    if (row.days_left !== null && row.days_left <= 21) return `${row.name} — ${t('stockoutIn', { n: row.days_left })}`;
+    return row.name;
+  }, [t]);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <style>{`
-        @keyframes spin        { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-        @keyframes shimmer     { 0%{opacity:0.4} 50%{opacity:0.8} 100%{opacity:0.4} }
-        @keyframes fadeUp      { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes pulse-green { 0%,100%{opacity:1} 50%{opacity:0.35} }
+        @keyframes fc-spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+        @keyframes fc-shimmer { 0% { opacity: .45 } 50% { opacity: .9 } 100% { opacity: .45 } }
       `}</style>
 
-      {/* ── Product Selector ── */}
-      <div style={{ background: bg, borderRadius: 18, border: `1px solid ${border}`, padding: '16px 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 11, background: 'rgba(219,20,46,0.12)', border: '1px solid rgba(219,20,46,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#db142e' }}>
-              <BarChart3 size={16}/>
-            </div>
-            <div>
-              <p style={{ fontWeight: 900, fontSize: 14, color: text, margin: '0 0 1px' }}>{t('title')}</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <p style={{ fontSize: 10, color: muted, margin: 0 }}>{t('subtitle')}</p>
-                {loadingLive && !loadingFull && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, color: ink('#10b981', dark) }}>
-                    <Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }}/>
-                    {t('refreshing')}
-                  </span>
-                )}
-                <LiveBadge lastUpdated={lastUpdated} dark={dark}/>
-              </div>
-            </div>
+      {/* ── Header + selector ── */}
+      <div style={{ background: p.bg, borderRadius: 16, border: `1px solid ${p.border}`, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ margin: 0, fontSize: 15, fontWeight: 900, color: p.text }}>{t('title')}</h2>
+            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: p.muted }}>
+              {t('subtitle')}{f?.computed_at ? ` · ${t('updated', { date: date(f.computed_at, 'datetime') })}` : ''}
+            </p>
           </div>
-          <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: 999, background: 'rgba(219,20,46,0.1)', border: '1px solid rgba(219,20,46,0.25)', color: ink('#f87171', dark) }}>
-            🔴 Red Pepper
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <div style={{ flex: 1, position: 'relative' }}>
-            <select
-              value={selectedId ?? ''}
-              onChange={e => setSelectedId(Number(e.target.value) || null)}
-              style={{ width: '100%', padding: '10px 14px', paddingInlineEnd: 36, borderRadius: 10, border: `1px solid ${border}`, background: dark ? '#1e2330' : '#f8fafc', color: dark ? '#fff' : '#111', fontSize: 13, fontWeight: 600, cursor: 'pointer', appearance: 'none', outline: 'none', colorScheme: dark ? 'dark' : 'light' }}
-            >
-              <option value="">{t('selectOption')}</option>
-              {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <ChevronDown size={14} style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)', color: dark ? '#fff' : '#111', pointerEvents: 'none' }}/>
-          </div>
-          {selectedId && (
-            <button
-              onClick={() => runFullForecast(selectedId)}
-              disabled={loadingFull}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, background: loadingFull ? 'rgba(219,20,46,0.3)' : 'linear-gradient(135deg,#db142e,#a00f22)', color: '#fff', fontWeight: 700, fontSize: 12, border: 'none', cursor: loadingFull ? 'not-allowed' : 'pointer' }}
-            >
-              {loadingFull ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }}/> : <RefreshCw size={13}/>}
-              {loadingFull ? t('forecasting') : t('refresh')}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setShowSettings(s => !s)} aria-expanded={showSettings}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 10, border: `1px solid ${p.border}`, background: showSettings ? p.sub : 'transparent', color: p.text, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              <Settings2 size={13} /> {t('settingsBtn')}
             </button>
-          )}
+            <button onClick={refresh} disabled={refreshing || loading || cooldownMin > 0} title={cooldownMin > 0 ? t('refreshIn', { minutes: cooldownMin }) : undefined}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 10, border: 'none', background: '#db142e', color: '#fff', fontSize: 12, fontWeight: 700, cursor: refreshing || cooldownMin > 0 ? 'not-allowed' : 'pointer', opacity: refreshing || cooldownMin > 0 ? 0.55 : 1 }}>
+              {refreshing ? <Loader2 size={13} style={{ animation: 'fc-spin 1s linear infinite' }} /> : <RefreshCw size={13} />}
+              {refreshing ? t('refreshing') : cooldownMin > 0 ? t('refreshIn', { minutes: cooldownMin }) : t('refresh')}
+            </button>
+          </div>
         </div>
 
-        {/* Auto-reload notice */}
-        {selectedId && !loadingFull && (
-          <p style={{ fontSize: 9, color: muted, margin: '8px 0 0', fontWeight: 600 }}>
-            ⚡ {t('autoRefresh')}
-          </p>
-        )}
+        <div style={{ position: 'relative' }}>
+          <label htmlFor="fc-product" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>{t('selectLabel')}</label>
+          <select id="fc-product" value={productId ?? ''} onChange={e => setProductId(e.target.value ? Number(e.target.value) : null)}
+            style={{ width: '100%', padding: '10px 12px', paddingInlineEnd: 34, borderRadius: 10, border: `1px solid ${p.border}`, background: dark ? '#1e2330' : '#f8fafc', color: p.text, fontSize: 13, fontWeight: 600, appearance: 'none', colorScheme: dark ? 'dark' : 'light' }}>
+            <option value="">{t('shop')}</option>
+            {products.map(row => <option key={row.id} value={row.id}>{selectLabel(row)}</option>)}
+          </select>
+          <ChevronDown size={14} style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)', color: p.muted, pointerEvents: 'none' }} />
+        </div>
 
-        {error && <p style={{ color: ink('#ef4444', dark), fontSize: 12, margin: '10px 0 0', fontWeight: 600 }}>{error}</p>}
+        {notice && <p style={{ margin: 0, fontSize: 12, color: ink('#f59e0b', dark), fontWeight: 600 }}>{notice}</p>}
       </div>
 
-      {/* Loading */}
-      {loadingFull && !forecast && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10 }}>
-            {[...Array(4)].map((_, i) => <Skeleton key={i} dark={dark} h={90}/>)}
+      {showSettings && data && (
+        // Remounts with fresh values whenever the saved settings or the product change
+        <SettingsPanel key={`${productId ?? 0}:${JSON.stringify(data.settings)}`} settings={data.settings} productId={productId} dark={dark} onSave={saveSettings} />
+      )}
+
+      {loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10 }}>
+            {[0, 1, 2, 3].map(i => <Skeleton key={i} dark={dark} h={92} />)}
           </div>
-          <Skeleton dark={dark} h={220}/>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <Skeleton dark={dark} h={280}/>
-            <Skeleton dark={dark} h={280}/>
-          </div>
+          <Skeleton dark={dark} h={260} />
         </div>
       )}
 
-      {/* ── Results ── */}
-      {forecast && !loadingFull && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, animation: 'fadeUp 0.4s ease' }}>
+      {!loading && error && (
+        <div style={{ background: p.bg, borderRadius: 16, border: `1px solid ${p.border}`, padding: 20, textAlign: 'center' }}>
+          <p style={{ margin: '0 0 10px', fontSize: 13, color: ink('#ef4444', dark), fontWeight: 700 }}>{error}</p>
+          <button onClick={() => load(productId)} style={{ padding: '8px 14px', borderRadius: 10, border: `1px solid ${p.border}`, background: 'transparent', color: p.text, fontWeight: 700, cursor: 'pointer' }}>{t('retry')}</button>
+        </div>
+      )}
 
-          {/* KPI row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
-            {[
-              { label: t('kpi.forecast'),  value: `${forecast.total_predicted_units}`,    sub: t('kpi.forecastSub'),         color: trendColor,                                                                  icon: '📦' },
-              { label: t('kpi.revenue'), value: fmtTND(forecast.total_predicted_revenue), sub: t('kpi.revenueSub'),      color: ink('#10b981', dark),                                                                   icon: '💰' },
-              { label: t('kpi.peak'),        value: forecast.peak_month ? monthShort(forecast.peak_month.month, forecast.peak_month.label) : '—', sub: t('kpi.peakSub', { count: forecast.peak_month?.predicted_units ?? 0 }), color: ink('#f59e0b', dark),                              icon: '🔥' },
-              { label: t('kpi.stock'), value: `${forecast.stock_recommendation_3m}`,  sub: t('kpi.stockSub'),      color: forecast.stock_recommendation_3m > forecast.current_stock ? ink('#ef4444', dark) : ink('#10b981', dark), icon: '📊' },
-            ].map(({ label, value, sub, color, icon }) => (
-              <div key={label} style={{ background: bg, borderRadius: 14, border: `1px solid ${border}`, padding: '14px 16px', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: -20, insetInlineEnd: -20, width: 70, height: 70, borderRadius: '50%', background: color, opacity: dark ? 0.1 : 0.06, filter: 'blur(16px)' }}/>
-                <p style={{ fontSize: 18, margin: '0 0 6px' }}>{icon}</p>
-                <p style={{ fontSize: 18, fontWeight: 900, color, margin: '0 0 2px', letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</p>
-                <p style={{ fontSize: 9, fontWeight: 800, color: muted, margin: '0 0 1px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
-                <p style={{ fontSize: 10, color: muted, margin: 0 }}>{sub}</p>
-                <div className="rtl-flip" style={{ position: 'absolute', bottom: 0, insetInlineStart: 0, insetInlineEnd: 0, height: 3, background: `linear-gradient(90deg,${color},transparent)`, borderRadius: '0 0 14px 14px' }}/>
-              </div>
-            ))}
-          </div>
+      {!loading && !error && !f && (
+        <div style={{ background: p.bg, borderRadius: 16, border: `1px solid ${p.border}`, padding: '36px 20px', textAlign: 'center' }}>
+          <Package size={26} style={{ color: p.muted }} />
+          <p style={{ margin: '10px 0 0', fontSize: 13, color: p.muted }}>{t('noProducts')}</p>
+        </div>
+      )}
 
-          {/* Demand + confidence */}
-          <div style={{ background: bg, borderRadius: 18, border: `1px solid ${border}`, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
-            <DemandScoreGauge score={forecast.demand_score} dark={dark}/>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, minWidth: 0 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 999, background: `${CONF_COLORS[forecast.confidence_label]}18`, border: `1px solid ${CONF_COLORS[forecast.confidence_label]}30`, fontSize: 11, fontWeight: 800, color: CONF_COLORS[forecast.confidence_label] }}>
-                {forecast.confidence_label === 'high' ? '✓' : forecast.confidence_label === 'medium' ? '◎' : '○'} {t(`confidence.${forecast.confidence_label}`)}
-              </span>
-              <p style={{ fontSize: 9, color: muted, margin: 0, fontWeight: 600 }}>{t('basedOn', { count: forecast.data_points })}</p>
-              {forecast.blend_note && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 8, background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }}>
-                  <Info size={11} style={{ color: ink('#3b82f6', dark), flexShrink: 0 }}/>
-                  <p style={{ fontSize: 10, color: muted, margin: 0, lineHeight: 1.4 }}>{forecast.blend_note}</p>
-                </div>
-              )}
-            </div>
-            <div style={{ textAlign: 'center', flexShrink: 0 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 999, background: `${trendColor}18`, border: `1px solid ${trendColor}30` }}>
-                {forecast.overall_trend === 'up'     && <TrendingUp size={14} style={{ color: trendColor }}/>}
-                {forecast.overall_trend === 'down'   && <TrendingDown size={14} style={{ color: trendColor }}/>}
-                {forecast.overall_trend === 'stable' && <Minus size={14} style={{ color: trendColor }}/>}
-                <span style={{ fontSize: 11, fontWeight: 800, color: trendColor }}>
-                  {t(`trend.${forecast.overall_trend}`)}
-                </span>
-              </div>
-              <p style={{ fontSize: 9, color: muted, margin: '4px 0 0', fontWeight: 600 }}>{t('slope', { value: `${forecast.trend_slope > 0 ? '+' : ''}${forecast.trend_slope}` })}</p>
-            </div>
-          </div>
-
-          {/* Forecast chart */}
-          <Card title={t('cards.chart')} icon={TrendingUp} accent="#10b981" dark={dark}>
-            <ForecastLineChart history={forecast.history} projections={forecast.projections} dark={dark}/>
-            <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6 }}>
-              {forecast.projections.map(p => {
-                const cc = CONF_COLORS[p.confidence];
-                return (
-                  <div key={p.month} style={{ textAlign: 'center', padding: '8px 4px', borderRadius: 10, background: p.event_name ? 'rgba(245,158,11,0.08)' : subBg, border: p.event_name ? '1px solid rgba(245,158,11,0.2)' : `1px solid ${border}` }}>
-                    <p style={{ fontSize: 9, fontWeight: 700, color: muted, margin: '0 0 3px' }}>{monthShort(p.month, p.label)}</p>
-                    <p style={{ fontSize: 16, fontWeight: 900, color: ink('#10b981', dark), margin: '0 0 2px', letterSpacing: '-0.02em' }}>{p.predicted_units}</p>
-                    <p style={{ fontSize: 8, color: muted, margin: '0 0 3px' }}>{t('unitsWord')}</p>
-                    {p.event_name && <span style={{ fontSize: 7, fontWeight: 800, color: ink('#f59e0b', dark), background: 'rgba(245,158,11,0.12)', padding: '1px 4px', borderRadius: 4 }}>⚡ {t('eventTag')}</span>}
-                    <div style={{ marginTop: 3, width: 6, height: 6, borderRadius: '50%', background: cc, margin: '3px auto 0' }}/>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-
-          {/* Regional + Events */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <Card title={t('cards.regional')} icon={MapPin} accent="#db142e" dark={dark}
-              badge={<span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: 'rgba(219,20,46,0.1)', border: '1px solid rgba(219,20,46,0.2)', color: '#db142e' }}>🇹🇳 {t('tunisia')}</span>}
-              rightSlot={loadingLive ? <Loader2 size={12} style={{ color: ink('#10b981', dark), animation: 'spin 1s linear infinite' }}/> : undefined}
-            >
-              {regional
-                ? <TunisiaHeatmap regional={regional} dark={dark}/>
-                : <Skeleton dark={dark} h={200}/>
-              }
-            </Card>
-            <Card title={t('cards.events')} icon={Calendar} accent="#f59e0b" dark={dark}>
-              <EventsCalendar events={events} dark={dark}/>
-            </Card>
-          </div>
-
-          {/* Similar + AI */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <Card title={t('cards.market')} icon={Layers} accent="#6b7280" dark={dark}
-              badge={similar?.count ? <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: 'rgba(107,114,128,0.12)', border: `1px solid ${border}`, color: muted }}>{t('similarCount', { count: similar.count })}</span> : undefined}
-              rightSlot={loadingLive ? <Loader2 size={12} style={{ color: ink('#10b981', dark), animation: 'spin 1s linear infinite' }}/> : undefined}
-            >
-              {similar
-                ? <SimilarProductsList data={similar} dark={dark}/>
-                : <Skeleton dark={dark} h={200}/>
-              }
-            </Card>
-            <Card title={t('cards.ai')} icon={Brain} accent="#8b5cf6" dark={dark}
-              badge={<span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', color: ink('#8b5cf6', dark) }}>{t('poweredBy')}</span>}
-            >
-              <AIExplanationPanel explanation={explanation} loading={loadingExplain} dark={dark}/>
-            </Card>
-          </div>
-
-          {/* Stock banners */}
-          {forecast.stock_recommendation_3m > forecast.current_stock ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderRadius: 14, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
-              <AlertTriangle size={20} style={{ color: ink('#ef4444', dark), flexShrink: 0 }}/>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 12, fontWeight: 800, color: ink('#ef4444', dark), margin: '0 0 2px' }}>{t('stock.shortTitle')}</p>
-                <p style={{ fontSize: 11, color: muted, margin: 0 }}>
-                  {t.rich('stock.shortText', {
-                    need: forecast.stock_recommendation_3m, have: forecast.current_stock,
-                    missing: forecast.stock_recommendation_3m - forecast.current_stock,
-                    b: (c) => <strong style={{ color: text }}>{c}</strong>,
-                    r: (c) => <strong style={{ color: ink('#ef4444', dark) }}>{c}</strong>,
-                  })}
-                </p>
-              </div>
-              <div style={{ textAlign: 'end', flexShrink: 0 }}>
-                <p style={{ fontSize: 22, fontWeight: 900, color: ink('#ef4444', dark), margin: '0 0 1px', letterSpacing: '-0.02em' }}>-{forecast.stock_recommendation_3m - forecast.current_stock}</p>
-                <p style={{ fontSize: 9, color: muted, margin: 0, fontWeight: 700 }}>{t('stock.unitsShort')}</p>
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderRadius: 14, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <Package size={20} style={{ color: ink('#10b981', dark), flexShrink: 0 }}/>
-              <div>
-                <p style={{ fontSize: 12, fontWeight: 800, color: ink('#10b981', dark), margin: '0 0 2px' }}>{t('stock.okTitle')} ✓</p>
-                <p style={{ fontSize: 11, color: muted, margin: 0 }}>{t('stock.okText', { have: forecast.current_stock, need: forecast.stock_recommendation_3m })}</p>
-              </div>
+      {!loading && !error && f && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {f.scope === 'product' && f.live === false && (
+            <div style={{ display: 'flex', gap: 8, padding: '10px 14px', borderRadius: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', fontSize: 12, color: ink('#ef4444', dark), fontWeight: 600 }}>
+              <AlertTriangle size={15} /> {t('notLive')}
             </div>
           )}
 
-          <p style={{ fontSize: 9, color: muted, margin: 0, textAlign: 'center', fontWeight: 600 }}>
-            {t('computedAt', { date: date(forecast.computed_at, 'datetime') })} · {forecast._cache_hit ? `⚡ ${t('cached')}` : `🔄 ${t('fresh')}`} · {forecast.computed_by}
-          </p>
-        </div>
-      )}
+          <TierBanner f={f} dark={dark} />
+          <KpiRow f={f} dark={dark} />
+          <ConfidenceLine f={f} dark={dark} />
 
-      {/* Empty state */}
-      {!selectedId && !forecast && (
-        <div style={{ background: bg, borderRadius: 18, border: `1px solid ${border}`, padding: '48px 20px', textAlign: 'center' }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, margin: '0 auto 16px', background: 'rgba(219,20,46,0.08)', border: '1px solid rgba(219,20,46,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <TrendingUp size={24} style={{ color: '#db142e' }}/>
+          {f.promo_uplift && (
+            <p style={{ margin: 0, fontSize: 11.5, color: p.muted }}>
+              {t('promo', { factor: f.promo_uplift.factor, days: f.promo_uplift.promo_days })}
+            </p>
+          )}
+
+          {f.history.length > 0 && (
+            <Panel title={t('chart.title')} icon={BarChart3} accent="#3b82f6" dark={dark}>
+              <ForecastChart f={f} dark={dark} locale={locale} />
+            </Panel>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14, alignItems: 'start' }}>
+            <ActionsList actions={f.actions} dark={dark} locale={locale} today={f.snapshot_date} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+              <AiSummary explanation={explanation} loading={explLoading} dark={dark} />
+              <AccuracyPanel f={f} record={data!.track_record} dark={dark} />
+            </div>
           </div>
-          <p style={{ fontSize: 15, fontWeight: 800, color: text, margin: '0 0 6px' }}>{t('emptyTitle')}</p>
-          <p style={{ fontSize: 12, color: muted, margin: 0, maxWidth: 360, marginInlineStart: 'auto', marginInlineEnd: 'auto', lineHeight: 1.6 }}>
-            {t('emptyText')}
-          </p>
+
+          {f.variants && f.variants.length > 0 && <VariantsTable variants={f.variants} dark={dark} locale={locale} today={f.snapshot_date} />}
+
+          <MonthsGrid f={f} dark={dark} />
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14, alignItems: 'start' }}>
+            <SignalsPanel f={f} dark={dark} />
+            <EventsPanel events={f.events} dark={dark} locale={locale} />
+          </div>
         </div>
       )}
     </div>

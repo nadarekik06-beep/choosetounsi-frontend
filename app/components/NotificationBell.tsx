@@ -11,7 +11,7 @@ import {
   Bell, CheckCheck, RefreshCw,
   PackagePlus, PackageCheck, PackageX,
   CheckCircle, XCircle, Store, Package, AlertTriangle,
-  Megaphone, PauseCircle, Flag, Gauge, Wallet,
+  Megaphone, PauseCircle, Flag, Gauge, Wallet, CalendarDays, TrendingDown,
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/Usenotifications';
 import type { AppNotification } from '@/lib/notificationApi';
@@ -53,6 +53,9 @@ export function NotifIcon({ icon }: { icon: string }) {
     'flag':            <Flag           className={cls} />,
     'gauge':           <Gauge          className={cls} />,
     'wallet':          <Wallet         className={cls} />,
+    // Sales forecast (AppNotificationsForecastAlertNotification)
+    'calendar':        <CalendarDays   className={cls} />,
+    'trending-down':   <TrendingDown   className={cls} />,
   };
   return <>{map[icon] ?? <Package className={cls} />}</>;
 }
@@ -65,6 +68,10 @@ export function accent(action: string): string {
   if (action === 'rejected')      return '#ef4444';
   if (action === 'deleted')       return '#ef4444';
   if (action === 'out_of_stock')  return '#ef4444';  // ← NEW
+  if (action === 'forecast_stockout')   return '#ef4444';
+  if (action === 'forecast_sales_drop') return '#f59e0b';
+  if (action === 'forecast_event')      return '#8b5cf6';
+  if (action === 'forecast_digest')     return '#3b82f6';
   if (action === 'low_stock')     return '#f59e0b';  // ← NEW
   if (action === 'reminder')      return '#f59e0b';  // seller order: not ready for pickup yet
   if (action === 'submitted')     return '#f59e0b';
