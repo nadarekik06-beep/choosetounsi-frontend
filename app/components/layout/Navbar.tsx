@@ -457,27 +457,26 @@ function SearchDropdown({
                         {/* Bold the matching prefix like Trendyol does */}
                         {product.name}
                       </p>
-                      <p style={{ fontSize: 13, fontWeight: 900, color: "#db142e", margin: 0, letterSpacing: "-0.01em" }}>
-                          {/* Price — shows discounted price + strikethrough original when promotion active */}
-                                {(() => {
-                                  const original  = Number(product.original_price ?? product.price)
-                                  const effective = product.effective_price != null
-                                    ? Number(product.effective_price)
-                                    : original
-                                  const hasDiscount = effective < original - 0.001
-                                  return (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                                      <p style={{ fontSize: 13, fontWeight: 900, color: "#db142e", margin: 0, letterSpacing: "-0.01em" }}>
-                                        {fmt.price(effective, { bare: true })} <span style={{ fontSize: 10, fontWeight: 700 }}>{fmt.currency}</span>
-                                      </p>
-                                      {hasDiscount && (
-                                        <span style={{ fontSize: 10, color: "#9ca3af", textDecoration: "line-through", fontWeight: 500 }}>
-                                          {fmt.price(original)}
-                                        </span>
-                                      )}
-                                    </div>
-                                  )
-                                })()}                      </p>
+                      {/* Price — shows discounted price + strikethrough original when promotion active */}
+                      {(() => {
+                        const original  = Number(product.original_price ?? product.price)
+                        const effective = product.effective_price != null
+                          ? Number(product.effective_price)
+                          : original
+                        const hasDiscount = effective < original - 0.001
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                            <p style={{ fontSize: 13, fontWeight: 900, color: "#db142e", margin: 0, letterSpacing: "-0.01em" }}>
+                              {fmt.price(effective, { bare: true })} <span style={{ fontSize: 10, fontWeight: 700 }}>{fmt.currency}</span>
+                            </p>
+                            {hasDiscount && (
+                              <span style={{ fontSize: 10, color: "#9ca3af", textDecoration: "line-through", fontWeight: 500 }}>
+                                {fmt.price(original)}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })()}
                     </div>
                   </Link>
                 );

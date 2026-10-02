@@ -121,7 +121,7 @@ export default function ShippingAddressFields({ value, errors, onChange }: {
           <Err k="address" />
         </div>
         <div>
-          <label style={labelStyle}><Hash size={10} style={{ verticalAlign: '-1px' }} /> {t('postalCode')} <Req /></label>
+          <label style={labelStyle}><Hash size={10} style={{ verticalAlign: '-1px' }} /> {t('postalCode')} <Opt /></label>
           <input value={value.postal_code} onChange={e => onChange('postal_code', e.target.value.replace(/\D/g, '').slice(0, 4))}
             autoComplete="postal-code" inputMode="numeric" dir="ltr" aria-label={t('postalCode')} aria-invalid={!!errors.postal_code}
             placeholder="1000" maxLength={4}

@@ -142,7 +142,7 @@ export interface CheckoutPayload {
   wilaya: string
   delegation: string
   address: string
-  postal_code: string
+  postal_code?: string
   notes?: string
   payment_method?: 'cod' | 'card' | 'd17' | 'wallet'
   item_ids?: number[]   // ← ADD THIS LINE
@@ -161,7 +161,7 @@ export interface BuyNowPayload {
   wilaya: string
   delegation: string
   address: string
-  postal_code: string
+  postal_code?: string
   notes?: string
   payment_method?: 'cod' | 'card' | 'd17' | 'wallet'
   coupon_code?: string

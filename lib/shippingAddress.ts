@@ -11,7 +11,7 @@ export interface ShippingAddressForm {
   wilaya:          string
   delegation:      string
   address:         string      // street, building, floor…
-  postal_code:     string      // 4 digits
+  postal_code:     string      // 4 digits (optional)
   notes:           string      // landmark / delivery notes (optional)
 }
 
@@ -70,7 +70,7 @@ export function validateShippingAddress(f: ShippingAddressForm): ShippingAddress
   if (!f.wilaya) e.wilaya = 'wilaya'
   if (f.delegation.trim().length < 2) e.delegation = 'delegation'
   if (f.address.trim().length < 5) e.address = 'address'
-  if (!/^\d{4}$/.test(f.postal_code.trim())) e.postal_code = 'postalCode'
+  if (f.postal_code.trim() && !/^\d{4}$/.test(f.postal_code.trim())) e.postal_code = 'postalCode'
   return e
 }
 
@@ -87,7 +87,7 @@ export function shippingAddressPayload(f: ShippingAddressForm) {
     wilaya:          f.wilaya,
     delegation:      f.delegation.trim(),
     address:         f.address.trim(),
-    postal_code:     f.postal_code.trim(),
+    postal_code:     f.postal_code.trim() || undefined,
     notes:           f.notes.trim() || undefined,
   }
 }
