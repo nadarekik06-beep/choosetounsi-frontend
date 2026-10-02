@@ -869,40 +869,207 @@
   },
   "profile": {
     "metaTitle": "Mon compte",
-    "changePhoto": "Changer la photo de profil",
-    "change": "Modifier",
-    "photoUpdated": "Photo de profil mise à jour !",
-    "backHome": "← Retour à l'accueil",
-    "verifiedTitle": "Compte vérifié",
-    "verifiedBody": "Votre identité a été confirmée",
+    "backHome": "Retour à l'accueil",
+    "verified": "Vérifié",
+    "notVerified": "E-mail non vérifié",
+    "memberSince": "Membre depuis {date}",
+    "editProfile": "Modifier le profil",
+    "photo": {
+      "change": "Changer la photo de profil",
+      "short": "Changer",
+      "type": "Utilisez une image JPG, PNG ou WebP.",
+      "tooBig": "Image trop lourde (max {max} Mo).",
+      "updated": "Photo de profil mise à jour.",
+      "removed": "Photo de profil supprimée.",
+      "remove": "Supprimer la photo"
+    },
+    "completion": {
+      "percent": "Profil complété à {percent} %",
+      "title": "Complétez votre profil",
+      "doneTitle": "Presque parfait !",
+      "doneBody": "Vous pouvez commander. Ajoutez les infos facultatives pour atteindre 100 %.",
+      "requiredBody": "Votre nom, votre téléphone et une adresse de livraison sont nécessaires avant votre première commande.",
+      "cta": "Compléter maintenant",
+      "fields": {
+        "first_name": "Prénom",
+        "last_name": "Nom",
+        "phone": "Téléphone",
+        "address": "Adresse de livraison",
+        "avatar": "Photo",
+        "date_of_birth": "Date de naissance",
+        "gender": "Genre"
+      },
+      "optionalBody": "Ajoutez ces informations pour personnaliser votre compte."
+    },
+    "tabs": {
+      "label": "Sections du compte",
+      "overview": "Aperçu",
+      "orders": "Commandes",
+      "addresses": "Adresses",
+      "favorites": "Favoris",
+      "reviews": "Avis",
+      "complaints": "Réclamations",
+      "settings": "Paramètres"
+    },
     "stats": {
       "orders": "Commandes",
+      "spent": "Total dépensé",
+      "favorites": "Favoris",
       "reviews": "Avis",
-      "wishlist": "Favoris"
+      "following": "Boutiques suivies",
+      "complaintsOpen": "Réclamations en cours",
+      "wallet": "Portefeuille"
     },
-    "sections": {
-      "orders": "Mes commandes",
-      "account": "Compte",
-      "sellerHub": "Espace vendeur",
-      "becomeSeller": "Devenir vendeur"
+    "statusGroups": {
+      "pending": "En attente",
+      "confirmed": "Confirmées",
+      "shipped": "En livraison",
+      "delivered": "Livrées",
+      "cancelled": "Annulées"
     },
-    "menu": {
-      "orders": "Mes commandes",
-      "complaints": "Mes réclamations",
-      "wishlist": "Mes favoris",
-      "returns": "Retours et remboursements",
-      "reviews": "Mes avis",
-      "editProfile": "Modifier mon profil",
-      "password": "Changer le mot de passe",
-      "addresses": "Carnet d'adresses",
-      "notifications": "Notifications",
-      "privacy": "Confidentialité et sécurité",
-      "myStore": "Ma boutique",
-      "myProducts": "Mes produits",
-      "sales": "Ventes et commandes",
+    "recent": {
+      "title": "Commandes récentes",
+      "subtitle": "{count, plural, one {# commande au total} other {# commandes au total}}",
+      "viewAll": "Toutes les commandes",
+      "items": "{count, plural, =0 {Aucun article} one {# article} other {# articles}}",
+      "emptyTitle": "Aucune commande pour l'instant",
+      "emptyBody": "Des milliers de produits tunisiens vous attendent.",
+      "emptyCta": "Commencer mes achats"
+    },
+    "quick": {
+      "title": "Raccourcis",
+      "track": "Suivre mes commandes",
+      "complaint": "Signaler un problème de commande",
+      "myStore": "Tableau de bord vendeur",
       "openStore": "Ouvrir ma boutique",
       "help": "Aide et support",
       "signOut": "Se déconnecter"
+    },
+    "ordersTab": {
+      "title": "Mes commandes",
+      "summary": "{count, plural, =0 {Aucune commande} one {# commande} other {# commandes}} · {spent} dépensés",
+      "all": "Voir toutes les commandes"
+    },
+    "addresses": {
+      "title": "Adresses de livraison",
+      "subtitle": "Utilisées au paiement — choisissez-en une en un clic.",
+      "loadError": "Impossible de charger vos adresses.",
+      "retry": "Réessayer",
+      "emptyBody": "Ajoutez une adresse pour commander plus vite. Elle est obligatoire avant votre première commande.",
+      "incomplete": "À compléter",
+      "confirmDelete": "Oui, supprimer",
+      "keep": "Garder",
+      "checkoutHint": "Votre adresse par défaut est présélectionnée au paiement.",
+      "openBook": "Ouvrir le carnet d'adresses complet",
+      "editTitle": "Modifier l'adresse",
+      "labelField": "Libellé",
+      "useAsDefault": "Adresse par défaut",
+      "useAsDefaultHint": "Présélectionnée au paiement",
+      "save": "Enregistrer l'adresse"
+    },
+    "favoritesTab": {
+      "title": "Mes favoris",
+      "count": "{count, plural, one {# produit enregistré} other {# produits enregistrés}}",
+      "viewAll": "Tout voir",
+      "emptyTitle": "Aucun favori pour l'instant",
+      "emptyBody": "Touchez le cœur sur un produit pour le retrouver ici.",
+      "cta": "Découvrir les produits",
+      "following": "Boutiques suivies",
+      "followingCount": "{count, plural, one {# boutique} other {# boutiques}}",
+      "followingEmpty": "Vous ne suivez encore aucune boutique",
+      "followingEmptyBody": "Suivez vos créateurs tunisiens préférés pour voir leurs nouveautés en premier.",
+      "discoverShops": "Découvrir les boutiques"
+    },
+    "reviewsTab": {
+      "title": "Mes avis",
+      "count": "{count, plural, one {# avis} other {# avis}}",
+      "write": "Évaluer un achat",
+      "loadError": "Impossible de charger vos avis.",
+      "retry": "Réessayer",
+      "emptyTitle": "Aucun avis pour l'instant",
+      "emptyBody": "Une fois une commande livrée, donnez votre avis pour aider les autres acheteurs.",
+      "cta": "Évaluer mes achats",
+      "productGone": "Produit plus disponible",
+      "more": "Voir plus",
+      "status": {
+        "pending": "En modération",
+        "approved": "Publié",
+        "rejected": "Refusé",
+        "flagged": "En vérification"
+      }
+    },
+    "complaintsTab": {
+      "title": "Mes réclamations",
+      "summary": "{open} en cours · {resolved} traitée(s)",
+      "viewAll": "Voir toutes mes réclamations"
+    },
+    "settings": {
+      "personal": "Informations personnelles",
+      "personalHint": "Utilisées pour vos livraisons et vos factures.",
+      "saved": "Profil mis à jour.",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "phone": "Téléphone mobile",
+      "dob": "Date de naissance",
+      "gender": "Genre",
+      "genderFemale": "Femme",
+      "genderMale": "Homme",
+      "genderNone": "Ne pas préciser",
+      "signOut": "Se déconnecter",
+      "email": {
+        "title": "Adresse e-mail",
+        "change": "Modifier",
+        "new": "Nouvelle adresse e-mail",
+        "password": "Mot de passe actuel",
+        "invalid": "Entrez une adresse e-mail valide.",
+        "passwordRequired": "Entrez votre mot de passe actuel.",
+        "hint": "Nous enverrons un code à 6 chiffres à la nouvelle adresse pour la confirmer.",
+        "send": "Envoyer le code",
+        "codeSent": "Entrez le code à 6 chiffres envoyé à {email}. Il est valable 15 minutes.",
+        "code": "Code de vérification",
+        "codeInvalid": "Le code contient 6 chiffres.",
+        "back": "Retour",
+        "verify": "Confirmer",
+        "updated": "Adresse e-mail modifiée."
+      },
+      "password": {
+        "title": "Mot de passe",
+        "titleSet": "Créer un mot de passe",
+        "subtitle": "Choisissez un mot de passe que vous n'utilisez nulle part ailleurs.",
+        "googleHint": "Vous vous connectez avec Google. Créez un mot de passe pour vous connecter aussi avec votre e-mail.",
+        "current": "Mot de passe actuel",
+        "new": "Nouveau mot de passe",
+        "confirm": "Confirmer le nouveau mot de passe",
+        "rule": "Au moins 8 caractères, avec une lettre et un chiffre.",
+        "mismatch": "Les mots de passe ne correspondent pas.",
+        "currentRequired": "Entrez votre mot de passe actuel.",
+        "save": "Changer le mot de passe",
+        "set": "Créer le mot de passe",
+        "saved": "Mot de passe modifié.",
+        "setDone": "Mot de passe créé. Vous pouvez aussi vous connecter avec votre e-mail.",
+        "forgot": "Oublié ?",
+        "otherDevices": "Vos autres appareils seront déconnectés.",
+        "show": "Afficher le mot de passe",
+        "hide": "Masquer le mot de passe"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "subtitle": "Choisissez comment nous vous tenons informé.",
+        "email": "Mises à jour par e-mail",
+        "emailHint": "Décisions sur vos réclamations et remboursements, par e-mail.",
+        "inApp": "Notifications sur le site",
+        "inAppHint": "Les mêmes informations dans la cloche du site.",
+        "saved": "Préférences enregistrées."
+      }
+    },
+    "errors": {
+      "load": "Impossible de charger votre compte.",
+      "retry": "Réessayer",
+      "required": "Ce champ est obligatoire.",
+      "nameShort": "Au moins 2 lettres.",
+      "nameLetters": "Lettres uniquement (espaces, tirets et apostrophes autorisés).",
+      "phoneInvalid": "Entrez un numéro mobile tunisien : 8 chiffres commençant par 2, 4, 5 ou 9.",
+      "tooYoung": "Vous devez avoir au moins 13 ans."
     }
   },
   "addresses": {
@@ -4478,5 +4645,25 @@
       "postalCode": "Le code postal doit comporter 4 chiffres.",
       "wilaya": "Veuillez choisir le gouvernorat."
     }
+  },
+  "completeProfile": {
+    "metaTitle": "Complétez votre profil",
+    "title": "Bienvenue {name} ! Une dernière étape",
+    "titleNoName": "Une dernière étape",
+    "subtitle": "Dites-nous qui vous êtes et où livrer — une minute suffit, et chaque commande sera plus rapide.",
+    "logout": "Se déconnecter",
+    "loadError": "Impossible de charger votre profil. Actualisez la page.",
+    "done": "C'est prêt !",
+    "doneBody": "Votre profil est complet. Redirection en cours…",
+    "stepOf": "Étape {current} sur {total}",
+    "step1": "À propos de vous",
+    "step1Body": "Votre nom et votre téléphone permettent au livreur de vous joindre.",
+    "step2": "Votre adresse de livraison",
+    "step2Body": "Choisissez votre gouvernorat et votre ville. Vous pourrez ajouter d'autres adresses plus tard.",
+    "continue": "Continuer",
+    "finish": "Enregistrer et continuer",
+    "back": "Retour",
+    "privacy": "Vos données restent privées",
+    "whyDelivery": "Nécessaire pour livrer vos commandes"
   }
 }

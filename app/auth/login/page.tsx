@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { login, loginWithGoogle, getToken, getUser, clearLocalSession } from '@/lib/auth';
+import { login, loginWithGoogle, getToken, getUser, clearLocalSession, needsProfileCompletion, resolveRedirectPath } from '@/lib/auth';
 import {
   Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle2,
   Loader2, ShoppingBag, Store, TrendingUp, Shield,
@@ -63,8 +63,10 @@ function LoginForm() {
     setError('');
     setSuccess('');
     try {
-      const { redirectTo } = await login({ email: email.trim(), password });
-      router.push((callbackUrl?.startsWith('/seller') ? callbackUrl : redirectTo) ?? '/');
+      const { user, redirectTo } = await login({ email: email.trim(), password });
+      router.push(needsProfileCompletion(user)
+        ? resolveRedirectPath(user, callbackUrl ?? '/')
+        : (callbackUrl?.startsWith('/seller') ? callbackUrl : redirectTo) ?? '/');
     } catch (err: any) {
       if (err?.needs_verification && err?.email) {
         router.push(`/auth/verify-email?email=${encodeURIComponent(err.email)}`);

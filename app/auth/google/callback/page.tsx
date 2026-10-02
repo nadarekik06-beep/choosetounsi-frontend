@@ -2,7 +2,7 @@
 
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { saveSession, AuthUser } from '@/lib/auth';
+import { saveSession, needsProfileCompletion, AuthUser } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -24,7 +24,11 @@ function GoogleCallbackHandler() {
       const user: AuthUser = JSON.parse(atob(userRaw));
       saveSession(token, user);
 
-      // ── Onboarding redirect for new clients ────────────────────────────
+      // ── Profile completion, then preference onboarding, for clients ─────
+      if (needsProfileCompletion(user)) {
+        router.replace('/complete-profile?redirect=/');
+        return;
+      }
       if (user.role === 'client' && !user.onboarding_completed) {
         router.replace('/onboarding?redirect=/');
         return;

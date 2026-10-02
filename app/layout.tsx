@@ -14,6 +14,7 @@ import SupportChatWidget from '@/components/SupportChatWidget';
 import SiteFooter from '@/components/layout/SiteFooter';
 import ReviewPromptPopup from '@/app/components/reviews/ReviewPromptPopup';
 import EntryPopup from '@/components/ads/EntryPopup';
+import ProfileGate from '@/components/profile/ProfileGate';
 
 const syne = Syne({
   subsets: ["latin"],
@@ -72,6 +73,7 @@ export default async function RootLayout({
               <SupportChatWidget />
               <ReviewPromptPopup />
               <EntryPopup />
+              <ProfileGate />
             </CartProvider>
           </LanguageProvider>
         </NextIntlClientProvider>

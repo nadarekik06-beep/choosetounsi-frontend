@@ -685,6 +685,10 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
         payment_method: paymentMethod,
       })
     } catch (err: any) {
+      if (err.data?.code === 'profile_incomplete') {
+        router.push(`/complete-profile?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)
+        return
+      }
       setApiError(err.message ?? t('errors.placeFailed'))
       if (err.data?.code === 'price_changed' || err.data?.code === 'flash_sold_out') {
         await (isBuyNow ? loadBuyNowProduct() : refreshCart())

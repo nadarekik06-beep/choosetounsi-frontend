@@ -24,7 +24,7 @@
  * All existing UI (tracker, order cards, complaint button) is preserved.
  */
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import {
   ShoppingBag, ChevronRight, ChevronDown, ChevronUp,
@@ -456,8 +456,10 @@ function SellerGroupSection({ group, showSeparator, reviewedMap, onRate, order }
 
 // ─── Order Card ───────────────────────────────────────────────────────────────
 
-function OrderCard({ order, reviewedMap, onRate, onReviewed }: {
+function OrderCard({ order, reviewedMap, onRate, onReviewed, focused = false }: {
   order: Order; reviewedMap: ReviewedMap
+  /** Opened from a link (/orders?order=ID): start expanded and scroll into view. */
+  focused?: boolean
   onRate: (item: OrderItem, orderItemId: number) => void
   onReviewed: (orderItemId: number) => void
 }) {
@@ -465,8 +467,12 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed }: {
   const tc = useTranslations('common')
   const format = useOrderFormat()
   const { fmt } = format
-  const [expanded,      setExpanded]      = useState(false)
+  const [expanded,      setExpanded]      = useState(focused)
   const [complaintOpen, setComplaintOpen] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (focused) cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [focused])
 
   const date = format.date(order.created_at, 'medium')
 
@@ -490,7 +496,8 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed }: {
 
   return (
     <>
-      <div style={{
+      <div ref={cardRef} style={{
+        scrollMarginTop: 90,
         background: '#fff', borderRadius: 16,
         border: totalPendingReviews > 0 ? '1.5px solid rgba(245,158,11,0.3)' : '1px solid #f1f5f9',
         overflow: 'hidden', marginBottom: 14,
@@ -596,6 +603,12 @@ export default function OrdersPage() {
   const [loading,     setLoading]     = useState(true)
   const [error,       setError]       = useState(false)
   const [reviewedMap, setReviewedMap] = useState<ReviewedMap>({})
+  const [focusId,     setFocusId]     = useState<number | null>(null)
+
+  // /orders?order=ID (links from the profile page) opens that order.
+  useEffect(() => {
+    setFocusId(Number(new URLSearchParams(window.location.search).get('order')) || null)
+  }, [])
 
   // ── Review popup state ────────────────────────────────────────────────────
   // pendingPrompts: queue of prompts fetched from /api/client/reviews/prompts
@@ -813,6 +826,7 @@ export default function OrdersPage() {
             <OrderCard
               key={order.id}
               order={order}
+              focused={order.id === focusId}
               reviewedMap={reviewedMap}
               onRate={handleRate}
               onReviewed={(id) => setReviewedMap(prev => ({ ...prev, [id]: true }))}

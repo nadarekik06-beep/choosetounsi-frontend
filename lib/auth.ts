@@ -11,6 +11,8 @@ export interface AuthUser {
   avatar: string | null;
   active_plan: 'free' | 'red' | 'black';
   onboarding_completed: boolean;
+  /** Shoppers only: name, phone and a delivery address are set. Absent on old sessions. */
+  profile_completed?: boolean;
 }
 
 export interface LoginCredentials {
@@ -105,6 +107,12 @@ export function saveSession(token: string, user: AuthUser): void {
   notifyAuthChange();
 }
 
+/** Refresh the cached user (same token) without the login side effects. */
+export function updateSessionUser(user: AuthUser): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  notifyAuthChange();
+}
+
 /** Fired on login / logout so session-bound state (cart, favorites) reloads without a page refresh. */
 export const AUTH_CHANGE_EVENT = 'ct-auth-change';
 
@@ -131,7 +139,8 @@ export function clearLocalSession(): void {
  * Determine the post-login redirect path based on user role and state.
  * Used by both login() and verifyEmail() to keep redirect logic consistent.
  */
-function resolveRedirectPath(user: AuthUser): string {
+export function resolveRedirectPath(user: AuthUser, after = '/'): string {
+  if (needsProfileCompletion(user)) return `/complete-profile?redirect=${encodeURIComponent(after)}`;
   if (user.role === 'client' && !user.onboarding_completed) return '/onboarding';
   if (user.role === 'seller') return '/seller';
   if (user.role === 'admin')  return '/admin';
@@ -230,6 +239,11 @@ export async function loginWithGoogle(): Promise<void> {
   const res = await fetch(`${baseUrl}/auth/google/redirect`);
   const data = await res.json();
   window.location.href = data.url;
+}
+
+/** Shoppers must complete their profile before using the store (backend: ProfileCompletion). */
+export function needsProfileCompletion(user: AuthUser | null = getUser()): boolean {
+  return !!(user && user.role === 'client' && user.profile_completed === false);
 }
 
 export function needsOnboarding(): boolean {

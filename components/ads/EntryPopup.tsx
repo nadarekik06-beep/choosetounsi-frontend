@@ -24,7 +24,7 @@ import { useAdImpression } from './useAdImpression'
 const OVERLAY_ID   = 'ad_popup'
 const SESSION_KEY  = 'ct_ad_popup_session'
 const DISMISS_KEY  = 'ct_ad_popup_dismiss'   // { until: epoch ms, count: n }
-const BLOCKED_PATHS = ['/checkout', '/cart', '/auth', '/login', '/register', '/seller', '/onboarding', '/forgot-password', '/reset-password']
+const BLOCKED_PATHS = ['/checkout', '/cart', '/auth', '/login', '/register', '/seller', '/onboarding', '/complete-profile', '/forgot-password', '/reset-password']
 
 function storage(kind: 'local' | 'session'): Storage | null {
   try { return typeof window === 'undefined' ? null : kind === 'local' ? localStorage : sessionStorage } catch { return null }

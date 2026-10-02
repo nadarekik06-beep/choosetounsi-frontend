@@ -7,7 +7,7 @@ import { LanguageInlineSelect } from '@/components/i18n/LanguageSwitcher'
 import MarketingConsentToggle from '@/components/marketing/MarketingConsentToggle'
 
 // Pages with their own chrome (dashboards, printable documents, auth callbacks) skip the footer.
-const HIDDEN_PREFIXES = ['/seller', '/invoice', '/settlement', '/auth/google', '/onboarding']
+const HIDDEN_PREFIXES = ['/seller', '/invoice', '/settlement', '/auth/google', '/onboarding', '/complete-profile']
 
 export default function SiteFooter() {
   const t = useTranslations('footer')

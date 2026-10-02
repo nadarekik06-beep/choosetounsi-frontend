@@ -869,40 +869,207 @@
   },
   "profile": {
     "metaTitle": "My account",
-    "changePhoto": "Change profile photo",
-    "change": "Change",
-    "photoUpdated": "Profile photo updated!",
-    "backHome": "← Back to homepage",
-    "verifiedTitle": "Verified account",
-    "verifiedBody": "Your identity has been confirmed",
+    "backHome": "Back to home",
+    "verified": "Verified",
+    "notVerified": "E-mail not verified",
+    "memberSince": "Member since {date}",
+    "editProfile": "Edit profile",
+    "photo": {
+      "change": "Change profile photo",
+      "short": "Change",
+      "type": "Use a JPG, PNG or WebP image.",
+      "tooBig": "This image is too large (max {max} MB).",
+      "updated": "Profile photo updated.",
+      "removed": "Profile photo removed.",
+      "remove": "Remove photo"
+    },
+    "completion": {
+      "percent": "Profile {percent}% complete",
+      "title": "Complete your profile",
+      "doneTitle": "Almost perfect!",
+      "doneBody": "You can order. Add the optional details to reach 100%.",
+      "requiredBody": "Your name, phone and a delivery address are needed before your first order.",
+      "cta": "Complete now",
+      "fields": {
+        "first_name": "First name",
+        "last_name": "Last name",
+        "phone": "Phone",
+        "address": "Delivery address",
+        "avatar": "Photo",
+        "date_of_birth": "Date of birth",
+        "gender": "Gender"
+      },
+      "optionalBody": "Add these details to personalize your account."
+    },
+    "tabs": {
+      "label": "Account sections",
+      "overview": "Overview",
+      "orders": "Orders",
+      "addresses": "Addresses",
+      "favorites": "Favorites",
+      "reviews": "Reviews",
+      "complaints": "Complaints",
+      "settings": "Settings"
+    },
     "stats": {
       "orders": "Orders",
+      "spent": "Total spent",
+      "favorites": "Favorites",
       "reviews": "Reviews",
-      "wishlist": "Wishlist"
+      "following": "Shops followed",
+      "complaintsOpen": "Open complaints",
+      "wallet": "Wallet"
     },
-    "sections": {
-      "orders": "My orders",
-      "account": "Account",
-      "sellerHub": "Seller hub",
-      "becomeSeller": "Become a seller"
+    "statusGroups": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "shipped": "On the way",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled"
     },
-    "menu": {
-      "orders": "My orders",
-      "complaints": "My complaints",
-      "wishlist": "Wishlist",
-      "returns": "Returns & refunds",
-      "reviews": "My reviews",
-      "editProfile": "Edit profile",
-      "password": "Change password",
-      "addresses": "Address book",
-      "notifications": "Notifications",
-      "privacy": "Privacy & security",
-      "myStore": "My store",
-      "myProducts": "My products",
-      "sales": "Sales & orders",
-      "openStore": "Open your store",
+    "recent": {
+      "title": "Recent orders",
+      "subtitle": "{count, plural, one {# order in total} other {# orders in total}}",
+      "viewAll": "All orders",
+      "items": "{count, plural, =0 {No items} one {# item} other {# items}}",
+      "emptyTitle": "No orders yet",
+      "emptyBody": "Thousands of Tunisian products are waiting for you.",
+      "emptyCta": "Start shopping"
+    },
+    "quick": {
+      "title": "Shortcuts",
+      "track": "Track my orders",
+      "complaint": "Report a problem with an order",
+      "myStore": "My store dashboard",
+      "openStore": "Open my store",
       "help": "Help & support",
       "signOut": "Sign out"
+    },
+    "ordersTab": {
+      "title": "My orders",
+      "summary": "{count, plural, =0 {No orders yet} one {# order} other {# orders}} · {spent} spent",
+      "all": "See all orders"
+    },
+    "addresses": {
+      "title": "Delivery addresses",
+      "subtitle": "Used at checkout — pick one in a tap.",
+      "loadError": "Could not load your addresses.",
+      "retry": "Retry",
+      "emptyBody": "Add an address to order faster. It is required before your first order.",
+      "incomplete": "To complete",
+      "confirmDelete": "Yes, delete",
+      "keep": "Keep",
+      "checkoutHint": "Your default address is pre-selected at checkout.",
+      "openBook": "Open the full address book",
+      "editTitle": "Edit address",
+      "labelField": "Label",
+      "useAsDefault": "Default address",
+      "useAsDefaultHint": "Pre-selected at checkout",
+      "save": "Save address"
+    },
+    "favoritesTab": {
+      "title": "My favorites",
+      "count": "{count, plural, one {# saved product} other {# saved products}}",
+      "viewAll": "See all",
+      "emptyTitle": "No favorites yet",
+      "emptyBody": "Tap the heart on a product to find it here later.",
+      "cta": "Discover products",
+      "following": "Shops I follow",
+      "followingCount": "{count, plural, one {# shop} other {# shops}}",
+      "followingEmpty": "You don't follow any shop yet",
+      "followingEmptyBody": "Follow your favorite Tunisian creators to see their new products first.",
+      "discoverShops": "Discover shops"
+    },
+    "reviewsTab": {
+      "title": "My reviews",
+      "count": "{count, plural, one {# review} other {# reviews}}",
+      "write": "Review a purchase",
+      "loadError": "Could not load your reviews.",
+      "retry": "Retry",
+      "emptyTitle": "No reviews yet",
+      "emptyBody": "Once an order is delivered, share your opinion to help other shoppers.",
+      "cta": "Review my purchases",
+      "productGone": "Product no longer available",
+      "more": "Load more",
+      "status": {
+        "pending": "Under moderation",
+        "approved": "Published",
+        "rejected": "Rejected",
+        "flagged": "Under review"
+      }
+    },
+    "complaintsTab": {
+      "title": "My complaints",
+      "summary": "{open} open · {resolved} resolved",
+      "viewAll": "See all my complaints"
+    },
+    "settings": {
+      "personal": "Personal information",
+      "personalHint": "Used for your deliveries and invoices.",
+      "saved": "Profile updated.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "phone": "Mobile phone",
+      "dob": "Date of birth",
+      "gender": "Gender",
+      "genderFemale": "Female",
+      "genderMale": "Male",
+      "genderNone": "Prefer not to say",
+      "signOut": "Sign out",
+      "email": {
+        "title": "E-mail address",
+        "change": "Change",
+        "new": "New e-mail address",
+        "password": "Current password",
+        "invalid": "Enter a valid e-mail address.",
+        "passwordRequired": "Enter your current password.",
+        "hint": "We will send a 6-digit code to the new address to confirm it.",
+        "send": "Send the code",
+        "codeSent": "Enter the 6-digit code we sent to {email}. It is valid for 15 minutes.",
+        "code": "Verification code",
+        "codeInvalid": "The code has 6 digits.",
+        "back": "Back",
+        "verify": "Confirm",
+        "updated": "E-mail address updated."
+      },
+      "password": {
+        "title": "Password",
+        "titleSet": "Set a password",
+        "subtitle": "Use a password you don't use anywhere else.",
+        "googleHint": "You sign in with Google. Set a password to also sign in with your e-mail.",
+        "current": "Current password",
+        "new": "New password",
+        "confirm": "Confirm the new password",
+        "rule": "At least 8 characters, with a letter and a number.",
+        "mismatch": "The passwords don't match.",
+        "currentRequired": "Enter your current password.",
+        "save": "Change password",
+        "set": "Set password",
+        "saved": "Password changed.",
+        "setDone": "Password set. You can now sign in with your e-mail too.",
+        "forgot": "Forgot it?",
+        "otherDevices": "Your other devices will be signed out.",
+        "show": "Show password",
+        "hide": "Hide password"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "subtitle": "Choose how we keep you informed.",
+        "email": "E-mail updates",
+        "emailHint": "Complaint decisions and refunds, by e-mail.",
+        "inApp": "In-app notifications",
+        "inAppHint": "The same updates in the bell on the site.",
+        "saved": "Preferences saved."
+      }
+    },
+    "errors": {
+      "load": "We couldn't load your account.",
+      "retry": "Try again",
+      "required": "This field is required.",
+      "nameShort": "At least 2 letters.",
+      "nameLetters": "Letters only (spaces, hyphens and apostrophes allowed).",
+      "phoneInvalid": "Enter a Tunisian mobile number: 8 digits starting with 2, 4, 5 or 9.",
+      "tooYoung": "You must be at least 13 years old."
     }
   },
   "addresses": {
@@ -4478,5 +4645,25 @@
       "postalCode": "Postal code must be 4 digits.",
       "wilaya": "Please select the governorate."
     }
+  },
+  "completeProfile": {
+    "metaTitle": "Complete your profile",
+    "title": "Welcome {name}! One last step",
+    "titleNoName": "One last step",
+    "subtitle": "Tell us who you are and where to deliver — it takes one minute and makes every order faster.",
+    "logout": "Sign out",
+    "loadError": "We couldn't load your profile. Refresh the page.",
+    "done": "All set!",
+    "doneBody": "Your profile is complete. Taking you back…",
+    "stepOf": "Step {current} of {total}",
+    "step1": "About you",
+    "step1Body": "Your name and phone are used by the delivery agent to reach you.",
+    "step2": "Your delivery address",
+    "step2Body": "Choose your governorate and city. You can add more addresses later.",
+    "continue": "Continue",
+    "finish": "Save and continue",
+    "back": "Back",
+    "privacy": "Your data stays private",
+    "whyDelivery": "Needed to deliver your orders"
   }
 }
