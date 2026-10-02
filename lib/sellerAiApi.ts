@@ -179,9 +179,9 @@ export const analyticsApi = {
 // ─── AI Tools API ─────────────────────────────────────────────────────────────
 
 export const sellerAiApi = {
-  priceOptimizer: (productId: number) =>
+  priceOptimizer: (productId: number, language?: string) =>
     jsonRequest<AIResponse<PriceOptimizerResult, PriceOptimizerDataContext>>(
-      'POST', '/seller/ai/price-optimizer', { product_id: productId }
+      'POST', '/seller/ai/price-optimizer', { product_id: productId, language }
     ),
 
   descriptionGenerator: (productId: number, tone = 'professional', language = 'fr') =>

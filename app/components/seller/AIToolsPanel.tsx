@@ -9,7 +9,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   DollarSign, TrendingUp, FileText, Package, Loader2,
   Copy, Check, ChevronDown, Sparkles, Brain,
-  TrendingDown, Minus, Globe, Shield,
+  Globe, Shield,
   BarChart3, Target, Star, Rocket, Search, CheckCircle2,
 } from 'lucide-react';
 
@@ -418,27 +418,6 @@ function MarketIntelPanel({ report, dataSource, r, dark }: {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// POSITIONING BADGE — UNCHANGED
-// ═════════════════════════════════════════════════════════════════════════════
-
-function PositioningBadge({ positioning, pct, dark }: { positioning: string; pct: number; dark: boolean }) {
-  const color = POSITIONING_COLORS[positioning] ?? '#6b7280';
-  const Icon  = positioning === 'underpriced' ? TrendingDown
-              : positioning === 'overpriced'  ? TrendingUp
-              : Minus;
-  const label = positioning === 'underpriced' ? `${Math.abs(pct)}% below market`
-              : positioning === 'overpriced'  ? `${Math.abs(pct)}% above market`
-              : 'Competitively priced';
-
-  return (
-    <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:999, background:`${color}14`, border:`1px solid ${color}30`, fontSize:11, fontWeight:800, color }}>
-      <Icon size={11} />
-      {label}
-    </span>
-  );
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
 // TOOL 1 — PRICE OPTIMIZER — UNCHANGED
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -449,9 +428,11 @@ function PriceOptimizerTool({ products, dark, initialProductId, autorun }: { pro
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string|null>(null);
   const t = useTranslations('seller.aiTools.price');
+  const locale = useLocale();
   const { price, number } = useFormat();
   const money  = (n: number) => price(n, { maximumFractionDigits: 3 });
   const money0 = useMoney0();
+  const { number: fmtNum } = useFormat();
   // ADD THIS after the useState lines:
 useEffect(() => {
   if (!initialProductId || products.length === 0) return;
@@ -475,7 +456,7 @@ useEffect(() => {
   if (!targetId) return;
   setLoading(true); setError(null); setResult(null);
   try {
-    const res = await sellerAiApi.priceOptimizer(targetId);
+    const res = await sellerAiApi.priceOptimizer(targetId, locale);
       setResult(res.data);
     } catch (e: any) {
       setError(e.message ?? t('failed'));
@@ -575,8 +556,8 @@ useEffect(() => {
                   </span>
                   <span style={{ fontSize:10, fontWeight:800,
                     color: POSITIONING_COLORS[r.market_positioning] ?? '#6b7280' }}>
-                    {r.market_positioning === 'underpriced' ? `↓ ${t('below', { pct: Math.abs(ctx.market_report?.positioning_pct ?? 0) })}`
-                    : r.market_positioning === 'overpriced'  ? `↑ ${t('above', { pct: Math.abs(ctx.market_report?.positioning_pct ?? 0) })}`
+                    {r.market_positioning === 'underpriced' ? `↓ ${t('below', { pct: fmtNum(Math.abs(ctx.market_report?.positioning_pct ?? 0)) })}`
+                    : r.market_positioning === 'overpriced'  ? `↑ ${t('above', { pct: fmtNum(Math.abs(ctx.market_report?.positioning_pct ?? 0)) })}`
                     : `✓ ${t('competitive')}`}
                   </span>
                 </div>
