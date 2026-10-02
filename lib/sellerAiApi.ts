@@ -1,9 +1,7 @@
 /**
  * lib/sellerAiApi.ts
  *
- * CHANGED: PriceOptimizerResult extended with multi-price fields,
- * market intelligence data, and MarketReport type.
- * All other types and functions are unchanged.
+ * Seller analytics + AI tools API (price optimizer, recommender, product descriptions).
  */
 
 const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
@@ -145,14 +143,89 @@ export interface PriceOptimizerDataContext {
   market_report:   MarketReport;
 }
 
-export interface DescriptionResult {
-  title:             string;
-  short_description: string;
+// ─── AI Descriptions ──────────────────────────────────────────────────────────
+
+export type DescriptionTone     = 'professional' | 'friendly' | 'luxury' | 'promo' | 'artisanal';
+export type DescriptionLanguage = 'fr' | 'ar' | 'en';
+export type DescriptionLength   = 'short' | 'medium' | 'long';
+export type DescriptionLevel    = 'free' | 'red' | 'black';
+
+export interface DescriptionUsage {
+  used:      number;
+  limit:     number | null;
+  remaining: number | null;
+  resets_at: string;
+}
+
+export interface DescriptionOptions {
+  level:            DescriptionLevel;
+  plan:             { slug: string; name: string };
+  default_language: DescriptionLanguage;
+  tones:            Array<{ key: DescriptionTone; locked: boolean; requires: DescriptionLevel | null }>;
+  languages:        Array<{ key: DescriptionLanguage; locked: boolean; requires: DescriptionLevel | null }>;
+  lengths:          DescriptionLength[];
+  max_variants:     number;
+  multi_language:   boolean;
+  extras:           boolean;
+  brand_voice:      boolean;
+  voice:            { voice: string; keywords: string[] } | null;
+  requires:         Record<'variants' | 'extras' | 'multi_language' | 'brand_voice', DescriptionLevel | null>;
+  limits:           Record<DescriptionLevel, number>;
+  upgrade:          Record<'red' | 'black', { slug: string; name: string } | null>;
+  usage:            DescriptionUsage;
+}
+
+export interface DescriptionVariant {
+  id:                string;
+  language:          DescriptionLanguage;
+  hook_style:        string;
+  intro:             string;
+  bullets:           string[];
+  closing:           string;
   description:       string;
-  keywords:          string[];
-  meta_title:        string;
-  meta_description:  string;
-  call_to_action:    string;
+  short_description: string;
+  /** 'banned_phrase' | 'unverified_spec' | 'needs_review' — parts the server fixed or wants reviewed */
+  flags:             string[];
+  seo_title?:        string;
+  tags?:             string[];
+  social?:           string;
+}
+
+export interface DescriptionRequest {
+  product_id?:        number;
+  name:               string;
+  category?:          string;
+  subcategory?:       string;
+  price?:             string | number;
+  short_description?: string;
+  notes?:             string;
+  keywords?:          string;
+  attributes?:        Record<string, string>;
+  /** exact combinations, e.g. "Black / XL" */
+  variants?:          string[];
+  /** options grouped by type, e.g. { Size: ['S', 'M'] } */
+  option_groups?:     Record<string, string[]>;
+  occasions?:         string[];
+  is_pack?:           boolean;
+  pack_quantity?:     number | null;
+  pack_contents?:     string;
+  tone:               DescriptionTone;
+  length:             DescriptionLength;
+  language?:          DescriptionLanguage;
+  languages?:         DescriptionLanguage[];
+  count:              number;
+  extras?:            boolean;
+}
+
+export interface DescriptionResponse {
+  success: boolean;
+  data: {
+    variants: DescriptionVariant[];
+    options:  { tone: DescriptionTone; length: DescriptionLength; languages: DescriptionLanguage[]; count: number; extras: boolean };
+    partial:  boolean;
+    usage:    DescriptionUsage;
+    model:    string;
+  };
 }
 
 export interface RecommenderResult {
@@ -188,11 +261,18 @@ export const sellerAiApi = {
   recommender: (productId: number, mode: 'bundle' | 'related' = 'bundle', discountPct = 10) =>
     jsonRequest<AIResponse<RecommenderResult>>('POST', '/seller/ai/recommender', { product_id: productId, mode, discount_pct: discountPct }),
 
-  quickDescription: (params: {
-    name: string; category?: string; price?: string | number;
-    short_description?: string; attributes?: Record<string, string>;
-    variants?: string[]; image_count?: number; tone?: string; language?: string;
-  }) => jsonRequest<AIResponse<DescriptionResult>>('POST', '/seller/ai/quick-description', params),
+  // ── AI descriptions (every plan; tiers enforced by the backend) ──
+  descriptionOptions: () =>
+    jsonRequest<{ success: boolean; data: DescriptionOptions }>('GET', '/seller/ai/description/options'),
+
+  generateDescription: (params: DescriptionRequest) =>
+    jsonRequest<DescriptionResponse>('POST', '/seller/ai/description', params),
+
+  saveDescriptionVoice: (voice: string, keywords: string) =>
+    jsonRequest<{ success: boolean; message: string; data: { voice: string; keywords: string[] } }>(
+      'PUT', '/seller/ai/description/voice', { voice, keywords }
+    ),
+
   // Already navigate via URL — but expose typed helper for programmatic use
 navigateToPriceOptimizer: (productId: number) => {
   if (typeof window !== 'undefined') {

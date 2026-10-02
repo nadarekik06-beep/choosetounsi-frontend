@@ -18,7 +18,6 @@ import ProductImagesEditor, {
 } from '../components/ProductImagesEditor'
 import type { AttributeValues, Attribute } from '@/types/Attributes'
 import PriceDecreaseDialog, { type PriceDrop, discountFor } from '../components/PriceDecreaseDialog'
-import { useSubscriptionStandalone } from '@/app/hooks/useSubscription';
 import AiDescriptionPanel from '../components/AiDescriptionPanel';
 import CommissionPreview from '@/app/seller/components/CommissionPreview'
 import { useTranslations } from 'next-intl'
@@ -242,8 +241,6 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const router   = useRouter()
   const t = useTranslations('seller.productForm')
   const { currency } = useFormat()
-  const { can } = useSubscriptionStandalone()
-  const canUseAi = can('ai_description_gen')
   const [priceDrops, setPriceDrops] = useState<PriceDrop[] | null>(null)
   const [discountBusy, setDiscountBusy] = useState(false)
 
@@ -655,13 +652,15 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <textarea rows={4} value={form.description} onChange={e => set('description', e.target.value)} placeholder={t('descriptionPlaceholder')} className={`${inputCls()} resize-none`} />
                     <AiDescriptionPanel
+                      productId={p?.id}
                       productName={form.name} categoryId={form.category_id}
                       categoryName={categories.find(c => c.id === Number(form.category_id))?.name}
+                      subcategoryName={subcategories.find(s => s.id === Number(form.subcategory_id))?.name}
                       price={form.price} shortDescription={form.short_description}
-                      imageCount={totalImages}
                       attrValues={attrValues} variantRows={variantRows}
                       variantAxes={variantAxes} infoAxes={infoAxes}
-                      hasVariantAxes={variantAxes.length > 0} canUseAi={canUseAi}
+                      occasions={occasionsApply ? form.occasions : undefined}
+                      isPack={form.is_pack} packQuantity={form.pack_quantity} packContents={form.pack_contents}
                       onInsert={({ short_description, description }) => {
                         if (short_description !== undefined) set('short_description', short_description)
                         if (description !== undefined) set('description', description)
