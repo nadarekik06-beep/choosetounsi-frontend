@@ -2,13 +2,11 @@
 
 import { useEffect, useRef, useState, forwardRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { useInView } from '@/app/hooks/useInView'
 import { useReducedMotion } from '@/app/hooks/useReducedMotion'
 import { useFormat } from '@/lib/i18n/useFormat'
-import AnimatedStore from '@/app/components/home/illustrations/AnimatedStore'
-import AnimatedPepper from '@/app/components/home/illustrations/AnimatedPepper'
 import TunisianPattern from '@/app/components/home/illustrations/TunisianPattern'
-import { ArrowIcon, CheckIcon, Eyebrow, useParallax } from './shared'
+import StoreStage from './StoreStage'
+import { ArrowIcon, CheckIcon, Eyebrow } from './shared'
 
 // Illustrative demo orders for the animated shop scene (decorative, aria-hidden).
 const DEMO_ORDERS = [
@@ -42,21 +40,19 @@ function TickingAmount({ value }: { value: number }) {
   return <span className="ltr-iso">{price(shown, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
 }
 
-function ShopScene() {
+/** Demo orders popping in over the shop (client hero only; illustrative, aria-hidden). */
+function DemoOrders({ live }: { live: boolean }) {
   const t  = useTranslations('vendor.landing.hero')
   const th = useTranslations('homeCta')
   const reduced = useReducedMotion()
-  const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.1 })
   const [tick, setTick] = useState(0)
-  const artRef = useParallax<HTMLDivElement>(0.05)
-  const pepRef = useParallax<HTMLDivElement>(-0.1)
 
   // A new order every few seconds while the scene is visible.
   useEffect(() => {
-    if (!inView || reduced) return
+    if (!live || reduced) return
     const id = window.setInterval(() => setTick(n => n + 1), CYCLE_MS)
     return () => window.clearInterval(id)
-  }, [inView, reduced])
+  }, [live, reduced])
 
   const order = DEMO_ORDERS[tick % DEMO_ORDERS.length]
   let revenue = START_REVENUE
@@ -64,21 +60,7 @@ function ShopScene() {
   const bars = [0.35, 0.5, 0.42, 0.68, 0.55, 0.8, 0.62 + (tick % 4) * 0.1]
 
   return (
-    <div ref={ref} className={`vl-stage${inView ? ' is-live' : ''}`} aria-hidden="true">
-      <div className="vl-stage__panel">
-        <TunisianPattern color="#198f41" className="vl-pattern" />
-      </div>
-
-      <div ref={artRef} className="vl-stage__art">
-        <AnimatedStore className="vl-stage__svg" signLabel={th('storeSign')} openLabel={th('storeOpen')} />
-      </div>
-
-      <div ref={pepRef} className="vl-stage__peppers">
-        <AnimatedPepper color="red" size={40} rotate={-20} delay={-1} className="vl-pep vl-pep--1" />
-        <AnimatedPepper color="green" size={26} rotate={35} delay={-3.4} className="vl-pep vl-pep--2" />
-        <AnimatedPepper color="red" size={22} rotate={70} delay={-5} className="vl-pep vl-pep--3" />
-      </div>
-
+    <>
       <span className="vl-chip vl-chip--verified">
         <span className="vl-chip__check"><CheckIcon size={11} /></span>
         {th('chipVerified')}
@@ -100,8 +82,12 @@ function ShopScene() {
           <span className="vl-toast__sub">{t(order.key)}</span>
         </span>
       </div>
-    </div>
+    </>
   )
+}
+
+function ShopScene() {
+  return <StoreStage>{live => <DemoOrders live={live} />}</StoreStage>
 }
 
 interface VendorHeroProps {

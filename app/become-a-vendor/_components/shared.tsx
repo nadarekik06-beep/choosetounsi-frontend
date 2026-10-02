@@ -50,17 +50,19 @@ export interface ShowcaseSeller {
   plan: string
 }
 
-export function useLandingData() {
+/** Public stats + showcase; `enabled` lets seller variants skip the request. */
+export function useLandingData(enabled = true) {
   const [data, setData] = useState<{ stats: LandingStats; sellers: ShowcaseSeller[] } | null>(null)
   const [failed, setFailed] = useState(false)
   useEffect(() => {
+    if (!enabled) return
     let alive = true
     fetch(`${API_URL}/seller-landing`, { headers: { Accept: 'application/json' } })
       .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
       .then(json => { if (alive) setData(json.data) })
       .catch(() => { if (alive) setFailed(true) })
     return () => { alive = false }
-  }, [])
+  }, [enabled])
   return { data, failed }
 }
 

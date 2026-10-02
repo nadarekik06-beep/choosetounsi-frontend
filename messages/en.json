@@ -2085,7 +2085,10 @@
           "analytics": "Advanced analytics",
           "ai_tools": "AI tools",
           "black_hub": "Black Hub: advanced AI and VIP lounge"
-        }
+        },
+        "currentTag": "Your plan",
+        "currentCta": "Your current plan",
+        "currentActive": "Active"
       },
       "showcase": {
         "eyebrow": "Already selling here",
@@ -2124,7 +2127,188 @@
         "subtitle": "Join the 100% Tunisian marketplace.",
         "cta": "Open my shop"
       }
-    }
+    },
+    "seller": {
+      "hero": {
+        "eyebrow": "ChooseTounsi seller space",
+        "eyebrowPremium": "ChooseTounsi Premium seller",
+        "title1": "You’re part of ChooseTounsi,",
+        "title2": "{name} 🌶️",
+        "title2Anon": "welcome 🌶️",
+        "subtitle": "Your shop is live. Ready for what’s next?",
+        "subtitlePremium": "Thank you for showcasing Tunisian craftsmanship.",
+        "shopFallback": "Your shop",
+        "badgeSeller": "Seller",
+        "badgePremium": "Premium seller",
+        "verified": "Verified seller",
+        "dashboard": "My dashboard",
+        "seePlans": "See the plans",
+        "shop": "My shop"
+      },
+      "stats": {
+        "label": "Your shop in numbers",
+        "products": "Products",
+        "orders": "Orders",
+        "views": "Views"
+      },
+      "compare": {
+        "eyebrow": "Level up",
+        "title1": "What you unlock with",
+        "lead": "Everything {plan} adds to your shop, at a glance.",
+        "yours": "Your plan",
+        "next": "Recommended",
+        "products": "Catalogue",
+        "commission": "Commission per sale",
+        "notInYours": "Not included in your plan",
+        "included": "Included in {plan}",
+        "cta": "Upgrade to {plan}",
+        "note": "Activated after payment. You keep all your products and orders."
+      },
+      "plans": {
+        "eyebrow": "Our plans",
+        "title1": "Pick your",
+        "title2": "next pepper",
+        "lead": "Change plans whenever you like.",
+        "ribbon": "Recommended for you",
+        "cta": "Upgrade to {plan}",
+        "hint": "Simple payment, quick activation"
+      },
+      "upgrade": {
+        "eyebrow": "Plan change",
+        "title": "Upgrade to"
+      },
+      "perks": {
+        "eyebrow": "Your perks",
+        "title1": "Everything is",
+        "title2": "unlocked",
+        "verified": {
+          "title": "Verified badge",
+          "desc": "Buyers can see your shop is approved.",
+          "cta": "View my shop"
+        },
+        "visibility": {
+          "title": "Boosted visibility",
+          "desc": "Sponsor your products to the top of results.",
+          "cta": "Start a campaign"
+        },
+        "ai": {
+          "title": "AI tools",
+          "desc": "Descriptions, pricing and trends, generated for you.",
+          "cta": "Open AI tools"
+        },
+        "analytics": {
+          "title": "Advanced analytics",
+          "desc": "Track sales, visitors and best sellers.",
+          "cta": "See my stats"
+        },
+        "blackHub": {
+          "title": "Black Hub",
+          "desc": "Advanced AI, goals and smart promotions.",
+          "cta": "Open Black Hub"
+        },
+        "vip": {
+          "title": "Priority support",
+          "desc": "The VIP lounge connects you straight to the team.",
+          "cta": "Go to the VIP lounge"
+        },
+        "promotions": {
+          "title": "Promotions",
+          "desc": "Flash sales and promo codes in a few clicks.",
+          "cta": "Create a promotion"
+        }
+      },
+      "planInfo": {
+        "eyebrow": "Your subscription",
+        "title1": "Plan",
+        "status": {
+          "active": "Active",
+          "trial": "Trial",
+          "grace_period": "Grace period",
+          "past_due": "Payment due",
+          "canceled": "Cancelled",
+          "expired": "Expired",
+          "suspended": "Suspended"
+        },
+        "renewal": "Renewal",
+        "periodEnded": "Period ended",
+        "daysLeft": "{count, plural, one {# day left} other {# days left}}",
+        "renewHint": "Remember to renew",
+        "pendingChange": "Scheduled change",
+        "commission": "Commission",
+        "products": "Catalogue",
+        "lastPayment": "Last payment",
+        "manage": "Manage my subscription",
+        "furtherEyebrow": "Go even further",
+        "furtherTitle": "{plan}, whenever you’re ready.",
+        "furtherCta": "Discover {plan}"
+      },
+      "shortcuts": {
+        "eyebrow": "Shortcuts",
+        "title1": "Back to",
+        "title2": "business?",
+        "addProduct": "Add a product",
+        "orders": "View my orders",
+        "ai": "AI assistant",
+        "promotions": "Create a promotion",
+        "shop": "My shop page"
+      },
+      "sticky": {
+        "upgrade": "Upgrade to {plan}",
+        "dashboard": "My dashboard"
+      },
+      "firstStep": {
+        "title": "Add your first product",
+        "desc": "Your storefront is ready: it just needs your creations."
+      }
+    },
+    "pending": {
+      "eyebrow": "Application sent",
+      "title1": "Your application is",
+      "title2": "under review",
+      "subtitle": "Thank you! Our team is reviewing your shop.",
+      "timelineLabel": "Application progress",
+      "steps": {
+        "sent": "Sent",
+        "review": "In review",
+        "approved": "Approved"
+      },
+      "stepsMeta": {
+        "sent": "Received",
+        "review": "In progress",
+        "approved": "Soon"
+      },
+      "stepState": {
+        "done": "Step completed",
+        "active": "Current step",
+        "todo": "Upcoming step"
+      },
+      "view": "View my application",
+      "browse": "Back to the shop",
+      "chip": "In review",
+      "eta": "2–3 business days",
+      "applyEyebrow": "Your file",
+      "applyTitle1": "Your",
+      "applyTitle2": "application",
+      "next": {
+        "eyebrow": "What’s next?",
+        "title1": "Three steps",
+        "title2": "to your first sale",
+        "check": {
+          "title": "Review",
+          "desc": "We check your details and photos within 2–3 business days."
+        },
+        "notify": {
+          "title": "Answer",
+          "desc": "You get an e-mail and a notification as soon as we decide."
+        },
+        "launch": {
+          "title": "Launch",
+          "desc": "Add your products and start selling."
+        }
+      }
+    },
+    "loadFailed": "We couldn’t load your application right now.",
+    "retry": "Try again"
   },
   "seller": {
     "nav": {
@@ -2546,47 +2730,111 @@
       "tooMany": "Maximum {max} photos here — extra files were skipped."
     },
     "aiDescription": {
-      "requiresPlan": "Requires Red Pepper or Black Pepper plan",
-      "generateShort": "AI Generate",
+      "generateShort": "AI description",
+      "usage": "{used}/{limit} today",
+      "loading": "Loading your AI options…",
+      "retry": "Try again",
       "failed": "Generation failed. Please try again.",
-      "tip": "<b>Tip:</b> Add {items}{more, plural, =0 {} one { and # more} other { and # more}} to unlock a more powerful AI description.",
-      "moreDetails": "More details = better AI description",
-      "completeFirst": "Complete your product first. The AI needs enough context to write a persuasive, conversion-optimized description.",
-      "checklist": "Completion checklist",
-      "missing": "missing",
-      "completeness": "Completeness",
-      "scoreNeed": "{score}% — need {need}%",
-      "willUse": "AI will use this data",
-      "photos": "{count, plural, one {# photo} other {# photos}}",
+      "needBasics": "Add a name and a category first",
+      "needBasicsHint": "The AI writes from your product data — it needs at least the product name and its category.",
+      "planLine": "Your plan: {plan}",
+      "seeWhatUnlocks": "What {plan} unlocks",
+      "willUse": "The AI will only use this data",
+      "richness": "Data {score}%",
+      "pack": "Pack of {count}",
       "yourDraft": "Your draft",
-      "tone": "Tone",
-      "language": "Language",
-      "generating": "Generating…",
-      "generate": "Generate Description",
-      "shortDescription": "Short Description",
-      "fullDescription": "Full Description",
-      "insertBoth": "Insert Both Fields",
-      "insert": "Insert",
+      "richnessTip": "More facts give more specific copy. Add: {items}.",
       "checks": {
-        "name": "Product name",
-        "category": "Category",
-        "price": "Price",
-        "photo": "At least 1 photo",
-        "shortDescription": "Short description",
-        "attributes": "Attributes",
-        "variants": "Variants"
+        "price": "price",
+        "attributes": "attributes (material, size…)",
+        "variants": "variants",
+        "notes": "a few notes about the product"
       },
+      "notes": "Notes for the AI",
+      "notesPlaceholder": "Origin, materials, how it is made, what customers love… Only facts — the AI never adds specs you do not give.",
+      "keywords": "Keywords to include",
+      "keywordsPlaceholder": "e.g. linen, Djerba, wedding gift",
+      "keywordsHint": "Separate with commas — up to 8.",
+      "tone": "Tone",
       "tones": {
         "professional": "Professional",
-        "casual": "Casual",
-        "exciting": "Exciting",
-        "trust-focused": "Trust-Focused"
+        "friendly": "Friendly",
+        "luxury": "Luxury",
+        "promo": "Urgent / Promo",
+        "artisanal": "Traditional / Artisanal"
       },
+      "toneHints": {
+        "professional": "Precise and factual, the most useful fact first. Formal.",
+        "friendly": "Warm and chatty, like a shop owner talking to a regular.",
+        "luxury": "Restrained and sensory: materials and details carry the value.",
+        "promo": "Direct and energetic, the offer first. Never invents scarcity or fake deadlines.",
+        "artisanal": "For handmade and local products: the maker, the region, the craft."
+      },
+      "language": "Language",
       "langs": {
         "fr": "French",
         "ar": "Arabic",
         "en": "English"
-      }
+      },
+      "allLanguages": "All 3",
+      "allLanguagesHint": "One version in each language, each written natively",
+      "length": "Length",
+      "lengths": {
+        "short": "Short",
+        "medium": "Medium",
+        "long": "Long"
+      },
+      "variants": "Versions",
+      "extras": "SEO title, tags and social caption",
+      "upsell": {
+        "overview": "{plan} gives you more from the AI",
+        "tone": "This tone comes with {plan}",
+        "language": "Writing in other languages comes with {plan}",
+        "multi_language": "All three languages in one click come with {plan}",
+        "variants": "Several versions to choose from come with {plan}",
+        "extras": "SEO title, tags and social caption come with {plan}",
+        "brand_voice": "Store voice comes with {plan}"
+      },
+      "upsellBody": {
+        "red": "{plan}: all 5 tones, French, Arabic and English, up to 3 versions per request, SEO title, tags and a social caption, and {limit} generations a day.",
+        "black": "{plan}: everything in Red, plus all three languages in one click, your store voice applied to every description, and {limit} generations a day."
+      },
+      "upgradeCta": "Upgrade to {plan}",
+      "notNow": "Not now",
+      "generating": "Writing…",
+      "regenerate": "Regenerate",
+      "generate": "Generate description",
+      "quotaReached": "Daily limit reached",
+      "quotaResets": "Your AI descriptions reset at midnight.",
+      "variantTab": "Version {n}",
+      "hooks": {
+        "detail": "key detail",
+        "scene": "scene",
+        "question": "question",
+        "contrast": "contrast",
+        "buyer": "who it is for",
+        "offer": "offer"
+      },
+      "reviewTitle": "Checked against your data",
+      "reviewBody": "We rewrote or removed claims your product data does not support (specs, delivery, warranty, clichés). Read it once before saving.",
+      "fullDescription": "Description",
+      "shortDescription": "Short version (cards & mobile)",
+      "insert": "Use",
+      "words": "{count} words",
+      "seoTitle": "SEO title",
+      "tags": "Tags",
+      "social": "Social caption",
+      "copy": "Copy",
+      "copied": "Copied",
+      "insertBoth": "Use description + short version",
+      "insertedHint": "Added to the form — save the product to publish it.",
+      "voiceTitle": "Store voice",
+      "voiceOn": "active",
+      "voiceOff": "not set",
+      "voiceHint": "Describe how your store talks. It is applied to every description you generate.",
+      "voicePlaceholder": "e.g. Warm and simple, close to the customer, a nod to the sea, no exclamation marks",
+      "voiceKeywordsPlaceholder": "Store keywords, e.g. handmade, Nabeul, natural dyes",
+      "voiceSave": "Save voice"
     },
     "commission": {
       "calculating": "Calculating commission…",

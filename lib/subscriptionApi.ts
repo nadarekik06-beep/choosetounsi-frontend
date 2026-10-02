@@ -85,6 +85,8 @@ export interface SubscriptionStatus {
   plan_details?:   PlanDetails
   commission?:     { source: 'override' | 'plan' | 'default'; label: string; rate: number | null; expires_at?: string | null }
   has_application: boolean
+  /** role === 'seller' && is_approved, even without an application row. */
+  is_approved_seller?: boolean
   status:          AppStatus | null
   plan:            string | null     // plan slug — use planMeta() / plan_details for display
   preferred_plan:  PreferredPlan | null

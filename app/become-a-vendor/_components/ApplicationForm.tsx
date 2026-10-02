@@ -209,13 +209,13 @@ function ApplicationStatusBanner({ app, onEdit }: { app: ExistingApplication; on
 interface ApplicationFormProps {
   /** Called after a successful submit; `wasUpdate` is true when an existing application was edited. */
   onSuccess: (wasUpdate: boolean) => void
-  /** Reports the loaded application's status (null = none) so the hero can adapt its CTA. */
-  onStatus: (status: ExistingApplication['status'] | null) => void
+  /** Reports the loaded application (null = none) so the page can adapt its hero. */
+  onApplication: (app: ExistingApplication | null) => void
   /** Scrolls the page to the top of the form section. */
   scrollToForm: () => void
 }
 
-export default function ApplicationForm({ onSuccess, onStatus, scrollToForm }: ApplicationFormProps) {
+export default function ApplicationForm({ onSuccess, onApplication, scrollToForm }: ApplicationFormProps) {
   const t   = useTranslations('vendor')
   const tc  = useTranslations('common')
   const tsp = useTranslations('sellerPickup')
@@ -223,6 +223,7 @@ export default function ApplicationForm({ onSuccess, onStatus, scrollToForm }: A
 
   const [existingApp,  setExistingApp]  = useState<ExistingApplication | null>(null)
   const [appLoading,   setAppLoading]   = useState(false)
+  const [loadFailed,   setLoadFailed]   = useState(false)
   const [isEditing,    setIsEditing]    = useState(false)
   const [existingId,   setExistingId]   = useState<number | null>(null)
 
@@ -345,11 +346,14 @@ export default function ApplicationForm({ onSuccess, onStatus, scrollToForm }: A
   // ── Load existing application ─────────────────────────────────────────
   const loadExistingApplication = useCallback(async () => {
     setAppLoading(true)
+    setLoadFailed(false)
     try {
       // ─── FIX: axios returns response.data automatically.
       // Laravel sends: { success: true, data: null } or { success: true, data: {...} }
       // So `res` here is already { success, data } — we need res.data for the app object.
+      // One retry on a network error/timeout before giving up.
       const res = await api.get('/seller-applications/mine')
+        .catch(() => new Promise(r => setTimeout(r, 1200)).then(() => api.get('/seller-applications/mine')))
 
       // res is the axios response wrapper, res.data is { success, data }
       // So the actual application is at res.data.data
@@ -398,10 +402,13 @@ export default function ApplicationForm({ onSuccess, onStatus, scrollToForm }: A
           isExisting: true,
         })))
       }
-    } catch {
-      // 404 or any error = no application exists, show fresh form
+    } catch (err) {
       setExistingApp(null)
       setExistingId(null)
+      // A 404 means "no application": fresh form. Any other failure (network,
+      // timeout, 5xx) must not show a blank form, or an applicant could submit
+      // a duplicate application: offer a retry instead.
+      if ((err as { response?: { status?: number } })?.response?.status !== 404) setLoadFailed(true)
     } finally {
       setAppLoading(false)
     }
@@ -410,7 +417,7 @@ export default function ApplicationForm({ onSuccess, onStatus, scrollToForm }: A
   // The page only mounts the form for signed-in, non-approved users, so this
   // runs exactly when the old page-level mount effect used to call it.
   useEffect(() => { loadExistingApplication() }, [loadExistingApplication])
-  useEffect(() => { onStatus(existingApp?.status ?? null) }, [existingApp, onStatus])
+  useEffect(() => { onApplication(existingApp) }, [existingApp, onApplication])
 
   const handleChange = (key: keyof FormState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -556,10 +563,21 @@ export default function ApplicationForm({ onSuccess, onStatus, scrollToForm }: A
   // ─── FIX: showForm only when existingApp is genuinely null (no real application)
   // OR when user explicitly clicked Edit.
   // existingApp being null means: loaded and confirmed no application exists.
-  const showForm = !existingApp || isEditing
+  const showForm = (!existingApp || isEditing) && !loadFailed
 
   return (
         <>
+          {!appLoading && loadFailed && (
+            <div role="alert" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between', gap:12, background:'#fff7ed', border:'1.5px solid #fed7aa', borderRadius:16, padding:'16px 20px' }}>
+              <span style={{ display:'flex', alignItems:'center', gap:8, fontSize:'0.85rem', fontWeight:600, color:'#9a3412' }}>
+                <AlertCircle size={16} aria-hidden="true" />{t('loadFailed')}
+              </span>
+              <button type="button" onClick={loadExistingApplication} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'9px 16px', borderRadius:999, border:'none', background:'#db142e', color:'#fff', fontSize:'0.8rem', fontWeight:800, cursor:'pointer' }}>
+                <RefreshCw size={13} aria-hidden="true" />{t('retry')}
+              </button>
+            </div>
+          )}
+
           {appLoading && (
             <div style={{ textAlign:'center', padding:'20px', color:'#9ca3af', fontSize:'0.85rem', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
               <Loader2 size={16} style={{ animation:'spin 1s linear infinite' }} />
