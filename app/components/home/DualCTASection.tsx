@@ -446,7 +446,7 @@ export default function DualCTASection() {
               </ul>
 
               <div className="dcta-actions">
-                <Link href="/discover" className="dcta-btn dcta-btn--shop">
+                <Link href="/shop" className="dcta-btn dcta-btn--shop">
                   {t('exploreNow')}
                   <ArrowIcon />
                 </Link>

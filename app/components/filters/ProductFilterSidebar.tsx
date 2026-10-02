@@ -23,16 +23,19 @@ import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { OCCASIONS, DEFAULT_OCCASION, useOccasionCategories } from '@/lib/occasions'
+import { PepperShape } from '@/app/components/home/illustrations/AnimatedPepper'
 
 const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API    = `${ORIGIN}/api`
 
-export type Sort = 'created_at' | 'views' | 'price_asc' | 'price_desc'
+export type Sort = 'created_at' | 'views' | 'price_asc' | 'price_desc' | 'rating'
 
 export interface F {
   q: string; pMin: string; pMax: string; inStock: boolean; isPack: boolean
   occasions: string[]
   sort: Sort; attrs: Record<string, number[]>
+  // Catalogue-wide grids (/shop): category, rating, seller tier, offers
+  cat?: string; minRating?: number; plans?: string[]; onSale?: boolean; freeDelivery?: boolean
 }
 
 /** Query params for the filters shared by every product grid (GET /api/products). */
@@ -43,16 +46,33 @@ export function appendFilterParams(qp: URLSearchParams, f: F): void {
   if (f.isPack) qp.set('is_pack', '1')
   f.occasions.forEach(o => qp.append('occasions[]', o))
   Object.entries(f.attrs).forEach(([s, ids]) => ids.forEach(v => qp.append(`attrs[${s}][]`, String(v))))
+  if (f.cat) qp.set('category_slug', f.cat)
+  if (f.minRating) qp.set('min_rating', String(f.minRating))
+  if (f.plans?.length) qp.set('seller_plan', f.plans.join(','))
+  if (f.onSale) qp.set('on_sale', '1')
+  if (f.freeDelivery) qp.set('free_delivery', '1')
 }
 
 /** True when the shopper narrowed the grid (sort and search box excluded). */
 export const hasActiveFilters = (f: F) =>
-  !!(f.inStock || f.isPack || f.pMin || f.pMax || f.occasions.length || Object.values(f.attrs).some(v => v.length))
+  !!(f.inStock || f.isPack || f.pMin || f.pMax || f.occasions.length || Object.values(f.attrs).some(v => v.length)
+    || f.cat || f.minRating || f.plans?.length || f.onSale || f.freeDelivery)
 
 export interface AOpt { id: number; value: string; color_hex?: string | null }
 export interface Attr { id: number; slug: string; name: string; type: string; options: AOpt[] }
 
-export const DEFAULT_FILTERS: F = { q: '', pMin: '', pMax: '', inStock: false, isPack: false, occasions: [], sort: 'created_at', attrs: {} }
+export const DEFAULT_FILTERS: F = {
+  q: '', pMin: '', pMax: '', inStock: false, isPack: false, occasions: [], sort: 'created_at', attrs: {},
+  cat: '', minRating: 0, plans: [], onSale: false, freeDelivery: false,
+}
+
+export const RATING_STEPS = [4, 3]
+// Pepper tiers are brand names: identical in every language
+export const PLAN_FILTERS = [
+  { k: 'black', label: 'Black Pepper', color: 'black' },
+  { k: 'red',   label: 'Red Pepper',   color: 'red' },
+  { k: 'free',  label: 'Green Pepper', color: 'green' },
+] as const
 
 // "All season" is the default tag, not something shoppers look for
 const OCCASION_FILTERS = OCCASIONS.filter(o => o.value !== DEFAULT_OCCASION)
@@ -63,6 +83,7 @@ export const SORTS: { k: Sort; l: string }[] = [
   { k: 'views',      l: 'sortPopular' },
   { k: 'price_asc',  l: 'sortPriceAsc' },
   { k: 'price_desc', l: 'sortPriceDesc' },
+  { k: 'rating',     l: 'sortRating' },
 ]
 
 export const PRANGES = [
@@ -82,13 +103,22 @@ interface Props {
   sellerId?: number | string
   searchPlaceholder?: string
   hideSearch?: boolean
+  /** The page shows its own sort control. */
+  hideSort?: boolean
+  /** Show rating, seller tier and offers filters. */
+  extended?: boolean
+  /** Category picker (catalogue-wide grids); sets f.cat. */
+  categories?: { slug: string; label: string; count: number }[]
   mOpen: boolean
   setMOpen: (v: boolean) => void
 }
 
 export default function ProductFilterSidebar({
-  f, setF, total, catSlug = '', subSlug = '', sellerId, searchPlaceholder, hideSearch = false, mOpen, setMOpen,
+  f, setF, total, catSlug: catProp = '', subSlug = '', sellerId, searchPlaceholder, hideSearch = false,
+  hideSort = false, extended = false, categories, mOpen, setMOpen,
 }: Props) {
+  // Attributes follow the page's category, or the one picked in the category filter
+  const catSlug = catProp || f.cat || ''
   const t   = useTranslations('filters')
   const to  = useTranslations('occasions')
   const occasionCategories = useOccasionCategories()
@@ -102,7 +132,7 @@ export default function ProductFilterSidebar({
     : t('rangeBetween', { min: fmt.number(mn), max: whole(mx) })
   const [attrs, setAttrs] = useState<Attr[]>([])
   const [aLoad, setALoad] = useState(false)
-  const [open, setOpen]   = useState(new Set<string>(['sort', 'price', 'avail']))
+  const [open, setOpen]   = useState(new Set<string>(['sort', 'price', 'avail', 'cat', 'rating', 'tier', 'offers']))
   const upd = (p: Partial<F>) => setF({ ...f, ...p })
 
   useEffect(() => {
@@ -135,6 +165,9 @@ export default function ProductFilterSidebar({
   const isR   = (mn: string, mx: string) => f.pMin === mn && f.pMax === mx
   const applyR = (mn: string, mx: string) => isR(mn, mx) ? upd({ pMin: '', pMax: '' }) : upd({ pMin: mn, pMax: mx })
   const togO  = (o: string) => upd({ occasions: f.occasions.includes(o) ? f.occasions.filter(x => x !== o) : [...f.occasions, o] })
+  const togP  = (p: string) => { const c = f.plans ?? []; upd({ plans: c.includes(p) ? c.filter(x => x !== p) : [...c, p] }) }
+  // A new category has other attributes: drop the old attribute picks
+  const pickCat = (slug: string) => upd({ cat: f.cat === slug ? '' : slug, attrs: {} })
   const hasAny = !!f.q || hasActiveFilters(f)
 
   const Acc = ({ k, label }: { k: string; label: string }) => (
@@ -164,14 +197,25 @@ export default function ProductFilterSidebar({
           </div>
         </div>
       )}
-      <div className="pfs-acc"><Acc k="sort" label={t('sortBy')} />
+      {!hideSort && <div className="pfs-acc"><Acc k="sort" label={t('sortBy')} />
         {open.has('sort') && <div className="pfs-body">{SORTS.map(s => (
           <button key={s.k} className={`pfs-sort${f.sort === s.k ? ' on' : ''}`} onClick={() => upd({ sort: s.k })}>
             <span className="pfs-dot" />{t(s.l)}
             {f.sort === s.k && <svg width="9" height="9" fill="none" stroke="#db142e" strokeWidth="2.5" viewBox="0 0 24 24" style={{ marginInlineStart: 'auto' }}><path d="M20 6L9 17l-5-5" /></svg>}
           </button>
         ))}</div>}
-      </div>
+      </div>}
+      {categories && categories.length > 0 && <div className="pfs-acc"><Acc k="cat" label={t('category')} />
+        {open.has('cat') && <div className="pfs-body">
+          <button className={`pfs-pr${!f.cat ? ' on' : ''}`} aria-pressed={!f.cat} onClick={() => upd({ cat: '', attrs: {} })}>{t('allCategories')}</button>
+          {categories.map(c => (
+            <button key={c.slug} className={`pfs-pr${f.cat === c.slug ? ' on' : ''}`} aria-pressed={f.cat === c.slug} onClick={() => pickCat(c.slug)}>
+              <span style={{ flex: 1, minWidth: 0 }}>{c.label}</span>
+              <span style={{ fontSize: 10.5, color: '#9ca3af', fontWeight: 600 }} className="ltr-iso">{fmt.number(c.count)}</span>
+            </button>
+          ))}
+        </div>}
+      </div>}
       <div className="pfs-acc"><Acc k="price" label={t('priceRange')} />
         {open.has('price') && <div className="pfs-body">
           <div className="pfs-pr-row">
@@ -194,6 +238,43 @@ export default function ProductFilterSidebar({
           </label>
         </div>}
       </div>
+      {extended && <>
+        <div className="pfs-acc"><Acc k="offers" label={t('offers')} />
+          {open.has('offers') && <div className="pfs-body" style={{ padding: '6px 16px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="pfs-trow">
+              <span id="pfs-onsale">{t('onSale')}</span>
+              <button type="button" role="switch" aria-checked={!!f.onSale} aria-labelledby="pfs-onsale" className={`pfs-tgl${f.onSale ? ' on' : ''}`} onClick={() => upd({ onSale: !f.onSale })}><span className="pfs-tgl-k" /></button>
+            </div>
+            <div className="pfs-trow">
+              <span id="pfs-freedel">{t('freeDelivery')}</span>
+              <button type="button" role="switch" aria-checked={!!f.freeDelivery} aria-labelledby="pfs-freedel" className={`pfs-tgl${f.freeDelivery ? ' on' : ''}`} onClick={() => upd({ freeDelivery: !f.freeDelivery })}><span className="pfs-tgl-k" /></button>
+            </div>
+          </div>}
+        </div>
+        <div className="pfs-acc"><Acc k="rating" label={t('rating')} />
+          {open.has('rating') && <div className="pfs-body">
+            {RATING_STEPS.map(r => (
+              <button key={r} className={`pfs-pr${f.minRating === r ? ' on' : ''}`} aria-pressed={f.minRating === r}
+                onClick={() => upd({ minRating: f.minRating === r ? 0 : r })}>
+                <span style={{ color: '#f59e0b', letterSpacing: 1 }} aria-hidden="true">{'\u2605'.repeat(r)}{'\u2606'.repeat(5 - r)}</span>
+                {t('ratingAtLeast', { rating: r })}
+              </button>
+            ))}
+          </div>}
+        </div>
+        <div className="pfs-acc"><Acc k="tier" label={t('sellerTier')} />
+          {open.has('tier') && <div className="pfs-body">
+            <div className="pfs-checks">{PLAN_FILTERS.map(p => { const on = !!f.plans?.includes(p.k); return (
+              <label key={p.k} className={`pfs-chk${on ? ' on' : ''}`}>
+                <input type="checkbox" className="sr-only" checked={on} onChange={() => togP(p.k)} />
+                <div className={`pfs-cb${on ? ' on' : ''}`} aria-hidden="true">{on && <svg width="8" height="8" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" /></svg>}</div>
+                <svg width="15" height="15" viewBox="-20 -20 40 40" aria-hidden="true" style={{ overflow: 'visible' }}><PepperShape color={p.color} /></svg>
+                {p.label}
+              </label>
+            )})}</div>
+          </div>}
+        </div>
+      </>}
       {showOccasions && (
         <div className="pfs-acc">
           <button className="pfs-head" onClick={() => tog('occasion')} aria-expanded={open.has('occasion')}>
@@ -297,9 +378,11 @@ export default function ProductFilterSidebar({
         .pfs-pr:hover{background:#f8f8f8;color:#db142e}.pfs-pr:hover::before{border-color:#db142e}
         .pfs-pr.on{color:#db142e;font-weight:700}.pfs-pr.on::before{background:#db142e;border-color:#db142e;box-shadow:inset 0 0 0 3px #fff}
         .pfs-trow{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:500;color:#374151;cursor:pointer}
-        .pfs-tgl{width:35px;height:19px;border-radius:999px;background:#e5e7eb;position:relative;cursor:pointer;flex-shrink:0;transition:background .19s}
+        .pfs-tgl{width:35px;height:19px;border-radius:999px;background:#e5e7eb;position:relative;cursor:pointer;flex-shrink:0;transition:background .19s;border:0;padding:0}
+        .pfs-tgl:focus-visible,.pfs-pr:focus-visible,.pfs-sort:focus-visible,.pfs-head:focus-visible,.pfs-pill:focus-visible{outline:2px solid #db142e;outline-offset:2px}
+        .pfs-chk:focus-within{outline:2px solid #db142e;outline-offset:1px}
         .pfs-tgl.on{background:#db142e}
-        .pfs-tgl-k{position:absolute;top:2px;inset-inline-start:2px;width:15px;height:15px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.14);transition:transform .19s}
+        .pfs-tgl-k{display:block;position:absolute;top:2px;inset-inline-start:2px;width:15px;height:15px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.14);transition:transform .19s}
         .pfs-tgl.on .pfs-tgl-k{transform:translateX(16px)}
         [dir=rtl] .pfs-tgl.on .pfs-tgl-k{transform:translateX(-16px)}
         .pfs-badge{display:inline-flex;align-items:center;justify-content:center;background:#db142e;color:#fff;font-size:9px;font-weight:900;border-radius:999px;min-width:14px;height:14px;margin-inline-start:5px;padding:0 3px}

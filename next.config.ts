@@ -3,6 +3,23 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
+
+// Product images are served by the Laravel API's /storage; allow whatever host
+// NEXT_PUBLIC_API_URL points at (production) on top of the local dev server.
+const apiStorage = (() => {
+  try {
+    const u = new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000');
+    return [{
+      protocol: u.protocol.replace(':', '') as 'http' | 'https',
+      hostname: u.hostname,
+      ...(u.port ? { port: u.port } : {}),
+      pathname: '/storage/**',
+    }];
+  } catch {
+    return [];
+  }
+})();
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -42,6 +59,7 @@ const nextConfig: NextConfig = {
         port: '8000',
         pathname: '/storage/**',
       },
+      ...apiStorage,
     ],
   },
 };

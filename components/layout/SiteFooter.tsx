@@ -32,7 +32,7 @@ export default function SiteFooter() {
           <Link href="/shop">{t('allProducts')}</Link>
           <Link href="/deals">{t('deals')}</Link>
           <Link href="/brand">{t('brand')}</Link>
-          <Link href="/discover">{t('discover')}</Link>
+          <Link href="/shop#for-you">{t('discover')}</Link>
         </nav>
 
         <nav className="sf-col" aria-label={t('help')}>

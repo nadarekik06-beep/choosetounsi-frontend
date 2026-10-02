@@ -455,50 +455,6 @@
     "checkout": "إتمام الطلب"
   },
   "discover": {
-    "phrase1": "اكتشف شيئاً جديداً",
-    "phrase2": "اعثر على كنوز تونسية",
-    "phrase3": "تسوّق الأكثر رواجاً",
-    "statProducts": "منتج",
-    "statSellers": "بائع",
-    "statRating": "التقييم",
-    "statCategories": "قسم",
-    "live": "مباشر · {date}",
-    "heroTitle": "استكشف و",
-    "heroHighlight": "اكتشف",
-    "tagFashion": "أزياء",
-    "tagElectronics": "إلكترونيات",
-    "tagBeauty": "جمال",
-    "tagHome": "منزل",
-    "tagSports": "رياضة",
-    "sort": "ترتيب",
-    "sortTrending": "الأكثر رواجاً",
-    "sortNewest": "الأحدث",
-    "sortPriceAsc": "السعر: من الأقل",
-    "sortPriceDesc": "السعر: من الأعلى",
-    "labels": {
-      "trending": "رائج",
-      "hotPick": "اختيار مميّز",
-      "bestSeller": "الأكثر مبيعاً",
-      "mostLoved": "الأكثر إعجاباً",
-      "editorsChoice": "اختيار المحرّر",
-      "viral": "منتج منتشر"
-    },
-    "noImage": "لا توجد صورة",
-    "addToWishlist": "أضف إلى المفضلة",
-    "add": "أضف",
-    "added": "تمت الإضافة",
-    "left": "بقي {count}",
-    "featuredTitle": "مختارات لك",
-    "featuredSubtitle": "مزيج من المنتجات الرائجة والمميّزة",
-    "bannerEyebrow": "توصيل مجاني",
-    "bannerTitle": "للطلبات بداية من {amount}",
-    "bannerSubtitle": "في كامل أنحاء تونس — توصيل سريع ومضمون",
-    "bannerCta": "تصفّح المتجر",
-    "moreTitle": "المزيد من الاكتشافات",
-    "moreSubtitle": "المنتجات التي يتحدث عنها الجميع",
-    "loadMore": "عرض المزيد من المنتجات",
-    "endTitle": "لقد شاهدت كل شيء!",
-    "endSubtitle": "عد قريباً لاكتشاف منتجات جديدة",
     "metaTitle": "المتجر"
   },
   "filters": {
@@ -525,7 +481,16 @@
     "apply": "تطبيق الفلاتر",
     "multiPacks": "العبوات المتعددة فقط",
     "occasion": "الموسم / المناسبة",
-    "clearFilters": "مسح الفلاتر"
+    "clearFilters": "مسح الفلاتر",
+    "sortRating": "الأعلى تقييماً",
+    "category": "القسم",
+    "allCategories": "كل الأقسام",
+    "rating": "التقييم",
+    "ratingAtLeast": "{rating}★ فأكثر",
+    "sellerTier": "فئة البائع",
+    "offers": "العروض",
+    "onSale": "في التخفيض",
+    "freeDelivery": "توصيل مجاني"
   },
   "category": {
     "sponsored": "مُموَّل",
@@ -4665,5 +4630,141 @@
     "back": "رجوع",
     "privacy": "بياناتك تبقى خاصة",
     "whyDelivery": "ضروري لتوصيل طلباتك"
+  },
+  "shopPage": {
+    "hero": {
+      "live": "مباشر · {date}",
+      "title1": "تونس كلها،",
+      "title2": "في متجر واحد.",
+      "lead": "منتجات من متاجر تونسية موثّقة، بأسعار بالدينار، والدفع عند الاستلام إن أردت.",
+      "searchLabel": "ابحث في الكتالوج",
+      "searchPlaceholder": "ابحث عن منتج أو متجر…",
+      "searchCta": "بحث",
+      "askAi": "اسأل المساعد",
+      "statsLabel": "أرقام الكتالوج مباشرة",
+      "statProducts": "منتج",
+      "statSellers": "متجر موثّق",
+      "statRating": "متوسط التقييم",
+      "statCategories": "قسم",
+      "spotlight": "عرض اللحظة",
+      "spotlightCta": "شاهد العرض",
+      "spotlightPrev": "العرض السابق",
+      "spotlightNext": "العرض التالي",
+      "chipsLabel": "أقسام رائجة"
+    },
+    "categories": {
+      "eyebrow": "حسب القسم",
+      "title1": "استكشف",
+      "title2": "كل الأقسام",
+      "count": "{count, plural, zero {لا منتجات} one {منتج واحد} two {منتجان} few {# منتجات} many {# منتجاً} other {# منتج}}"
+    },
+    "deals": {
+      "eyebrow": "عروض",
+      "title1": "أسعار",
+      "title2": "لن تدوم",
+      "lead": "تخفيضات حقيقية يحدّدها بائعونا — السعر المعروض هو السعر الذي تدفعه.",
+      "endsIn": "ينتهي خلال",
+      "sold": "بيع {percent}%",
+      "left": "{count, plural, one {بقيت قطعة واحدة بهذا السعر} two {بقيت قطعتان بهذا السعر} few {بقيت # قطع بهذا السعر} many {بقيت # قطعة بهذا السعر} other {بقيت # قطعة بهذا السعر}}",
+      "seeAll": "كل العروض"
+    },
+    "forYou": {
+      "eyebrow": "خصيصاً لك",
+      "title1": "مختارة",
+      "title2": "لك",
+      "leadWarm": "بناءً على ما تتصفّحه وتحبّه وتشتريه.",
+      "leadCold": "اختيارات رائجة للبداية — كلما تصفّحت أكثر أصبحت أقرب إلى ذوقك."
+    },
+    "sellers": {
+      "eyebrow": "متاجر Pepper",
+      "title1": "متاجر",
+      "title2": "بنكهة حارّة",
+      "lead": "كل المتاجر موثّقة. Green وRed وBlack Pepper تبيّن مدى نموّ كل متجر معنا.",
+      "tabsLabel": "فئات البائعين",
+      "tier": {
+        "black": "Black Pepper",
+        "red": "Red Pepper",
+        "free": "Green Pepper"
+      },
+      "blurb": {
+        "black": "متاجرنا المميّزة",
+        "red": "في نموّ سريع",
+        "free": "مواهب صاعدة"
+      },
+      "reviews": "{count, plural, zero {لا تقييمات} one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييماً} other {# تقييم}}",
+      "newShop": "متجر جديد",
+      "visit": "زيارة المتجر",
+      "productsLabel": "{count, plural, one {منتج} two {منتجان} few {منتجات} many {منتجاً} other {منتج}}",
+      "followersLabel": "{count, plural, one {متابع} two {متابعان} few {متابعين} many {متابعاً} other {متابع}}"
+    },
+    "lists": {
+      "eyebrow": "الرائج",
+      "title1": "الرائج،",
+      "title2": "الأكثر مبيعاً والجديد",
+      "tabsLabel": "قوائم المنتجات"
+    },
+    "local": {
+      "eyebrow": "صُنع في تونس",
+      "brandTitle1": "WearTounsi",
+      "brandTitle2": "والعلامات المحلية",
+      "brandLead": "علامتنا الخاصة، تصميم وصناعة تونسية.",
+      "brandCta": "زيارة WearTounsi",
+      "craftsTitle1": "الحِرف",
+      "craftsTitle2": "التونسية",
+      "craftsLead": "قطع مصنوعة يدوياً من قسم الفنون والحرف.",
+      "craftsCta": "كل الحرف"
+    },
+    "catalog": {
+      "eyebrow": "الكتالوج الكامل",
+      "title1": "تصفّح",
+      "title2": "كل شيء",
+      "sortLabel": "ترتيب المنتجات",
+      "sortTrending": "الأكثر رواجاً",
+      "sortNewest": "الأحدث",
+      "sortPriceAsc": "السعر: من الأقل",
+      "sortPriceDesc": "السعر: من الأعلى",
+      "sortRating": "الأعلى تقييماً",
+      "filters": "الفلاتر",
+      "loadMore": "عرض المزيد من المنتجات",
+      "end": "شاهدت كل شيء — منتجات جديدة تصل كل يوم.",
+      "emptyTitle": "لا توجد منتجات تطابق هذه الفلاتر",
+      "emptyBody": "أزل فلتراً أو وسّع نطاق السعر.",
+      "error": "تعذّر تحميل المنتجات."
+    },
+    "vendorCta": {
+      "eyebrow": "بِع على ChooseTounsi",
+      "title1": "لديك ما",
+      "title2": "تبيعه؟",
+      "sub": "افتح متجرك مجاناً وابلغ المشترين في كل الولايات.",
+      "cta": "كن بائعاً"
+    },
+    "trust": {
+      "label": "تسوّق بثقة",
+      "delivery": "توصيل لكل تونس",
+      "deliveryFee": "التوصيل العادي {fee}",
+      "freeCount": "{count, plural, zero {لا منتجات بتوصيل مجاني} one {منتج واحد بتوصيل مجاني} two {منتجان بتوصيل مجاني} few {# منتجات بتوصيل مجاني} many {# منتجاً بتوصيل مجاني} other {# منتج بتوصيل مجاني}}",
+      "cod": "الدفع عند الاستلام",
+      "codBody": "ادفع عند وصول طلبك.",
+      "secure": "دفع إلكتروني آمن",
+      "secureBody": "بطاقة أو D17 أو محفظة ChooseTounsi.",
+      "returns": "مشكلة؟ نتكفّل بها",
+      "returnsBody": "قدّم شكوى خلال {hours} ساعة من الاستلام."
+    },
+    "card": {
+      "chooseOptions": "اختر الخيارات",
+      "added": "تمت الإضافة",
+      "removeFavorite": "إزالة من المفضلة",
+      "rating": "التقييم {rating} من 5 ({count, plural, zero {لا تقييمات} one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييماً} other {# تقييم}})",
+      "tierBadge": "متجر {tier}"
+    },
+    "quickView": {
+      "close": "إغلاق",
+      "viewDetails": "عرض التفاصيل الكاملة",
+      "soldBy": "يبيعه",
+      "inStock": "متوفر",
+      "loadError": "تعذّر تحميل هذا المنتج.",
+      "options": "يتوفر هذا المنتج بعدة خيارات — اختر ما يناسبك في صفحة المنتج.",
+      "image": "الصورة {index} من {total}"
+    }
   }
 }

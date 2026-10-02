@@ -7,10 +7,10 @@
  */
 
 .vl {
-  --red: #db142e; --red-dark: #b01025; --red-tint: #fff1f3;
-  --green: #198f41; --green-dark: #137234; --green-tint: #ecf9f0;
-  --gold: #f59e0b; --ink: #111; --muted: #5f6368; --line: rgba(17,17,17,.07);
-  --ease: cubic-bezier(.2,.8,.2,1); --spring: cubic-bezier(.34,1.56,.64,1);
+  --red: var(--ct-red); --red-dark: var(--ct-red-dark); --red-tint: var(--ct-red-tint);
+  --green: var(--ct-green); --green-dark: var(--ct-green-dark); --green-tint: var(--ct-green-tint);
+  --gold: var(--ct-gold); --ink: var(--ct-ink); --muted: var(--ct-muted); --line: var(--ct-line);
+  --ease: var(--ct-ease); --spring: var(--ct-spring);
   --dir: 1;
   position: relative;
   background: #f7f7f5; color: var(--ink);

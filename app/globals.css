@@ -79,3 +79,25 @@ html[lang="ar"] body *:not(svg):not(svg *):not(code):not(pre):not(kbd):not([styl
   direction: ltr;
   unicode-bidi: isolate;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Brand tokens — shared by the marketing pages (/become-a-vendor, /shop)
+   so their colours, easing and type stay identical.
+   ───────────────────────────────────────────────────────────── */
+:root {
+  --ct-red: #db142e;
+  --ct-red-dark: #b01025;
+  --ct-red-tint: #fff1f3;
+  --ct-green: #198f41;
+  --ct-green-dark: #137234;
+  --ct-green-tint: #ecf9f0;
+  --ct-gold: #f59e0b;
+  --ct-gold-soft: #fbbf24;
+  --ct-ink: #111;
+  --ct-muted: #5f6368;
+  --ct-line: rgba(17, 17, 17, .07);
+  --ct-paper: #f7f7f5;
+  --ct-night: #09090b;
+  --ct-ease: cubic-bezier(.2, .8, .2, 1);
+  --ct-spring: cubic-bezier(.34, 1.56, .64, 1);
+}

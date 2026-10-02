@@ -9,6 +9,8 @@ import { useId } from 'react'
 const PALETTE = {
   red:   { light: '#ff5a6e', mid: '#db142e', dark: '#a50f22', stem: '#198f41', cap: '#22a04d' },
   green: { light: '#4fd37f', mid: '#198f41', dark: '#0f6b30', stem: '#4d5b1a', cap: '#3f7d1f' },
+  // Black Pepper tier: charcoal body, gold calyx
+  black: { light: '#71717a', mid: '#27272a', dark: '#09090b', stem: '#b45309', cap: '#f59e0b' },
 } as const
 
 export type PepperColor = keyof typeof PALETTE

@@ -66,7 +66,7 @@ export default function FavoritesTab() {
           <div className="pf-shops">{[0, 1, 2, 3].map(i => <Skeleton key={i} w={96} h={90} r={14} />)}</div>
         ) : shops.length === 0 ? (
           <EmptyState icon={<Store size={34} />} title={t('followingEmpty')} body={t('followingEmptyBody')}
-            action={<Link href="/discover" className="pf-btn light">{t('discoverShops')}</Link>} />
+            action={<Link href="/shop" className="pf-btn light">{t('discoverShops')}</Link>} />
         ) : (
           <div className="pf-shops">
             {shops.map(s => (

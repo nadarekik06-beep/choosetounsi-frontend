@@ -455,50 +455,6 @@
     "checkout": "Proceed to checkout"
   },
   "discover": {
-    "phrase1": "Discover something new",
-    "phrase2": "Find Tunisian treasures",
-    "phrase3": "Shop what's trending",
-    "statProducts": "Products",
-    "statSellers": "Sellers",
-    "statRating": "Rating",
-    "statCategories": "Categories",
-    "live": "Live · {date}",
-    "heroTitle": "Explore &",
-    "heroHighlight": "Discover",
-    "tagFashion": "Fashion",
-    "tagElectronics": "Electronics",
-    "tagBeauty": "Beauty",
-    "tagHome": "Home",
-    "tagSports": "Sports",
-    "sort": "Sort",
-    "sortTrending": "Trending",
-    "sortNewest": "New arrivals",
-    "sortPriceAsc": "Price: low to high",
-    "sortPriceDesc": "Price: high to low",
-    "labels": {
-      "trending": "Trending now",
-      "hotPick": "Hot pick",
-      "bestSeller": "Best seller",
-      "mostLoved": "Most loved",
-      "editorsChoice": "Editor's choice",
-      "viral": "Viral product"
-    },
-    "noImage": "No image",
-    "addToWishlist": "Add to wishlist",
-    "add": "Add",
-    "added": "Added",
-    "left": "{count} left",
-    "featuredTitle": "Featured for you",
-    "featuredSubtitle": "A curated mix of trending and promoted products",
-    "bannerEyebrow": "Free delivery",
-    "bannerTitle": "On all orders over {amount}",
-    "bannerSubtitle": "Anywhere in Tunisia — fast delivery guaranteed",
-    "bannerCta": "Explore the shop",
-    "moreTitle": "More to discover",
-    "moreSubtitle": "The products everyone is talking about",
-    "loadMore": "Show more products",
-    "endTitle": "You've seen it all!",
-    "endSubtitle": "Come back soon for new products",
     "metaTitle": "Shop"
   },
   "filters": {
@@ -525,7 +481,16 @@
     "apply": "Apply filters",
     "multiPacks": "Multi-packs only",
     "occasion": "Season / occasion",
-    "clearFilters": "Clear filters"
+    "clearFilters": "Clear filters",
+    "sortRating": "Top rated",
+    "category": "Category",
+    "allCategories": "All categories",
+    "rating": "Rating",
+    "ratingAtLeast": "{rating}★ & up",
+    "sellerTier": "Seller tier",
+    "offers": "Offers",
+    "onSale": "On sale",
+    "freeDelivery": "Free delivery"
   },
   "category": {
     "sponsored": "Sponsored",
@@ -4665,5 +4630,141 @@
     "back": "Back",
     "privacy": "Your data stays private",
     "whyDelivery": "Needed to deliver your orders"
+  },
+  "shopPage": {
+    "hero": {
+      "live": "Live · {date}",
+      "title1": "All of Tunisia,",
+      "title2": "in one shop.",
+      "lead": "Products from verified Tunisian shops, priced in dinars, paid on delivery if you like.",
+      "searchLabel": "Search the catalogue",
+      "searchPlaceholder": "Search a product, a shop…",
+      "searchCta": "Search",
+      "askAi": "Ask our assistant",
+      "statsLabel": "Live catalogue numbers",
+      "statProducts": "Products",
+      "statSellers": "Verified shops",
+      "statRating": "Average rating",
+      "statCategories": "Categories",
+      "spotlight": "Deal of the moment",
+      "spotlightCta": "See the deal",
+      "spotlightPrev": "Previous deal",
+      "spotlightNext": "Next deal",
+      "chipsLabel": "Popular categories"
+    },
+    "categories": {
+      "eyebrow": "Shop by category",
+      "title1": "Explore",
+      "title2": "every aisle",
+      "count": "{count, plural, one {# product} other {# products}}"
+    },
+    "deals": {
+      "eyebrow": "Deals",
+      "title1": "Prices that",
+      "title2": "won't last",
+      "lead": "Real discounts set by our sellers — the price you see is the price you pay.",
+      "endsIn": "Ends in",
+      "sold": "{percent}% sold",
+      "left": "{count, plural, one {# left at this price} other {# left at this price}}",
+      "seeAll": "All deals"
+    },
+    "forYou": {
+      "eyebrow": "Just for you",
+      "title1": "Selected",
+      "title2": "for you",
+      "leadWarm": "Based on what you browse, love and buy.",
+      "leadCold": "Popular picks to start with — the more you browse, the more personal it gets."
+    },
+    "sellers": {
+      "eyebrow": "Pepper shops",
+      "title1": "Shops with",
+      "title2": "real spice",
+      "lead": "Every shop is verified. Green, Red and Black Pepper show how far each one has grown with us.",
+      "tabsLabel": "Seller tiers",
+      "tier": {
+        "black": "Black Pepper",
+        "red": "Red Pepper",
+        "free": "Green Pepper"
+      },
+      "blurb": {
+        "black": "Our premium shops",
+        "red": "Growing fast",
+        "free": "Rising talent"
+      },
+      "reviews": "{count, plural, one {# review} other {# reviews}}",
+      "newShop": "New shop",
+      "visit": "Visit store",
+      "productsLabel": "{count, plural, one {product} other {products}}",
+      "followersLabel": "{count, plural, one {follower} other {followers}}"
+    },
+    "lists": {
+      "eyebrow": "What's moving",
+      "title1": "Trending,",
+      "title2": "best sellers & new",
+      "tabsLabel": "Product lists"
+    },
+    "local": {
+      "eyebrow": "Made in Tunisia",
+      "brandTitle1": "WearTounsi",
+      "brandTitle2": "& local brands",
+      "brandLead": "Our own label, designed and made in Tunisia.",
+      "brandCta": "Visit WearTounsi",
+      "craftsTitle1": "Tunisian",
+      "craftsTitle2": "craftsmanship",
+      "craftsLead": "Handmade pieces from the arts & crafts aisle.",
+      "craftsCta": "All crafts"
+    },
+    "catalog": {
+      "eyebrow": "Full catalogue",
+      "title1": "Browse",
+      "title2": "everything",
+      "sortLabel": "Sort products",
+      "sortTrending": "Trending",
+      "sortNewest": "New arrivals",
+      "sortPriceAsc": "Price: low to high",
+      "sortPriceDesc": "Price: high to low",
+      "sortRating": "Top rated",
+      "filters": "Filters",
+      "loadMore": "Show more products",
+      "end": "You've seen everything — new products land every day.",
+      "emptyTitle": "Nothing matches these filters",
+      "emptyBody": "Remove a filter or widen the price range.",
+      "error": "We couldn't load the products."
+    },
+    "vendorCta": {
+      "eyebrow": "Sell on ChooseTounsi",
+      "title1": "Got something",
+      "title2": "to sell?",
+      "sub": "Open your shop for free and reach buyers in every governorate.",
+      "cta": "Become a vendor"
+    },
+    "trust": {
+      "label": "Shopping with confidence",
+      "delivery": "Delivery across Tunisia",
+      "deliveryFee": "Standard delivery {fee}",
+      "freeCount": "{count, plural, one {# product ships free} other {# products ship free}}",
+      "cod": "Cash on delivery",
+      "codBody": "Pay when your order arrives.",
+      "secure": "Secure online payment",
+      "secureBody": "Card, D17 or ChooseTounsi wallet.",
+      "returns": "A problem? We step in",
+      "returnsBody": "Open a complaint within {hours} hours of delivery."
+    },
+    "card": {
+      "chooseOptions": "Choose options",
+      "added": "Added",
+      "removeFavorite": "Remove from favourites",
+      "rating": "Rated {rating} out of 5 ({count, plural, one {# review} other {# reviews}})",
+      "tierBadge": "{tier} shop"
+    },
+    "quickView": {
+      "close": "Close",
+      "viewDetails": "View full details",
+      "soldBy": "Sold by",
+      "inStock": "In stock",
+      "loadError": "We couldn't load this product.",
+      "options": "This product comes in several options — pick yours on the product page.",
+      "image": "Image {index} of {total}"
+    }
   }
 }
