@@ -2,13 +2,13 @@
 
 /**
  * app/components/seller/AIToolsPanel.tsx — Outils IA: price optimizer, sales
- * forecast (SalesForecastDashboard), description generator, bundle recommender.
+ * forecast (SalesForecastDashboard), bundle recommender. (AI descriptions live in the product form.)
  */
 
 import { useState, useEffect, useRef } from 'react';
 import {
-  DollarSign, TrendingUp, FileText, Package, Loader2,
-  Copy, Check, ChevronDown, Sparkles, Brain,
+  DollarSign, TrendingUp, Package, Loader2,
+  Check, ChevronDown, Sparkles, Brain,
   Globe, Shield,
   BarChart3, Target, Star, Rocket, Search, CheckCircle2,
 } from 'lucide-react';
@@ -16,7 +16,6 @@ import {
 import {
   sellerAiApi,
   type PriceOptimizerResult, type PriceOptimizerDataContext,
-  type DescriptionResult,
   type RecommenderResult, type MarketReport,
 } from '@/lib/sellerAiApi';
 import { productsApi as sellerProductsApi } from '@/lib/sellerApi';
@@ -29,8 +28,6 @@ import { useTheme } from '@/app/seller/SellerShell';
 const CONFIDENCE_COLORS: Record<string, string> = { high: '#10b981', medium: '#f59e0b', low: '#ef4444' };
 const POSITIONING_COLORS: Record<string, string>= { underpriced: '#10b981', competitive: '#3b82f6', overpriced: '#ef4444', unknown: '#6b7280' };
 
-const TONES   = ['professional','casual','exciting','trust-focused'];
-const LANGS   = ['fr', 'ar', 'en'] as const;
 
 /** Whole-number TND amount in the active locale. */
 function useMoney0() {
@@ -57,20 +54,6 @@ function AiTag() {
     <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 9px', borderRadius:999, background:'rgba(219,20,46,0.1)', border:'1px solid rgba(219,20,46,0.25)', fontSize:10, fontWeight:800, color:ink('#f87171', dark) }}>
       <Brain size={10} /> {t('aiPowered')}
     </span>
-  );
-}
-
-function CopyBtn({ text, dark }: { text: string; dark: boolean }) {
-  const [copied, setCopied] = useState(false);
-  const t = useTranslations('seller.aiTools');
-  return (
-    <button
-      onClick={() => { navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); }}
-      style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:8, border:`1px solid ${dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`, background:'transparent', cursor:'pointer', fontSize:11, fontWeight:700, color: dark ? 'rgba(255,255,255,0.5)' : '#5b6472' }}
-    >
-      {copied ? <Check size={11} style={{ color:ink('#10b981', dark) }} /> : <Copy size={11} />}
-      {copied ? t('copied') : t('copy')}
-    </button>
   );
 }
 
@@ -657,251 +640,6 @@ useEffect(() => {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TOOL 3 — DESCRIPTION GENERATOR — UNCHANGED
-// ═════════════════════════════════════════════════════════════════════════════
-
-function DescriptionGeneratorTool({ products, dark, initialProductId }: { products: Array<{ id:number; name:string }>; dark:boolean; initialProductId?: number }) {
-  const [selectedId, setSelectedId] = useState<number|null>(initialProductId ?? null);
-  const [tone,       setTone]       = useState('professional');
-  const locale = useLocale();
-  const t = useTranslations('seller.aiTools.description');
-  const [lang,       setLang]       = useState<string>(locale);
-  const [result,     setResult]     = useState<{ ai_result: DescriptionResult; data_context: any }|null>(null);
-  const [loading,    setLoading]    = useState(false);
-  const [error,      setError]      = useState<string|null>(null);
-  useEffect(() => {
-  if (!initialProductId || products.length === 0) return;
-  const found = products.find(p => p.id === initialProductId);
-  if (found) setSelectedId(initialProductId);
-}, [initialProductId, products]);
-  const cardBg = dark ? '#161b27' : '#ffffff';
-  const border = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
-  const text   = dark ? '#fff' : '#111';
-  const muted  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
-  const subBg  = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
-
-  const run = async () => {
-    if (!selectedId) return;
-    setLoading(true); setError(null);
-    try { const res = await sellerAiApi.descriptionGenerator(selectedId, tone, lang); setResult(res.data); }
-    catch (e: any) { setError(e.message ?? t('failed')); }
-    finally { setLoading(false); }
-  };
-
-  const r = result?.ai_result ?? null;
-
-  return (
-    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-      <div style={{ background:cardBg, borderRadius:18, border:`1px solid ${border}`, padding:'18px 20px' }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-          <p style={{ fontWeight:900, fontSize:14, color:text, margin:0 }}>{t('title')}</p>
-          <AiTag />
-        </div>
-        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-          <ProdSelect products={products} value={selectedId} onChange={setSelectedId} dark={dark} />
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-            <div>
-              <p style={{ fontSize:10, fontWeight:700, color:muted, margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('tone')}</p>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
-                {TONES.map(tn => <button key={tn} onClick={() => setTone(tn)} style={{ padding:'5px 10px', borderRadius:999, fontSize:10, fontWeight:700, cursor:'pointer', border:'none', background: tone===tn?'rgba(219,20,46,0.15)':subBg, color: tone===tn?ink('#f87171', dark):muted, outline: tone===tn?'1px solid rgba(219,20,46,0.35)':'1px solid transparent' }}>{t(`tones.${tn}`)}</button>)}
-              </div>
-            </div>
-            <div>
-              <p style={{ fontSize:10, fontWeight:700, color:muted, margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('language')}</p>
-              <div style={{ display:'flex', gap:5 }}>
-                {LANGS.map(l => <button key={l} onClick={() => setLang(l)} style={{ padding:'5px 10px', borderRadius:999, fontSize:10, fontWeight:700, cursor:'pointer', border:'none', background: lang===l?'rgba(59,130,246,0.15)':subBg, color: lang===l?ink('#60a5fa', dark):muted, outline: lang===l?'1px solid rgba(59,130,246,0.35)':'1px solid transparent' }}>{t(`langs.${l}`)}</button>)}
-              </div>
-            </div>
-          </div>
-          <RunBtn onClick={run} loading={loading} label={t('run')} icon={FileText} />
-        </div>
-        {error && <p style={{ color:ink('#ef4444', dark), fontSize:12, margin:'10px 0 0', fontWeight:600 }}>{error}</p>}
-      </div>
-      {r !== null && (
-  <div
-    style={{
-      background: cardBg,
-      borderRadius: 18,
-      border: '1px solid rgba(16,185,129,0.22)',
-      padding: '20px 22px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 14,
-      animation: 'fadeIn 0.4s ease',
-    }}
-  >
-    {/* ── Header ── */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <div
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 8,
-          background: 'rgba(16,185,129,0.12)',
-          border: '1px solid rgba(16,185,129,0.25)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <FileText size={14} style={{ color: ink('#10b981', dark) }} />
-      </div>
-      <p
-        style={{
-          fontSize: 12,
-          fontWeight: 900,
-          color: ink('#10b981', dark),
-          margin: 0,
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
-        }}
-      >
-        {t('generated')}
-      </p>
-      <span
-        style={{
-          marginInlineStart: 'auto',
-          fontSize: 9,
-          fontWeight: 800,
-          padding: '2px 7px',
-          borderRadius: 999,
-          background: 'rgba(16,185,129,0.1)',
-          border: '1px solid rgba(16,185,129,0.25)',
-          color: ink('#10b981', dark),
-        }}
-      >
-        {t('quality')}
-      </span>
-    </div>
- 
-    {/* ── Short Description card ── */}
-    <div
-      style={{
-        background: dark ? 'rgba(255,255,255,0.04)' : '#f8fafc',
-        borderRadius: 12,
-        border: `1px solid ${border}`,
-        padding: '14px 16px',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 8,
-        }}
-      >
-        <p
-          style={{
-            fontSize: 9,
-            fontWeight: 800,
-            color: muted,
-            margin: 0,
-            textTransform: 'uppercase',
-            letterSpacing: '0.07em',
-          }}
-        >
-          {t('short')}
-        </p>
-        <CopyBtn text={r.short_description} dark={dark} />
-      </div>
-      <p
-        style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: text,
-          margin: 0,
-          lineHeight: 1.55,
-        }}
-      >
-        {r.short_description}
-      </p>
-    </div>
- 
-    {/* ── Full Description card ── */}
-    <div
-      style={{
-        background: dark ? 'rgba(255,255,255,0.04)' : '#f8fafc',
-        borderRadius: 12,
-        border: `1px solid ${border}`,
-        padding: '14px 16px',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 8,
-        }}
-      >
-        <p
-          style={{
-            fontSize: 9,
-            fontWeight: 800,
-            color: muted,
-            margin: 0,
-            textTransform: 'uppercase',
-            letterSpacing: '0.07em',
-          }}
-        >
-          {t('full')}
-        </p>
-        <CopyBtn text={r.description} dark={dark} />
-      </div>
-      <p
-        style={{
-          fontSize: 12,
-          fontWeight: 400,
-          color: text,
-          margin: 0,
-          lineHeight: 1.7,
-          whiteSpace: 'pre-wrap',
-          maxHeight: 240,
-          overflowY: 'auto',
-        }}
-      >
-        {r.description}
-      </p>
-    </div>
- 
-    {/* ── Copy Both button ── */}
-    <button
-      onClick={() => {
-        const both =
-          `${t('short').toUpperCase()}:\n${r.short_description}\n\n` +
-          `${t('full').toUpperCase()}:\n${r.description}`;
-        navigator.clipboard.writeText(both);
-      }}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 7,
-        padding: '10px 0',
-        borderRadius: 10,
-        border: '1.5px solid rgba(16,185,129,0.35)',
-        background: 'rgba(16,185,129,0.06)',
-        color: ink('#059669', dark),
-        fontWeight: 700,
-        fontSize: 12,
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        transition: 'background 0.15s',
-      }}
-    >
-      <Copy size={13} />
-      {t('copyBoth')}
-    </button>
-  </div>
-)}
-    </div>
-  );
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
 // TOOL 4 — BUNDLE RECOMMENDER — UNCHANGED
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -1034,7 +772,6 @@ function BundleRecommenderTool({ products, dark, initialProductId }: { products:
 const TOOLS = [
   { key:'price',       icon:DollarSign, accent:'#db142e' },
   { key:'sales',       icon:TrendingUp, accent:'#3b82f6' },
-  { key:'description', icon:FileText,   accent:'#10b981' },
   { key:'bundles',     icon:Package,    accent:'#f59e0b' },
 ];
 
@@ -1046,7 +783,7 @@ export default function AIToolsPanel({  dark,
   initialProductId?: number;
   autorun?: boolean; }) {
 
-const validTab = ['price','sales','description','bundles'].includes(initialTab ?? '') ? initialTab! : 'price';
+const validTab = ['price','sales','bundles'].includes(initialTab ?? '') ? initialTab! : 'price';
 const [activeTool, setActiveTool] = useState(validTab);
   const [products,   setProducts]   = useState<Array<{ id:number; name:string }>>([]);
   const t = useTranslations('seller.aiTools');
@@ -1078,7 +815,7 @@ const [activeTool, setActiveTool] = useState(validTab);
         <span style={{ padding:'4px 10px', borderRadius:999, background:'rgba(219,20,46,0.12)', border:'1px solid rgba(219,20,46,0.3)', fontSize:10, fontWeight:800, color:ink('#f87171', dark) }}>🔴 Red Pepper</span>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:6 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:6 }}>
         {TOOLS.map(tool => {
           const Icon = tool.icon;
           const isActive = activeTool === tool.key;
@@ -1094,7 +831,6 @@ const [activeTool, setActiveTool] = useState(validTab);
       <div>
         {activeTool === 'price'       && <PriceOptimizerTool      products={products} dark={dark} initialProductId={initialProductId} autorun={autorun} />}
         {activeTool === 'sales'       && <SalesForecastDashboard   dark={dark} initialProductId={initialProductId} />}
-        {activeTool === 'description' && <DescriptionGeneratorTool products={products} dark={dark} initialProductId={initialProductId} />}
         {activeTool === 'bundles'     && <BundleRecommenderTool    products={products} dark={dark} initialProductId={initialProductId} />}
       </div>
     </div>

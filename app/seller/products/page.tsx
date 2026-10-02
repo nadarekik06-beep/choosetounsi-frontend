@@ -161,12 +161,17 @@ export default function ProductsPage() {
     }
   };
 
-  // Opened from Outils IA → Ventes ("Réapprovisionner"): /seller/products?restock=<id>
+  // Deep links from forecast actions / product alerts:
+  //   /seller/products?restock=<id>  → restock modal
+  //   /seller/products?edit=<id>     → product form (AI description panel included)
   useEffect(() => {
-    const id = Number(new URLSearchParams(window.location.search).get('restock'));
-    if (!id) return;
+    const q = new URLSearchParams(window.location.search);
+    const restockId = Number(q.get('restock'));
+    const editId    = Number(q.get('edit'));
+    if (!restockId && !editId) return;
     window.history.replaceState(null, '', window.location.pathname);
-    handleRestock({ id } as Product);
+    if (restockId) handleRestock({ id: restockId } as Product);
+    else handleEdit({ id: editId } as Product);
   }, []);
 
   // ── Theme ──────────────────────────────────────────────────────────────────

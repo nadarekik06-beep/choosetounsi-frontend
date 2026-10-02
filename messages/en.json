@@ -3514,7 +3514,7 @@
     "pageHeaders": {
       "aiTools": {
         "title": "AI Business Tools",
-        "subtitle": "Price optimizer, sales predictor, description generator & bundle recommender"
+        "subtitle": "Price optimizer, sales forecast & bundle recommender"
       },
       "analytics": {
         "title": "Advanced Analytics",
@@ -3531,7 +3531,6 @@
       "tabs": {
         "price": "Price",
         "sales": "Sales",
-        "description": "Description",
         "bundles": "Bundles"
       },
       "aiPowered": "AI Powered",
@@ -3622,29 +3621,6 @@
         "verdict": "AI Verdict",
         "tip": "Price tip",
         "market": "Market"
-      },
-      "description": {
-        "failed": "Generation failed",
-        "title": "Generate Product Content",
-        "tone": "Tone",
-        "language": "Language",
-        "tones": {
-          "professional": "Professional",
-          "casual": "Casual",
-          "exciting": "Exciting",
-          "trust-focused": "Trust-focused"
-        },
-        "langs": {
-          "fr": "French",
-          "ar": "Arabic",
-          "en": "English"
-        },
-        "run": "Generate Content",
-        "generated": "Generated description",
-        "quality": "AI · Human-quality",
-        "short": "Short description",
-        "full": "Full description",
-        "copyBoth": "Copy both fields"
       },
       "bundles": {
         "failed": "Recommendation failed",

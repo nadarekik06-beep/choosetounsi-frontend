@@ -3514,7 +3514,7 @@
     "pageHeaders": {
       "aiTools": {
         "title": "Outils IA pour votre boutique",
-        "subtitle": "Optimiseur de prix, prévision des ventes, générateur de descriptions et recommandations de packs"
+        "subtitle": "Optimiseur de prix, prévision des ventes et recommandations de packs"
       },
       "analytics": {
         "title": "Statistiques avancées",
@@ -3531,7 +3531,6 @@
       "tabs": {
         "price": "Prix",
         "sales": "Ventes",
-        "description": "Description",
         "bundles": "Packs"
       },
       "aiPowered": "Propulsé par l'IA",
@@ -3622,29 +3621,6 @@
         "verdict": "Verdict de l'IA",
         "tip": "Astuce prix",
         "market": "Marché"
-      },
-      "description": {
-        "failed": "La génération a échoué",
-        "title": "Générer le contenu du produit",
-        "tone": "Ton",
-        "language": "Langue",
-        "tones": {
-          "professional": "Professionnel",
-          "casual": "Décontracté",
-          "exciting": "Enthousiaste",
-          "trust-focused": "Confiance"
-        },
-        "langs": {
-          "fr": "Français",
-          "ar": "Arabe",
-          "en": "Anglais"
-        },
-        "run": "Générer le contenu",
-        "generated": "Description générée",
-        "quality": "IA · Qualité rédactionnelle",
-        "short": "Description courte",
-        "full": "Description complète",
-        "copyBoth": "Copier les deux champs"
       },
       "bundles": {
         "failed": "La recommandation a échoué",

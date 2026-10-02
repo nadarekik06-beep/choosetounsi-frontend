@@ -184,8 +184,6 @@ export const sellerAiApi = {
       'POST', '/seller/ai/price-optimizer', { product_id: productId, language }
     ),
 
-  descriptionGenerator: (productId: number, tone = 'professional', language = 'fr') =>
-    jsonRequest<AIResponse<DescriptionResult>>('POST', '/seller/ai/description-generator', { product_id: productId, tone, language }),
 
   recommender: (productId: number, mode: 'bundle' | 'related' = 'bundle', discountPct = 10) =>
     jsonRequest<AIResponse<RecommenderResult>>('POST', '/seller/ai/recommender', { product_id: productId, mode, discount_pct: discountPct }),
