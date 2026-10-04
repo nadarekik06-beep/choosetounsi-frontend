@@ -48,10 +48,46 @@ function authHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+// ─── Errors ───────────────────────────────────────────────────────────────────
+// Every failed call rejects with an Error carrying `response: { data, status }`.
+// status 0 = the API could not be reached (server down, timeout, CORS);
+// data is {} when the server answered with something that is not JSON (PHP fatal page, proxy).
+
+function apiError(message: string, status: number, data: any = {}): Error {
+  const err: any = new Error(message)
+  err.response = { data, status }
+  return err
+}
+
+export function isNetworkError(err: unknown): boolean {
+  return (err as any)?.response?.status === 0
+}
+
+async function send<T>(path: string, init: RequestInit): Promise<T> {
+  let res: Response
+  try {
+    res = await fetch(`${API_URL}${path}`, init)
+  } catch {
+    throw apiError('Network error', 0)
+  }
+
+  const text = await res.text().catch(() => '')
+  let json: any = null
+  try { json = text ? JSON.parse(text) : {} } catch { /* non-JSON body */ }
+
+  if (!res.ok) {
+    throw apiError(json?.message ?? `Request failed (HTTP ${res.status})`, res.status, json ?? {})
+  }
+  if (json === null) {
+    throw apiError(`Invalid server response (HTTP ${res.status})`, res.status)
+  }
+  return json
+}
+
 // ─── JSON request (GET, DELETE, PATCH, POST) ──────────────────────────────────
 
-async function jsonRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+function jsonRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
+  return send<T>(path, {
     method,
     headers: {
       'Content-Type': 'application/json',
@@ -60,13 +96,6 @@ async function jsonRequest<T>(method: string, path: string, body?: unknown): Pro
     },
     body: body != null ? JSON.stringify(body) : undefined,
   })
-  const json = await res.json()
-  if (!res.ok) {
-    const err: any = new Error(json.message ?? 'Request failed')
-    err.response = { data: json, status: res.status }
-    throw err
-  }
-  return json
 }
 
 // ─── Upload with progress (fetch can't report upload progress) ────────────────
@@ -84,23 +113,18 @@ function uploadRequest<T>(path: string, data: FormData, onProgress?: (percent: n
       let json: any = {}
       try { json = JSON.parse(xhr.responseText) } catch { /* non-JSON error page */ }
       if (xhr.status >= 200 && xhr.status < 300) return resolve(json)
-      const err: any = new Error(json.message ?? 'Request failed')
-      err.response = { data: json, status: xhr.status }
-      reject(err)
+      reject(apiError(json.message ?? `Request failed (HTTP ${xhr.status})`, xhr.status, json))
     }
-    xhr.onerror = () => {
-      const err: any = new Error('Network error')
-      err.response = { data: {}, status: 0 }
-      reject(err)
-    }
+    xhr.onerror = () => reject(apiError('Network error', 0))
+    xhr.ontimeout = () => reject(apiError('Network error', 0))
     xhr.send(data)
   })
 }
 
 // ─── FormData request (POST/PUT with file uploads) ────────────────────────────
 
-async function formRequest<T>(method: string, path: string, data: FormData): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+function formRequest<T>(method: string, path: string, data: FormData): Promise<T> {
+  return send<T>(path, {
     method,
     headers: {
       Accept: 'application/json',
@@ -108,13 +132,6 @@ async function formRequest<T>(method: string, path: string, data: FormData): Pro
     },
     body: data,
   })
-  const json = await res.json()
-  if (!res.ok) {
-    const err: any = new Error(json.message ?? 'Request failed')
-    err.response = { data: json, status: res.status }
-    throw err
-  }
-  return json
 }
 
 // ─── FormData builder ─────────────────────────────────────────────────────────

@@ -56,8 +56,11 @@ export default async function RootLayout({
   const fontClass = locale === "ar" ? `${syne.variable} ${cairo.variable}` : syne.variable;
 
   return (
-    <html lang={locale} dir={dirOf(locale)} className={fontClass}>
-      <body className="antialiased text-zinc-900">
+    // suppressHydrationWarning: browser extensions (toolbars, Grammarly, translators…) add
+    // attributes/nodes to <html>/<body> before React hydrates. It only covers these two
+    // elements' own attributes, not the app below them.
+    <html lang={locale} dir={dirOf(locale)} className={fontClass} suppressHydrationWarning>
+      <body className="antialiased text-zinc-900" suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
           <LanguageProvider>
             <CartProvider>

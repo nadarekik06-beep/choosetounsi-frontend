@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { X, Upload, Trash2, Star, Loader2, AlertCircle, ImageIcon, Radio } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { productsApi, categoriesApi, storageUrl, shippingApi } from '@/lib/sellerApi'
+import { productsApi, categoriesApi, storageUrl, shippingApi, isNetworkError } from '@/lib/sellerApi'
 import type { Category, Subcategory, ProductPayload } from '@/lib/sellerApi'
 import DynamicAttributeSection from '../components/attributes/DynamicAttributeSection'
 import VariantBuilder, {
@@ -289,6 +289,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const [categories,    setCategories]    = useState<Category[]>([])
   const [subcategories, setSubcategories] = useState<Subcategory[]>([])
   const [catLoading,    setCatLoading]    = useState(true)
+  const [catError,      setCatError]      = useState(false)
   const [subLoading,    setSubLoading]    = useState(false)
   const [variantAxes, setVariantAxes]    = useState<Attribute[]>([])
   const [infoAxes,    setInfoAxes]        = useState<Attribute[]>([])
@@ -304,12 +305,17 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const categorySlug       = categories.find(c => c.id === Number(form.category_id))?.slug
   const occasionsApply     = !!categorySlug && !!occasionCategories?.includes(categorySlug)
 
-  useEffect(() => {
+  // API down → message + retry in the category field; the rest of the form stays usable
+  const loadCategories = useCallback(() => {
+    setCatLoading(true)
+    setCatError(false)
     categoriesApi.getAll()
       .then(res => setCategories(res.data ?? []))
-      .catch(console.error)
+      .catch(err => { console.warn('[ProductModal] categories not loaded:', err?.message); setCatError(true) })
       .finally(() => setCatLoading(false))
   }, [])
+
+  useEffect(() => { loadCategories() }, [loadCategories])
 
   useEffect(() => {
     if (!form.category_id) { setSubcategories([]); set('subcategory_id', ''); setVariantAxes([]); setInfoAxes([]); return }
@@ -535,6 +541,8 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
         setErrors(mapped)
         const imageMsg = Object.entries(mapped).find(([k]) => k.startsWith('images'))?.[1]
         if (imageMsg) setApiError(imageMsg)
+      } else if (isNetworkError(err)) {
+        setApiError(t('networkError'))
       } else {
         setApiError(data?.message ?? t('errors.saveFailed'))
       }
@@ -783,6 +791,14 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                     <option value="">{catLoading ? t('loading') : t('selectCategory')}</option>
                     {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                   </select>
+                  {catError && (
+                    <p role="alert" style={{ fontSize: 11, color: '#b91c1c', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <AlertCircle size={12} style={{ flexShrink: 0 }} />{t('categoriesFailed')}
+                      <button type="button" onClick={loadCategories} style={{ background: 'none', border: 'none', padding: 0, color: '#b91c1c', fontWeight: 800, textDecoration: 'underline', cursor: 'pointer', fontSize: 11, fontFamily: 'inherit' }}>
+                        {t('retry')}
+                      </button>
+                    </p>
+                  )}
                 </Field>
                 <Field label={t('subcategory')} hint={t('subcategoryHint')}>
                   <select value={form.subcategory_id} onChange={e => { set('subcategory_id', e.target.value); setAttrValues({}); setVariantRows([]); setStockMode('auto'); setVariantStockErrors({}) }}

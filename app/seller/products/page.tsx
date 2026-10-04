@@ -14,9 +14,9 @@
  * Everything else is IDENTICAL to the original.
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { productsApi, storageUrl } from '@/lib/sellerApi';
+import { productsApi, storageUrl, isNetworkError } from '@/lib/sellerApi';
 import type { Product, PaginatedResponse } from '@/types/seller';
 import {
   Plus, Search, Filter, Edit2, Trash2, Package,
@@ -56,6 +56,15 @@ export default function ProductsPage() {
   const [page,       setPage]       = useState(1);
   const [modal,      setModal]      = useState<ModalState>(MODAL_CLOSED);
   const [deleting,   setDeleting]   = useState<number | null>(null);
+  const [toast,      setToast]      = useState<{ msg: string; ok: boolean } | null>(null);
+
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const showToast = useCallback((msg: string, ok: boolean) => {
+    clearTimeout(toastTimer.current);
+    setToast({ msg, ok });
+    toastTimer.current = setTimeout(() => setToast(null), 4000);
+  }, []);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
 
   // ── Restock modal state ───────────────────────────────────────────────────
   const [restockProduct, setRestockProduct] = useState<RestockProduct | null>(null);
@@ -85,10 +94,11 @@ export default function ProductsPage() {
       setData(res.data as unknown as PaginatedResponse<Product>);
     } catch {
       // keep previous data on error
+      showToast(t('loadFailed'), false);
     } finally {
       setLoading(false);
     }
-  }, [page, search, isActive, isApproved]);
+  }, [page, search, isActive, isApproved, showToast, t]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
@@ -96,12 +106,28 @@ export default function ProductsPage() {
   const closeModal   = () => setModal(MODAL_CLOSED);
   const handleSaved  = () => { closeModal(); fetchProducts(); };
 
+  /** After a delete the row must go: step back a page when it was the last one shown. */
+  const refreshAfterDelete = () => {
+    if (data && data.data.length <= 1 && page > 1) setPage(p => p - 1);
+    else fetchProducts();
+  };
+
   const handleDelete = async (id: number) => {
-    if (!confirm(t('confirmDelete'))) return;
+    if (deleting !== null || !confirm(t('confirmDelete'))) return;
     setDeleting(id);
     try {
       await productsApi.delete(id);
-      fetchProducts();
+      showToast(t('deleted'), true);
+      refreshAfterDelete();
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 404) {
+        // Already gone (e.g. an earlier attempt went through): just drop it from the list
+        showToast(t('deleteGone'), true);
+        refreshAfterDelete();
+      } else {
+        showToast(isNetworkError(err) ? t('deleteNetwork') : t('deleteFailed'), false);
+      }
     } finally {
       setDeleting(null);
     }
@@ -203,6 +229,7 @@ export default function ProductsPage() {
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes alertSlideIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
         @keyframes alertPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+        @keyframes toastIn { from{opacity:0;transform:translate(-50%,12px)} to{opacity:1;transform:translate(-50%,0)} }
       `}</style>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -484,9 +511,10 @@ export default function ProductsPage() {
                               {/* Delete */}
                               <button
                                 onClick={() => handleDelete(product.id)}
-                                disabled={deleting === product.id}
+                                disabled={deleting !== null}
+                                aria-busy={deleting === product.id}
                                 className="act-btn"
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: ink('#94a3b8', dark), opacity: deleting === product.id ? 0.4 : 0.7 }}
+                                style={{ background: 'transparent', border: 'none', cursor: deleting !== null ? 'not-allowed' : 'pointer', padding: 6, borderRadius: 8, color: ink('#94a3b8', dark), opacity: deleting === product.id ? 0.4 : 0.7 }}
                                 title={t('delete')}
                                 aria-label={t('delete')}
                               >
@@ -552,6 +580,21 @@ export default function ProductsPage() {
       {/* Edit / Add modal */}
       {modal.open && (
         <ProductModal product={modal.product} onClose={closeModal} onSaved={handleSaved} />
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div role={toast.ok ? 'status' : 'alert'} aria-live="polite" style={{
+          position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)',
+          background: dark ? '#1a2235' : '#1e293b', color: '#fff',
+          padding: '11px 22px', borderRadius: 999, fontSize: 13, fontWeight: 700, zIndex: 99999,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)', maxWidth: 'calc(100vw - 32px)',
+          display: 'flex', alignItems: 'center', gap: 8,
+          animation: 'toastIn 0.22s ease forwards',
+        }}>
+          {toast.ok ? <CheckCircle size={15} color="#10b981" /> : <XCircle size={15} color="#f87171" />}
+          {toast.msg}
+        </div>
       )}
 
       {/* Restock modal */}
