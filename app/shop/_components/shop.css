@@ -450,6 +450,32 @@
 }
 .sp-card-enter { animation: spRise .5s var(--ct-ease) both; animation-delay: calc(var(--i, 0) * 45ms); }
 
+/* deal layout (/deals): square image, denser body, "you save" line, full-width add to cart */
+.sp-card--deal { border-radius: 14px; }
+.sp-card--deal .sp-card__media { aspect-ratio: 1 / 1; }
+.sp-card--deal .sp-card__body { gap: 4px; padding: 9px 10px 10px; }
+.sp-card--deal .sp-card__badges { top: 8px; inset-inline-start: 8px; gap: 5px; }
+.sp-card--deal .sp-card__fav { width: 34px; height: 34px; }
+.sp-card__shoplink { position: relative; z-index: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; text-decoration: none; }
+.sp-card__shoplink:hover { color: var(--ct-red); text-decoration: underline; }
+.sp-card__save { font-size: 11px; font-weight: 800; color: var(--ct-green-dark); }
+.sp-card__cta {
+  position: relative; z-index: 2; margin-top: 6px; width: 100%; min-height: 36px; padding: 0 10px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 0; border-radius: 10px; cursor: pointer; text-decoration: none;
+  background: var(--ct-red); color: #fff; font: 800 12.5px var(--body); white-space: nowrap;
+  transition: background .2s, transform .2s var(--ct-ease);
+}
+.sp-card__cta:hover { background: var(--ct-red-dark); }
+.sp-card__cta:active { transform: scale(.98); }
+.sp-card__cta.is-done { background: var(--ct-green); }
+.sp-card__cta:disabled { background: #e5e7eb; color: #9ca3af; cursor: default; }
+.sp-card__cta--dark { background: #18181b; }
+.sp-card__cta--dark:hover { background: #000; }
+@media (hover: hover) {
+  .sp-card--deal:hover { transform: translateY(-4px); }
+}
+
 /* skeleton */
 .sp-skel { border-radius: 18px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1px var(--ct-line); }
 .sp-skel__media { aspect-ratio: 3 / 4; }
@@ -770,3 +796,12 @@
   .sp-deal-meter__fill { transition: none; }
   .sp-qv, .sp-qv-backdrop { animation: none; }
 }
+
+/* shop photo on deal cards (fallback: first letter on a neutral circle) */
+.sp-avatar {
+  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 50%;
+  background: #eceef1; color: #6b7280; font-weight: 800; letter-spacing: 0; line-height: 1; text-transform: uppercase;
+  box-shadow: inset 0 0 0 1px rgba(17,17,17,.06);
+}
+.sp-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sp-card--deal .sp-card__shop { gap: 6px; text-transform: none; letter-spacing: 0; font-size: 11.5px; font-weight: 600; color: #6b7280; }

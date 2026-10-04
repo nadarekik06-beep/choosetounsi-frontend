@@ -1491,36 +1491,55 @@
     "viewBundle": "View bundle",
     "dealsCount": "{count, plural, =0 {No deals} one {# deal} other {# deals}}",
     "dealType": "Deal type",
-    "types": {
-      "all": "All deals",
-      "flash": "Flash sales",
-      "discounts": "Discounts",
-      "bundles": "Bundles"
-    },
-    "sort": {
-      "flashFirst": "Flash priority",
-      "savings": "Biggest savings",
-      "priceAsc": "Price: low to high",
-      "priceDesc": "Price: high to low",
-      "newest": "Newest first"
-    },
     "sortLabel": "Sort deals",
     "filters": "Filters",
     "heroEyebrow": "ChooseTounsi exclusive",
-    "heroTitle": "Deals & offers 🔥",
-    "heroSub": "Flash sales, discounts & curated bundles from Tunisia's best sellers",
-    "backHome": "← Back to home",
-    "stats": {
-      "flash": "Flash deals",
-      "discounts": "Discounts",
-      "bundles": "Bundles",
-      "maxOff": "Max off",
-      "bundleSave": "Bundle save"
-    },
+    "heroTitle": "Deals & offers",
     "emptyTitle": "No deals match your filters",
     "emptyBody": "Try adjusting your filters or clearing them to see all deals.",
     "clearAll": "Clear all filters",
-    "browse": "Browse products"
+    "browse": "Browse products",
+    "heroSubShort": "Flash sales, promotions, packs and coupons from the best Tunisian sellers.",
+    "breadcrumb": "Breadcrumb",
+    "crumbHome": "Home",
+    "crumbDeals": "Deals",
+    "tabs": {
+      "all": "All",
+      "flash": "Flash sales",
+      "promo": "Promotions",
+      "pack": "Packs",
+      "coupon": "Coupons"
+    },
+    "sort": {
+      "recommended": "Recommended",
+      "savings": "Biggest savings",
+      "price_asc": "Price: low to high",
+      "price_desc": "Price: high to low",
+      "newest": "Newest"
+    },
+    "minDiscount": "Minimum discount",
+    "anyDiscount": "Any discount",
+    "discountAtLeast": "-{percent}% or more",
+    "seller": "Seller",
+    "closeFilters": "Close filters",
+    "seeResults": "{count, plural, =0 {No deals} one {Show # deal} other {Show # deals}}",
+    "resultsLabel": "Deals",
+    "removeFilter": "Remove filter {label}",
+    "loadError": "We couldn't load the deals right now.",
+    "retry": "Try again",
+    "noDealsTitle": "No deals running right now",
+    "noDealsBody": "Sellers post new offers regularly. Meanwhile, here are popular products.",
+    "showMore": "Show more deals ({shown} of {total})",
+    "related": {
+      "alsoLike": "You may also like",
+      "popular": "Popular products"
+    },
+    "badge": {
+      "coupon": "Coupon {value}",
+      "couponMin": "On orders from {amount}"
+    },
+    "stockLeft": "Only {count} left",
+    "upToSavings": "Save up to {percent}%"
   },
   "packDetail": {
     "metaTitle": "Bundle",
@@ -2570,7 +2589,12 @@
       "confirmDelete": "Delete this product? This cannot be undone.",
       "empty": "No products found",
       "emptyHint": "Try adjusting your filters or add a new product",
-      "showing": "Showing {from}–{to} of {total}"
+      "showing": "Showing {from}–{to} of {total}",
+      "deleted": "Product deleted.",
+      "deleteGone": "This product had already been deleted. The list has been refreshed.",
+      "deleteFailed": "Deleting failed. Please try again.",
+      "deleteNetwork": "Server unreachable: the product was not deleted. Check your connection and try again.",
+      "loadFailed": "Could not load your products. Please try again."
     },
     "productForm": {
       "active": "Active",
@@ -2665,7 +2689,10 @@
       "packQuantity": "Units per pack",
       "packQuantityHint": "At least 2",
       "packContents": "Pack contents (optional)",
-      "packContentsPlaceholder": "e.g. 3 cotton t-shirts: white, black, grey"
+      "packContentsPlaceholder": "e.g. 3 cotton t-shirts: white, black, grey",
+      "categoriesFailed": "Could not load the categories. Check that the server is running.",
+      "retry": "Retry",
+      "networkError": "Server unreachable: the product was not saved. Check your connection and try again."
     },
     "variants": {
       "stockRequired": "Stock is required.",
@@ -5003,7 +5030,9 @@
       "added": "Added",
       "removeFavorite": "Remove from favourites",
       "rating": "Rated {rating} out of 5 ({count, plural, one {# review} other {# reviews}})",
-      "tierBadge": "{tier} shop"
+      "tierBadge": "{tier} shop",
+      "save": "You save {amount}",
+      "addedToast": "“{name}” added to cart"
     },
     "quickView": {
       "close": "Close",

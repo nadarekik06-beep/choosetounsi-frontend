@@ -75,7 +75,7 @@ export interface ShopProduct extends Omit<FeedProduct, 'seller' | 'is_sponsored'
   is_pack?: boolean | null
   pack_quantity?: number | null
   variants?: { id: number; stock: number }[]
-  seller?: { id?: number; name: string; business_name?: string | null; plan?: PepperTier | string } | null
+  seller?: { id?: number; name: string; business_name?: string | null; plan?: PepperTier | string; avatar?: string | null } | null
 }
 
 export async function fetchShopOverview(signal?: AbortSignal): Promise<ShopOverview> {

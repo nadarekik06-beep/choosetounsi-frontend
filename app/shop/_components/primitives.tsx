@@ -182,3 +182,17 @@ export function TimeLeft({ endsAt }: { endsAt: string }) {
   return <span className="ltr-iso">{text}</span>
 }
 
+
+/** Shop photo as a small round avatar; no photo (or a broken one) → neutral circle with the first letter. */
+export function ShopAvatar({ name, src, size = 22 }: { name: string; src?: string | null; size?: number }) {
+  const [broken, setBroken] = useState(false)
+  const letter = (name.trim()[0] ?? '?').toUpperCase()
+  return (
+    <span className="sp-avatar" style={{ width: size, height: size, fontSize: Math.round(size * 0.48) } as CSSProperties} aria-hidden="true">
+      {src && !broken
+        // eslint-disable-next-line @next/next/no-img-element -- shop photos come from any host (storage, Google)
+        ? <img src={src} alt="" width={size} height={size} loading="lazy" onError={() => setBroken(true)} />
+        : letter}
+    </span>
+  )
+}

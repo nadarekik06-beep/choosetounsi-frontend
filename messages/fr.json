@@ -1491,36 +1491,55 @@
     "viewBundle": "Voir le pack",
     "dealsCount": "{count, plural, =0 {Aucune offre} one {# offre} other {# offres}}",
     "dealType": "Type d'offre",
-    "types": {
-      "all": "Toutes les offres",
-      "flash": "Ventes flash",
-      "discounts": "Promotions",
-      "bundles": "Packs"
-    },
-    "sort": {
-      "flashFirst": "Ventes flash d'abord",
-      "savings": "Plus grosses économies",
-      "priceAsc": "Prix croissant",
-      "priceDesc": "Prix décroissant",
-      "newest": "Plus récentes"
-    },
     "sortLabel": "Trier les offres",
     "filters": "Filtres",
     "heroEyebrow": "Exclusivités ChooseTounsi",
-    "heroTitle": "Bons plans & offres 🔥",
-    "heroSub": "Ventes flash, promotions et packs sélectionnés auprès des meilleurs vendeurs tunisiens",
-    "backHome": "← Retour à l'accueil",
-    "stats": {
-      "flash": "Ventes flash",
-      "discounts": "Promotions",
-      "bundles": "Packs",
-      "maxOff": "Remise max.",
-      "bundleSave": "Économie pack"
-    },
+    "heroTitle": "Bons plans & offres",
     "emptyTitle": "Aucune offre ne correspond à vos filtres",
     "emptyBody": "Modifiez ou effacez vos filtres pour voir toutes les offres.",
     "clearAll": "Effacer tous les filtres",
-    "browse": "Parcourir les produits"
+    "browse": "Parcourir les produits",
+    "heroSubShort": "Ventes flash, promos, packs et coupons des meilleurs vendeurs tunisiens.",
+    "breadcrumb": "Fil d'Ariane",
+    "crumbHome": "Accueil",
+    "crumbDeals": "Bons plans",
+    "tabs": {
+      "all": "Tous",
+      "flash": "Ventes flash",
+      "promo": "Promotions",
+      "pack": "Packs",
+      "coupon": "Coupons"
+    },
+    "sort": {
+      "recommended": "Recommandé",
+      "savings": "Plus grosses économies",
+      "price_asc": "Prix croissant",
+      "price_desc": "Prix décroissant",
+      "newest": "Plus récentes"
+    },
+    "minDiscount": "Remise minimum",
+    "anyDiscount": "Toutes les remises",
+    "discountAtLeast": "-{percent}% et plus",
+    "seller": "Vendeur",
+    "closeFilters": "Fermer les filtres",
+    "seeResults": "{count, plural, =0 {Aucune offre} one {Voir # offre} other {Voir # offres}}",
+    "resultsLabel": "Offres",
+    "removeFilter": "Retirer le filtre {label}",
+    "loadError": "Impossible de charger les offres pour le moment.",
+    "retry": "Réessayer",
+    "noDealsTitle": "Pas d'offre en cours pour l'instant",
+    "noDealsBody": "Les vendeurs publient régulièrement de nouvelles offres. En attendant, voici des produits populaires.",
+    "showMore": "Voir plus d'offres ({shown} sur {total})",
+    "related": {
+      "alsoLike": "Vous aimerez aussi",
+      "popular": "Produits populaires"
+    },
+    "badge": {
+      "coupon": "Coupon {value}",
+      "couponMin": "Dès {amount} d'achat"
+    },
+    "stockLeft": "Plus que {count} en stock",
+    "upToSavings": "Jusqu'à -{percent}% d'économie"
   },
   "packDetail": {
     "metaTitle": "Pack",
@@ -2570,7 +2589,12 @@
       "confirmDelete": "Supprimer ce produit ? Cette action est irréversible.",
       "empty": "Aucun produit trouvé",
       "emptyHint": "Modifiez vos filtres ou ajoutez un nouveau produit",
-      "showing": "Affichage de {from} à {to} sur {total}"
+      "showing": "Affichage de {from} à {to} sur {total}",
+      "deleted": "Produit supprimé.",
+      "deleteGone": "Ce produit avait déjà été supprimé. La liste a été actualisée.",
+      "deleteFailed": "La suppression a échoué. Veuillez réessayer.",
+      "deleteNetwork": "Serveur injoignable : le produit n’a pas été supprimé. Vérifiez votre connexion et réessayez.",
+      "loadFailed": "Impossible de charger vos produits. Veuillez réessayer."
     },
     "productForm": {
       "active": "Actif",
@@ -2665,7 +2689,10 @@
       "packQuantity": "Unités par pack",
       "packQuantityHint": "Au moins 2",
       "packContents": "Contenu du pack (facultatif)",
-      "packContentsPlaceholder": "ex. 3 t-shirts en coton : blanc, noir, gris"
+      "packContentsPlaceholder": "ex. 3 t-shirts en coton : blanc, noir, gris",
+      "categoriesFailed": "Impossible de charger les catégories. Vérifiez que le serveur est démarré.",
+      "retry": "Réessayer",
+      "networkError": "Serveur injoignable : le produit n’a pas été enregistré. Vérifiez votre connexion et réessayez."
     },
     "variants": {
       "stockRequired": "Le stock est obligatoire.",
@@ -5003,7 +5030,9 @@
       "added": "Ajouté",
       "removeFavorite": "Retirer des favoris",
       "rating": "Noté {rating} sur 5 ({count, plural, one {# avis} other {# avis}})",
-      "tierBadge": "Boutique {tier}"
+      "tierBadge": "Boutique {tier}",
+      "save": "Économisez {amount}",
+      "addedToast": "« {name} » ajouté au panier"
     },
     "quickView": {
       "close": "Fermer",

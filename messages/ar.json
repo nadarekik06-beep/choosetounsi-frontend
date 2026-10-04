@@ -1491,36 +1491,55 @@
     "viewBundle": "عرض الباقة",
     "dealsCount": "{count, plural, =0 {لا توجد عروض} one {عرض واحد} two {عرضان} few {# عروض} many {# عرضاً} other {# عرض}}",
     "dealType": "نوع العرض",
-    "types": {
-      "all": "كل العروض",
-      "flash": "تخفيضات سريعة",
-      "discounts": "تخفيضات",
-      "bundles": "باقات"
-    },
-    "sort": {
-      "flashFirst": "التخفيضات السريعة أولاً",
-      "savings": "أكبر توفير",
-      "priceAsc": "السعر: من الأقل",
-      "priceDesc": "السعر: من الأعلى",
-      "newest": "الأحدث"
-    },
     "sortLabel": "ترتيب العروض",
     "filters": "الفلاتر",
     "heroEyebrow": "حصرياً على ChooseTounsi",
-    "heroTitle": "العروض والتخفيضات 🔥",
-    "heroSub": "تخفيضات سريعة وخصومات وباقات مختارة من أفضل البائعين في تونس",
-    "backHome": "→ العودة إلى الرئيسية",
-    "stats": {
-      "flash": "تخفيضات سريعة",
-      "discounts": "تخفيضات",
-      "bundles": "باقات",
-      "maxOff": "أقصى خصم",
-      "bundleSave": "توفير الباقات"
-    },
+    "heroTitle": "العروض والتخفيضات",
     "emptyTitle": "لا توجد عروض تطابق الفلاتر",
     "emptyBody": "جرّب تعديل الفلاتر أو مسحها لعرض كل العروض.",
     "clearAll": "مسح كل الفلاتر",
-    "browse": "تصفّح المنتجات"
+    "browse": "تصفّح المنتجات",
+    "heroSubShort": "تخفيضات فلاش وعروض وباقات وقسائم من أفضل البائعين التونسيين.",
+    "breadcrumb": "مسار التنقل",
+    "crumbHome": "الرئيسية",
+    "crumbDeals": "العروض",
+    "tabs": {
+      "all": "الكل",
+      "flash": "تخفيضات فلاش",
+      "promo": "عروض",
+      "pack": "باقات",
+      "coupon": "قسائم"
+    },
+    "sort": {
+      "recommended": "مقترح",
+      "savings": "أكبر توفير",
+      "price_asc": "السعر: من الأقل",
+      "price_desc": "السعر: من الأعلى",
+      "newest": "الأحدث"
+    },
+    "minDiscount": "الحد الأدنى للتخفيض",
+    "anyDiscount": "كل التخفيضات",
+    "discountAtLeast": "‎-{percent}% فأكثر",
+    "seller": "البائع",
+    "closeFilters": "إغلاق الفلاتر",
+    "seeResults": "{count, plural, =0 {لا توجد عروض} one {عرض نتيجة واحدة} other {عرض # عروض}}",
+    "resultsLabel": "العروض",
+    "removeFilter": "إزالة الفلتر {label}",
+    "loadError": "تعذر تحميل العروض حاليًا.",
+    "retry": "إعادة المحاولة",
+    "noDealsTitle": "لا توجد عروض جارية حاليًا",
+    "noDealsBody": "ينشر البائعون عروضًا جديدة بانتظام. في الأثناء، إليك منتجات رائجة.",
+    "showMore": "عرض المزيد ({shown} من {total})",
+    "related": {
+      "alsoLike": "قد يعجبك أيضًا",
+      "popular": "منتجات رائجة"
+    },
+    "badge": {
+      "coupon": "قسيمة {value}",
+      "couponMin": "ابتداءً من {amount} شراء"
+    },
+    "stockLeft": "تبقّى {count} فقط",
+    "upToSavings": "وفّر حتى {percent}%"
   },
   "packDetail": {
     "metaTitle": "باقة",
@@ -2570,7 +2589,12 @@
       "confirmDelete": "حذف هذا المنتج؟ لا يمكن التراجع عن ذلك.",
       "empty": "لم يتم العثور على منتجات",
       "emptyHint": "غيّر عوامل التصفية أو أضف منتجاً جديداً",
-      "showing": "عرض {from}–{to} من {total}"
+      "showing": "عرض {from}–{to} من {total}",
+      "deleted": "تم حذف المنتج.",
+      "deleteGone": "تم حذف هذا المنتج مسبقًا. تم تحديث القائمة.",
+      "deleteFailed": "فشل الحذف. يرجى المحاولة مرة أخرى.",
+      "deleteNetwork": "تعذّر الوصول إلى الخادم: لم يتم حذف المنتج. تحقق من اتصالك وحاول مرة أخرى.",
+      "loadFailed": "تعذّر تحميل منتجاتك. يرجى المحاولة مرة أخرى."
     },
     "productForm": {
       "active": "نشط",
@@ -2665,7 +2689,10 @@
       "packQuantity": "عدد الوحدات في العبوة",
       "packQuantityHint": "2 على الأقل",
       "packContents": "محتوى العبوة (اختياري)",
-      "packContentsPlaceholder": "مثلاً 3 قمصان قطنية: أبيض، أسود، رمادي"
+      "packContentsPlaceholder": "مثلاً 3 قمصان قطنية: أبيض، أسود، رمادي",
+      "categoriesFailed": "تعذّر تحميل الفئات. تأكد من تشغيل الخادم.",
+      "retry": "إعادة المحاولة",
+      "networkError": "تعذّر الوصول إلى الخادم: لم يتم حفظ المنتج. تحقق من اتصالك وحاول مرة أخرى."
     },
     "variants": {
       "stockRequired": "المخزون مطلوب.",
@@ -5003,7 +5030,9 @@
       "added": "تمت الإضافة",
       "removeFavorite": "إزالة من المفضلة",
       "rating": "التقييم {rating} من 5 ({count, plural, zero {لا تقييمات} one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييماً} other {# تقييم}})",
-      "tierBadge": "متجر {tier}"
+      "tierBadge": "متجر {tier}",
+      "save": "وفّر {amount}",
+      "addedToast": "تمت إضافة «{name}» إلى السلة"
     },
     "quickView": {
       "close": "إغلاق",

@@ -33,6 +33,8 @@ interface CartContextValue {
   favLoading: boolean
   flash: string | null
   clearFlash: () => void
+  /** Show a short confirmation in the global toast. */
+  notify: (msg: string) => void
   drawerOpen: boolean
   openDrawer: () => void
   closeDrawer: () => void
@@ -246,7 +248,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       addToCart, addPackToCart,
       updateItem, removeItem, clearCart, refreshCart,
       favorites, isFavorited, toggleFavorite, favLoading,
-      flash, clearFlash: () => setFlash(null),
+      flash, clearFlash: () => setFlash(null), notify: showFlash,
       drawerOpen, openDrawer, closeDrawer,
     }}>
       {children}
