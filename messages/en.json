@@ -2381,10 +2381,8 @@
       "analytics": "Analytics",
       "aiTools": "AI Tools",
       "eliteOverview": "Elite Overview",
-      "aiIntelligence": "AI Intelligence",
       "visitorInsights": "Visitor Insights",
       "listingQuality": "Listing Quality",
-      "smartPromotions": "Smart Promotions",
       "profitCenter": "Profit Center",
       "vipLounge": "VIP Lounge",
       "tierRed": "● Red Pepper",
@@ -2401,7 +2399,8 @@
       "collapse": "Collapse",
       "expand": "Expand",
       "signOut": "Sign Out",
-      "language": "Language ({code})"
+      "language": "Language ({code})",
+      "growthRadar": "Growth Radar"
     },
     "topbar": {
       "title": "Dashboard",
@@ -3605,7 +3604,9 @@
         "scheduled": "Scheduled",
         "paused": "Paused",
         "expired": "Expired"
-      }
+      },
+      "targeted": "Private · {count} buyers",
+      "endsOn": "Ends {date}"
     },
     "promotionForm": {
       "commissionHeader": "{plan} Pepper · Commission after discount",
@@ -3663,7 +3664,8 @@
         "saveFailed": "Failed to save. Please try again."
       },
       "prefill": "Pre-filled from your price change: customers will pay {price} instead of {was}.",
-      "referencePrice": "Crossed-out price: {price} (lowest of the last 30 days)"
+      "referencePrice": "Crossed-out price: {price} (lowest of the last 30 days)",
+      "fromRadar": "Pre-filled by Growth Radar — adjust anything before saving."
     },
     "couponForm": {
       "editTitle": "Edit Coupon",
@@ -3686,7 +3688,11 @@
         "max100": "Cannot exceed 100%.",
         "negative": "Cannot be negative.",
         "atLeast1": "Must be at least 1."
-      }
+      },
+      "targetedTitle": "Private coupon for {count} interested buyers",
+      "targetedBody": "Only buyers who favourited this product or left it in their cart can use it. They get it as a notification (by e-mail only if they agreed). You never see who they are.",
+      "expiresAt": "Valid until",
+      "audienceTooSmall": "Not enough interested buyers right now — try again later."
     },
     "revenueGoals": {
       "title": "Revenue Goals",
@@ -3750,17 +3756,12 @@
       "quick": {
         "title": "Quick Actions",
         "addProduct": "Add Product",
-        "aiTools": "Run AI Tools",
         "boost": "Boost a Product",
         "goals": "Revenue Goals",
-        "vip": "VIP Request"
+        "vip": "VIP Request",
+        "growth": "Growth Radar"
       },
       "features": {
-        "ai": {
-          "title": "AI Intelligence",
-          "subtitle": "Trending products, stock alerts and real-time market insights powered by AI.",
-          "badge": "{count} trending"
-        },
         "visitors": {
           "title": "Visitor Insights",
           "subtitle": "See which products attract visitors but don't convert — and fix them fast."
@@ -3768,10 +3769,6 @@
         "quality": {
           "title": "Listing Quality",
           "subtitle": "Product quality scores with step-by-step improvement tips for each listing."
-        },
-        "smart": {
-          "title": "Smart Promotions",
-          "subtitle": "AI detects your hottest products and recommends the best time to sponsor them."
         },
         "goals": {
           "title": "Revenue Goals",
@@ -3781,20 +3778,16 @@
           "title": "VIP Lounge",
           "subtitle": "Request reels, custom promotions, or priority support directly from our team.",
           "badge": "Exclusive"
+        },
+        "growth": {
+          "title": "Growth Radar",
+          "subtitle": "Your weekly score and the actions worth doing, each one click away — results measured."
         }
       },
       "pages": {
-        "ai": {
-          "title": "AI Intelligence",
-          "subtitle": "Trending products, stock alerts and market insights — updated every 6 hours."
-        },
         "quality": {
           "title": "Listing Quality",
           "subtitle": "Product listing scores with improvement tips — better listings = more sales."
-        },
-        "smart": {
-          "title": "Smart Promotions",
-          "subtitle": "AI detects trending products and recommends the right moment to sponsor them."
         },
         "visitors": {
           "title": "Visitor Insights",
@@ -3839,47 +3832,6 @@
         "rejected": "Rejected"
       }
     },
-    "aiHub": {
-      "title": "AI Intelligence",
-      "subtitle": "Trending products, stock alerts and market insights",
-      "trendingBadge": "{count} trending",
-      "criticalBadge": "{count} critical",
-      "refresh": "Refresh",
-      "retry": "Retry",
-      "loadError": "Could not load AI Intelligence data.",
-      "noTrends": "No strong trends detected yet this week. Check back tomorrow.",
-      "noAlerts": "All products have healthy stock levels. No restocking needed.",
-      "priorityAction": "Priority Action",
-      "tabs": {
-        "trending": "Trending ({count})",
-        "alerts": "Stock Alerts ({count})",
-        "insights": "Market Insights"
-      },
-      "signal": {
-        "hot": "Hot",
-        "rising": "Rising",
-        "warm": "Warm"
-      },
-      "urgency": {
-        "critical": "Critical",
-        "high": "High",
-        "medium": "Medium"
-      },
-      "temp": {
-        "hot": "Hot market",
-        "warm": "Warm market",
-        "cooling": "Cooling market",
-        "cold": "Cold market"
-      },
-      "stats": {
-        "thisWeek": "This week",
-        "sold": "{count} sold",
-        "revenue": "Revenue",
-        "stockLeft": "Stock left",
-        "daysLeft": "Days left",
-        "revenueRisk": "Revenue risk"
-      }
-    },
     "funnel": {
       "title": "Visitor Insights",
       "needAttention": "{count} need attention",
@@ -3897,24 +3849,6 @@
         "opportunity": "Opportunity"
       },
       "try": "Try:"
-    },
-    "smartPromote": {
-      "title": "Smart Promotions",
-      "ready": "{count} ready",
-      "subtitle": "{count, plural, one {# trending product} other {# trending products}} not yet sponsored — est. +{amount}",
-      "allSponsored": "All trending products are already sponsored",
-      "allSponsoredLong": "All trending products are already sponsored. You are maximizing visibility.",
-      "loadError": "Could not load suggestions.",
-      "retry": "Retry",
-      "intro": "These products are selling fast but are not promoted yet. Sponsoring them puts them in front of more buyers at exactly the right moment.",
-      "hot": "Hot product",
-      "rising": "Rising fast",
-      "stats": {
-        "selling": "Selling",
-        "thisWeek": "This week",
-        "estBoost": "Est. boost"
-      },
-      "cta": "Go to Promote"
     },
     "quality": {
       "score": {
@@ -4635,6 +4569,193 @@
       "loading": "Loading…",
       "error": "Could not load notifications.",
       "retry": "Retry"
+    },
+    "growth": {
+      "title": "Growth Radar",
+      "subtitle": "Your weekly score and the actions worth doing now — each one opens the right tool, pre-filled.",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing…",
+      "updated": "Updated {time}",
+      "cooldown": "Refreshed a few minutes ago — try again soon.",
+      "error": "Could not load Growth Radar.",
+      "retry": "Retry",
+      "tabs": {
+        "week": "This week",
+        "history": "Past actions"
+      },
+      "score": {
+        "title": "Growth Score",
+        "outOf": "/100",
+        "trendUp": "+{n} vs last week",
+        "trendDown": "{n} vs last week",
+        "trendFlat": "Same as last week",
+        "firstWeek": "First week — the trend appears next week",
+        "notEnough": "Not enough data yet",
+        "subs": {
+          "pricing": "Pricing",
+          "visibility": "Visibility",
+          "conversion": "Conversion",
+          "stock": "Stock health"
+        },
+        "hints": {
+          "pricing": "Share of your products inside their category's usual price range",
+          "visibility": "Views per product compared with the marketplace median",
+          "conversion": "Orders per view compared with the marketplace",
+          "stock": "Products in stock, selling, and not about to run out"
+        }
+      },
+      "feed": {
+        "title": "This week's actions",
+        "sortedBy": "Ranked by estimated impact",
+        "snoozed": "{count, plural, one {# action snoozed} other {# actions snoozed}}"
+      },
+      "types": {
+        "leaking_product": "Leaking product",
+        "price_position": "Price position",
+        "hidden_demand": "Hidden demand",
+        "warm_audience": "Warm audience",
+        "seasonal": "Seasonal moment",
+        "dead_stock": "Dead stock",
+        "promo_timing": "Best timing"
+      },
+      "confidence": {
+        "low": "Low confidence",
+        "medium": "Medium confidence",
+        "high": "High confidence",
+        "tip": "How much data stands behind this card. Low-confidence cards always rank below the others."
+      },
+      "impact": {
+        "label": "Estimated impact",
+        "range": "+{low}–{high} DT",
+        "none": "Impact not estimated yet",
+        "tip": "A range, not a promise — computed from the numbers shown on the card."
+      },
+      "evidence": {
+        "views_30d": "Views · 30 d",
+        "orders_30d": "Orders · 30 d",
+        "conversion": "Conversion",
+        "compare": "benchmark {value}",
+        "your_price": "Your price",
+        "category_median": "Category median",
+        "units_30d": "Sold · 30 d",
+        "searches_30d": "Searches · 30 d",
+        "results_found": "Results found",
+        "typical_price": "Typical price",
+        "interested_buyers": "Interested buyers",
+        "favorites": "Favourites",
+        "abandoned_carts": "Left in cart",
+        "days_until_event": "Days to go",
+        "last_year_lift": "Last time",
+        "products_matched": "Products",
+        "days_without_sale": "Days without a sale",
+        "units_in_stock": "In stock",
+        "stock_value": "Stock value",
+        "traffic_lift": "Peak vs average"
+      },
+      "chart": {
+        "sparkline": "Daily views and orders, last 30 days",
+        "views": "Views",
+        "orders": "Orders",
+        "price": "Your price vs the category range",
+        "you": "You",
+        "median": "Median",
+        "range": "Usual range",
+        "traffic": "When buyers are active on the marketplace, by hour",
+        "bestHour": "Recommended launch time",
+        "timeline": "When to start",
+        "today": "Today",
+        "start": "Start",
+        "event": "Event",
+        "dayTip": "{day}: {views} views, {orders} orders",
+        "hourTip": "{hour}h: {pct}% of activity",
+        "daysAgo": "{n, plural, =1 {yesterday} other {# days ago}}",
+        "priceTip": "{label}: {value}"
+      },
+      "do": "Do this",
+      "why": "Where do these numbers come from?",
+      "actions": {
+        "discount": "Create the discount",
+        "flash_sale": "Schedule the flash sale",
+        "coupon": "Create the private coupon",
+        "boost": "Boost this product",
+        "edit_photos": "Add photos",
+        "edit_description": "Improve the description",
+        "edit_price": "Update the price",
+        "listing": "List a product",
+        "bundle": "Find a bundle"
+      },
+      "or": "or",
+      "dismiss": "Dismiss",
+      "remind": "Remind me later",
+      "remind3": "In 3 days",
+      "remind7": "In a week",
+      "dismissed": "Card dismissed — it won't come back for 4 weeks.",
+      "snoozedToast": "We'll bring it back in {days} days.",
+      "locked": {
+        "title": "Unlock your action feed",
+        "body": "Your Growth Score is free. Black Pepper unlocks every action: what to do, with numbers, one click to apply — and the result measured afterwards.",
+        "cta": "Upgrade to Black Pepper",
+        "waiting": "{count, plural, =0 {Actions appear here as your shop grows} one {# more action is waiting for your shop} other {# more actions are waiting for your shop}}",
+        "worth": "Worth up to +{high} DT"
+      },
+      "empty": {
+        "title": "No action this week — and that's honest",
+        "body": "We only show an action when the data supports it. Here is what unlocks more:",
+        "allGood": "Nothing stands out right now. We check again every night.",
+        "unlocks": {
+          "add_products": "{count, plural, one {Add # more product} other {Add # more products}} so we can compare and rank them",
+          "more_views": "Your products need about {count} more views — share your shop link or boost a product",
+          "first_sale": "Your first sale unlocks conversion insights",
+          "market_data": "Price comparisons appear once 5 or more shops sell similar products",
+          "platform_data": "Marketplace benchmarks appear as more shops and buyers join"
+        }
+      },
+      "results": {
+        "title": "Results of your actions",
+        "before": "Before",
+        "during": "During",
+        "after": "After",
+        "units": "Units",
+        "revenue": "Revenue",
+        "views": "Views",
+        "gross": "Extra revenue",
+        "cost": "Discount cost",
+        "ads": "Ad spend",
+        "net": "Net gain",
+        "sameDays": "Compared with the {days} days just before",
+        "lift": "{pct}% units",
+        "running": "Running — results on {date}",
+        "verdict": {
+          "win": "Worked",
+          "loss": "Did not pay off",
+          "neutral": "No clear change",
+          "unclear": "Can't tell yet"
+        },
+        "chart": "Units sold per day before, during and after the action"
+      },
+      "history": {
+        "empty": "Actions you apply from Growth Radar appear here, with their results.",
+        "learning": "What works for your shop",
+        "best": "Your buyers respond best to {kind}: {lift} units on average over {n} measured actions.",
+        "notYet": "We need {min} measured actions of a kind before drawing conclusions — so far:",
+        "kindStat": "{kind}: {n} measured, {wins} worked",
+        "col": {
+          "action": "Action",
+          "product": "Product",
+          "when": "When",
+          "result": "Result",
+          "net": "Net gain"
+        }
+      },
+      "kinds": {
+        "discount": "discount",
+        "flash_sale": "flash sale",
+        "coupon": "coupon",
+        "boost": "boost",
+        "edit": "listing update",
+        "listing": "new listing",
+        "bundle": "bundle"
+      }
     }
   },
   "invoice": {

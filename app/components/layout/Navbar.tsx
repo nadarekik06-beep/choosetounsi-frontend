@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { logout, isAuthenticated, getUser, AuthUser } from "@/lib/auth";
 import { useCart } from "@/context/CartContext";
 import { Heart, ShoppingBag, ClipboardList, AlertCircle } from "lucide-react";
+import NotificationBell from "@/app/components/NotificationBell";
+import { sellerNotificationApi as notificationApi } from "@/lib/notificationApi";
 import BrandLogoCircle from "@/components/BrandLogoCircle";
 import { useSiteFeatures } from "@/lib/platformApi";
 import CatIcon from "@/app/components/layout/CategoryIcon";
@@ -900,6 +902,13 @@ export default function Navbar() {
               {count>0&&<span className="nu-bdg">{count>99?"99+":count}</span>}
             </button>
             <span className="nu-sep"/>
+            {/* Buyers' bell: private coupons (Growth Radar), order and complaint updates */}
+            {loggedIn&&!isSeller&&(
+              <>
+                <NotificationBell api={notificationApi} dark={false} onNavigate={router.push}/>
+                <span className="nu-sep"/>
+              </>
+            )}
             {!loggedIn?(
               <>
                 <Link href="/auth/login"    onClick={closeAll} className="nu"><UserIcon/>{t("login")}</Link>
@@ -1071,6 +1080,13 @@ export default function Navbar() {
                 </Link>
               )}
             </div>
+
+            {/* Mobile bell (buyers) */}
+            {loggedIn&&!isSeller&&(
+              <span className="nb-cart-m" style={{display:"none",flexShrink:0}}>
+                <NotificationBell api={notificationApi} dark={false} onNavigate={router.push}/>
+              </span>
+            )}
 
             {/* Mobile cart */}
             <button onClick={handleCart} className="nb-cart-m" aria-label={t("cart")} style={{display:"none",position:"relative",background:"transparent",border:"none",cursor:"pointer",color:"#374151",padding:4,flexShrink:0}}>

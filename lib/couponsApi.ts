@@ -50,6 +50,9 @@ export interface Coupon {
   products_count: number
   products: CouponProduct[]
   created_at: string
+  expires_at?: string | null
+  /** Targeted coupon (Growth Radar): how many buyers can use it — never who */
+  audience_size?: number | null
 }
 
 export interface CouponPayload {
@@ -61,6 +64,9 @@ export interface CouponPayload {
   usage_limit_per_customer?: number | null
   is_active?: boolean
   product_ids: number[]
+  expires_at?: string | null
+  /** Growth Radar card this answers (create only) */
+  growth_card_id?: number
 }
 
 export interface CouponStats {

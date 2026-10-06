@@ -1,5 +1,6 @@
 'use client';
-// BlackPepperHub.tsx
+// BlackPepperHub.tsx — shared Black Pepper sections (elite banner, revenue goals, VIP lounge).
+// The AI hub section moved to Growth Radar (/seller/growth-radar).
 // UPDATED: Replaced ProfitCenterSection with RevenueGoalsSection
 // Everything else is 100% identical to the original.
 
@@ -12,14 +13,10 @@ import {
 } from 'lucide-react';
 import { blackPepperApi } from '@/lib/blackPepperApi';
 import type {
-  AiHubData, RevenueGoalsData,
+  RevenueGoalsData,
   VipRequest, VipRequestType,
 } from '@/lib/blackPepperApi';
-import DailyBriefCard from './black/DailyBriefCard';
 import SmartActionButton from './black/SmartActionButton';
-import ConversionFunnelCard from './black/ConversionFunnelCard';
-import ProductQualityAudit from './black/ProductQualityAudit';
-import SmartPromoteCard from './black/SmartPromoteCard';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { ink } from '@/app/seller/ink';
@@ -160,170 +157,6 @@ export function EliteBanner({ dark }: { dark: boolean }) {
         {[...Array(3)].map((_,i) => <Star key={i} size={14} fill={GOLD} color={GOLD} style={{ opacity: 1-i*0.2 }}/>)}
       </div>
     </div>
-  );
-}
-
-// ---- AI Hub ----------------------------------------------------------------
-
-export function AiHubSection({ dark }: { dark: boolean }) {
-  const [data, setData]       = useState<AiHubData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState<string|null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true); setError(null);
-    try { const r = await blackPepperApi.aiHub(); setData(r.data); }
-    catch (e: any) { setError(e.message ?? 'Failed to load'); }
-    finally { setLoading(false); }
-  }, []);
-  useEffect(() => { load(); }, [load]);
-
-  const textMain  = dark ? '#fff' : '#111';
-  const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';
-  const cardBg    = dark ? '#141209' : '#fff';
-  const cardBdr   = dark ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.18)';
-  const sigColors = { hot:'#ef4444', rising:GOLD, warm:'#10b981' };
-
-  return (
-    <SectionCard title="AI Intelligence"
-      subtitle="Trending products, stock alerts and market insights"
-      icon={Sparkles} dark={dark} collapsible defaultOpen={false}
-      badge={data?.market_insights?.market_temperature==='hot' ? <GoldBadge text="Market Hot"/> : undefined}>
-      {loading && <LoadingGlyph/>}
-      {error && (
-        <div style={{ textAlign:'center', padding:'24px 0' }}>
-          <p style={{ color:ink('#ef4444', dark), fontSize:13 }}>{error}</p>
-          <button onClick={load} style={{ marginTop:8, padding:'8px 16px', borderRadius:8,
-            background:`${GOLD}18`, border:`1px solid ${GOLD}33`, color:ink(GOLD, dark), cursor:'pointer', fontWeight:700, fontSize:12 }}>
-            <RefreshCw size={12} style={{ display:'inline', marginInlineEnd:4 }}/> Retry
-          </button>
-        </div>
-      )}
-      {!loading && !error && data && (
-        <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-          {data.market_insights && (
-            <div style={{ background: dark
-              ? 'linear-gradient(135deg,rgba(245,158,11,0.1),rgba(245,158,11,0.05))'
-              : 'linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.04))',
-              borderRadius:14, border:`1px solid ${GOLD}25`, padding:16 }}>
-              <p style={{ fontSize:15, fontWeight:800, color:ink(GOLD, dark), margin:'0 0 10px' }}>{data.market_insights.headline}</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                {data.market_insights.insights.map((s,i) => (
-                  <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
-                    <span style={{ color:ink(GOLD, dark), fontSize:14, lineHeight:1.5, flexShrink:0 }}>›</span>
-                    <p style={{ fontSize:12, color:textMain, margin:0, fontWeight:500, lineHeight:1.5 }}>{s}</p>
-                  </div>
-                ))}
-              </div>
-              {data.market_insights.priority_action && (
-                <div style={{ marginTop:12, padding:'8px 12px', borderRadius:8, background:`${GOLD}15`, border:`1px solid ${GOLD}25` }}>
-                  <p style={{ fontSize:11, fontWeight:800, color:ink(GOLD, dark), margin:'0 0 2px', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                    Priority Action
-                  </p>
-                  <p style={{ fontSize:12, color:textMain, margin:0, fontWeight:600 }}>{data.market_insights.priority_action}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div>
-            <p style={{ fontSize:12, fontWeight:800, color:ink(GOLD, dark), margin:'0 0 12px', textTransform:'uppercase', letterSpacing:'0.08em',
-              display:'flex', alignItems:'center', gap:6 }}>
-              <TrendingUp size={13}/> Trending Right Now ({data.trending_products.length})
-            </p>
-            {data.trending_products.length===0 ? (
-              <p style={{ fontSize:13, color:textMuted, textAlign:'center', padding:'16px 0' }}>
-                No trending signals yet — keep selling and check back soon.
-              </p>
-            ) : (
-              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                {data.trending_products.map(p => {
-                  const sc = sigColors[p.trend_signal];
-                  const vl = p.velocity_label || velocityLabel(p.velocity_multiplier);
-                  return (
-                    <div key={p.product_id} style={{ background:cardBg, borderRadius:12, border:`1px solid ${cardBdr}`,
-                      padding:'12px 14px', display:'flex', alignItems:'flex-start', gap:12 }}>
-                      {p.image_url
-                        ? <img src={p.image_url} alt={p.product_name} style={{ width:36, height:36, borderRadius:10, objectFit:'cover', flexShrink:0, border:`1px solid ${sc}30` }}/>
-                        : <div style={{ width:36, height:36, borderRadius:10, flexShrink:0, background:`${sc}15`, border:`1px solid ${sc}30`, display:'flex', alignItems:'center', justifyContent:'center' }}><Flame size={16} color={sc}/></div>
-                      }
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
-                          <p style={{ fontSize:13, fontWeight:800, color:textMain, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.product_name}</p>
-                          <span style={{ fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:999, background:`${sc}18`, color:sc, border:`1px solid ${sc}30`, whiteSpace:'nowrap', textTransform:'uppercase' as const }}>
-                            {p.trend_signal==='hot' ? '🔥 Hot' : p.trend_signal==='rising' ? '📈 Rising' : '🌿 Warm'}
-                          </span>
-                        </div>
-                        <p style={{ fontSize:11, color:sc, fontWeight:700, margin:'0 0 2px' }}>{vl}</p>
-                        <p style={{ fontSize:11, color:textMuted, margin:'0 0 8px' }}>{p.insight}</p>
-                        <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-                          <span style={{ fontSize:11, fontWeight:700, color:ink('#10b981', dark) }}>{p.seven_day_units} sold this week</span>
-                          <span style={{ fontSize:11, fontWeight:700, color:ink(GOLD, dark) }}>{fmt(p.seven_day_revenue)}</span>
-                          {(p.smart_actions||[]).map((a,i) => (
-                            <SmartActionButton key={i} label={a.label}
-                              icon={a.type==='promote' ? TrendingUp : a.type==='restock' ? Package : Zap}
-                              href={a.href} color={a.type==='promote' ? 'gold' : a.type==='restock' ? 'red' : 'blue'}
-                              size="sm" dark={dark}/>
-                          ))}
-                          {(!p.smart_actions||p.smart_actions.length===0) && (
-                            <SmartActionButton label="Promote" icon={TrendingUp} href="/seller/promote" color="gold" size="sm" dark={dark}/>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <p style={{ fontSize:12, fontWeight:800, color:ink('#ef4444', dark), margin:'0 0 12px', textTransform:'uppercase', letterSpacing:'0.08em',
-              display:'flex', alignItems:'center', gap:6 }}>
-              <AlertTriangle size={13}/> Stock Alerts ({data.inventory_alerts.length})
-            </p>
-            {data.inventory_alerts.length===0 ? (
-              <div style={{ display:'flex', alignItems:'center', gap:8, padding:'12px 14px', background:'rgba(16,185,129,0.08)', borderRadius:10, border:'1px solid rgba(16,185,129,0.2)' }}>
-                <CheckCircle size={16} color="#10b981"/>
-                <p style={{ fontSize:13, color:ink('#10b981', dark), margin:0, fontWeight:600 }}>You have enough stock for everything right now.</p>
-              </div>
-            ) : (
-              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                {data.inventory_alerts.map(a => {
-                  const uc = a.urgency==='critical' ? '#ef4444' : a.urgency==='high' ? GOLD : '#3b82f6';
-                  const ul = urgencyLabel(a.urgency, a.days_remaining);
-                  return (
-                    <div key={a.product_id} style={{ background:cardBg, borderRadius:12, border:`1px solid ${uc}28`,
-                      padding:'12px 14px', display:'flex', alignItems:'flex-start', gap:12 }}>
-                      {a.image_url
-                        ? <img src={a.image_url} alt={a.product_name} style={{ width:36, height:36, borderRadius:10, objectFit:'cover', flexShrink:0, border:`1px solid ${uc}28` }}/>
-                        : <div style={{ width:36, height:36, borderRadius:10, flexShrink:0, background:`${uc}12`, border:`1px solid ${uc}28`, display:'flex', alignItems:'center', justifyContent:'center' }}><Package size={16} color={uc}/></div>
-                      }
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <p style={{ fontSize:13, fontWeight:800, color:textMain, margin:'0 0 3px' }}>{a.product_name}</p>
-                        <p style={{ fontSize:11, color:uc, fontWeight:700, margin:'0 0 2px' }}>{ul}</p>
-                        <p style={{ fontSize:11, color:textMuted, margin:'0 0 8px', lineHeight:1.4 }}>{a.insight}</p>
-                        <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-                          <span style={{ fontSize:11, fontWeight:700, color:ink('#ef4444', dark) }}>Could lose {fmt(a.revenue_at_risk)}</span>
-                          {(a.smart_actions||[]).map((ac,i) => (
-                            <SmartActionButton key={i} label={ac.label}
-                              icon={ac.type==='restock' ? Package : TrendingUp}
-                              href={ac.href} color={ac.type==='restock' ? 'red' : 'gold'} size="sm" dark={dark}/>
-                          ))}
-                          {(!a.smart_actions||a.smart_actions.length===0) && (
-                            <SmartActionButton label="Restock Now" icon={Package} href="/seller/products" color="red" size="sm" dark={dark}/>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </SectionCard>
   );
 }
 
@@ -797,33 +630,5 @@ export function VipLoungeSection({ dark }: { dark: boolean }) {
         )}
       </div>
     </SectionCard>
-  );
-}
-
-// ---- Main Export -----------------------------------------------------------
-
-export default function BlackPepperHub({ dark }: { dark: boolean }) {
-  return (
-    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-      <div style={{ display:'flex', alignItems:'center', gap:12, margin:'4px 0' }}>
-        <div style={{ flex:1, height:1, background:'rgba(245,158,11,0.2)' }}/>
-        <GoldBadge text="Black Pepper Elite Features"/>
-        <div style={{ flex:1, height:1, background:'rgba(245,158,11,0.2)' }}/>
-      </div>
-
-      {/* Daily Brief is always visible — the first thing sellers see */}
-      <DailyBriefCard dark={dark}/>
-      <EliteBanner dark={dark}/>
-
-      {/* These start collapsed — tap to expand */}
-      <AiHubSection dark={dark}/>
-      <ConversionFunnelCard dark={dark}/>
-      <ProductQualityAudit dark={dark}/>
-      <SmartPromoteCard dark={dark}/>
-      <RevenueGoalsSection dark={dark}/>
-
-      {/* VIP Lounge starts open */}
-      <VipLoungeSection dark={dark}/>
-    </div>
   );
 }

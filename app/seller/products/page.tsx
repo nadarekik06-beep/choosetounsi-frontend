@@ -24,7 +24,8 @@ import {
   Clock, Image as ImageIcon, Eye, Layers,
   RefreshCw,
 } from 'lucide-react';
-import ProductModal from './ProductModal';
+import ProductModal, { type ProductRadarPrefill } from './ProductModal';
+import { growthRadarApi } from '@/lib/growthRadarApi';
 import RestockModal, { type RestockProduct } from '../components/RestockModal';
 import { useTheme } from '../SellerShell';
 import { useTranslations } from 'next-intl';
@@ -107,9 +108,15 @@ export default function ProductsPage() {
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
+  // Opened from a Growth Radar card: prefill + the card to mark as applied on save
+  const [radar, setRadar] = useState<(ProductRadarPrefill & { cardId: number; kind: 'edit' | 'listing' }) | null>(null);
+
   const openAddModal = () => setModal({ open: true, product: null });
-  const closeModal   = () => setModal(MODAL_CLOSED);
-  const handleSaved  = () => { closeModal(); fetchProducts(); };
+  const closeModal   = () => { setModal(MODAL_CLOSED); setRadar(null); };
+  const handleSaved  = () => {
+    if (radar) growthRadarApi.applied(radar.cardId, radar.kind).catch(() => {});
+    closeModal(); fetchProducts();
+  };
 
   /** After a delete the row must go: step back a page when it was the last one shown. */
   const refreshAfterDelete = () => {
@@ -195,13 +202,26 @@ export default function ProductsPage() {
   // Deep links from forecast actions / product alerts:
   //   /seller/products?restock=<id>  → restock modal
   //   /seller/products?edit=<id>     → product form (AI description panel included)
+  // Growth Radar cards add: &focus=photos|description|price&price=…&card=…, or
+  //   /seller/products?create=1&name=…&category=…&card=…  → new product form
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const restockId = Number(q.get('restock'));
     const editId    = Number(q.get('edit'));
-    if (!restockId && !editId) return;
+    const create    = q.get('create') === '1';
+    const cardId    = Number(q.get('card')) || 0;
+    if (!restockId && !editId && !create) return;
     window.history.replaceState(null, '', window.location.pathname);
+    const focus = q.get('focus');
+    if (cardId) setRadar({
+      cardId, kind: create ? 'listing' : 'edit',
+      focus: focus === 'photos' || focus === 'description' || focus === 'price' ? focus : undefined,
+      price: q.get('price') ? Number(q.get('price')) : undefined,
+      name: q.get('name') ?? undefined,
+      categoryId: Number(q.get('category')) || undefined,
+    });
     if (restockId) handleRestock({ id: restockId } as Product);
+    else if (create) openAddModal();
     else handleEdit({ id: editId } as Product);
   }, []);
 
@@ -585,7 +605,7 @@ export default function ProductsPage() {
 
       {/* Edit / Add modal */}
       {modal.open && (
-        <ProductModal product={modal.product} onClose={closeModal} onSaved={handleSaved} />
+        <ProductModal product={modal.product} radar={radar} onClose={closeModal} onSaved={handleSaved} />
       )}
 
       {/* Toast */}

@@ -27,13 +27,23 @@ interface SellerProduct {
   primary_image_url: string | null
 }
 
-/** Opened from the product form after a seller tried to lower a price. */
+/**
+ * Opened pre-filled: from the product form after a seller tried to lower a price,
+ * or from a Growth Radar card (type, products, dates, growthCardId).
+ */
 export interface PromotionPrefill {
   productId: number
   discountType: 'percentage' | 'fixed'
   discountValue: number
   /** Price the seller wanted customers to pay (base-price drops only) */
   target?: number
+  type?: 'flash_sale' | 'discount'
+  productIds?: number[]
+  /** datetime-local values (YYYY-MM-DDTHH:mm) */
+  startsAt?: string
+  endsAt?: string
+  /** Growth Radar card this promotion answers — sent so the result can be measured */
+  growthCardId?: number
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -342,14 +352,14 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
 
   // ── Form state ──────────────────────────────────────────────────────────────
   const [name,          setName]          = useState(promotion?.name           ?? '')
-  const [type,          setType]          = useState<'flash_sale' | 'discount'>(promotion?.type ?? (prefill ? 'discount' : 'flash_sale'))
+  const [type,          setType]          = useState<'flash_sale' | 'discount'>(promotion?.type ?? prefill?.type ?? (prefill ? 'discount' : 'flash_sale'))
   const [discountType,  setDiscountType]  = useState<'percentage' | 'fixed'>(promotion?.discount_type ?? prefill?.discountType ?? 'percentage')
   const [discountValue, setDiscountValue] = useState(promotion?.discount_value?.toString() ?? prefill?.discountValue?.toString() ?? '')
-  const [startsAt,      setStartsAt]      = useState(promotion ? toLocalDateTimeInput(promotion.starts_at) : prefill ? inDays(0) : '')
-  const [endsAt,        setEndsAt]        = useState(promotion ? toLocalDateTimeInput(promotion.ends_at) : prefill ? inDays(14) : '')
+  const [startsAt,      setStartsAt]      = useState(promotion ? toLocalDateTimeInput(promotion.starts_at) : prefill ? (prefill.startsAt ?? inDays(0)) : '')
+  const [endsAt,        setEndsAt]        = useState(promotion ? toLocalDateTimeInput(promotion.ends_at) : prefill ? (prefill.endsAt ?? inDays(14)) : '')
   const [flashStock,    setFlashStock]    = useState(promotion?.flash_stock?.toString() ?? '')
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>(
-    promotion?.products?.map(p => p.id) ?? (prefill ? [prefill.productId] : [])
+    promotion?.products?.map(p => p.id) ?? (prefill ? (prefill.productIds ?? [prefill.productId]) : [])
   )
 
   // Product picker
@@ -459,6 +469,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
       starts_at:      toISOFromInput(startsAt),
       ends_at:        toISOFromInput(endsAt),
       product_ids:    selectedProductIds,
+      ...(!isEdit && prefill?.growthCardId ? { growth_card_id: prefill.growthCardId } : {}),
       ...(type === 'flash_sale' && flashStock
         ? { flash_stock: parseInt(flashStock) }
         : {}),
@@ -554,6 +565,11 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
         </div>
 
         <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {prefill?.growthCardId && (
+            <div style={{ background: 'rgba(219,20,46,0.06)', border: '1px solid rgba(219,20,46,0.25)', borderRadius: 12, padding: '10px 14px', fontSize: 12, color: '#9f1239' }}>
+              {t('fromRadar')}
+            </div>
+          )}
           {prefill && prefillProduct && prefill.target != null && (
             <div style={{ background: 'rgba(25,143,65,0.07)', border: '1px solid rgba(25,143,65,0.3)', borderRadius: 12, padding: '10px 14px', fontSize: 12, color: '#166534' }}>
               {t('prefill', { price: dt(prefill.target), was: dt(Math.min(prefillProduct.price, prefillProduct.reference_price)) })}

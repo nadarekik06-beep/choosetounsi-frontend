@@ -64,60 +64,6 @@ export interface SmartAction {
   type:  'restock' | 'promote' | 'flash_sale' | 'edit' | 'default';
 }
 
-// ─── AI Hub ───────────────────────────────────────────────────────────────────
-
-export interface TrendingProduct {
-  product_id:          number;
-  product_name:        string;
-  category:            string;
-  price:               number;
-  current_stock:       number;
-  seven_day_units:     number;
-  seven_day_revenue:   number;
-  daily_velocity:      number;
-  thirty_day_avg:      number;
-  velocity_multiplier: number;
-  trend_signal:        'hot' | 'rising' | 'warm';
-  insight:             string;
-  velocity_label:      string;
-  image_url:           string | null;
-  smart_actions:       SmartAction[];
-}
-
-export interface InventoryAlert {
-  product_id:      number;
-  product_name:    string;
-  category:        string;
-  current_stock:   number;
-  daily_sales_avg: number;
-  days_remaining:  number;
-  urgency:         'critical' | 'high' | 'medium';
-  revenue_at_risk: number;
-  restock_units:   number;
-  insight:         string;
-  image_url:       string | null;
-  smart_actions:   SmartAction[];
-}
-
-export interface MarketInsights {
-  headline:           string;
-  insights:           string[];
-  priority_action:    string;
-  market_temperature: 'hot' | 'warm' | 'cooling' | 'cold';
-}
-
-export interface AiHubData {
-  trending_products: TrendingProduct[];
-  inventory_alerts:  InventoryAlert[];
-  market_insights:   MarketInsights;
-  meta: {
-    trending_count: number;
-    alert_count:    number;
-    critical_count: number;
-    generated_at:   string;
-  };
-}
-
 // ─── Revenue Goals ────────────────────────────────────────────────────────────
 
 export interface RevenueGoalMonth {
@@ -195,32 +141,12 @@ export interface QualityAuditProduct {
   tips:         QualityAuditTip[];
 }
 
-// ─── Auto-Promote ─────────────────────────────────────────────────────────────
-
-export interface AutoPromoteSuggestion {
-  product_id:           number;
-  product_name:         string;
-  category:             string;
-  image_url:            string | null;
-  trend_signal:         'hot' | 'rising' | 'warm';
-  velocity_label:       string;
-  seven_day_revenue:    string;
-  velocity_multiplier:  number;
-  rationale:            string;
-  boost_explanation:    string;
-  estimated_boost_tnd:  number;
-  already_sponsored:    boolean;
-}
-
 // ─── API client ───────────────────────────────────────────────────────────────
 
 export const blackPepperApi = {
 
   dailyBrief: () =>
     jsonRequest<{ success: boolean; data: DailyBriefData }>('GET', '/seller/black/daily-brief'),
-
-  aiHub: () =>
-    jsonRequest<{ success: boolean; data: AiHubData }>('GET', '/seller/black/ai-hub'),
 
   // ── Revenue Goals (replaces profitCenter) ──────────────────────────────────
   revenueGoals: () =>
@@ -239,9 +165,6 @@ export const blackPepperApi = {
 
   qualityAudit: () =>
     jsonRequest<{ success: boolean; data: QualityAuditProduct[] }>('GET', '/seller/black/quality-audit'),
-
-  autoPromoteSuggestions: () =>
-    jsonRequest<{ success: boolean; data: AutoPromoteSuggestion[] }>('GET', '/seller/black/auto-promote-suggestions'),
 
   submitVipRequest: (type: VipRequestType, message: string) =>
     jsonRequest<{ success: boolean; message: string; data: VipRequest }>('POST', '/seller/black/vip-request', {

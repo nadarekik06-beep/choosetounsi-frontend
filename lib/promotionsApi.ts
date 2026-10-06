@@ -66,6 +66,8 @@ export interface PromotionPayload {
   ends_at: string
   flash_stock?: number | null
   product_ids: number[]
+  /** Growth Radar card this answers (create only) */
+  growth_card_id?: number
 }
 
 export interface ActivePromotion {

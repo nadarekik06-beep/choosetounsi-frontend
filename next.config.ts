@@ -26,6 +26,13 @@ if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_SITE_URL) 
 }
 
 const nextConfig: NextConfig = {
+  // The Black Pepper "AI Intelligence" and "Intelligent Promotion" pages were replaced by Growth Radar
+  async redirects() {
+    return [
+      { source: '/seller/black/ai-intelligence',  destination: '/seller/growth-radar', permanent: true },
+      { source: '/seller/black/smart-promotions', destination: '/seller/growth-radar', permanent: true },
+    ];
+  },
   images: {
     remotePatterns: [
       {

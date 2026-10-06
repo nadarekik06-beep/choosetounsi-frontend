@@ -10,7 +10,7 @@ import {
   XCircle, Pause, Ticket, Users,
 } from 'lucide-react'
 import PromotionModal, { type PromotionPrefill } from './PromotionModal'
-import CouponModal from './CouponModal'
+import CouponModal, { type CouponPrefill } from './CouponModal'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { ink } from '@/app/seller/ink';
@@ -120,19 +120,48 @@ export default function PromotionsPage() {
 
   useEffect(() => { load() }, [load])
 
-  // Opened from the product form after a price cut: /seller/promotions?create=discount&product=…
+  // Opened pre-filled: from the product form after a price cut
+  //   /seller/promotions?create=discount&product=…
+  // or from a Growth Radar card (see lib/growthRadarApi.ts → growthActionHref)
+  //   ?create=discount|flash_sale&product=1,2&starts_at=…&ends_at=…&card=…
+  //   ?create=coupon&product=…&discount_value=…&days=…&audience=…&card=…
   const [prefill, setPrefill] = useState<PromotionPrefill | null>(null)
+  const [couponPrefill, setCouponPrefill] = useState<CouponPrefill | null>(null)
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
-    if (q.get('create') !== 'discount' || !q.get('product')) return
-    setSection('promotions')
-    setPrefill({
-      productId:     Number(q.get('product')),
-      discountType:  q.get('discount_type') === 'percentage' ? 'percentage' : 'fixed',
-      discountValue: Number(q.get('discount_value')) || 0,
-      target:        q.get('target') ? Number(q.get('target')) : undefined,
-    })
-    setModal({ open: true, promotion: null })
+    const create = q.get('create')
+    const ids = (q.get('product') ?? '').split(',').map(Number).filter(n => n > 0)
+    const card = Number(q.get('card')) || undefined
+    if (!create || !ids.length) return
+    if (create === 'coupon') {
+      setSection('coupons')
+      setCouponPrefill({
+        productIds: ids,
+        discountType: q.get('discount_type') === 'fixed' ? 'fixed' : 'percentage',
+        discountValue: Number(q.get('discount_value')) || 0,
+        days: Number(q.get('days')) || 7,
+        perCustomer: Number(q.get('per_customer')) || undefined,
+        audience: Number(q.get('audience')) || undefined,
+        growthCardId: card,
+      })
+      setCouponModal({ open: true, coupon: null })
+    } else if (create === 'discount' || create === 'flash_sale') {
+      setSection('promotions')
+      setPrefill({
+        productId:     ids[0],
+        productIds:    ids,
+        type:          card ? create : undefined,
+        discountType:  q.get('discount_type') === 'percentage' ? 'percentage' : 'fixed',
+        discountValue: Number(q.get('discount_value')) || 0,
+        target:        q.get('target') ? Number(q.get('target')) : undefined,
+        startsAt:      q.get('starts_at') ?? undefined,
+        endsAt:        q.get('ends_at') ?? undefined,
+        growthCardId:  card,
+      })
+      setModal({ open: true, promotion: null })
+    } else {
+      return
+    }
     window.history.replaceState(null, '', window.location.pathname)
   }, [])
 
@@ -400,8 +429,9 @@ export default function PromotionsPage() {
       {couponModal.open && (
         <CouponModal
           coupon={couponModal.coupon}
-          onClose={() => setCouponModal({ open: false, coupon: null })}
-          onSaved={() => { setCouponModal({ open: false, coupon: null }); loadCoupons() }}
+          prefill={couponModal.coupon ? null : couponPrefill}
+          onClose={() => { setCouponModal({ open: false, coupon: null }); setCouponPrefill(null) }}
+          onSaved={() => { setCouponModal({ open: false, coupon: null }); setCouponPrefill(null); loadCoupons() }}
         />
       )}
       </>
@@ -422,7 +452,7 @@ function CouponCard({
   onEdit: () => void; onDelete: () => void; deleting: boolean
 }) {
   const t = useTranslations('seller.promotions')
-  const { price } = useFormat()
+  const { price, date } = useFormat()
   const { dark } = useTheme()
   return (
     <div
@@ -452,6 +482,21 @@ function CouponCard({
         </div>
 
         <p style={{ fontSize: 22, fontWeight: 900, margin: 0, color: '#dc2626' }}>{coupon.discount_label}</p>
+
+        {(coupon.audience_size || coupon.expires_at) && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {!!coupon.audience_size && (
+              <span style={{ fontSize: 10.5, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: 'rgba(236,72,153,0.12)', color: ink('#ec4899', dark) }}>
+                {t('targeted', { count: coupon.audience_size })}
+              </span>
+            )}
+            {coupon.expires_at && (
+              <span style={{ fontSize: 10.5, fontWeight: 700, padding: '3px 8px', borderRadius: 999, background: subBg, color: textMuted }}>
+                {t('endsOn', { date: date(coupon.expires_at, { day: 'numeric', month: 'short' }) })}
+              </span>
+            )}
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {coupon.min_order_amount != null && (

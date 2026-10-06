@@ -132,6 +132,8 @@ export interface CampaignInput {
   target_category_ids?: number[] | null
   target_price_min?: number | null
   target_price_max?: number | null
+  /** Growth Radar card this boost answers */
+  growth_card_id?: number
 }
 
 /** Error thrown for non-2xx answers; `code` is the backend's machine code (WALLET_TOO_LOW, NOT_READY, …). */

@@ -224,13 +224,22 @@ function Field({ label, required, error, hint, children, labelAction }: {
   )
 }
 
+/** Opened from a Growth Radar card: starting values and the part of the form to show first. */
+export interface ProductRadarPrefill {
+  name?: string
+  price?: number
+  categoryId?: number
+  focus?: 'photos' | 'description' | 'price'
+}
+
 interface ProductModalProps {
   product: Record<string, any> | null
+  radar?: ProductRadarPrefill | null
   onClose: () => void
   onSaved: () => void
 }
 
-export default function ProductModal({ product, onClose, onSaved }: ProductModalProps) {
+export default function ProductModal({ product, radar, onClose, onSaved }: ProductModalProps) {
   const isEdit   = !!product
   const p        = product as FullProduct | null
   // Live (approved) products are edited directly; changes are logged for the admin
@@ -243,17 +252,22 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   const t = useTranslations('seller.productForm')
   const { currency } = useFormat()
   const [priceDrops, setPriceDrops] = useState<PriceDrop[] | null>(null)
+  useEffect(() => {
+    if (!radar?.focus) return
+    const id = setTimeout(() => document.getElementById(`pf-${radar.focus}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 400)
+    return () => clearTimeout(id)
+  }, [radar?.focus])
   const [discountBusy, setDiscountBusy] = useState(false)
 
   const [form, setForm] = useState({
-    name:              (p?.name              ?? '') as string,
+    name:              (p?.name              ?? radar?.name ?? '') as string,
     slug:              (p?.slug              ?? '') as string,
     sku:               (p?.sku               ?? '') as string,
     description:       (p?.description       ?? '') as string,
     short_description: (p?.short_description ?? '') as string,
-    price:             p?.price?.toString()         ?? '',
+    price:             radar?.price?.toString() ?? p?.price?.toString() ?? '',
     stock:             p?.stock?.toString()         ?? '0',
-    category_id:       p?.category_id?.toString()   ?? '',
+    category_id:       p?.category_id?.toString()   ?? radar?.categoryId?.toString() ?? '',
     subcategory_id:    p?.subcategory_id != null ? String(p.subcategory_id) : '',
     is_active:         p?.is_active ?? true,
     is_pack:           !!(p as any)?.is_pack,
@@ -658,6 +672,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                   <input value={form.short_description} onChange={e => set('short_description', e.target.value)} maxLength={500} placeholder={t('shortDescriptionPlaceholder')} className={inputCls()} />
                 </Field>
                 <Field label={t('description')}>
+                  <span id="pf-description" />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <textarea rows={4} value={form.description} onChange={e => set('description', e.target.value)} placeholder={t('descriptionPlaceholder')} className={`${inputCls()} resize-none`} />
                     <AiDescriptionPanel
@@ -683,7 +698,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
             {/* ── Pricing & Inventory ── */}
             <section>
               <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>{t('sections.pricing')}</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div id="pf-price" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                 <Field label={t('basePrice', { currency })} required error={errors.price}
                   hint={isLive && pricing?.discount_rule ? t('priceLowerHint') : undefined}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -848,7 +863,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
             )}
 
             {/* ── Images: color groups (shared by all sizes) or a single gallery ── */}
-            <section>
+            <section id="pf-photos">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 14 }}>
                 <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', margin: 0 }}>
                   {colorGroups ? t('sections.colorImages') : t('sections.images')}

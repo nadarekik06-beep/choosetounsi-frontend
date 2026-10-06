@@ -7,7 +7,7 @@
  *   • Welcome strip with Today's Brief inline
  *   • 4 metric cards (Revenue, Orders, Trending, AI Usage)
  *   • Quick Actions row
- *   • 6 feature gateway cards, each linking to its own dedicated page
+ *   • Feature gateway cards (Growth Radar first), each linking to its own page
  *
  * No accordions. No wall of information. One page — one clear entry point.
  */
@@ -16,7 +16,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Crown, Brain, Eye, Star, TrendingUp, DollarSign,
+  Crown, Eye, Star, TrendingUp, DollarSign, Radar,
   Zap, Users, Package, ShoppingBag, RefreshCw,
   ArrowRight, Sparkles, AlertTriangle,
 } from 'lucide-react';
@@ -244,12 +244,11 @@ export default function BlackOverviewPage() {
 
   const features: FeatureCard[] = [
     {
-      href:     '/seller/black/ai-intelligence',
-      title:    t('features.ai.title'),
-      subtitle: t('features.ai.subtitle'),
-      icon:     Brain,
-      accent:   '#a78bfa',
-      badge:    brief?.trending_count ? { text: t('features.ai.badge', { count: brief.trending_count }), color: ink('#a78bfa', dark) } : undefined,
+      href:     '/seller/growth-radar',
+      title:    t('features.growth.title'),
+      subtitle: t('features.growth.subtitle'),
+      icon:     Radar,
+      accent:   '#db142e',
     },
     {
       href:     '/seller/black/visitor-insights',
@@ -264,13 +263,6 @@ export default function BlackOverviewPage() {
       subtitle: t('features.quality.subtitle'),
       icon:     Star,
       accent:   '#c084fc',
-    },
-    {
-      href:     '/seller/black/smart-promotions',
-      title:    t('features.smart.title'),
-      subtitle: t('features.smart.subtitle'),
-      icon:     TrendingUp,
-      accent:   GOLD,
     },
     {
       href:     '/seller/black/profit',
@@ -408,7 +400,7 @@ export default function BlackOverviewPage() {
           </p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <QuickAction href="/seller/products/new"          label={t('quick.addProduct')} icon={Package}     accent="#db142e" dark={dark} />
-            <QuickAction href="/seller/black/ai-intelligence" label={t('quick.aiTools')} icon={Brain}       accent="#a78bfa" dark={dark} />
+            <QuickAction href="/seller/growth-radar"          label={t('quick.growth')} icon={Radar}       accent="#db142e" dark={dark} />
             <QuickAction href="/seller/promote"               label={t('quick.boost')} icon={Zap}         accent={GOLD}    dark={dark} />
             <QuickAction href="/seller/black/profit"          label={t('quick.goals')} icon={DollarSign}  accent="#34d399" dark={dark} />
             <QuickAction href="/seller/black/vip-lounge"      label={t('quick.vip')} icon={Crown}       accent={GOLD}    dark={dark} />

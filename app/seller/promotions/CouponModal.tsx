@@ -24,27 +24,47 @@ function computeEffectivePrice(basePrice: number, discountType: 'percentage' | '
 
 // ─── Modal ─────────────────────────────────────────────────────────────────────
 
+/** Opened from a Growth Radar card: a coupon private to the product's interested buyers. */
+export interface CouponPrefill {
+  productIds: number[]
+  discountType: 'percentage' | 'fixed'
+  discountValue: number
+  days: number
+  perCustomer?: number
+  /** Size of the warm audience (the server re-checks it and attaches the buyers) */
+  audience?: number
+  growthCardId?: number
+}
+
 interface CouponModalProps {
   coupon: Coupon | null
+  prefill?: CouponPrefill | null
   onClose: () => void
   onSaved: () => void
 }
 
-export default function CouponModal({ coupon, onClose, onSaved }: CouponModalProps) {
+const dateInDays = (d: number) => {
+  const x = new Date(Date.now() + d * 86400000)
+  return new Date(x.getTime() - x.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+}
+
+export default function CouponModal({ coupon, prefill, onClose, onSaved }: CouponModalProps) {
   const isEdit = !!coupon
   const t  = useTranslations('seller.couponForm')
   const tp = useTranslations('seller.promotionForm')
   const { price, currency } = useFormat()
   const dt = (n: number) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
 
-  const [code,                    setCode]                   = useState(coupon?.code ?? '')
-  const [discountType,            setDiscountType]            = useState<'percentage' | 'fixed'>(coupon?.discount_type ?? 'percentage')
-  const [discountValue,           setDiscountValue]           = useState(coupon?.discount_value?.toString() ?? '')
+  const [code,                    setCode]                   = useState(coupon?.code ?? (prefill ? `VIP${Math.random().toString(36).slice(2, 7).toUpperCase()}` : ''))
+  const [discountType,            setDiscountType]            = useState<'percentage' | 'fixed'>(coupon?.discount_type ?? prefill?.discountType ?? 'percentage')
+  const [discountValue,           setDiscountValue]           = useState(coupon?.discount_value?.toString() ?? prefill?.discountValue?.toString() ?? '')
   const [minOrderAmount,          setMinOrderAmount]          = useState(coupon?.min_order_amount?.toString() ?? '')
   const [usageLimit,              setUsageLimit]              = useState(coupon?.usage_limit?.toString() ?? '')
-  const [usageLimitPerCustomer,   setUsageLimitPerCustomer]   = useState(coupon?.usage_limit_per_customer?.toString() ?? '')
+  const [usageLimitPerCustomer,   setUsageLimitPerCustomer]   = useState(coupon?.usage_limit_per_customer?.toString() ?? prefill?.perCustomer?.toString() ?? '')
   const [isActive,                setIsActive]                = useState(coupon?.is_active ?? true)
-  const [selectedProductIds, setSelectedProductIds] = useState<number[]>(coupon?.products?.map(p => p.id) ?? [])
+  const [selectedProductIds, setSelectedProductIds] = useState<number[]>(coupon?.products?.map(p => p.id) ?? prefill?.productIds ?? [])
+  const [expiresAt, setExpiresAt] = useState(coupon?.expires_at?.slice(0, 10) ?? (prefill ? dateInDays(prefill.days) : ''))
+  const targeted = !isEdit && !!prefill?.audience
 
   const [products,    setProducts]    = useState<SellerProduct[]>([])
   const [prodLoading, setProdLoading] = useState(false)
@@ -104,6 +124,9 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
       usage_limit_per_customer: usageLimitPerCustomer ? parseInt(usageLimitPerCustomer) : null,
       is_active: isActive,
       product_ids: selectedProductIds,
+      // end of that day in the seller's timezone, sent as UTC
+      ...(!isEdit && expiresAt ? { expires_at: new Date(`${expiresAt}T23:59:59`).toISOString() } : {}),
+      ...(!isEdit && prefill?.growthCardId ? { growth_card_id: prefill.growthCardId } : {}),
     }
 
     try {
@@ -167,6 +190,17 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
         </div>
 
         <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {targeted && (
+            <div style={{ background: 'rgba(236,72,153,0.07)', border: '1px solid rgba(236,72,153,0.3)', borderRadius: 12, padding: '12px 14px', fontSize: 12.5, color: '#9d174d', lineHeight: 1.5 }}>
+              <strong style={{ display: 'block', marginBottom: 2 }}>{t('targetedTitle', { count: prefill!.audience! })}</strong>
+              {t('targetedBody')}
+            </div>
+          )}
+          {!targeted && prefill?.growthCardId && (
+            <div style={{ background: 'rgba(219,20,46,0.06)', border: '1px solid rgba(219,20,46,0.25)', borderRadius: 12, padding: '10px 14px', fontSize: 12, color: '#9f1239' }}>
+              {tp('fromRadar')}
+            </div>
+          )}
           {apiError && (
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '12px 14px', fontSize: 13, color: '#dc2626' }}>
               <AlertCircle size={15} style={{ flexShrink: 0 }} /> {apiError}
@@ -246,6 +280,12 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
                   />
                 </Field>
               </div>
+
+              {!isEdit && (
+                <Field label={t('expiresAt')} error={errors.expires_at}>
+                  <input type="date" value={expiresAt} min={dateInDays(1)} onChange={e => setExpiresAt(e.target.value)} style={inputBase} />
+                </Field>
+              )}
 
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                 <div

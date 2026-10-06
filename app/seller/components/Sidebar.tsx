@@ -7,7 +7,7 @@ import {
   ChevronLeft, ChevronRight, LogOut, Home, Sun, Moon,
   AlertTriangle, BarChart2, Brain, Lock, Crown,
   Tag, Package2, TrendingUp, Eye, Star, DollarSign,
-  Users, Megaphone, ChevronDown, ChevronUp, CreditCard, Wallet, X, Store, Globe,
+  Users, Megaphone, ChevronDown, ChevronUp, CreditCard, Wallet, X, Store, Globe, Radar,
 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useLanguage } from '@/components/i18n/LanguageSwitcher';
@@ -29,7 +29,9 @@ const CUSTOMER_NAV = [
   { href: '/seller/complaints', label: 'complaints', icon: AlertTriangle },
   { href: '/seller/reviews',    label: 'reviews',    icon: Star },
 ];
+// Growth Radar is listed for every plan: Red/Green see their score + one locked card
 const GROWTH_NAV = [
+  { href: '/seller/growth-radar', label: 'growthRadar', icon: Radar },
   { href: '/seller/promotions', label: 'promotions', icon: Tag },
   { href: '/seller/promote',    label: 'promote',    icon: Megaphone },
 ];
@@ -40,10 +42,8 @@ const RED_NAV = [
 ];
 const BLACK_NAV = [
   { href: '/seller/black',                  label: 'eliteOverview',   icon: Crown,      accent: '#fbbf24', accentLight: '#92400e' },
-  { href: '/seller/black/ai-intelligence',  label: 'aiIntelligence',  icon: Brain,      accent: '#c4b5fd', accentLight: '#6d28d9' },
   { href: '/seller/black/visitor-insights', label: 'visitorInsights', icon: Eye,        accent: '#93c5fd', accentLight: '#1d4ed8' },
   { href: '/seller/black/listing-quality',  label: 'listingQuality',  icon: Star,       accent: '#d8b4fe', accentLight: '#7e22ce' },
-  { href: '/seller/black/smart-promotions', label: 'smartPromotions', icon: TrendingUp, accent: '#fbbf24', accentLight: '#92400e' },
   { href: '/seller/black/profit',           label: 'profitCenter',    icon: DollarSign, accent: '#6ee7b7', accentLight: '#047857' },
   { href: '/seller/black/vip-lounge',       label: 'vipLounge',       icon: Users,      accent: '#fbbf24', accentLight: '#92400e' },
 ];

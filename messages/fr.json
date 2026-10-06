@@ -2381,10 +2381,8 @@
       "analytics": "Statistiques",
       "aiTools": "Outils IA",
       "eliteOverview": "Vue Élite",
-      "aiIntelligence": "Intelligence IA",
       "visitorInsights": "Analyse des visiteurs",
       "listingQuality": "Qualité des fiches",
-      "smartPromotions": "Promotions intelligentes",
       "profitCenter": "Centre de profit",
       "vipLounge": "Salon VIP",
       "tierRed": "● Red Pepper",
@@ -2401,7 +2399,8 @@
       "collapse": "Réduire",
       "expand": "Agrandir",
       "signOut": "Se déconnecter",
-      "language": "Langue ({code})"
+      "language": "Langue ({code})",
+      "growthRadar": "Growth Radar"
     },
     "topbar": {
       "title": "Tableau de bord",
@@ -3605,7 +3604,9 @@
         "scheduled": "Programmée",
         "paused": "En pause",
         "expired": "Expirée"
-      }
+      },
+      "targeted": "Privé · {count} acheteurs",
+      "endsOn": "Fin le {date}"
     },
     "promotionForm": {
       "commissionHeader": "{plan} Pepper · Commission après remise",
@@ -3663,7 +3664,8 @@
         "saveFailed": "Échec de l'enregistrement. Veuillez réessayer."
       },
       "prefill": "Pré-rempli depuis votre changement de prix : les clients paieront {price} au lieu de {was}.",
-      "referencePrice": "Prix barré : {price} (le plus bas des 30 derniers jours)"
+      "referencePrice": "Prix barré : {price} (le plus bas des 30 derniers jours)",
+      "fromRadar": "Pré-rempli par Growth Radar — ajustez ce que vous voulez avant d'enregistrer."
     },
     "couponForm": {
       "editTitle": "Modifier le coupon",
@@ -3686,7 +3688,11 @@
         "max100": "Ne peut pas dépasser 100 %.",
         "negative": "Ne peut pas être négatif.",
         "atLeast1": "Doit être au moins 1."
-      }
+      },
+      "targetedTitle": "Code privé pour {count} acheteurs intéressés",
+      "targetedBody": "Seuls les acheteurs qui ont mis ce produit en favori ou l'ont laissé dans leur panier peuvent l'utiliser. Ils le reçoivent en notification (par e-mail seulement s'ils l'ont accepté). Vous ne voyez jamais qui ils sont.",
+      "expiresAt": "Valable jusqu'au",
+      "audienceTooSmall": "Pas assez d'acheteurs intéressés pour l'instant — réessayez plus tard."
     },
     "revenueGoals": {
       "title": "Objectifs de chiffre d'affaires",
@@ -3750,17 +3756,12 @@
       "quick": {
         "title": "Actions rapides",
         "addProduct": "Ajouter un produit",
-        "aiTools": "Lancer les outils IA",
         "boost": "Booster un produit",
         "goals": "Objectifs de revenus",
-        "vip": "Demande VIP"
+        "vip": "Demande VIP",
+        "growth": "Growth Radar"
       },
       "features": {
-        "ai": {
-          "title": "Intelligence IA",
-          "subtitle": "Produits tendance, alertes de stock et analyses de marché en temps réel grâce à l'IA.",
-          "badge": "{count, plural, one {# en tendance} other {# en tendance}}"
-        },
         "visitors": {
           "title": "Analyse des visiteurs",
           "subtitle": "Voyez quels produits attirent des visiteurs sans convertir — et corrigez-les vite."
@@ -3768,10 +3769,6 @@
         "quality": {
           "title": "Qualité des fiches",
           "subtitle": "Scores de qualité des produits avec des conseils d'amélioration pas à pas pour chaque fiche."
-        },
-        "smart": {
-          "title": "Promotions intelligentes",
-          "subtitle": "L'IA détecte vos produits les plus demandés et recommande le meilleur moment pour les sponsoriser."
         },
         "goals": {
           "title": "Objectifs de revenus",
@@ -3781,20 +3778,16 @@
           "title": "VIP Lounge",
           "subtitle": "Demandez des reels, des promotions sur mesure ou un support prioritaire directement à notre équipe.",
           "badge": "Exclusif"
+        },
+        "growth": {
+          "title": "Growth Radar",
+          "subtitle": "Votre score de la semaine et les actions qui valent le coup, à un clic — résultats mesurés."
         }
       },
       "pages": {
-        "ai": {
-          "title": "Intelligence IA",
-          "subtitle": "Produits tendance, alertes de stock et analyses de marché — mis à jour toutes les 6 heures."
-        },
         "quality": {
           "title": "Qualité des fiches",
           "subtitle": "Scores de vos fiches produits avec conseils d'amélioration — de meilleures fiches = plus de ventes."
-        },
-        "smart": {
-          "title": "Promotions intelligentes",
-          "subtitle": "L'IA détecte les produits tendance et recommande le bon moment pour les sponsoriser."
         },
         "visitors": {
           "title": "Analyse des visiteurs",
@@ -3839,47 +3832,6 @@
         "rejected": "Refusée"
       }
     },
-    "aiHub": {
-      "title": "Intelligence IA",
-      "subtitle": "Produits tendance, alertes de stock et analyses de marché",
-      "trendingBadge": "{count} en tendance",
-      "criticalBadge": "{count, plural, one {# critique} other {# critiques}}",
-      "refresh": "Actualiser",
-      "retry": "Réessayer",
-      "loadError": "Impossible de charger les données IA.",
-      "noTrends": "Aucune tendance forte détectée cette semaine. Revenez demain.",
-      "noAlerts": "Tous les produits ont un stock suffisant. Aucun réapprovisionnement nécessaire.",
-      "priorityAction": "Action prioritaire",
-      "tabs": {
-        "trending": "Tendances ({count})",
-        "alerts": "Alertes stock ({count})",
-        "insights": "Analyse du marché"
-      },
-      "signal": {
-        "hot": "Très demandé",
-        "rising": "En hausse",
-        "warm": "Stable"
-      },
-      "urgency": {
-        "critical": "Critique",
-        "high": "Élevée",
-        "medium": "Moyenne"
-      },
-      "temp": {
-        "hot": "Marché très actif",
-        "warm": "Marché actif",
-        "cooling": "Marché en ralentissement",
-        "cold": "Marché calme"
-      },
-      "stats": {
-        "thisWeek": "Cette semaine",
-        "sold": "{count} vendus",
-        "revenue": "Revenus",
-        "stockLeft": "Stock restant",
-        "daysLeft": "Jours restants",
-        "revenueRisk": "Revenus à risque"
-      }
-    },
     "funnel": {
       "title": "Analyse des visiteurs",
       "needAttention": "{count, plural, one {# à revoir} other {# à revoir}}",
@@ -3897,24 +3849,6 @@
         "opportunity": "Potentiel"
       },
       "try": "À essayer :"
-    },
-    "smartPromote": {
-      "title": "Promotions intelligentes",
-      "ready": "{count, plural, one {# prêt} other {# prêts}}",
-      "subtitle": "{count, plural, one {# produit tendance pas encore sponsorisé} other {# produits tendance pas encore sponsorisés}} — est. +{amount}",
-      "allSponsored": "Tous les produits tendance sont déjà sponsorisés",
-      "allSponsoredLong": "Tous les produits tendance sont déjà sponsorisés. Vous maximisez votre visibilité.",
-      "loadError": "Impossible de charger les suggestions.",
-      "retry": "Réessayer",
-      "intro": "Ces produits se vendent vite mais ne sont pas encore mis en avant. Les sponsoriser les place devant plus d'acheteurs au bon moment.",
-      "hot": "Produit très demandé",
-      "rising": "En forte hausse",
-      "stats": {
-        "selling": "Ventes",
-        "thisWeek": "Cette semaine",
-        "estBoost": "Gain estimé"
-      },
-      "cta": "Aller à la promotion"
     },
     "quality": {
       "score": {
@@ -4635,6 +4569,193 @@
       "loading": "Chargement…",
       "error": "Impossible de charger les notifications.",
       "retry": "Réessayer"
+    },
+    "growth": {
+      "title": "Growth Radar",
+      "subtitle": "Votre score de la semaine et les actions qui valent le coup maintenant — chacune ouvre le bon outil, pré-rempli.",
+      "refresh": "Actualiser",
+      "refreshing": "Actualisation…",
+      "updated": "Mis à jour {time}",
+      "cooldown": "Actualisé il y a quelques minutes — réessayez bientôt.",
+      "error": "Impossible de charger Growth Radar.",
+      "retry": "Réessayer",
+      "tabs": {
+        "week": "Cette semaine",
+        "history": "Actions passées"
+      },
+      "score": {
+        "title": "Growth Score",
+        "outOf": "/100",
+        "trendUp": "+{n} vs la semaine dernière",
+        "trendDown": "{n} vs la semaine dernière",
+        "trendFlat": "Comme la semaine dernière",
+        "firstWeek": "Première semaine — la tendance apparaît la semaine prochaine",
+        "notEnough": "Pas encore assez de données",
+        "subs": {
+          "pricing": "Prix",
+          "visibility": "Visibilité",
+          "conversion": "Conversion",
+          "stock": "Santé du stock"
+        },
+        "hints": {
+          "pricing": "Part de vos produits dans la fourchette de prix habituelle de leur catégorie",
+          "visibility": "Vues par produit comparées à la médiane de la marketplace",
+          "conversion": "Commandes par vue comparées à la marketplace",
+          "stock": "Produits en stock, qui se vendent et ne vont pas manquer"
+        }
+      },
+      "feed": {
+        "title": "Les actions de la semaine",
+        "sortedBy": "Classées par impact estimé",
+        "snoozed": "{count, plural, one {# action reportée} other {# actions reportées}}"
+      },
+      "types": {
+        "leaking_product": "Produit qui fuit",
+        "price_position": "Position prix",
+        "hidden_demand": "Demande cachée",
+        "warm_audience": "Acheteurs intéressés",
+        "seasonal": "Moment saisonnier",
+        "dead_stock": "Stock dormant",
+        "promo_timing": "Bon moment"
+      },
+      "confidence": {
+        "low": "Confiance faible",
+        "medium": "Confiance moyenne",
+        "high": "Confiance élevée",
+        "tip": "Quantité de données derrière cette carte. Les cartes à confiance faible sont toujours classées après les autres."
+      },
+      "impact": {
+        "label": "Impact estimé",
+        "range": "+{low}–{high} DT",
+        "none": "Impact pas encore estimé",
+        "tip": "Une fourchette, pas une promesse — calculée à partir des chiffres de la carte."
+      },
+      "evidence": {
+        "views_30d": "Vues · 30 j",
+        "orders_30d": "Commandes · 30 j",
+        "conversion": "Conversion",
+        "compare": "référence {value}",
+        "your_price": "Votre prix",
+        "category_median": "Médiane catégorie",
+        "units_30d": "Vendus · 30 j",
+        "searches_30d": "Recherches · 30 j",
+        "results_found": "Résultats trouvés",
+        "typical_price": "Prix typique",
+        "interested_buyers": "Acheteurs intéressés",
+        "favorites": "Favoris",
+        "abandoned_carts": "Laissés au panier",
+        "days_until_event": "Jours restants",
+        "last_year_lift": "La dernière fois",
+        "products_matched": "Produits",
+        "days_without_sale": "Jours sans vente",
+        "units_in_stock": "En stock",
+        "stock_value": "Valeur du stock",
+        "traffic_lift": "Pic vs moyenne"
+      },
+      "chart": {
+        "sparkline": "Vues et commandes par jour, 30 derniers jours",
+        "views": "Vues",
+        "orders": "Commandes",
+        "price": "Votre prix vs la fourchette de la catégorie",
+        "you": "Vous",
+        "median": "Médiane",
+        "range": "Fourchette habituelle",
+        "traffic": "Quand les acheteurs sont actifs sur la marketplace, par heure",
+        "bestHour": "Heure de lancement conseillée",
+        "timeline": "Quand commencer",
+        "today": "Aujourd'hui",
+        "start": "Début",
+        "event": "Événement",
+        "dayTip": "{day} : {views} vues, {orders} commandes",
+        "hourTip": "{hour} h : {pct} % de l'activité",
+        "daysAgo": "{n, plural, =1 {hier} other {il y a # jours}}",
+        "priceTip": "{label} : {value}"
+      },
+      "do": "À faire",
+      "why": "D'où viennent ces chiffres ?",
+      "actions": {
+        "discount": "Créer la remise",
+        "flash_sale": "Programmer la vente flash",
+        "coupon": "Créer le code privé",
+        "boost": "Sponsoriser ce produit",
+        "edit_photos": "Ajouter des photos",
+        "edit_description": "Améliorer la description",
+        "edit_price": "Modifier le prix",
+        "listing": "Mettre en vente un produit",
+        "bundle": "Trouver un pack"
+      },
+      "or": "ou",
+      "dismiss": "Ignorer",
+      "remind": "Me le rappeler",
+      "remind3": "Dans 3 jours",
+      "remind7": "Dans une semaine",
+      "dismissed": "Carte ignorée — elle ne reviendra pas avant 4 semaines.",
+      "snoozedToast": "Elle reviendra dans {days} jours.",
+      "locked": {
+        "title": "Débloquez vos actions",
+        "body": "Votre Growth Score est gratuit. Black Pepper débloque toutes les actions : quoi faire, avec des chiffres, en un clic — et le résultat mesuré ensuite.",
+        "cta": "Passer à Black Pepper",
+        "waiting": "{count, plural, =0 {Les actions apparaîtront ici à mesure que votre boutique grandit} one {# autre action attend votre boutique} other {# autres actions attendent votre boutique}}",
+        "worth": "Jusqu'à +{high} DT"
+      },
+      "empty": {
+        "title": "Aucune action cette semaine — en toute honnêteté",
+        "body": "Nous ne montrons une action que si les données la justifient. Voici ce qui en débloquera :",
+        "allGood": "Rien ne ressort pour l'instant. Nous revérifions chaque nuit.",
+        "unlocks": {
+          "add_products": "{count, plural, one {Ajoutez # produit de plus} other {Ajoutez # produits de plus}} pour pouvoir les comparer et les classer",
+          "more_views": "Vos produits ont besoin d'environ {count} vues de plus — partagez le lien de votre boutique ou sponsorisez un produit",
+          "first_sale": "Votre première vente débloque les analyses de conversion",
+          "market_data": "Les comparaisons de prix apparaissent quand 5 boutiques ou plus vendent des produits similaires",
+          "platform_data": "Les références de la marketplace apparaissent avec plus de boutiques et d'acheteurs"
+        }
+      },
+      "results": {
+        "title": "Résultats de vos actions",
+        "before": "Avant",
+        "during": "Pendant",
+        "after": "Après",
+        "units": "Unités",
+        "revenue": "Chiffre d'affaires",
+        "views": "Vues",
+        "gross": "CA en plus",
+        "cost": "Coût de la remise",
+        "ads": "Dépense pub",
+        "net": "Gain net",
+        "sameDays": "Comparé aux {days} jours juste avant",
+        "lift": "{pct} % d'unités",
+        "running": "En cours — résultats le {date}",
+        "verdict": {
+          "win": "A fonctionné",
+          "loss": "Pas rentable",
+          "neutral": "Pas de différence nette",
+          "unclear": "Impossible à dire"
+        },
+        "chart": "Unités vendues par jour avant, pendant et après l'action"
+      },
+      "history": {
+        "empty": "Les actions appliquées depuis Growth Radar apparaissent ici, avec leurs résultats.",
+        "learning": "Ce qui marche pour votre boutique",
+        "best": "Vos acheteurs réagissent le mieux aux {kind} : {lift} d'unités en moyenne sur {n} actions mesurées.",
+        "notYet": "Il faut {min} actions mesurées d'un même type avant de conclure — pour l'instant :",
+        "kindStat": "{kind} : {n} mesurées, {wins} réussies",
+        "col": {
+          "action": "Action",
+          "product": "Produit",
+          "when": "Quand",
+          "result": "Résultat",
+          "net": "Gain net"
+        }
+      },
+      "kinds": {
+        "discount": "remise",
+        "flash_sale": "vente flash",
+        "coupon": "code promo",
+        "boost": "sponsorisation",
+        "edit": "mise à jour de fiche",
+        "listing": "nouveau produit",
+        "bundle": "pack"
+      }
     }
   },
   "invoice": {
