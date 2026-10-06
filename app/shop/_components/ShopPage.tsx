@@ -1,25 +1,27 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import Navbar from '@/app/components/layout/Navbar'
 import { fetchHomeFeed, type HomeFeed } from '@/lib/homeFeedApi'
 import { fetchShopOverview, type ShopOverview } from '@/lib/shopPageApi'
 import { QuickViewProvider } from './QuickView'
 import ShopHero from './ShopHero'
-import CategoryRail from './CategoryRail'
 import DealsSection from './DealsSection'
 import { ForYouSection, ListsSection } from './FeedSections'
-import PepperSellers from './PepperSellers'
 import LocalSpotlight from './LocalSpotlight'
 import Catalog from './Catalog'
 import { TrustStrip, VendorCta } from './Closing'
-import { PepperDivider } from './primitives'
+import { useHeaderHeight } from './primitives'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 import './shop.css'
 
 export default function ShopPage({ initialOverview }: { initialOverview: ShopOverview | null }) {
   const [overview, setOverview] = useState<ShopOverview | null>(initialOverview)
   const [feed, setFeed] = useState<HomeFeed | null>(null)
   const [feedLoading, setFeedLoading] = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(feedLoading)
+  const headerH = useHeaderHeight()
 
   // The server render normally brings the overview; fetch it here only if that failed
   useEffect(() => {
@@ -48,14 +50,11 @@ export default function ShopPage({ initialOverview }: { initialOverview: ShopOve
   return (
     <>
       <Navbar />
-      <main className="sp">
+      <main className="sp" style={{ '--nav-h': `${headerH}px` } as CSSProperties}>
         <QuickViewProvider>
           <ShopHero overview={overview} />
-          <CategoryRail categories={overview?.categories ?? null} />
           <DealsSection deals={overview?.deals ?? []} />
           <ForYouSection feed={feed} loading={feedLoading} />
-          <PepperDivider />
-          <PepperSellers sellers={overview?.sellers ?? null} />
           <ListsSection feed={feed} loading={feedLoading} />
           <LocalSpotlight categories={overview?.categories ?? null} />
           <Catalog categories={overview?.categories ?? null} excludeAds={feedAds} />

@@ -183,16 +183,38 @@ export function TimeLeft({ endsAt }: { endsAt: string }) {
 }
 
 
-/** Shop photo as a small round avatar; no photo (or a broken one) → neutral circle with the first letter. */
+/** "Dar El Moda" → "DE", "TechZone" → "T". */
+function initials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  const first = (w?: string) => (w ? Array.from(w)[0] ?? '' : '')
+  return ((first(words[0]) + first(words[1])) || '?').toUpperCase()
+}
+
+/** Shop photo as a small round avatar; no photo (or a broken one) → neutral circle with the shop's initials. */
 export function ShopAvatar({ name, src, size = 22 }: { name: string; src?: string | null; size?: number }) {
   const [broken, setBroken] = useState(false)
-  const letter = (name.trim()[0] ?? '?').toUpperCase()
+  const letters = initials(name)
   return (
-    <span className="sp-avatar" style={{ width: size, height: size, fontSize: Math.round(size * 0.48) } as CSSProperties} aria-hidden="true">
+    <span className="sp-avatar" style={{ width: size, height: size, fontSize: Math.round(size * (letters.length > 1 ? 0.4 : 0.48)) } as CSSProperties} aria-hidden="true">
       {src && !broken
         // eslint-disable-next-line @next/next/no-img-element -- shop photos come from any host (storage, Google)
         ? <img src={src} alt="" width={size} height={size} loading="lazy" onError={() => setBroken(true)} />
-        : letter}
+        : letters}
     </span>
   )
+}
+
+/** Height of the site's sticky header, so sticky bars and sidebars sit right under it. */
+export function useHeaderHeight(): number {
+  const [h, setH] = useState(0)
+  useEffect(() => {
+    const el = document.querySelector('body header')
+    if (!el) return
+    const measure = () => setH(Math.round(el.getBoundingClientRect().height))
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  return h
 }

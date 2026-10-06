@@ -10,7 +10,7 @@ import { isLocalImage } from '@/lib/imageHost'
 import { resolveImageUrl } from '@/lib/dealsApi'
 import type { ShopProduct } from '@/lib/shopPageApi'
 import { promoPricing } from '@/app/components/promotions/ProductPrice'
-import ShopProductCard from '@/app/shop/_components/ShopProductCard'
+import ProductCard from '@/app/components/product/ProductCard'
 import { ShopAvatar, TimeLeft } from '@/app/shop/_components/primitives'
 import type { DealItem } from './model'
 
@@ -69,7 +69,7 @@ function FlashStock({ item }: { item: DealItem }) {
 export function DealCard({ item, index }: { item: DealItem; index: number }) {
   if (item.pack) return <PackCard item={item} index={index} />
   return (
-    <ShopProductCard product={item.product!} index={index} section="deals" eager={index < 4}
+    <ProductCard product={item.product!} index={index} section="deals" eager={index < 4}
       layout="deal" badge={<OfferBadge item={item} />} footer={<FlashStock item={item} />} />
   )
 }

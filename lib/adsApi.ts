@@ -27,6 +27,8 @@ export interface AdsConfig {
   placements: string[]
   max_ads: Record<string, number>
   reserved_slots: number[]
+  grid_ad_every?: number
+  grid_flyer_every?: number
   popup: { enabled: boolean; delay_seconds: number; dismiss_hours: number; dismiss_days_after_3: number }
 }
 
@@ -131,18 +133,4 @@ export function recordAdImpression(token: string) {
 /** Sent immediately with keepalive, so a click that navigates away still arrives. */
 export function recordAdClick(token: string) {
   enqueue({ token, event: 'click' }, true)
-}
-
-/**
- * Put ads into reserved 1-based grid slots (e.g. [1, 7]); ads that don't fit
- * (the list is shorter) go at the end only if there are organic items at all.
- */
-export function withAdSlots<T>(items: T[], ads: AdCard[], slots: number[]): Array<{ ad: AdCard } | { item: T }> {
-  const out: Array<{ ad: AdCard } | { item: T }> = items.map(item => ({ item }))
-  const sorted = [...slots].sort((a, b) => a - b)
-  ads.slice(0, sorted.length).forEach((ad, i) => {
-    const at = Math.min(sorted[i] - 1, out.length)
-    if (items.length > 0) out.splice(at, 0, { ad })
-  })
-  return out
 }

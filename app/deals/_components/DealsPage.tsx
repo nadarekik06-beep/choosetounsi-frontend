@@ -5,7 +5,7 @@
  * packs and coupon products (GET /api/deals). Filters live in the URL
  * (?type=flash&sort=savings&cat=3&min=10&max=80&disc=20) so they survive a
  * refresh and can be shared; the last choice is remembered in localStorage and
- * restored on a bare /deals. Cards are the /shop ShopProductCard in its "deal" layout.
+ * restored on a bare /deals. Cards are the shared ProductCard in its "deal" layout.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
@@ -17,8 +17,9 @@ import Navbar from '@/app/components/layout/Navbar'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { categoryName, type ShopProduct } from '@/lib/shopPageApi'
 import { fetchDeals, fetchPopular, type DealsData } from '@/lib/dealsApi'
-import ShopProductCard from '@/app/shop/_components/ShopProductCard'
+import ProductCard from '@/app/components/product/ProductCard'
 import { QuickViewProvider } from '@/app/shop/_components/QuickView'
+import { FloatingIcons, HeaderBadge } from '@/app/shop/_components/HeaderDecor'
 import { DealCard, DealSkeleton, ProductOfferBadge } from './DealCards'
 import { FilterSheet, FiltersBody, TYPE_ORDER, TypeIcon, type Facets, type FacetOption } from './DealFiltersPanel'
 import {
@@ -219,6 +220,7 @@ export default function DealsPage() {
           {/* ── Page header: light, compact, products carry the colour ─── */}
           <div className="dl-head">
             <div className="dl-wrap dl-head__row">
+              <HeaderBadge kind="deals" />
               <div className="dl-head__text">
                 <nav className="dl-crumbs" aria-label={t('breadcrumb')}>
                   <Link href="/">{t('crumbHome')}</Link>
@@ -228,10 +230,11 @@ export default function DealsPage() {
                 <h1 className="dl-head__title">{t('heroTitle')}</h1>
                 <p className="dl-head__sub">{t('heroSubShort')}</p>
               </div>
+              <FloatingIcons kind="deals" />
               {totals.maxPercent > 0 && (
                 <button type="button" className={`dl-head__chip${f.sort === 'savings' ? ' is-on' : ''}`} aria-pressed={f.sort === 'savings'}
                   onClick={() => update({ sort: f.sort === 'savings' ? 'recommended' : 'savings' })}>
-                  <TrendingDown size={16} aria-hidden="true" /> {t('upToSavings', { percent: totals.maxPercent })}
+                  <TrendingDown className="dl-head__trend" size={16} aria-hidden="true" /> {t('upToSavings', { percent: totals.maxPercent })}
                 </button>
               )}
             </div>
@@ -323,7 +326,7 @@ export default function DealsPage() {
                     <Link href="/shop" className="dl-related__link">{t('browse')} →</Link>
                   </div>
                   <div className="dl-grid">
-                    {related.products.map((p, i) => <ShopProductCard key={p.id} product={p} index={i} section="deals_related" layout="deal" badge={<ProductOfferBadge product={p} />} />)}
+                    {related.products.map((p, i) => <ProductCard key={p.id} product={p} index={i} section="deals_related" layout="deal" badge={<ProductOfferBadge product={p} />} />)}
                   </div>
                 </section>
               )}

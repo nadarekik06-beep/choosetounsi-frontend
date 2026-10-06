@@ -7,7 +7,11 @@ import { logout, isAuthenticated, getUser, AuthUser } from "@/lib/auth";
 import { useCart } from "@/context/CartContext";
 import { Heart, ShoppingBag, ClipboardList, AlertCircle } from "lucide-react";
 import BrandLogoCircle from "@/components/BrandLogoCircle";
+import { useSiteFeatures } from "@/lib/platformApi";
+import CatIcon from "@/app/components/layout/CategoryIcon";
 import { useTranslations } from "next-intl";
+import ImageSearchModal from "@/app/components/search/ImageSearchModal";
+import { OPEN_EVENT as OPEN_PHOTO_SEARCH, usePhotoSearchAvailable } from "@/lib/imageSearch";
 // Organic popular products (same card fields as the listing API). No ads here: paid
 // placements are only shown where they carry a visible "Sponsored" label.
 interface PopularProduct {
@@ -91,23 +95,6 @@ const MEGA: MegaData = {
     { group:"wellness", items:["essential-oil","herbal-tea","medical-device"] },
   ],
 };
-
-/* ─── Category icon ──────────────────────────────────────────── */
-function CatIcon({ slug, name }: { slug: string; name: string }) {
-  const s = (slug + " " + name).toLowerCase();
-  if (/fashion|clothing|wear|tenue/.test(s)) return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>;
-  if (/electronic|tech|phone|computer/.test(s)) return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>;
-  if (/home|living|maison|meuble/.test(s)) return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
-  if (/food|grocery|alimentation/.test(s)) return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>;
-  if (/beauty|cosmetic|soin|makeup|parfum/.test(s)) return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>;
-  if (/sport|outdoor|fitness|gym/.test(s)) return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/><path d="M3.6 9h16.8"/></svg>;
-  if (/art|craft|handmade/.test(s)) return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 20v-8.5c0-1.1.9-2 2-2"/><path d="M12 20c-3.3 0-6-2.7-6-6v-1.5"/></svg>;
-  if (/book|livre|stationery/.test(s)) return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
-  if (/kid|baby|toy/.test(s)) return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46L5.5 8H4a1 1 0 0 1 0-2h1.09A2.5 2.5 0 0 1 9.5 2z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46L18.5 8H20a1 1 0 0 0 0-2h-1.09A2.5 2.5 0 0 0 14.5 2z"/></svg>;
-  if (/auto|car|moto/.test(s)) return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v9a2 2 0 0 1-2 2h-2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>;
-  if (/health|wellness|medical/.test(s)) return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>;
-  return <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>;
-}
 
 /* ─── Avatar ─────────────────────────────────────────────────── */
 const ACOLORS=[["#fde68a","#92400e"],["#bfdbfe","#1e40af"],["#bbf7d0","#14532d"],["#fecaca","#991b1b"],["#e9d5ff","#4c1d95"],["#fed7aa","#7c2d12"]];
@@ -500,7 +487,7 @@ function SearchDropdown({
 type SuggestionItem =
   | { type: "query";    text: string }
   | { type: "category"; text: string; slug: string }
-  | { type: "seller";   text: string; initial: string };
+  | { type: "seller";   text: string; initial: string; id: number; avatar: string | null };
 
 function SearchSuggestionsDropdown({
   visible,
@@ -508,12 +495,14 @@ function SearchSuggestionsDropdown({
   items,
   onSelectQuery,
   onSelectCategory,
+  onSelectSeller,
 }: {
   visible:          boolean;
   query:            string;
   items:            SuggestionItem[];
   onSelectQuery:    (s: string) => void;
   onSelectCategory: (slug: string) => void;
+  onSelectSeller:   (id: number) => void;
 }) {
   const t = useTranslations("nav");
   if (!visible || items.length === 0) return null;
@@ -597,7 +586,7 @@ function SearchSuggestionsDropdown({
           return (
             <button
               key={`seller-${i}`}
-              onMouseDown={e => { e.preventDefault(); onSelectQuery(item.text); }}
+              onMouseDown={e => { e.preventDefault(); onSelectSeller(item.id); }}
               style={{
                 display:      "flex",
                 alignItems:   "center",
@@ -619,11 +608,12 @@ function SearchSuggestionsDropdown({
                 {/* Seller avatar circle */}
                 <span style={{
                   width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-                  background: "#0f172a", color: "#fff",
+                  background: "#0f172a", color: "#fff", overflow: "hidden",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 11, fontWeight: 800,
                 }}>
-                  {item.initial}
+                  {/* eslint-disable-next-line @next/next/no-img-element -- shop logo from the API */}
+                  {item.avatar ? <img src={item.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}/> : item.initial}
                 </span>
                 <HighlightMatch text={item.text}/>
               </div>
@@ -676,6 +666,10 @@ const NAV_LINKS = [
 export default function Navbar() {
   const router = useRouter();
   const t   = useTranslations("nav");
+  const ti  = useTranslations("imageSearch");
+  // WearTounsi is hidden until the admin switches it on
+  const wearTounsi = useSiteFeatures()?.wear_tounsi ?? false;
+  const showLink = (href: string) => href !== "/brand" || wearTounsi;
   const fmt = useFormat();
   const [menuOpen,   setMenuOpen]   = useState(false);
   const [dropOpen,   setDropOpen]   = useState(false);
@@ -686,7 +680,10 @@ export default function Navbar() {
 
   // Search state
   const [searchQuery,    setSearchQuery]    = useState("");
-  const [imageSearching, setImageSearching] = useState(false);
+  // Photo search: the chosen photo opens the crop dialog; the button greys out while the AI service is down
+  const [photoFile,      setPhotoFile]      = useState<File | null>(null);
+  const [camNotice,      setCamNotice]      = useState(false);
+  const [photoAvailable, recheckPhoto]      = usePhotoSearchAvailable();
   const [searchFocused,  setSearchFocused]  = useState(false);
   const [suggItems,      setSuggItems]      = useState<SuggestionItem[]>([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -747,8 +744,13 @@ export default function Navbar() {
         const words: string[] = data.suggestions ?? [];
         const qLow  = q.toLowerCase();
 
-        // Build items list — Trendyol style: categories first, then queries
+        // Build items list — Trendyol style: shops, categories, then queries
         const items: SuggestionItem[] = [];
+
+        // 0. Shops whose name matches what is typed ("dar el", "techzone")
+        ((data.shops ?? []) as { id: number; name: string; avatar: string | null }[]).slice(0, 2).forEach(s => {
+          items.push({ type: "seller", text: s.name, id: s.id, avatar: s.avatar, initial: s.name.trim().charAt(0).toUpperCase() });
+        });
 
         // 1. Matching categories (from already-loaded categories state)
         const matchingCats = categories.filter(c =>
@@ -808,37 +810,42 @@ export default function Navbar() {
     router.push(`/category/${slug}`);
   }, [router]);
 
-  const handleCameraClick = useCallback(() => { imageInputRef.current?.click(); }, []);
-
-  const handleImageSelected = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImageSearching(true);
+  const handleCameraClick = useCallback(async () => {
     closeAll();
-    try {
-      const reader = new FileReader();
-      reader.onload = () => { sessionStorage.setItem("searchImagePreview", reader.result as string); };
-      reader.readAsDataURL(file);
-      const formData = new FormData();
-      formData.append("image", file);
-      const res = await fetch(`${API_URL}/api/search/image`, { method:"POST", headers:{ Accept:"application/json" }, body: formData });
-      if (!res.ok) throw new Error("Image search failed");
-      const data = await res.json();
-      const ids = (data.products ?? []).map((p: { id: number }) => p.id).join(",");
-      router.push(`/search?mode=image&ids=${ids}`);
-    } catch {
-      alert(t("imageSearchFailed"));
-    } finally {
-      setImageSearching(false);
-      if (imageInputRef.current) imageInputRef.current.value = "";
+    // Down a moment ago: ask again (it may be back), otherwise say so instead of opening the picker
+    if (photoAvailable === false && !(await recheckPhoto())) {
+      setCamNotice(true);
+      setTimeout(() => setCamNotice(false), 3500);
+      return;
     }
-  }, [router, t]);
+    imageInputRef.current?.click();
+  }, [photoAvailable, recheckPhoto]);
+
+  // "New photo search" on the results page
+  useEffect(() => {
+    const open = () => { handleCameraClick(); };
+    window.addEventListener(OPEN_PHOTO_SEARCH, open);
+    return () => window.removeEventListener(OPEN_PHOTO_SEARCH, open);
+  }, [handleCameraClick]);
+
+  const handleImageSelected = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setPhotoFile(file);
+    e.target.value = "";
+  }, []);
+
+  const closePhoto = useCallback(() => { setPhotoFile(null); recheckPhoto(); }, [recheckPhoto]);
+  const camOff = photoAvailable === false;
+  const camLabel = camOff ? ti("unavailableShort") : ti("camera");
 
   return (
     <>
       <MegaMenu categories={categories} visible={megaOpen} onClose={()=>setMegaOpen(false)}/>
 
-      <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display:"none" }} onChange={handleImageSelected}/>
+      {/* image/*: phones offer the camera or the gallery */}
+      <input ref={imageInputRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleImageSelected}/>
+      {photoFile && <ImageSearchModal file={photoFile} onClose={closePhoto} onPickAnother={() => imageInputRef.current?.click()}/>}
+      {camNotice && <div className="cam-notice" role="status">{ti("unavailable")}</div>}
 
       <header style={{
         position:"sticky", top:0, zIndex:50,
@@ -990,23 +997,19 @@ export default function Navbar() {
                   {/* Camera button */}
                   <button
                     onClick={handleCameraClick}
-                    disabled={imageSearching}
-                    title={t("searchByImage")}
-                    aria-label={t("searchByImage")}
-                    className="search-camera-btn"
+                    title={camLabel}
+                    aria-label={camLabel}
+                    aria-disabled={camOff}
+                    className={`search-camera-btn${camOff ? " cam-off" : ""}`}
                     style={{
                       background:"transparent", border:"none", borderInlineEnd:"1px solid #e5e7eb",
-                      padding:"0 11px", cursor: imageSearching ? "wait" : "pointer",
+                      padding:"0 11px", cursor:"pointer",
                       display:"flex", alignItems:"center", justifyContent:"center",
                       flexShrink:0, color:"#9ca3af",
                       transition:"background 0.15s, color 0.15s, transform 0.1s",
                     }}
                   >
-                    {imageSearching ? (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" style={{animation:"spin 0.8s linear infinite"}}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-                    ) : (
-                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                    )}
+                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>{camOff && <path d="M2 2l20 20"/>}</svg>
                   </button>
 
                   {/* Search button */}
@@ -1036,6 +1039,7 @@ export default function Navbar() {
                   items={suggItems}
                   onSelectQuery={handleSelectSuggestion}
                   onSelectCategory={handleSelectSuggestionCategory}
+                  onSelectSeller={id => { setSuggItems([]); setSearchFocused(false); router.push(`/sellers/${id}`); }}
                 />
 
               </div>
@@ -1049,7 +1053,7 @@ export default function Navbar() {
                 {t("categories")}
                 <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{transform:megaOpen?"rotate(180deg)":"none",transition:"transform 0.2s"}}><path d="M6 9l6 6 6-6"/></svg>
               </button>
-              {NAV_LINKS.map(l=>(
+              {NAV_LINKS.filter(l=>showLink(l.href)).map(l=>(
                 <Link key={l.href} href={l.href} prefetch={false}
                   style={{padding:"8px 12px",borderRadius:8,fontSize:14,fontWeight:500,color:"#52525b",textDecoration:"none",transition:"all 0.14s",whiteSpace:"nowrap"}}
                   onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.color="#111";(e.currentTarget as HTMLElement).style.background="#f4f4f5";}}
@@ -1126,8 +1130,8 @@ export default function Navbar() {
                 onKeyDown={handleSearchKeyDown}
                 style={{flex:1,padding:"0 14px",fontSize:14,border:"none",outline:"none",background:"#fff",color:"#111"}}
               />
-              <button onClick={handleCameraClick} aria-label={t("searchByImage")} style={{background:"transparent",border:"none",borderInlineEnd:"1px solid #e5e7eb",padding:"0 10px",cursor:"pointer",color:"#9ca3af"}}>
-                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <button onClick={handleCameraClick} aria-label={camLabel} title={camLabel} aria-disabled={camOff} className={camOff ? "cam-off" : undefined} style={{background:"transparent",border:"none",borderInlineEnd:"1px solid #e5e7eb",padding:"0 10px",cursor:"pointer",color:"#9ca3af"}}>
+                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>{camOff && <path d="M2 2l20 20"/>}</svg>
               </button>
               <button onClick={handleTextSearch} aria-label={t("searchButton")} style={{background:"#dc2626",border:"none",padding:"0 16px",cursor:"pointer",color:"#fff"}}><SearchIcon/></button>
             </div>
@@ -1137,7 +1141,7 @@ export default function Navbar() {
             <button onClick={()=>{setMenuOpen(false);handleSupport();}} style={{fontSize:14,fontWeight:700,color:"#dc2626",background:"none",border:"none",cursor:"pointer",textAlign:"start",padding:"8px 0",borderBottom:"1px solid #f5f5f5",fontFamily:"inherit",display:"flex",alignItems:"center",gap:8}}>
               <BrandLogoCircle size={22} ring="1.5px solid #db142e"/>{t("askAi")}
             </button>
-            {([{key:"shop",href:"/shop"},{key:"brand",href:"/brand"},{key:"deals",href:"/deals"},{key:"myOrders",href:"/orders"},{key:"myComplaints",href:"/complaints"},{key:"helpComplaint",href:"/complaints/new"},{key:"favorites",href:"/favorites"}] as const).map(l=>(
+            {([{key:"shop",href:"/shop"},{key:"brand",href:"/brand"},{key:"deals",href:"/deals"},{key:"myOrders",href:"/orders"},{key:"myComplaints",href:"/complaints"},{key:"helpComplaint",href:"/complaints/new"},{key:"favorites",href:"/favorites"}] as const).filter(l=>showLink(l.href)).map(l=>(
               <Link key={l.href} href={l.href} onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>{t(l.key)}</Link>
             ))}
             <button onClick={handleCart} style={{fontSize:14,fontWeight:600,color:"#374151",background:"none",border:"none",cursor:"pointer",textAlign:"start",padding:"8px 0",borderBottom:"1px solid #f5f5f5",display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}>

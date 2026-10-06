@@ -4,16 +4,22 @@ import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ChevronRight, MapPin, Package, Loader2, Store, Heart, Users, Search,
+  ChevronRight, MapPin, Package, Store, Heart, Users, Search,
   Star, Truck, Tag, Copy, Check, Zap, Home as HomeIcon,
 } from 'lucide-react'
-import ProductPrice, { ProductPromoOverlay, type PricedProduct } from '@/app/components/promotions/ProductPrice'
+import type { PricedProduct } from '@/app/components/promotions/ProductPrice'
+import SharedProductCard from '@/app/components/product/ProductCard'
+import type { CardSwatch } from '@/app/components/product/cardData'
 import type { ActivePromotion } from '@/lib/promotionsApi'
-import { getToken, isAuthenticated } from '@/lib/auth'
+import { getToken, getUser, isAuthenticated } from '@/lib/auth'
 import ProductFilterSidebar, { DEFAULT_FILTERS, appendFilterParams, hasActiveFilters, type F } from '@/app/components/filters/ProductFilterSidebar'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { useWilayaLabel } from '@/lib/i18n/wilayas'
+import { parseSellerId, storePath } from '@/lib/storeLink'
+import { ShareStoreButtons } from '@/app/components/seller/ShareStore'
+import BrandLoader, { BusyLabel } from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL      = `${STORAGE_BASE}/api`
@@ -79,6 +85,11 @@ interface GridProduct extends PricedProduct {
   price: number | string; stock: number
   primary_image_url: string | null
   promotion?: ActivePromotion | null
+  card_images?: string[]
+  card_swatches?: CardSwatch[]
+  variants?: { id: number; stock: number }[]
+  avg_rating?: number | null
+  reviews_count?: number
 }
 
 interface Pack {
@@ -111,56 +122,17 @@ function promoProductsToGrid(promo: SellerPromotion): GridProduct[] {
   }))
 }
 
-// ─── Product card — one shared design everywhere on this page ─────────────────
+// ─── Product card — the shared storefront card (image slider, swatches, cart, favourite)
 
 function ProductCard({ product }: { product: GridProduct }) {
-  const tc = useTranslations('productCard')
-  const [imgErr, setImgErr] = useState(false)
-  const img = resolveImg(product.primary_image_url)
-  const outOfStock = product.stock <= 0
-
-  return (
-    <Link href={`/products/${product.slug}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-      <div
-        style={{ transition: 'transform 0.18s ease' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)' }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}
-      >
-        <div style={{
-          position: 'relative', aspectRatio: '3/4', borderRadius: 16, overflow: 'hidden',
-          background: '#f4f5f7',
-        }}>
-          {img && !imgErr
-            ? <img src={img} alt={product.name} onError={() => setImgErr(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, opacity: 0.4 }}>📦</div>
-          }
-          {/* -X% + FLASH / PROMO + flash countdown, same as /deals */}
-          <ProductPromoOverlay product={product} badgeStyle={{ top: 10, insetInlineStart: 10 }} />
-          {outOfStock && (
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 10, fontWeight: 800, background: '#111', color: '#fff', padding: '4px 10px', borderRadius: 999, letterSpacing: '0.05em' }}>{tc('soldOut')}</span>
-            </div>
-          )}
-        </div>
-        <div style={{ padding: '10px 2px 0' }}>
-          <p style={{
-            fontSize: 12.5, fontWeight: 600, color: '#374151', margin: '0 0 6px', lineHeight: 1.35,
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-          }}>
-            {product.name}
-          </p>
-          <ProductPrice product={product} pack />
-        </div>
-      </div>
-    </Link>
-  )
+  return <SharedProductCard product={product} section="seller_store" showShop={false} />
 }
 
 function ProductRow({ products }: { products: GridProduct[] }) {
   return (
     <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 6 }}>
       {products.map(p => (
-        <div key={p.id} style={{ flex: '0 0 auto', width: 160 }}>
+        <div key={p.id} style={{ flex: '0 0 auto', width: 170 }}>
           <ProductCard product={p} />
         </div>
       ))}
@@ -318,11 +290,15 @@ export default function SellerStorefrontPage() {
   const tc  = useTranslations('common')
   const tf  = useTranslations('filters')
   const wilayaLabel = useWilayaLabel()
-  const { id } = useParams<{ id: string }>()
+  // The segment is "12" or the clean "12-store-name"; every API call uses the numeric id
+  const { id: segment } = useParams<{ id: string }>()
+  const id = parseSellerId(segment)
   const router = useRouter()
 
   const [seller, setSeller] = useState<SellerProfile | null>(null)
   const [sellerLoading, setSellerLoading] = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(sellerLoading)
   const [sellerError, setSellerError] = useState(false)
 
   const [tab, setTab] = useState<Tab>('home')
@@ -352,7 +328,7 @@ export default function SellerStorefrontPage() {
   const [followLoading, setFollowLoading] = useState(false)
 
   useEffect(() => {
-    if (!id) return
+    if (!id) { setSellerError(true); setSellerLoading(false); return }
     setSellerLoading(true)
     setSellerError(false)
     fetch(`${API_URL}/sellers/${id}`, { headers: { Accept: 'application/json' } })
@@ -437,9 +413,23 @@ export default function SellerStorefrontPage() {
   const discountPromos = useMemo(() => seller?.promotions.filter(p => p.type === 'discount') ?? [], [seller])
   const hasCoupons     = (seller?.coupons.length ?? 0) > 0
 
+  // The session lives in localStorage: read it after mount so SSR and hydration agree
+  const [isOwner, setIsOwner] = useState(false)
+  useEffect(() => {
+    const u = getUser()
+    setIsOwner(!!seller && u?.role === 'seller' && u.id === seller.id)
+  }, [seller])
+
+  // Show the clean /sellers/{id}-{name} URL in the address bar (old /sellers/{id} links keep working)
+  useEffect(() => {
+    if (!seller) return
+    const clean = storePath(seller.id, seller.business_name)
+    if (window.location.pathname !== clean) window.history.replaceState(window.history.state, '', clean + window.location.search)
+  }, [seller])
+
   const handleFollow = async () => {
     if (!isAuthenticated()) {
-      router.push(`/auth/login?callbackUrl=${encodeURIComponent(`/sellers/${id}`)}`)
+      router.push(`/auth/login?callbackUrl=${encodeURIComponent(storePath(id ?? '', seller?.business_name))}`)
       return
     }
     setFollowLoading(true)
@@ -454,7 +444,7 @@ export default function SellerStorefrontPage() {
   if (sellerLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader2 size={28} className="animate-spin" color={RED} />
+        <BrandLoader variant="section" />
       </div>
     )
   }
@@ -474,11 +464,13 @@ export default function SellerStorefrontPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#fff', fontFamily: "'Barlow', sans-serif" }}>
       <style>{`
+        /* ProductFilterSidebar's .pfs-desk is the sticky grid child (see there). Below 920px it
+           hides itself and the "Filtres" button opens the drawer instead. */
         @media(max-width:920px) {
-          .seller-pfs-col { display: none; }
+          .seller-products-layout { grid-template-columns: 1fr !important; }
           .seller-mobile-filters-btn { display: flex !important; }
         }
-        @media(max-width:768px) { .seller-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+        @media(max-width:768px) { .seller-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px !important; } }
       `}</style>
 
       <div style={{ borderBottom: '1px solid #f3f4f6' }}>
@@ -526,12 +518,15 @@ export default function SellerStorefrontPage() {
             </div>
           </div>
 
-          <button
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <ShareStoreButtons store={{ id: seller.id, name: seller.business_name }} isOwner={isOwner} />
+          {!isOwner && <button
             onClick={handleFollow}
             disabled={followLoading}
             aria-pressed={following}
+            aria-busy={followLoading || undefined}
             style={{
-              display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+              position: 'relative', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
               fontSize: 13, fontWeight: 700, padding: '9px 20px', borderRadius: 999,
               border: following ? '1.5px solid rgba(255,255,255,0.5)' : 'none',
               background: following ? 'transparent' : '#fff',
@@ -540,9 +535,12 @@ export default function SellerStorefrontPage() {
               opacity: followLoading ? 0.7 : 1,
             }}
           >
-            <Heart size={14} fill={following ? '#fff' : 'none'} />
-            {following ? t('following') : t('follow')}
-          </button>
+            <BusyLabel busy={followLoading} size={14}>
+              <Heart size={14} fill={following ? '#fff' : 'none'} />
+              {following ? t('following') : t('follow')}
+            </BusyLabel>
+          </button>}
+          </div>
         </div>
 
         {seller.business_description && (
@@ -619,11 +617,11 @@ export default function SellerStorefrontPage() {
               </button>
             </div>
             {recentLoading ? (
-              <p style={{ fontSize: 13, color: '#9ca3af' }}>{tc('loading')}</p>
+              <BrandLoader variant="section" size="sm" label={tc('loading')} />
             ) : recent.length === 0 ? (
               <p style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>{t('noProducts')}</p>
             ) : (
-              <div className="seller-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 22 }}>
+              <div className="seller-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 22 }}>
                 {recent.map(p => <ProductCard key={p.id} product={p} />)}
               </div>
             )}
@@ -633,16 +631,14 @@ export default function SellerStorefrontPage() {
 
       {/* ══════════════════ ALL PRODUCTS ══════════════════ */}
       {tab === 'products' && (
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px 56px', display: 'grid', gridTemplateColumns: '246px 1fr', gap: 22, alignItems: 'start' }}>
-          <div className="seller-pfs-col">
-            <ProductFilterSidebar
-              f={f} setF={setF} total={productsTotal}
-              sellerId={id} hideSearch
-              mOpen={mOpen} setMOpen={setMOpen}
-            />
-          </div>
+        <div className="seller-products-layout" style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px 56px', display: 'grid', gridTemplateColumns: '246px minmax(0, 1fr)', gap: 22, alignItems: 'start' }}>
+          <ProductFilterSidebar
+            f={f} setF={setF} total={productsTotal}
+            sellerId={id ?? undefined} hideSearch
+            mOpen={mOpen} setMOpen={setMOpen}
+          />
 
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8f8f8', border: '1.5px solid #eee', borderRadius: 10, padding: '9px 12px', flex: 1, maxWidth: 420 }}>
                 <Search size={14} color="#9ca3af" />
@@ -676,7 +672,7 @@ export default function SellerStorefrontPage() {
                 )}
               </div>
             ) : (
-              <div className="seller-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 22 }}>
+              <div className="seller-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 22 }}>
                 {products.map(p => <ProductCard key={p.id} product={p} />)}
               </div>
             )}
@@ -692,7 +688,7 @@ export default function SellerStorefrontPage() {
                     cursor: productsLoading ? 'default' : 'pointer', opacity: productsLoading ? 0.6 : 1,
                   }}
                 >
-                  {productsLoading ? tc('loading') : t('loadMore')}
+                  <BusyLabel busy={productsLoading}>{t('loadMore')}</BusyLabel>
                 </button>
               </div>
             )}

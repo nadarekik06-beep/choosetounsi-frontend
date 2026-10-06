@@ -12,7 +12,7 @@ import { useMemo, useState, type KeyboardEvent } from 'react'
 import { useTranslations } from 'next-intl'
 import type { HomeFeed, FeedSection } from '@/lib/homeFeedApi'
 import type { ShopProduct } from '@/lib/shopPageApi'
-import ShopProductCard from './ShopProductCard'
+import ProductCard from '@/app/components/product/ProductCard'
 import { CardSkeleton, Rail, SectionHead } from './primitives'
 
 // Slots where paid placements sit in a mixed row (homepage convention)
@@ -28,7 +28,7 @@ function ProductRail({ products, section, label }: { products: ShopProduct[] | n
         ? Array.from({ length: 6 }, (_, i) => <div key={i} role="listitem"><CardSkeleton /></div>)
         : products.map((p, i) => (
           <div key={`${p.placement ?? 'o'}-${p.id}`} role="listitem">
-            <ShopProductCard product={p} index={i} section={section} />
+            <ProductCard product={p} index={i} section={section} />
           </div>
         ))}
     </Rail>

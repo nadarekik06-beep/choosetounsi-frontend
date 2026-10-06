@@ -1,0 +1,274 @@
+/*
+ * Storefront product card (app/components/product/ProductCard.tsx) — shared by every
+ * product grid and row. Global `sp-card*` / `sp-price*` class names are kept from the
+ * /shop card it grew out of, so page stylesheets (shop.css, deals.css) can still
+ * adjust it in context. Fonts come from the page (Barlow inside .sp via --body).
+ * Motion: transform / opacity only; none under prefers-reduced-motion.
+ */
+.sp-card *, .sp-card *::before, .sp-card *::after { box-sizing: border-box; }
+.sp-card :where(h3, p) { margin: 0; }
+.sp-card :focus-visible { outline: 3px solid var(--ct-red); outline-offset: 2px; border-radius: 6px; }
+
+.sp-card {
+  font-family: var(--body, inherit); text-align: start;
+  position: relative; display: flex; flex-direction: column; height: 100%; min-width: 0;
+  border-radius: 10px; background: #fff; overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--ct-line);
+  transition: transform .35s var(--ct-ease), box-shadow .35s ease;
+}
+.sp-card__link { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.sp .sp-card__link:focus-visible { outline-offset: -3px; }
+.sp-card__media { position: relative; aspect-ratio: 4 / 5; background: #f4f4f3; overflow: hidden; }
+.sp-card__img { object-fit: cover; transition: opacity .45s ease, transform .7s var(--ct-ease); }
+.sp-card__ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #c9cacd; background: #f4f4f3; }
+.sp-card__badges { position: absolute; top: 8px; inset-inline-start: 8px; z-index: 3; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; pointer-events: none; }
+.sp-pill { font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: .06em; line-height: 1.3; }
+.sp-card__fav {
+  position: absolute; top: 8px; inset-inline-end: 8px; z-index: 3;
+  width: 32px; height: 32px; border-radius: 50%; border: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.92); color: #374151; box-shadow: 0 1px 3px rgba(17,17,17,.15);
+  transition: transform .25s var(--ct-spring), background .2s, color .2s;
+}
+.sp-card__fav:hover { transform: scale(1.1); color: var(--ct-red); }
+.sp-card__fav.is-on { background: var(--ct-red); color: #fff; }
+.sp-card__fav.is-pop svg { animation: spHeart .5s var(--ct-spring); }
+.sp-card__fav.is-pop::after {
+  content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--ct-red);
+  animation: spBurst .5s ease-out forwards;
+}
+.sp-card__actions {
+  position: absolute; inset-inline: 8px; bottom: 8px; z-index: 3; display: flex; gap: 6px;
+  transform: translateY(calc(100% + 12px)); opacity: 0;
+  transition: transform .35s var(--ct-ease), opacity .25s ease;
+}
+.sp-card__act {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 0 10px;
+  border: 0; border-radius: 12px; cursor: pointer; font-family: inherit; font-size: 11.5px; font-weight: 800; white-space: nowrap;
+  background: rgba(255,255,255,.95); color: var(--ct-ink); box-shadow: 0 6px 16px -8px rgba(17,17,17,.45);
+  transition: background .2s, color .2s, transform .2s var(--ct-ease);
+}
+.sp-card__act:hover { transform: translateY(-1px); }
+.sp-card__act--cart { background: var(--ct-ink); color: #fff; }
+.sp-card__act--cart.is-done { background: var(--ct-green); }
+.sp-card__act--icon { flex: 0 0 38px; padding: 0; }
+.sp-card__act:disabled { opacity: .7; cursor: default; }
+.sp-card__soldout { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.6); backdrop-filter: blur(2px); }
+.sp-card__soldout span { padding: 5px 12px; border-radius: 999px; background: #111; color: #fff; font-size: 10px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.sp-card__body { display: flex; flex-direction: column; gap: 4px; flex: 1; padding: 8px 10px 10px; }
+.sp-card__shop { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 11.5px; font-weight: 600; color: #6b7280; }
+.sp-card__shop > span:not(.sp-avatar) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-card__name {
+  font-size: 13px; font-weight: 600; line-height: 1.35; color: #1f2937; min-height: calc(13px * 1.35 * 2);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; transition: color .2s;
+}
+.sp-card__rating { min-height: 14px; }
+.sp-card__rating:empty { display: none; }
+.sp-card__price { margin-top: auto; padding-top: 2px; }
+.sp-card__low { font-size: 10px; font-weight: 800; color: #ea580c; }
+@media (hover: hover) {
+  .sp-card:hover { box-shadow: inset 0 0 0 1px rgba(17,17,17,.14), 0 10px 24px -16px rgba(17,17,17,.35); }
+  .sp-card:hover .sp-card__img { transform: scale(1.03); }
+  .sp-card:hover .sp-card__actions, .sp-card:focus-within .sp-card__actions { transform: none; opacity: 1; }
+}
+/* touch: actions always reachable, compact */
+@media (hover: none) {
+  .sp-card__actions { transform: none; opacity: 1; inset-inline: auto 8px; }
+  [dir="rtl"] .sp-card__actions { inset-inline: 8px auto; }
+  .sp-card__act--label { display: none; }
+  .sp-card__act { flex: 0 0 36px; min-height: 36px; padding: 0; border-radius: 50%; }
+}
+.sp-card-enter { animation: spFadeIn .35s ease both; animation-delay: calc(var(--i, 0) * 30ms); }
+
+/* price: current bold (red only on sale), old struck and muted, small -X% tag */
+.sp-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 6px; }
+.sp-price__now { font-size: 15px; font-weight: 800; line-height: 1.2; color: var(--ct-ink); font-variant-numeric: tabular-nums; }
+.sp-price__now.is-sale { color: var(--ct-red); }
+.sp-price__was { font-size: 12px; font-weight: 500; color: #9ca3af; text-decoration: line-through; }
+.sp-price__pct { align-self: center; padding: 1px 5px; border-radius: 4px; background: var(--ct-red-tint); color: var(--ct-red-dark); font-size: 10.5px; font-weight: 800; line-height: 1.4; }
+
+/* deal layout (/deals): square image, denser body, "you save" line, full-width add to cart */
+.sp-card--deal { border-radius: 14px; }
+.sp-card--deal .sp-card__media { aspect-ratio: 1 / 1; }
+.sp-card--deal .sp-card__body { gap: 4px; padding: 9px 10px 10px; }
+.sp-card--deal .sp-card__badges { top: 8px; inset-inline-start: 8px; gap: 5px; }
+.sp-card--deal .sp-card__fav { width: 34px; height: 34px; }
+.sp-card__shoplink { position: relative; z-index: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; text-decoration: none; }
+.sp-card__shoplink:hover { color: var(--ct-red); text-decoration: underline; }
+.sp-card__save { font-size: 11px; font-weight: 800; color: var(--ct-green-dark); }
+.sp-card__cta {
+  position: relative; z-index: 2; margin-top: 6px; width: 100%; min-height: 36px; padding: 0 10px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 0; border-radius: 10px; cursor: pointer; text-decoration: none;
+  background: var(--ct-red); color: #fff; font-weight: 800; font-size: 12.5px; font-family: inherit; white-space: nowrap;
+  transition: background .2s, transform .2s var(--ct-ease);
+}
+.sp-card__cta:hover { background: var(--ct-red-dark); }
+.sp-card__cta:active { transform: scale(.98); }
+.sp-card__cta.is-done { background: var(--ct-green); }
+.sp-card__cta:disabled { background: #e5e7eb; color: #9ca3af; cursor: default; }
+.sp-card__cta--dark { background: #18181b; }
+.sp-card__cta--dark:hover { background: #000; }
+@media (hover: hover) {
+  .sp-card--deal:hover { transform: translateY(-4px); }
+}
+
+/* ── Stars ──────────────────────────────────────────────────────────────── */
+.sp-stars { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #6b7280; }
+.sp-stars__row { position: relative; display: inline-flex; color: #e5e7eb; letter-spacing: 1px; line-height: 1; }
+.sp-stars__fill { position: absolute; inset-block: 0; inset-inline-start: 0; overflow: hidden; white-space: nowrap; color: var(--ct-gold); }
+.sp-stars__num { color: var(--ct-ink); }
+
+/* shop photo on deal cards (fallback: first letter on a neutral circle) */
+.sp-avatar {
+  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 50%;
+  background: #eceef1; color: #6b7280; font-weight: 800; letter-spacing: 0; line-height: 1; text-transform: uppercase;
+  box-shadow: inset 0 0 0 1px rgba(17,17,17,.06);
+}
+.sp-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* pack cards (/deals): second photo on hover */
+.sp-card__img--alt { opacity: 0; }
+@media (hover: hover) {
+  .sp-card.has-alt:hover .sp-card__img--main { opacity: 0; }
+  .sp-card.has-alt:hover .sp-card__img--alt { opacity: 1; }
+}
+
+/* ── Image slider ───────────────────────────────────────────────────────── */
+.pc-track {
+  position: absolute; inset: 0; z-index: 2; display: flex;
+  overflow: hidden; scroll-snap-type: x mandatory; scrollbar-width: none;
+  overscroll-behavior-x: contain; -webkit-tap-highlight-color: transparent; cursor: pointer;
+}
+.pc-track::-webkit-scrollbar { display: none; }
+.pc-slide { position: relative; flex: 0 0 100%; height: 100%; scroll-snap-align: start; scroll-snap-stop: always; overflow: hidden; background: #f4f4f3; }
+/* touch: a native swipe (vertical scrolling stays with the page) */
+@media (hover: none) { .pc-track { overflow-x: auto; overflow-y: hidden; } }
+
+.sp-card__dots {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 3;
+  display: flex; gap: 4px; padding: 3px 5px; border-radius: 999px; background: rgba(17,17,17,.18);
+  opacity: 0; transition: opacity .2s, bottom .3s var(--ct-ease); pointer-events: none;
+}
+.sp-card__dots i { display: block; width: 5px; height: 5px; border-radius: 999px; background: rgba(255,255,255,.65); transition: width .25s var(--ct-ease), background .25s; }
+.sp-card__dots i.is-on { width: 14px; background: #fff; }
+.sp-card.is-flash .sp-card__dots { bottom: 34px; }
+@media (hover: hover) {
+  .sp-card:hover .sp-card__dots { opacity: 1; bottom: 54px; }
+  .sp-card.is-flash:hover .sp-card__dots { bottom: 80px; }
+  .sp-card--deal:hover .sp-card__dots, .sp-card--row:hover .sp-card__dots { bottom: 8px; }
+  .sp-card--deal.is-flash:hover .sp-card__dots, .sp-card--row.is-flash:hover .sp-card__dots { bottom: 34px; }
+}
+/* touch: always visible, at the start corner so the round action buttons keep the end corner */
+@media (hover: none) {
+  .sp-card__dots { opacity: 1; left: 8px; transform: none; }
+  [dir="rtl"] .sp-card__dots { left: auto; right: 8px; }
+}
+
+/* ── Color swatches ─────────────────────────────────────────────────────── */
+.pc-swatches { position: relative; z-index: 2; display: flex; align-items: center; gap: 2px; min-height: 22px; margin-inline-start: -4px; }
+.pc-swatch {
+  position: relative; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: transparent; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.pc-swatch::before {
+  content: ''; width: 14px; height: 14px; border-radius: 50%; background: var(--sw);
+  box-shadow: inset 0 0 0 1px rgba(17,17,17,.14); transition: transform .2s var(--ct-spring), box-shadow .2s;
+}
+.pc-swatch img { position: absolute; width: 14px; height: 14px; border-radius: 50%; object-fit: cover; }
+.pc-swatch:hover::before { transform: scale(1.15); }
+.pc-swatch.is-on::before { box-shadow: 0 0 0 1.5px #fff, 0 0 0 3px var(--ct-ink); }
+.pc-swatch-more { font-size: 10.5px; font-weight: 700; color: #9ca3af; padding-inline-start: 2px; }
+
+/* category / subcategory eyebrow (search, category pages) */
+.pc-label { font-size: 10px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--ct-red); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* page badges under the promo ones */
+.pc-badge { font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: .06em; line-height: 1.3; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; }
+.pc-badge--top  { background: #111; color: var(--ct-gold-soft); }
+.pc-badge--new  { background: var(--ct-green); color: #fff; }
+.pc-badge--hot  { background: linear-gradient(135deg, #f97316, var(--ct-red)); color: #fff; }
+.pc-badge--gold { background: linear-gradient(135deg, #ca8a04, #a16207); color: #fff; }
+.pc-badge--featured { background: var(--ct-red); color: #fff; }
+.pc-badge--official { background: rgba(255,255,255,.94); color: var(--ct-green-dark); box-shadow: 0 1px 3px rgba(17,17,17,.12); }
+.pc-rank {
+  position: absolute; bottom: 2px; inset-inline-start: 8px; z-index: 3; pointer-events: none;
+  font-size: 46px; font-weight: 900; line-height: 1; letter-spacing: -.04em; color: #fff;
+  -webkit-text-stroke: 1.5px #111; text-shadow: 0 4px 14px rgba(0,0,0,.35);
+}
+.pc-rank.is-top { -webkit-text-stroke-color: var(--ct-red); }
+.sp-card:has(.pc-rank) .sp-card__dots { left: auto; right: 8px; transform: none; }
+[dir="rtl"] .sp-card:has(.pc-rank) .sp-card__dots { right: auto; left: 8px; }
+
+/* ── Row layout (category list view) ────────────────────────────────────── */
+.sp-card--row { flex-direction: row; height: auto; }
+.sp-card--row .sp-card__media { flex: 0 0 132px; aspect-ratio: 3 / 4; }
+.sp-card--row .sp-card__body { padding: 12px 14px; gap: 5px; }
+.sp-card--row .sp-card__name { font-size: 14.5px; min-height: 0; }
+.sp-card__cta--row { align-self: flex-start; width: auto; padding: 0 16px; }
+@media (max-width: 560px) { .sp-card--row .sp-card__media { flex-basis: 100px; } }
+
+/* ── Skeleton ───────────────────────────────────────────────────────────── */
+.pc-skel { border-radius: 10px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1px var(--ct-line); }
+.pc-skel__media { aspect-ratio: 4 / 5; }
+.pc-skel--deal .pc-skel__media { aspect-ratio: 1 / 1; }
+.pc-skel__line { height: 10px; border-radius: 6px; margin: 10px 12px 0; }
+.pc-skel__media, .pc-skel__line {
+  background: linear-gradient(90deg, #efefec 25%, #f8f8f6 50%, #efefec 75%); background-size: 600px 100%;
+  animation: spShimmer 1.3s infinite linear;
+}
+
+/* ── Promo flyer (PromoFlyerCard) ───────────────────────────────────────── */
+.pc-flyer {
+  position: relative; display: flex; flex-direction: column; height: 100%; min-width: 0;
+  border-radius: 10px; overflow: hidden; isolation: isolate; color: #fff; text-decoration: none; text-align: start;
+  font-family: var(--body, inherit);
+  background: radial-gradient(120% 90% at 100% 0%, rgba(255,255,255,.14), transparent 55%), linear-gradient(155deg, #e11d38 0%, #b01025 62%, #7a0b1a 100%);
+  box-shadow: 0 10px 24px -18px rgba(176,16,37,.9);
+  transition: transform .35s var(--ct-ease), box-shadow .35s ease;
+  animation: spFadeIn .35s ease both;
+}
+.pc-flyer--discount {
+  background: radial-gradient(120% 90% at 100% 0%, rgba(255,255,255,.16), transparent 55%), linear-gradient(155deg, #1fa34c 0%, #198f41 55%, #0f5f2b 100%);
+  box-shadow: 0 10px 24px -18px rgba(19,114,52,.9);
+}
+.pc-flyer :where(p, h3) { margin: 0; }
+.pc-flyer__dots { position: absolute; inset: 0; z-index: -1; opacity: .12; background-image: radial-gradient(#fff 1px, transparent 1.4px); background-size: 14px 14px; pointer-events: none; }
+.pc-flyer__top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 8px; padding: 12px 12px 0; }
+.pc-flyer__kind { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; background: rgba(255,255,255,.18); font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.pc-flyer__off { font-size: clamp(20px, 2.2vw, 28px); font-weight: 900; line-height: .95; letter-spacing: -.02em; white-space: nowrap; }
+.pc-flyer__body { display: flex; flex-direction: column; gap: 3px; padding: 8px 12px 0; }
+.pc-flyer__name { font-size: 14px; font-weight: 800; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pc-flyer__meta { font-size: 11.5px; font-weight: 600; opacity: .9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-flyer__pics { position: relative; flex: 1; min-height: 120px; margin: 10px 12px 0; }
+.pc-flyer__pic { position: absolute; overflow: hidden; border-radius: 10px; background: rgba(255,255,255,.2); box-shadow: 0 10px 20px -10px rgba(0,0,0,.55); transition: transform .5s var(--ct-ease); }
+.pc-flyer__pic img { object-fit: cover; }
+.pc-flyer__pic:nth-child(1) { inset-block: 0; inset-inline: 0 22%; z-index: 2; }
+.pc-flyer__pic:nth-child(2) { inset-block: 10%; inset-inline: 62% 0; transform: rotate(4deg); z-index: 1; }
+.pc-flyer__pic:nth-child(3) { display: none; }
+.pc-flyer__pic:only-child { inset-inline: 0; }
+.pc-flyer__price { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; padding: 10px 12px 0; }
+.pc-flyer__now { font-size: 16px; font-weight: 900; }
+.pc-flyer__was { font-size: 12px; opacity: .75; text-decoration: line-through; }
+.pc-flyer__cta {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin: 10px 12px 12px; min-height: 36px; padding: 0 12px;
+  border-radius: 10px; background: #fff; color: var(--ct-ink); font-size: 12.5px; font-weight: 800; white-space: nowrap;
+  transition: transform .2s var(--ct-ease), box-shadow .2s;
+}
+.pc-flyer__cta svg { transition: transform .2s var(--ct-ease); }
+@media (hover: hover) {
+  .pc-flyer:hover { transform: translateY(-3px); box-shadow: 0 18px 32px -20px rgba(17,17,17,.6); }
+  .pc-flyer:hover .pc-flyer__pic:nth-child(1) { transform: scale(1.03); }
+  .pc-flyer:hover .pc-flyer__cta svg { transform: translateX(calc(3px * var(--pc-dir, 1))); }
+}
+[dir="rtl"] .pc-flyer { --pc-dir: -1; }
+.pc-flyer:focus-visible { outline: 3px solid var(--ct-ink); outline-offset: 2px; }
+
+@keyframes spHeart { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+@keyframes spBurst { from { transform: scale(.8); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
+@keyframes spFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes spShimmer { from { background-position: -600px 0; } to { background-position: 600px 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-card, .sp-card *, .pc-flyer, .pc-flyer *, .pc-skel * { animation: none !important; transition: none !important; }
+}

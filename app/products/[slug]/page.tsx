@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Heart, ShoppingCart, ChevronRight, Star, Shield, Truck,
   RotateCcw, Share2, Minus, Plus, ZoomIn, ChevronLeft,
-  CheckCircle, Loader2, Zap,
+  CheckCircle, Zap,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { isAuthenticated, getUser } from '@/lib/auth'
@@ -19,6 +19,8 @@ import ProductPrice, { ProductPromoBadges, type PricedProduct } from '@/app/comp
 import ProductReviewsSection from '@/app/components/reviews/ProductReviewsSection';
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL      = `${STORAGE_BASE}/api`
 
@@ -382,6 +384,8 @@ export default function ProductDetailPage() {
 
   const [product,         setProduct]         = useState<Product | null>(null)
   const [loading,         setLoading]         = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading)
   const [error,           setError]           = useState(false)
   const [quantity,        setQuantity]        = useState(1)
   const [addedToCart,     setAddedToCart]     = useState(false)
@@ -409,7 +413,13 @@ export default function ProductDetailPage() {
         }
         if (prod.has_variants && prod.selectable_axes?.length > 0) {
           const auto: Record<string, string> = {}
+          // ?color=<attribute option id>: the color photo search matched (or any link to one color)
+          const wanted = Number(new URLSearchParams(window.location.search).get('color'))
           for (const axis of prod.selectable_axes) {
+            if (wanted && axis.type === 'color') {
+              const o = (axis.options as ColorOption[]).find(o => o.id === wanted || o.ids?.includes(wanted))
+              if (o) { auto[axis.slug] = o.group_key ?? String(o.id); continue }
+            }
             if (axis.options.length === 1) {
               if (axis.type === 'color') {
                 const o = axis.options[0] as ColorOption
@@ -551,11 +561,7 @@ export default function ProductDetailPage() {
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ width: 40, height: 40, border: '3px solid #eee', borderTopColor: '#dc2626', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 16px' }} />
-        <p style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>{t('loading')}</p>
-      </div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <BrandLoader variant="section" label={t('loading')} />
     </div>
   )
 
@@ -778,11 +784,11 @@ export default function ProductDetailPage() {
                 <>
                   <button className="buy-now-btn" onClick={handleBuyNow} disabled={outOfStock || buyNowLoading}
                     style={{ flex: 1, height: 52, background: '#fff', color: outOfStock ? '#9ca3af' : '#dc2626', border: `2px solid ${outOfStock ? '#e5e7eb' : '#dc2626'}`, borderRadius: 12, cursor: outOfStock || buyNowLoading ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.2s', fontFamily: 'inherit', opacity: outOfStock ? 0.6 : 1 }}>
-                    {buyNowLoading ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} /> : <><Zap size={16} />{outOfStock ? tc('outOfStock') : tc('buyNow')}</>}
+                    {buyNowLoading ? <BrandLoader variant="inline" size={18} style={{ color: '#dc2626' }} /> : <><Zap size={16} />{outOfStock ? tc('outOfStock') : tc('buyNow')}</>}
                   </button>
                   <button onClick={handleAddToCart} disabled={outOfStock || cartLoading}
                     style={{ flex: 1, height: 52, background: outOfStock ? '#e5e7eb' : addedToCart ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#dc2626,#b91c1c)', color: outOfStock ? '#9ca3af' : '#fff', border: 'none', borderRadius: 12, cursor: outOfStock ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: outOfStock ? 'none' : addedToCart ? '0 8px 24px rgba(16,185,129,0.3)' : '0 8px 24px rgba(220,38,38,0.3)', transition: 'all 0.2s', fontFamily: 'inherit' }}>
-                    {cartLoading ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} /> : addedToCart ? <><CheckCircle size={18} />{tc('added')}</> : <><ShoppingCart size={18} />{outOfStock ? tc('outOfStock') : tc('addToCart')}</>}
+                    {cartLoading ? <BrandLoader variant="inline" size={18} /> : addedToCart ? <><CheckCircle size={18} />{tc('added')}</> : <><ShoppingCart size={18} />{outOfStock ? tc('outOfStock') : tc('addToCart')}</>}
                   </button>
                   <button onClick={handleToggleFavorite} aria-label={favorited ? t('removeFavorite') : t('addFavorite')} aria-pressed={favorited}
                     style={{ width: 52, height: 52, flexShrink: 0, borderRadius: '50%', border: `2px solid ${favorited ? '#dc2626' : '#e5e7eb'}`, background: favorited ? 'rgba(220,38,38,0.06)' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>

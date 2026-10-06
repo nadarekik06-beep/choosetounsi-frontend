@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import ProductPrice, { type PricedProduct } from '@/app/components/promotions/ProductPrice'
+import type { PricedProduct } from '@/app/components/promotions/ProductPrice'
+import ProductCard from '@/app/components/product/ProductCard'
+import type { CardSwatch } from '@/app/components/product/cardData'
 import { useTranslations } from 'next-intl'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
@@ -13,11 +15,15 @@ interface FlashProduct extends PricedProduct {
   slug: string
   price: number
   primary_image_url: string | null
-  seller: { name: string } | null
+  stock: number
+  seller: { id?: number; name: string; business_name?: string | null; plan?: string | null; avatar?: string | null } | null
   original_price: number
   effective_price: number
   discount_amount: number
-    variant_images?: string[]   // ← ADD
+  variant_images?: string[]
+  card_images?: string[]
+  card_swatches?: CardSwatch[]
+  variants?: { id: number; stock: number }[]
 
 }
 
@@ -46,91 +52,19 @@ function useCountdown(endsAt: string) {
   return time
 }
 
-function MiniCountdown({ endsAt }: { endsAt: string }) {
-  const { h, m, s, expired } = useCountdown(endsAt)
-  if (expired) return null
+/** The shared storefront card (square "deal" layout) with the flash stock meter under the price. */
+function FlashDealCard({ product, promo, index }: { product: FlashProduct; promo: FlashPromotion; index: number }) {
+  const sold = promo.flash_stock && promo.flash_stock_remaining !== null
+    ? Math.min(100, ((promo.flash_stock - promo.flash_stock_remaining) / promo.flash_stock) * 100)
+    : null
   return (
-    <span className="fds-timer" dir="ltr">
-      {String(h).padStart(2,'0')}:{String(m).padStart(2,'0')}:{String(s).padStart(2,'0')}
-    </span>
+    <div className="fds-card">
+      <ProductCard product={product} index={index} section="home_flash" layout="deal"
+        footer={sold !== null ? <div className="fds-stock-bar"><div className="fds-stock-fill" style={{ width: `${sold}%` }} /></div> : undefined} />
+    </div>
   )
 }
 
-function FlashDealCard({ product, promo }: { product: FlashProduct; promo: FlashPromotion }) {
-  const t = useTranslations('home')
-  const [imgErr, setImgErr] = useState(false)
-  const [imgIndex, setImgIndex] = useState(0)          // ← NEW
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null) // ← NEW
-
-  const allImages = useMemo(() => {                    // ← NEW
-    const imgs: string[] = []
-    if (product.primary_image_url) imgs.push(product.primary_image_url)
-    ;(product.variant_images ?? []).forEach(url => {
-      if (url && !imgs.includes(url)) imgs.push(url)
-    })
-    return imgs
-  }, [product.primary_image_url, product.variant_images])
-
-  useEffect(() => () => {
-    if (tickRef.current) clearInterval(tickRef.current)
-  }, [])
-
-  return (
-    <Link
-      href={`/products/${product.slug}`}
-      className="fds-card"
-      onMouseEnter={() => {                            // ← ADD
-        if (allImages.length > 1) {
-          tickRef.current = setInterval(() => {
-            setImgIndex(i => (i + 1) % allImages.length)
-          }, 1400)
-        }
-      }}
-      onMouseLeave={() => {                            // ← ADD
-        if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
-        setImgIndex(0)
-      }}
-    >
-      <div className="fds-img-wrap">
-        {allImages.length > 0 && !imgErr   // ← CHANGED from product.primary_image_url &&
-          ? <img
-              src={allImages[imgIndex]}    // ← CHANGED from product.primary_image_url
-              alt={product.name}
-              className="fds-img"
-              onError={() => setImgErr(true)}
-            />
-          : <div className="fds-img-placeholder">⚡</div>
-        }
-        {/* rest unchanged */}
-        {product.original_price > product.effective_price && (
-          <span className="fds-discount">
-            -{Math.round(((product.original_price - product.effective_price) / product.original_price) * 100)}%
-          </span>
-        )}
-        <div className="fds-flash-badge">
-          <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-          </svg>
-          {t('flashBadge')}
-        </div>
-        <MiniCountdown endsAt={promo.ends_at} />
-      </div>
-      <div className="fds-info">
-        <p className="fds-name">{product.name}</p>
-        <ProductPrice product={product} pack />
-        {promo.flash_stock_remaining !== null && (
-          <div className="fds-stock-bar">
-            <div className="fds-stock-fill" style={{
-              width: promo.flash_stock
-                ? `${Math.min(100, ((promo.flash_stock - (promo.flash_stock_remaining ?? promo.flash_stock)) / promo.flash_stock) * 100)}%`
-                : '0%'
-            }} />
-          </div>
-        )}
-      </div>
-    </Link>
-  )
-}
 export default function FlashDealsSection() {
   const t = useTranslations('home')
   const [promotions, setPromotions] = useState<FlashPromotion[]>([])
@@ -177,18 +111,8 @@ export default function FlashDealsSection() {
         .fds-view-all:hover { color:#db142e; }
         .fds-row     { display:flex; gap:12px; overflow-x:auto; padding:4px 2px 10px; scrollbar-width:none; -ms-overflow-style:none; }
         .fds-row::-webkit-scrollbar { display:none; }
-        .fds-card    { flex:0 0 auto; width:220px; text-decoration:none; color:inherit; display:block; }
+        .fds-card    { flex:0 0 auto; width:220px; }
         @media(max-width:640px){ .fds-card { width:160px; } }
-        .fds-img-wrap{ position:relative; width:100%; aspect-ratio:1/1; background:#f7f7f7; border-radius:12px; overflow:hidden; border:1.5px solid #efefef; transition:transform .22s ease, box-shadow .22s ease; }
-        .fds-card:hover .fds-img-wrap { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,0.10); }
-        .fds-img     { width:100%; height:100%; object-fit:cover; display:block; transition:transform .35s ease; }
-        .fds-card:hover .fds-img { transform:scale(1.05); }
-        .fds-img-placeholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:1.8rem; }
-        .fds-discount{ position:absolute; top:6px; inset-inline-start:6px; background:#db142e; color:#fff; font-size:8px; font-weight:800; padding:2px 5px; border-radius:999px; letter-spacing:.04em; }
-        .fds-flash-badge { position:absolute; top:6px; inset-inline-end:6px; display:flex; align-items:center; gap:2px; background:rgba(0,0,0,.6); color:#fbbf24; font-family:'Barlow',sans-serif; font-size:7px; font-weight:900; padding:2px 6px; border-radius:999px; backdrop-filter:blur(4px); letter-spacing:.06em; }
-        .fds-timer   { position:absolute; bottom:6px; inset-inline:6px; background:rgba(0,0,0,.65); color:rgba(255,255,255,.9); font-family:'Barlow Condensed',sans-serif; font-size:10px; font-weight:800; letter-spacing:.03em; padding:2px 6px; border-radius:999px; text-align:center; backdrop-filter:blur(4px); }
-        .fds-info    { padding:7px 2px 0; }
-        .fds-name    { font-family:'Barlow',sans-serif; font-size:11.5px; font-weight:700; color:#111; margin:0 0 4px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
         .fds-stock-bar  { height:3px; background:#f3f4f6; border-radius:2px; margin-top:6px; overflow:hidden; }
         .fds-stock-fill { height:100%; background:linear-gradient(90deg,#10b981,#fbbf24 55%,#db142e); border-radius:2px; transition:width .5s; }
         .fds-skel    { flex:0 0 auto; width:220px; }
@@ -223,8 +147,8 @@ export default function FlashDealsSection() {
                     <div className="fds-skel-line" style={{ width:'55%', marginTop:4 }} />
                   </div>
                 ))
-              : allItems.map(({ product, promo }) => (
-                  <FlashDealCard key={`${promo.id}-${product.id}`} product={product} promo={promo} />
+              : allItems.map(({ product, promo }, i) => (
+                  <FlashDealCard key={`${promo.id}-${product.id}`} product={product} promo={promo} index={i} />
                 ))
             }
           </div>

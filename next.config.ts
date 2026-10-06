@@ -20,6 +20,11 @@ const apiStorage = (() => {
   }
 })();
 
+// Shared store links, QR codes and Open Graph tags are built from this (see lib/storeLink.ts)
+if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_SITE_URL) {
+  console.warn('\n⚠ NEXT_PUBLIC_SITE_URL is not set: shared store links will fall back to the request origin.\n')
+}
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [

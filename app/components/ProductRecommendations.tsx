@@ -11,20 +11,15 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronRight, Loader2, Store, Star, Zap, Heart } from 'lucide-react'
+import { ChevronRight, Store, Star, Zap, Heart } from 'lucide-react'
 import { getToken } from '@/lib/auth'
-import ProductPrice, { ProductPromoOverlay, promoPricing, type PricedProduct } from '@/app/components/promotions/ProductPrice'
+import type { PricedProduct } from '@/app/components/promotions/ProductPrice'
+import ProductCard, { ProductCardSkeleton } from '@/app/components/product/ProductCard'
+import type { CardSwatch } from '@/app/components/product/cardData'
 import { useTranslations } from 'next-intl'
-import { useFormat } from '@/lib/i18n/useFormat'
 
 const API_URL      = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
-const STORAGE_BASE = API_URL.replace(/\/api\/?$/, '')
 
-function resolveImg(url: string | null | undefined): string | null {
-  if (!url) return null
-  if (url.startsWith('http')) return url
-  return `${STORAGE_BASE}/storage/${url.replace(/^\/storage\//, '')}`
-}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,8 +48,12 @@ interface RecProduct extends PricedProduct {
   stock: number
   primary_image_url: string | null
   featured: boolean
-  seller: { id: number; name: string } | null
+  seller: { id: number; name: string; business_name?: string | null; avatar?: string | null } | null
   _score?: number | null
+  card_images?: string[]
+  card_swatches?: CardSwatch[]
+  variant_images?: string[]
+  variants?: { id: number; stock: number }[]
 }
 
 interface SellerInfo {
@@ -67,84 +66,13 @@ interface SellerInfo {
   total_products: number
 }
 
-// ─── Mini product card ────────────────────────────────────────────────────────
+// ─── Mini product card — the shared storefront card ───────────────────────────
 
-function MiniCard({ product }: { product: RecProduct }) {
-  const t  = useTranslations('recommendations')
-  const tc = useTranslations('productCard')
-  const { price: fmt } = useFormat()
-  const [imgErr, setImgErr] = useState(false)
-  const img        = resolveImg(product.primary_image_url)
-  const outOfStock = product.stock <= 0
-
-  const { final, original, hasDiscount } = promoPricing(product)
-
+function MiniCard({ product, index, section }: { product: RecProduct; index: number; section: string }) {
+  const t = useTranslations('recommendations')
   return (
-    <Link href={`/products/${product.slug}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-      <div
-        style={{
-          background: '#fff', borderRadius: 12,
-          border: '1px solid #f1f5f9', overflow: 'hidden',
-          transition: 'box-shadow 0.2s, transform 0.2s', cursor: 'pointer',
-        }}
-        onMouseEnter={e => {
-          (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)'
-          ;(e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'
-        }}
-        onMouseLeave={e => {
-          (e.currentTarget as HTMLElement).style.boxShadow = 'none'
-          ;(e.currentTarget as HTMLElement).style.transform = 'none'
-        }}
-      >
-        {/* Image */}
-        <div style={{ position: 'relative', aspectRatio: '3/4', background: '#f8fafc', overflow: 'hidden' }}>
-          {img && !imgErr
-            ? <img src={img} alt={product.name} onError={() => setImgErr(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>📦</div>
-          }
-
-          {/* -X% + FLASH / PROMO + flash countdown, same as /deals */}
-          <ProductPromoOverlay product={product} badgeStyle={{ top: 6, insetInlineStart: 6 }} />
-
-          {product.featured && (
-            <span style={{ position: 'absolute', top: 6, insetInlineEnd: 6, fontSize: 8, fontWeight: 800, background: '#198f41', color: '#fff', padding: '2px 6px', borderRadius: 999, textTransform: 'uppercase' }}>
-              {t('top')}
-            </span>
-          )}
-
-          {outOfStock && (
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 9, fontWeight: 900, background: '#111', color: '#fff', padding: '3px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{tc('soldOut')}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Info */}
-        <div style={{ padding: '8px 10px 10px' }}>
-          {product.seller?.name && (
-            <p style={{ fontSize: 9, fontWeight: 700, color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px' }}>
-              {product.seller.name}
-            </p>
-          )}
-          <p style={{ fontSize: 12, fontWeight: 700, color: '#1f2937', margin: '0 0 5px', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            {product.name}
-          </p>
-
-          <ProductPrice product={product} pack />
-
-          {/* Savings pill */}
-          {hasDiscount && (
-            <p style={{
-              fontSize: 9, fontWeight: 700, color: '#059669',
-              background: '#f0fdf4', padding: '1px 5px',
-              borderRadius: 999, display: 'inline-block', marginTop: 3,
-            }}>
-              {t('save', { amount: fmt(original - final) })}
-            </p>
-          )}
-        </div>
-      </div>
-    </Link>
+    <ProductCard product={product} index={index} section={section}
+      badge={product.featured ? <span className="pc-badge pc-badge--new">{t('top')}</span> : undefined} />
   )
 }
 
@@ -192,14 +120,14 @@ function RecommendationSection({
       </div>
 
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        <div className="rec-grid">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} style={{ borderRadius: 12, overflow: 'hidden', background: '#f1f5f9', aspectRatio: '3/4', animation: 'shimmer 1.3s infinite linear', backgroundSize: '600px 100%' }} />
+            <ProductCardSkeleton key={i} />
           ))}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-          {products.map(p => <MiniCard key={p.id} product={p} />)}
+        <div className="rec-grid">
+          {products.map((p, i) => <MiniCard key={p.id} product={p} index={i} section={`product_${endpoint}`} />)}
         </div>
       )}
     </div>
@@ -280,14 +208,14 @@ function FromSellerSection({ slug }: { slug: string }) {
       )}
 
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        <div className="rec-grid">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} style={{ borderRadius: 12, background: '#f1f5f9', aspectRatio: '3/4' }} />
+            <ProductCardSkeleton key={i} />
           ))}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-          {products.map(p => <MiniCard key={p.id} product={p} />)}
+        <div className="rec-grid">
+          {products.map((p, i) => <MiniCard key={p.id} product={p} index={i} section="product_from_seller" />)}
         </div>
       )}
     </div>
@@ -307,9 +235,9 @@ export default function ProductRecommendations({ slug, sellerId }: Props) {
     <>
       <style>{`
         @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
-        @media(max-width:768px) {
-          .rec-grid { grid-template-columns: repeat(2, 1fr) !important; }
-        }
+        .rec-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+        @media(max-width:1024px) { .rec-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+        @media(max-width:640px)  { .rec-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
       `}</style>
 
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px 64px', fontFamily: "'Barlow', sans-serif" }}>

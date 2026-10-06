@@ -96,3 +96,34 @@ export async function fetchPaymentInfo(): Promise<PaymentInfo> {
   const json = await res.json()
   return { d17_account_number: json?.data?.d17_account_number ?? null }
 }
+
+// ── Site features (GET /api/site-features) ─────────────────────────────────
+// Storefront sections the admin switches on/off. Everything stays hidden until
+// the backend says otherwise, so a disabled section never flashes on screen.
+
+export interface SiteFeatures { wear_tounsi: boolean }
+
+const FEATURES_OFF: SiteFeatures = { wear_tounsi: false }
+
+let featuresPromise: Promise<SiteFeatures> | null = null
+
+export function fetchSiteFeatures(): Promise<SiteFeatures> {
+  if (!featuresPromise) {
+    featuresPromise = fetch(`${API_URL}/site-features`, { headers: { Accept: 'application/json' } })
+      .then(r => r.json())
+      .then(j => ({ ...FEATURES_OFF, ...(j?.data ?? {}) }) as SiteFeatures)
+      .catch(() => { featuresPromise = null; return FEATURES_OFF })
+  }
+  return featuresPromise
+}
+
+/** null while loading. */
+export function useSiteFeatures(): SiteFeatures | null {
+  const [features, setFeatures] = useState<SiteFeatures | null>(null)
+  useEffect(() => {
+    let alive = true
+    fetchSiteFeatures().then(f => { if (alive) setFeatures(f) })
+    return () => { alive = false }
+  }, [])
+  return features
+}

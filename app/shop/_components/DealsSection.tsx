@@ -5,37 +5,26 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { useInView } from '@/app/hooks/useInView'
-import TunisianPattern from '@/app/components/home/illustrations/TunisianPattern'
+import { Clock as ClockIcon } from 'lucide-react'
 import type { DealProduct } from '@/lib/shopPageApi'
-import ShopProductCard from './ShopProductCard'
-import { ArrowIcon, Rail, Reveal, SectionHead, splitDuration, useNow } from './primitives'
+import ProductCard from '@/app/components/product/ProductCard'
+import { ArrowIcon, Rail, splitDuration, useNow } from './primitives'
 
-/** Big ticking clock to the soonest-ending deal. */
+/** Discreet "Ends in 02:14:33" pill for the soonest-ending deal. */
 function Clock({ endsAt }: { endsAt: string }) {
   const t  = useTranslations('countdown')
   const td = useTranslations('shopPage.deals')
   const now = useNow()
   const left = splitDuration(now === null ? 0 : new Date(endsAt).getTime() - now)
-  const boxes = [
-    ...(left.d > 0 ? [{ k: 'd', v: left.d, u: t('daySuffix') }] : []),
-    { k: 'h', v: left.h, u: t('hr') },
-    { k: 'm', v: left.m, u: t('min') },
-    { k: 's', v: left.s, u: t('sec') },
-  ]
+  const pad = (n: number) => String(n).padStart(2, '0')
   return (
-    <div className="sp-clock" role="timer" aria-live="off">
-      <span className="sp-clock__label">{td('endsIn')}</span>
-      <span className="sp-clock__boxes">
-        {boxes.map(b => (
-          <span key={b.k} className="sp-clock__box">
-            <span key={b.k === 's' ? b.v : undefined} className={`sp-clock__num${b.k === 's' ? ' is-tick' : ''}`} suppressHydrationWarning>
-              {now === null ? '--' : String(b.v).padStart(2, '0')}
-            </span>
-            <span className="sp-clock__unit">{b.u}</span>
-          </span>
-        ))}
+    <span className="sp-clock" role="timer" aria-live="off">
+      <ClockIcon size={12} aria-hidden="true" />
+      <span>{td('endsIn')}</span>
+      <span className="sp-clock__num ltr-iso" suppressHydrationWarning>
+        {now === null ? '--:--:--' : `${left.d > 0 ? `${left.d}${t('daySuffix')} ` : ''}${pad(left.h)}:${pad(left.m)}:${pad(left.s)}`}
       </span>
-    </div>
+    </span>
   )
 }
 
@@ -70,19 +59,20 @@ export default function DealsSection({ deals }: { deals: DealProduct[] }) {
   return (
     <section className="sp-section sp-section--tight" aria-labelledby="sp-deals-title">
       <div className="sp-container">
-        <Reveal className={`sp-deals${deals.length <= 3 ? ' sp-deals--few' : ''}`}>
-          <TunisianPattern color="#ffffff" className="sp-pattern" />
-          <SectionHead id="sp-deals-title" eyebrow={t('eyebrow')} line1={t('title1')} line2={t('title2')} lead={t('lead')}
-            action={<Link href="/deals" className="sp-link">{t('seeAll')}<ArrowIcon /></Link>} />
-          {soonest && <div className="sp-deals__clock"><Clock endsAt={soonest} /></div>}
+        <div className={`sp-deals${deals.length <= 3 ? ' sp-deals--few' : ''}`}>
+          <div className="sp-deals__head">
+            <h2 id="sp-deals-title" className="sp-deals__title">{t('eyebrow')}</h2>
+            {soonest && <Clock endsAt={soonest} />}
+            <Link href="/deals" className="sp-link sp-deals__all">{t('seeAll')}<ArrowIcon size={13} /></Link>
+          </div>
           <Rail className="sp-rail--products" label={t('eyebrow')}>
             {deals.map((d, i) => (
               <div key={d.id} role="listitem">
-                <ShopProductCard product={d} index={i} section="shop_deals" footer={<Meter deal={d.deal} />} />
+                <ProductCard product={d} index={i} section="shop_deals" eager={i < 6} footer={<Meter deal={d.deal} />} />
               </div>
             ))}
           </Rail>
-        </Reveal>
+        </div>
       </div>
     </section>
   )

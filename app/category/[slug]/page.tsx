@@ -11,15 +11,18 @@ import {
 } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import ProductPrice, { ProductPromoBadges, ProductPromoOverlay, type PricedProduct } from '@/app/components/promotions/ProductPrice'
-import { useCart } from '@/context/CartContext'
+import type { PricedProduct } from '@/app/components/promotions/ProductPrice'
+import ProductCard, { ProductCardSkeleton } from '@/app/components/product/ProductCard'
+import PromoFlyerCard from '@/app/components/product/PromoFlyerCard'
+import type { CardSwatch } from '@/app/components/product/cardData'
 
 import Navbar from '@/app/components/layout/Navbar'
-import SponsoredCard from '@/components/ads/SponsoredCard'
-import { fetchAds, fetchAdsConfig, withAdSlots, type AdCard } from '@/lib/adsApi'
+import { fillGrid, useGridExtras } from '@/lib/gridFill'
 import ProductFilterSidebar, { type F, DEFAULT_FILTERS, appendFilterParams, hasActiveFilters } from '@/app/components/filters/ProductFilterSidebar'
 import { useTranslations } from 'next-intl'
 import { canScrollNext, canScrollPrev, scrollCarousel } from '@/lib/i18n/rtlScroll'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
+import { RouteLoading } from '@/components/brand/NavigationLoader'
 
 const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API    = `${ORIGIN}/api`
@@ -60,266 +63,30 @@ interface Product extends PricedProduct {
   original_price?: number | null    // crossed-out price (30-day lowest) when discounted
   discount_amount?: number | null   // absolute savings amount
   promotion?: ActivePromotion | null
+  card_images?: string[]
+  card_swatches?: CardSwatch[]
+  variant_images?: string[]
+  avg_rating?: number | null
+  reviews_count?: number
 }
 
 interface Category { id: number; name: string; slug: string; icon: string | null; description?: string | null }
 interface Paginated { data: Product[]; current_page: number; last_page: number; total: number }
 type View = 'grid' | 'list'
 
-// ─── Image helpers ────────────────────────────────────────────────────────────
-function primaryImg(p: Product): string | null {
-  if (p.primary_image_url) return p.primary_image_url.startsWith('http') ? p.primary_image_url : `${ORIGIN}${p.primary_image_url}`
-  if (p.primary_image?.url) { const u = p.primary_image.url; return u.startsWith('http') ? u : `${ORIGIN}${u}` }
-  if (p.primary_image?.image_path) return `${ORIGIN}/storage/${p.primary_image.image_path}`
-  return null
-}
-function galleryImgs(p: Product): string[] {
-  const out: string[] = []
-  if (p.images?.length) {
-    p.images.forEach(i => {
-      const u = i.url ? (i.url.startsWith('http') ? i.url : `${ORIGIN}${i.url}`) : `${ORIGIN}/storage/${i.image_path}`
-      if (u && !out.includes(u)) out.push(u)
-    })
-  }
-  const pri = primaryImg(p)
-  if (pri && !out.includes(pri)) out.unshift(pri)
-  return out.filter(Boolean)
+// ─── Product card — the shared storefront card (image slider, swatches) ──────
+function Card({ p, idx, list = false }: { p: Product; idx: number; list?: boolean }) {
+  const t = useTranslations('category')
+  const badge = p.is_new || p.is_bestseller ? (
+    <>
+      {p.is_new        && <span className="pc-badge pc-badge--new">{t('badgeNew')}</span>}
+      {p.is_bestseller && <span className="pc-badge pc-badge--top">{t('badgeTop')}</span>}
+    </>
+  ) : undefined
+  return <ProductCard product={p} index={idx} section="category" eager={idx < 4} badge={badge} layout={list ? 'row' : 'default'} />
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  PRODUCT CARD
-// ══════════════════════════════════════════════════════════════════════════════
-function Card({ p, idx }: { p: Product; idx: number }) {
-  const t   = useTranslations('category')
-  const tc  = useTranslations('productCard')
-  const { addToCart, isFavorited, toggleFavorite } = useCart()
-  const gallery = useMemo(() => galleryImgs(p), [p])
-
-  const [cur,    setCur]   = useState(0)
-  const [prev,   setPrev]  = useState<number | null>(null)
-  const [sliding,setSlide] = useState(false)
-  const [hov,    setHov]   = useState(false)
-  const wish = isFavorited(p.id)
-  const [cs,     setCs]    = useState<'idle' | 'busy' | 'done'>('idle')
-  const [imgErr, setErr]   = useState(false)
-
-  const tickRef  = useRef<ReturnType<typeof setInterval> | null>(null)
-  const resetRef = useRef<ReturnType<typeof setTimeout>  | null>(null)
-
-  const oos = p.stock <= 0
-
-  const swatches    = p.color_swatches ?? []
-  const maxSwatches = 5
-  const visSwatches = swatches.slice(0, maxSwatches)
-  const extraCount  = swatches.length > maxSwatches ? swatches.length - maxSwatches : 0
-
-  const advance = useCallback(() => {
-    if (gallery.length < 2) return
-    setCur(c => {
-      const next = (c + 1) % gallery.length
-      setPrev(c)
-      setSlide(true)
-      setTimeout(() => { setSlide(false); setPrev(null) }, 550)
-      return next
-    })
-  }, [gallery.length])
-
-  const onEnter = () => {
-    setHov(true)
-    if (resetRef.current) { clearTimeout(resetRef.current); resetRef.current = null }
-    if (gallery.length > 1) tickRef.current = setInterval(advance, 1600)
-  }
-  const onLeave = () => {
-    setHov(false)
-    if (tickRef.current)  { clearInterval(tickRef.current);  tickRef.current  = null }
-    resetRef.current = setTimeout(() => { setCur(0); setPrev(null); setSlide(false) }, 600)
-  }
-  useEffect(() => () => {
-    if (tickRef.current)  clearInterval(tickRef.current)
-    if (resetRef.current) clearTimeout(resetRef.current)
-  }, [])
-
-  const addCart = async (e: React.MouseEvent) => {
-    e.preventDefault(); e.stopPropagation()
-    if (oos || cs !== 'idle') return
-    const variants = p.variants ?? []
-    if (variants.length > 1) {
-      window.location.href = `/products/${p.slug}`
-      return
-    }
-    const variantId = variants.length === 1 ? variants[0].id : null
-    setCs('busy')
-    await addToCart(p.id, 1, variantId)
-    setCs('done')
-    setTimeout(() => setCs('idle'), 2200)
-  }
-
-  return (
-    <Link
-      href={`/products/${p.slug}`}
-      onMouseEnter={onEnter}
-      onMouseLeave={onLeave}
-      style={{ '--d': `${Math.min(idx * 0.042, 0.5)}s` } as React.CSSProperties}
-      className="shc"
-    >
-      {/* ── Image stage ── */}
-      <div className="shc-stage">
-
-        {sliding && prev !== null && gallery[prev] && (
-          <div className="shc-layer shc-layer-out">
-            <img src={gallery[prev]} alt="" className="shc-img" draggable={false} />
-          </div>
-        )}
-
-        <div className={`shc-layer${sliding ? ' shc-layer-in' : ''}${hov && !sliding ? ' shc-layer-zoom' : ''}`}>
-          {gallery[cur] && !imgErr
-            ? <img src={gallery[cur]} alt={p.name} className="shc-img" onError={() => setErr(true)} draggable={false} />
-            : <div className="shc-noimg">
-                <svg width="36" height="36" fill="none" stroke="#ccc" strokeWidth="1.2" viewBox="0 0 24 24">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
-                </svg>
-              </div>
-          }
-        </div>
-
-        {/* ── Badges ── */}
-        <div className="shc-badges">
-          {/* -X% + FLASH / PROMO, same as /deals */}
-          <ProductPromoBadges product={p} inline />
-
-          {p.is_new        && <span className="shc-badge shc-new">{t('badgeNew')}</span>}
-          {p.is_bestseller && <span className="shc-badge shc-hot">{t('badgeTop')}</span>}
-        </div>
-
-        <ProductPromoOverlay product={p} badges={false} />
-
-        {oos && <div className="shc-oos"><span>{tc('soldOut')}</span></div>}
-
-        <button className={`shc-wish${wish ? ' on' : ''}`}
-          onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.id) }}
-          aria-label={tc('wishlist')} aria-pressed={wish}>
-          <svg width="14" height="14" fill={wish ? '#db142e' : 'none'} stroke={wish ? '#db142e' : '#666'} strokeWidth="2.1" viewBox="0 0 24 24">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-        </button>
-
-        {gallery.length > 1 && (
-          <div className="shc-dots">
-            {gallery.slice(0, 5).map((_, i) => <span key={i} className={`shc-dot${i === cur ? ' on' : ''}`} />)}
-          </div>
-        )}
-
-        <div className={`shc-cta${hov ? ' show' : ''}`}>
-          <button className={`shc-add${cs === 'done' ? ' done' : ''}${oos ? ' oos' : ''}`}
-            onClick={addCart} disabled={oos || cs === 'busy'}>
-            {cs === 'busy' && <span className="shc-spin" />}
-            {cs === 'done' && <svg width="12" height="12" fill="none" stroke="#fff" strokeWidth="2.8" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>}
-            {cs === 'idle' && !oos && (
-              <svg width="12" height="12" fill="none" stroke="#fff" strokeWidth="2.2" viewBox="0 0 24 24">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
-              </svg>
-            )}
-            <span>{oos ? tc('soldOut') : cs === 'done' ? t('added') : cs === 'busy' ? '' : tc('addToCart')}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ── Info ── */}
-      <div className="shc-info">
-        {p.seller?.name && <p className="shc-seller">{p.seller.name}</p>}
-        <p className="shc-name">{p.name}</p>
-
-        {p.short_description && (
-          <p className="shc-desc">{p.short_description}</p>
-        )}
-
-        <ProductPrice product={p} pack className="shc-prices" />
-
-        {/* Color swatches */}
-        {visSwatches.length > 0 && (
-          <div className="shc-swatches">
-            {visSwatches.map(sw => (
-              <span
-                key={sw.id}
-                className="shc-sw"
-                title={sw.value}
-                style={{ background: sw.color_hex ?? '#e5e7eb' }}
-              />
-            ))}
-            {extraCount > 0 && (
-              <span className="shc-sw-more">+{extraCount}</span>
-            )}
-          </div>
-        )}
-
-        {p.stock > 0 && p.stock <= 5 && <p className="shc-low">{tc('onlyLeft', { count: p.stock })}</p>}
-      </div>
-    </Link>
-  )
-}
-
-// ─── List card — same price fix applied ───────────────────────────────────────
-function ListCard({ p, idx }: { p: Product; idx: number }) {
-  const t   = useTranslations('category')
-  const tc  = useTranslations('productCard')
-  const { addToCart } = useCart()
-  const [cs, setCs] = useState<'idle' | 'busy' | 'done'>('idle')
-  const [err, setErr] = useState(false)
-  const pri = primaryImg(p)
-
-  const handle = async (e: React.MouseEvent) => {
-    e.preventDefault(); e.stopPropagation()
-    if (p.stock <= 0 || cs !== 'idle') return
-    const variants = p.variants ?? []
-    if (variants.length > 1) {
-      window.location.href = `/products/${p.slug}`
-      return
-    }
-    const variantId = variants.length === 1 ? variants[0].id : null
-    setCs('busy')
-    await addToCart(p.id, 1, variantId)
-    setCs('done')
-    setTimeout(() => setCs('idle'), 2000)
-  }
-
-  return (
-    <Link href={`/products/${p.slug}`} className="shlc" style={{ '--d': `${Math.min(idx * 0.04, 0.4)}s` } as React.CSSProperties}>
-      <div className="shlc-img">
-        {pri && !err
-          ? <img src={pri} alt={p.name} style={{ width:'100%',height:'100%',objectFit:'cover' }} onError={() => setErr(true)} />
-          : <div className="shc-noimg" />
-        }
-        <ProductPromoOverlay product={p} />
-      </div>
-      <div className="shlc-body">
-        {p.seller?.name && <p className="shc-seller">{p.seller.name}</p>}
-        <p className="shlc-name">{p.name}</p>
-        {p.short_description && <p className="shlc-desc">{p.short_description}</p>}
-        <div className="shlc-foot">
-          <ProductPrice product={p} pack className="shc-prices" />
-          <button
-            className={`shc-add shc-add-sm${cs === 'done' ? ' done' : ''}`}
-            onClick={handle}
-            disabled={p.stock <= 0 || cs === 'busy'}
-          >
-            {cs === 'done' ? `✓ ${t('added')}` : p.stock <= 0 ? tc('soldOut') : `+ ${t('add')}`}
-          </button>
-        </div>
-      </div>
-    </Link>
-  )
-}
-
-const Skel = () => (
-  <div className="shsk">
-    <div className="shsk-img" />
-    <div className="shsk-body">
-      <div className="shsk-ln" style={{ width:'42%',height:9 }} />
-      <div className="shsk-ln" style={{ width:'75%',height:13,marginTop:5 }} />
-      <div className="shsk-ln" style={{ width:'35%',height:15,marginTop:6 }} />
-    </div>
-  </div>
-)
+const Skel = () => <ProductCardSkeleton />
 
 // ─── Category bar — UNCHANGED ─────────────────────────────────────────────────
 function CatBar({ cats, active, view, setView, mOpen, setMOpen, fCount, shown, total }: {
@@ -398,10 +165,9 @@ function Inner() {
 
   const [allC, setAllC]  = useState<Category[]>([])
   const [prods,setProds] = useState<Paginated|null>(null)
-  // Sponsored products in reserved grid slots (organic order and the chosen sort are untouched)
-  const [ads,setAds] = useState<AdCard[]>([])
-  const [adSlots,setAdSlots] = useState<number[]>([])
   const [load, setLoad]  = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(load)
   const [page, setPage]  = useState(1)
   const [view, setView]  = useState<View>('grid')
   const [mOpen,setMOpen] = useState(false)
@@ -447,14 +213,6 @@ function Inner() {
   },[slug,subSlug,f.sort,filterKey,page])
 
   useEffect(()=>{ fetchP() },[fetchP])
-  useEffect(()=>{
-    setAds([])
-    if(!slug||load||!prods?.data?.length) return
-    const ctrl=new AbortController()
-    Promise.all([fetchAds('category_top',{categorySlug:slug,exclude:prods.data.map(p=>p.id)},ctrl.signal),fetchAdsConfig()])
-      .then(([list,cfg])=>{ setAds(list); setAdSlots(cfg?.reserved_slots??[]) })
-    return ()=>ctrl.abort()
-  },[slug,load,prods])
   useEffect(()=>{ setPage(1) },[f.sort,filterKey,subSlug])
 
   const displayed=useMemo(()=>{
@@ -466,6 +224,13 @@ function Inner() {
   const subLabel=tMega.has(`items.${subSlug}`)?tMega(`items.${subSlug}`):subSlug.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
   const fCount=[f.q!=='',f.inStock,f.isPack,f.occasions.length>0,f.pMin!==''||f.pMax!=='',subSlug!=='',Object.values(f.attrs).some(v=>v.length)].filter(Boolean).length
   const filtered=hasActiveFilters(f)||f.q!==''
+
+  // Sponsored products (category_top, this category) and promo flyers between the organic
+  // cards; organic order and the chosen sort are untouched. Not on a filtered list: a paid
+  // card must never look like it matches a price / stock / attribute filter it doesn't.
+  const pageIds=useMemo(()=>(prods?.data??[]).map(p=>p.id),[prods])
+  const extras=useGridExtras({ placement:'category_top', categorySlug:slug, ids:pageIds, enabled:!load&&pageIds.length>0&&!filtered })
+  const cells=useMemo(()=>fillGrid(displayed,extras,{ adEvery:extras.adEvery, flyerEvery:view==='grid'?extras.flyerEvery:0 }).cells,[displayed,extras,view])
 
   return (
     <>
@@ -508,7 +273,7 @@ function Inner() {
         .catbar-vb{width:29px;height:29px;border-radius:6px;border:1.5px solid #e5e7eb;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#bbb;transition:all .13s}
         .catbar-vb:hover,.catbar-vb.on{border-color:#db142e;color:#db142e}.catbar-vb.on{background:rgba(219,20,46,.06)}
 
-        .shlayout{max-width:1520px;margin:0 auto;padding:18px 32px 50px;display:grid;grid-template-columns:246px 1fr;gap:18px;align-items:start}
+        .shlayout{max-width:1520px;margin:0 auto;padding:18px 32px 50px;display:grid;grid-template-columns:246px minmax(0,1fr);gap:18px;align-items:start;--pfs-offset:48px}
         .sbar-desk{display:block}
 
         .sbar{background:#fff;border-radius:12px;border:1px solid #eee;overflow:hidden;position:sticky;top:calc(var(--nav-h,0px) + 56px + 8px);max-height:calc(100vh - var(--nav-h,0px) - 56px - 16px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#f0f0f0 transparent}
@@ -562,62 +327,8 @@ function Inner() {
         .sbar-drawer .sbar{border-radius:0;position:static;box-shadow:none;border:none;max-height:none}
         .sbar-drawer .sbar-apply{display:flex}
 
-        /* ════ PRODUCT CARD ════ */
-        .shc{background:#fff;border-radius:11px;border:1px solid #eee;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;cursor:pointer;animation:shFadeUp .42s ease both;animation-delay:var(--d,0s);transition:box-shadow .22s,transform .22s,border-color .2s;will-change:transform}
-        .shc:hover{box-shadow:0 12px 38px rgba(0,0,0,.11);border-color:#e0e0e0;transform:translateY(-4px)}
-        .shc-stage{position:relative;width:100%;aspect-ratio:3/4;overflow:hidden;background:#f5f5f5;flex-shrink:0}
-        .shc-layer{position:absolute;inset:0;will-change:transform}
-        .shc-layer-out{z-index:1;animation:shSlideL .52s cubic-bezier(.77,0,.175,1) forwards}
-        .shc-layer-in {z-index:2;animation:shSlideR .52s cubic-bezier(.77,0,.175,1) forwards}
-        .shc-layer-zoom{transform:scale(1.055);transition:transform .55s cubic-bezier(.25,.46,.45,.94)}
-        .shc-img{width:100%;height:100%;object-fit:cover;display:block}
-        .shc-noimg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f4f4f6}
-        .shc-badges{position:absolute;top:8px;inset-inline-start:8px;display:flex;flex-direction:column;gap:4px;z-index:5}
-        .shc-badge{font-size:8px;font-weight:900;padding:2px 6px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
-        .shc-disc{background:#db142e;color:#fff}.shc-new{background:#198f41;color:#fff}.shc-hot{background:#111;color:#fbbf24}
-        .shc-oos{position:absolute;inset:0;z-index:6;background:rgba(255,255,255,.62);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center}
-        .shc-oos span{background:#111;color:#fff;font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;padding:5px 13px;border-radius:999px}
-        .shc-wish{position:absolute;top:8px;inset-inline-end:8px;z-index:7;width:28px;height:28px;background:rgba(255,255,255,.88);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.09);backdrop-filter:blur(4px);transition:transform .16s,background .16s}
-        .shc-wish:hover{transform:scale(1.14);background:#fff}.shc-wish.on{animation:shPop .3s ease}
-        .shc-dots{position:absolute;bottom:48px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:5}
-        .shc-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.6);transition:all .22s}
-        .shc-dot.on{background:#fff;width:15px;border-radius:3px}
-        .shc-cta{position:absolute;bottom:0;inset-inline:0;padding:0 9px 9px;z-index:6;transform:translateY(110%);opacity:0;transition:transform .3s cubic-bezier(.34,1.48,.64,1),opacity .22s}
-        .shc-cta.show{transform:translateY(0);opacity:1}
-        .shc-add{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px 10px;background:#db142e;color:#fff;font-size:12px;font-weight:800;border:none;border-radius:8px;cursor:pointer;font-family:'Outfit',sans-serif;box-shadow:0 4px 14px rgba(219,20,46,.38);transition:background .13s,transform .11s;letter-spacing:.01em}
-        .shc-add:hover:not(:disabled){background:#b91c1c;transform:scale(1.01)}.shc-add:disabled{cursor:not-allowed}
-        .shc-add.oos{background:#e5e7eb;color:#aaa;box-shadow:none}.shc-add.done{background:#198f41;box-shadow:0 4px 14px rgba(25,143,65,.35)}
-        .shc-add-sm{padding:5px 11px;font-size:11px;border-radius:7px;white-space:nowrap;flex-shrink:0}
-        .shc-spin{width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:shSpin .65s linear infinite;display:inline-block}
-        .shc-info{padding:9px 11px 12px;display:flex;flex-direction:column;gap:3px;flex:1}
-        .shc-seller{font-size:9px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:.07em}
-        .shc-name{font-size:12.5px;font-weight:600;color:#1f2937;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-        .shc:hover .shc-name{color:#db142e}
-        .shc-desc{font-size:10.5px;font-weight:400;color:#9ca3af;line-height:1.4;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;margin-top:1px}
-        .shc-prices{display:flex;align-items:baseline;gap:5px;margin-top:3px;flex-wrap:wrap}
-        .shc-price{font-size:13.5px;font-weight:900;color:#db142e}
-        .shc-orig{font-size:10px;font-weight:500;color:#bbb;text-decoration:line-through}
-        .shc-swatches{display:flex;align-items:center;gap:4px;margin-top:5px;flex-wrap:nowrap;overflow:hidden}
-        .shc-sw{display:inline-block;width:13px;height:13px;border-radius:50%;border:1.5px solid rgba(0,0,0,.10);flex-shrink:0;transition:transform .14s}
-        .shc-sw:hover{transform:scale(1.22)}
-        .shc-sw-more{font-size:9px;font-weight:700;color:#9ca3af;white-space:nowrap;flex-shrink:0}
-        .shc-low{font-size:9.5px;font-weight:700;color:#f97316;background:#fff7ed;padding:1px 7px;border-radius:999px;display:inline-block;margin-top:2px}
-        .shlc{background:#fff;border-radius:11px;border:1px solid #eee;overflow:hidden;display:flex;text-decoration:none;animation:shFadeUp .42s ease both;animation-delay:var(--d,0s);transition:box-shadow .2s,transform .2s}
-        .shlc:hover{box-shadow:0 6px 22px rgba(0,0,0,.08);transform:translateX(3px)}
-        [dir=rtl] .shlc:hover{transform:translateX(-3px)}
-        [dir=rtl] .shc-layer-out{animation-name:shSlideLRtl}[dir=rtl] .shc-layer-in{animation-name:shSlideRRtl}
-        .shlc-img{position:relative;width:138px;flex-shrink:0}
-        .shlc-body{padding:15px 18px;display:flex;flex-direction:column;gap:5px;flex:1}
-        .shlc-name{font-size:15px;font-weight:700;color:#1f2937;line-height:1.4}
-        .shlc:hover .shlc-name{color:#db142e}
-        .shlc-desc{font-size:12px;color:#6b7280;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-        .shlc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:7px;gap:9px;flex-wrap:wrap}
         .shlist{display:flex;flex-direction:column;gap:10px}
-        .shsk{background:#fff;border-radius:11px;border:1px solid #eee;overflow:hidden}
-        .shsk-img{aspect-ratio:3/4;background:linear-gradient(90deg,#f2f2f2 25%,#fafafa 50%,#f2f2f2 75%);background-size:700px 100%;animation:shShimmer 1.3s infinite linear}
-        .shsk-body{padding:9px 11px 12px;display:flex;flex-direction:column;gap:7px}
-        .shsk-ln{border-radius:4px;background:linear-gradient(90deg,#f2f2f2 25%,#fafafa 50%,#f2f2f2 75%);background-size:700px 100%;animation:shShimmer 1.3s infinite linear}
-        .shgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
+        .shgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
         .pages{display:flex;align-items:center;justify-content:center;gap:5px;padding:24px 0 0;flex-wrap:wrap}
         .pgb{width:34px;height:34px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;color:#555;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .13s}
         .pgb:hover:not(:disabled){border-color:#db142e;color:#db142e}.pgb:disabled{opacity:.35;cursor:not-allowed}
@@ -629,15 +340,15 @@ function Inner() {
         .shempty-sub{font-size:12px;color:#bbb;max-width:270px;line-height:1.6}
         .shempty-cta{margin-top:5px;display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:#db142e;color:#fff;font-weight:800;font-size:12px;border-radius:8px;text-decoration:none;transition:background .13s}
         .shempty-cta:hover{background:#b91c1c}
-        @media(max-width:1260px){.shgrid{grid-template-columns:repeat(3,1fr)}.shlayout{grid-template-columns:220px 1fr}}
+        @media(max-width:1260px){.shgrid{grid-template-columns:repeat(3,minmax(0,1fr))}.shlayout{grid-template-columns:220px minmax(0,1fr)}}
         @media(max-width:920px){
           .shlayout{grid-template-columns:1fr;padding:13px 15px 38px}
           .sbar-desk{display:none}.catbar-fb{display:flex}
-          .shgrid{grid-template-columns:repeat(3,1fr);gap:10px}
+          .shgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
         }
         @media(max-width:560px){
-          .shgrid{grid-template-columns:repeat(2,1fr);gap:8px}
-          .shlayout{padding:10px 10px 30px}.shlc-img{width:100px}
+          .shgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+          .shlayout{padding:10px 10px 30px}
         }
       `}</style>
 
@@ -662,14 +373,13 @@ function Inner() {
             )}
             {!load&&displayed.length>0&&(
               <>
-                {view==='grid'
-                  ?<div className="shgrid">{withAdSlots(displayed,ads,adSlots).map((c,i)=>'ad' in c
-                    ?<SponsoredCard key={`ad-${c.ad.sponsor_data.id}`} ad={c.ad} index={i}/>
-                    :<Card key={c.item.id} p={c.item} idx={i}/>)}</div>
-                  :<div className="shlist">{withAdSlots(displayed,ads,adSlots).map((c,i)=>'ad' in c
-                    ?<SponsoredCard key={`ad-${c.ad.sponsor_data.id}`} ad={c.ad} index={i} layout="row"/>
-                    :<ListCard key={c.item.id} p={c.item} idx={i}/>)}</div>
-                }
+                <div className={view==='grid'?'shgrid':'shlist'}>
+                  {cells.map((c,i)=>c.kind==='flyer'
+                    ?<PromoFlyerCard key={`f-${c.flyer.id}`} flyer={c.flyer} index={i} section="category"/>
+                    :c.kind==='ad'
+                      ?<ProductCard key={`ad-${c.ad.id}`} product={c.ad} index={i} section="category" layout={view==='list'?'row':'default'}/>
+                      :<Card key={c.item.id} p={c.item} idx={i} list={view==='list'}/>)}
+                </div>
                 {prods&&<Pages cur={page} total={prods.last_page} go={n=>{setPage(n);window.scrollTo({top:0,behavior:'smooth'})}}/>}
               </>
             )}
@@ -684,12 +394,7 @@ export default function CategoryPage() {
   return (
     <>
       <Navbar />
-      <Suspense fallback={
-        <div style={{minHeight:'80vh',background:'#f6f6f7',display:'flex',alignItems:'center',justifyContent:'center'}}>
-          <div style={{width:34,height:34,border:'3px solid #eee',borderTopColor:'#db142e',borderRadius:'50%',animation:'_s .7s linear infinite'}}/>
-          <style>{`@keyframes _s{to{transform:rotate(360deg)}}`}</style>
-        </div>
-      }>
+      <Suspense fallback={<RouteLoading minHeight="80vh" />}>
         <Inner />
       </Suspense>
     </>

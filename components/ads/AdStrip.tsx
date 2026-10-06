@@ -2,7 +2,7 @@
 
 /**
  * A small titled strip of ads for one placement:
- *   - product page: "Sponsored — similar items" (product_similar, grid)
+ *   - product page: "Sponsored — similar items" (product_similar, grid of the shared ProductCard)
  *   - cart drawer:  "Sponsored — you might also like" (cart_cross_sell, compact rows)
  * Renders nothing when the ad server has nothing relevant.
  */
@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { fetchAds, type AdCard, type AdPlacement, type AdQuery } from '@/lib/adsApi'
 import SponsoredCard from './SponsoredCard'
+import ProductCard from '@/app/components/product/ProductCard'
 
 export default function AdStrip({ placement, query, title, layout = 'grid', onNavigate }: {
   placement: Extract<AdPlacement, 'product_similar' | 'cart_cross_sell'>
@@ -40,9 +41,10 @@ export default function AdStrip({ placement, query, title, layout = 'grid', onNa
       <div style={layout === 'row'
         ? { display: 'flex', flexDirection: 'column', gap: 8 }
         : { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(160px, 45%), 1fr))', gap: 12 }}>
-        {ads.map((ad, i) => (
-          <SponsoredCard key={ad.sponsor_data.id} ad={ad} index={i} layout={layout} onNavigate={onNavigate} />
-        ))}
+        {ads.map((ad, i) => layout === 'row'
+          ? <SponsoredCard key={ad.sponsor_data.id} ad={ad} index={i} layout="row" onNavigate={onNavigate} />
+          // Grid: the shared storefront card (slider, swatches); it reports the ad's impression / click
+          : <ProductCard key={ad.sponsor_data.id} product={ad} index={i} section={placement} />)}
       </div>
     </section>
   )

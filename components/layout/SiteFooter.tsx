@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { LanguageInlineSelect } from '@/components/i18n/LanguageSwitcher'
 import MarketingConsentToggle from '@/components/marketing/MarketingConsentToggle'
+import { useSiteFeatures } from '@/lib/platformApi'
 
 // Pages with their own chrome (dashboards, printable documents, auth callbacks) skip the footer.
 const HIDDEN_PREFIXES = ['/seller', '/invoice', '/settlement', '/auth/google', '/onboarding', '/complete-profile']
@@ -12,6 +13,7 @@ const HIDDEN_PREFIXES = ['/seller', '/invoice', '/settlement', '/auth/google', '
 export default function SiteFooter() {
   const t = useTranslations('footer')
   const pathname = usePathname() ?? '/'
+  const wearTounsi = useSiteFeatures()?.wear_tounsi ?? false
   if (HIDDEN_PREFIXES.some(p => pathname.startsWith(p))) return null
 
   const openSupport = () => window.dispatchEvent(new Event('open-support-chat'))
@@ -31,7 +33,7 @@ export default function SiteFooter() {
           <p className="sf-h">{t('shop')}</p>
           <Link href="/shop">{t('allProducts')}</Link>
           <Link href="/deals">{t('deals')}</Link>
-          <Link href="/brand">{t('brand')}</Link>
+          {wearTounsi && <Link href="/brand">{t('brand')}</Link>}
           <Link href="/shop#for-you">{t('discover')}</Link>
         </nav>
 

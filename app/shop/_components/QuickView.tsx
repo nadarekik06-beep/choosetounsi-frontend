@@ -39,7 +39,8 @@ export interface QuickSeed {
   reviews?: number
 }
 
-const QuickViewCtx = createContext<(seed: QuickSeed) => void>(() => {})
+// null outside a QuickViewProvider: cards then hide their quick-view button
+const QuickViewCtx = createContext<((seed: QuickSeed) => void) | null>(null)
 export const useQuickView = () => useContext(QuickViewCtx)
 
 /** Renders the modal inside the page wrapper (fonts, tokens) and hands cards an opener. */

@@ -347,9 +347,15 @@ export default function ProductFilterSidebar({
         @keyframes pfsSlideInRtl { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
         @keyframes pfsShimmer { 0%{background-position:-700px 0} 100%{background-position:700px 0} }
 
-        .pfs-desk{display:block}
+        /* Sticky filters. The wrapper is the sticky box, not the inner <aside>: the aside fills
+           the wrapper exactly, so it had no room to move and scrolled away with the page.
+           Put the sidebar straight in the page's grid/flex row (no extra wrapper div) so the
+           wrapper can travel the whole row; align-self keeps it from stretching to the row height.
+           --nav-h is the height of the page's sticky header (0 when the page has none); --pfs-offset
+           adds any other sticky bar the page shows under it (e.g. the category bar). */
+        .pfs-desk{display:block;position:sticky;top:calc(var(--nav-h,0px) + var(--pfs-offset,0px) + 12px);align-self:flex-start;max-height:calc(100vh - var(--nav-h,0px) - var(--pfs-offset,0px) - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#e5e7eb transparent;border-radius:12px}
 
-        .pfs{background:#fff;border-radius:12px;border:1px solid #eee;overflow:hidden;position:sticky;top:8px;max-height:calc(100vh - 16px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#f0f0f0 transparent;font-family:'Outfit',sans-serif}
+        .pfs{background:#fff;border-radius:12px;border:1px solid #eee;overflow:clip;font-family:'Outfit',sans-serif}
         .pfs-hd{display:flex;align-items:center;justify-content:space-between;padding:13px 16px 9px;border-bottom:1px solid #f5f5f5;position:sticky;top:0;background:#fff;z-index:2}
         .pfs-title{font-size:13px;font-weight:800;color:#111;margin-bottom:2px}
         .pfs-count{font-size:10px;color:#bbb;font-weight:500}

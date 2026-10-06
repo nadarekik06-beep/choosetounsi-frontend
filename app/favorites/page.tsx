@@ -11,149 +11,42 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import {
-  Heart, ShoppingCart, ChevronRight, Trash2, Package, Loader2,
-} from 'lucide-react'
+import { Heart, ChevronRight } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { isAuthenticated } from '@/lib/auth'
 import type { FavoriteItem } from '@/lib/shopApi'
 import { useTranslations } from 'next-intl'
-import ProductPrice, { ProductPromoOverlay } from '@/app/components/promotions/ProductPrice'
-
-const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api$/, '')
-
-function resolveImg(path: string | null | undefined): string | null {
-  if (!path) return null
-  if (path.startsWith('http')) return path
-  return `${STORAGE_BASE}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
-}
+import ProductCard from '@/app/components/product/ProductCard'
+import type { CardSwatch } from '@/app/components/product/cardData'
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 // ─── Favorite Card ────────────────────────────────────────────────────────────
+// The shared product card on the favourited variant: its color image first, the cart
+// adds that exact variant, and the heart removes this favourite.
 
-function FavoriteCard({ item, onRemove }: { item: FavoriteItem; onRemove: () => void }) {
-  const t  = useTranslations('favorites')
-  const tc = useTranslations('common')
-  const { addToCart, cartLoading } = useCart()
-  const [adding, setAdding] = useState(false)
+type FavoriteCardItem = FavoriteItem & {
+  card_images?: string[]
+  card_swatches?: CardSwatch[]
+  variants?: { id: number; stock: number }[]
+}
 
-  // image_url is already resolved by backend (variant color → product primary fallback)
-  const imgSrc = resolveImg(item.image_url)
-
-  const colorOptions = Object.values(item.variant_options ?? {}).filter(o => o.color_hex)
-  const otherOptions = Object.values(item.variant_options ?? {}).filter(o => !o.color_hex)
-
-  const handleAddToCart = async () => {
-    if (item.product_id == null) return
-    setAdding(true)
-    try {
-      await addToCart(item.product_id, 1, item.variant_id ?? null)
-    } finally {
-      setAdding(false)
-    }
-  }
+function FavoriteCard({ item, index, onRemove }: { item: FavoriteCardItem; index: number; onRemove: () => void }) {
+  const options = Object.values(item.variant_options ?? {})
+  const footer = item.variant_label ? (
+    <div className="fav-variant">
+      {options.filter(o => o.color_hex).map((o, i) => (
+        <span key={`c${i}`} className="fav-variant__dot" title={o.value} style={{ background: o.color_hex! }} />
+      ))}
+      {options.filter(o => !o.color_hex).map((o, i) => <span key={`o${i}`} className="fav-variant__opt">{o.value}</span>)}
+    </div>
+  ) : undefined
 
   return (
-    <div style={{
-      background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9',
-      overflow: 'hidden', display: 'flex', flexDirection: 'column',
-    }}>
-      {/* Image */}
-      <Link href={`/products/${item.slug}`} style={{ display: 'block', position: 'relative', aspectRatio: '3/4', overflow: 'hidden', background: '#f8fafc' }}>
-        {imgSrc
-          ? <img src={imgSrc} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }} />
-          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Package size={28} color="#e2e8f0" />
-            </div>
-        }
-        {/* -X% + FLASH / PROMO + flash countdown, same as /deals */}
-        <ProductPromoOverlay product={item} />
-        {item.stock <= 0 && (
-          <div style={{ position: 'absolute', top: 8, insetInlineEnd: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 999 }}>
-            {tc('outOfStock')}
-          </div>
-        )}
-      </Link>
-
-      {/* Info */}
-      <div style={{ padding: '12px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <Link href={`/products/${item.slug}`}
-          style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', textDecoration: 'none', lineHeight: 1.3,
-            overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box',
-            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-          {item.name}
-        </Link>
-
-        {/* Variant indicators */}
-        {item.variant_label && (
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
-            {colorOptions.map((opt, i) => (
-              <span key={i} title={opt.value} style={{
-                display: 'inline-block', width: 14, height: 14, borderRadius: '50%',
-                background: opt.color_hex!, border: '1.5px solid rgba(0,0,0,0.12)', flexShrink: 0,
-              }} />
-            ))}
-            {otherOptions.map((opt, i) => (
-              <span key={i} style={{
-                fontSize: 10, fontWeight: 700, color: '#6366f1',
-                background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
-                padding: '1px 7px', borderRadius: 4,
-              }}>
-                {opt.value}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Price */}
-        <ProductPrice product={item} size="md" />
-
-        {/* Low stock */}
-        {item.stock > 0 && item.stock <= 10 && (
-          <p style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700, margin: 0 }}>
-            {t('onlyLeft', { count: item.stock })}
-          </p>
-        )}
-
-        {/* Actions */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <button
-            onClick={handleAddToCart}
-            disabled={item.stock <= 0 || cartLoading || adding}
-            style={{
-              flex: 1, height: 38, borderRadius: 10, border: 'none',
-              cursor: item.stock <= 0 ? 'not-allowed' : 'pointer',
-              background: item.stock <= 0 ? '#f1f5f9' : 'linear-gradient(135deg,#dc2626,#b91c1c)',
-              color: item.stock <= 0 ? '#94a3b8' : '#fff',
-              fontSize: 12, fontWeight: 800,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              boxShadow: item.stock <= 0 ? 'none' : '0 4px 14px rgba(220,38,38,0.25)',
-              opacity: (cartLoading || adding) ? 0.6 : 1,
-              fontFamily: 'inherit', transition: 'all 0.15s',
-            }}
-          >
-            {adding
-              ? <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />
-              : <ShoppingCart size={13} />
-            }
-            {item.stock <= 0 ? tc('outOfStock') : tc('addToCart')}
-          </button>
-
-          <button
-            onClick={onRemove}
-            style={{
-              width: 38, height: 38, borderRadius: 10,
-              border: '1px solid #fee2e2', background: '#fff',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#ef4444', transition: 'background 0.15s',
-            }}
-            title={t('remove')}
-            aria-label={t('remove')}
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-      </div>
-    </div>
+    <ProductCard
+      product={{ ...item, id: item.product_id ?? item.id }}
+      index={index} section="favorites" eager={index < 4}
+      variantId={item.variant_id} onFavorite={onRemove} footer={footer} />
   )
 }
 
@@ -164,6 +57,8 @@ export default function FavoritesPage() {
   const tc     = useTranslations('common')
   const router = useRouter()
   const { favorites, toggleFavorite, favLoading } = useCart()
+  // holds the navigation loader until the first load is done
+  usePageLoading(favLoading && favorites.length === 0)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -173,7 +68,7 @@ export default function FavoritesPage() {
     }
   }, [router])
 
-  const items = (favorites as (FavoriteItem | null)[]).filter((f): f is FavoriteItem => f != null)
+  const items = (favorites as (FavoriteCardItem | null)[]).filter((f): f is FavoriteCardItem => f != null && f.product_id != null)
 
   return (
     <>
@@ -181,6 +76,11 @@ export default function FavoritesPage() {
         @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap');
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+        .fav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(200px,45%),1fr));gap:18px}
+        @media(max-width:640px){.fav-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+        .fav-variant{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+        .fav-variant__dot{width:13px;height:13px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.14)}
+        .fav-variant__opt{font-size:10px;font-weight:700;color:#4f46e5;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);padding:1px 7px;border-radius:4px}
       `}</style>
 
       <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Barlow', sans-serif" }}>
@@ -213,10 +113,7 @@ export default function FavoritesPage() {
 
           {/* Loading */}
           {favLoading && items.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <Loader2 size={28} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626', margin: '0 auto 12px' }} />
-              <p style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>{t('loading')}</p>
-            </div>
+            <BrandLoader variant="section" label={t('loading')} minHeight={240} />
           )}
 
           {/* Empty */}
@@ -236,11 +133,11 @@ export default function FavoritesPage() {
 
           {/* Grid */}
           {items.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(220px, 45%), 1fr))', gap: 20 }}>
-              {items.map(item => (
+            <div className="fav-grid">
+              {items.map((item, i) => (
                 <FavoriteCard
                   key={`${item.product_id}-${item.variant_id ?? 'base'}`}
-                  item={item}
+                  item={item} index={i}
                   onRemove={() => { if (item.product_id != null) toggleFavorite(item.product_id, item.variant_id) }}
                 />
               ))}

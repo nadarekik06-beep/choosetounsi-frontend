@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { useCart } from '@/context/CartContext'
-import { isAuthenticated } from '@/lib/auth'
-import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import ProductPrice, { ProductPromoOverlay, type PricedProduct } from '@/app/components/promotions/ProductPrice'
+import type { PricedProduct } from '@/app/components/promotions/ProductPrice'
+import ProductCard, { ProductCardSkeleton } from '@/app/components/product/ProductCard'
+import type { CardSwatch } from '@/app/components/product/cardData'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -20,163 +19,30 @@ interface Product extends PricedProduct {
   category?: { name: string; slug: string } | null
   is_featured?: boolean
   is_platform_product?: boolean
-  variant_images?: string[]   
-
+  variant_images?: string[]
+  card_images?: string[]
+  card_swatches?: CardSwatch[]
+  variants?: { id: number; stock: number }[]
 }
 
+/** The shared storefront card with the brand's "official" badge and the category eyebrow. */
 function BrandProductCard({ product, index }: { product: Product; index: number }) {
-  const t   = useTranslations('productCard')
-  const { addToCart, isFavorited, toggleFavorite } = useCart()
-  const router = useRouter()
-  const [imgErr, setImgErr] = useState(false)
-  const [added, setAdded] = useState(false)
-  const [hovered, setHovered] = useState(false)
-
-  const favorited = isFavorited(product.id)
-  const outOfStock = product.stock <= 0
-
-  const handleCart = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    if (!isAuthenticated()) { router.push('/auth/login'); return }
-    if (outOfStock) return
-    await addToCart(product.id, 1, null)
-    setAdded(true)
-    setTimeout(() => setAdded(false), 1800)
-  }
-
-  const handleFav = (e: React.MouseEvent) => {
-    e.preventDefault()
-    toggleFavorite(product.id, null)
-  }
-  const [imgIndex, setImgIndex] = useState(0)
-const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-const allImages = useMemo(() => {
-  const imgs: string[] = []
-  if (product.primary_image_url) imgs.push(product.primary_image_url)
-  ;(product.variant_images ?? []).forEach(url => {
-    if (url && !imgs.includes(url)) imgs.push(url)
-  })
-  return imgs
-}, [product.primary_image_url, product.variant_images])
-
-useEffect(() => () => {
-  if (tickRef.current) clearInterval(tickRef.current)
-}, [])
-
+  const t = useTranslations('productCard')
   return (
-    <Link
-      href={`/products/${product.slug}`}
-      className="bpc-card"
-      style={{ animationDelay: `${index * 0.08}s` }}
-      onMouseEnter={() => {
-  setHovered(true)
-  if (allImages.length > 1) {
-    tickRef.current = setInterval(() => {
-      setImgIndex(i => (i + 1) % allImages.length)
-    }, 1400)
-  }
-}}
-onMouseLeave={() => {
-  setHovered(false)
-  if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
-  setImgIndex(0)
-}}
-    >
-      {/* Image */}
-      <div className="bpc-img-wrap">
-          {allImages.length > 0 && !imgErr ? (
-          <img
-            src={allImages[imgIndex] ?? product.primary_image_url ?? ''}
-            alt={product.name}
-            className="bpc-img"
-            onError={() => setImgErr(true)}
-          />
-        ) : (
-          <div className="bpc-img-fallback">
-            <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.2" viewBox="0 0 24 24">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <path d="m21 15-5-5L5 21"/>
-            </svg>
-          </div>
-        )}
-
-        {/* Official badge */}
-        <div className="bpc-official-badge">
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
+    <ProductCard product={product} index={index} section="home_brand" label={product.category?.name}
+      badge={(
+        <span className="pc-badge pc-badge--official">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
           </svg>
           {t('official')}
-        </div>
-
-        {/* -X% + FLASH / PROMO (below the official badge) + flash countdown, same as /deals */}
-        <ProductPromoOverlay product={product} badgeStyle={{ top: 36, insetInlineStart: 10 }} />
-
-        {/* Out of stock overlay */}
-        {outOfStock && (
-          <div className="bpc-sold-overlay">
-            <span>{t('soldOut')}</span>
-          </div>
-        )}
-
-        {/* Hover actions */}
-        <div className="bpc-actions">
-          <button className={`bpc-action-btn ${favorited ? 'bpc-action-btn--fav' : ''}`} onClick={handleFav} title={t('wishlist')} aria-label={t('wishlist')} aria-pressed={favorited}>
-            <svg width="14" height="14" fill={favorited ? '#dc2626' : 'none'} stroke={favorited ? '#dc2626' : 'currentColor'} strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-          </button>
-          <button
-            className={`bpc-action-btn bpc-action-btn--cart ${added ? 'bpc-action-btn--added' : ''}`}
-            onClick={handleCart}
-            disabled={outOfStock}
-            title={t('addToCart')}
-            aria-label={t('addToCart')}
-          >
-            {added ? (
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            ) : (
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-              </svg>
-            )}
-          </button>
-        </div>
-
-        {/* Shine effect */}
-        <div className="bpc-shine" />
-      </div>
-
-      {/* Info */}
-      <div className="bpc-info">
-        {product.category && (
-          <span className="bpc-cat">{product.category.name}</span>
-        )}
-        <p className="bpc-name">{product.name}</p>
-        <div className="bpc-price-row">
-          <ProductPrice product={product} pack size="md" />
-        </div>
-      </div>
-    </Link>
+        </span>
+      )} />
   )
 }
 
 function BrandSkeleton() {
-  return (
-    <div className="bpc-skeleton">
-      <div className="bpc-skel-img" />
-      <div style={{ padding: '12px 14px' }}>
-        <div className="bpc-skel-line" style={{ width: '40%', height: 9, marginBottom: 8 }} />
-        <div className="bpc-skel-line" style={{ width: '85%', height: 12, marginBottom: 5 }} />
-        <div className="bpc-skel-line" style={{ width: '55%', height: 12 }} />
-        <div className="bpc-skel-line" style={{ width: '45%', height: 16, marginTop: 10 }} />
-      </div>
-    </div>
-  )
+  return <ProductCardSkeleton />
 }
 
 export default function BrandCollectionSection() {
@@ -364,12 +230,12 @@ export default function BrandCollectionSection() {
         /* ── Grid ── */
         .bpc-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 16px;
         }
-        @media (max-width: 1024px) { .bpc-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 768px)  { .bpc-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 480px)  { .bpc-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
+        @media (max-width: 1024px) { .bpc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+        @media (max-width: 768px)  { .bpc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 480px)  { .bpc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
 
         /* ── Product card ── */
         .bpc-card {

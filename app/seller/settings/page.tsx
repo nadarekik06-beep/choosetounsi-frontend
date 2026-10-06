@@ -13,13 +13,19 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { ImageUp, Loader2, CheckCircle2, AlertCircle, Store } from 'lucide-react'
+import Link from 'next/link'
+import { ImageUp, CheckCircle2, AlertCircle, Store, Share2, ExternalLink } from 'lucide-react'
+import { getUser } from '@/lib/auth'
+import { storePath } from '@/lib/storeLink'
+import { StoreLinkPanel } from '@/app/components/seller/ShareStore'
 import { storeProfileApi, storageUrl } from '@/lib/sellerApi'
 import { useTheme } from '../SellerShell'
 import { useTranslations } from 'next-intl'
 import { ink } from '@/app/seller/ink';
 import PickupAddressCard from './PickupAddressCard'
 
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 const MAX_SIZE = 4 * 1024 * 1024 // 4MB — matches backend validation
 const ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
 
@@ -33,10 +39,13 @@ interface StoreProfile {
 export default function SellerSettingsPage() {
   const { dark } = useTheme()
   const t = useTranslations('seller.settings')
+  const ts = useTranslations('storeShare')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [profile,     setProfile]     = useState<StoreProfile | null>(null)
   const [loading,     setLoading]     = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading)
   const [preview,     setPreview]     = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [validationErr, setValidationErr] = useState<string | null>(null)
@@ -49,7 +58,10 @@ export default function SellerSettingsPage() {
   const textMain  = dark ? '#fff' : '#111'
   const textMuted = dark ? 'rgba(255,255,255,0.55)' : '#5b6472'
 
+  const [sellerId, setSellerId] = useState<number | null>(null)
+
   useEffect(() => {
+    setSellerId(getUser()?.id ?? null)
     storeProfileApi.get()
       .then(json => { if (json.success) setProfile(json.data) })
       .catch(() => {})
@@ -104,7 +116,7 @@ export default function SellerSettingsPage() {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
-        <Loader2 size={24} className="animate-spin" color="#db142e" />
+        <BrandLoader variant="section" theme={dark ? 'dark' : 'light'} />
       </div>
     )
   }
@@ -137,6 +149,23 @@ export default function SellerSettingsPage() {
           </p>
         </div>
       </div>
+
+      {/* Public store link: copy, share, QR code for flyers and packaging */}
+      {sellerId && profile?.business_name && (
+        <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 14, padding: 18, marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Share2 size={16} color="#db142e" />
+              <h2 style={{ fontSize: 14, fontWeight: 800, color: textMain, margin: 0 }}>{ts('cardTitle')}</h2>
+            </div>
+            <Link href={storePath(sellerId, profile.business_name)} target="_blank" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: ink('#f87171', dark), textDecoration: 'none' }}>
+              {ts('viewStore')} <ExternalLink size={12} />
+            </Link>
+          </div>
+          <p style={{ fontSize: 12, color: textMuted, margin: '0 0 14px' }}>{ts('cardHint')}</p>
+          <StoreLinkPanel store={{ id: sellerId, name: profile.business_name }} showQr dark={dark} />
+        </div>
+      )}
 
       {/* Pickup address (courier collection point) */}
       <PickupAddressCard dark={dark} cardBg={cardBg} border={border} textMain={textMain} textMuted={textMuted} />
@@ -213,7 +242,7 @@ export default function SellerSettingsPage() {
               display: 'flex', alignItems: 'center', gap: 6,
             }}
           >
-            {uploading && <Loader2 size={13} className="animate-spin" />}
+            {uploading && <BrandLoader variant="inline" size={13} />}
             {uploading ? t('uploading') : t('save')}
           </button>
         </div>

@@ -17,21 +17,20 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/app/components/layout/Navbar'
 import { isAuthenticated } from '@/lib/auth'
-import { ShoppingCart, Heart, Star, Loader2, AlertCircle, Package } from 'lucide-react'
-import { useCart } from '@/context/CartContext'
+import { Star, AlertCircle, Package } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import ProductPrice, { ProductPromoBadges, ProductPromoOverlay, type PricedProduct } from '@/app/components/promotions/ProductPrice'
+import type { PricedProduct } from '@/app/components/promotions/ProductPrice'
+import SharedProductCard from '@/app/components/product/ProductCard'
+import { useSiteFeatures } from '@/lib/platformApi'
+import type { CardSwatch } from '@/app/components/product/cardData'
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
+import { RefreshCover } from '@/components/brand/BrandLoader'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api')
-const STORAGE_BASE = API_BASE.replace(/\/api\/?$/, '')
 
-function resolveImg(path: string | null | undefined): string | null {
-  if (!path) return null
-  if (path.startsWith('http')) return path
-  return `${STORAGE_BASE}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
-}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,6 +44,9 @@ interface BrandProduct extends PricedProduct {
   featured: boolean
   primary_image_url: string | null
   category: { id: number; name: string; slug: string } | null
+  card_images?: string[]
+  card_swatches?: CardSwatch[]
+  variants?: { id: number; stock: number }[]
 }
 
 // ─── Hero slides — texts in messages: brandPage.slides.s<id>.{tag,title,headline} ──
@@ -56,121 +58,14 @@ const HERO_SLIDES = [
   { id: 4, bg: '#0f172a', src: '/images/im4.jpg' },
 ]
 
-// ─── ProductCard ──────────────────────────────────────────────────────────────
+// ─── ProductCard — the shared storefront card, with the featured badge and category ──
 
-function ProductCard({ product }: { product: BrandProduct }) {
-  const t  = useTranslations('brandPage')
-  const tc = useTranslations('common')
-  const { addToCart, isFavorited, toggleFavorite } = useCart()
-  const router = useRouter()
-  const [adding, setAdding] = useState(false)
-  const [added,  setAdded]  = useState(false)
-
-  const imgUrl   = resolveImg(product.primary_image_url)
-  const outOfStock = product.stock <= 0
-  const favorited  = isFavorited(product.id, null)
-
-  const handleAdd = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    if (outOfStock || adding) return
-    if (!isAuthenticated()) { router.push('/auth/login?redirect=/brand'); return }
-    setAdding(true)
-    await addToCart(product.id, 1, null)
-    setAdded(true)
-    setAdding(false)
-    setTimeout(() => setAdded(false), 2000)
-  }
-
-  const handleFav = (e: React.MouseEvent) => {
-    e.preventDefault()
-    toggleFavorite(product.id, null)
-  }
-
+function ProductCard({ product, index }: { product: BrandProduct; index: number }) {
+  const t = useTranslations('brandPage')
   return (
-    <Link href={`/products/${product.slug}`} className="group block">
-      <div className="relative rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-
-        {/* Image */}
-        <div className="relative aspect-[3/4] bg-gray-50 overflow-hidden">
-          {imgUrl
-            ? <img src={imgUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-            : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Package size={32} className="text-gray-300" />
-              </div>
-            )
-          }
-
-          {/* Featured + promotion badges (-X%, FLASH / PROMO as on /deals) */}
-          <div className="absolute top-3 start-3 z-[5] flex flex-col items-start gap-1 pointer-events-none">
-            {product.featured && (
-              <div className="flex items-center gap-1 bg-yellow-400 text-yellow-900 text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-widest">
-                <Star size={8} fill="currentColor" /> {t('featured')}
-              </div>
-            )}
-            <ProductPromoBadges product={product} inline />
-          </div>
-          <ProductPromoOverlay product={product} badges={false} />
-
-          {/* Out of stock overlay */}
-          {outOfStock && (
-            <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-              <span className="text-xs font-black text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full uppercase tracking-widest">
-                {tc('outOfStock')}
-              </span>
-            </div>
-          )}
-
-          {/* Hover actions */}
-          <div className="absolute top-3 end-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={handleFav}
-              aria-label={t('wishlist')}
-              aria-pressed={favorited}
-              className="w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-sm flex items-center justify-center transition-all"
-            >
-              <Heart
-                size={14}
-                fill={favorited ? '#dc2626' : 'none'}
-                stroke={favorited ? '#dc2626' : '#94a3b8'}
-                strokeWidth={2}
-              />
-            </button>
-            <button
-              onClick={handleAdd}
-              disabled={outOfStock || adding}
-              aria-label={tc('addToCart')}
-              className="w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-sm flex items-center justify-center transition-all disabled:opacity-50"
-            >
-              {adding
-                ? <Loader2 size={13} className="animate-spin text-gray-400" />
-                : <ShoppingCart size={13} className={added ? 'text-green-500' : 'text-gray-600'} />
-              }
-            </button>
-          </div>
-        </div>
-
-        {/* Info */}
-        <div className="p-3">
-          {product.category && (
-            <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1">
-              {product.category.name}
-            </p>
-          )}
-          <p className="text-sm font-bold text-gray-900 leading-tight line-clamp-2 mb-2">
-            {product.name}
-          </p>
-          <div className="flex items-center justify-between gap-2">
-            <ProductPrice product={product} pack size="md" />
-            {!outOfStock && product.stock <= 10 && (
-              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">
-                {t('left', { count: product.stock })}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    </Link>
+    <SharedProductCard product={product} index={index} section="brand" eager={index < 4}
+      label={product.category?.name}
+      badge={product.featured ? <span className="pc-badge pc-badge--featured"><Star size={8} fill="currentColor" aria-hidden="true" /> {t('featured')}</span> : undefined} />
   )
 }
 
@@ -187,6 +82,8 @@ export default function BrandPage() {
   // ── Products state ─────────────────────────────────────────────────────────
   const [products,     setProducts]     = useState<BrandProduct[]>([])
   const [loading,      setLoading]      = useState(true)
+  // holds the navigation loader until the first load is done
+  const firstLoad = usePageLoading(loading)
   const [fetchError,   setFetchError]   = useState(false)
   const [page,         setPage]         = useState(1)
   const [lastPage,     setLastPage]     = useState(1)
@@ -195,6 +92,10 @@ export default function BrandPage() {
   const [filterFeatured, setFilterFeatured] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
+
+  // WearTounsi switched off by the admin: the page doesn't exist for shoppers
+  const features = useSiteFeatures()
+  useEffect(() => { if (features && !features.wear_tounsi) router.replace('/') }, [features, router])
 
   // ── Fetch brand products ───────────────────────────────────────────────────
 
@@ -254,6 +155,8 @@ export default function BrandPage() {
     headline: t(`slides.s${id}.headline`),
   })
   const slide = { ...HERO_SLIDES[activeSlide], ...slideText(HERO_SLIDES[activeSlide].id) }
+
+  if (!features?.wear_tounsi) return null
 
   return (
     <>
@@ -479,53 +382,54 @@ export default function BrandPage() {
           </div>
 
           {/* Products grid */}
-          {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}>
-              <Loader2 size={28} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} />
-            </div>
-          ) : fetchError ? (
-            <div style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center',
-              padding: '64px 0', gap: 12,
-            }}>
-              <AlertCircle size={28} color="#dc2626" />
-              <p style={{ fontSize: 14, fontWeight: 700, color: '#374151' }}>
-                {t('loadFailed')}
-              </p>
-              <button
-                onClick={fetchProducts}
-                style={{
-                  fontSize: 12, fontWeight: 700, color: '#dc2626',
-                  background: 'rgba(220,38,38,0.08)',
-                  border: '1px solid rgba(220,38,38,0.2)',
-                  padding: '8px 20px', borderRadius: 999, cursor: 'pointer',
-                  fontFamily: "'Barlow',sans-serif",
-                }}
-              >
-                {tc('retry')}
-              </button>
-            </div>
-          ) : products.length === 0 ? (
-            <div style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center',
-              padding: '64px 0', gap: 12,
-            }}>
-              <Package size={40} color="#e5e7eb" />
-              <p style={{ fontSize: 14, fontWeight: 700, color: '#94a3b8' }}>
-                {filterFeatured ? t('emptyFeatured') : t('empty')}
-              </p>
-            </div>
-          ) : (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(min(220px, 45%), 1fr))',
-              gap: 20,
-            }}>
-              {products.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
+          <div style={{ position: 'relative' }}>
+            <RefreshCover active={loading} />
+            {firstLoad ? (
+              <BrandLoader variant="section" minHeight={240} />
+            ) : fetchError ? (
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                padding: '64px 0', gap: 12,
+              }}>
+                <AlertCircle size={28} color="#dc2626" />
+                <p style={{ fontSize: 14, fontWeight: 700, color: '#374151' }}>
+                  {t('loadFailed')}
+                </p>
+                <button
+                  onClick={fetchProducts}
+                  style={{
+                    fontSize: 12, fontWeight: 700, color: '#dc2626',
+                    background: 'rgba(220,38,38,0.08)',
+                    border: '1px solid rgba(220,38,38,0.2)',
+                    padding: '8px 20px', borderRadius: 999, cursor: 'pointer',
+                    fontFamily: "'Barlow',sans-serif",
+                  }}
+                >
+                  {tc('retry')}
+                </button>
+              </div>
+            ) : products.length === 0 ? (
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                padding: '64px 0', gap: 12,
+              }}>
+                <Package size={40} color="#e5e7eb" />
+                <p style={{ fontSize: 14, fontWeight: 700, color: '#94a3b8' }}>
+                  {filterFeatured ? t('emptyFeatured') : t('empty')}
+                </p>
+              </div>
+            ) : (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(220px, 45%), 1fr))',
+                gap: 20,
+              }}>
+                {products.map((product, i) => (
+                  <ProductCard key={product.id} product={product} index={i} />
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Pagination */}
           {lastPage > 1 && !loading && !fetchError && (

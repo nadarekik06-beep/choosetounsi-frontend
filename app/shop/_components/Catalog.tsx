@@ -4,8 +4,8 @@
  * The full catalogue: shared smart sidebar (+ category, rating, seller tier and
  * offers filters), sort chips, filters mirrored in the URL (shareable, survive
  * reloads), infinite scroll for the first pages then a "show more" button so
- * the footer stays reachable. Page 1 carries labelled ads in the platform's
- * reserved slots.
+ * the footer stays reachable. Page 1 carries sponsored cards (one per
+ * grid_ad_every cards) and promo flyers, via lib/gridFill.ts.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -13,9 +13,11 @@ import { SlidersHorizontal, SearchX, PackageCheck } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import ProductFilterSidebar, { DEFAULT_FILTERS, appendFilterParams, hasActiveFilters, type F } from '@/app/components/filters/ProductFilterSidebar'
-import { fetchAds, fetchAdsConfig, withAdSlots, type AdCard } from '@/lib/adsApi'
+import { fetchAds, fetchAdsConfig, type AdCard } from '@/lib/adsApi'
+import { fetchPromoFlyers, fillGrid, type GridCell, type PromoFlyer } from '@/lib/gridFill'
+import PromoFlyerCard from '@/app/components/product/PromoFlyerCard'
 import { categoryName, fetchCatalogPage, type ShopCategory, type ShopProduct, type ShopSort, DEFAULT_SHOP_SORT, SHOP_SORTS } from '@/lib/shopPageApi'
-import ShopProductCard from './ShopProductCard'
+import ProductCard from '@/app/components/product/ProductCard'
 import { CardSkeleton, SectionHead } from './primitives'
 
 const PER_PAGE = 24
@@ -92,7 +94,7 @@ const activeCount = (f: F) =>
   [f.cat, f.pMin || f.pMax, f.inStock, f.isPack, f.onSale, f.freeDelivery, f.minRating, f.plans?.length, f.occasions.length,
     Object.values(f.attrs).some(v => v.length), f.q.trim()].filter(Boolean).length
 
-type Row = { ad: AdCard } | { item: ShopProduct }
+type Row = GridCell<ShopProduct>
 
 export default function Catalog({ categories, excludeAds = [] }: { categories: ShopCategory[] | null; excludeAds?: number[] }) {
   const t  = useTranslations('shopPage.catalog')
@@ -141,17 +143,21 @@ export default function Catalog({ categories, excludeAds = [] }: { categories: S
       // Ads only on an unfiltered page 1 (category / search are context): a paid card
       // must never look like it matches a price, rating or tier filter it doesn't
       const narrowed = [...params.keys()].some(k => !['sort', 'per_page', 'page', 'category_slug', 'search'].includes(k))
-      const [res, ads, config] = await Promise.all([
+      const extras = pageNum === 1 && !narrowed
+      const [res, ads, flyers, config] = await Promise.all([
         fetchCatalogPage(params, signal),
-        pageNum === 1 && !narrowed
-          ? fetchAds(cat ? 'category_top' : search ? 'search_top' : 'home_inline', { categorySlug: cat, q: search, exclude: exclude.current }, signal)
+        extras
+          ? fetchAds(cat ? 'category_top' : search ? 'search_top' : 'home_inline', { categorySlug: cat, q: search, exclude: exclude.current, limit: 3 }, signal)
           : Promise.resolve([] as AdCard[]),
+        extras ? fetchPromoFlyers({ categorySlug: cat, q: search, limit: 2 }, signal) : Promise.resolve([] as PromoFlyer[]),
         fetchAdsConfig(),
       ])
       if (signal.aborted) return
       if (pageNum === 1) adIds.current = new Set(ads.map(a => a.id))
       const organic = res.data.filter(p => !adIds.current.has(p.id))
-      const next: Row[] = pageNum === 1 ? withAdSlots(organic, ads, config?.reserved_slots ?? [1, 7]) : organic.map(item => ({ item }))
+      const next: Row[] = pageNum === 1
+        ? fillGrid(organic, { ads, flyers }, { adEvery: config?.grid_ad_every, flyerEvery: config?.grid_flyer_every }).cells
+        : organic.map(item => ({ kind: 'product' as const, item }))
       setRows(prev => (pageNum === 1 ? next : [...prev, ...next]))
       setLastPage(res.last_page)
       setTotal(res.total)
@@ -249,9 +255,11 @@ export default function Catalog({ categories, excludeAds = [] }: { categories: S
               </div>
             ) : (
               <div className="sp-grid" aria-busy={loading}>
-                {!showSkeleton && rows.map((r, i) => 'ad' in r
-                  ? <ShopProductCard key={`ad-${r.ad.id}`} product={r.ad} index={i} section="shop_catalog" eager={i < 4} />
-                  : <ShopProductCard key={`p-${r.item.id}`} product={r.item} index={i} section="shop_catalog" eager={i < 4} />)}
+                {!showSkeleton && rows.map((r, i) => r.kind === 'flyer'
+                  ? <PromoFlyerCard key={`f-${r.flyer.id}`} flyer={r.flyer} index={i} section="shop_catalog" />
+                  : r.kind === 'ad'
+                    ? <ProductCard key={`ad-${r.ad.id}`} product={r.ad} index={i} section="shop_catalog" eager={i < 4} />
+                    : <ProductCard key={`p-${r.item.id}`} product={r.item} index={i} section="shop_catalog" eager={i < 4} />)}
                 {loading && Array.from({ length: page === 1 ? 8 : 4 }, (_, i) => <CardSkeleton key={`sk-${i}`} />)}
               </div>
             )}
