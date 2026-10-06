@@ -341,7 +341,7 @@ export function ResultCard({ action, dark, compact = false }: { action: GrowthAc
     );
   }
 
-  const money = (n: number) => `${n > 0 ? '+' : ''}${number(Math.round(n))} DT`;
+  const money = (n: number) => { const r = Math.round(n); return `${r > 0 ? '+' : ''}${number(r === 0 ? 0 : r)} DT`; };
   const cols: { k: 'before' | 'during' | 'after'; m: typeof r.baseline | null }[] = [
     { k: 'before', m: r.baseline }, { k: 'during', m: r.during }, { k: 'after', m: r.after },
   ];
@@ -389,7 +389,8 @@ export function ResultCard({ action, dark, compact = false }: { action: GrowthAc
 
       {v !== 'unclear' && !compact && (
         <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 6, fontSize: 12 }}>
-          {[['gross', r.gross_gain], ['cost', -r.discount_cost], ['ads', -r.ad_spend], ['net', r.net_gain]].map(([k, n]) => (
+          {([['gross', r.gross_gain], ['cost', -r.discount_cost], ['ads', -r.ad_spend], ['net', r.net_gain]] as [string, number][])
+            .filter(([k, n]) => k !== 'ads' || n !== 0).map(([k, n]) => (
             <div key={k as string}>
               <dt style={{ color: p.muted }}>{t(k as string)}</dt>
               <dd style={{ margin: 0, fontWeight: 800, color: p.text, direction: 'ltr', textAlign: 'start' }}>{money(n as number)}</dd>

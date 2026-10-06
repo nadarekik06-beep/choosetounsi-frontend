@@ -4738,7 +4738,7 @@
         "learning": "What works for your shop",
         "best": "Your buyers respond best to {kind}: {lift} units on average over {n} measured actions.",
         "notYet": "We need {min} measured actions of a kind before drawing conclusions — so far:",
-        "kindStat": "{kind}: {n} measured, {wins} worked",
+        "kindStat": "{kind}: {n, plural, one {# measured} other {# measured}}, {wins, plural, =0 {none worked} one {# worked} other {# worked}}",
         "col": {
           "action": "Action",
           "product": "Product",

@@ -4738,7 +4738,7 @@
         "learning": "Ce qui marche pour votre boutique",
         "best": "Vos acheteurs réagissent le mieux aux {kind} : {lift} d'unités en moyenne sur {n} actions mesurées.",
         "notYet": "Il faut {min} actions mesurées d'un même type avant de conclure — pour l'instant :",
-        "kindStat": "{kind} : {n} mesurées, {wins} réussies",
+        "kindStat": "{kind} : {n, plural, one {# mesurée} other {# mesurées}}, {wins, plural, =0 {aucune réussie} one {# réussie} other {# réussies}}",
         "col": {
           "action": "Action",
           "product": "Produit",
