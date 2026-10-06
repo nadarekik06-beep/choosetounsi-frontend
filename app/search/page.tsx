@@ -15,6 +15,7 @@ import {
   type ImageSearchError, type ImageSearchResponse, type PredictedCategory,
 } from "@/lib/imageSearch";
 import ImageSearchModal from "@/app/components/search/ImageSearchModal";
+import { identityHeaders } from "@/lib/tracking";
 import { usePageLoading } from '@/components/brand/NavigationLoader'
 import { RouteLoading } from '@/components/brand/NavigationLoader'
 import "./search.css";
@@ -375,7 +376,8 @@ function SearchPageContent() {
     try {
       const res = await fetch(`${API_URL}/api/search/text`, {
         method:"POST",
-        headers:{ "Content-Type":"application/json", Accept:"application/json" },
+        // identityHeaders: guest id / token, so the search counts for personalization and Growth Radar
+        headers:{ "Content-Type":"application/json", Accept:"application/json", ...identityHeaders() },
         body: JSON.stringify({ query: q, limit: 40, ...(exactParam ? { exact: true } : {}) }),
       });
       if (!res.ok) throw new Error(`${res.status}`);
