@@ -18,6 +18,8 @@ import { ordersApi } from '@/lib/sellerApi'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { useStatusLabel } from '@/lib/i18n/useStatusLabel'
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,6 +89,8 @@ export default function InvoicePage() {
 
   const [data,    setData]    = useState<InvoiceData | null>(null)
   const [loading, setLoading] = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading)
   const [error,   setError]   = useState(false)
   // ✅ FIX: resolve origin only after mount so SSR never returns empty string
   const [origin,  setOrigin]  = useState('')
@@ -124,8 +128,7 @@ export default function InvoicePage() {
 
   if (loading) return (
     <div style={styles.loadingWrap}>
-      <div style={styles.spinner} />
-      <p style={styles.loadingText}>{t('preparing')}</p>
+      <BrandLoader variant="section" label={t('preparing')} />
     </div>
   )
 
@@ -605,14 +608,6 @@ const styles = {
     fontFamily: "'Barlow', sans-serif",
     gap: 16,
     background: '#f0f2f5',
-  },
-  spinner: {
-    width: 36,
-    height: 36,
-    border: '3px solid #e2e8f0',
-    borderTopColor: '#db142e',
-    borderRadius: '50%',
-    animation: 'spin 0.7s linear infinite',
   },
   loadingText: {
     fontSize: 14,

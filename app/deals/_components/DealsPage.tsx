@@ -25,6 +25,7 @@ import {
   DISCOUNT_STEPS, SORT_KEYS, activeFilterCount, buildItems, matches, parseQuery, sortItems, toQuery,
   type DealFilters, type DealItem, type SortKey, type TypeFilter,
 } from './model'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 import '@/app/shop/_components/shop.css'
 import './deals.css'
 
@@ -205,6 +206,8 @@ export default function DealsPage() {
 
   const filterBadge = activeFilterCount(f) + (f.type !== 'all' ? 1 : 0)
   const loading = !data && !failed
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading)
   const filtersBody = <FiltersBody f={f} facets={facets} update={update} clear={clear} hasActive={chips.length > 0} />
 
 

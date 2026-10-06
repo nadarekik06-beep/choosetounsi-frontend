@@ -13,6 +13,7 @@ import { Crown, TrendingUp, AlertTriangle, Sparkles, ArrowRight, RefreshCw } fro
 import { blackPepperApi, type DailyBriefData } from "@/lib/blackPepperApi";
 import SmartActionButton from "@/app/components/seller/black/SmartActionButton";
 import { ink } from '@/app/seller/ink';
+import BrandLoader from '@/components/brand/BrandLoader'
 
 const GOLD = "#f59e0b";
 
@@ -92,7 +93,7 @@ export default function DailyBriefCard({ dark }: { dark: boolean }) {
               Today&apos;s Brief
             </p>
             <p style={{ fontSize:13, fontWeight:900, color:textMain, margin:0 }}>
-              {loading ? "Loading..." : (data?.greeting ?? "Good morning!")}
+              {loading ? <BrandLoader variant="inline" size={14} /> : (data?.greeting ?? "Good morning!")}
             </p>
           </div>
         </div>

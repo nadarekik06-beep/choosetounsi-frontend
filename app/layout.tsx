@@ -15,6 +15,7 @@ import SiteFooter from '@/components/layout/SiteFooter';
 import ReviewPromptPopup from '@/app/components/reviews/ReviewPromptPopup';
 import EntryPopup from '@/components/ads/EntryPopup';
 import ProfileGate from '@/components/profile/ProfileGate';
+import { NavigationLoaderProvider, NavigationLoaderHost } from '@/components/brand/NavigationLoader';
 
 const syne = Syne({
   subsets: ["latin"],
@@ -64,19 +65,23 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <LanguageProvider>
             <CartProvider>
-              {/* Keyed by locale: switching language remounts the page so it
-                  refetches API content in the new language (cart/session live
-                  in providers above and are kept). */}
-              <Fragment key={locale}>
-                {children}
-                <SiteFooter />
-              </Fragment>
-              <FlashToast />
-              <CartDrawer />
-              <SupportChatWidget />
-              <ReviewPromptPopup />
-              <EntryPopup />
-              <ProfileGate />
+              <NavigationLoaderProvider>
+                {/* Keyed by locale: switching language remounts the page so it
+                    refetches API content in the new language (cart/session live
+                    in providers above and are kept). */}
+                <Fragment key={locale}>
+                  {children}
+                  <SiteFooter />
+                </Fragment>
+                <FlashToast />
+                <CartDrawer />
+                <SupportChatWidget />
+                <ReviewPromptPopup />
+                <EntryPopup />
+                <ProfileGate />
+                {/* fullscreen; the seller dashboard mounts its own over its content area */}
+                <NavigationLoaderHost />
+              </NavigationLoaderProvider>
             </CartProvider>
           </LanguageProvider>
         </NextIntlClientProvider>

@@ -28,7 +28,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import {
   ShoppingBag, ChevronRight, ChevronDown, ChevronUp,
-  Package, Loader2, Clock, CheckCircle, XCircle,
+  Package, Clock, CheckCircle, XCircle,
   Truck, RotateCcw, Store, Star, MapPin,
 } from 'lucide-react'
 import { isAuthenticated } from '@/lib/auth'
@@ -38,6 +38,8 @@ import ReviewSubmitModal from '@/app/components/reviews/ReviewSubmitModal'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { useWilayaLabel } from '@/lib/i18n/wilayas'
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 const API_URL      = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api$/, '')
@@ -601,6 +603,8 @@ export default function OrdersPage() {
   const router  = useRouter()
   const [orders,      setOrders]      = useState<Order[]>([])
   const [loading,     setLoading]     = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading)
   const [error,       setError]       = useState(false)
   const [reviewedMap, setReviewedMap] = useState<ReviewedMap>({})
   const [focusId,     setFocusId]     = useState<number | null>(null)
@@ -798,12 +802,7 @@ export default function OrdersPage() {
             </div>
           </div>
 
-          {loading && (
-            <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <Loader2 size={28} style={{ animation: 'spin 0.8s linear infinite', color: RED, margin: '0 auto 12px' }} />
-              <p style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>{t('loading')}</p>
-            </div>
-          )}
+          {loading && <BrandLoader variant="section" label={t('loading')} minHeight={240} />}
 
           {error && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '16px 20px', color: RED, fontSize: 13, fontWeight: 600 }}>

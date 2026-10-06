@@ -7,10 +7,11 @@
  * other edits with the current price, then opens the promotions page pre-filled.
  */
 
-import { Loader2, TrendingDown, X } from 'lucide-react'
+import { TrendingDown, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 export interface PriceDrop {
   id?: number              // variant id; absent for the base price
   label?: string
@@ -92,7 +93,7 @@ export default function PriceDecreaseDialog({ drops, windowDays, busy, onCreateD
             {t('cancel')}
           </button>
           <button type="button" onClick={onCreateDiscount} disabled={busy} style={{ flex: 1.4, padding: '10px 0', borderRadius: 11, border: 'none', background: 'linear-gradient(135deg,#db142e,#b80f25)', color: '#fff', fontWeight: 800, fontSize: 13, cursor: busy ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit', opacity: busy ? 0.7 : 1 }}>
-            {busy && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
+            {busy && <BrandLoader variant="inline" size={14} />}
             {t('createDiscount')}
           </button>
         </div>

@@ -17,6 +17,7 @@ import { useNotifications } from '@/hooks/Usenotifications';
 import type { AppNotification } from '@/lib/notificationApi';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
+import BrandLoader from '@/components/brand/BrandLoader'
 
 // ─── sound ────────────────────────────────────────────────────────
 function playSound() {
@@ -340,7 +341,7 @@ export default function NotificationBell({
             title={t('refresh')}
             aria-label={t('refresh')}
           >
-            <RefreshCw size={mobile ? 14 : 12} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+            {loading ? <BrandLoader variant="inline" size={mobile ? 14 : 12} /> : <RefreshCw size={mobile ? 14 : 12} />}
           </button>
         </div>
       </div>
@@ -352,9 +353,7 @@ export default function NotificationBell({
           : { overflowY: 'auto', maxHeight: 420 }
       }>
         {loading && items.length === 0 ? (
-          <div style={{ padding: '40px 16px', textAlign: 'center', color: textMuted, fontSize: 13 }}>
-            {t('loading')}
-          </div>
+          <BrandLoader variant="section" size="sm" label={t('loading')} theme={dark ? 'dark' : 'light'} />
         ) : items.length === 0 ? (
           <div style={{ padding: '48px 16px', textAlign: 'center' }}>
             <Bell size={32} style={{ color: textMuted, opacity: 0.2, margin: '0 auto 12px', display: 'block' }} />

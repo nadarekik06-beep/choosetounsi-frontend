@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, CheckCheck, Loader2 } from 'lucide-react';
+import { Bell, CheckCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '../SellerShell';
 import { NotifIcon, accent } from '@/app/components/NotificationBell';
@@ -13,7 +13,9 @@ import {
   sellerNotificationApi, announceNotificationsChanged, type AppNotification,
 } from '@/lib/notificationApi';
 import { useFormat } from '@/lib/i18n/useFormat';
-import { ink } from '@/app/seller/ink';
+import BrandLoader, { BusyLabel } from '@/components/brand/BrandLoader'
+import { useBrandLoading } from '@/hooks/useBrandLoading'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 type Filter = 'all' | 'unread';
 
@@ -28,6 +30,9 @@ export default function SellerNotificationsPage() {
   const [page,     setPage]     = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [loading,  setLoading]  = useState(true);
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading);
+  const showLoader = useBrandLoading(loading);
   const [error,    setError]    = useState(false);
 
   const load = useCallback(async (nextPage: number, replace: boolean) => {
@@ -125,10 +130,8 @@ export default function SellerNotificationsPage() {
 
       {/* List */}
       <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
-        {loading && items.length === 0 ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}>
-            <Loader2 size={24} style={{ animation: 'spin 0.8s linear infinite', color: ink('#3b82f6', dark) }} />
-          </div>
+        {showLoader && items.length === 0 ? (
+          <BrandLoader variant="section" theme={dark ? 'dark' : 'light'} minHeight={220} />
         ) : error && items.length === 0 ? (
           <div style={{ padding: '48px 16px', textAlign: 'center', color: textMuted, fontSize: 13 }}>
             {t('error')}{' '}
@@ -217,7 +220,7 @@ export default function SellerNotificationsPage() {
             background: 'transparent', border: `1px solid ${border}`, color: textMain,
           }}
         >
-          {loading ? t('loading') : t('loadMore')}
+          <BusyLabel busy={loading}>{t('loadMore')}</BusyLabel>
         </button>
       )}
     </div>

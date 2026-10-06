@@ -17,6 +17,7 @@ import { addressApi, profileApi, syncSessionUser, type Profile, type SavedAddres
 import PersonalInfoForm from '@/components/profile/PersonalInfoForm'
 import AddressForm from '@/components/profile/AddressForm'
 import { Skeleton } from '@/components/profile/ui'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 import '@/components/profile/profile.css'
 
 /** Only same-site paths: never bounce to another origin. */
@@ -35,6 +36,8 @@ function CompleteProfile() {
   const [addresses, setAddresses] = useState<SavedAddress[]>([])
   const [step,      setStep]      = useState<1 | 2>(1)
   const [error,     setError]     = useState('')
+  // holds the navigation loader until the first load is done
+  usePageLoading(!profile && !error)
   const [finishing, setFinishing] = useState(false)
 
   const finish = (p: Profile) => {

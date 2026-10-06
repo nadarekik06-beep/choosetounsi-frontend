@@ -4,11 +4,11 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Loader2 } from 'lucide-react'
 import { validateTunisianPhone } from '@/lib/shippingAddress'
 import { profileApi, syncSessionUser, ApiError, type Profile } from '@/lib/profileApi'
 import { Field, PhoneInput } from './ui'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 type Form = { first_name: string; last_name: string; phone: string; date_of_birth: string; gender: '' | 'male' | 'female' }
 type Errors = Partial<Record<keyof Form, string>>
 
@@ -126,7 +126,7 @@ export default function PersonalInfoForm({ profile, onSaved, showOptional = true
       <div className="pf-actions">
         {onCancel && <button type="button" className="pf-btn light" onClick={onCancel}>{tc('cancel')}</button>}
         <button type="submit" className="pf-btn primary" disabled={saving}>
-          {saving && <Loader2 size={15} className="animate-spin" />}
+          {saving && <BrandLoader variant="inline" size={15} />}
           {saving ? tc('saving') : (submitLabel ?? tc('save'))}
         </button>
       </div>

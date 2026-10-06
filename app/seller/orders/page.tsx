@@ -4,8 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ordersApi } from '@/lib/sellerApi';
 import {
-  Search, Eye, ChevronLeft, ChevronRight, X, Loader2,
-  ShoppingBag, AlertCircle, User, MapPin, Package,
+  Search, Eye, ChevronLeft, ChevronRight, X, ShoppingBag, AlertCircle, User, MapPin, Package,
   Hash, Calendar, Tag, Wallet,
 } from 'lucide-react';
 import { useTheme } from '../SellerShell';
@@ -17,6 +16,10 @@ import { useStatusLabel } from '@/lib/i18n/useStatusLabel';
 import { useWilayaLabel } from '@/lib/i18n/wilayas';
 import { ink } from '@/app/seller/ink';
 
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
+import { RouteLoading } from '@/components/brand/NavigationLoader'
+import { RefreshCover } from '@/components/brand/BrandLoader'
 /** 3-decimal DT amounts, as on invoices */
 function useDt() {
   const { price } = useFormat();
@@ -333,9 +336,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
         {/* Body */}
         <div style={{ overflowY: 'auto', flex: 1, padding: 24 }}>
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
-              <Loader2 size={24} style={{ animation: 'spin 0.8s linear infinite', color: ink('#3b82f6', dark) }} />
-            </div>
+            <BrandLoader variant="section" theme={dark ? 'dark' : 'light'} minHeight={160} />
           ) : error && !detail ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(219,20,46,0.1)', border: '1px solid rgba(219,20,46,0.2)', borderRadius: 12, padding: '12px 16px', color: '#db142e', fontSize: 13 }}>
               <AlertCircle size={15} />{error}
@@ -492,7 +493,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                     onMouseLeave={e => { e.currentTarget.style.transform = 'none' }}
                   >
                     {updatingStatus
-                      ? <Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite' }} />
+                      ? <BrandLoader variant="inline" size={16} />
                       : <span style={{ fontSize: 16 }}>✅</span>
                     }
                     {updatingStatus ? t('updating') : t('markCompleted')}
@@ -543,6 +544,8 @@ export default function OrdersPage() {
   const wilaya = useWilayaLabel();
   const [data,          setData]          = useState<PaginatedResponse<Order> | null>(null);
   const [loading,       setLoading]       = useState(true);
+  // holds the navigation loader until the first load is done
+  const firstLoad = usePageLoading(loading);
   const [search,        setSearch]        = useState('');
   const [filterStatus,  setFilterStatus]  = useState('');
   const [filterPayment, setFilterPayment] = useState('');
@@ -605,7 +608,7 @@ export default function OrdersPage() {
         }
       `}</style>
 
-      <Suspense fallback={null}>
+      <Suspense fallback={<RouteLoading area minHeight="60vh" />}>
         <OpenOrderFromQuery onOpen={setSelectedId} />
       </Suspense>
 
@@ -638,87 +641,88 @@ export default function OrdersPage() {
 
       {/* Table */}
       <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
-        {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}>
-            <Loader2 size={24} style={{ animation: 'spin 0.8s linear infinite', color: ink('#3b82f6', dark) }} />
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-              <thead>
-                <tr style={{ background: theadBg }}>
-                  {(['order', 'customer', 'wilaya', 'status', 'payment', 'method', 'amount', 'date', ''] as const).map((h, i) => (
-                    <th key={h + i} style={{ padding: '10px 20px', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted, textAlign: h === 'amount' ? 'end' : h === '' ? 'center' : 'start' }}>{h ? t(`cols.${h}`) : ''}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data?.data.map(order => (
-                  <tr
-                    key={order.id}
-                    className="order-row"
-                    style={{
-                      borderTop: `1px solid ${border}`,
-                      borderInlineStart: order.status === 'confirmed' ? '3px solid #3b82f6' : '3px solid transparent',
-                      background: order.status === 'confirmed' ? (dark ? 'rgba(59,130,246,0.05)' : 'rgba(59,130,246,0.03)') : undefined,
-                    }}
-                  >
-                    <td style={{ padding: '13px 20px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <ShoppingBag size={13} color="#3b82f6" />
+        <div style={{ position: 'relative' }}>
+          <RefreshCover active={loading} theme={dark ? 'dark' : 'light'} />
+          {firstLoad ? (
+            <BrandLoader variant="section" theme={dark ? 'dark' : 'light'} minHeight={220} />
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr style={{ background: theadBg }}>
+                    {(['order', 'customer', 'wilaya', 'status', 'payment', 'method', 'amount', 'date', ''] as const).map((h, i) => (
+                      <th key={h + i} style={{ padding: '10px 20px', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted, textAlign: h === 'amount' ? 'end' : h === '' ? 'center' : 'start' }}>{h ? t(`cols.${h}`) : ''}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data?.data.map(order => (
+                    <tr
+                      key={order.id}
+                      className="order-row"
+                      style={{
+                        borderTop: `1px solid ${border}`,
+                        borderInlineStart: order.status === 'confirmed' ? '3px solid #3b82f6' : '3px solid transparent',
+                        background: order.status === 'confirmed' ? (dark ? 'rgba(59,130,246,0.05)' : 'rgba(59,130,246,0.03)') : undefined,
+                      }}
+                    >
+                      <td style={{ padding: '13px 20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <ShoppingBag size={13} color="#3b82f6" />
+                          </div>
+                          <div>
+                            <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 11, background: dark ? 'rgba(255,255,255,0.07)' : '#f1f5f9', color: textMain, padding: '2px 7px', borderRadius: 6 }}>
+                              {order.order_number}
+                            </span>
+                            {order.items_count != null && (
+                              <span style={{ display: 'block', marginTop: 4, fontSize: 9, fontWeight: 800, color: textMuted }}>
+                                {t('itemCount', { count: order.items_count })}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 11, background: dark ? 'rgba(255,255,255,0.07)' : '#f1f5f9', color: textMain, padding: '2px 7px', borderRadius: 6 }}>
-                            {order.order_number}
-                          </span>
-                          {order.items_count != null && (
-                            <span style={{ display: 'block', marginTop: 4, fontSize: 9, fontWeight: 800, color: textMuted }}>
-                              {t('itemCount', { count: order.items_count })}
+                      </td>
+                      <td style={{ padding: '13px 20px' }}>
+                        <p style={{ fontWeight: 700, color: textMain, margin: 0, fontSize: 12 }}>{order.user?.name ?? t('customerFallback', { id: order.user_id })}</p>
+                      </td>
+                      <td style={{ padding: '13px 20px', fontSize: 12, fontWeight: 500, color: textMuted }}>{order.wilaya ? wilaya(order.wilaya) : '—'}</td>
+                      <td style={{ padding: '13px 20px' }}><StatusBadge status={order.status} dark={dark} /></td>
+                      <td style={{ padding: '13px 20px' }}><PaymentBadge status={order.payment_status} /></td>
+                      <td style={{ padding: '13px 20px' }}><MethodBadge method={order.payment_method} /></td>
+                      <td style={{ padding: '13px 20px', textAlign: 'end', fontWeight: 900, color: textMain, fontSize: 12 }}>{dt(order.total_amount)}</td>
+                      <td style={{ padding: '13px 20px', fontSize: 11, color: textMuted, fontWeight: 500 }}>{date(order.created_at, 'short')}</td>
+                      <td style={{ padding: '13px 20px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                          {order.status === 'confirmed' && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 999, background: dark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.08)', color: ink('#3b82f6', dark), border: '1px solid rgba(59,130,246,0.3)', whiteSpace: 'nowrap', animation: 'confirmedPulse 2s ease-in-out infinite' }}>
+                              {t('prepareNow')}
                             </span>
                           )}
+                          <button onClick={() => setSelectedId(order.id)} aria-label={t('view')} title={t('view')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: textMuted }} className="eye-btn">
+                            <Eye size={14} />
+                          </button>
+                          <button onClick={() => setEarningsOrder(order)} aria-label={tDrawer('earningsTooltip')} title={tDrawer('earningsTooltip')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#198f41' }} className="eye-btn">
+                            <Wallet size={14} />
+                          </button>
                         </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '13px 20px' }}>
-                      <p style={{ fontWeight: 700, color: textMain, margin: 0, fontSize: 12 }}>{order.user?.name ?? t('customerFallback', { id: order.user_id })}</p>
-                    </td>
-                    <td style={{ padding: '13px 20px', fontSize: 12, fontWeight: 500, color: textMuted }}>{order.wilaya ? wilaya(order.wilaya) : '—'}</td>
-                    <td style={{ padding: '13px 20px' }}><StatusBadge status={order.status} dark={dark} /></td>
-                    <td style={{ padding: '13px 20px' }}><PaymentBadge status={order.payment_status} /></td>
-                    <td style={{ padding: '13px 20px' }}><MethodBadge method={order.payment_method} /></td>
-                    <td style={{ padding: '13px 20px', textAlign: 'end', fontWeight: 900, color: textMain, fontSize: 12 }}>{dt(order.total_amount)}</td>
-                    <td style={{ padding: '13px 20px', fontSize: 11, color: textMuted, fontWeight: 500 }}>{date(order.created_at, 'short')}</td>
-                    <td style={{ padding: '13px 20px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                        {order.status === 'confirmed' && (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 999, background: dark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.08)', color: ink('#3b82f6', dark), border: '1px solid rgba(59,130,246,0.3)', whiteSpace: 'nowrap', animation: 'confirmedPulse 2s ease-in-out infinite' }}>
-                            {t('prepareNow')}
-                          </span>
-                        )}
-                        <button onClick={() => setSelectedId(order.id)} aria-label={t('view')} title={t('view')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: textMuted }} className="eye-btn">
-                          <Eye size={14} />
-                        </button>
-                        <button onClick={() => setEarningsOrder(order)} aria-label={tDrawer('earningsTooltip')} title={tDrawer('earningsTooltip')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#198f41' }} className="eye-btn">
-                          <Wallet size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {data?.data.length === 0 && (
-                  <tr>
-                    <td colSpan={9} style={{ padding: '56px 20px', textAlign: 'center' }}>
-                      <ShoppingBag size={28} style={{ margin: '0 auto 10px', display: 'block', color: textMuted, opacity: 0.4 }} />
-                      <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>{t('empty')}</p>
-                      <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>{t('emptyHint')}</p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {data?.data.length === 0 && (
+                    <tr>
+                      <td colSpan={9} style={{ padding: '56px 20px', textAlign: 'center' }}>
+                        <ShoppingBag size={28} style={{ margin: '0 auto 10px', display: 'block', color: textMuted, opacity: 0.4 }} />
+                        <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>{t('empty')}</p>
+                        <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>{t('emptyHint')}</p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
 
         {data && data.last_page > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: `1px solid ${border}` }}>

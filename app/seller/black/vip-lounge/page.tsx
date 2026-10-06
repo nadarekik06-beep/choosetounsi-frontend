@@ -12,6 +12,8 @@ import { Crown, Film, Tag, Headphones, CheckCircle, Clock, XCircle, Loader } fro
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { ink } from '@/app/seller/ink';
+import { usePageLoading } from '@/components/brand/NavigationLoader'
+import BrandLoader from '@/components/brand/BrandLoader'
 
 const GOLD = '#f59e0b';
 
@@ -37,6 +39,8 @@ export default function VipLoungePage() {
 
   const [requests,    setRequests]    = useState<VipRequest[]>([]);
   const [reqLoading,  setReqLoading]  = useState(true);
+  // holds the navigation loader until the first load is done
+  usePageLoading(reqLoading);
   const [submitting,  setSubmitting]  = useState(false);
   const [selected,    setSelected]    = useState<VipRequestType>('reel');
   const [message,     setMessage]     = useState('');
@@ -166,11 +170,10 @@ export default function VipLoungePage() {
           }}
         >
           {submitting
-            ? <><span style={{ width: 12, height: 12, borderRadius: '50%', border: '2px solid #00000030', borderTop: '2px solid #000', animation: 'vip-spin 0.7s linear infinite', display: 'inline-block' }} /> {t('submitting')}</>
+            ? <><BrandLoader variant="inline" size={12} /> {t('submitting')}</>
             : <><Crown size={14} /> {t('submit')}</>
           }
         </button>
-        <style>{'@keyframes vip-spin{to{transform:rotate(360deg)}}'}</style>
       </div>
 
       {/* Past requests */}
@@ -179,7 +182,7 @@ export default function VipLoungePage() {
           {t('yourRequests')}
         </p>
         {reqLoading ? (
-          <div style={{ textAlign: 'center', padding: '24px', color: txtMut, fontSize: 13 }}>{t('loading')}</div>
+          <BrandLoader variant="section" size="sm" label={t('loading')} theme={dark ? 'dark' : 'light'} />
         ) : requests.length === 0 ? (
           <div style={{
             background: cardBg, borderRadius: 16, border: `1px solid ${border}`,

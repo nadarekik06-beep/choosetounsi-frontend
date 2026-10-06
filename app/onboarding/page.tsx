@@ -13,9 +13,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getToken, getUser, refreshUser } from '@/lib/auth'
-import { Loader2, ChevronRight, ChevronLeft, Check, X, ShoppingBag, Sparkles } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Check, X, ShoppingBag, Sparkles } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -47,6 +49,8 @@ export default function OnboardingPage() {
 
   const [data,         setData]         = useState<OnboardingData | null>(null)
   const [loading,      setLoading]      = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading)
   const [saving,       setSaving]       = useState(false)
   const [step,         setStep]         = useState<Step>('gender')
   const [stepIndex,    setStepIndex]    = useState(0)
@@ -169,8 +173,7 @@ export default function OnboardingPage() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader2 size={28} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} />
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <BrandLoader variant="section" />
       </div>
     )
   }
@@ -377,7 +380,7 @@ export default function OnboardingPage() {
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 22px', borderRadius: 10, border: 'none', background: saving ? '#e5e7eb' : 'linear-gradient(135deg, #dc2626, #b91c1c)', color: saving ? '#9ca3af' : '#fff', fontSize: 13, fontWeight: 800, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', boxShadow: saving ? 'none' : '0 4px 14px rgba(220,38,38,0.3)' }}
               >
                 {saving
-                  ? <><Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} /> {t('saving')}</>
+                  ? <><BrandLoader variant="inline" size={14} /> {t('saving')}</>
                   : <><Sparkles size={14} /> {t('finish')}</>
                 }
               </button>

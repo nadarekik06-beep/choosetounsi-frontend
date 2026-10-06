@@ -11,13 +11,14 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { CheckCircle, Loader2, MessageCircle, X } from 'lucide-react'
+import { CheckCircle, MessageCircle, X } from 'lucide-react'
 import { useFormat } from '@/lib/i18n/useFormat'
 import {
   createAndOpenWhatsApp, openWhatsApp, paymentRequestsApi,
   type PaymentRequest, type PaymentRequestStatus,
 } from '@/lib/paymentRequestsApi'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 export interface ManualPalette { text: string; muted: string; border: string; card: string; cardAlt: string }
 
 export const LIGHT_PALETTE: ManualPalette = { text: '#111827', muted: '#6b7280', border: '#e5e7eb', card: '#ffffff', cardAlt: '#f8f9fb' }
@@ -35,7 +36,7 @@ function WhatsAppButton({ children, onClick, disabled, busy }: { children: React
       border: 'none', background: WA_GREEN, color: '#073b1c', fontSize: 14, fontWeight: 800, fontFamily: 'inherit',
       cursor: disabled || busy ? 'not-allowed' : 'pointer', opacity: disabled || busy ? 0.6 : 1, width: '100%',
     }}>
-      {busy ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <MessageCircle size={16} />}
+      {busy ? <BrandLoader variant="inline" size={16} /> : <MessageCircle size={16} />}
       {children}
     </button>
   )

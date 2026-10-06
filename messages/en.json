@@ -5043,5 +5043,14 @@
       "options": "This product comes in several options — pick yours on the product page.",
       "image": "Image {index} of {total}"
     }
+  },
+  "loader": {
+    "loading": "Loading…",
+    "tagline": "Made in Tunisia, chosen by you",
+    "aiTyping": "Thinking…",
+    "analyzingImage": "Analyzing your image…",
+    "forecasting": "Calculating your forecast…",
+    "optimizing": "Analyzing your prices…",
+    "loadingMore": "Loading more…"
   }
 }

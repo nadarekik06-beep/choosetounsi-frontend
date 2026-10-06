@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import {
-  X, Package, RefreshCw, Loader2, AlertCircle,
+  X, Package, RefreshCw, AlertCircle,
   CheckCircle, Plus, Trash2, ChevronDown, ChevronUp,
   Info, Zap,
 } from 'lucide-react'
@@ -10,6 +10,7 @@ import api from '@/lib/sellerApi'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface OptionEntry {
@@ -553,7 +554,7 @@ export default function RestockModal({ product, onClose, onRestocked }: Props) {
             </button>
             <button type="button" onClick={handleSubmit} disabled={saving} style={{ flex: 2, padding: '11px 0', background: 'linear-gradient(135deg,#db142e,#a00f22)', color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(219,20,46,0.3)', opacity: saving ? 0.65 : 1, fontFamily: 'inherit', transition: 'opacity 0.15s' }}>
               {saving
-                ? <><Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} /> {t('updating')}</>
+                ? <><BrandLoader variant="inline" size={14} /> {t('updating')}</>
                 : <><RefreshCw size={14} /> {t('confirm')}</>
               }
             </button>

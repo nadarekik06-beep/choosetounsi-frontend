@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import {
-  X, Loader2, AlertCircle, Plus, Trash2,
+  X, AlertCircle, Plus, Trash2,
   Search, Package2, Zap, Tag, Calendar,
   TrendingDown, TrendingUp,
 } from 'lucide-react'
@@ -10,6 +10,7 @@ import { sellerPromotionsApi, type Promotion, type PromotionPayload } from '@/li
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 function useDt() {
   const { price } = useFormat()
   return (n: number) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
@@ -210,7 +211,7 @@ function PromotionCommissionPreview({
           {t('commissionHeader', { plan: planLabel })}
         </span>
         {loading && (
-          <Loader2 size={11} style={{ animation: 'spin 0.8s linear infinite', color: '#5b6472' }} />
+          <BrandLoader variant="inline" size={11} style={{ color: '#5b6472' }} />
         )}
       </div>
 
@@ -782,7 +783,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
               }}>
                 {prodLoading ? (
                   <div style={{ textAlign: 'center', padding: 32, color: '#5b6472', fontSize: 13 }}>
-                    <Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite', margin: '0 auto 6px', display: 'block' }} />
+                    <BrandLoader variant="inline" size={16} style={{ margin: '0 auto 6px', display: 'block' }} />
                     {t('loading')}
                   </div>
                 ) : products.length === 0 ? (
@@ -889,7 +890,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
               boxShadow: '0 6px 20px rgba(220,38,38,0.3)',
               opacity: saving ? 0.6 : 1,
             }}>
-              {saving && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
+              {saving && <BrandLoader variant="inline" size={14} />}
               {isEdit ? t('save') : t('create')}
             </button>
           </div>

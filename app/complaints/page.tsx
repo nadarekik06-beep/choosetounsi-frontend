@@ -16,6 +16,8 @@ import type { Complaint } from '@/types/complaint'
 import { STATUS_CONFIG } from '@/types/complaint'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
+import BrandLoader from '@/components/brand/BrandLoader'
 
 const RED = '#db142e'
 
@@ -158,6 +160,8 @@ export default function MyComplaintsPage() {
   const router = useRouter()
   const [complaints, setComplaints] = useState<Complaint[]>([])
   const [loading,    setLoading]    = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading)
   const [error,      setError]      = useState(false)
 
   const fetchComplaints = useCallback(async () => {
@@ -233,14 +237,7 @@ export default function MyComplaintsPage() {
 
           {/* States */}
           {loading && (
-            <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <div style={{ width: 28, height: 28, border: `3px solid #f1f5f9`,
-                borderTopColor: RED, borderRadius: '50%',
-                animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-              <p style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>
-                {t('loading')}
-              </p>
-            </div>
+            <BrandLoader variant="section" label={t('loading')} minHeight={240} />
           )}
 
           {error && (

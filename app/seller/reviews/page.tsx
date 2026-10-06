@@ -9,6 +9,8 @@ import { useTheme } from '@/app/seller/SellerShell';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { ink } from '@/app/seller/ink';
+import { usePageLoading } from '@/components/brand/NavigationLoader'
+import BrandLoader, { BusyLabel, RefreshCover } from '@/components/brand/BrandLoader'
 
 const API_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
 const getToken = () => typeof window !== 'undefined'
@@ -213,7 +215,7 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
                   fontSize: 13, fontFamily: 'inherit',
                 }}
               >
-                {sending ? t('submitting') : t('submitReport')}
+                <BusyLabel busy={sending}>{t('submitReport')}</BusyLabel>
               </button>
             </div>
           </>
@@ -259,7 +261,7 @@ function ReplyModal({ reviewId, existing, dark, onClose, onSaved }: {
           <button onClick={onClose} style={{ flex: 1, height: 44, borderRadius: 12, border: `1.5px solid ${dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`, background: 'transparent', color: dark ? 'rgba(255,255,255,0.6)' : '#5b6472', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>{t('cancel')}</button>
           <button onClick={handleSave} disabled={saving || body.trim().length < 5}
             style={{ flex: 2, height: 44, borderRadius: 12, border: 'none', background: body.trim().length >= 5 ? 'linear-gradient(135deg,#db142e,#a00f22)' : '#e2e8f0', color: body.trim().length >= 5 ? '#fff' : ink('#94a3b8', dark), fontWeight: 900, cursor: saving ? 'wait' : 'pointer', fontSize: 13 }}>
-            {saving ? t('saving') : t('saveReply')}
+            <BusyLabel busy={saving}>{t('saveReply')}</BusyLabel>
           </button>
         </div>
       </div>
@@ -362,6 +364,8 @@ export default function SellerReviewsPage() {
   const [stats,       setStats]       = useState<ReviewStats | null>(null);
   const [reviews,     setReviews]     = useState<ReviewItem[]>([]);
   const [loading,     setLoading]     = useState(true);
+  // holds the navigation loader until the first load is done
+  const firstLoad = usePageLoading(loading);
   const [rFilter,     setRFilter]     = useState<number | null>(null);
   const [reply,       setReply]       = useState<{ id: number; existing: string } | null>(null);
   const [reportId,    setReportId]    = useState<number | null>(null);
@@ -497,31 +501,31 @@ export default function SellerReviewsPage() {
           </div>
 
           <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {loading ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: muted }}>
-                <RefreshCw size={24} style={{ display: 'block', margin: '0 auto 12px', opacity: 0.4 }} />
-                <p style={{ fontWeight: 600, fontSize: 13 }}>{t('loading')}</p>
-              </div>
-            ) : reviews.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: muted }}>
-                <Star size={32} style={{ opacity: 0.2, display: 'block', margin: '0 auto 12px' }} />
-                <p style={{ fontWeight: 700 }}>{t('empty')}</p>
-              </div>
-            ) : reviews.map(review => (
-              <ReviewRow
-                key={review.id}
-                review={review}
-                dark={dark}
-                onReply={(id, ex) => setReply({ id, existing: ex })}
-                onReport={(id) => setReportId(id)}
-              />
-            ))}
+            <div style={{ position: 'relative' }}>
+              <RefreshCover active={loading} theme={dark ? 'dark' : 'light'} />
+              {firstLoad ? (
+                <BrandLoader variant="section" label={t('loading')} minHeight={220} theme={dark ? 'dark' : 'light'} />
+              ) : reviews.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '48px 0', color: muted }}>
+                  <Star size={32} style={{ opacity: 0.2, display: 'block', margin: '0 auto 12px' }} />
+                  <p style={{ fontWeight: 700 }}>{t('empty')}</p>
+                </div>
+              ) : reviews.map(review => (
+                <ReviewRow
+                  key={review.id}
+                  review={review}
+                  dark={dark}
+                  onReply={(id, ex) => setReply({ id, existing: ex })}
+                  onReport={(id) => setReportId(id)}
+                />
+              ))}
+            </div>
 
             {meta.page < meta.lastPage && (
               <div style={{ textAlign: 'center', paddingTop: 8 }}>
                 <button onClick={() => fetchReviews(meta.page + 1, true)} disabled={loadingMore}
                   style={{ padding: '10px 28px', borderRadius: 12, border: `1.5px solid ${border}`, background: 'transparent', color: txt, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                  {loadingMore ? t('loadingMore') : t('loadMore', { count: meta.total - reviews.length })}
+                  <BusyLabel busy={loadingMore}>{t('loadMore', { count: meta.total - reviews.length })}</BusyLabel>
                 </button>
               </div>
             )}

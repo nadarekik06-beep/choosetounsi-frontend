@@ -5043,5 +5043,14 @@
       "options": "Plusieurs options disponibles — choisissez la vôtre sur la fiche produit.",
       "image": "Image {index} sur {total}"
     }
+  },
+  "loader": {
+    "loading": "Chargement…",
+    "tagline": "Fait en Tunisie, choisi par vous",
+    "aiTyping": "Réflexion…",
+    "analyzingImage": "Analyse de votre image…",
+    "forecasting": "Calcul de vos prévisions…",
+    "optimizing": "Analyse de vos prix…",
+    "loadingMore": "Chargement de la suite…"
   }
 }

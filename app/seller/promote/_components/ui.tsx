@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useTheme } from '../../SellerShell'
 import type { Campaign, CampaignStatus, Tip } from '@/lib/sellerAdsApi'
+import { BusyLabel } from '@/components/brand/BrandLoader'
 
 export const GOLD = '#f59e0b'
 export const RED  = '#db142e'
@@ -76,10 +77,13 @@ export function StatusChip({ campaign }: { campaign: Pick<Campaign, 'status' | '
   )
 }
 
-export function Button({ children, onClick, href, variant = 'primary', disabled, type = 'button', small }: {
+export function Button({ children, onClick, href, variant = 'primary', disabled, loading = false, type = 'button', small }: {
   children: React.ReactNode; onClick?: () => void; href?: string; variant?: 'primary' | 'ghost' | 'danger'
   disabled?: boolean; type?: 'button' | 'submit'; small?: boolean
+  /** Async action running: inline loader over the label, button disabled, width kept. */
+  loading?: boolean
 }) {
+  disabled = disabled || loading
   const p = usePalette()
   const style: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none',
@@ -90,7 +94,7 @@ export function Button({ children, onClick, href, variant = 'primary', disabled,
       : { background: p.cardAlt, color: p.text, border: `1px solid ${p.border}` }),
   }
   if (href && !disabled) return <Link href={href} style={style}>{children}</Link>
-  return <button type={type} onClick={onClick} disabled={disabled} style={style}>{children}</button>
+  return <button type={type} onClick={onClick} disabled={disabled} aria-busy={loading || undefined} style={style}><BusyLabel busy={loading} size={small ? 12 : 14}>{children}</BusyLabel></button>
 }
 
 export function Notice({ tone = 'info', children }: { tone?: 'info' | 'warn' | 'error' | 'success'; children: React.ReactNode }) {

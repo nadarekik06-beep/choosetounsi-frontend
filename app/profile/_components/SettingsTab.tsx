@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { Loader2, Mail, KeyRound, Bell, UserRound, Eye, EyeOff, LogOut } from 'lucide-react'
+import { Mail, KeyRound, Bell, UserRound, Eye, EyeOff, LogOut } from 'lucide-react'
 import MarketingConsentToggle from '@/components/marketing/MarketingConsentToggle'
 import { profileApi, syncSessionUser, ApiError, type Profile, type NotificationPreferences } from '@/lib/profileApi'
 import PersonalInfoForm from '@/components/profile/PersonalInfoForm'
 import { Field, Switch } from '@/components/profile/ui'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 type Toast = (msg: string, kind?: 'success' | 'error') => void
 
 function PasswordInput({ id, value, onChange, error, label, autoComplete, required = true, hint }: {
@@ -101,7 +102,7 @@ function EmailSection({ profile, onProfile, toast }: { profile: Profile; onProfi
           <p className="pf-hint" style={{ margin: 0 }}>{t('hint')}</p>
           <div className="pf-actions">
             <button type="button" className="pf-btn light" onClick={reset}>{tc('cancel')}</button>
-            <button type="submit" className="pf-btn primary" disabled={busy}>{busy && <Loader2 size={15} className="animate-spin" />}{t('send')}</button>
+            <button type="submit" className="pf-btn primary" disabled={busy}>{busy && <BrandLoader variant="inline" size={15} />}{t('send')}</button>
           </div>
         </form>
       )}
@@ -116,7 +117,7 @@ function EmailSection({ profile, onProfile, toast }: { profile: Profile; onProfi
           </Field>
           <div className="pf-actions">
             <button type="button" className="pf-btn light" onClick={() => { setSentTo(null); setCode('') }}>{t('back')}</button>
-            <button type="submit" className="pf-btn primary" disabled={busy}>{busy && <Loader2 size={15} className="animate-spin" />}{t('verify')}</button>
+            <button type="submit" className="pf-btn primary" disabled={busy}>{busy && <BrandLoader variant="inline" size={15} />}{t('verify')}</button>
           </div>
         </form>
       )}
@@ -182,7 +183,7 @@ function PasswordSection({ profile, onProfile, toast }: { profile: Profile; onPr
         </div>
         <div className="pf-actions" style={{ alignItems: 'center' }}>
           {!setting && <Link href="/auth/forgot-password" className="pf-link" style={{ marginInlineEnd: 'auto' }}>{t('forgot')}</Link>}
-          <button type="submit" className="pf-btn primary" disabled={busy}>{busy && <Loader2 size={15} className="animate-spin" />}{setting ? t('set') : t('save')}</button>
+          <button type="submit" className="pf-btn primary" disabled={busy}>{busy && <BrandLoader variant="inline" size={15} />}{setting ? t('set') : t('save')}</button>
         </div>
         <p className="pf-hint" style={{ margin: 0 }}>{t('otherDevices')}</p>
       </form>

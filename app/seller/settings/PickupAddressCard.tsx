@@ -8,12 +8,13 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Truck, Loader2, CheckCircle2, AlertCircle, AlertTriangle } from 'lucide-react'
+import { Truck, CheckCircle2, AlertCircle, AlertTriangle } from 'lucide-react'
 import { storeProfileApi, type PickupAddressInput } from '@/lib/sellerApi'
 import { WILAYAS, useWilayaLabel } from '@/lib/i18n/wilayas'
 import { validateTunisianPhone } from '@/lib/shippingAddress'
 import { ink } from '@/app/seller/ink'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 const EMPTY: PickupAddressInput = {
   full_name: '', phone_number: '', pickup_address: '', city: '',
   pickup_postal_code: '', wilaya: '', pickup_notes: '',
@@ -118,7 +119,7 @@ export default function PickupAddressCard({ dark, cardBg, border, textMain, text
       )}
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}><Loader2 size={18} className="animate-spin" color="#db142e" /></div>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}><BrandLoader variant="inline" size={18} style={{ color: '#db142e' }} /></div>
       ) : (
         <div className="pickup-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div><label style={label} htmlFor="pk-contact">{t('contact')} *</label>
@@ -158,7 +159,7 @@ export default function PickupAddressCard({ dark, cardBg, border, textMain, text
           background: '#db142e', border: 'none', color: '#fff', cursor: saving ? 'default' : 'pointer',
           opacity: saving ? 0.6 : 1, display: 'flex', alignItems: 'center', gap: 6,
         }}>
-          {saving && <Loader2 size={13} className="animate-spin" />} {t('save')}
+          {saving && <BrandLoader variant="inline" size={13} />} {t('save')}
         </button>
       )}
 

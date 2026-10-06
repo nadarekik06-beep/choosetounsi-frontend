@@ -14,6 +14,7 @@
 
 import { type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
+import BrandLoader from '@/components/brand/BrandLoader'
 
 export type SmartActionColor = 'gold' | 'red' | 'green' | 'blue' | 'purple';
 
@@ -38,16 +39,9 @@ const COLOR_MAP: Record<SmartActionColor, { bg: string; border: string; text: st
   purple: { bg: 'rgba(139,92,246,0.13)', border: 'rgba(139,92,246,0.35)', text: '#8b5cf6' },
 };
 
-function Spinner({ color }: { color: string }) {
+function BusyGlyph({ color }: { color: string }) {
   return (
-    <>
-      <span style={{
-        display: 'inline-block', width: 10, height: 10, borderRadius: '50%',
-        border: `2px solid ${color}30`, borderTop: `2px solid ${color}`,
-        animation: 'sab-spin 0.7s linear infinite', flexShrink: 0,
-      }} />
-      <style>{`@keyframes sab-spin{to{transform:rotate(360deg)}}`}</style>
-    </>
+    <BrandLoader variant="inline" size={11} style={{ color }} />
   );
 }
 
@@ -77,7 +71,7 @@ export default function SmartActionButton({
 
   const inner = (
     <>
-      {loading ? <Spinner color={c.text} /> : <Icon size={iconSize} />}
+      {loading ? <BusyGlyph color={c.text} /> : <Icon size={iconSize} />}
       {label}
     </>
   );

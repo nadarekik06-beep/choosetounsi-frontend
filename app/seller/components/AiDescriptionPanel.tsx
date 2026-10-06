@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  Sparkles, Loader2, Check, ChevronDown, ChevronUp, Lock, ArrowRight, AlertTriangle,
+  Sparkles, Check, ChevronDown, ChevronUp, Lock, ArrowRight, AlertTriangle,
   Info, RefreshCw, Copy, CheckCircle2, Mic, Hash, Search, Megaphone, Crown,
 } from 'lucide-react';
 import { sellerAiApi } from '@/lib/sellerAiApi';
@@ -15,6 +15,7 @@ import type { VariantRow } from './VariantBuilder';
 import { useLocale, useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 
+import BrandLoader from '@/components/brand/BrandLoader'
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const RED   = '#db142e';
@@ -290,7 +291,7 @@ export default function AiDescriptionPanel(props: AiDescriptionPanelProps) {
         }}>
           {!opts && !optsErr && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: MUTED }}>
-              <Loader2 size={13} style={{ animation: 'ai-spin 0.8s linear infinite' }} /> {t('loading')}
+              <BrandLoader variant="inline" size={13} /> {t('loading')}
             </div>
           )}
           {optsErr && <ErrorBox message={optsErr} onRetry={loadOptions} retryLabel={t('retry')} />}
@@ -466,7 +467,7 @@ export default function AiDescriptionPanel(props: AiDescriptionPanelProps) {
                 }}
               >
                 {loading
-                  ? <><Loader2 size={13} style={{ animation: 'ai-spin 0.8s linear infinite' }} />{t('generating')}</>
+                  ? <><BrandLoader variant="inline" size={13} />{t('generating')}</>
                   : variants.length
                     ? <><RefreshCw size={13} />{t('regenerate')}</>
                     : <><Sparkles size={13} />{t('generate')}</>}
@@ -785,7 +786,7 @@ function StoreVoice({ opts, onLocked, onSaved }: {
               display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 8, border: 'none',
               background: '#111827', color: '#fff', fontFamily: 'inherit', fontSize: 11, fontWeight: 700, cursor: saving ? 'wait' : 'pointer',
             }}>
-              {saving ? <Loader2 size={11} style={{ animation: 'ai-spin 0.8s linear infinite' }} /> : <Check size={11} />} {t('voiceSave')}
+              {saving ? <BrandLoader variant="inline" size={11} /> : <Check size={11} />} {t('voiceSave')}
             </button>
             {msg && <span style={{ fontSize: 10, color: MUTED }}>{msg}</span>}
           </div>

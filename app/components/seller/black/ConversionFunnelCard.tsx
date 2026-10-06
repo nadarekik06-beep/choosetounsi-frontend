@@ -14,6 +14,7 @@ import SmartActionButton from '@/app/components/seller/black/SmartActionButton';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { ink } from '@/app/seller/ink';
+import BrandLoader from '@/components/brand/BrandLoader'
 
 const GOLD = '#f59e0b';
 
@@ -114,13 +115,8 @@ export default function ConversionFunnelCard({ dark }: { dark: boolean }) {
       {open && (
         <div style={{ padding: 20 }}>
           {loading && (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: '50%',
-                border: `3px solid ${GOLD}20`, borderTop: `3px solid ${GOLD}`,
-                animation: 'ff-spin 0.8s linear infinite',
-              }} />
-              <style>{'@keyframes ff-spin{to{transform:rotate(360deg)}}'}</style>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0', color: GOLD }}>
+              <BrandLoader variant="inline" size={28} />
             </div>
           )}
 

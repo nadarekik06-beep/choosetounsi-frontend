@@ -7,6 +7,7 @@ import { Star, Package } from 'lucide-react'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { profileApi, type MyReview, type Paginated } from '@/lib/profileApi'
 import { EmptyState, Skeleton, Stars } from '@/components/profile/ui'
+import BrandLoader from '@/components/brand/BrandLoader'
 
 const STATUS_CLASS: Record<MyReview['status'], string> = {
   approved: 'delivered', pending: 'pending', rejected: 'cancelled', flagged: 'neutral',
@@ -76,7 +77,7 @@ export default function ReviewsTab() {
             {page && page.current_page < page.last_page && (
               <div style={{ textAlign: 'center', marginTop: 12 }}>
                 <button type="button" className="pf-btn light" onClick={() => load(page.current_page + 1)} disabled={loading}>
-                  {loading ? <span className="pf-spin dark" /> : t('more')}
+                  {loading ? <BrandLoader variant="inline" size={16} style={{ color: 'var(--pf-red)' }} /> : t('more')}
                 </button>
               </div>
             )}

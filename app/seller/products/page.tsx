@@ -21,7 +21,7 @@ import type { Product, PaginatedResponse } from '@/types/seller';
 import {
   Plus, Search, Filter, Edit2, Trash2, Package,
   CheckCircle, XCircle, ChevronLeft, ChevronRight,
-  Loader2, Clock, Image as ImageIcon, Eye, Layers,
+  Clock, Image as ImageIcon, Eye, Layers,
   RefreshCw,
 } from 'lucide-react';
 import ProductModal from './ProductModal';
@@ -35,6 +35,9 @@ import ProductAlertPanel, {
 } from '@/app/components/seller/ProductAlertPanel';
 import { ink } from '@/app/seller/ink';
 
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
+import { RefreshCover } from '@/components/brand/BrandLoader'
 interface ModalState {
   open: boolean;
   product: Product | null;
@@ -50,6 +53,8 @@ export default function ProductsPage() {
 
   const [data,       setData]       = useState<PaginatedResponse<Product> | null>(null);
   const [loading,    setLoading]    = useState(true);
+  // holds the navigation loader until the first load is done
+  const firstLoad = usePageLoading(loading);
   const [search,     setSearch]     = useState('');
   const [isActive,   setIsActive]   = useState('');
   const [isApproved, setIsApproved] = useState('');
@@ -285,275 +290,276 @@ export default function ProductsPage() {
 
         {/* Table */}
         <div style={{ background: cardBg, borderRadius: 18, border: `1px solid ${border}`, overflow: 'hidden' }}>
-          {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}>
-              <Loader2 size={24} style={{ animation: 'spin 0.8s linear infinite', color: '#db142e' }} />
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                <thead>
-                  <tr style={{ background: theadBg }}>
-                    {(['product', 'category', 'price', 'stock', 'status', 'approval', 'actions'] as const).map(h => (
-                      <th key={h} style={{
-                        padding: '10px 20px', fontSize: 9, fontWeight: 800,
-                        textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted,
-                        textAlign: ['price', 'stock'].includes(h) ? 'end' : ['status', 'approval', 'actions'].includes(h) ? 'center' : 'start',
-                      }}>
-                        {t(`cols.${h}`)}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data?.data.map(product => {
-                    const hasVariants  = (product as any).has_variants;
-                    const variantStock = (product as any).variant_stock;
-                    const displayStock = hasVariants ? variantStock : product.stock;
-                    const thumbUrl     = (product as any).primary_image_url as string | null | undefined;
-
-                    // ── Is out of stock? (triggers restock button) ──────────
-                    const isOutOfStock = displayStock === 0;
-
-                    // ── Alert data from backend ─────────────────────────────
-                    const alertData = ((product as any).alert_data ?? { has_alert: false }) as ProductAlertData;
-                    const isCritical = alertData.alert_level === 'critical';
-                    const isWarning  = alertData.alert_level === 'warning';
-
-                    return (
-                      <React.Fragment key={product.id}>
-                        <tr
-                          className="product-row"
-                          style={{
-                            borderTop: `1px solid ${border}`,
-                            background: isCritical
-                              ? (dark ? 'rgba(239,68,68,0.04)' : 'rgba(239,68,68,0.02)')
-                              : isWarning
-                              ? (dark ? 'rgba(245,158,11,0.03)' : 'rgba(245,158,11,0.015)')
-                              : 'transparent',
-                            borderInlineStart: isCritical
-                              ? '3px solid rgba(239,68,68,0.5)'
-                              : isWarning
-                              ? '3px solid rgba(245,158,11,0.5)'
-                              : '3px solid transparent',
-                            transition: 'background 0.2s ease',
-                          }}
-                        >
-
-                          {/* Product */}
-                          <td style={{ padding: '12px 20px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                              <div style={{ width: 40, height: 40, borderRadius: 10, background: dark ? 'rgba(255,255,255,0.06)' : '#f1f5f9', border: `1px solid ${border}`, flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                {thumbUrl ? (
-                                  <img
-                                    src={thumbUrl}
-                                    alt={product.name}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                    onError={e => {
-                                      const img = e.currentTarget;
-                                      img.style.display = 'none';
-                                      const parent = img.parentElement;
-                                      if (parent && !parent.querySelector('svg')) {
-                                        const wrap = document.createElement('div');
-                                        wrap.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%';
-                                        wrap.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${textMuted}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
-                                        parent.appendChild(wrap);
-                                      }
-                                    }}
-                                  />
-                                ) : (
-                                  <ImageIcon size={14} style={{ color: textMuted, opacity: 0.5 }} />
-                                )}
-                              </div>
-                              <div style={{ minWidth: 0 }}>
-                                <p style={{ fontWeight: 800, color: textMain, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
-                                  {product.name}
-                                </p>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>
-                                    {(product as any).sku ? t('sku', { sku: (product as any).sku }) : t('id', { id: product.id })}
-                                  </p>
-                                  {hasVariants && (
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 800, color: ink('#6366f1', dark), background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 5px', borderRadius: 4 }}>
-                                      <Layers size={8} /> {t('variantsBadge')}
-                                    </span>
+          <div style={{ position: 'relative' }}>
+            <RefreshCover active={loading} theme={dark ? 'dark' : 'light'} />
+            {firstLoad ? (
+              <BrandLoader variant="section" theme={dark ? 'dark' : 'light'} minHeight={220} />
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ background: theadBg }}>
+                      {(['product', 'category', 'price', 'stock', 'status', 'approval', 'actions'] as const).map(h => (
+                        <th key={h} style={{
+                          padding: '10px 20px', fontSize: 9, fontWeight: 800,
+                          textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted,
+                          textAlign: ['price', 'stock'].includes(h) ? 'end' : ['status', 'approval', 'actions'].includes(h) ? 'center' : 'start',
+                        }}>
+                          {t(`cols.${h}`)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data?.data.map(product => {
+                      const hasVariants  = (product as any).has_variants;
+                      const variantStock = (product as any).variant_stock;
+                      const displayStock = hasVariants ? variantStock : product.stock;
+                      const thumbUrl     = (product as any).primary_image_url as string | null | undefined;
+  
+                      // ── Is out of stock? (triggers restock button) ──────────
+                      const isOutOfStock = displayStock === 0;
+  
+                      // ── Alert data from backend ─────────────────────────────
+                      const alertData = ((product as any).alert_data ?? { has_alert: false }) as ProductAlertData;
+                      const isCritical = alertData.alert_level === 'critical';
+                      const isWarning  = alertData.alert_level === 'warning';
+  
+                      return (
+                        <React.Fragment key={product.id}>
+                          <tr
+                            className="product-row"
+                            style={{
+                              borderTop: `1px solid ${border}`,
+                              background: isCritical
+                                ? (dark ? 'rgba(239,68,68,0.04)' : 'rgba(239,68,68,0.02)')
+                                : isWarning
+                                ? (dark ? 'rgba(245,158,11,0.03)' : 'rgba(245,158,11,0.015)')
+                                : 'transparent',
+                              borderInlineStart: isCritical
+                                ? '3px solid rgba(239,68,68,0.5)'
+                                : isWarning
+                                ? '3px solid rgba(245,158,11,0.5)'
+                                : '3px solid transparent',
+                              transition: 'background 0.2s ease',
+                            }}
+                          >
+  
+                            {/* Product */}
+                            <td style={{ padding: '12px 20px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{ width: 40, height: 40, borderRadius: 10, background: dark ? 'rgba(255,255,255,0.06)' : '#f1f5f9', border: `1px solid ${border}`, flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  {thumbUrl ? (
+                                    <img
+                                      src={thumbUrl}
+                                      alt={product.name}
+                                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                      onError={e => {
+                                        const img = e.currentTarget;
+                                        img.style.display = 'none';
+                                        const parent = img.parentElement;
+                                        if (parent && !parent.querySelector('svg')) {
+                                          const wrap = document.createElement('div');
+                                          wrap.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%';
+                                          wrap.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${textMuted}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
+                                          parent.appendChild(wrap);
+                                        }
+                                      }}
+                                    />
+                                  ) : (
+                                    <ImageIcon size={14} style={{ color: textMuted, opacity: 0.5 }} />
                                   )}
-                                  {/* ── Alert indicator badge ── */}
-                                  <AlertIndicator alertData={alertData} dark={dark} />
+                                </div>
+                                <div style={{ minWidth: 0 }}>
+                                  <p style={{ fontWeight: 800, color: textMain, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
+                                    {product.name}
+                                  </p>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>
+                                      {(product as any).sku ? t('sku', { sku: (product as any).sku }) : t('id', { id: product.id })}
+                                    </p>
+                                    {hasVariants && (
+                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 800, color: ink('#6366f1', dark), background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 5px', borderRadius: 4 }}>
+                                        <Layers size={8} /> {t('variantsBadge')}
+                                      </span>
+                                    )}
+                                    {/* ── Alert indicator badge ── */}
+                                    <AlertIndicator alertData={alertData} dark={dark} />
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </td>
-
-                          {/* Category */}
-                          <td style={{ padding: '12px 20px', fontSize: 12, fontWeight: 500, color: textMuted }}>
-                            {(product as any).category?.name ?? '—'}
-                          </td>
-
-                          {/* Price */}
-                          <td style={{ padding: '12px 20px', textAlign: 'end', fontWeight: 900, color: textMain }}>
-                            {price(product.price, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
-                          </td>
-
-                          {/* Stock */}
-                          <td style={{ padding: '12px 20px', textAlign: 'end' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
-                              <span style={{ fontWeight: 800, color: displayStock === 0 ? ink('#ef4444', dark) : displayStock <= 10 ? ink('#f59e0b', dark) : textMain }}>
-                                {displayStock}
-                                {displayStock === 0 && <span style={{ fontSize: 10, marginInlineStart: 4, color: ink('#ef4444', dark) }}>{t('outTag')}</span>}
-                                {displayStock > 0 && displayStock <= 10 && <span style={{ fontSize: 10, marginInlineStart: 4, color: ink('#f59e0b', dark) }}>{t('lowTag')}</span>}
+                            </td>
+  
+                            {/* Category */}
+                            <td style={{ padding: '12px 20px', fontSize: 12, fontWeight: 500, color: textMuted }}>
+                              {(product as any).category?.name ?? '—'}
+                            </td>
+  
+                            {/* Price */}
+                            <td style={{ padding: '12px 20px', textAlign: 'end', fontWeight: 900, color: textMain }}>
+                              {price(product.price, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                            </td>
+  
+                            {/* Stock */}
+                            <td style={{ padding: '12px 20px', textAlign: 'end' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
+                                <span style={{ fontWeight: 800, color: displayStock === 0 ? ink('#ef4444', dark) : displayStock <= 10 ? ink('#f59e0b', dark) : textMain }}>
+                                  {displayStock}
+                                  {displayStock === 0 && <span style={{ fontSize: 10, marginInlineStart: 4, color: ink('#ef4444', dark) }}>{t('outTag')}</span>}
+                                  {displayStock > 0 && displayStock <= 10 && <span style={{ fontSize: 10, marginInlineStart: 4, color: ink('#f59e0b', dark) }}>{t('lowTag')}</span>}
+                                </span>
+                              </div>
+                            </td>
+  
+                            {/* Status */}
+                            <td style={{ padding: '12px 20px', textAlign: 'center' }}>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999, background: product.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: product.is_active ? ink('#10b981', dark) : ink('#ef4444', dark), border: `1px solid ${product.is_active ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
+                                {product.is_active ? <><CheckCircle size={9} />{t('active')}</> : <><XCircle size={9} />{t('inactive')}</>}
                               </span>
-                            </div>
-                          </td>
-
-                          {/* Status */}
-                          <td style={{ padding: '12px 20px', textAlign: 'center' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999, background: product.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: product.is_active ? ink('#10b981', dark) : ink('#ef4444', dark), border: `1px solid ${product.is_active ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
-                              {product.is_active ? <><CheckCircle size={9} />{t('active')}</> : <><XCircle size={9} />{t('inactive')}</>}
-                            </span>
-                          </td>
-
-                          {/* Approval — replace the existing cell */}
-<td style={{ padding: '12px 20px', textAlign: 'center' }}>
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-        <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999,
-            background: product.is_approved
-                ? 'rgba(59,130,246,0.12)'
-                : (product as any).rejection_reason
-                ? 'rgba(239,68,68,0.12)'
-                : 'rgba(245,158,11,0.12)',
-            color: product.is_approved
-                ? ink('#3b82f6', dark)
-                : (product as any).rejection_reason
-                ? ink('#ef4444', dark)
-                : ink('#f59e0b', dark),
-            border: `1px solid ${product.is_approved
-                ? 'rgba(59,130,246,0.25)'
-                : (product as any).rejection_reason
-                ? 'rgba(239,68,68,0.25)'
-                : 'rgba(245,158,11,0.25)'}`,
-        }}>
-            {product.is_approved
-                ? <><CheckCircle size={9} />{t('approved')}</>
-                : (product as any).rejection_reason
-                ? <><XCircle size={9} />{t('rejected')}</>
-                : (product as any).changes_requested_at
-                ? <><Clock size={9} />{t('changesRequested')}</>
-                : <><Clock size={9} />{t('pending')}</>
-            }
-        </span>
-        {/* Reason snippet */}
-        {!product.is_approved && (product as any).rejection_reason && (
-            <span style={{
-                fontSize: 9, color: ink('#ef4444', dark), maxWidth: 120,
-                overflow: 'hidden', textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap', display: 'block',
-            }}
-                title={(product as any).rejection_reason}
-            >
-                {(product as any).rejection_reason}
-            </span>
-        )}
-    </div>
-</td>
-
-                          {/* Actions */}
-                          <td style={{ padding: '12px 20px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-
-                              {/* View */}
-                              <button
-                                onClick={() => router.push(`/seller/products/${product.id}`)}
-                                className="act-btn"
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: ink('#94a3b8', dark), opacity: 0.7 }}
-                                title={t('view')}
-                                aria-label={t('view')}
-                              >
-                                <Eye size={13} />
-                              </button>
-
-                              {/* Edit */}
-                              <button
-                                onClick={() => handleEdit(product)}
-                                className="act-btn"
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: ink('#94a3b8', dark), opacity: 0.7 }}
-                                title={t('edit')}
-                                aria-label={t('edit')}
-                              >
-                                <Edit2 size={13} />
-                              </button>
-
-                              {/* ── Restock button (only when out of stock) ── */}
-                              {isOutOfStock && (
-                                <button
-                                  onClick={() => handleRestock(product)}
-                                  className="restock-btn"
-                                  title={t('restockHint')}
-                                  style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                                    padding: '5px 10px',
-                                    background: 'rgba(16,185,129,0.1)',
-                                    border: '1px solid rgba(16,185,129,0.3)',
-                                    borderRadius: 8, cursor: 'pointer',
-                                    color: ink('#10b981', dark),
-                                    fontSize: 10, fontWeight: 800,
-                                    opacity: 0.9, transition: 'all 0.15s',
-                                    fontFamily: 'inherit',
-                                  }}
-                                >
-                                  <RefreshCw size={11} />
-                                  {t('restock')}
-                                </button>
-                              )}
-
-                              {/* Delete */}
-                              <button
-                                onClick={() => handleDelete(product.id)}
-                                disabled={deleting !== null}
-                                aria-busy={deleting === product.id}
-                                className="act-btn"
-                                style={{ background: 'transparent', border: 'none', cursor: deleting !== null ? 'not-allowed' : 'pointer', padding: 6, borderRadius: 8, color: ink('#94a3b8', dark), opacity: deleting === product.id ? 0.4 : 0.7 }}
-                                title={t('delete')}
-                                aria-label={t('delete')}
-                              >
-                                {deleting === product.id
-                                  ? <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />
-                                  : <Trash2 size={13} />
-                                }
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-
-                        {/* ── Alert panel (expands as a full-width row below the product row) ── */}
-                        {alertData.has_alert && (
-                          <ProductAlertPanel
-                            key={`alert-${product.id}`}
-                            productId={product.id}
-                            productName={product.name}
-                            alertData={alertData}
-                            dark={dark}
-                          />
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-
-                  {data?.data.length === 0 && (
-                    <tr>
-                      <td colSpan={7} style={{ padding: '56px 20px', textAlign: 'center' }}>
-                        <Package size={28} style={{ margin: '0 auto 10px', display: 'block', color: textMuted, opacity: 0.4 }} />
-                        <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>{t('empty')}</p>
-                        <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>{t('emptyHint')}</p>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                            </td>
+  
+                            {/* Approval — replace the existing cell */}
+  <td style={{ padding: '12px 20px', textAlign: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999,
+              background: product.is_approved
+                  ? 'rgba(59,130,246,0.12)'
+                  : (product as any).rejection_reason
+                  ? 'rgba(239,68,68,0.12)'
+                  : 'rgba(245,158,11,0.12)',
+              color: product.is_approved
+                  ? ink('#3b82f6', dark)
+                  : (product as any).rejection_reason
+                  ? ink('#ef4444', dark)
+                  : ink('#f59e0b', dark),
+              border: `1px solid ${product.is_approved
+                  ? 'rgba(59,130,246,0.25)'
+                  : (product as any).rejection_reason
+                  ? 'rgba(239,68,68,0.25)'
+                  : 'rgba(245,158,11,0.25)'}`,
+          }}>
+              {product.is_approved
+                  ? <><CheckCircle size={9} />{t('approved')}</>
+                  : (product as any).rejection_reason
+                  ? <><XCircle size={9} />{t('rejected')}</>
+                  : (product as any).changes_requested_at
+                  ? <><Clock size={9} />{t('changesRequested')}</>
+                  : <><Clock size={9} />{t('pending')}</>
+              }
+          </span>
+          {/* Reason snippet */}
+          {!product.is_approved && (product as any).rejection_reason && (
+              <span style={{
+                  fontSize: 9, color: ink('#ef4444', dark), maxWidth: 120,
+                  overflow: 'hidden', textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap', display: 'block',
+              }}
+                  title={(product as any).rejection_reason}
+              >
+                  {(product as any).rejection_reason}
+              </span>
           )}
+      </div>
+  </td>
+  
+                            {/* Actions */}
+                            <td style={{ padding: '12px 20px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+  
+                                {/* View */}
+                                <button
+                                  onClick={() => router.push(`/seller/products/${product.id}`)}
+                                  className="act-btn"
+                                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: ink('#94a3b8', dark), opacity: 0.7 }}
+                                  title={t('view')}
+                                  aria-label={t('view')}
+                                >
+                                  <Eye size={13} />
+                                </button>
+  
+                                {/* Edit */}
+                                <button
+                                  onClick={() => handleEdit(product)}
+                                  className="act-btn"
+                                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: ink('#94a3b8', dark), opacity: 0.7 }}
+                                  title={t('edit')}
+                                  aria-label={t('edit')}
+                                >
+                                  <Edit2 size={13} />
+                                </button>
+  
+                                {/* ── Restock button (only when out of stock) ── */}
+                                {isOutOfStock && (
+                                  <button
+                                    onClick={() => handleRestock(product)}
+                                    className="restock-btn"
+                                    title={t('restockHint')}
+                                    style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                                      padding: '5px 10px',
+                                      background: 'rgba(16,185,129,0.1)',
+                                      border: '1px solid rgba(16,185,129,0.3)',
+                                      borderRadius: 8, cursor: 'pointer',
+                                      color: ink('#10b981', dark),
+                                      fontSize: 10, fontWeight: 800,
+                                      opacity: 0.9, transition: 'all 0.15s',
+                                      fontFamily: 'inherit',
+                                    }}
+                                  >
+                                    <RefreshCw size={11} />
+                                    {t('restock')}
+                                  </button>
+                                )}
+  
+                                {/* Delete */}
+                                <button
+                                  onClick={() => handleDelete(product.id)}
+                                  disabled={deleting !== null}
+                                  aria-busy={deleting === product.id}
+                                  className="act-btn"
+                                  style={{ background: 'transparent', border: 'none', cursor: deleting !== null ? 'not-allowed' : 'pointer', padding: 6, borderRadius: 8, color: ink('#94a3b8', dark), opacity: deleting === product.id ? 0.4 : 0.7 }}
+                                  title={t('delete')}
+                                  aria-label={t('delete')}
+                                >
+                                  {deleting === product.id
+                                    ? <BrandLoader variant="inline" size={13} />
+                                    : <Trash2 size={13} />
+                                  }
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+  
+                          {/* ── Alert panel (expands as a full-width row below the product row) ── */}
+                          {alertData.has_alert && (
+                            <ProductAlertPanel
+                              key={`alert-${product.id}`}
+                              productId={product.id}
+                              productName={product.name}
+                              alertData={alertData}
+                              dark={dark}
+                            />
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+  
+                    {data?.data.length === 0 && (
+                      <tr>
+                        <td colSpan={7} style={{ padding: '56px 20px', textAlign: 'center' }}>
+                          <Package size={28} style={{ margin: '0 auto 10px', display: 'block', color: textMuted, opacity: 0.4 }} />
+                          <p style={{ fontSize: 13, fontWeight: 700, color: textMuted, margin: '0 0 4px' }}>{t('empty')}</p>
+                          <p style={{ fontSize: 11, color: textMuted, margin: 0 }}>{t('emptyHint')}</p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
           {/* Pagination */}
           {data && data.last_page > 1 && (

@@ -357,9 +357,6 @@
 .pf-skel { background: linear-gradient(90deg, #ececef 0%, #f6f6f8 50%, #ececef 100%); background-size: 200% 100%; animation: pfShimmer 1.3s infinite linear; border-radius: 10px; }
 .pf-hero .pf-skel { background: linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.16) 50%, rgba(255,255,255,0.08) 100%); background-size: 200% 100%; }
 @keyframes pfShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-.pf-spin { width: 16px; height: 16px; border: 2.5px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; animation: pfSpin .7s linear infinite; display: inline-block; }
-.pf-spin.dark { border-color: #e5e5e5; border-top-color: var(--pf-red); }
-@keyframes pfSpin { to { transform: rotate(360deg); } }
 
 /* ── Completion (onboarding) page ────────────────────────── */
 .pf-onb { max-width: 600px; margin: 0 auto; padding: 0 16px 48px; position: relative; z-index: 2; margin-top: -64px; }

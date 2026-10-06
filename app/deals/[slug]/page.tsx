@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ChevronRight, ChevronLeft, ShoppingCart,
-  Zap, CheckCircle, Loader2, Shield, Truck,
+  Zap, CheckCircle, Shield, Truck,
   RotateCcw, Package2, TrendingDown, ZoomIn,
   AlertCircle, Tag,
 } from 'lucide-react'
@@ -14,6 +14,8 @@ import { isAuthenticated } from '@/lib/auth'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 const ORIGIN  = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 const API_URL = `${ORIGIN}/api`
 
@@ -399,6 +401,8 @@ export default function PackDetailPage() {
 
   const [pack,          setPack]          = useState<PackDetail | null>(null)
   const [loading,       setLoading]       = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading)
   const [error,         setError]         = useState(false)
   const [selections,    setSelections]    = useState<Record<number, number | null>>({})
   const [selectorError, setSelectorError] = useState(false)
@@ -515,12 +519,8 @@ export default function PackDetailPage() {
   // Loading
   if (loading) return (
     <>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, border: '3px solid #eee', borderTopColor: '#db142e', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 14px' }} />
-          <p style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>{t('loading')}</p>
-        </div>
+        <BrandLoader variant="section" label={t('loading')} />
       </div>
     </>
   )
@@ -722,7 +722,7 @@ export default function PackDetailPage() {
                 }}
               >
                 {addingToCart
-                  ? <Loader2 size={17} style={{ animation: 'spin 0.8s linear infinite' }} />
+                  ? <BrandLoader variant="inline" size={17} />
                   : <><Zap size={16} /> {tc('buyNow')}</>
                 }
               </button>
@@ -748,7 +748,7 @@ export default function PackDetailPage() {
                 }}
               >
                 {addingToCart
-                  ? <Loader2 size={17} style={{ animation: 'spin 0.8s linear infinite' }} />
+                  ? <BrandLoader variant="inline" size={17} />
                   : addedToCart
                     ? <><CheckCircle size={17} /> {t('added')}</>
                     : <><ShoppingCart size={17} /> {tc('addToCart')}</>

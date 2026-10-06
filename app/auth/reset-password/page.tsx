@@ -6,10 +6,11 @@ import Link from 'next/link';
 import { api } from '@/lib/auth';
 import {
   Lock, Eye, EyeOff, AlertCircle, CheckCircle2,
-  Loader2, ShoppingBag, ArrowLeft,
+  ShoppingBag, ArrowLeft,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import BrandLoader from '@/components/brand/BrandLoader'
 function ResetPasswordForm() {
   const t            = useTranslations('auth');
   const router       = useRouter();
@@ -164,7 +165,7 @@ function ResetPasswordForm() {
                   className="w-full py-3.5 mt-2 rounded-2xl bg-[#E63946] hover:bg-[#c1121f] active:scale-[0.98] text-white text-sm font-bold tracking-wide transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-500/25"
                 >
                   {loading
-                    ? <><Loader2 size={16} className="animate-spin" /> {t('reset.submitting')}</>
+                    ? <><BrandLoader variant="inline" size={16} /> {t('reset.submitting')}</>
                     : t('reset.submit')}
                 </button>
               </form>
@@ -219,7 +220,7 @@ export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
-        <Loader2 size={22} className="animate-spin text-[#E63946]" />
+        <BrandLoader variant="section" />
       </div>
     }>
       <ResetPasswordForm />

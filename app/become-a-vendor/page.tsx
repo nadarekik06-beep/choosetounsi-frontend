@@ -26,6 +26,7 @@ import { PendingHero, PendingNext } from './_components/PendingView'
 import SellerView from './_components/seller/SellerView'
 import { loadVendorState, type VendorState } from './_components/vendorState'
 import { SectionHeading, scrollToEl, useLandingData } from './_components/shared'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 import './_components/landing.css'
 import './_components/seller.css'
 
@@ -66,6 +67,8 @@ export default function BecomeVendorPage() {
 
   const [mounted,     setMounted]     = useState(false)
   const [vendor,      setVendor]      = useState<VendorState | null>(null)
+  // holds the navigation loader until the first load is done
+  usePageLoading(!mounted || !vendor)
   const [lockedModal, setLockedModal] = useState<'red' | 'black' | null>(null)
   const [success,     setSuccess]     = useState<{ wasUpdate: boolean } | null>(null)
   const [application, setApplication] = useState<ExistingApplication | null>(null)

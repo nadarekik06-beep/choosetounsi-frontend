@@ -14,6 +14,8 @@ import CouponModal from './CouponModal'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { ink } from '@/app/seller/ink';
+import { usePageLoading } from '@/components/brand/NavigationLoader'
+import BrandLoader, { BusyLabel, RefreshCover } from '@/components/brand/BrandLoader'
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
   active:    { bg: 'rgba(16,185,129,0.12)',  color: '#10b981', icon: <CheckCircle size={10} /> },
@@ -52,6 +54,8 @@ export default function PromotionsPage() {
   const [coupons,      setCoupons]      = useState<Coupon[]>([])
   const [couponStats,  setCouponStats]  = useState<CouponStats | null>(null)
   const [couponLoading, setCouponLoading] = useState(true)
+  // holds the navigation loader until the first load is done
+  const firstLoad = usePageLoading(loading || couponLoading)
   const [couponError,  setCouponError]  = useState(false)
   const [couponDeleting, setCouponDeleting] = useState<number | null>(null)
   const [couponModal,  setCouponModal]  = useState<{ open: boolean; coupon: Coupon | null }>({
@@ -262,62 +266,65 @@ export default function PromotionsPage() {
       </div>
 
       {/* ── Content ── */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: textMuted }}>{t('loading')}</div>
-      ) : error ? (
-        <div style={{ textAlign: 'center', padding: 60 }}>
-          <AlertCircle size={28} color="#db142e" style={{ margin: '0 auto 10px', display: 'block' }} />
-          <p style={{ color: textMuted, fontSize: 13 }}>{t('loadFailed')}</p>
-          <button onClick={load} style={{
-            marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '8px 16px', background: '#db142e', color: '#fff',
-            fontWeight: 700, fontSize: 12, borderRadius: 10, border: 'none', cursor: 'pointer',
+      <div style={{ position: 'relative' }}>
+        <RefreshCover active={loading} theme={dark ? 'dark' : 'light'} />
+        {firstLoad ? (
+          <BrandLoader variant="section" label={t('loading')} minHeight={220} theme={dark ? 'dark' : 'light'} />
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: 60 }}>
+            <AlertCircle size={28} color="#db142e" style={{ margin: '0 auto 10px', display: 'block' }} />
+            <p style={{ color: textMuted, fontSize: 13 }}>{t('loadFailed')}</p>
+            <button onClick={load} style={{
+              marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '8px 16px', background: '#db142e', color: '#fff',
+              fontWeight: 700, fontSize: 12, borderRadius: 10, border: 'none', cursor: 'pointer',
+            }}>
+              <RefreshCw size={12} /> {t('retry')}
+            </button>
+          </div>
+        ) : promotions.length === 0 ? (
+          <div style={{
+            textAlign: 'center', padding: '60px 20px',
+            background: cardBg, borderRadius: 18, border: `1px solid ${border}`,
           }}>
-            <RefreshCw size={12} /> {t('retry')}
-          </button>
-        </div>
-      ) : promotions.length === 0 ? (
-        <div style={{
-          textAlign: 'center', padding: '60px 20px',
-          background: cardBg, borderRadius: 18, border: `1px solid ${border}`,
-        }}>
-          <Tag size={40} style={{ color: textMuted, opacity: 0.3, margin: '0 auto 14px', display: 'block' }} />
-          <p style={{ fontWeight: 800, color: textMain, fontSize: 15, margin: '0 0 6px' }}>{t('empty')}</p>
-          <p style={{ fontSize: 13, color: textMuted, margin: '0 0 20px' }}>
-            {t('emptyHint')}
-          </p>
-          <button
-            onClick={() => setModal({ open: true, promotion: null })}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '10px 20px',
-              background: 'linear-gradient(135deg,#db142e,#a00f22)',
-              color: '#fff', fontWeight: 800, fontSize: 13,
-              borderRadius: 12, border: 'none', cursor: 'pointer',
-            }}
-          >
-            <Plus size={14} /> {t('newPromotion')}
-          </button>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-          {promotions.map(promo => (
-            <PromotionCard
-              key={promo.id}
-              promo={promo}
-              dark={dark}
-              cardBg={cardBg}
-              border={border}
-              textMain={textMain}
-              textMuted={textMuted}
-              subBg={subBg}
-              onEdit={() => openEdit(promo)}
-              onDelete={() => handleDelete(promo.id)}
-              deleting={deleting === promo.id}
-            />
-          ))}
-        </div>
-      )}
+            <Tag size={40} style={{ color: textMuted, opacity: 0.3, margin: '0 auto 14px', display: 'block' }} />
+            <p style={{ fontWeight: 800, color: textMain, fontSize: 15, margin: '0 0 6px' }}>{t('empty')}</p>
+            <p style={{ fontSize: 13, color: textMuted, margin: '0 0 20px' }}>
+              {t('emptyHint')}
+            </p>
+            <button
+              onClick={() => setModal({ open: true, promotion: null })}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '10px 20px',
+                background: 'linear-gradient(135deg,#db142e,#a00f22)',
+                color: '#fff', fontWeight: 800, fontSize: 13,
+                borderRadius: 12, border: 'none', cursor: 'pointer',
+              }}
+            >
+              <Plus size={14} /> {t('newPromotion')}
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+            {promotions.map(promo => (
+              <PromotionCard
+                key={promo.id}
+                promo={promo}
+                dark={dark}
+                cardBg={cardBg}
+                border={border}
+                textMain={textMain}
+                textMuted={textMuted}
+                subBg={subBg}
+                onEdit={() => openEdit(promo)}
+                onDelete={() => handleDelete(promo.id)}
+                deleting={deleting === promo.id}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* ── Modal ── */}
       {modal.open && (
@@ -351,7 +358,7 @@ export default function PromotionsPage() {
       )}
 
       {couponLoading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: textMuted }}>{t('loading')}</div>
+        <BrandLoader variant="section" label={t('loading')} minHeight={220} theme={dark ? 'dark' : 'light'} />
       ) : couponError ? (
         <div style={{ textAlign: 'center', padding: 60 }}>
           <AlertCircle size={28} color="#db142e" style={{ margin: '0 auto 10px', display: 'block' }} />
@@ -479,8 +486,8 @@ function CouponCard({
         <button onClick={onEdit} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px', borderRadius: 10, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', color: '#3b82f6', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
           <Edit2 size={12} /> {t('edit')}
         </button>
-        <button onClick={onDelete} disabled={deleting} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px', borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444', fontWeight: 700, fontSize: 12, cursor: 'pointer', opacity: deleting ? 0.5 : 1 }}>
-          <Trash2 size={12} /> {deleting ? '…' : t('delete')}
+        <button onClick={onDelete} disabled={deleting} aria-busy={deleting || undefined} style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px', borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444', fontWeight: 700, fontSize: 12, cursor: 'pointer', opacity: deleting ? 0.5 : 1 }}>
+          <BusyLabel busy={deleting} size={13}><Trash2 size={12} /> {t('delete')}</BusyLabel>
         </button>
       </div>
     </div>
@@ -634,7 +641,7 @@ function PromotionCard({
             opacity: deleting ? 0.5 : 1,
           }}
         >
-          <Trash2 size={12} /> {deleting ? '…' : t('delete')}
+          <BusyLabel busy={deleting} size={13}><Trash2 size={12} /> {t('delete')}</BusyLabel>
         </button>
       </div>
     </div>

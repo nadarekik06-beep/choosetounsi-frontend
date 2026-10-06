@@ -13,9 +13,9 @@ import { useEffect, useState } from 'react'
 import type { Attribute, AttributeValues } from '@/types/Attributes'
 import { categoriesApi } from '@/lib/sellerApi'
 import AttributeField from './AttributeField'
-import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 interface Props {
   subcategoryId: number
   values: AttributeValues
@@ -68,7 +68,7 @@ export default function DynamicAttributeSection({
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 0', color: '#5b6472', fontSize: 12 }}>
-        <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />
+        <BrandLoader variant="inline" size={14} />
         {t('loading')}
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>

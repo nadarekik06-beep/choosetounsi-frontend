@@ -25,10 +25,11 @@
  */
 
 import { useEffect, useState, useRef } from 'react'
-import { TrendingUp, TrendingDown, ArrowUpRight, Loader2, Flame, Crown } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowUpRight, Flame, Crown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 interface CommissionData {
   unit_price:             number
   total_price:            number
@@ -151,7 +152,7 @@ export default function CommissionPreview({
         background: '#f8fafc', borderRadius: 10,
         border: '1px solid #e5e7eb',
       }}>
-        <Loader2 size={12} style={{ animation: 'spin 0.8s linear infinite', color: '#5b6472', flexShrink: 0 }} />
+        <BrandLoader variant="inline" size={12} style={{ color: '#5b6472', flexShrink: 0 }} />
         <span style={{ fontSize: 11, color: '#5b6472', fontWeight: 500 }}>
           {t('calculating')}
         </span>

@@ -28,6 +28,7 @@ import { analyticsApi, type AnalyticsOverview, type ProductAnalytics, type Custo
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { ink } from '@/app/seller/ink';
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 
 const SEGMENT_COLORS: Record<string, string> = {
@@ -109,6 +110,8 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
   const [products,   setProducts]   = useState<ProductAnalytics | null>(null);
   const [customers,  setCustomers]  = useState<CustomerAnalytics | null>(null);
   const [loading,    setLoading]    = useState(true);
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading);
   const [error,      setError]      = useState<string | null>(null);
   const [activeTab,  setActiveTab]  = useState<'overview' | 'products' | 'customers'>('overview');
   const t  = useTranslations('seller.advanced');

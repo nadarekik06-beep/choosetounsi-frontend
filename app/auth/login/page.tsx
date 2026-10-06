@@ -6,10 +6,11 @@ import Link from 'next/link';
 import { login, loginWithGoogle, getToken, getUser, clearLocalSession, needsProfileCompletion, resolveRedirectPath } from '@/lib/auth';
 import {
   Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle2,
-  Loader2, ShoppingBag, Store, TrendingUp, Shield,
+  ShoppingBag, Store, TrendingUp, Shield,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import BrandLoader from '@/components/brand/BrandLoader'
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 48 48">
@@ -92,7 +93,7 @@ function LoginForm() {
   if (!checked) {
     return (
       <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
-        <Loader2 size={22} className="animate-spin text-[#E63946]" />
+        <BrandLoader variant="section" />
       </div>
     );
   }
@@ -143,7 +144,7 @@ function LoginForm() {
             disabled={googleLoading || loading}
             className="w-full flex items-center justify-center gap-3 py-3 rounded-2xl border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all duration-150 text-sm font-semibold text-slate-700 mb-5 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {googleLoading ? <Loader2 size={18} className="animate-spin" /> : <GoogleIcon />}
+            {googleLoading ? <BrandLoader variant="inline" size={18} /> : <GoogleIcon />}
             {t('continueGoogle')}
           </button>
 
@@ -222,7 +223,7 @@ function LoginForm() {
               className="w-full py-3.5 mt-2 rounded-2xl bg-[#E63946] hover:bg-[#c1121f] active:scale-[0.98] text-white text-sm font-bold tracking-wide transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-500/25"
             >
               {loading
-                ? <><Loader2 size={16} className="animate-spin" /> {t('login.submitting')}</>
+                ? <><BrandLoader variant="inline" size={16} /> {t('login.submitting')}</>
                 : t('login.submit')}
             </button>
 
@@ -284,7 +285,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
-        <Loader2 size={22} className="animate-spin text-[#E63946]" />
+        <BrandLoader variant="section" />
       </div>
     }>
       <LoginForm />

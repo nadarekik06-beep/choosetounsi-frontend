@@ -17,6 +17,9 @@ import { useTheme } from '../SellerShell'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { ink } from '@/app/seller/ink';
+import { usePageLoading } from '@/components/brand/NavigationLoader'
+import { RefreshCover } from '@/components/brand/BrandLoader'
+import BrandLoader from '@/components/brand/BrandLoader'
 
 /** Complaint type label (shared with the storefront complaint pages). */
 function useComplaintType() {
@@ -589,10 +592,7 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
           >
             {saving ? (
               <>
-                <div style={{
-                  width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)',
-                  borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite',
-                }} />
+                <BrandLoader variant="inline" size={14} />
                 {t('submitting')}
               </>
             ) : isApprove ? (
@@ -965,6 +965,8 @@ export default function SellerComplaintsPage() {
   const [complaints, setComplaints] = useState<Complaint[]>([])
   const [stats,      setStats]      = useState<StatsData | null>(null)
   const [loading,    setLoading]    = useState(true)
+  // holds the navigation loader until the first load is done
+  const firstLoad = usePageLoading(loading)
   const [selected,   setSelected]   = useState<Complaint | null>(null)
   const [filter,     setFilter]     = useState('')
 
@@ -1096,112 +1098,115 @@ export default function SellerComplaintsPage() {
         </div>
 
         {/* ── List */}
-        {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {[0, 1, 2, 3].map(i => <SkeletonRow key={i} dark={dark} />)}
-          </div>
-        ) : complaints.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '72px 0', animation: 'fadeUp 0.4s ease' }}>
-            <div style={{
-              width: 60, height: 60, borderRadius: 18, background: C.greenDim,
-              border: `1px solid ${C.green}30`, margin: '0 auto 16px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <IconCheckCircle size={28} color={C.green} strokeWidth={1.8} />
+        <div style={{ position: 'relative' }}>
+          <RefreshCover active={loading} theme={dark ? 'dark' : 'light'} />
+          {firstLoad ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[0, 1, 2, 3].map(i => <SkeletonRow key={i} dark={dark} />)}
             </div>
-            <p style={{ fontSize: 15, fontWeight: 800, color: T.textMain, margin: '0 0 6px' }}>
-              {filter ? t('emptyFiltered') : t('empty')}
-            </p>
-            <p style={{ fontSize: 13, color: T.textMuted, margin: 0 }}>
-              {t('emptyHint')}
-            </p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {complaints.map((c, idx) => {
-              const meta   = STATUS_META[c.status] ?? STATUS_META['pending']
-              const canAct = ['pending', 'reviewing'].includes(c.status)
-              return (
-                <div
-                  key={c.id}
-                  className="complaint-row"
-                  onClick={() => handleSelect(c)}
-                  style={{
-                    background: T.cardBg,
-                    border: `1px solid ${canAct
-                      ? 'rgba(245,158,11,0.25)'
-                      : T.border
-                    }`,
-                    borderRadius: 14, overflow: 'hidden', cursor: 'pointer',
-                    display: 'flex', alignItems: 'stretch',
-                    animation: `fadeUp 0.35s ease ${idx * 55}ms both`,
-                  }}
-                >
-                  {/* Status stripe */}
-                  <div style={{ width: 3, background: meta.color, flexShrink: 0 }} />
-
-                  {/* Content */}
-                  <div style={{
-                    flex: 1, padding: '15px 20px',
-                    display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap',
-                  }}>
-                    {/* ID + type */}
-                    <div style={{ minWidth: 160 }}>
-                      <p style={{ fontSize: 10, fontFamily: 'monospace', color: T.textFaint, margin: '0 0 4px', fontWeight: 600 }}>
-                        #{c.id}
-                      </p>
-                      <p style={{ fontSize: 13.5, fontWeight: 700, color: T.textMain, margin: 0 }}>
-                        {typeLabel(c.complaint_type)}
-                      </p>
-                    </div>
-
-                    {/* Customer */}
-                    <div style={{ minWidth: 130, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{
-                        width: 30, height: 30, borderRadius: 8,
-                        background: T.cardBgSub,
-                        border: `1px solid ${T.border}`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: T.iconMuted, flexShrink: 0,
-                      }}>
-                        <IconUser size={14} />
-                      </div>
-                      <div>
-                        <p style={{ fontSize: 11, color: T.textMuted, margin: '0 0 1px', fontWeight: 600 }}>{t('customer')}</p>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: T.textSub, margin: 0 }}>
-                          {c.user?.name ?? '—'}
+          ) : complaints.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '72px 0', animation: 'fadeUp 0.4s ease' }}>
+              <div style={{
+                width: 60, height: 60, borderRadius: 18, background: C.greenDim,
+                border: `1px solid ${C.green}30`, margin: '0 auto 16px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <IconCheckCircle size={28} color={C.green} strokeWidth={1.8} />
+              </div>
+              <p style={{ fontSize: 15, fontWeight: 800, color: T.textMain, margin: '0 0 6px' }}>
+                {filter ? t('emptyFiltered') : t('empty')}
+              </p>
+              <p style={{ fontSize: 13, color: T.textMuted, margin: 0 }}>
+                {t('emptyHint')}
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {complaints.map((c, idx) => {
+                const meta   = STATUS_META[c.status] ?? STATUS_META['pending']
+                const canAct = ['pending', 'reviewing'].includes(c.status)
+                return (
+                  <div
+                    key={c.id}
+                    className="complaint-row"
+                    onClick={() => handleSelect(c)}
+                    style={{
+                      background: T.cardBg,
+                      border: `1px solid ${canAct
+                        ? 'rgba(245,158,11,0.25)'
+                        : T.border
+                      }`,
+                      borderRadius: 14, overflow: 'hidden', cursor: 'pointer',
+                      display: 'flex', alignItems: 'stretch',
+                      animation: `fadeUp 0.35s ease ${idx * 55}ms both`,
+                    }}
+                  >
+                    {/* Status stripe */}
+                    <div style={{ width: 3, background: meta.color, flexShrink: 0 }} />
+  
+                    {/* Content */}
+                    <div style={{
+                      flex: 1, padding: '15px 20px',
+                      display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap',
+                    }}>
+                      {/* ID + type */}
+                      <div style={{ minWidth: 160 }}>
+                        <p style={{ fontSize: 10, fontFamily: 'monospace', color: T.textFaint, margin: '0 0 4px', fontWeight: 600 }}>
+                          #{c.id}
+                        </p>
+                        <p style={{ fontSize: 13.5, fontWeight: 700, color: T.textMain, margin: 0 }}>
+                          {typeLabel(c.complaint_type)}
                         </p>
                       </div>
-                    </div>
-
-                    {/* Badges */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <StatusBadge status={c.status} />
-                      {canAct && (
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 5,
-                          fontSize: 10, fontWeight: 700, color: C.amber,
-                          background: C.amberDim, border: `1px solid ${C.amber}30`,
-                          padding: '4px 10px', borderRadius: 6, letterSpacing: '0.05em',
+  
+                      {/* Customer */}
+                      <div style={{ minWidth: 130, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{
+                          width: 30, height: 30, borderRadius: 8,
+                          background: T.cardBgSub,
+                          border: `1px solid ${T.border}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: T.iconMuted, flexShrink: 0,
                         }}>
-                          <IconAlertTriangle size={10} /> {t('actionRequired')}
+                          <IconUser size={14} />
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 11, color: T.textMuted, margin: '0 0 1px', fontWeight: 600 }}>{t('customer')}</p>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: T.textSub, margin: 0 }}>
+                            {c.user?.name ?? '—'}
+                          </p>
+                        </div>
+                      </div>
+  
+                      {/* Badges */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <StatusBadge status={c.status} />
+                        {canAct && (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 5,
+                            fontSize: 10, fontWeight: 700, color: C.amber,
+                            background: C.amberDim, border: `1px solid ${C.amber}30`,
+                            padding: '4px 10px', borderRadius: 6, letterSpacing: '0.05em',
+                          }}>
+                            <IconAlertTriangle size={10} /> {t('actionRequired')}
+                          </span>
+                        )}
+                      </div>
+  
+                      {/* Date + arrow */}
+                      <div style={{ marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 11.5, color: T.textFaint, fontWeight: 500 }}>
+                          {date(c.created_at, 'medium')}
                         </span>
-                      )}
-                    </div>
-
-                    {/* Date + arrow */}
-                    <div style={{ marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: 11.5, color: T.textFaint, fontWeight: 500 }}>
-                        {date(c.created_at, 'medium')}
-                      </span>
-                      <IconChevronRight size={16} color={T.iconMuted} className="rtl-flip" />
+                        <IconChevronRight size={16} color={T.iconMuted} className="rtl-flip" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Detail drawer */}

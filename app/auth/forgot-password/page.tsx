@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { api } from '@/lib/auth';
 import {
   Mail, AlertCircle, CheckCircle2,
-  Loader2, ShoppingBag, ArrowLeft,
+  ShoppingBag, ArrowLeft,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import BrandLoader from '@/components/brand/BrandLoader'
 export default function ForgotPasswordPage() {
   const t = useTranslations('auth');
   const [email,     setEmail]     = useState('');
@@ -88,7 +89,7 @@ export default function ForgotPasswordPage() {
                   className="w-full py-3.5 rounded-2xl bg-[#E63946] hover:bg-[#c1121f] active:scale-[0.98] text-white text-sm font-bold tracking-wide transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-500/25"
                 >
                   {loading
-                    ? <><Loader2 size={16} className="animate-spin" /> {t('forgot.sending')}</>
+                    ? <><BrandLoader variant="inline" size={16} /> {t('forgot.sending')}</>
                     : t('forgot.submit')}
                 </button>
               </form>

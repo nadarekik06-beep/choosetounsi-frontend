@@ -36,6 +36,7 @@ import {
   Lock, Clock, PackageCheck,
 } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
+import BrandLoader from '@/components/brand/BrandLoader'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const RED     = '#db142e'
@@ -610,7 +611,7 @@ export default function ComplaintModal({
                 {/* ── Item Picker (original) ── */}
                 {loadingItems && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8', fontSize: 12 }}>
-                    <div style={{ width: 14, height: 14, border: '2px solid #e2e8f0', borderTopColor: RED, borderRadius: '50%', animation: 'cd-spin 0.8s linear infinite' }} />
+                    <BrandLoader variant="inline" size={14} style={{ color: RED }} />
                     {t('loadingItems')}
                   </div>
                 )}
@@ -913,7 +914,7 @@ export default function ComplaintModal({
                   disabled={loading || !type || !resolutionType || !charOk}
                 >
                   {loading
-                    ? <><div style={{ width: 15, height: 15, border: '2.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'cd-spin 0.7s linear infinite' }} /> {t('submitting')}</>
+                    ? <><BrandLoader variant="inline" size={15} /> {t('submitting')}</>
                     : <><Send size={14} /> {t('submit')}</>
                   }
                 </button>

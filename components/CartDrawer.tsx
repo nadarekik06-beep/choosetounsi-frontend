@@ -15,7 +15,7 @@ import Link from 'next/link'
 import {
   X, ShoppingCart, Trash2, Plus, Minus,
   ArrowRight, Package, Package2, CheckSquare, Square,
-  Loader2, Tag,
+  Tag,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import type { CartItem as BaseCartItem } from '@/lib/shopApi'
@@ -24,6 +24,7 @@ import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import ProductPrice from '@/app/components/promotions/ProductPrice'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 // ─── Extend CartItem with sponsored + pack fields ─────────────────────────────
 type CartItem = BaseCartItem & {
   is_pack?: boolean
@@ -183,7 +184,7 @@ function CartRow({
             </button>
             <span style={{ width: 32, textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#111', borderInlineStart: '1px solid #e5e7eb', borderInlineEnd: '1px solid #e5e7eb', lineHeight: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 28 }}>
               {itemBusy
-                ? <Loader2 size={12} style={{ animation: 'spin 0.8s linear infinite', color: '#dc2626' }} />
+                ? <BrandLoader variant="inline" size={12} style={{ color: '#dc2626' }} />
                 : item.quantity
               }
             </span>

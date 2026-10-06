@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
-import { X, Upload, Trash2, Star, Loader2, AlertCircle, ImageIcon, Radio } from 'lucide-react'
+import { X, Upload, Trash2, Star, AlertCircle, ImageIcon, Radio } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { productsApi, categoriesApi, storageUrl, shippingApi, isNetworkError } from '@/lib/sellerApi'
 import type { Category, Subcategory, ProductPayload } from '@/lib/sellerApi'
@@ -24,6 +24,7 @@ import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { OCCASIONS, normalizeOccasions, useOccasionCategories, type Occasion } from '@/lib/occasions'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 interface FullProduct {
   id: number
   name: string
@@ -825,7 +826,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
               <section>
                 <div style={{ paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', margin: 0 }}>{t('sections.variants')}</p>
-                  {axesLoading && <span style={{ fontSize: 10, color: '#5b6472', display: 'flex', alignItems: 'center', gap: 4 }}><Loader2 size={10} style={{ animation: 'spin 0.8s linear infinite' }} />{t('loading')}</span>}
+                  {axesLoading && <span style={{ fontSize: 10, color: '#5b6472', display: 'flex', alignItems: 'center', gap: 4 }}><BrandLoader variant="inline" size={10} />{t('loading')}</span>}
                   {!axesLoading && variantAxes.length > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#4338ca', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '2px 8px', borderRadius: 4 }}>{t('axes', { list: variantAxes.map(a => a.name).join(', ') })}</span>}
                 </div>
                 {!axesLoading && variantAxes.length === 0 && <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#5b6472' }}>{t('noVariantAxes')}</div>}
@@ -852,7 +853,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
                 <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', margin: 0 }}>
                   {colorGroups ? t('sections.colorImages') : t('sections.images')}
                 </p>
-                {axesLoading && <Loader2 size={12} color="#94a3b8" style={{ animation: 'spin 0.8s linear infinite' }} />}
+                {axesLoading && <BrandLoader variant="inline" size={12} style={{ color: '#94a3b8' }} />}
               </div>
               <ProductImagesEditor
                 groups={colorGroups}
@@ -888,7 +889,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
             <div style={{ display: 'flex', gap: 12, paddingTop: 4, position: 'sticky', bottom: 0, background: '#fff', paddingBottom: 2 }}>
               <button type="button" onClick={onClose} style={{ flex: 1, padding: '11px 0', border: '1.5px solid #e5e7eb', background: '#fff', color: '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{t('cancel')}</button>
               <button type="submit" disabled={saving || catLoading} style={{ flex: 1, padding: '11px 0', background: 'linear-gradient(135deg,#dc2626,#b91c1c)', color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(220,38,38,0.3)', opacity: (saving || catLoading) ? 0.6 : 1, fontFamily: 'inherit' }}>
-                {saving && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
+                {saving && <BrandLoader variant="inline" size={14} />}
                 {isEdit ? t('saveChanges') : t('submitForReview')}
               </button>
             </div>

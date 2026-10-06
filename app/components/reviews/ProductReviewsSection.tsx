@@ -23,6 +23,7 @@ import { Star, Camera, ThumbsUp, ThumbsDown, Flag, ChevronDown, ShieldCheck, Bad
 import { isAuthenticated } from '@/lib/auth';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
+import { BusyLabel } from '@/components/brand/BrandLoader'
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api');
 const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null);
@@ -426,7 +427,7 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
                 cursor: loading ? 'wait' : 'pointer', transition: 'all 0.2s',
                 display: 'inline-flex', alignItems: 'center', gap: 6,
               }}>
-              <ChevronDown size={16} /> {loading ? tc('loading') : t('loadMore')}
+              <BusyLabel busy={loading}><ChevronDown size={16} /> {t('loadMore')}</BusyLabel>
             </button>
           </div>
         )}

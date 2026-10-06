@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   X, Upload, CheckCircle, AlertCircle, ChevronDown,
-  Loader2, User, Check, Clock, RefreshCw, Eye,
+  User, Check, Clock, RefreshCw, Eye,
 } from 'lucide-react'
 import { api, getUser } from '@/lib/auth'
 import { useTranslations } from 'next-intl'
@@ -11,6 +11,7 @@ import { useFormat } from '@/lib/i18n/useFormat'
 import { WILAYAS, useWilayaLabel } from '@/lib/i18n/wilayas'
 import { validateTunisianPhone } from '@/lib/shippingAddress'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 const FALLBACK_CATEGORIES = [
   'Fashion & Clothing','Electronics & Tech','Home & Living','Food & Grocery',
   'Beauty & Personal Care','Health & Wellness','Sports & Outdoors',
@@ -580,7 +581,7 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
 
           {appLoading && (
             <div style={{ textAlign:'center', padding:'20px', color:'#9ca3af', fontSize:'0.85rem', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-              <Loader2 size={16} style={{ animation:'spin 1s linear infinite' }} />
+              <BrandLoader variant="inline" size={16} />
               {t('loadingApplication')}
             </div>
           )}
@@ -662,7 +663,7 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
                         <span style={{ fontSize:'0.72rem', fontWeight:400, color:'#9ca3af', marginInlineStart:6 }}>{t('fields.categoriesHint')}</span>
                       </label>
                       {categoriesLoading ? (
-                        <div style={{ padding:'12px', textAlign:'center', color:'#9ca3af', fontSize:'0.78rem' }}>{t('loadingCategories')}</div>
+                        <BrandLoader variant="section" size="sm" label={t('loadingCategories')} />
                       ) : (
                         <div style={{ display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:8, maxHeight:240, overflowY:'auto', padding:4 }}>
                           {(apiCategories.length > 0 ? apiCategories.map(c => c.name) : FALLBACK_CATEGORIES).map(catName => {
@@ -705,7 +706,7 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
                           </p>
                           {subcategoriesLoading && (
                             <div style={{ fontSize:'0.75rem', color:'#9ca3af', display:'flex', alignItems:'center', gap:6 }}>
-                              <Loader2 size={12} style={{ animation:'spin 1s linear infinite' }} />{t('loadingSubcategories')}
+                              <BrandLoader variant="inline" size={12} />{t('loadingSubcategories')}
                             </div>
                           )}
                           {!subcategoriesLoading && availableSubcats.length === 0 && (
@@ -943,7 +944,7 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
                     <button type="button" onClick={handleSubmit} disabled={loading}
                       style={{ padding:'10px 24px', borderRadius:12, background:loading ? '#d1d5db' : existingId ? '#0f172a' : '#198f41', color:'white', fontSize:'0.82rem', fontWeight:800, border:'none', cursor:loading ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', gap:6, fontFamily:'Barlow,sans-serif', transition:'all 0.2s' }}>
                       {loading
-                        ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }} />{t('submitting')}</>
+                        ? <><BrandLoader variant="inline" size={14} />{t('submitting')}</>
                         : existingId
                         ? <><RefreshCw size={14} />{t('update')}</>
                         : <>✓ {t('submit')}</>}

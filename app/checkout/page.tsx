@@ -15,7 +15,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   MapPin, Phone, FileText, ChevronRight, Package,
-  Loader2, CheckCircle, ShoppingBag, ArrowLeft, Zap,
+  CheckCircle, ShoppingBag, ArrowLeft, Zap,
   Plus, Star, Home, Briefcase, CreditCard, Wallet,
   Smartphone, Truck, AlertCircle, Ticket, X,
 } from 'lucide-react'
@@ -33,6 +33,8 @@ import {
   shippingAddressPayload, formatShippingAddress, type ShippingAddressForm,
 } from '@/lib/shippingAddress'
 
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 function usePrice() {
   const { price } = useFormat()
   return (n: number) => price(n, { maximumFractionDigits: 3 })
@@ -387,6 +389,8 @@ export default function CheckoutPage() {
 
   // Track when CartContext has finished its initial fetch
   const [cartReady, setCartReady] = useState(false)
+  // holds the navigation loader until the first load is done
+  usePageLoading(!cartReady)
   useEffect(() => {
     if (!cartLoading) setCartReady(true)
   }, [cartLoading])
@@ -753,11 +757,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
   if (isBuyNow && bnLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, border: '3px solid #eee', borderTopColor: '#dc2626', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 16px' }} />
-          <p style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>{tc('loading')}</p>
-        </div>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <BrandLoader variant="section" label={tc('loading')} />
       </div>
     )
   }
@@ -772,13 +772,12 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
     )
   }
 
-  // Show spinner while CartContext is still fetching — prevents the false
+  // Keep the loader up while CartContext is still fetching — prevents the false
   // "empty cart" screen from flashing before items arrive
   if (!isBuyNow && !cartReady) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
-        <div style={{ width: 40, height: 40, border: '3px solid #eee', borderTopColor: '#dc2626', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <BrandLoader variant="section" />
       </div>
     )
   }
@@ -864,7 +863,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
                 )}
                 {addressesLoading && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0', color: '#94a3b8', fontSize: 13 }}>
-                    <Loader2 size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> {t('loadingAddresses')}
+                    <BrandLoader variant="inline" size={14} /> {t('loadingAddresses')}
                   </div>
                 )}
                 {hasSavedAddresses && (
@@ -1042,7 +1041,7 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
                   }}
                 >
                   {loading || stripeLoading
-                    ? <><Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} />{stripeLoading ? t('redirectingStripe') : t('placing')}</>
+                    ? <><BrandLoader variant="inline" size={18} />{stripeLoading ? t('redirectingStripe') : t('placing')}</>
                     : paymentMethod === 'card' ? <><CreditCard size={18} /> {t('payWithCard')}</>
                     : isBuyNow ? <><Zap size={18} /> {t('placeOrderNow')}</>
                     : <><CheckCircle size={18} /> {t('placeOrder')}</>}

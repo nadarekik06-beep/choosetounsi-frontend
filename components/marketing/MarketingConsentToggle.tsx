@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl'
 import { API_BASE } from '@/lib/constants'
 import { isAuthenticated } from '@/lib/auth'
 import { currentLocale } from '@/lib/i18n/clientLocale'
+import { BusyLabel } from '@/components/brand/BrandLoader'
 
 function headers(): Record<string, string> {
   let token: string | null = null
@@ -52,11 +53,11 @@ export default function MarketingConsentToggle({ variant = 'card' }: { variant?:
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 360 }}>
         <p style={{ fontSize: 13, fontWeight: 800, margin: 0, color: 'inherit' }}>{t('footerTitle')}</p>
         <p style={{ fontSize: 12, margin: 0, opacity: 0.75, lineHeight: 1.5 }}>{optIn ? t('footerOn') : t('footerOff')}</p>
-        <button type="button" onClick={() => save(!optIn)} disabled={saving} style={{
+        <button type="button" onClick={() => save(!optIn)} disabled={saving} aria-busy={saving || undefined} style={{
           alignSelf: 'flex-start', padding: '8px 14px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 800, fontSize: 12,
           fontFamily: 'inherit', background: optIn ? 'rgba(255,255,255,0.12)' : '#db142e', color: '#fff', opacity: saving ? 0.6 : 1,
         }}>
-          {optIn ? t('unsubscribe') : t('subscribe')}
+          <BusyLabel busy={saving} size={14}>{optIn ? t('unsubscribe') : t('subscribe')}</BusyLabel>
         </button>
       </div>
     )

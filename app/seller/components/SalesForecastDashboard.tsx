@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   AlertTriangle, BarChart3, Brain, CalendarDays, CheckCircle2, ChevronDown, Eye, Info,
-  Loader2, Package, RefreshCw, Settings2, ShoppingCart, Sparkles, Target, Timer, TrendingDown, Truck, XCircle,
+  Package, RefreshCw, Settings2, ShoppingCart, Sparkles, Target, Timer, TrendingDown, Truck, XCircle,
 } from 'lucide-react';
 
 import {
@@ -25,6 +25,8 @@ import {
 import { useFormat } from '@/lib/i18n/useFormat';
 import { ink } from '@/app/seller/ink';
 
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 type Locale = 'fr' | 'en' | 'ar';
 
 const SEVERITY_COLOR: Record<number, string> = { 1: '#ef4444', 2: '#f59e0b', 3: '#3b82f6' };
@@ -445,7 +447,7 @@ function AiSummary({ explanation, loading, dark }: { explanation: Explanation | 
       right={explanation ? <span style={{ fontSize: 10, color: p.muted }}>{explanation.source === 'ai' ? t('sourceAi') : t('sourceTemplate')}</span> : undefined}>
       {loading ? (
         <p style={{ margin: 0, fontSize: 12, color: p.muted, display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Loader2 size={13} style={{ animation: 'fc-spin 1s linear infinite' }} /> {t('loading')}
+          <BrandLoader variant="inline" size={13} /> {t('loading')}
         </p>
       ) : (
         <p style={{ margin: 0, fontSize: 13, color: p.text, lineHeight: 1.65 }}>{explanation?.text ?? t('unavailable')}</p>
@@ -633,6 +635,9 @@ export default function SalesForecastDashboard({ dark, initialProductId }: { dar
   const [productId, setProductId]     = useState<number | null>(initialProductId ?? null);
   const [data, setData]               = useState<ForecastResponse | null>(null);
   const [loading, setLoading]         = useState(true);
+  // holds the navigation loader until the first load is done
+  const tLoader = useTranslations('loader');
+  usePageLoading(loading, { label: tLoader('forecasting') });
   const [refreshing, setRefreshing]   = useState(false);
   const [error, setError]             = useState<string | null>(null);
   const [notice, setNotice]           = useState<string | null>(null);
@@ -736,7 +741,7 @@ export default function SalesForecastDashboard({ dark, initialProductId }: { dar
             </button>
             <button onClick={refresh} disabled={refreshing || loading || cooldownMin > 0} title={cooldownMin > 0 ? t('refreshIn', { minutes: cooldownMin }) : undefined}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 10, border: 'none', background: '#db142e', color: '#fff', fontSize: 12, fontWeight: 700, cursor: refreshing || cooldownMin > 0 ? 'not-allowed' : 'pointer', opacity: refreshing || cooldownMin > 0 ? 0.55 : 1 }}>
-              {refreshing ? <Loader2 size={13} style={{ animation: 'fc-spin 1s linear infinite' }} /> : <RefreshCw size={13} />}
+              {refreshing ? <BrandLoader variant="inline" size={13} /> : <RefreshCw size={13} />}
               {refreshing ? t('refreshing') : cooldownMin > 0 ? t('refreshIn', { minutes: cooldownMin }) : t('refresh')}
             </button>
           </div>

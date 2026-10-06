@@ -8,6 +8,7 @@ import { PlanGate } from '@/app/components/seller/SubscriptionBadge';
 import AIToolsPanel from '@/app/components/seller/AIToolsPanel';
 import { Brain } from 'lucide-react';
 import { ink } from '@/app/seller/ink';
+import { RouteLoading } from '@/components/brand/NavigationLoader'
 
 function AIToolsInner() {
   const { dark } = useTheme();
@@ -57,7 +58,7 @@ function AIToolsInner() {
 
 export default function AIToolsPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoading area minHeight="60vh" />}>
       <AIToolsInner />
     </Suspense>
   );

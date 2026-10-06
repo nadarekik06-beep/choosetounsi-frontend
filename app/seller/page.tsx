@@ -19,6 +19,7 @@ import { useFormat } from '@/lib/i18n/useFormat';
 import { useStatusLabel } from '@/lib/i18n/useStatusLabel';
 import { useWilayaLabel } from '@/lib/i18n/wilayas';
 import { ink } from '@/app/seller/ink';
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 /* ─────────────── RESPONSIVE GRIDS ─────────────── */
 const RESPONSIVE_CSS = `
@@ -218,6 +219,8 @@ export default function SellerDashboardPage() {
   const wilaya = useWilayaLabel();
   const [data,    setData]    = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading);
   const [error,   setError]   = useState(false);
   const [visible, setVisible] = useState(false);
 

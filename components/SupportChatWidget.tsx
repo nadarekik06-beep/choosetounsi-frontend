@@ -9,6 +9,7 @@ import ChatStepsCard, { type ChatStep } from './chat/ChatStepsCard'
 import ChatActions, { CHAT_ACTIONS_CSS, sanitizeActions, type ChatAction } from './chat/ChatActions'
 import { useLocale, useTranslations } from 'next-intl'
 import { isLocale } from '@/i18n/config'
+import BrandLoader from '@/components/brand/BrandLoader'
 
 const RED   = '#db142e'
 const GREEN = '#198f41'
@@ -427,23 +428,18 @@ function PepperFAB({
 }
 
 /* ─────────────────────────────────────────────────────────────
-   TYPING BUBBLE  (unchanged)
+   TYPING BUBBLE
 ───────────────────────────────────────────────────────────── */
 function TypingBubble() {
+  const t = useTranslations('loader')
   return (
     <div style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      padding: '10px 14px', background: '#f4f4f5',
+      display: 'inline-flex', alignItems: 'center', gap: 8,
+      padding: '10px 14px', background: '#f4f4f5', color: '#db142e',
       borderRadius: '16px 16px 16px 4px',
     }}>
-      {[0, 1, 2].map(i => (
-        <span key={i} style={{
-          width: 7, height: 7, borderRadius: '50%', background: '#94a3b8',
-          animation: 'ct-bounce 1.2s ease-in-out infinite',
-          animationDelay: `${i * 0.2}s`,
-          display: 'inline-block',
-        }} />
-      ))}
+      <BrandLoader variant="inline" size={16} label={t('aiTyping')} />
+      <span style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b' }}>{t('aiTyping')}</span>
     </div>
   )
 }

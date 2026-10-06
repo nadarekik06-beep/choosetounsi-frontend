@@ -6,6 +6,7 @@ import Topbar              from './components/Topbar';
 import AuthGuard           from './components/AuthGuard';
 import { SubscriptionProvider } from '@/app/hooks/useSubscription';
 import GlobalSellerStyles  from '@/app/components/seller/GlobalSellerStyles';
+import { NavigationLoaderHost, RouteLoading } from '@/components/brand/NavigationLoader';
 
 export const ThemeContext = createContext<{
   dark: boolean;
@@ -57,7 +58,8 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
     });
   };
 
-  if (!mounted) return null;
+  // waiting one frame for the saved theme: hold the global overlay rather than show a blank page
+  if (!mounted) return <RouteLoading />;
 
   return (
     <ThemeContext.Provider value={{ dark, toggle }}>
@@ -85,15 +87,17 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
               <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-6 overflow-x-hidden">
                 {children}
               </main>
+              {/* navigation loader over the content area: sidebar and topbar stay visible */}
+              <NavigationLoaderHost area theme={dark ? 'dark' : 'light'} />
             </div>
           </div>
         </AuthGuard>
       </SubscriptionProvider>
 
       <style>{`
-        .seller-main { margin-inline-start: 0; transition: margin-inline-start 0.28s ease; }
+        .seller-main { margin-inline-start: 0; transition: margin-inline-start 0.28s ease; --ctl-area-top: 64px; }
         @media (min-width: 1024px) {
-          .seller-main { margin-inline-start: var(--sb-w); }
+          .seller-main { margin-inline-start: var(--sb-w); --ctl-area-start: var(--sb-w); }
         }
       `}</style>
     </ThemeContext.Provider>

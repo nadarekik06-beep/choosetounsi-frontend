@@ -24,6 +24,7 @@ import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { ink } from '@/app/seller/ink';
 import { useTheme } from '@/app/seller/SellerShell';
+import BrandLoader from '@/components/brand/BrandLoader'
 
 const GOLD   = '#f59e0b';
 const GOLD_2 = '#fbbf24';
@@ -120,12 +121,10 @@ function SectionCard({ title, subtitle, icon: Icon, accentColor = GOLD,
   );
 }
 
-function LoadingSpinner() {
+function LoadingGlyph() {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}>
-      <div style={{ width: 32, height: 32, borderRadius: '50%', border: `3px solid ${GOLD}20`,
-        borderTop: `3px solid ${GOLD}`, animation: 'spin 0.8s linear infinite' }} />
-      <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0', color: GOLD }}>
+      <BrandLoader variant="inline" size={30} />
     </div>
   );
 }
@@ -190,7 +189,7 @@ export function AiHubSection({ dark }: { dark: boolean }) {
       subtitle="Trending products, stock alerts and market insights"
       icon={Sparkles} dark={dark} collapsible defaultOpen={false}
       badge={data?.market_insights?.market_temperature==='hot' ? <GoldBadge text="Market Hot"/> : undefined}>
-      {loading && <LoadingSpinner/>}
+      {loading && <LoadingGlyph/>}
       {error && (
         <div style={{ textAlign:'center', padding:'24px 0' }}>
           <p style={{ color:ink('#ef4444', dark), fontSize:13 }}>{error}</p>
@@ -402,7 +401,7 @@ export function RevenueGoalsSection({ dark }: { dark: boolean }) {
           : undefined
       }
     >
-      {loading && <LoadingSpinner />}
+      {loading && <LoadingGlyph />}
       {error && (
         <div style={{ textAlign: 'center', padding: '24px 0' }}>
           <p style={{ color: ink('#ef4444', dark), fontSize: 13 }}>{error}</p>

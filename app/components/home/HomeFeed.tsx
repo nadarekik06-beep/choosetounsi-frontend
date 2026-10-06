@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react'
 import { fetchHomeFeed, type FeedSection as FeedSectionData } from '@/lib/homeFeedApi'
 import FeedSection, { FeedSectionSkeleton } from './FeedSection'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 const FEED_CSS = `
   @keyframes feedFadeUp  { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:none } }
@@ -46,6 +47,8 @@ const FEED_CSS = `
 export default function HomeFeed() {
   const [sections, setSections] = useState<FeedSectionData[] | null>(null)
   const [failed, setFailed] = useState(false)
+  // holds the navigation loader until the first load is done
+  usePageLoading(sections === null && !failed)
 
   useEffect(() => {
     const ctrl = new AbortController()

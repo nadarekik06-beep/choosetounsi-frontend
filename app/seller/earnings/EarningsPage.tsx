@@ -9,6 +9,8 @@ import SellerOrderDrawer from '../components/SellerOrderDrawer'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { ink } from '@/app/seller/ink';
+import { usePageLoading } from '@/components/brand/NavigationLoader'
+import { RefreshCover } from '@/components/brand/BrandLoader'
 
 const PAYOUT_COLORS: Record<string, string> = {
   pending:   '#f59e0b',
@@ -47,6 +49,8 @@ export default function EarningsPage() {
   const [orders,       setOrders]       = useState<any>(null)
   const [history,      setHistory]      = useState<any>(null)
   const [loading,      setLoading]      = useState(true)
+  // holds the navigation loader until the first load is done
+  const firstLoad = usePageLoading(loading)
   const [error,        setError]        = useState<string | null>(null)
   const [payoutFilter, setPayoutFilter] = useState('')
   const [detailRow,    setDetailRow]    = useState<{ id: number; order_number: string | null } | null>(null)
@@ -168,332 +172,335 @@ export default function EarningsPage() {
         </div>
       )}
 
-      {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0', color: textMuted }}>
-          {t('loading')}
-        </div>
-      ) : (
-        <>
-          {/* ── OVERVIEW ── */}
-          {tab === 'overview' && overview && (() => {
-            const kpis = overview.kpis ?? {}
-            const subtitle = pendingSubtitle(kpis)
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-
-                {/* Period selector */}
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {(['today', 'week', 'month', 'all'] as const).map(p => (
-                    <button key={p} onClick={() => setPeriod(p)} style={{
-                      padding: '6px 14px', borderRadius: 8,
-                      border: `1px solid ${border}`,
-                      background: period === p ? 'rgba(219,20,46,0.12)' : 'transparent',
-                      color: period === p ? '#db142e' : textMuted,
-                      fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                      textTransform: 'capitalize',
-                    }}>
-                      {t(`periods.${p}`)}
-                    </button>
-                  ))}
-                </div>
-
-                {/* KPI Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
-
-                  {/* Static KPI cards */}
-                  {[
-                    { label: t('kpi.gross'),  value: fmt(kpis.gross_revenue   ?? 0), color: ink('#94a3b8', dark), icon: DollarSign  },
-                    { label: t('kpi.fees'),   value: fmt(kpis.total_commission ?? 0), color: '#db142e', icon: TrendingDown },
-                    { label: t('kpi.net'),    value: fmt(kpis.total_net        ?? 0), color: ink('#10b981', dark), icon: TrendingUp   },
-                    { label: t('kpi.orders'), value: number(kpis.orders_count  ?? 0), color: ink('#3b82f6', dark), icon: Package      },
-                  ].map(({ label, value, color, icon: Icon }) => (
-                    <div key={label} style={{
-                      background: cardBg, border: `1px solid ${color}28`,
+      <div style={{ position: 'relative' }}>
+        <RefreshCover active={loading} theme={dark ? 'dark' : 'light'} />
+        {firstLoad ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0', color: textMuted }}>
+            {t('loading')}
+          </div>
+        ) : (
+          <>
+            {/* ── OVERVIEW ── */}
+            {tab === 'overview' && overview && (() => {
+              const kpis = overview.kpis ?? {}
+              const subtitle = pendingSubtitle(kpis)
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+  
+                  {/* Period selector */}
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {(['today', 'week', 'month', 'all'] as const).map(p => (
+                      <button key={p} onClick={() => setPeriod(p)} style={{
+                        padding: '6px 14px', borderRadius: 8,
+                        border: `1px solid ${border}`,
+                        background: period === p ? 'rgba(219,20,46,0.12)' : 'transparent',
+                        color: period === p ? '#db142e' : textMuted,
+                        fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                        textTransform: 'capitalize',
+                      }}>
+                        {t(`periods.${p}`)}
+                      </button>
+                    ))}
+                  </div>
+  
+                  {/* KPI Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+  
+                    {/* Static KPI cards */}
+                    {[
+                      { label: t('kpi.gross'),  value: fmt(kpis.gross_revenue   ?? 0), color: ink('#94a3b8', dark), icon: DollarSign  },
+                      { label: t('kpi.fees'),   value: fmt(kpis.total_commission ?? 0), color: '#db142e', icon: TrendingDown },
+                      { label: t('kpi.net'),    value: fmt(kpis.total_net        ?? 0), color: ink('#10b981', dark), icon: TrendingUp   },
+                      { label: t('kpi.orders'), value: number(kpis.orders_count  ?? 0), color: ink('#3b82f6', dark), icon: Package      },
+                    ].map(({ label, value, color, icon: Icon }) => (
+                      <div key={label} style={{
+                        background: cardBg, border: `1px solid ${color}28`,
+                        borderRadius: 14, padding: '16px 18px',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                          <div style={{ width: 28, height: 28, borderRadius: 8, background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Icon size={13} color={color} />
+                          </div>
+                          <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
+                        </div>
+                        <p style={{ fontSize: 18, fontWeight: 900, color, margin: 0 }}>{value}</p>
+                      </div>
+                    ))}
+  
+                    {/* Pending Payout — special card with breakdown subtitle */}
+                    <div style={{
+                      background: cardBg, border: `1px solid #f59e0b28`,
                       borderRadius: 14, padding: '16px 18px',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                        <div style={{ width: 28, height: 28, borderRadius: 8, background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Icon size={13} color={color} />
+                        <div style={{ width: 28, height: 28, borderRadius: 8, background: '#f59e0b15', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Clock size={13} color="#f59e0b" />
                         </div>
-                        <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
+                        <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('kpi.pending')}</span>
                       </div>
-                      <p style={{ fontSize: 18, fontWeight: 900, color, margin: 0 }}>{value}</p>
-                    </div>
-                  ))}
-
-                  {/* Pending Payout — special card with breakdown subtitle */}
-                  <div style={{
-                    background: cardBg, border: `1px solid #f59e0b28`,
-                    borderRadius: 14, padding: '16px 18px',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 8, background: '#f59e0b15', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Clock size={13} color="#f59e0b" />
-                      </div>
-                      <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('kpi.pending')}</span>
-                    </div>
-                    <p style={{ fontSize: 18, fontWeight: 900, color: ink('#f59e0b', dark), margin: '0 0 6px' }}>
-                      {fmt(kpis.pending_amount ?? 0)}
-                    </p>
-                    {/* Breakdown: awaiting cash-in vs cash-in done (ready) */}
-                    {subtitle && (
-                      <p style={{ fontSize: 9, color: textMuted, margin: 0, lineHeight: 1.5 }}>
-                        {subtitle}
+                      <p style={{ fontSize: 18, fontWeight: 900, color: ink('#f59e0b', dark), margin: '0 0 6px' }}>
+                        {fmt(kpis.pending_amount ?? 0)}
                       </p>
-                    )}
-                  </div>
-
-                  {/* Paid Out */}
-                  <div style={{
-                    background: cardBg, border: `1px solid #10b98128`,
-                    borderRadius: 14, padding: '16px 18px',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 8, background: '#10b98115', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <CheckCircle size={13} color="#10b981" />
-                      </div>
-                      <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('kpi.paid')}</span>
-                    </div>
-                    <p style={{ fontSize: 18, fontWeight: 900, color: ink('#10b981', dark), margin: 0 }}>
-                      {fmt(kpis.paid_amount ?? 0)}
-                    </p>
-                  </div>
-
-                </div>
-
-                {/* Revenue split */}
-                <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
-                    <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>{t('split', { period: t(`periods.${period as 'today' | 'week' | 'month' | 'all'}`) })}</p>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
-                    {[
-                      { label: t('splitCols.gross'),    value: fmt(kpis.gross_revenue   ?? 0), color: ink('#94a3b8', dark), note: t('splitCols.grossNote'),    bg: undefined },
-                      { label: t('splitCols.fee'),      value: fmt(kpis.total_commission ?? 0), color: '#db142e', note: t('splitCols.feeNote'),      bg: 'rgba(219,20,46,0.03)' },
-                      // Free-shipping orders: agency cost paid by the seller (already out of total_net)
-                      { label: t('splitCols.shipping'), value: fmt(kpis.total_shipping  ?? 0), color: ink('#f59e0b', dark), note: t('splitCols.shippingNote'), bg: 'rgba(245,158,11,0.03)' },
-                      { label: t('splitCols.receive'),  value: fmt(kpis.total_net        ?? 0), color: ink('#10b981', dark), note: t('splitCols.receiveNote'),  bg: 'rgba(16,185,129,0.03)' },
-                    ].map((col, i, cols) => (
-                      <div key={col.label} style={{
-                        padding: '16px 20px',
-                        borderInlineEnd: i < cols.length - 1 ? `1px solid ${border}` : undefined,
-                        background: col.bg,
-                      }}>
-                        <p style={{ fontSize: 9, fontWeight: 800, color: ink(col.color, dark), textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>
-                          {col.label}
+                      {/* Breakdown: awaiting cash-in vs cash-in done (ready) */}
+                      {subtitle && (
+                        <p style={{ fontSize: 9, color: textMuted, margin: 0, lineHeight: 1.5 }}>
+                          {subtitle}
                         </p>
-                        <p style={{ fontSize: 18, fontWeight: 900, color: ink(col.color, dark), margin: '0 0 3px' }}>{col.value}</p>
-                        <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{col.note}</p>
+                      )}
+                    </div>
+  
+                    {/* Paid Out */}
+                    <div style={{
+                      background: cardBg, border: `1px solid #10b98128`,
+                      borderRadius: 14, padding: '16px 18px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 8, background: '#10b98115', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <CheckCircle size={13} color="#10b981" />
+                        </div>
+                        <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('kpi.paid')}</span>
                       </div>
-                    ))}
+                      <p style={{ fontSize: 18, fontWeight: 900, color: ink('#10b981', dark), margin: 0 }}>
+                        {fmt(kpis.paid_amount ?? 0)}
+                      </p>
+                    </div>
+  
                   </div>
-                </div>
-
-                {/* Daily breakdown table */}
-                {(overview.daily_chart?.length ?? 0) > 0 && (
+  
+                  {/* Revenue split */}
                   <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
                     <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
-                      <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>{t('daily')}</p>
+                      <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>{t('split', { period: t(`periods.${period as 'today' | 'week' | 'month' | 'all'}`) })}</p>
                     </div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr>
-                            <th style={th()}>{t('cols.day')}</th>
-                            <th style={th(true)}>{t('cols.orders')}</th>
-                            <th style={th(true)}>{t('cols.gross')}</th>
-                            <th style={th(true)}>{t('cols.fee')}</th>
-                            <th style={th(true)}>{t('cols.shipping')}</th>
-                            <th style={th(true)}>{t('cols.net')}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {overview.daily_chart.slice(-14).map((row: any) => (
-                            <tr key={row.day}>
-                              <td style={{ ...td(), fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{/^\d{4}-\d{2}-\d{2}$/.test(row.day) ? date(row.day, 'dayMonth') : row.day}</td>
-                              <td style={{ ...td(true), color: textMuted }}>{row.orders}</td>
-                              <td style={{ ...td(true), color: textMuted }}>{fmt(row.gross ?? 0)}</td>
-                              <td style={{ ...td(true), color: '#db142e' }}>{fmt(row.commission ?? 0)}</td>
-                              <td style={{ ...td(true), color: ink('#f59e0b', dark) }}>{Number(row.shipping ?? 0) > 0 ? '−' + fmt(row.shipping) : '—'}</td>
-                              <td style={{ ...td(true), color: ink('#10b981', dark), fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
+                      {[
+                        { label: t('splitCols.gross'),    value: fmt(kpis.gross_revenue   ?? 0), color: ink('#94a3b8', dark), note: t('splitCols.grossNote'),    bg: undefined },
+                        { label: t('splitCols.fee'),      value: fmt(kpis.total_commission ?? 0), color: '#db142e', note: t('splitCols.feeNote'),      bg: 'rgba(219,20,46,0.03)' },
+                        // Free-shipping orders: agency cost paid by the seller (already out of total_net)
+                        { label: t('splitCols.shipping'), value: fmt(kpis.total_shipping  ?? 0), color: ink('#f59e0b', dark), note: t('splitCols.shippingNote'), bg: 'rgba(245,158,11,0.03)' },
+                        { label: t('splitCols.receive'),  value: fmt(kpis.total_net        ?? 0), color: ink('#10b981', dark), note: t('splitCols.receiveNote'),  bg: 'rgba(16,185,129,0.03)' },
+                      ].map((col, i, cols) => (
+                        <div key={col.label} style={{
+                          padding: '16px 20px',
+                          borderInlineEnd: i < cols.length - 1 ? `1px solid ${border}` : undefined,
+                          background: col.bg,
+                        }}>
+                          <p style={{ fontSize: 9, fontWeight: 800, color: ink(col.color, dark), textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>
+                            {col.label}
+                          </p>
+                          <p style={{ fontSize: 18, fontWeight: 900, color: ink(col.color, dark), margin: '0 0 3px' }}>{col.value}</p>
+                          <p style={{ fontSize: 10, color: textMuted, margin: 0 }}>{col.note}</p>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                )}
+  
+                  {/* Daily breakdown table */}
+                  {(overview.daily_chart?.length ?? 0) > 0 && (
+                    <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
+                      <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
+                        <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>{t('daily')}</p>
+                      </div>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr>
+                              <th style={th()}>{t('cols.day')}</th>
+                              <th style={th(true)}>{t('cols.orders')}</th>
+                              <th style={th(true)}>{t('cols.gross')}</th>
+                              <th style={th(true)}>{t('cols.fee')}</th>
+                              <th style={th(true)}>{t('cols.shipping')}</th>
+                              <th style={th(true)}>{t('cols.net')}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {overview.daily_chart.slice(-14).map((row: any) => (
+                              <tr key={row.day}>
+                                <td style={{ ...td(), fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{/^\d{4}-\d{2}-\d{2}$/.test(row.day) ? date(row.day, 'dayMonth') : row.day}</td>
+                                <td style={{ ...td(true), color: textMuted }}>{row.orders}</td>
+                                <td style={{ ...td(true), color: textMuted }}>{fmt(row.gross ?? 0)}</td>
+                                <td style={{ ...td(true), color: '#db142e' }}>{fmt(row.commission ?? 0)}</td>
+                                <td style={{ ...td(true), color: ink('#f59e0b', dark) }}>{Number(row.shipping ?? 0) > 0 ? '−' + fmt(row.shipping) : '—'}</td>
+                                <td style={{ ...td(true), color: ink('#10b981', dark), fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+  
+            {/* ── ORDERS ── */}
+            {tab === 'orders' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+  
+                {/* Payout filter */}
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {([['', t('filters.all')], ['pending', t('payout.pending')], ['ready', t('payout.ready')], ['paid', t('payout.paid')]] as [string, string][]).map(([val, label]) => (
+                    <button key={val} onClick={() => setPayoutFilter(val)} style={{
+                      padding: '6px 14px', borderRadius: 8, border: `1px solid ${border}`,
+                      background: payoutFilter === val ? 'rgba(219,20,46,0.12)' : 'transparent',
+                      color: payoutFilter === val ? '#db142e' : textMuted,
+                      fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                    }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+  
+                <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr>
+                          <th style={th()}>{t('cols.order')}</th>
+                          <th style={th(true)}>{t('cols.gross')}</th>
+                          <th style={th(true)}>{t('cols.platformFee')}</th>
+                          <th style={th(true)}>{t('cols.shipping')}</th>
+                          <th style={th(true)}>{t('cols.yourNet')}</th>
+                          <th style={th(true)}>{t('cols.payoutStatus')}</th>
+                          <th style={th(true)}>{t('cols.settled')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(orders?.data ?? []).map((row: any) => (
+                          <tr key={row.id}>
+                            <td style={td()}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{row.order_number}</span>
+                                <button
+                                  onClick={() => setDetailRow(row)}
+                                  title={tDrawer('earningsTooltip')}
+                                  aria-label={tDrawer('earningsTooltip')}
+                                  style={{
+                                    width: 26, height: 26, borderRadius: 7, flexShrink: 0, cursor: 'pointer',
+                                    border: `1px solid ${border}`, background: dark ? 'rgba(255,255,255,0.05)' : '#f8fafc',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: textMuted,
+                                  }}
+                                >
+                                  <Eye size={13} />
+                                </button>
+                              </div>
+                              {row.items_count != null && (
+                                <span style={{
+                                  display: 'inline-block', marginTop: 4,
+                                  fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
+                                  background: dark ? 'rgba(255,255,255,0.06)' : '#f1f5f9', color: textMuted,
+                                  border: `1px solid ${border}`,
+                                }}>
+                                  {tOrders('itemCount', { count: Number(row.items_count) })}
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ ...td(true), color: textMuted }}>{fmt(row.gross ?? 0)}</td>
+                            <td style={{ ...td(true), color: '#db142e', fontWeight: 700 }}>{fmt(row.commission_amount ?? 0)}</td>
+                            <td style={{ ...td(true), color: ink('#f59e0b', dark), fontWeight: 700 }}>{Number(row.seller_shipping_charge ?? 0) > 0 ? '−' + fmt(row.seller_shipping_charge) : '—'}</td>
+                            <td style={{ ...td(true), color: ink('#10b981', dark), fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
+                            <td style={{ ...td(true) }}><PayoutBadge status={row.payout_status ?? 'pending'} /></td>
+                            <td style={{ ...td(true), color: textMuted, fontSize: 11 }}>
+                              {row.settled_at ? date(row.settled_at, 'short') : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                        {(orders?.data ?? []).length === 0 && (
+                          <tr>
+                            <td colSpan={7} style={{ padding: '40px 20px', textAlign: 'center', color: textMuted }}>
+                              {t('noOrders')}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
-            )
-          })()}
-
-          {/* ── ORDERS ── */}
-          {tab === 'orders' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-              {/* Payout filter */}
-              <div style={{ display: 'flex', gap: 6 }}>
-                {([['', t('filters.all')], ['pending', t('payout.pending')], ['ready', t('payout.ready')], ['paid', t('payout.paid')]] as [string, string][]).map(([val, label]) => (
-                  <button key={val} onClick={() => setPayoutFilter(val)} style={{
-                    padding: '6px 14px', borderRadius: 8, border: `1px solid ${border}`,
-                    background: payoutFilter === val ? 'rgba(219,20,46,0.12)' : 'transparent',
-                    color: payoutFilter === val ? '#db142e' : textMuted,
-                    fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                  }}>
-                    {label}
+            )}
+  
+            {/* ── HISTORY ── */}
+            {tab === 'history' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+  
+                {/* Full report button */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={() => window.open('/seller/earnings/receipt', '_blank')}
+                    style={{
+                      padding: '8px 16px', borderRadius: 9, border: 'none',
+                      background: 'linear-gradient(135deg,#198f41,#12b34a)',
+                      color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                    }}
+                  >
+                    {t('fullReport')}
                   </button>
-                ))}
-              </div>
-
-              <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr>
-                        <th style={th()}>{t('cols.order')}</th>
-                        <th style={th(true)}>{t('cols.gross')}</th>
-                        <th style={th(true)}>{t('cols.platformFee')}</th>
-                        <th style={th(true)}>{t('cols.shipping')}</th>
-                        <th style={th(true)}>{t('cols.yourNet')}</th>
-                        <th style={th(true)}>{t('cols.payoutStatus')}</th>
-                        <th style={th(true)}>{t('cols.settled')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(orders?.data ?? []).map((row: any) => (
-                        <tr key={row.id}>
-                          <td style={td()}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{row.order_number}</span>
-                              <button
-                                onClick={() => setDetailRow(row)}
-                                title={tDrawer('earningsTooltip')}
-                                aria-label={tDrawer('earningsTooltip')}
-                                style={{
-                                  width: 26, height: 26, borderRadius: 7, flexShrink: 0, cursor: 'pointer',
-                                  border: `1px solid ${border}`, background: dark ? 'rgba(255,255,255,0.05)' : '#f8fafc',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: textMuted,
-                                }}
-                              >
-                                <Eye size={13} />
-                              </button>
-                            </div>
-                            {row.items_count != null && (
-                              <span style={{
-                                display: 'inline-block', marginTop: 4,
-                                fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
-                                background: dark ? 'rgba(255,255,255,0.06)' : '#f1f5f9', color: textMuted,
-                                border: `1px solid ${border}`,
-                              }}>
-                                {tOrders('itemCount', { count: Number(row.items_count) })}
-                              </span>
-                            )}
-                          </td>
-                          <td style={{ ...td(true), color: textMuted }}>{fmt(row.gross ?? 0)}</td>
-                          <td style={{ ...td(true), color: '#db142e', fontWeight: 700 }}>{fmt(row.commission_amount ?? 0)}</td>
-                          <td style={{ ...td(true), color: ink('#f59e0b', dark), fontWeight: 700 }}>{Number(row.seller_shipping_charge ?? 0) > 0 ? '−' + fmt(row.seller_shipping_charge) : '—'}</td>
-                          <td style={{ ...td(true), color: ink('#10b981', dark), fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
-                          <td style={{ ...td(true) }}><PayoutBadge status={row.payout_status ?? 'pending'} /></td>
-                          <td style={{ ...td(true), color: textMuted, fontSize: 11 }}>
-                            {row.settled_at ? date(row.settled_at, 'short') : '—'}
-                          </td>
-                        </tr>
-                      ))}
-                      {(orders?.data ?? []).length === 0 && (
+                </div>
+  
+                {/* Table card */}
+                <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>{t('history')}</p>
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
                         <tr>
-                          <td colSpan={7} style={{ padding: '40px 20px', textAlign: 'center', color: textMuted }}>
-                            {t('noOrders')}
-                          </td>
+                          <th style={th()}>{t('cols.batch')}</th>
+                          <th style={th()}>{t('cols.date')}</th>
+                          <th style={th(true)}>{t('cols.orders')}</th>
+                          <th style={th(true)}>{t('cols.payout')}</th>
+                          <th style={th(true)}>{t('cols.status')}</th>
+                          <th style={th(true)}>{t('cols.paidOn')}</th>
+                          <th style={th(true)}>{t('cols.receipt')}</th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {(history?.data ?? []).map((row: any) => (
+                          <tr key={row.id}>
+                            <td style={{ ...td(), fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{row.batch_reference}</td>
+                            <td style={{ ...td(), color: textMuted, fontFamily: 'monospace' }}>{row.batch_date ? date(row.batch_date, 'short') : '—'}</td>
+                            <td style={{ ...td(true), color: textMuted }}>{row.orders_count}</td>
+                            <td style={{ ...td(true), color: ink('#10b981', dark), fontWeight: 900 }}>{fmt(row.total_seller_payout ?? 0)}</td>
+                            <td style={{ ...td(true) }}><PayoutBadge status={row.status ?? 'draft'} /></td>
+                            <td style={{ ...td(true), color: textMuted, fontSize: 11 }}>
+                              {row.paid_at ? date(row.paid_at, 'short') : '—'}
+                            </td>
+                            <td style={{ ...td(true) }}>
+                              {row.status === 'paid' && (
+                                <button
+                                  onClick={() => window.open(`/settlement/${row.id}`, '_blank')}
+                                  style={{
+                                    padding: '4px 10px', borderRadius: 7, border: 'none',
+                                    background: 'linear-gradient(135deg,#db142e,#a50f22)',
+                                    color: '#fff', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                                  }}
+                                >
+                                  {t('receipt')}
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                        {(history?.data ?? []).length === 0 && (
+                          <tr>
+                            <td colSpan={7} style={{ padding: '40px 20px', textAlign: 'center', color: textMuted }}>
+                              {t('noSettlements')}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
+  
               </div>
-            </div>
-          )}
-
-          {/* ── HISTORY ── */}
-          {tab === 'history' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-              {/* Full report button */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => window.open('/seller/earnings/receipt', '_blank')}
-                  style={{
-                    padding: '8px 16px', borderRadius: 9, border: 'none',
-                    background: 'linear-gradient(135deg,#198f41,#12b34a)',
-                    color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                  }}
-                >
-                  {t('fullReport')}
-                </button>
-              </div>
-
-              {/* Table card */}
-              <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
-                  <p style={{ fontSize: 13, fontWeight: 800, color: textMain, margin: 0 }}>{t('history')}</p>
-                </div>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr>
-                        <th style={th()}>{t('cols.batch')}</th>
-                        <th style={th()}>{t('cols.date')}</th>
-                        <th style={th(true)}>{t('cols.orders')}</th>
-                        <th style={th(true)}>{t('cols.payout')}</th>
-                        <th style={th(true)}>{t('cols.status')}</th>
-                        <th style={th(true)}>{t('cols.paidOn')}</th>
-                        <th style={th(true)}>{t('cols.receipt')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(history?.data ?? []).map((row: any) => (
-                        <tr key={row.id}>
-                          <td style={{ ...td(), fontFamily: 'monospace', fontWeight: 700, color: textMain, fontSize: 11 }}>{row.batch_reference}</td>
-                          <td style={{ ...td(), color: textMuted, fontFamily: 'monospace' }}>{row.batch_date ? date(row.batch_date, 'short') : '—'}</td>
-                          <td style={{ ...td(true), color: textMuted }}>{row.orders_count}</td>
-                          <td style={{ ...td(true), color: ink('#10b981', dark), fontWeight: 900 }}>{fmt(row.total_seller_payout ?? 0)}</td>
-                          <td style={{ ...td(true) }}><PayoutBadge status={row.status ?? 'draft'} /></td>
-                          <td style={{ ...td(true), color: textMuted, fontSize: 11 }}>
-                            {row.paid_at ? date(row.paid_at, 'short') : '—'}
-                          </td>
-                          <td style={{ ...td(true) }}>
-                            {row.status === 'paid' && (
-                              <button
-                                onClick={() => window.open(`/settlement/${row.id}`, '_blank')}
-                                style={{
-                                  padding: '4px 10px', borderRadius: 7, border: 'none',
-                                  background: 'linear-gradient(135deg,#db142e,#a50f22)',
-                                  color: '#fff', fontSize: 10, fontWeight: 700, cursor: 'pointer',
-                                }}
-                              >
-                                {t('receipt')}
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                      {(history?.data ?? []).length === 0 && (
-                        <tr>
-                          <td colSpan={7} style={{ padding: '40px 20px', textAlign: 'center', color: textMuted }}>
-                            {t('noSettlements')}
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-        </>
-      )}
+            )}
+  
+          </>
+        )}
+      </div>
     </div>
   )
 }

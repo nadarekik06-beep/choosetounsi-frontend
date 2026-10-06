@@ -15,8 +15,9 @@
 
 import { useState } from 'react'
 import { useCart } from '@/context/CartContext'
-import { ShoppingCart, Loader2, CheckCircle } from 'lucide-react'
+import { ShoppingCart, CheckCircle } from 'lucide-react'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 interface Props {
   productId: number
   variantId?: number | null    // pass selected variant ID when product has variants
@@ -66,7 +67,7 @@ export default function AddToCartButton({
         }}
       >
         {cartLoading ? (
-          <Loader2 size={15} style={{ animation: 'spin 0.8s linear infinite' }} />
+          <BrandLoader variant="inline" size={15} />
         ) : added ? (
           <CheckCircle size={15} />
         ) : (
@@ -99,7 +100,7 @@ export default function AddToCartButton({
       }}
     >
       {cartLoading ? (
-        <Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite' }} />
+        <BrandLoader variant="inline" size={16} />
       ) : added ? (
         <CheckCircle size={16} />
       ) : (

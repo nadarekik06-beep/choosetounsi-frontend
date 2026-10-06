@@ -10,9 +10,10 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Star, X, Upload, CheckCircle, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Star, X, Upload, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import BrandLoader from '@/components/brand/BrandLoader'
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
 
 /** Consistent token lookup — matches the rest of the storefront */
@@ -514,7 +515,7 @@ export default function ReviewSubmitModal({
                   }}
                 >
                   {submitting
-                    ? <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite' }} />
+                    ? <BrandLoader variant="inline" size={18} />
                     : t('submit')
                   }
                 </button>

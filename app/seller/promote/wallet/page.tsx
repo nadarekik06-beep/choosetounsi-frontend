@@ -18,6 +18,7 @@ import { sellerAdsApi, type TopUp, type Wallet, type WalletTx } from '@/lib/sell
 import { createAndOpenWhatsApp, paymentRequestsApi, type ManualPaymentConfig, type PaymentRequest } from '@/lib/paymentRequestsApi'
 import { ManualPaymentConfirmation, PaymentRequestHistory } from '@/app/components/seller/ManualPayment'
 import { Button, Kpi, Notice, PageFrame, Panel, usePalette, GOLD } from '../_components/ui'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 const RAW_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const API_URL = `${RAW_URL.replace(/\/api\/?$/, '')}/api`
@@ -45,6 +46,8 @@ export default function AdWalletPage() {
   const [reference, setReference] = useState('')
   const [busy, setBusy]       = useState(false)
   const [notice, setNotice]   = useState<{ tone: 'success' | 'info' | 'error'; text: string } | null>(null)
+  // holds the navigation loader until the first load is done
+  usePageLoading(wallet === null && notice?.tone !== 'error')
 
   const methodsFor = (w: Wallet | null, cfg: ManualPaymentConfig | null) => {
     const gateways = w?.gateways ?? []
@@ -158,7 +161,7 @@ export default function AdWalletPage() {
                   </label>
                 </>
               )}
-              <Button type="submit" disabled={busy || !gateway}>{viaWhatsApp ? tm('submitTopUp') : t('walletPage.pay')}</Button>
+              <Button type="submit" loading={busy} disabled={!gateway}>{viaWhatsApp ? tm('submitTopUp') : t('walletPage.pay')}</Button>
             </form>
           )}
         </Panel>

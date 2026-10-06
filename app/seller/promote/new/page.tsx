@@ -19,6 +19,8 @@ import {
   type AdsSellerConfig, type Forecast, type Placement, type Readiness, type SellerProductLite,
 } from '@/lib/sellerAdsApi'
 import { Button, Notice, PageFrame, Panel, TipList, usePalette, GOLD, RED } from '../_components/ui'
+import { RouteLoading } from '@/components/brand/NavigationLoader'
+import BrandLoader from '@/components/brand/BrandLoader'
 
 const STEPS = ['product', 'readiness', 'budget', 'audience', 'placements', 'review'] as const
 type Step = typeof STEPS[number]
@@ -207,7 +209,7 @@ function Wizard() {
 
         {step === 'readiness' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {loading || !readiness ? <p style={{ color: p.muted }}>{t('loading')}</p> : (
+            {loading || !readiness ? <BrandLoader variant="section" size="sm" theme={p.dark ? 'dark' : 'light'} /> : (
               <>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 800, color: p.text, marginBottom: 6 }}>
@@ -352,7 +354,7 @@ function Wizard() {
             </div>
             <div>
               <p style={label}>{t('wizard.review.forecast')}</p>
-              {!forecast ? <p style={{ color: p.muted, fontSize: 13 }}>{t('loading')}</p> : (
+              {!forecast ? <BrandLoader variant="section" size="sm" theme={p.dark ? 'dark' : 'light'} /> : (
                 <>
                   <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}>
                     {(['impressions', 'clicks', 'orders'] as const).map(k => (
@@ -390,7 +392,7 @@ function Wizard() {
           {idx === 0 ? t('wizard.cancel') : t('wizard.back')}
         </Button>
         {step === 'review'
-          ? <Button onClick={launch} disabled={loading || !!walletShort}>{loading ? t('wizard.review.launching') : t('wizard.review.launch')}</Button>
+          ? <Button onClick={launch} loading={loading} disabled={!!walletShort}>{t('wizard.review.launch')}</Button>
           : <Button onClick={next} disabled={!canNext || loading}>{t('wizard.next')}</Button>}
       </div>
     </PageFrame>
@@ -399,7 +401,7 @@ function Wizard() {
 
 export default function NewCampaignPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoading area minHeight="60vh" />}>
       <Wizard />
     </Suspense>
   )

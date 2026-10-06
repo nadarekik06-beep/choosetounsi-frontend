@@ -12,6 +12,7 @@ import { useFormat } from '@/lib/i18n/useFormat'
 import { useStatusLabel } from '@/lib/i18n/useStatusLabel'
 import { useWilayaLabel } from '@/lib/i18n/wilayas'
 import { ink } from '@/app/seller/ink';
+import BrandLoader from '@/components/brand/BrandLoader'
 
 const RED   = '#db142e'
 const GREEN = '#198f41'
@@ -194,10 +195,6 @@ export default function SellerOrderDrawer({ sellerOrderId, orderNumber, onClose 
     </div>
   )
 
-  const skel = (w: string | number, h = 12, mb = 8) => (
-    <div className="so-skel" style={{ width: w, height: h, borderRadius: 6, marginBottom: mb }} />
-  )
-
   return (
     <>
       {/* Backdrop — click outside closes */}
@@ -242,19 +239,7 @@ export default function SellerOrderDrawer({ sellerOrderId, orderNumber, onClose 
         {/* Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
           {loading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }} aria-busy="true">
-              <div style={card}>{skel('45%', 14)}{skel('70%')}{skel('55%', 12, 0)}</div>
-              <div style={card}>{skel('35%')}{skel('60%', 12, 0)}</div>
-              <div style={card}>
-                {[0, 1].map(i => (
-                  <div key={i} style={{ display: 'flex', gap: 12, padding: '8px 0' }}>
-                    <div className="so-skel" style={{ width: 52, height: 52, borderRadius: 10, flexShrink: 0 }} />
-                    <div style={{ flex: 1 }}>{skel('75%')}{skel('40%')}{skel('30%', 12, 0)}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={card}>{skel('100%')}{skel('100%')}{skel('100%')}{skel('100%', 12, 0)}</div>
-            </div>
+            <BrandLoader variant="section" minHeight={320} theme={dark ? 'dark' : 'light'} />
           ) : error ? (
             <div style={{ ...card, textAlign: 'center', padding: '36px 20px' }}>
               <AlertCircle size={28} color={RED} style={{ marginBottom: 10 }} />
@@ -445,13 +430,7 @@ export default function SellerOrderDrawer({ sellerOrderId, orderNumber, onClose 
         @keyframes soIn    { from { transform: translateX(100%) }  to { transform: translateX(0) } }
         @keyframes soInRtl { from { transform: translateX(-100%) } to { transform: translateX(0) } }
         @keyframes soFade  { from { opacity: 0 } to { opacity: 1 } }
-        .so-skel {
-          background: linear-gradient(90deg, ${dark ? 'rgba(255,255,255,0.05)' : '#eef2f7'} 25%, ${dark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'} 50%, ${dark ? 'rgba(255,255,255,0.05)' : '#eef2f7'} 75%);
-          background-size: 200% 100%;
-          animation: soShimmer 1.2s linear infinite;
-        }
-        @keyframes soShimmer { from { background-position: 200% 0 } to { background-position: -200% 0 } }
-        @media (prefers-reduced-motion: reduce) { .so-drawer, .so-backdrop, .so-skel { animation: none; } }
+        @media (prefers-reduced-motion: reduce) { .so-drawer, .so-backdrop { animation: none; } }
       `}</style>
     </>
   )

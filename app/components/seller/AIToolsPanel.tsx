@@ -7,8 +7,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import {
-  DollarSign, TrendingUp, Package, Loader2,
-  Check, ChevronDown, Sparkles, Brain,
+  DollarSign, TrendingUp, Package, Check, ChevronDown, Sparkles, Brain,
   Globe, Shield,
   BarChart3, Target, Star, Rocket, Search, CheckCircle2,
 } from 'lucide-react';
@@ -25,6 +24,7 @@ import { useFormat } from '@/lib/i18n/useFormat';
 import { ink } from '@/app/seller/ink';
 import { useTheme } from '@/app/seller/SellerShell';
 
+import BrandLoader from '@/components/brand/BrandLoader'
 const CONFIDENCE_COLORS: Record<string, string> = { high: '#10b981', medium: '#f59e0b', low: '#ef4444' };
 const POSITIONING_COLORS: Record<string, string>= { underpriced: '#10b981', competitive: '#3b82f6', overpriced: '#ef4444', unknown: '#6b7280' };
 
@@ -86,7 +86,7 @@ function RunBtn({ onClick, loading, label, icon: Icon = Sparkles }: { onClick:()
   const t = useTranslations('seller.aiTools');
   return (
     <button onClick={onClick} disabled={loading} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 20px', borderRadius:12, background: loading ? 'rgba(219,20,46,0.4)' : 'linear-gradient(135deg,#db142e,#a00f22)', color:'#fff', fontWeight:700, fontSize:13, border:'none', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : '0 4px 16px rgba(219,20,46,0.35)' }}>
-      {loading ? <Loader2 size={14} style={{ animation:'spin 1s linear infinite' }} /> : <Icon size={14} />}
+      {loading ? <BrandLoader variant="inline" size={14} /> : <Icon size={14} />}
       {loading ? t('analyzing') : (label ?? t('analyze'))}
     </button>
   );
@@ -181,7 +181,7 @@ function PriceAnalysisLoader({ dark }: LoaderProps) {
                 {isDone
                   ? <Check size={14} style={{ color:ink('#10b981', dark) }} />
                   : isActive
-                    ? <Loader2 size={14} style={{ color:ink(step.color, dark), animation:'spin 0.8s linear infinite' }} />
+                    ? <BrandLoader variant="inline" size={14} style={{ color:ink(step.color, dark) }} />
                     : <Icon size={14} style={{ color: isPending ? muted : step.color, opacity: isPending ? 0.4 : 1 }} />
                 }
               </div>

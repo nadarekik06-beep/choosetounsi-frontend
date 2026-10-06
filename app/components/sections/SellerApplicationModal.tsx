@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { X, Upload, CheckCircle, AlertCircle, ChevronDown, Loader2, User } from 'lucide-react'
+import { X, Upload, CheckCircle, AlertCircle, ChevronDown, User } from 'lucide-react'
 import { api, getUser } from '@/lib/auth'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 // ── Constants ─────────────────────────────────────────────────────────────────
 const WILAYAS = [
   'Ariana','Béja','Ben Arous','Bizerte','Gabès','Gafsa','Jendouba','Kairouan',
@@ -494,7 +495,7 @@ export default function SellerApplicationModal({ onClose }: Props) {
             <button type="button" onClick={handleSubmit} disabled={loading}
               className="px-6 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 disabled:opacity-60 text-white text-sm font-bold transition-colors flex items-center gap-2">
               {loading
-                ? <><Loader2 size={14} className="animate-spin" />Submitting…</>
+                ? <><BrandLoader variant="inline" size={14} />Submitting…</>
                 : '✓ Submit Application'}
             </button>
           )}

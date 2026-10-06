@@ -15,6 +15,8 @@ import {
 } from '@/lib/sellerAdsApi'
 import DailyChart from './_components/DailyChart'
 import { Button, Kpi, Notice, PageFrame, Panel, StatusChip, usePalette, GOLD } from './_components/ui'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
+import BrandLoader from '@/components/brand/BrandLoader'
 
 export default function AdsHomePage() {
   const t   = useTranslations('seller.ads')
@@ -27,6 +29,8 @@ export default function AdsHomePage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [loading, setLoading]     = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading)
   const [error, setError]         = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -62,7 +66,7 @@ export default function AdsHomePage() {
         {/* Wallet */}
         <Panel title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><WalletIcon size={16} />{t('wallet.title')}</span>}
           action={<Link href="/seller/promote/wallet" style={{ fontSize: 12, fontWeight: 800, color: p.gold, textDecoration: 'none' }}>{t('wallet.history')}</Link>}>
-          {loading && !wallet ? <p style={{ color: p.muted, fontSize: 13 }}>{t('loading')}</p> : wallet && (
+          {loading && !wallet ? <BrandLoader variant="section" size="sm" theme={p.dark ? 'dark' : 'light'} /> : wallet && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <Kpi label={t('wallet.balance')} value={money(wallet.balance)} />

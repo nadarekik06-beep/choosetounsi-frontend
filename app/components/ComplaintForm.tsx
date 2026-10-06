@@ -27,6 +27,7 @@ import type { EligibleOrder, EligibleOrderItem, ComplaintType, ResolutionType } 
 import { COMPLAINT_TYPE_LABELS, RESOLUTION_TYPE_LABELS } from '@/types/complaint'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
+import BrandLoader from '@/components/brand/BrandLoader'
 
 // ── Brand tokens — light mode ─────────────────────────────────────────────────
 const RED       = '#db142e'
@@ -619,11 +620,7 @@ const scrollToFirstError = () => {
                 ...baseInputStyle, border: `1.5px solid ${BORDER}`,
                 display: 'flex', alignItems: 'center', gap: 10, color: MUTED,
               }}>
-                <span style={{
-                  display: 'inline-block', width: 14, height: 14,
-                  border: `2px solid #e2e8f0`, borderTopColor: RED,
-                  borderRadius: '50%', animation: 'spin 0.8s linear infinite',
-                }} />
+                <BrandLoader variant="inline" size={14} style={{ color: RED }} />
                 {t('loadingOrders')}
               </div>
             ) : prefilledOrderId ? (
@@ -887,11 +884,7 @@ const scrollToFirstError = () => {
             }}>
             {submitting ? (
               <>
-                <span style={{
-                  display: 'inline-block', width: 16, height: 16,
-                  border: '2.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff',
-                  borderRadius: '50%', animation: 'spin 0.7s linear infinite',
-                }} />
+                <BrandLoader variant="inline" size={16} />
                 {t('submitting')}
               </>
             ) : (

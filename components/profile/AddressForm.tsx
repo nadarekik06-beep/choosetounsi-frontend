@@ -8,7 +8,6 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Loader2 } from 'lucide-react'
 import ShippingAddressFields from '@/components/address/ShippingAddressFields'
 import {
   emptyShippingAddress, shippingAddressFrom, validateShippingAddress, shippingAddressPayload,
@@ -17,6 +16,7 @@ import {
 import { addressApi, ApiError, type SavedAddress } from '@/lib/profileApi'
 import { Switch } from './ui'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 // Stored values stay in English; only their label is translated (same as the address book).
 const LABELS = ['Home', 'Work', 'Parents', 'Other'] as const
 
@@ -94,7 +94,7 @@ export default function AddressForm({ initial, prefill, forceDefault, onSaved, o
       <div className="pf-actions">
         {onCancel && <button type="button" className="pf-btn light" onClick={onCancel}>{cancelLabel ?? tc('cancel')}</button>}
         <button type="submit" className="pf-btn primary" disabled={saving}>
-          {saving && <Loader2 size={15} className="animate-spin" />}
+          {saving && <BrandLoader variant="inline" size={15} />}
           {saving ? tc('saving') : (submitLabel ?? t('save'))}
         </button>
       </div>

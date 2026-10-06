@@ -12,10 +12,14 @@ import { useRouter } from 'next/navigation';
 import { useSubscription } from '@/app/hooks/useSubscription';
 import { useTheme } from '../../SellerShell';
 import { EliteBanner, RevenueGoalsSection } from '@/app/components/seller/BlackPepperHub';
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 export default function RevenueGoalsPage() {
   const { dark } = useTheme();
   const { isBlack, loading } = useSubscription();
+  // holds the navigation loader until the plan is known
+  usePageLoading(loading);
   const router = useRouter();
 
   useEffect(() => {
@@ -24,7 +28,7 @@ export default function RevenueGoalsPage() {
     }
   }, [isBlack, loading, router]);
 
-  if (loading || !isBlack) return null;
+  if (loading || !isBlack) return <BrandLoader variant="section" size="lg" minHeight="60vh" theme={dark ? 'dark' : 'light'} />;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

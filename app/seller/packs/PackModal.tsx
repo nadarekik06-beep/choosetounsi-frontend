@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import {
-  X, Loader2, AlertCircle, Plus, Trash2,
+  X, AlertCircle, Plus, Trash2,
   Search, Upload, Package2, TrendingDown,
 } from 'lucide-react'
 import { packsApi, type PackPayload, type PackItemPayload } from '@/lib/sellerApi'
@@ -10,6 +10,7 @@ import CommissionPreview from '@/app/seller/components/CommissionPreview'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SellerProduct {
@@ -526,7 +527,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
               boxShadow: '0 6px 20px rgba(220,38,38,0.3)',
               opacity: saving ? 0.6 : 1,
             }}>
-              {saving && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
+              {saving && <BrandLoader variant="inline" size={14} />}
               {isEdit ? t('save') : t('create')}
             </button>
           </div>
@@ -727,7 +728,7 @@ function ItemRow({
 
           {prodLoading ? (
             <div style={{ padding: '20px', textAlign: 'center', color: '#5b6472', fontSize: 13 }}>
-              <Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite', margin: '0 auto 6px', display: 'block' }} />
+              <BrandLoader variant="inline" size={16} style={{ margin: '0 auto 6px', display: 'block' }} />
               {t('loading')}
             </div>
           ) : products.length === 0 ? (

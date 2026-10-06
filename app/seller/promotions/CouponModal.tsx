@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useCallback, useState } from 'react'
-import { X, Loader2, AlertCircle, Search, Package2 } from 'lucide-react'
+import { X, AlertCircle, Search, Package2 } from 'lucide-react'
 import { sellerCouponsApi, type Coupon, type CouponPayload } from '@/lib/couponsApi'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
+import BrandLoader from '@/components/brand/BrandLoader'
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
 interface SellerProduct {
@@ -282,7 +283,7 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
               <div style={{ flex: 1, overflowY: 'auto', maxHeight: 380, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {prodLoading ? (
                   <div style={{ textAlign: 'center', padding: 32, color: '#5b6472', fontSize: 13 }}>
-                    <Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite', margin: '0 auto 6px', display: 'block' }} />
+                    <BrandLoader variant="inline" size={16} style={{ margin: '0 auto 6px', display: 'block' }} />
                     {tp('loading')}
                   </div>
                 ) : products.length === 0 ? (
@@ -331,7 +332,7 @@ export default function CouponModal({ coupon, onClose, onSaved }: CouponModalPro
               border: 'none', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               boxShadow: '0 6px 20px rgba(220,38,38,0.3)', opacity: saving ? 0.6 : 1,
             }}>
-              {saving && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
+              {saving && <BrandLoader variant="inline" size={14} />}
               {isEdit ? tp('save') : t('create')}
             </button>
           </div>

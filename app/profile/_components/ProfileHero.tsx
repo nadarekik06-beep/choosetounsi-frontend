@@ -7,6 +7,7 @@ import { Camera, ArrowLeft, BadgeCheck, MailWarning, CalendarDays, PencilLine, T
 import { useFormat } from '@/lib/i18n/useFormat'
 import { profileApi, squareImage, syncSessionUser, ApiError, type Profile } from '@/lib/profileApi'
 import { AvatarImage, Skeleton } from '@/components/profile/ui'
+import BrandLoader from '@/components/brand/BrandLoader'
 
 const MAX_MB = 3
 const RING_R = 52
@@ -91,7 +92,7 @@ export default function ProfileHero({ profile, onProfile, onEdit, toast }: {
                   ? <img src={preview} alt="" className="pf-avatar-img" />
                   : <AvatarImage name={profile.name} src={profile.avatar} />}
                 <span className={`pf-avatar-over${busy ? ' busy' : ''}`}>
-                  {busy ? <span className="pf-spin" /> : <><Camera size={18} />{t('photo.short')}</>}
+                  {busy ? <BrandLoader variant="inline" size={18} /> : <><Camera size={18} />{t('photo.short')}</>}
                 </span>
               </button>
             ) : <span className="pf-avatar-btn"><Skeleton h="100%" r={999} /></span>}

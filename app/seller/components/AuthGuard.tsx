@@ -3,11 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated, getUser } from '@/lib/auth';
-import { Loader2 } from 'lucide-react';
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router  = useRouter();
   const [ready, setReady] = useState(false);
+  // the overlay stays up while the session is checked (and through a redirect)
+  usePageLoading(!ready);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -25,7 +28,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!ready) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-[#E63946]" />
+        <BrandLoader variant="section" />
       </div>
     );
   }

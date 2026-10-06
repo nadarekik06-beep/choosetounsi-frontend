@@ -9,6 +9,7 @@ import { formatShippingAddress, isCompleteShippingAddress, shippingAddressFrom }
 import { addressApi, type Profile, type SavedAddress } from '@/lib/profileApi'
 import AddressForm from '@/components/profile/AddressForm'
 import { EmptyState, Modal, Skeleton } from '@/components/profile/ui'
+import { BusyLabel } from '@/components/brand/BrandLoader'
 
 const MAX = 10
 const LABELS = ['Home', 'Work', 'Parents', 'Other']
@@ -117,7 +118,7 @@ export default function AddressesTab({ profile, onChanged, toast, autoAdd }: {
                     <div className="pf-addr-actions">
                       <button type="button" className="pf-btn light sm" onClick={() => setEditing(a)}><Pencil size={13} />{ta('edit')}</button>
                       {!a.is_default && (
-                        <button type="button" className="pf-btn light sm" onClick={() => makeDefault(a)} disabled={busyId === a.id}><Star size={13} />{ta('setDefault')}</button>
+                        <button type="button" className="pf-btn light sm" onClick={() => makeDefault(a)} disabled={busyId === a.id}><BusyLabel busy={busyId === a.id} size={13}><Star size={13} />{ta('setDefault')}</BusyLabel></button>
                       )}
                       {confirmId === a.id ? (
                         <>

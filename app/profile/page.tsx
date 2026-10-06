@@ -25,6 +25,7 @@ import ReviewsTab from './_components/ReviewsTab'
 import ComplaintsTab from './_components/ComplaintsTab'
 import SettingsTab from './_components/SettingsTab'
 import { TABS, isTab, type TabKey } from './_components/tabs'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 import '@/components/profile/profile.css'
 
 const TAB_ICONS: Record<TabKey, React.ReactNode> = {
@@ -40,6 +41,8 @@ export default function ProfilePage() {
 
   const [data,    setData]    = useState<ProfileOverview | null>(null)
   const [loading, setLoading] = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading)
   const [error,   setError]   = useState(false)
   const [tab,     setTab]     = useState<TabKey>('overview')
   const [autoAdd, setAutoAdd] = useState(false)

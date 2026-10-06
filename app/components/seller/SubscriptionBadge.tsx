@@ -14,6 +14,8 @@ import { Lock, Sparkles, Zap, Crown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/app/seller/SellerShell';
 import { ink } from '@/app/seller/ink';
+import { usePageLoading } from '@/components/brand/NavigationLoader'
+import BrandLoader from '@/components/brand/BrandLoader'
 
 // ─── SubscriptionBadge ────────────────────────────────────────────────────────
 
@@ -121,8 +123,12 @@ interface PlanGateProps {
 }
 
 export function PlanGate({ feature, children, fallback, silent = false, dark = true }: PlanGateProps) {
-  const { gate } = useSubscription();
+  const { gate, loading } = useSubscription();
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading);
 
+  // plan not known yet: never flash the upgrade banner at a seller who has the feature
+  if (loading) return <BrandLoader variant="section" minHeight={240} theme={dark ? 'dark' : 'light'} />;
   if (gate(feature)) return <>{children}</>;
 
   if (silent) return null;

@@ -8,14 +8,18 @@ import { useSubscription } from '@/app/hooks/useSubscription';
 import { useTheme } from '../../SellerShell';
 import { useTranslations } from 'next-intl';
 import SmartPromoteCard from '@/app/components/seller/black/SmartPromoteCard';
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 export default function SmartPromotionsPage() {
   const { dark } = useTheme();
   const { isBlack, loading } = useSubscription();
+  // holds the navigation loader until the plan is known
+  usePageLoading(loading);
   const router = useRouter();
   const t = useTranslations('seller.black.pages');
   useEffect(() => { if (!loading && !isBlack) router.replace('/seller/subscription'); }, [isBlack, loading, router]);
-  if (loading || !isBlack) return null;
+  if (loading || !isBlack) return <BrandLoader variant="section" size="lg" minHeight="60vh" theme={dark ? 'dark' : 'light'} />;
 
   const txtMain = dark ? '#fff' : '#111';
   const txtMut  = dark ? 'rgba(255,255,255,0.55)' : '#5b6472';

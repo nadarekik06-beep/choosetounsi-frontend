@@ -21,7 +21,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   MapPin, Plus, Edit2, Trash2, Star, ChevronRight,
-  Loader2, CheckCircle, X, Phone, FileText, Home, Briefcase,
+  CheckCircle, X, Phone, FileText, Home, Briefcase,
 } from 'lucide-react'
 import { isAuthenticated } from '@/lib/auth'
 import { useTranslations } from 'next-intl'
@@ -32,6 +32,8 @@ import {
   shippingAddressPayload, formatShippingAddress, type ShippingAddressForm,
 } from '@/lib/shippingAddress'
 
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 
 function getToken(): string | null {
@@ -187,7 +189,7 @@ function AddressCard({
             }}
           >
             {settingDefault === addr.id
-              ? <Loader2 size={11} style={{ animation: 'spin 0.7s linear infinite' }} />
+              ? <BrandLoader variant="inline" size={11} />
               : <Star size={11} />}
             {t('setDefault')}
           </button>
@@ -219,7 +221,7 @@ function AddressCard({
           }}
         >
           {deleting === addr.id
-            ? <Loader2 size={11} style={{ animation: 'spin 0.7s linear infinite' }} />
+            ? <BrandLoader variant="inline" size={11} />
             : <Trash2 size={11} />}
           {t('delete')}
         </button>
@@ -340,7 +342,7 @@ function AddressForm({
           <button onClick={handleSubmit} disabled={saving}
             style={{ fontSize: 13, fontWeight: 800, color: '#fff', background: 'linear-gradient(135deg,#db142e,#b91c1c)', border: 'none', borderRadius: 10, padding: '8px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, opacity: saving ? 0.7 : 1 }}>
             {saving
-              ? <><Loader2 size={13} style={{ animation: 'spin 0.7s linear infinite' }} /> {tc('saving')}</>
+              ? <><BrandLoader variant="inline" size={13} /> {tc('saving')}</>
               : <><CheckCircle size={13} /> {t('save')}</>}
           </button>
         </div>
@@ -358,6 +360,8 @@ export default function AddressesPage() {
   const router = useRouter()
   const [addresses,      setAddresses]      = useState<UserAddress[]>([])
   const [loading,        setLoading]        = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading)
   const [showForm,       setShowForm]       = useState(false)
   const [editingAddress, setEditingAddress] = useState<UserAddress | null>(null)
   const [formError,      setFormError]      = useState('')
@@ -519,10 +523,7 @@ export default function AddressesPage() {
 
           {/* Loading */}
           {loading && (
-            <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <Loader2 size={26} style={{ animation: 'spin 0.7s linear infinite', color: '#db142e', margin: '0 auto 10px' }} />
-              <p style={{ color: '#94a3b8', fontSize: 13 }}>{t('loading')}</p>
-            </div>
+            <BrandLoader variant="section" label={t('loading')} minHeight={220} />
           )}
 
           {/* Empty state */}

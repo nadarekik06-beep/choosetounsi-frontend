@@ -3,8 +3,8 @@
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { saveSession, needsProfileCompletion, AuthUser } from '@/lib/auth';
-import { Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import BrandLoader from '@/components/brand/BrandLoader'
 
 function GoogleCallbackHandler() {
   const t            = useTranslations('auth');
@@ -48,8 +48,7 @@ function GoogleCallbackHandler() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center gap-4">
-      <Loader2 size={28} className="animate-spin text-[#E63946]" />
-      <p className="text-sm text-slate-500 font-medium">{t('completingSignIn')}</p>
+      <BrandLoader variant="section" label={t('completingSignIn')} />
     </div>
   );
 
@@ -60,7 +59,7 @@ export default function GoogleCallbackPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
-        <Loader2 size={28} className="animate-spin text-[#E63946]" />
+        <BrandLoader variant="section" />
       </div>
     }>
       <GoogleCallbackHandler />

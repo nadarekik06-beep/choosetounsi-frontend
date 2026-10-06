@@ -7,11 +7,13 @@ import type { Product, ProductImage } from '@/types/seller';
 import {
   ArrowLeft, Eye, Package, Tag, Layers, BarChart2,
   Calendar, Clock, Edit2, CheckCircle, XCircle, AlertTriangle,
-  ChevronLeft, ChevronRight, Loader2, Star, Hash, FileText,
+  ChevronLeft, ChevronRight, Star, Hash, FileText,
 } from 'lucide-react';
 import ProductModal from '../ProductModal';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -193,6 +195,8 @@ export default function ProductDetailPage() {
   const [product,   setProduct]   = useState<ProductDetail | null>(null);
   const [allImages, setAllImages] = useState<ProductImage[]>([]);
   const [loading,   setLoading]   = useState(true);
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading);
   const [error,     setError]     = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -252,8 +256,7 @@ export default function ProductDetailPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 size={28} className="animate-spin text-rose-500" />
-          <p className="text-sm font-semibold text-slate-400">{t('loading')}</p>
+          <BrandLoader variant="section" label={t('loading')} />
         </div>
       </div>
     );

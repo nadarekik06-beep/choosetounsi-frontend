@@ -27,6 +27,8 @@ import { dashboardApi } from '@/lib/sellerApi';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { ink } from '@/app/seller/ink';
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -173,6 +175,8 @@ function QuickAction({ href, label, icon: Icon, accent, dark }: {
 export default function BlackOverviewPage() {
   const { dark }             = useTheme();
   const { isBlack, loading } = useSubscription();
+  // holds the navigation loader until the plan is known
+  usePageLoading(loading);
   const router               = useRouter();
   const t                    = useTranslations('seller.black');
   const { price, number }    = useFormat();
@@ -200,7 +204,7 @@ export default function BlackOverviewPage() {
 
   useEffect(() => { if (isBlack) loadBrief(); }, [isBlack, loadBrief]);
 
-  if (loading || !isBlack) return null;
+  if (loading || !isBlack) return <BrandLoader variant="section" size="lg" minHeight="60vh" theme={dark ? 'dark' : 'light'} />;
 
   const bg      = dark ? '#0D1117' : '#f0f2f5';
   const cardBg  = dark ? 'rgba(255,255,255,0.03)' : '#ffffff';

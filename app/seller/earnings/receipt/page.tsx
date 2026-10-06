@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 interface SellerInfo {
   name: string
@@ -62,6 +64,8 @@ export default function FullReceiptPage() {
   const d = (v: string) => date(v, 'short')
   const [data,    setData]    = useState<FullReceipt | null>(null)
   const [loading, setLoading] = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading)
   const [error,   setError]   = useState(false)
   const [origin,  setOrigin]  = useState('')
 
@@ -87,8 +91,7 @@ export default function FullReceiptPage() {
 
   if (loading) return (
     <div style={wrap}>
-      <div style={spinner} />
-      <p style={{ fontSize: 14, fontWeight: 600, color: '#64748b' }}>{t('generating')}</p>
+      <BrandLoader variant="section" label={t('generating')} />
     </div>
   )
 
@@ -334,7 +337,6 @@ export default function FullReceiptPage() {
 }
 
 const wrap: React.CSSProperties = { minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow',sans-serif", gap: 16, background: '#f0f2f5' }
-const spinner: React.CSSProperties = { width: 36, height: 36, border: '3px solid #e2e8f0', borderTopColor: '#db142e', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }
 const btn = (bg: string): React.CSSProperties => ({ padding: '9px 20px', background: bg, color: '#fff', fontFamily: "'Barlow',sans-serif", fontWeight: 700, fontSize: 13, border: 'none', borderRadius: 8, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 })
 const card: React.CSSProperties = { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 16px' }
 const lbl:  React.CSSProperties = { fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#5b6472', marginBottom: 6 }

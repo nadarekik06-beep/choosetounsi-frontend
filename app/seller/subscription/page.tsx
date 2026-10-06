@@ -14,7 +14,7 @@
 import { useState, useEffect } from 'react'
 import {
   Leaf, Flame, Crown, Check, X, ArrowRight, ArrowDown,
-  CheckCircle, Loader2, MessageCircle,
+  CheckCircle, MessageCircle,
   Clock, Calendar, RefreshCw, ChevronRight,
   TrendingDown, AlertTriangle, History, BarChart2, Package,
 } from 'lucide-react'
@@ -27,6 +27,8 @@ import { useFormat } from '@/lib/i18n/useFormat'
 import { usePlanPrice } from '@/lib/i18n/usePlanPrice'
 import { ink } from '@/app/seller/ink';
 
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 type Translate = ReturnType<typeof useTranslations>
 
 // ── Plan configuration ────────────────────────────────────────────────────────
@@ -169,7 +171,7 @@ function DowngradeModal({ currentPlan, targetPlan, billingCycleEnd, daysRemainin
               {t('downgrade.keep')}
             </button>
             <button onClick={onConfirm} disabled={loading} style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: loading ? 0.7 : 1 }}>
-              {loading ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <ArrowDown size={13} />}
+              {loading ? <BrandLoader variant="inline" size={13} /> : <ArrowDown size={13} />}
               {loading ? t('downgrade.scheduling') : t('downgrade.schedule')}
             </button>
           </div>
@@ -189,6 +191,8 @@ export default function SellerSubscriptionPage() {
   const { label: priceLabel, short: priceShort } = usePlanPrice()
   const [status,       setStatus]       = useState<any>(null)
   const [loading,      setLoading]      = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading)
   const [history,      setHistory]      = useState<PlanChange[]>([])
   const [historyOpen,  setHistoryOpen]  = useState(false)
 
@@ -270,8 +274,7 @@ export default function SellerSubscriptionPage() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
-        <Loader2 size={28} style={{ animation: 'spin 1s linear infinite', color: '#db142e' }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <BrandLoader variant="section" theme={dark ? 'dark' : 'light'} />
       </div>
     )
   }
@@ -400,7 +403,7 @@ export default function SellerSubscriptionPage() {
                 onClick={handleCancelDowngrade}
                 disabled={cancelLoading}
                 style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid rgba(245,158,11,0.4)', background: 'transparent', color: ink('#f59e0b', dark), fontSize: 11, fontWeight: 700, cursor: cancelLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                {cancelLoading ? <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> : <RefreshCw size={11} />}
+                {cancelLoading ? <BrandLoader variant="inline" size={11} /> : <RefreshCw size={11} />}
                 {t('cancelDowngrade')}
               </button>
             </div>

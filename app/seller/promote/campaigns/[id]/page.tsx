@@ -14,6 +14,9 @@ import { useFormat } from '@/lib/i18n/useFormat'
 import { sellerAdsApi, type CampaignFull } from '@/lib/sellerAdsApi'
 import DailyChart from '../../_components/DailyChart'
 import { Button, Kpi, Notice, PageFrame, Panel, StatusChip, TipList, usePalette, GOLD } from '../../_components/ui'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
+import BrandLoader from '@/components/brand/BrandLoader'
+import { RouteLoading } from '@/components/brand/NavigationLoader'
 
 function CampaignDetail() {
   const t      = useTranslations('seller.ads')
@@ -24,6 +27,8 @@ function CampaignDetail() {
 
   const [c, setC]             = useState<CampaignFull | null>(null)
   const [error, setError]     = useState<string | null>(null)
+  // holds the navigation loader until the first load is done
+  usePageLoading(!c && !error)
   const [notice, setNotice]   = useState<string | null>(search.get('launched') ? t('wizard.review.launched') : null)
   const [busy, setBusy]       = useState(false)
   const [editing, setEditing] = useState(false)
@@ -58,7 +63,7 @@ function CampaignDetail() {
 
   const money = (v: number | null | undefined) => (v == null ? '—' : fmt.price(v))
   if (!c) {
-    return <PageFrame title={t('title')}>{error ? <Notice tone="error">{error}</Notice> : <p style={{ color: p.muted }}>{t('loading')}</p>}</PageFrame>
+    return <PageFrame title={t('title')}>{error ? <Notice tone="error">{error}</Notice> : <BrandLoader variant="section" minHeight={240} />}</PageFrame>
   }
 
   const s = c.summary
@@ -70,9 +75,9 @@ function CampaignDetail() {
       subtitle={<Link href="/seller/promote" style={{ color: p.gold, textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}><ArrowLeft size={14} className="rtl-flip" />{t('detail.back')}</Link>}
       actions={
         <>
-          {c.can.pause && <Button variant="ghost" disabled={busy} onClick={() => act(() => sellerAdsApi.pause(c.id))}>{t('detail.pause')}</Button>}
-          {c.can.resume && <Button disabled={busy} onClick={() => act(() => sellerAdsApi.resume(c.id))}>{t('detail.resume')}</Button>}
-          {c.can.cancel && <Button variant="danger" disabled={busy} onClick={() => { if (window.confirm(t('detail.confirmStop'))) act(() => sellerAdsApi.cancel(c.id)) }}>{t('detail.stop')}</Button>}
+          {c.can.pause && <Button variant="ghost" loading={busy} onClick={() => act(() => sellerAdsApi.pause(c.id))}>{t('detail.pause')}</Button>}
+          {c.can.resume && <Button loading={busy} onClick={() => act(() => sellerAdsApi.resume(c.id))}>{t('detail.resume')}</Button>}
+          {c.can.cancel && <Button variant="danger" loading={busy} onClick={() => { if (window.confirm(t('detail.confirmStop'))) act(() => sellerAdsApi.cancel(c.id)) }}>{t('detail.stop')}</Button>}
         </>
       }
     >
@@ -157,7 +162,7 @@ function CampaignDetail() {
                 <input type="date" value={form.end} onChange={e => setForm(f => ({ ...f, end: e.target.value }))} style={{ ...inputStyle, marginTop: 6 }} />
               </label>
               <div style={{ display: 'flex', gap: 8 }}>
-                <Button type="submit" disabled={busy}>{t('detail.save')}</Button>
+                <Button type="submit" loading={busy}>{t('detail.save')}</Button>
                 <Button variant="ghost" onClick={() => setEditing(false)}>{t('detail.discard')}</Button>
               </div>
             </form>
@@ -170,7 +175,7 @@ function CampaignDetail() {
 
 export default function CampaignPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoading area minHeight="60vh" />}>
       <CampaignDetail />
     </Suspense>
   )

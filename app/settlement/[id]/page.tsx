@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
+import BrandLoader from '@/components/brand/BrandLoader'
+import { usePageLoading } from '@/components/brand/NavigationLoader'
 
 interface SettlementOrder {
   id: number
@@ -52,6 +54,8 @@ export default function SettlementReceiptPage() {
 
   const [data,    setData]    = useState<SettlementBatch | null>(null)
   const [loading, setLoading] = useState(true)
+  // holds the navigation loader until the first load is done
+  usePageLoading(loading)
   const [error,   setError]   = useState(false)
   const [origin,  setOrigin]  = useState('')
 
@@ -82,8 +86,7 @@ export default function SettlementReceiptPage() {
 
   if (loading) return (
     <div style={styles.loadingWrap}>
-      <div style={styles.spinner} />
-      <p style={styles.loadingText}>{t('preparing')}</p>
+      <BrandLoader variant="section" label={t('preparing')} />
     </div>
   )
 
@@ -287,7 +290,6 @@ export default function SettlementReceiptPage() {
 
 const styles = {
   loadingWrap: { minHeight: '100vh', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow',sans-serif", gap: 16, background: '#f0f2f5' },
-  spinner:     { width: 36, height: 36, border: '3px solid #e2e8f0', borderTopColor: '#db142e', borderRadius: '50%', animation: 'spin 0.7s linear infinite' },
   loadingText: { fontSize: 14, fontWeight: 600, color: '#64748b' },
 }
 function btnStyle(bg: string): React.CSSProperties {

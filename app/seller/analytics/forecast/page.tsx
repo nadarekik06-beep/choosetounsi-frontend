@@ -17,6 +17,7 @@ import { PlanGate } from '@/app/components/seller/SubscriptionBadge';
 import SalesForecastDashboard from '@/app/seller/components/SalesForecastDashboard';
 import { TrendingUp } from 'lucide-react';
 import { ink } from '@/app/seller/ink';
+import { RouteLoading } from '@/components/brand/NavigationLoader'
 
 function ForecastInner() {
   const { dark } = useTheme();
@@ -58,7 +59,7 @@ function ForecastInner() {
 
 export default function ForecastPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoading area minHeight="60vh" />}>
       <ForecastInner />
     </Suspense>
   );
