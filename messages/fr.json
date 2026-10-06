@@ -2400,7 +2400,7 @@
       "expand": "Agrandir",
       "signOut": "Se déconnecter",
       "language": "Langue ({code})",
-      "growthRadar": "Growth Radar"
+      "growthRadar": "Radar de croissance"
     },
     "topbar": {
       "title": "Tableau de bord",
@@ -3665,7 +3665,7 @@
       },
       "prefill": "Pré-rempli depuis votre changement de prix : les clients paieront {price} au lieu de {was}.",
       "referencePrice": "Prix barré : {price} (le plus bas des 30 derniers jours)",
-      "fromRadar": "Pré-rempli par Growth Radar — ajustez ce que vous voulez avant d'enregistrer."
+      "fromRadar": "Pré-rempli par Radar de croissance — ajustez ce que vous voulez avant d'enregistrer."
     },
     "couponForm": {
       "editTitle": "Modifier le coupon",
@@ -3759,7 +3759,7 @@
         "boost": "Booster un produit",
         "goals": "Objectifs de revenus",
         "vip": "Demande VIP",
-        "growth": "Growth Radar"
+        "growth": "Radar de croissance"
       },
       "features": {
         "visitors": {
@@ -3780,7 +3780,7 @@
           "badge": "Exclusif"
         },
         "growth": {
-          "title": "Growth Radar",
+          "title": "Radar de croissance",
           "subtitle": "Votre score de la semaine et les actions qui valent le coup, à un clic — résultats mesurés."
         }
       },
@@ -4571,20 +4571,20 @@
       "retry": "Réessayer"
     },
     "growth": {
-      "title": "Growth Radar",
+      "title": "Radar de croissance",
       "subtitle": "Votre score de la semaine et les actions qui valent le coup maintenant — chacune ouvre le bon outil, pré-rempli.",
       "refresh": "Actualiser",
       "refreshing": "Actualisation…",
       "updated": "Mis à jour {time}",
       "cooldown": "Actualisé il y a quelques minutes — réessayez bientôt.",
-      "error": "Impossible de charger Growth Radar.",
+      "error": "Impossible de charger Radar de croissance.",
       "retry": "Réessayer",
       "tabs": {
         "week": "Cette semaine",
         "history": "Actions passées"
       },
       "score": {
-        "title": "Growth Score",
+        "title": "Score de croissance",
         "outOf": "/100",
         "trendUp": "+{n} vs la semaine dernière",
         "trendDown": "{n} vs la semaine dernière",
@@ -4691,13 +4691,6 @@
       "remind7": "Dans une semaine",
       "dismissed": "Carte ignorée — elle ne reviendra pas avant 4 semaines.",
       "snoozedToast": "Elle reviendra dans {days} jours.",
-      "locked": {
-        "title": "Débloquez vos actions",
-        "body": "Votre Growth Score est gratuit. Black Pepper débloque toutes les actions : quoi faire, avec des chiffres, en un clic — et le résultat mesuré ensuite.",
-        "cta": "Passer à Black Pepper",
-        "waiting": "{count, plural, =0 {Les actions apparaîtront ici à mesure que votre boutique grandit} one {# autre action attend votre boutique} other {# autres actions attendent votre boutique}}",
-        "worth": "Jusqu'à +{high} DT"
-      },
       "empty": {
         "title": "Aucune action cette semaine — en toute honnêteté",
         "body": "Nous ne montrons une action que si les données la justifient. Voici ce qui en débloquera :",
@@ -4734,7 +4727,7 @@
         "chart": "Unités vendues par jour avant, pendant et après l'action"
       },
       "history": {
-        "empty": "Les actions appliquées depuis Growth Radar apparaissent ici, avec leurs résultats.",
+        "empty": "Les actions appliquées depuis Radar de croissance apparaissent ici, avec leurs résultats.",
         "learning": "Ce qui marche pour votre boutique",
         "best": "Vos acheteurs réagissent le mieux aux {kind} : {lift} d'unités en moyenne sur {n} actions mesurées.",
         "notYet": "Il faut {min} actions mesurées d'un même type avant de conclure — pour l'instant :",

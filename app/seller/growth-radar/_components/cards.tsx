@@ -10,14 +10,14 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import {
-  ArrowDownRight, ArrowRight, ArrowUpRight, BellRing, CheckCircle2, Crown, HelpCircle, Info, Lock, Minus, Sparkles, X,
+  ArrowDownRight, ArrowRight, ArrowUpRight, BellRing, CheckCircle2, HelpCircle, Info, Minus, Sparkles, X,
 } from 'lucide-react';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { ink } from '@/app/seller/ink';
 import {
-  growthActionHref, type CardAction, type GrowthAction, type GrowthCard, type GrowthScore, type LockedCard, type Unlock,
+  growthActionHref, type CardAction, type GrowthAction, type GrowthCard, type GrowthScore, type Unlock,
 } from '@/lib/growthRadarApi';
-import { BRAND_RED, Chip, ConfidencePips, GOLD, MiniChart, TYPE_META, usePalette } from './ui';
+import { BRAND_RED, Chip, ConfidencePips, MiniChart, TYPE_META, usePalette } from './ui';
 
 const scoreColor = (v: number) => (v >= 70 ? '#10b981' : v >= 40 ? '#f59e0b' : '#ef4444');
 
@@ -240,58 +240,6 @@ export function ActionCard({ card, dark, onDismiss, onSnooze, onLinkAction }: {
         </div>
       </footer>
     </article>
-  );
-}
-
-// ─── Locked (Red / Green) ────────────────────────────────────────────────────
-
-export function LockedPreview({ card, hidden, dark }: { card: LockedCard | null; hidden: number; dark: boolean }) {
-  const t = useTranslations('seller.growth');
-  const { number } = useFormat();
-  const p = usePalette(dark);
-  const meta = card ? TYPE_META[card.type] : null;
-  const total = hidden;   // "more" actions, beyond the one previewed
-
-  return (
-    <section style={{ position: 'relative', borderRadius: 18, overflow: 'hidden', border: `1px solid ${GOLD}55`, background: p.bg }}>
-      {/* A card-shaped silhouette: the server sends no content for it */}
-      <div aria-hidden style={{ padding: 16, filter: 'blur(5px)', opacity: 0.55, pointerEvents: 'none', userSelect: 'none' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <div style={{ width: 120, height: 22, borderRadius: 999, background: meta ? `${meta.color}55` : p.grid }} />
-          <div style={{ width: 90, height: 22, borderRadius: 6, background: `${p.gain}55` }} />
-        </div>
-        <div style={{ marginTop: 14, height: 18, width: '85%', borderRadius: 6, background: p.grid }} />
-        <div style={{ marginTop: 8, height: 18, width: '60%', borderRadius: 6, background: p.grid }} />
-        <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
-          {[0, 1, 2].map(i => <div key={i} style={{ height: 48, borderRadius: 10, background: p.sub }} />)}
-        </div>
-        <div style={{ marginTop: 14, height: 46, borderRadius: 10, background: p.sub }} />
-      </div>
-      <div style={{
-        position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        textAlign: 'center', gap: 10, padding: 20,
-        background: dark ? 'rgba(13,17,23,0.55)' : 'rgba(255,255,255,0.6)',
-      }}>
-        <span style={{ width: 42, height: 42, borderRadius: 12, background: `${GOLD}22`, color: ink(GOLD, dark), display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Lock size={20} />
-        </span>
-        {card && meta && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <Chip color={meta.color} dark={dark}><meta.icon size={12} />{t(`types.${card.type}`)}</Chip>
-            {card.impact && <Chip color="#10b981" dark={dark}>{t('locked.worth', { high: number(card.impact.high) })}</Chip>}
-          </div>
-        )}
-        <h3 style={{ margin: 0, fontSize: 17, fontWeight: 900, color: p.text }}>{t('locked.title')}</h3>
-        <p style={{ margin: 0, maxWidth: 440, fontSize: 13, color: p.muted, lineHeight: 1.5 }}>{t('locked.body')}</p>
-        <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, color: p.text }}>{t('locked.waiting', { count: total })}</p>
-        <Link href="/seller/subscription" style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 10,
-          background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#1a1206', fontWeight: 900, fontSize: 13.5, textDecoration: 'none',
-        }}>
-          <Crown size={15} />{t('locked.cta')}
-        </Link>
-      </div>
-    </section>
   );
 }
 

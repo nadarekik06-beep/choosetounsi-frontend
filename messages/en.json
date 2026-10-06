@@ -4691,13 +4691,6 @@
       "remind7": "In a week",
       "dismissed": "Card dismissed — it won't come back for 4 weeks.",
       "snoozedToast": "We'll bring it back in {days} days.",
-      "locked": {
-        "title": "Unlock your action feed",
-        "body": "Your Growth Score is free. Black Pepper unlocks every action: what to do, with numbers, one click to apply — and the result measured afterwards.",
-        "cta": "Upgrade to Black Pepper",
-        "waiting": "{count, plural, =0 {Actions appear here as your shop grows} one {# more action is waiting for your shop} other {# more actions are waiting for your shop}}",
-        "worth": "Worth up to +{high} DT"
-      },
       "empty": {
         "title": "No action this week — and that's honest",
         "body": "We only show an action when the data supports it. Here is what unlocks more:",

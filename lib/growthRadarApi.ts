@@ -1,8 +1,8 @@
 /**
  * lib/growthRadarApi.ts — Seller dashboard → Growth Radar.
  *
- * Scores and cards are computed nightly on the server (growth:compute) and only
- * read here. Card actions open the existing promotion / coupon / boost / product
+ * Black Pepper only. Scores and cards are computed nightly on the server
+ * (growth:compute) and only read here. Card actions open the existing promotion / coupon / boost / product
  * flows pre-filled (see growthActionHref); those flows send `growth_card_id`
  * back so the server can measure the result.
  */
@@ -83,9 +83,6 @@ export interface GrowthCard {
   created_at: string;
 }
 
-/** What plans without the full feed receive of a card. */
-export interface LockedCard { id: number; type: CardType; confidence: Confidence; impact: Impact | null; locked: true }
-
 export interface ResultMetrics { units: number; revenue: number; views: number; orders: number }
 
 export interface ActionResult {
@@ -129,12 +126,10 @@ export interface GrowthScore {
 }
 
 export interface GrowthRadarData {
-  access: 'full' | 'locked';
   week_start: string;
   computed_at: string | null;
   score: GrowthScore | null;
-  cards: (GrowthCard | LockedCard)[];
-  hidden_cards: number;
+  cards: GrowthCard[];
   results: GrowthAction[];
   snoozed: number;
 }
@@ -146,7 +141,6 @@ export interface LearningSummary {
 }
 
 export interface GrowthHistory {
-  access: 'full' | 'locked';
   actions: GrowthAction[];
   learning: LearningSummary | null;
 }
@@ -162,8 +156,6 @@ export const growthRadarApi = {
   applied:  (id: number, kind: 'edit' | 'listing' | 'bundle') =>
     jsonRequest<{ success: boolean }>('POST', `/seller/growth-radar/cards/${id}/applied`, { kind }),
 };
-
-export const isLocked = (c: GrowthCard | LockedCard): c is LockedCard => 'locked' in c && c.locked === true;
 
 /**
  * Where a card's action button goes: the existing flow, pre-filled. `card` travels

@@ -29,9 +29,7 @@ const CUSTOMER_NAV = [
   { href: '/seller/complaints', label: 'complaints', icon: AlertTriangle },
   { href: '/seller/reviews',    label: 'reviews',    icon: Star },
 ];
-// Growth Radar is listed for every plan: Red/Green see their score + one locked card
 const GROWTH_NAV = [
-  { href: '/seller/growth-radar', label: 'growthRadar', icon: Radar },
   { href: '/seller/promotions', label: 'promotions', icon: Tag },
   { href: '/seller/promote',    label: 'promote',    icon: Megaphone },
 ];
@@ -42,6 +40,7 @@ const RED_NAV = [
 ];
 const BLACK_NAV = [
   { href: '/seller/black',                  label: 'eliteOverview',   icon: Crown,      accent: '#fbbf24', accentLight: '#92400e' },
+  { href: '/seller/growth-radar',           label: 'growthRadar',     icon: Radar,      accent: '#fb7185', accentLight: '#be123c' },
   { href: '/seller/black/visitor-insights', label: 'visitorInsights', icon: Eye,        accent: '#93c5fd', accentLight: '#1d4ed8' },
   { href: '/seller/black/listing-quality',  label: 'listingQuality',  icon: Star,       accent: '#d8b4fe', accentLight: '#7e22ce' },
   { href: '/seller/black/profit',           label: 'profitCenter',    icon: DollarSign, accent: '#6ee7b7', accentLight: '#047857' },

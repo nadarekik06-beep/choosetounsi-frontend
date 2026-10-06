@@ -3,10 +3,11 @@
 /**
  * /seller/growth-radar — replaces Black Pepper "AI Intelligence" + "Intelligent Promotion".
  *
- * Weekly Growth Score + 3–7 action cards (precomputed nightly). Every plan sees
- * its score; the full feed is Black Pepper (the server strips cards for others).
- * Each card opens an existing flow pre-filled; "Past actions" shows what was
- * applied and its measured result.
+ * Black Pepper only (like the other /seller/black pages): other plans are sent to
+ * /seller/subscription, and the API answers 403 for them.
+ *
+ * Weekly Growth Score + 3–7 action cards (precomputed nightly). Each card opens an
+ * existing flow pre-filled; "Past actions" shows what was applied and its result.
  */
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
@@ -14,14 +15,15 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Radar, RefreshCw } from 'lucide-react';
 import { useTheme } from '../SellerShell';
+import { useSubscription } from '@/app/hooks/useSubscription';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { ink } from '@/app/seller/ink';
 import BrandLoader from '@/components/brand/BrandLoader';
 import { RouteLoading, usePageLoading } from '@/components/brand/NavigationLoader';
 import {
-  growthRadarApi, isLocked, type ApiError, type GrowthCard, type GrowthHistory, type GrowthRadarData, type LockedCard,
+  growthRadarApi, type ApiError, type GrowthCard, type GrowthHistory, type GrowthRadarData,
 } from '@/lib/growthRadarApi';
-import { ActionCard, EmptyState, LockedPreview, ResultCard, ScoreHero } from './_components/cards';
+import { ActionCard, EmptyState, ResultCard, ScoreHero } from './_components/cards';
 import { BRAND_RED, usePalette } from './_components/ui';
 
 type Tab = 'week' | 'history';
@@ -35,17 +37,20 @@ function GrowthRadarInner() {
   const params = useSearchParams();
   const tab: Tab = params.get('tab') === 'history' ? 'history' : 'week';
 
+  const { isBlack, loading: planLoading } = useSubscription();
   const [data, setData] = useState<GrowthRadarData | null>(null);
   const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  usePageLoading(!data && !error);
+  usePageLoading(planLoading || (isBlack && !data && !error));
+
+  useEffect(() => { if (!planLoading && !isBlack) router.replace('/seller/subscription'); }, [isBlack, planLoading, router]);
 
   const load = useCallback(() => {
     setError(false);
     growthRadarApi.get().then(r => setData(r.data)).catch(() => setError(true));
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (isBlack) load(); }, [isBlack, load]);
 
   useEffect(() => {
     if (!toast) return;
@@ -83,6 +88,7 @@ function GrowthRadarInner() {
 
   const setTab = (next: Tab) => router.replace(next === 'week' ? '/seller/growth-radar' : '/seller/growth-radar?tab=history', { scroll: false });
 
+  if (planLoading || !isBlack) return <BrandLoader variant="section" size="lg" minHeight="60vh" theme={dark ? 'dark' : 'light'} />;
   if (error && !data) {
     return (
       <div style={{ padding: 24, textAlign: 'center', color: p.muted }}>
@@ -93,9 +99,7 @@ function GrowthRadarInner() {
   }
   if (!data) return <BrandLoader variant="section" size="lg" minHeight="60vh" theme={dark ? 'dark' : 'light'} />;
 
-  const full = data.access === 'full';
-  const cards = data.cards.filter(c => !isLocked(c)) as GrowthCard[];
-  const locked = (data.cards.find(c => isLocked(c)) as LockedCard | undefined) ?? null;
+  const cards = data.cards;
 
   return (
     <div className="gr-page" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -123,22 +127,20 @@ function GrowthRadarInner() {
 
       {data.score && <ScoreHero score={data.score} dark={dark} />}
 
-      {/* Tabs (full feed only — the history needs applied actions) */}
-      {full && (
-        <div role="tablist" style={{ display: 'flex', gap: 4, background: p.sub, border: `1px solid ${p.border}`, borderRadius: 12, padding: 4, alignSelf: 'flex-start' }}>
-          {(['week', 'history'] as Tab[]).map(k => (
-            <button key={k} role="tab" aria-selected={tab === k} type="button" onClick={() => setTab(k)} style={{
-              padding: '7px 14px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 800,
-              background: tab === k ? p.bg : 'transparent', color: tab === k ? p.text : p.muted,
-              boxShadow: tab === k ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
-            }}>{t(`tabs.${k}`)}</button>
-          ))}
-        </div>
-      )}
+      {/* Tabs */}
+      <div role="tablist" style={{ display: 'flex', gap: 4, background: p.sub, border: `1px solid ${p.border}`, borderRadius: 12, padding: 4, alignSelf: 'flex-start' }}>
+        {(['week', 'history'] as Tab[]).map(k => (
+          <button key={k} role="tab" aria-selected={tab === k} type="button" onClick={() => setTab(k)} style={{
+            padding: '7px 14px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 800,
+            background: tab === k ? p.bg : 'transparent', color: tab === k ? p.text : p.muted,
+            boxShadow: tab === k ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+          }}>{t(`tabs.${k}`)}</button>
+        ))}
+      </div>
 
-      {(!full || tab === 'week') && (
+      {tab === 'week' && (
         <>
-          {full && data.results.length > 0 && (
+          {data.results.length > 0 && (
             <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <h2 style={{ margin: 0, fontSize: 14, fontWeight: 900, color: p.text }}>{t('results.title')}</h2>
               <div className="gr-grid">{data.results.map(a => <ResultCard key={a.id} action={a} dark={dark} />)}</div>
@@ -152,16 +154,14 @@ function GrowthRadarInner() {
                 {t('feed.sortedBy')}{data.snoozed ? ` · ${t('feed.snoozed', { count: data.snoozed })}` : ''}
               </span>
             </div>
-            {!full
-              ? <LockedPreview card={locked} hidden={data.hidden_cards} dark={dark} />
-              : cards.length
-                ? <div className="gr-grid">{cards.map(c => <ActionCard key={c.id} card={c} dark={dark} onDismiss={dismiss} onSnooze={snooze} onLinkAction={linkAction} />)}</div>
-                : <EmptyState unlocks={data.score?.unlocks ?? []} dark={dark} />}
+            {cards.length
+              ? <div className="gr-grid">{cards.map(c => <ActionCard key={c.id} card={c} dark={dark} onDismiss={dismiss} onSnooze={snooze} onLinkAction={linkAction} />)}</div>
+              : <EmptyState unlocks={data.score?.unlocks ?? []} dark={dark} />}
           </section>
         </>
       )}
 
-      {full && tab === 'history' && <HistoryTab dark={dark} />}
+      {tab === 'history' && <HistoryTab dark={dark} />}
 
       {toast && (
         <div role="status" style={{
@@ -189,7 +189,7 @@ function HistoryTab({ dark }: { dark: boolean }) {
   const t = useTranslations('seller.growth');
   const p = usePalette(dark);
   const [h, setH] = useState<GrowthHistory | null>(null);
-  useEffect(() => { growthRadarApi.history().then(r => setH(r.data)).catch(() => setH({ access: 'full', actions: [], learning: null })); }, []);
+  useEffect(() => { growthRadarApi.history().then(r => setH(r.data)).catch(() => setH({ actions: [], learning: null })); }, []);
   if (!h) return <BrandLoader variant="section" size="md" minHeight="30vh" theme={dark ? 'dark' : 'light'} />;
 
   const l = h.learning;
