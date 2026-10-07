@@ -229,6 +229,11 @@ interface NotificationBellProps {
   pollInterval?: number;
   /** Page listing every notification, linked from the dropdown footer. */
   viewAllHref?: string;
+  /**
+   * Trigger style: `boxed` (seller dashboard), `link` (storefront utility bar: icon + label,
+   * styled like its neighbours) or `icon` (bare icon, e.g. next to the mobile cart).
+   */
+  variant?: 'boxed' | 'link' | 'icon';
 }
 
 export default function NotificationBell({
@@ -237,6 +242,7 @@ export default function NotificationBell({
   onNavigate,
   pollInterval = 30_000,
   viewAllHref,
+  variant = 'boxed',
 }: NotificationBellProps) {
 
   const t = useTranslations('seller.bell');
@@ -420,6 +426,27 @@ export default function NotificationBell({
           max-height: min(72vh, calc(100vh - 84px));
           max-height: min(72dvh, calc(100dvh - 84px));
         }
+        /* Storefront triggers: match the utility bar links (.nu) and the mobile cart icon */
+        .nb-bell-link, .nb-bell-icon {
+          display: flex; align-items: center; position: relative;
+          border: none; background: transparent; cursor: pointer; font-family: inherit;
+          transition: color .14s, background .14s;
+        }
+        .nb-bell-link {
+          gap: 5px; padding: 3px 9px; border-radius: 6px; white-space: nowrap;
+          font-size: 12px; font-weight: 600; color: #52525b;
+        }
+        .nb-bell-link:hover, .nb-bell-link[aria-expanded="true"] { color: #dc2626; background: rgba(220,38,38,0.06); }
+        .nb-bell-icon { padding: 4px; color: #374151; }
+        .nb-bell-icon[aria-expanded="true"] { color: #dc2626; }
+        .nb-bell-bdg {
+          position: absolute; top: -2px; inset-inline-end: 1px;
+          min-width: 15px; height: 15px; padding: 0 3px; border-radius: 999px;
+          background: #dc2626; color: #fff; border: 1.5px solid #fff;
+          font-size: 9px; font-weight: 900;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .nb-bell-icon .nb-bell-bdg { top: -3px; inset-inline-end: -5px; }
         /* 44px touch target — CSS (not JS) so it applies from first paint */
         @media ${MOBILE_QUERY} {
           .nb-bell { width: 44px !important; height: 44px !important; }
@@ -429,6 +456,7 @@ export default function NotificationBell({
       <div ref={ref} style={{ position: 'relative' }}>
 
         {/* Bell button */}
+        {variant === 'boxed' ? (
         <button
           onClick={() => setOpen(o => !o)}
           aria-expanded={open}
@@ -461,6 +489,23 @@ export default function NotificationBell({
             </span>
           )}
         </button>
+        ) : (
+        <button
+          onClick={() => setOpen(o => !o)}
+          aria-expanded={open}
+          className={variant === 'link' ? 'nb-bell-link' : 'nb-bell-icon'}
+          title={t('title')}
+          aria-label={t('title')}
+        >
+          <Bell size={variant === 'link' ? 13 : 22} />
+          {variant === 'link' && t('title')}
+          {unreadCount > 0 && (
+            <span className="nb-bell-bdg" style={{ animation: 'badge-bounce 0.4s ease' }}>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </button>
+        )}
 
         {/* Dropdown (tablet / desktop) */}
         {open && !mobile && (

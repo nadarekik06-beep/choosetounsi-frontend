@@ -905,7 +905,7 @@ export default function Navbar() {
             {/* Buyers' bell: private coupons (Growth Radar), order and complaint updates */}
             {loggedIn&&!isSeller&&(
               <>
-                <NotificationBell api={notificationApi} dark={false} onNavigate={router.push}/>
+                <NotificationBell api={notificationApi} dark={false} onNavigate={router.push} variant="icon"/>
                 <span className="nu-sep"/>
               </>
             )}
@@ -1084,7 +1084,7 @@ export default function Navbar() {
             {/* Mobile bell (buyers) */}
             {loggedIn&&!isSeller&&(
               <span className="nb-cart-m" style={{display:"none",flexShrink:0}}>
-                <NotificationBell api={notificationApi} dark={false} onNavigate={router.push}/>
+                <NotificationBell api={notificationApi} dark={false} onNavigate={router.push} variant="link"/>
               </span>
             )}
 
