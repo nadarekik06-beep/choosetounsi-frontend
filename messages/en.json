@@ -1019,12 +1019,43 @@
       },
       "notifications": {
         "title": "Notifications",
-        "subtitle": "Choose how we keep you informed.",
+        "subtitle": "For each kind of message, choose the site bell and/or e-mail.",
         "email": "E-mail updates",
         "emailHint": "Complaint decisions and refunds, by e-mail.",
         "inApp": "In-app notifications",
         "inAppHint": "The same updates in the bell on the site.",
-        "saved": "Preferences saved."
+        "saved": "Preferences saved.",
+        "channelInApp": "Bell",
+        "channelEmail": "E-mail",
+        "locked": "Always on",
+        "lockedHint": "Messages about your orders, payments, complaints and account security can’t be turned off in the bell: they tell you about something in progress.",
+        "optInHint": "Promotional e-mails only with your consent (verified address).",
+        "categories": {
+          "orders": {
+            "label": "Orders & delivery",
+            "hint": "Confirmation, packing, shipping, delivery, cancellation."
+          },
+          "payments": {
+            "label": "Payments & refunds",
+            "hint": "Pending or refused payments, returns and refunds."
+          },
+          "complaints": {
+            "label": "Complaints & returns",
+            "hint": "Shop replies and decisions."
+          },
+          "reviews": {
+            "label": "Reviews",
+            "hint": "Reminders to rate your purchases, shop replies to your reviews."
+          },
+          "promotions": {
+            "label": "Promotions",
+            "hint": "Private codes, price drops and restocks of your favourites (at most 1 a day)."
+          },
+          "account": {
+            "label": "Account & security",
+            "hint": "Password and e-mail address changes."
+          }
+        }
       }
     },
     "errors": {
@@ -5657,5 +5688,42 @@
     "forecasting": "Calculating your forecast…",
     "optimizing": "Analyzing your prices…",
     "loadingMore": "Loading more…"
+  },
+  "notificationsPage": {
+    "metaTitle": "My notifications",
+    "title": "Notifications",
+    "breadcrumb": "Breadcrumb",
+    "account": "Account",
+    "subtitle": "Your orders, payments, complaints and offers",
+    "unreadCount": "{count, plural, one {# unread notification} other {# unread notifications}}",
+    "settings": "Notification settings",
+    "filters": "Filter by category",
+    "tabs": {
+      "all": "All",
+      "orders": "Orders",
+      "payments": "Payments",
+      "complaints": "Complaints",
+      "reviews": "Reviews",
+      "promotions": "Promotions"
+    },
+    "unreadOnly": "Unread only",
+    "unread": "Unread",
+    "markAllRead": "Mark all as read",
+    "markRead": "Mark as read",
+    "delete": "Delete",
+    "loadMore": "Load more",
+    "loading": "Loading…",
+    "error": "Could not load notifications.",
+    "retry": "Retry",
+    "emptyUnread": "You’re all caught up",
+    "emptyHint": "We’ll let you know here at every new step.",
+    "empty": {
+      "all": "No notifications yet",
+      "orders": "No order updates",
+      "payments": "No payments or refunds",
+      "complaints": "No open complaints",
+      "reviews": "No review reminders",
+      "promotions": "No offers right now"
+    }
   }
 }

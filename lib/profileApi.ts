@@ -18,6 +18,22 @@ export interface NotificationPreferences {
   in_app_updates: boolean
 }
 
+/** One buyer notification category (backend NotificationPreferences::settings()). */
+export interface NotificationChannelSetting {
+  enabled: boolean
+  /** Always on: can't be changed (transactional / security) */
+  locked:  boolean
+  /** Promotions e-mail: the marketing consent */
+  opt_in:  boolean
+}
+export interface NotificationCategorySetting {
+  category: 'orders' | 'payments' | 'complaints' | 'reviews' | 'promotions' | 'account'
+  in_app:   NotificationChannelSetting
+  email:    NotificationChannelSetting
+}
+/** PUT /profile/notifications keys: "{category}_{channel}" for unlocked channels */
+export type NotificationChoiceKey = `${NotificationCategorySetting['category']}_${'in_app' | 'email'}`
+
 export interface Profile {
   id: number
   name: string
@@ -36,6 +52,8 @@ export interface Profile {
   has_password: boolean
   member_since: string | null
   notification_preferences: NotificationPreferences
+  notification_settings?: NotificationCategorySetting[]
+  marketing_emails_opt_in?: boolean
   completion: ProfileCompletion
 }
 
@@ -136,7 +154,7 @@ export const profileApi = {
   requestEmail:    (body: { email: string; current_password?: string }) =>
                      call<{ email: string; expires_in: number }>(api.post('/profile/email', body)),
   confirmEmail:    (code: string) => call<Profile>(api.post('/profile/email/verify', { code })),
-  notifications:   (body: Partial<NotificationPreferences>) => call<Profile>(api.put('/profile/notifications', body)),
+  notifications:   (body: Partial<NotificationPreferences> | Partial<Record<NotificationChoiceKey, boolean>>) => call<Profile>(api.put('/profile/notifications', body)),
   reviews:         (page = 1) => call<Paginated<MyReview>>(api.get('/profile/reviews', { params: { page } })),
   followedSellers: () => call<FollowedSeller[]>(api.get('/profile/followed-sellers')),
 }

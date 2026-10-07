@@ -1019,12 +1019,43 @@
       },
       "notifications": {
         "title": "Notifications",
-        "subtitle": "Choisissez comment nous vous tenons informé.",
+        "subtitle": "Choisissez, pour chaque type de message, la cloche du site et/ou l’e-mail.",
         "email": "Mises à jour par e-mail",
         "emailHint": "Décisions sur vos réclamations et remboursements, par e-mail.",
         "inApp": "Notifications sur le site",
         "inAppHint": "Les mêmes informations dans la cloche du site.",
-        "saved": "Préférences enregistrées."
+        "saved": "Préférences enregistrées.",
+        "channelInApp": "Cloche",
+        "channelEmail": "E-mail",
+        "locked": "Toujours activé",
+        "lockedHint": "Les messages sur vos commandes, paiements, réclamations et la sécurité de votre compte ne peuvent pas être coupés dans la cloche : ils vous informent d’une opération en cours.",
+        "optInHint": "E-mails promotionnels uniquement avec votre accord (adresse vérifiée).",
+        "categories": {
+          "orders": {
+            "label": "Commandes et livraison",
+            "hint": "Confirmation, préparation, expédition, livraison, annulation."
+          },
+          "payments": {
+            "label": "Paiements et remboursements",
+            "hint": "Paiement en attente ou refusé, retours et remboursements."
+          },
+          "complaints": {
+            "label": "Réclamations et retours",
+            "hint": "Réponses des boutiques et décisions."
+          },
+          "reviews": {
+            "label": "Avis",
+            "hint": "Rappel pour noter vos achats, réponses des boutiques à vos avis."
+          },
+          "promotions": {
+            "label": "Promotions",
+            "hint": "Codes privés, baisses de prix et retours en stock de vos favoris (1 par jour maximum)."
+          },
+          "account": {
+            "label": "Compte et sécurité",
+            "hint": "Mot de passe et adresse e-mail modifiés."
+          }
+        }
       }
     },
     "errors": {
@@ -5657,5 +5688,42 @@
     "forecasting": "Calcul de vos prévisions…",
     "optimizing": "Analyse de vos prix…",
     "loadingMore": "Chargement de la suite…"
+  },
+  "notificationsPage": {
+    "metaTitle": "Mes notifications",
+    "title": "Notifications",
+    "breadcrumb": "Fil d'Ariane",
+    "account": "Compte",
+    "subtitle": "Vos commandes, paiements, réclamations et offres",
+    "unreadCount": "{count, plural, one {# notification non lue} other {# notifications non lues}}",
+    "settings": "Gérer mes notifications",
+    "filters": "Filtrer par catégorie",
+    "tabs": {
+      "all": "Tout",
+      "orders": "Commandes",
+      "payments": "Paiements",
+      "complaints": "Réclamations",
+      "reviews": "Avis",
+      "promotions": "Promotions"
+    },
+    "unreadOnly": "Non lues seulement",
+    "unread": "Non lue",
+    "markAllRead": "Tout marquer comme lu",
+    "markRead": "Marquer comme lu",
+    "delete": "Supprimer",
+    "loadMore": "Voir plus",
+    "loading": "Chargement…",
+    "error": "Impossible de charger les notifications.",
+    "retry": "Réessayer",
+    "emptyUnread": "Vous êtes à jour",
+    "emptyHint": "Nous vous préviendrons ici à chaque nouvelle étape.",
+    "empty": {
+      "all": "Aucune notification pour l’instant",
+      "orders": "Aucune nouvelle de vos commandes",
+      "payments": "Aucun paiement ni remboursement",
+      "complaints": "Aucune réclamation en cours",
+      "reviews": "Aucun rappel d’avis",
+      "promotions": "Aucune offre pour le moment"
+    }
   }
 }

@@ -3,9 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { Mail, KeyRound, Bell, UserRound, Eye, EyeOff, LogOut } from 'lucide-react'
-import MarketingConsentToggle from '@/components/marketing/MarketingConsentToggle'
-import { profileApi, syncSessionUser, ApiError, type Profile, type NotificationPreferences } from '@/lib/profileApi'
+import { Mail, KeyRound, Bell, UserRound, Eye, EyeOff, LogOut, Lock } from 'lucide-react'
+import { profileApi, syncSessionUser, ApiError, type Profile, type NotificationCategorySetting, type NotificationChoiceKey } from '@/lib/profileApi'
 import PersonalInfoForm from '@/components/profile/PersonalInfoForm'
 import { Field, Switch } from '@/components/profile/ui'
 
@@ -193,40 +192,77 @@ function PasswordSection({ profile, onProfile, toast }: { profile: Profile; onPr
 
 function NotificationsSection({ profile, onProfile, toast }: { profile: Profile; onProfile: (p: Profile) => void; toast: Toast }) {
   const t = useTranslations('profile.settings.notifications')
-  const [prefs, setPrefs] = useState<NotificationPreferences>(profile.notification_preferences)
-  const [saving, setSaving] = useState<keyof NotificationPreferences | null>(null)
+  const [rows, setRows] = useState<NotificationCategorySetting[]>(profile.notification_settings ?? [])
+  const [saving, setSaving] = useState<NotificationChoiceKey | null>(null)
 
-  const toggle = async (key: keyof NotificationPreferences, value: boolean) => {
-    const before = prefs
-    setPrefs(p => ({ ...p, [key]: value }))           // optimistic
+  const toggle = async (category: NotificationCategorySetting['category'], channel: 'in_app' | 'email', value: boolean) => {
+    const key = `${category}_${channel}` as NotificationChoiceKey
+    const before = rows
+    setRows(rs => rs.map(r => r.category === category ? { ...r, [channel]: { ...r[channel], enabled: value } } : r))   // optimistic
     setSaving(key)
     try {
       const saved = await profileApi.notifications({ [key]: value })
       onProfile(saved)
+      if (saved.notification_settings) setRows(saved.notification_settings)
       toast(t('saved'))
     } catch (err) {
-      setPrefs(before)
+      setRows(before)
       toast((err as ApiError).message, 'error')
     } finally { setSaving(null) }
   }
 
+  const channel = (row: NotificationCategorySetting, ch: 'in_app' | 'email') => {
+    const s = row[ch]
+    const label = `${t(`categories.${row.category}.label`)} — ${ch === 'in_app' ? t('channelInApp') : t('channelEmail')}`
+    return (
+      <div className="pf-notif-ch">
+        <span className="pf-notif-ch-label">{ch === 'in_app' ? t('channelInApp') : t('channelEmail')}</span>
+        {s.locked ? (
+          <span className="pf-notif-lock" title={t('locked')}><Lock size={12} />{t('locked')}</span>
+        ) : (
+          <Switch checked={s.enabled} onChange={v => toggle(row.category, ch, v)} label={label} disabled={saving !== null} />
+        )}
+      </div>
+    )
+  }
+
   return (
     <section className="pf-card" aria-labelledby="pf-notif-title">
+      <style>{`
+        .pf-notif-row { display:flex; align-items:center; gap:16px; padding:14px 0; border-top:1px solid #f1f5f9; flex-wrap:wrap; }
+        .pf-notif-row:first-of-type { border-top:none; }
+        .pf-notif-row .grow { flex:1; min-width:200px; }
+        .pf-notif-row .grow strong { display:block; font-size:14px; }
+        .pf-notif-row .grow span { display:block; font-size:12px; color:#64748b; margin-top:2px; }
+        .pf-notif-chs { display:flex; gap:18px; }
+        .pf-notif-ch { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:72px; }
+        .pf-notif-ch-label { font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.04em; }
+        .pf-notif-lock { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:#0f766e;
+          background:#f0fdfa; border:1px solid #ccfbf1; border-radius:999px; padding:4px 8px; white-space:nowrap; }
+        @media (max-width: 520px) { .pf-notif-chs { width:100%; justify-content:flex-start; } }
+      `}</style>
       <div className="pf-card-head">
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <span className="pf-menu-icon"><Bell size={17} /></span>
           <div><h2 id="pf-notif-title">{t('title')}</h2><p className="pf-card-sub">{t('subtitle')}</p></div>
         </div>
       </div>
-      <div className="pf-switch-row">
-        <div className="grow"><strong>{t('email')}</strong><span>{t('emailHint')}</span></div>
-        <Switch checked={prefs.email_updates} onChange={v => toggle('email_updates', v)} label={t('email')} disabled={saving !== null} />
-      </div>
-      <div className="pf-switch-row">
-        <div className="grow"><strong>{t('inApp')}</strong><span>{t('inAppHint')}</span></div>
-        <Switch checked={prefs.in_app_updates} onChange={v => toggle('in_app_updates', v)} label={t('inApp')} disabled={saving !== null} />
-      </div>
-      <div style={{ marginTop: 12 }}><MarketingConsentToggle variant="card" /></div>
+      {rows.map(row => (
+        <div key={row.category} className="pf-notif-row">
+          <div className="grow">
+            <strong>{t(`categories.${row.category}.label`)}</strong>
+            <span>{t(`categories.${row.category}.hint`)}</span>
+            {row.email.opt_in && <span>{t('optInHint')}</span>}
+          </div>
+          <div className="pf-notif-chs">
+            {channel(row, 'in_app')}
+            {channel(row, 'email')}
+          </div>
+        </div>
+      ))}
+      <p className="pf-hint" style={{ margin: '12px 0 0', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+        <Lock size={13} style={{ flexShrink: 0, marginTop: 2 }} />{t('lockedHint')}
+      </p>
     </section>
   )
 }
