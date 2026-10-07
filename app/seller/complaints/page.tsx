@@ -16,6 +16,7 @@ import type { Complaint } from '@/types/complaint'
 import { STATUS_CONFIG, COMPLAINT_TYPE_LABELS } from '@/types/complaint'
 import { useTheme } from '../SellerShell'
 import { useTranslations } from 'next-intl'
+import PurchasedItemRow from '@/app/components/PurchasedItemRow'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { ink } from '@/app/seller/ink';
 import { usePageLoading } from '@/components/brand/NavigationLoader'
@@ -652,8 +653,6 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
   const [toast,        setToast]        = useState('')
   const T = useColors(dark)
 
-  useEffect(() => { if (!complaint) setDecisionMode(null) }, [complaint])
-
   if (!complaint) return null
 
   const canAct = ['pending', 'reviewing'].includes(complaint.status)
@@ -752,14 +751,26 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
                 <p style={{ fontSize: 14, fontWeight: 700, color: T.textMain, margin: '2px 0 1px', fontFamily: 'monospace' }}>
                   #{complaint.order?.order_number ?? complaint.order_id}
                 </p>
-                {complaint.order?.items?.slice(0, 1).map((item, i) => (
-                  <p key={i} style={{ fontSize: 11.5, color: T.textMuted, margin: 0 }}>
-                    {item.product_name} × {item.quantity}
-                  </p>
-                ))}
               </DrawerSection>
             </div>
           </div>
+
+          {/* Complained items — exactly what the buyer received (order snapshot) */}
+          {!!complaint.complained_items?.length && (
+            <DrawerSection icon={<IconPackage size={13} />} label={t('items')} dark={dark}>
+              <div style={{
+                background: T.drawerBgSub,
+                border: `1px solid ${T.drawerBorder}`,
+                borderRadius: 12, padding: '12px 14px',
+                display: 'flex', flexDirection: 'column', gap: 10,
+              }}>
+                {complaint.complained_items.map(item => (
+                  <PurchasedItemRow key={item.id} item={item} qtyLabel={t('qty', { count: item.quantity })}
+                    textColor={T.textMain} mutedColor={T.textMuted} border={T.drawerBorder} />
+                ))}
+              </div>
+            </DrawerSection>
+          )}
 
           {/* Description */}
           <DrawerSection icon={<IconMessageSquare size={13} />} label={t('description')} dark={dark}>
@@ -1227,6 +1238,7 @@ export default function SellerComplaintsPage() {
 
       {/* Detail drawer */}
       <ComplaintDrawer
+        key={selected?.id ?? 'closed'}
         complaint={selected}
         dark={dark}
         onClose={() => setSelected(null)}

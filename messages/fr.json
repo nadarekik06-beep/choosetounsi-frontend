@@ -1382,7 +1382,9 @@
         "description": "Votre réclamation n'a pas été acceptée."
       }
     },
-    "newMetaTitle": "Déposer une réclamation"
+    "newMetaTitle": "Déposer une réclamation",
+    "items": "Article(s) concerné(s)",
+    "qty": "Qté : {count}"
   },
   "complaintForm": {
     "qty": "Qté : {count}",
@@ -3518,7 +3520,9 @@
         "responseRequired": "Veuillez expliquer votre réponse (au moins 10 caractères).",
         "reasonRequired": "Veuillez indiquer un motif de refus (au moins 10 caractères).",
         "failed": "L'action a échoué. Veuillez réessayer."
-      }
+      },
+      "items": "Article(s) concerné(s)",
+      "qty": "Qté : {count}"
     },
     "reviews": {
       "title": "Avis et réputation",

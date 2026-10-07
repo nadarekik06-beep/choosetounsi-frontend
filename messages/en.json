@@ -1382,7 +1382,9 @@
         "description": "Your complaint was not approved."
       }
     },
-    "newMetaTitle": "File a complaint"
+    "newMetaTitle": "File a complaint",
+    "items": "Item(s) concerned",
+    "qty": "Qty: {count}"
   },
   "complaintForm": {
     "qty": "Qty: {count}",
@@ -3518,7 +3520,9 @@
         "responseRequired": "Please explain your response (at least 10 characters).",
         "reasonRequired": "Please provide a rejection reason (at least 10 characters).",
         "failed": "Action failed. Please try again."
-      }
+      },
+      "items": "Item(s) concerned",
+      "qty": "Qty: {count}"
     },
     "reviews": {
       "title": "Reviews & Reputation",

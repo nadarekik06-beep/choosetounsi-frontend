@@ -15,6 +15,7 @@ import { complaintApi } from '@/lib/complaintApi'
 import type { Complaint } from '@/types/complaint'
 import { STATUS_CONFIG } from '@/types/complaint'
 import { useTranslations } from 'next-intl'
+import PurchasedItemRow from '@/app/components/PurchasedItemRow'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
 import BrandLoader from '@/components/brand/BrandLoader'
@@ -98,6 +99,19 @@ function ComplaintCard({ complaint, focused = false }: { complaint: Complaint; f
               {expanded ? `▲ ${t('hide')}` : `▼ ${t('details')}`}
             </button>
           </div>
+
+          {/* Complained items — image, name and variant as bought */}
+          {!!complaint.complained_items?.length && (
+            <div style={{ padding: '0 20px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <p style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700,
+                textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
+                {t('items')}
+              </p>
+              {complaint.complained_items.map(item => (
+                <PurchasedItemRow key={item.id} item={item} qtyLabel={t('qty', { count: item.quantity })} />
+              ))}
+            </div>
+          )}
 
           {/* Status description bar */}
           <div style={{ padding: '8px 20px 10px', background: `${cfg.bg}`,
