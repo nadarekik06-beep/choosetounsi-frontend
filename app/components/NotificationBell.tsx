@@ -11,7 +11,7 @@ import {
   Bell, CheckCheck, RefreshCw,
   PackagePlus, PackageCheck, PackageX,
   CheckCircle, XCircle, Store, Package, AlertTriangle,
-  Megaphone, PauseCircle, Flag, Gauge, Wallet, CalendarDays, TrendingDown, TrendingUp, Ticket,
+  Megaphone, PauseCircle, Flag, Gauge, Wallet, CalendarDays, TrendingDown, TrendingUp, Ticket, Target,
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/Usenotifications';
 import type { AppNotification } from '@/lib/notificationApi';
@@ -60,6 +60,8 @@ export function NotifIcon({ icon }: { icon: string }) {
     // Growth Radar (App\Notifications\Growth\*)
     'trending-up':     <TrendingUp     className={cls} />,
     'ticket':          <Ticket         className={cls} />,
+    // Centre de profit goal alerts (App\Notifications\ProfitGoalNotification)
+    'target':          <Target         className={cls} />,
   };
   return <>{map[icon] ?? <Package className={cls} />}</>;
 }
@@ -79,6 +81,11 @@ export function accent(action: string): string {
   if (action === 'growth_new_cards')    return '#db142e';
   if (action === 'growth_result')       return '#10b981';
   if (action === 'coupon')              return '#ec4899';
+  if (action === 'goal_milestone')      return '#198f41';
+  if (action === 'goal_behind_pace')    return '#f97316';
+  if (action === 'goal_weekly')         return '#3b82f6';
+  if (action === 'goal_recap')          return '#f59e0b';
+  if (action === 'goal_new_goal')       return '#f59e0b';
   if (action === 'low_stock')     return '#f59e0b';  // ← NEW
   if (action === 'reminder')      return '#f59e0b';  // seller order: not ready for pickup yet
   if (action === 'submitted')     return '#f59e0b';

@@ -1,6 +1,6 @@
 /**
  * lib/blackPepperApi.ts
- * UPDATED: Replaced ProfitCenter with RevenueGoals tracker
+ * Black Pepper endpoints (daily brief, Centre de profit, visitor insights, quality audit, VIP).
  */
 
 const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
@@ -64,30 +64,97 @@ export interface SmartAction {
   type:  'restock' | 'promote' | 'flash_sale' | 'edit' | 'default';
 }
 
-// ─── Revenue Goals ────────────────────────────────────────────────────────────
+// ─── Centre de profit (money, goals, profitability) ──────────────────────────
+// GET /seller/black/profit-center — see App\Services\Profit\ProfitCenter (backend)
 
-export interface RevenueGoalMonth {
-  month:   string;   // "2026-05"
-  revenue: number;
-  goal:    number;
-  hit:     boolean;
-  pct:     number;   // 0-100
+export type GoalStatus = 'none' | 'unknown' | 'behind' | 'on_track' | 'ahead' | 'reached';
+export type ProfitConfidence = 'low' | 'medium' | 'high';
+export type GoalPreset = 'prudent' | 'realistic' | 'ambitious' | 'custom';
+
+export interface ProfitGoal {
+  month:           string;          // "2026-10"
+  amount:          number;
+  orders_target:   number | null;
+  net_target:      number | null;
+  preset:          GoalPreset | null;
+  milestones_sent: number[];
+  updated_at:      string | null;
 }
 
-export interface RevenueGoalsData {
-  current_month:   string;
-  current_revenue: number;
-  last_revenue:    number;
-  current_goal:    number;
-  projected:       number;
-  progress_pct:    number;   // 0-100
-  on_track:        boolean;
-  days_left:       number;
-  days_in_month:   number;
-  daily_pace:      number;
-  streak:          number;
-  ai_message:      string;
-  history:         RevenueGoalMonth[];
+export interface ProfitProgress {
+  status:           GoalStatus;
+  current_daily:    number;
+  pct?:             number;
+  pct_delivered?:   number;
+  remaining?:       number;
+  expected_by_now?: number;
+  required_daily?:  number;
+  orders_needed?:   number;
+  gap_pct?:         number | null;
+  orders?:          { done: number; target: number; pct: number } | null;
+  net?:             { done: number; target: number; pct: number } | null;
+}
+
+export interface ProfitMonthTotals {
+  month: string; sales: number; delivered: number; in_progress: number; orders: number;
+  commission: number; shipping: number; refunds: number; ads: number; ads_credit: number; gross: number; net: number;
+}
+
+export interface ProfitHistoryMonth {
+  month: string; current: boolean; sales: number; delivered: number; net: number; orders: number;
+  goal: number; hit: boolean; pct: number | null;
+}
+
+export interface ProfitProduct {
+  id: number; name: string; deleted: boolean; revenue: number; kept: number; units: number; share: number;
+}
+
+export interface ProfitDecliner {
+  id: number; name: string; before: number; now: number; drop_pct: number; lost: number;
+}
+
+export interface ProfitTip {
+  key: 'confirm_pending' | 'set_goal' | 'behind' | 'behind_flash' | 'no_sales_boost' | 'no_products'
+     | 'ads_low_return' | 'declining' | 'ahead' | 'reached';
+  tone: 'warn' | 'info' | 'good';
+  href?: string;
+  action?: 'open_goal';
+  params: Record<string, string | number | null>;
+}
+
+export interface ProfitAlertSettings {
+  enabled: boolean; milestones: boolean; pace: boolean; weekly: boolean;
+  monthly_recap: boolean; new_goal_reminder: boolean; channel_bell: boolean; channel_email: boolean;
+}
+
+export interface ProfitCenterData {
+  month: string; today: string; day: number; days_in_month: number; days_left: number;
+  state: 'active' | 'new';
+  goal: ProfitGoal | null;
+  progress: ProfitProgress;
+  projection: { amount: number; confidence: ProfitConfidence; run_rate: number; baseline: number | null; weight: number } | null;
+  kpis: {
+    sales: number; delivered: number; in_progress: number; orders: number; net: number;
+    sales_prev_same: number; orders_prev_same: number; avg_basket: number | null;
+    awaiting: { count: number; amount: number; oldest_days: number | null };
+  };
+  breakdown: { current: ProfitMonthTotals; previous: ProfitMonthTotals };
+  cumulative: { day: number; sales: number }[];
+  history: ProfitHistoryMonth[];
+  streak: { current: number; best: number; hits: number; badges: string[]; best_month: { month: string; sales: number } | null };
+  suggestion: {
+    basis: 'starter' | 'last' | 'average'; months: number; reference: number | null;
+    presets: Record<'prudent' | 'realistic' | 'ambitious', number> | null; same_month_last_year: number | null;
+  };
+  contributors: { top: ProfitProduct[]; declining: ProfitDecliner[]; compare_ready: boolean };
+  ads: { spend: number; credit: number; revenue: number; orders: number; roas: number | null; campaigns: number } | null;
+  payout: { awaiting_cash_in: number; ready: number; paid_this_month: number; last_paid_at: string | null };
+  tips: ProfitTip[];
+  alerts: ProfitAlertSettings;
+}
+
+export interface SaveGoalInput {
+  month: string; amount: number; orders_target?: number | null; net_target?: number | null; preset?: GoalPreset;
 }
 
 // ─── VIP Requests ─────────────────────────────────────────────────────────────
@@ -212,14 +279,28 @@ export const blackPepperApi = {
   dailyBrief: () =>
     jsonRequest<{ success: boolean; data: DailyBriefData }>('GET', '/seller/black/daily-brief'),
 
-  // ── Revenue Goals (replaces profitCenter) ──────────────────────────────────
-  revenueGoals: () =>
-    jsonRequest<{ success: boolean; data: RevenueGoalsData }>('GET', '/seller/black/revenue-goals'),
+  // ── Centre de profit ───────────────────────────────────────────────────────
+  profitCenter: () =>
+    jsonRequest<{ success: boolean; data: ProfitCenterData }>('GET', '/seller/black/profit-center'),
 
-  setRevenueGoal: (month: string, amount: number) =>
-    jsonRequest<{ success: boolean; message: string; data: { month: string; amount: number } }>(
-      'POST', '/seller/black/revenue-goals', { month, amount }
-    ),
+  saveGoal: (input: SaveGoalInput) =>
+    jsonRequest<{ success: boolean; message: string; data: ProfitGoal }>('POST', '/seller/black/revenue-goals', input),
+
+  deleteGoal: (month: string) =>
+    jsonRequest<{ success: boolean; message: string }>('DELETE', `/seller/black/revenue-goals/${month}`),
+
+  updateGoalAlerts: (settings: Partial<ProfitAlertSettings>) =>
+    jsonRequest<{ success: boolean; message: string; data: ProfitAlertSettings }>('PUT', '/seller/black/profit-center/alerts', settings),
+
+  /** Monthly CSV report, saved through a blob link (the token lives in storage, not a cookie). */
+  exportProfitCsv: async (month: string) => {
+    const res = await fetch(`${API_URL}/seller/black/profit-center/export?month=${month}`, { headers: { Accept: 'text/csv', ...authHeaders() } });
+    if (!res.ok) throw new Error('Export failed');
+    const url = URL.createObjectURL(await res.blob());
+    const a = Object.assign(document.createElement('a'), { href: url, download: `centre-de-profit-${month}.csv` });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
 
   getVipRequests: () =>
     jsonRequest<{ success: boolean; data: VipRequest[] }>('GET', '/seller/black/vip-requests'),
