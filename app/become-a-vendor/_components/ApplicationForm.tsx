@@ -358,7 +358,7 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
 
       // res is the axios response wrapper, res.data is { success, data }
       // So the actual application is at res.data.data
-      const responseBody = (res as any).data  // { success: true, data: null | {...} }
+      const responseBody = (res as { data?: { data?: ExistingApplication | null } }).data  // { success: true, data: null | {...} }
       const app: ExistingApplication | null = responseBody?.data ?? null
 
       // ─── CRITICAL GUARD: only set existingApp if we have a real application
@@ -524,7 +524,7 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
       // ─── FIX: axios returns the full response object.
       // response.data is { success, data, message }.
       // So the application object is at response.data.data
-      let response: any
+      let response: { data?: { data?: ExistingApplication | null } }
       if (existingId) {
         response = await api.put(`/seller-applications/${existingId}`, fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
