@@ -1,6 +1,8 @@
 'use client'
 // hooks/Usenotifications.ts
-// Shared hook for NotificationBell — works for both seller and admin.
+// Shared hook for NotificationBell — storefront (buyer), seller and admin bells.
+// No realtime channel: the unread count is polled, and refreshed as soon as the
+// window regains focus / the tab becomes visible again.
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { NOTIFICATIONS_CHANGED, type AppNotification, type NotificationListResponse } from '@/lib/notificationApi'
@@ -55,9 +57,16 @@ export function useNotifications({
       const data = Array.isArray(res?.data) ? res.data : []
       setItems(data)
 
-      // Unread count from list
-      const unread = data.filter(n => !n.is_read).length
-      setUnreadCount(unread)
+      // Exact badge count: the list only holds the latest 20 rows
+      try {
+        const count = await api.getUnreadCount()
+        if (mounted.current) {
+          setUnreadCount(count)
+          prevUnread.current = count
+        }
+      } catch {
+        setUnreadCount(data.filter(n => !n.is_read).length)
+      }
     } catch (err) {
       console.error('[useNotifications] fetchAll error:', err)
       // Keep existing items on error — don't reset to undefined
@@ -102,6 +111,17 @@ export function useNotifications({
     const id = setInterval(pollCount, pollInterval)
     return () => clearInterval(id)
   }, [pollCount, pollInterval])
+
+  // ── Back to the tab / window: catch up right away ────────────────────────
+  useEffect(() => {
+    const onVisible = () => { if (!document.hidden) pollCount() }
+    window.addEventListener('focus', onVisible)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.removeEventListener('focus', onVisible)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [pollCount])
 
   // ── Read state changed elsewhere (notifications page) ──────────────────────
   useEffect(() => {

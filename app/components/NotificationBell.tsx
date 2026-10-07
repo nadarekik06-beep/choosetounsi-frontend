@@ -12,6 +12,7 @@ import {
   PackagePlus, PackageCheck, PackageX,
   CheckCircle, XCircle, Store, Package, AlertTriangle,
   Megaphone, PauseCircle, Flag, Gauge, Wallet, CalendarDays, TrendingDown, TrendingUp, Ticket, Target,
+  ShoppingBag, Truck, CreditCard, MessageCircle, Star, Tag, ShieldCheck, AlertCircle,
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/Usenotifications';
 import type { AppNotification } from '@/lib/notificationApi';
@@ -62,6 +63,17 @@ export function NotifIcon({ icon }: { icon: string }) {
     'ticket':          <Ticket         className={cls} />,
     // Centre de profit goal alerts (App\Notifications\ProfitGoalNotification)
     'target':          <Target         className={cls} />,
+    // Buyer notifications (App\Notifications\Buyer\*)
+    'shopping-bag':    <ShoppingBag    className={cls} />,
+    'package':         <Package        className={cls} />,
+    'truck':           <Truck          className={cls} />,
+    'credit-card':     <CreditCard     className={cls} />,
+    'message-circle':  <MessageCircle  className={cls} />,
+    'alert-circle':    <AlertCircle    className={cls} />,
+    'star':            <Star           className={cls} />,
+    'tag':             <Tag            className={cls} />,
+    'shield':          <ShieldCheck    className={cls} />,
+    'bell':            <Bell           className={cls} />,
   };
   return <>{map[icon] ?? <Package className={cls} />}</>;
 }
@@ -89,6 +101,12 @@ export function accent(action: string): string {
   if (action === 'low_stock')     return '#f59e0b';  // ← NEW
   if (action === 'reminder')      return '#f59e0b';  // seller order: not ready for pickup yet
   if (action === 'submitted')     return '#f59e0b';
+  // Buyer notifications
+  if (action === 'order')         return '#3b82f6';
+  if (action === 'pending')       return '#f59e0b';
+  if (action === 'cancelled')     return '#ef4444';
+  if (action === 'review')        return '#f59e0b';
+  if (action === 'security')      return '#0f766e';
   if (action === 'created')       return '#3b82f6';
   if (action === 'updated')       return '#a855f7';
   return '#db142e';

@@ -7,7 +7,7 @@ import { logout, isAuthenticated, getUser, AuthUser } from "@/lib/auth";
 import { useCart } from "@/context/CartContext";
 import { Heart, ShoppingBag, ClipboardList, AlertCircle } from "lucide-react";
 import NotificationBell from "@/app/components/NotificationBell";
-import { sellerNotificationApi as notificationApi } from "@/lib/notificationApi";
+import { buyerNotificationApi } from "@/lib/notificationApi";
 import BrandLogoCircle from "@/components/BrandLogoCircle";
 import { useSiteFeatures } from "@/lib/platformApi";
 import CatIcon from "@/app/components/layout/CategoryIcon";
@@ -902,10 +902,11 @@ export default function Navbar() {
               {count>0&&<span className="nu-bdg">{count>99?"99+":count}</span>}
             </button>
             <span className="nu-sep"/>
-            {/* Buyers' bell: private coupons (Growth Radar), order and complaint updates */}
-            {loggedIn&&!isSeller&&(
+            {/* Buyer bell, for every signed-in user (sellers buy too): orders, payments,
+                complaints, reviews, promotions, account. Seller rows stay in the dashboard bell. */}
+            {loggedIn&&(
               <>
-                <NotificationBell api={notificationApi} dark={false} onNavigate={router.push} variant="icon"/>
+                <NotificationBell api={buyerNotificationApi} dark={false} onNavigate={router.push} variant="link" viewAllHref="/notifications"/>
                 <span className="nu-sep"/>
               </>
             )}
@@ -1081,10 +1082,10 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Mobile bell (buyers) */}
-            {loggedIn&&!isSeller&&(
+            {/* Mobile bell (buyer notifications, every signed-in user) */}
+            {loggedIn&&(
               <span className="nb-cart-m" style={{display:"none",flexShrink:0}}>
-                <NotificationBell api={notificationApi} dark={false} onNavigate={router.push} variant="link"/>
+                <NotificationBell api={buyerNotificationApi} dark={false} onNavigate={router.push} variant="icon" viewAllHref="/notifications"/>
               </span>
             )}
 
