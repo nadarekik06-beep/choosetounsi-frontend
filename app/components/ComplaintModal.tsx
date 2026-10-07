@@ -37,6 +37,8 @@ import {
 } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import BrandLoader from '@/components/brand/BrandLoader'
+import type { PurchasedItem } from '@/types/complaint'
+import { PurchasedItemThumb, VariantLabel } from '@/app/components/PurchasedItemRow'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const RED     = '#db142e'
@@ -63,13 +65,8 @@ const ELIGIBLE_STATUSES = ['delivered', 'out_for_delivery', 'completed']
 // Labels: complaintModal.status.<status>
 const STATUS_KEYS = ['pending', 'processing', 'out_for_delivery', 'completed', 'delivered', 'cancelled']
 
-interface OrderItemInfo {
-  id:           number
-  product_name: string
-  quantity:     number
-  unit_price:   number
-  image_url:    string | null
-}
+// Each order line as bought — image / name / variant from the order, not the live product
+type OrderItemInfo = PurchasedItem
 
 interface Props {
   orderId:       number
@@ -129,8 +126,8 @@ export default function ComplaintModal({
       const json = await res.json()
       if (!json.success) return
 
-      const orders: any[] = json.data ?? []
-      const thisOrder = orders.find((o: any) => o.id === orderId)
+      const orders: { id: number; hours_left?: number; items?: OrderItemInfo[] }[] = json.data ?? []
+      const thisOrder = orders.find(o => o.id === orderId)
       if (!thisOrder) return
 
       const items: OrderItemInfo[] = thisOrder.items ?? []
@@ -233,8 +230,8 @@ export default function ComplaintModal({
       const json = await res.json()
       if (!res.ok) throw new Error(json.message ?? t('errors.submit'))
       setSuccess(true)
-    } catch (err: any) {
-      setError(err.message ?? t('errors.generic'))
+    } catch (err) {
+      setError((err instanceof Error && err.message) || t('errors.generic'))
     } finally {
       setLoading(false)
     }
@@ -629,16 +626,14 @@ export default function ComplaintModal({
                         padding: '10px 12px', borderRadius: 10,
                         background: 'rgba(219,20,46,0.05)', border: `1.5px solid ${RED}`,
                       }}>
-                        {orderItems[0].image_url && (
-                          <img src={orderItems[0].image_url} alt={orderItems[0].product_name}
-                            style={{ width: 36, height: 36, borderRadius: 7, objectFit: 'cover', flexShrink: 0 }} />
-                        )}
+                        <PurchasedItemThumb item={orderItems[0]} size={36} />
                         <div style={{ flex: 1 }}>
                           <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0 }}>
                             {orderItems[0].product_name}
                           </p>
-                          <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>
-                            {t('qty', { count: orderItems[0].quantity })}
+                          <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                            <VariantLabel item={orderItems[0]} />
+                            <span>{t('qty', { count: orderItems[0].quantity })}</span>
                           </p>
                         </div>
                         <span style={{
@@ -675,16 +670,7 @@ export default function ComplaintModal({
                                   </svg>
                                 )}
                               </div>
-                              {item.image_url ? (
-                                <img src={item.image_url} alt={item.product_name}
-                                  style={{ width: 38, height: 38, borderRadius: 7, objectFit: 'cover', flexShrink: 0 }} />
-                              ) : (
-                                <div style={{
-                                  width: 38, height: 38, borderRadius: 7, flexShrink: 0,
-                                  background: '#f1f5f9', display: 'flex', alignItems: 'center',
-                                  justifyContent: 'center', fontSize: 16,
-                                }}>📦</div>
-                              )}
+                              <PurchasedItemThumb item={item} size={38} />
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <p style={{
                                   fontSize: 13, fontWeight: 700,
@@ -694,8 +680,9 @@ export default function ComplaintModal({
                                 }}>
                                   {item.product_name}
                                 </p>
-                                <p style={{ fontSize: 11, color: '#94a3b8', margin: '1px 0 0' }}>
-                                  {t('qty', { count: item.quantity })}
+                                <p style={{ fontSize: 11, color: '#94a3b8', margin: '1px 0 0', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                                  <VariantLabel item={item} color="#94a3b8" />
+                                  <span>{t('qty', { count: item.quantity })}</span>
                                 </p>
                               </div>
                             </button>

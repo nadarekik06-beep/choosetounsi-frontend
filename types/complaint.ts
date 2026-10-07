@@ -82,13 +82,35 @@ export const STATUS_CONFIG: Record<
   },
 }
 
-export interface EligibleOrderItem {
-  id:           number
-  product_name: string
-  quantity:     number
-  unit_price:   number
-  image_url:    string | null
+/** One attribute of the bought variant, frozen at checkout. */
+export interface PurchasedVariantAttribute {
+  option_id?: number
+  slug:       string
+  label:      string
+  value:      string
+  color_hex:  string | null
 }
+
+/**
+ * An order line exactly as bought (backend OrderItem::purchaseSnapshot):
+ * image, name, variant and price come from the order, never the live product.
+ * image_url null → show a placeholder.
+ */
+export interface PurchasedItem {
+  id:                 number            // order_item_id — what a complaint selects
+  order_id?:          number
+  product_id?:        number | null
+  variant_id?:        number | null
+  product_name:       string
+  variant_label:      string | null     // "Rouge / M"
+  variant_attributes?: PurchasedVariantAttribute[]
+  quantity:           number
+  unit_price:         number
+  total?:             number
+  image_url:          string | null
+}
+
+export type EligibleOrderItem = PurchasedItem
 
 export interface EligibleOrder {
   id:           number
@@ -100,13 +122,7 @@ export interface EligibleOrder {
   items:        EligibleOrderItem[]
 }
 
-export interface ComplaintOrderItem {
-  id:           number
-  product_name: string
-  quantity:     number
-  unit_price:   number
-  total:        number
-}
+export type ComplaintOrderItem = PurchasedItem
 
 export interface ComplaintOrder {
   id:           number

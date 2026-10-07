@@ -23,7 +23,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { complaintApi } from '@/lib/complaintApi'
-import type { EligibleOrder, EligibleOrderItem, ComplaintType, ResolutionType } from '@/types/complaint'
+import type { Complaint, EligibleOrder, EligibleOrderItem, ComplaintType, ResolutionType } from '@/types/complaint'
+import { PurchasedItemThumb, VariantLabel } from '@/app/components/PurchasedItemRow'
 import { COMPLAINT_TYPE_LABELS, RESOLUTION_TYPE_LABELS } from '@/types/complaint'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -173,13 +174,13 @@ function ItemPicker({
         background: RED_LIGHT, border: `1.5px solid ${RED}`,
         animation: 'fadeSlideIn 0.2s ease',
       }}>
-        {item.image_url && (
-          <img src={item.image_url} alt={item.product_name}
-            style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
-        )}
+        <PurchasedItemThumb item={item} size={40} border={BORDER} />
         <div style={{ flex: 1 }}>
           <p style={{ fontSize: 13, fontWeight: 800, color: TEXT, margin: 0 }}>{item.product_name}</p>
-          <p style={{ fontSize: 11, color: TEXT_SEC, margin: '2px 0 0' }}>{t('qty', { count: item.quantity })}</p>
+          <p style={{ fontSize: 11, color: TEXT_SEC, margin: '2px 0 0', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <VariantLabel item={item} color={TEXT_SEC} />
+            <span>{t('qty', { count: item.quantity })}</span>
+          </p>
         </div>
         <span style={{
           fontSize: 10, fontWeight: 800, color: RED, background: RED_LIGHT,
@@ -229,24 +230,16 @@ function ItemPicker({
                   </svg>
                 )}
               </div>
-              {item.image_url ? (
-                <img src={item.image_url} alt={item.product_name}
-                  style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', flexShrink: 0, border: `1px solid ${BORDER}` }} />
-              ) : (
-                <div style={{
-                  width: 44, height: 44, borderRadius: 8, flexShrink: 0,
-                  background: '#f1f5f9', border: `1px solid ${BORDER}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-                }}>📦</div>
-              )}
+              <PurchasedItemThumb item={item} border={BORDER} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{
                   fontSize: 13, fontWeight: 700, color: sel ? RED : TEXT,
                   margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   transition: 'color 0.15s',
                 }}>{item.product_name}</p>
-                <p style={{ fontSize: 11, color: TEXT_SEC, margin: '2px 0 0', fontWeight: 500 }}>
-                  {t('qty', { count: item.quantity })} · {price(item.unit_price)}
+                <p style={{ fontSize: 11, color: TEXT_SEC, margin: '2px 0 0', fontWeight: 500, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <VariantLabel item={item} color={TEXT_SEC} />
+                  <span>{t('qty', { count: item.quantity })} · {price(item.unit_price)}</span>
                 </p>
               </div>
             </button>
@@ -343,7 +336,7 @@ function ResolutionPicker({
 // ─────────────────────────────────────────────────────────────────────────────
 interface ComplaintFormProps {
   prefilledOrderId?: number
-  onSuccess?: (complaint: any) => void
+  onSuccess?: (complaint: Complaint) => void
   onCancel?: () => void
   compact?: boolean
 }
@@ -476,8 +469,9 @@ const scrollToFirstError = () => {
         item_ids:        selectedItemIds,
       })
       onSuccess?.(res.data)
-    } catch (err: any) {
-      setServerError(err?.response?.data?.message ?? t('errors.submit'))
+    } catch (err) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setServerError(message ?? t('errors.submit'))
     } finally {
       setSubmitting(false)
     }
@@ -664,11 +658,11 @@ const scrollToFirstError = () => {
               animation: 'fadeSlideIn 0.25s ease',
               alignItems: 'center',
             }}>
-              {selectedOrder.items.map((item, i) => (
-                <span key={i} style={{
+              {selectedOrder.items.map(item => (
+                <span key={item.id} style={{
                   fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 6,
                   background: '#fff', color: TEXT_SEC, border: `1px solid ${BORDER}`,
-                }}>📦 {item.product_name} ×{item.quantity}</span>
+                }}>📦 {item.product_name}{item.variant_label ? ` (${item.variant_label})` : ''} ×{item.quantity}</span>
               ))}
               <span style={{
                 marginInlineStart: 'auto', fontSize: 11, fontWeight: 800,
