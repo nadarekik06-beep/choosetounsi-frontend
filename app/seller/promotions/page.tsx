@@ -16,6 +16,7 @@ import { useFormat } from '@/lib/i18n/useFormat'
 import { ink } from '@/app/seller/ink';
 import { usePageLoading } from '@/components/brand/NavigationLoader'
 import BrandLoader, { BusyLabel, RefreshCover } from '@/components/brand/BrandLoader'
+import { insightFromUrl } from '../black/visitor-insights/_components/links'
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
   active:    { bg: 'rgba(16,185,129,0.12)',  color: '#10b981', icon: <CheckCircle size={10} /> },
@@ -157,6 +158,7 @@ export default function PromotionsPage() {
         startsAt:      q.get('starts_at') ?? undefined,
         endsAt:        q.get('ends_at') ?? undefined,
         growthCardId:  card,
+        insight:       insightFromUrl(q),
       })
       setModal({ open: true, promotion: null })
     } else {

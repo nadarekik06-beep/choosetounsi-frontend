@@ -80,6 +80,8 @@ export interface GrowthCard {
   alt: CardAction | null;
   product: { id: number; name: string; slug: string; price: number; stock: number; image: string | null } | null;
   params: Record<string, unknown>;
+  /** leaking_product: the full funnel diagnosis in Analyse des visiteurs */
+  insights_href?: string | null;
   created_at: string;
 }
 

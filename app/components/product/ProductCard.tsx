@@ -30,6 +30,7 @@ import { isAuthenticated } from '@/lib/auth'
 import { recordAdClick } from '@/lib/adsApi'
 import { useAdImpression } from '@/components/ads/useAdImpression'
 import { trackClick } from '@/lib/tracking'
+import { useImpression } from './useImpression'
 import ProductPrice, { ProductPromoBadges, ProductPromoOverlay, promoPricing } from '@/app/components/promotions/ProductPrice'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { resolveImageUrl } from '@/lib/dealsApi'
@@ -109,6 +110,9 @@ export default function ProductCard({
   const isPaid = !!product.is_sponsored && product.placement === 'sponsored'
   const adToken = isPaid ? (product.sponsor_data?.token ?? product.ad_token) : undefined
   useAdImpression(ref, adToken)
+  // Seller funnel: a paid slot counts as "sponsored" traffic, whatever page it sits on
+  const funnelSection = isPaid ? `sponsored_${section}` : section
+  useImpression(ref, product.id, funnelSection)
 
   const allImages = useMemo(() => cardImages(product), [product])
   const images = useMemo(() => allImages.filter(u => !broken.includes(u)), [allImages, broken])
@@ -128,7 +132,7 @@ export default function ProductCard({
   const savings = pricing.hasDiscount ? pricing.original - pricing.final : 0
 
   const onOpen = () => {
-    trackClick(product.id, section)
+    trackClick(product.id, funnelSection)
     onSelect?.()
     if (adToken) recordAdClick(adToken)
   }

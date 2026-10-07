@@ -321,6 +321,15 @@ export default function ProductQualityAudit({ dark }: { dark: boolean }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // ?product=ID (from Analyse des visiteurs "Corriger dans Qualité des fiches"): open that product's tips
+  useEffect(() => {
+    if (!data) return;
+    const id = Number(new URLSearchParams(window.location.search).get('product'));
+    if (!id || !data.some(p => p.product_id === id)) return;
+    setFilter('all');
+    setSelected(id);
+  }, [data]);
+
   // Scroll to detail panel when it opens
   useEffect(() => {
     if (selected !== null && detailRef.current) {

@@ -50,7 +50,7 @@ export interface AnalyticsOverview {
 }
 
 export interface ProductAnalytics {
-  products: Array<{ id: number; name: string; price: number; stock: number; views: number; is_active: boolean; is_approved: boolean; category_name: string; total_revenue: number; total_units: number; total_orders: number; avg_order_val: number; conversion_rate: number; revenue_per_view: number }>;
+  products: Array<{ id: number; name: string; price: number; stock: number; views: number; is_active: boolean; is_approved: boolean; category_name: string; total_revenue: number; total_units: number; total_orders: number; avg_order_val: number; conversion_rate: number | null; conversion_sample_ok?: boolean; revenue_per_view: number }>;
   by_category: Array<{ category: string; total_revenue: number; total_units: number; product_count: number }>;
   stock_health: { healthy: number; low_stock: number; out: number };
 }

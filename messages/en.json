@@ -3791,7 +3791,7 @@
         },
         "visitors": {
           "title": "Visitor Insights",
-          "subtitle": "Products attracting visitors but not converting — with plain-language fixes."
+          "subtitle": "Where and why your buyers drop off — and what to fix."
         }
       }
     },
@@ -3831,24 +3831,6 @@
         "completed": "Done",
         "rejected": "Rejected"
       }
-    },
-    "funnel": {
-      "title": "Visitor Insights",
-      "needAttention": "{count} need attention",
-      "allGood": "All good",
-      "subtitleIssues": "{count, plural, one {# product getting visitors but not selling} other {# products getting visitors but not selling}}",
-      "subtitleOk": "Products attracting and converting visitors well",
-      "loadError": "Could not load visitor insights.",
-      "retry": "Retry",
-      "okTitle": "Everything is converting well",
-      "okText": "No products with high visits and low sales detected right now.",
-      "intro": "These products are getting visitors but people are not buying. A better photo, clearer title, or small discount can make a big difference.",
-      "stats": {
-        "visitors": "Visitors",
-        "bought": "Bought",
-        "opportunity": "Opportunity"
-      },
-      "try": "Try:"
     },
     "quality": {
       "score": {
@@ -4274,7 +4256,9 @@
           "rfm": "RFM"
         }
       },
-      "daysAgo": "{count}d ago"
+      "daysAgo": "{count}d ago",
+      "notEnoughData": "not enough data",
+      "notEnoughDataHint": "Under 30 visits: the rate wouldn't be reliable."
     },
     "orderDrawer": {
       "title": "Order details",
@@ -4682,7 +4666,11 @@
         "edit_description": "Improve the description",
         "edit_price": "Update the price",
         "listing": "List a product",
-        "bundle": "Find a bundle"
+        "bundle": "Find a bundle",
+        "edit_stock": "Fix stock and variants",
+        "edit_title": "Improve the title",
+        "edit_attributes": "Complete the details",
+        "edit_category": "Fix the category"
       },
       "or": "or",
       "dismiss": "Dismiss",
@@ -4748,7 +4736,215 @@
         "edit": "listing update",
         "listing": "new listing",
         "bundle": "bundle"
-      }
+      },
+      "viewAnalysis": "See the analysis"
+    },
+    "insights": {
+      "title": "Visitor insights",
+      "subtitle": "Where your buyers drop off, why, and what to do — from listing to order.",
+      "period": {
+        "label": "Period",
+        "days": "{count} days",
+        "range": "{from} – {to} · compared with {pfrom} – {pto}"
+      },
+      "kpi": {
+        "impressions": "Impressions",
+        "ctr": "Click rate",
+        "views": "Product page visits",
+        "unique_visitors": "Unique visitors / day",
+        "add_to_cart_rate": "Add to cart",
+        "cart_to_order": "Cart → order",
+        "revenue_per_visit": "Revenue per visit",
+        "notTracked": "Tracking started",
+        "noPrevious": "No previous period",
+        "vsPrevious": "vs previous"
+      },
+      "comparedTo": "compared with: {scope}",
+      "scope": {
+        "subcategory": "the subcategory",
+        "category": "the category",
+        "platform": "the whole platform",
+        "own_previous": "your previous period",
+        "target": "the target"
+      },
+      "scopeShort": {
+        "subcategory": "Subcategory",
+        "category": "Category",
+        "platform": "Platform",
+        "own_previous": "Your prev. period",
+        "target": "Target"
+      },
+      "funnel": {
+        "title": "Your buyers' journey",
+        "subtitle": "From impression to order, across the whole shop.",
+        "steps": {
+          "impressions": "Impressions",
+          "clicks": "Clicks",
+          "views": "Page visits",
+          "carts": "Carts",
+          "checkouts": "Checkouts started",
+          "orders": "Orders"
+        },
+        "continue": "{pct} continue",
+        "bench": "{scope}: {pct}",
+        "leak": "Biggest loss vs the category",
+        "leakDrop": "Biggest drop",
+        "trackingSince": "Impressions and checkout starts are tracked since {date}: older periods only count them partly.",
+        "today": "today",
+        "extraVisits": "+{count} visits from outside the listings (links, direct)",
+        "benchSpan": "{from} → {to}: {you} · {scope} {pct}"
+      },
+      "traffic": {
+        "title": "Where your visitors come from",
+        "subtitle": "Visits per source, and which ones actually buy.",
+        "source": "Source",
+        "visits": "Visits",
+        "conversion": "Conversion",
+        "tip": "{visits} visits · {carts} carts · {orders} orders",
+        "best": "Best converting source",
+        "bestLine": "{source} converts best: {pct} of visits become orders.",
+        "devices": "Devices",
+        "convShort": "conv. {pct}"
+      },
+      "sources": {
+        "search": "Search",
+        "category": "Categories",
+        "home": "Home & recommendations",
+        "sponsored": "Sponsored",
+        "storefront": "Your shop",
+        "external": "Other websites",
+        "direct": "Direct"
+      },
+      "devices": {
+        "mobile": "Mobile",
+        "desktop": "Computer",
+        "tablet": "Tablet",
+        "unknown": "Unknown"
+      },
+      "stages": {
+        "click": "Lost at click",
+        "product_page": "Lost on the product page",
+        "cart": "Lost at cart",
+        "checkout": "Lost at checkout"
+      },
+      "stageHints": {
+        "click": "Rarely seen or rarely clicked",
+        "product_page": "Visited but not added to cart",
+        "cart": "In the cart but not ordered",
+        "checkout": "Checkout started, then abandoned"
+      },
+      "problems": {
+        "low_visibility": "Almost nobody sees this product: it lacks visibility in search and categories.",
+        "low_ctr": "It shows up often but gets few clicks: the main photo or the displayed price doesn't attract.",
+        "price_high": "Visitors leave: the price is well above similar products.",
+        "listing_quality": "Visitors leave: the listing is incomplete (photos, description or details).",
+        "no_reviews": "Visitors hesitate: no customer review reassures them.",
+        "stock_variants": "Some sizes or colours are out of stock: buyers can't find what they want.",
+        "low_add_to_cart": "Visitors look without adding to cart: the listing isn't convincing enough.",
+        "shipping_cost": "The delivery fee makes buyers give up.",
+        "cart_abandon": "Added to cart, then abandoned before checkout.",
+        "checkout_abandon": "Checkout started, then abandoned."
+      },
+      "problemsShort": {
+        "low_visibility": "Low visibility",
+        "low_ctr": "Few clicks",
+        "price_high": "High price",
+        "listing_quality": "Incomplete listing",
+        "no_reviews": "No reviews",
+        "stock_variants": "Variants out of stock",
+        "low_add_to_cart": "Few add-to-carts",
+        "shipping_cost": "Expensive delivery",
+        "cart_abandon": "Abandoned cart",
+        "checkout_abandon": "Abandoned checkout"
+      },
+      "evidence": {
+        "views": "Visits: {value} · {scope} {bench}",
+        "ctr": "Click rate: {value} · {scope} {bench}",
+        "view_to_cart": "Add to cart: {value} · {scope} {bench}",
+        "cart_to_order": "Cart → order: {value} · {scope} {bench}",
+        "checkout_to_order": "Completed checkouts: {value}",
+        "price": "Price: {value} · {scope} median {bench}",
+        "delivery_fee": "Delivery: {value} · {scope} median {bench}",
+        "quality_score": "Listing score: {value}/100 (target {bench})",
+        "reviews": "No customer review",
+        "stock": "Out of stock",
+        "variants_out": "{value} of {bench} variants out of stock"
+      },
+      "actions": {
+        "edit_photos": "Change the photos",
+        "edit_description": "Improve the description",
+        "edit_title": "Improve the title",
+        "edit_price": "Check price & delivery",
+        "edit_shipping": "Review the delivery fee",
+        "edit_stock": "Fix stock and variants",
+        "edit_attributes": "Complete the details",
+        "edit_category": "Fix the category",
+        "discount": "Create a {pct}% discount",
+        "ai_description": "AI description generator",
+        "boost": "Boost",
+        "restock": "Restock",
+        "listing_quality": "Fix in Listing quality"
+      },
+      "fix": {
+        "title": "Fix this week",
+        "subtitle": "The 3 products costing you the most buyers.",
+        "lost": "≈ {amount} lost over the period",
+        "noneFound": "No clear leak on your {count} analysed products. Keep an eye on it here.",
+        "noneYet": "Not enough visits yet to point at a product to fix."
+      },
+      "groups": {
+        "title": "Where you lose buyers",
+        "subtitle": "Your products grouped by the step where buyers drop off.",
+        "none": "No product is stuck at this step.",
+        "more": "+{count} more",
+        "insufficient": "{count, plural, one {# product doesn't} other {# products don't}} have enough visits yet (under 30) to be analysed."
+      },
+      "lostExplained": "Estimated lost revenue: {amount} — visits × (category conversion − yours) × price. An estimate to prioritise, not a promise.",
+      "results": {
+        "title": "Results of your actions",
+        "subtitle": "Before / after each fix applied from this page.",
+        "empty": "No action applied yet. Use the buttons above: we'll measure the effect here.",
+        "appliedOn": "on {date}",
+        "measuring": "Measuring — {done}/{needed} days",
+        "insufficient": "Not enough visits to measure the effect.",
+        "then": "then",
+        "kinds": {
+          "edit": "Listing edited",
+          "restock": "Restocked",
+          "discount": "Discount",
+          "flash_sale": "Flash sale",
+          "coupon": "Promo code",
+          "boost": "Boost"
+        },
+        "metrics": {
+          "ctr": "Click rate",
+          "view_to_cart": "Add to cart",
+          "cart_to_order": "Cart → order",
+          "conversion": "Conversion",
+          "views_per_day": "Visits / day"
+        }
+      },
+      "states": {
+        "no_products": {
+          "title": "No products online yet",
+          "text": "As soon as your products are visible, this page shows where your buyers drop off and what to fix."
+        },
+        "low_data": {
+          "title": "Not enough visits yet to conclude",
+          "text": "A product needs at least 30 visits for a reliable diagnosis. Meanwhile, here is what we already see."
+        },
+        "tracked": "What we track",
+        "trackedList": "Impressions in search, categories, home, sponsored slots and your shop · clicks · product page visits · cart and wishlist adds · checkouts started · orders. Your own visits, staff and bots are not counted.",
+        "tipsTitle": "To get started",
+        "tips": {
+          "addProduct": "Put a first product online",
+          "photos": "Polish photos and descriptions (Listing quality)",
+          "share": "Share your shop link on social media",
+          "boost": "Boost a product to get your first visits"
+        }
+      },
+      "error": "Couldn't load the analysis.",
+      "retry": "Retry"
     }
   },
   "invoice": {

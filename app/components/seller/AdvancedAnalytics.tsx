@@ -379,9 +379,14 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
                       <td style={{ padding: '10px 16px', textAlign: 'end', fontWeight: 800, color: '#db142e' }}>{fmt(p.total_revenue)}</td>
                       <td style={{ padding: '10px 16px', textAlign: 'end', color: textMain, fontWeight: 700 }}>{number(p.total_units)}</td>
                       <td style={{ padding: '10px 16px', textAlign: 'end' }}>
-                        <span style={{ color: p.conversion_rate > 5 ? ink('#10b981', dark) : p.conversion_rate > 1 ? ink('#f59e0b', dark) : textMuted, fontWeight: 700 }}>
-                          {pctOf(p.conversion_rate, 2)}
-                        </span>
+                        {/* Under ~30 views a rate means nothing (3 orders / 4 views ≠ 75 %) */}
+                        {p.conversion_rate == null ? (
+                          <span title={t('notEnoughDataHint')} style={{ color: textMuted, fontWeight: 600, fontSize: 11 }}>{t('notEnoughData')}</span>
+                        ) : (
+                          <span style={{ color: p.conversion_rate > 5 ? ink('#10b981', dark) : p.conversion_rate > 1 ? ink('#f59e0b', dark) : textMuted, fontWeight: 700 }}>
+                            {pctOf(p.conversion_rate, 2)}
+                          </span>
+                        )}
                       </td>
                       <td style={{ padding: '10px 16px', textAlign: 'end' }}>
                         <span style={{ color: p.stock === 0 ? ink('#ef4444', dark) : p.stock <= 10 ? ink('#f59e0b', dark) : ink('#10b981', dark), fontWeight: 700 }}>

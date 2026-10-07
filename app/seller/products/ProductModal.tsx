@@ -229,8 +229,12 @@ export interface ProductRadarPrefill {
   name?: string
   price?: number
   categoryId?: number
-  focus?: 'photos' | 'description' | 'price'
+  focus?: ProductFormFocus
 }
+
+/** Sections a deep link can scroll to (Growth Radar, Analyse des visiteurs, Qualité des fiches). */
+export type ProductFormFocus = 'photos' | 'description' | 'price' | 'title' | 'category' | 'attributes' | 'stock'
+export const PRODUCT_FORM_FOCUS: ProductFormFocus[] = ['photos', 'description', 'price', 'title', 'category', 'attributes', 'stock']
 
 interface ProductModalProps {
   product: Record<string, any> | null
@@ -654,7 +658,7 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
             )}
 
             {/* ── Basic Information ── */}
-            <section>
+            <section id="pf-title">
               <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>{t('sections.basic')}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <Field label={t('name')} required error={errors.name}>
@@ -733,6 +737,7 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
                 <CommissionPreview price={form.price} />
                 {!hasVariantRows && (
                   <Field label={t('stock')} required error={errors.stock}>
+                    <span id="pf-stock" />
                     <input type="number" min="0" value={form.stock}
                       onChange={e => set('stock', e.target.value)}
                       placeholder="0"
@@ -798,7 +803,7 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
             </section>
 
             {/* ── Category ── */}
-            <section>
+            <section id="pf-category">
               <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>{t('sections.category')}</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <Field label={t('category')} required error={errors.category_id}>
@@ -828,7 +833,7 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
 
             {/* ── Informational Attributes ── */}
             {form.subcategory_id && !axesLoading && infoAxes.length > 0 && (
-              <section>
+              <section id="pf-attributes">
                 <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
                   {t('sections.details')} <span style={{ marginInlineStart: 8, fontSize: 9, fontWeight: 500, color: '#6d28d9', textTransform: 'none' }}>{t('informational')}</span>
                 </p>

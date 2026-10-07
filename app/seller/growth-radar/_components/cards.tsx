@@ -212,6 +212,12 @@ export function ActionCard({ card, dark, onDismiss, onSnooze, onLinkAction }: {
               {actionLabel(card.action, t)}<ArrowRight size={14} className="gr-flip" />
             </Link>
           )}
+          {card.insights_href && (
+            <Link href={card.insights_href}
+              style={{ fontSize: 12.5, fontWeight: 700, color: ink('#3b82f6', dark), textDecoration: 'underline' }}>
+              {t('viewAnalysis')}
+            </Link>
+          )}
           {card.alt && (
             <Link href={growthActionHref(card.id, card.alt)} onClick={() => card.alt?.kind === 'bundle' && onLinkAction(card, 'bundle')}
               style={{ fontSize: 12.5, fontWeight: 700, color: ink('#3b82f6', dark), textDecoration: 'underline' }}>

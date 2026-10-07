@@ -16,6 +16,8 @@ import { useTranslations } from 'next-intl'
 import { recordAdClick, type AdCard } from '@/lib/adsApi'
 import ProductPrice, { ProductPromoBadges, ProductPromoOverlay } from '@/app/components/promotions/ProductPrice'
 import { useAdImpression } from './useAdImpression'
+import { useImpression } from '@/app/components/product/useImpression'
+import { trackClick } from '@/lib/tracking'
 
 export function SponsoredLabel({ dark = false }: { dark?: boolean }) {
   const t = useTranslations('ads')
@@ -40,6 +42,9 @@ export default function SponsoredCard({ ad, index = 0, layout = 'grid', onNaviga
   const ref = useRef<HTMLAnchorElement>(null)
   const [imgErr, setImgErr] = useState(false)
   useAdImpression(ref, ad.ad_token)
+  // Seller funnel (Visitor Insights): sponsored traffic
+  const funnelSection = `sponsored_${ad.ad_placement ?? 'card'}`
+  useImpression(ref, ad.id, funnelSection)
 
   const image = !imgErr ? ad.primary_image_url : null
   const copy  = ad.sponsor_data?.ai_ad_copy
@@ -47,6 +52,7 @@ export default function SponsoredCard({ ad, index = 0, layout = 'grid', onNaviga
 
   const onClick = () => {
     recordAdClick(ad.ad_token)
+    trackClick(ad.id, funnelSection)
     onNavigate?.()
   }
 

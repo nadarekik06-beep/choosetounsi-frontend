@@ -35,6 +35,7 @@ import {
 
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
+import { trackCheckoutStart, clearCheckoutAttempt } from '@/lib/tracking'
 function usePrice() {
   const { price } = useFormat()
   return (n: number) => price(n, { maximumFractionDigits: 3 })
@@ -447,6 +448,15 @@ export default function CheckoutPage() {
 
   const [stripeLoading,      setStripeLoading]      = useState(false)
 
+  // Seller funnel: checkout started for these products (once per checkout attempt)
+  useEffect(() => {
+    if (!cartReady) return
+    const ids = isBuyNow
+      ? (bnProduct ? [bnProduct.id] : [])
+      : items.map(i => i.product_id).filter((id): id is number => !!id)
+    if (ids.length) trackCheckoutStart(ids)
+  }, [cartReady, isBuyNow, bnProduct, items])
+
   const [form,     setForm]     = useState<ShippingAddressForm>(emptyShippingAddress())
   // The selected saved address predates structured addresses: show the form to complete it
   const [savedNeedsCompletion, setSavedNeedsCompletion] = useState(false)
@@ -674,6 +684,9 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
           body: JSON.stringify({ ...address, label: saved?.label }),
         }).catch(() => {})
       }
+
+      // The order exists: the next checkout is a new attempt
+      clearCheckoutAttempt()
 
       if (paymentMethod === 'card' && res.needs_payment) {
         setLoading(false)

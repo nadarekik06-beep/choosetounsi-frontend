@@ -134,6 +134,10 @@ export interface CampaignInput {
   target_price_max?: number | null
   /** Growth Radar card this boost answers */
   growth_card_id?: number
+  /** Opened from an Analyse des visiteurs action (product + problem it fixes) */
+  insight_product?: number
+  insight_problem?: string | null
+  insight_stage?: string | null
 }
 
 /** Error thrown for non-2xx answers; `code` is the backend's machine code (WALLET_TOO_LOW, NOT_READY, …). */

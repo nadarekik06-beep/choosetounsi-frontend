@@ -107,21 +107,85 @@ export interface VipRequest {
   handled_at:   string | null;
 }
 
-// ─── FunnelInsight ────────────────────────────────────────────────────────────
+// ─── Visitor Insights (Analyse des visiteurs) ─────────────────────────────────
 
-export interface FunnelInsight {
-  product_id:       number;
-  product_name:     string;
-  category:         string;
-  image_url:        string | null;
-  views:            number;
-  units_sold:       number;
-  opportunity_tnd:  number;
-  diagnosis:        string;
-  fix_type:         'image' | 'price' | 'description' | 'promote' | 'default';
-  fix_suggestion:   string;
-  fix_action_label: string;
-  fix_action_href:  string;
+export type FunnelStage = 'click' | 'product_page' | 'cart' | 'checkout';
+export type BenchScope = 'subcategory' | 'category' | 'platform' | 'own_previous' | 'target';
+export type TrafficSourceKey = 'search' | 'category' | 'home' | 'sponsored' | 'storefront' | 'external' | 'direct';
+export type ProblemCode =
+  | 'low_visibility' | 'low_ctr' | 'price_high' | 'listing_quality' | 'no_reviews' | 'stock_variants'
+  | 'low_add_to_cart' | 'shipping_cost' | 'cart_abandon' | 'checkout_abandon';
+
+export interface InsightKpi {
+  key: 'impressions' | 'ctr' | 'views' | 'unique_visitors' | 'add_to_cart_rate' | 'cart_to_order' | 'revenue_per_visit';
+  value: number | null;
+  previous: number | null;
+  format: 'count' | 'rate' | 'money';
+  change_pct: number | null;
+  bench: { value: number; scope: BenchScope } | null;
+}
+
+export type FunnelStepKey = 'impressions' | 'clicks' | 'views' | 'carts' | 'checkouts' | 'orders';
+
+export interface InsightEvidence {
+  metric: string;
+  value: number;
+  bench: number | null;
+  scope: BenchScope | null;
+  rate?: boolean;
+  weakest?: string | null;
+}
+
+export interface InsightAction {
+  kind: 'edit' | 'discount' | 'ai_description' | 'boost' | 'restock' | 'listing_quality';
+  focus?: string;
+  pct?: number;
+}
+
+export interface InsightProduct {
+  status: 'problem';
+  stage: FunnelStage;
+  code: ProblemCode;
+  severity: 'high' | 'medium' | 'low';
+  evidence: InsightEvidence[];
+  actions: InsightAction[];
+  lost_revenue: number | null;
+  views: number;
+  product: { id: number; name: string; slug: string; image: string | null; price: number };
+}
+
+export interface InsightResult {
+  id: number;
+  product: { id: number; name: string; image: string | null };
+  kind: 'edit' | 'restock' | 'discount' | 'flash_sale' | 'coupon' | 'boost';
+  problem_code: ProblemCode | null;
+  stage: FunnelStage | null;
+  applied_on: string;
+  status: 'measured' | 'measuring' | 'insufficient';
+  days_after: number;
+  days_needed: number;
+  metrics: { metric: 'ctr' | 'view_to_cart' | 'cart_to_order' | 'conversion' | 'views_per_day'; before: number | null; after: number | null }[];
+}
+
+export interface VisitorInsightsData {
+  period: { days: 7 | 30 | 90; from: string; to: string; previous_from: string; previous_to: string };
+  state: 'ok' | 'low_data' | 'no_products';
+  tracking: { impressions_since: string | null; checkout_since: string | null; impressions_full: boolean; checkout_full: boolean };
+  kpis: InsightKpi[];
+  funnel: {
+    steps: { key: FunnelStepKey; value: number; tracked: boolean }[];
+    transitions: { from: FunnelStepKey; to: FunnelStepKey; rate: number | null; metric: string; bench: number | null; scope: BenchScope | null; ratio: number | null }[];
+    leak: { from: FunnelStepKey; to: FunnelStepKey; ratio: number | null; scope: BenchScope | null; basis: 'benchmark' | 'drop' } | null;
+  };
+  traffic: {
+    sources: { source: TrafficSourceKey; impressions: number; views: number; carts: number; orders: number; conversion: number | null }[];
+    devices: { device: 'mobile' | 'tablet' | 'desktop' | 'unknown'; views: number; orders: number; share: number; conversion: number | null }[];
+  };
+  fix_this_week: InsightProduct[];
+  stages: { stage: FunnelStage; count: number; lost_revenue: number; items: InsightProduct[] }[];
+  summary: { products: number; problems: number; ok: number; insufficient: number; lost_revenue: number };
+  actions: InsightResult[];
+  generated_at: string;
 }
 
 // ─── QualityAuditProduct ──────────────────────────────────────────────────────
@@ -160,8 +224,14 @@ export const blackPepperApi = {
   getVipRequests: () =>
     jsonRequest<{ success: boolean; data: VipRequest[] }>('GET', '/seller/black/vip-requests'),
 
-  funnelInsights: () =>
-    jsonRequest<{ success: boolean; data: FunnelInsight[] }>('GET', '/seller/black/funnel-insights'),
+  visitorInsights: (period: 7 | 30 | 90) =>
+    jsonRequest<{ success: boolean; data: VisitorInsightsData }>('GET', `/seller/black/visitor-insights?period=${period}`),
+
+  /** A listing edit / restock saved from an Analyse des visiteurs action (promotions & boosts record themselves). */
+  insightApplied: (productId: number, kind: 'edit' | 'restock', problem?: string | null, stage?: string | null) =>
+    jsonRequest<{ success: boolean }>('POST', '/seller/black/visitor-insights/actions', {
+      product_id: productId, kind, problem_code: problem ?? null, stage: stage ?? null,
+    }),
 
   qualityAudit: () =>
     jsonRequest<{ success: boolean; data: QualityAuditProduct[] }>('GET', '/seller/black/quality-audit'),

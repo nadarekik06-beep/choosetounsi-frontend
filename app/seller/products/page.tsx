@@ -24,8 +24,10 @@ import {
   Clock, Image as ImageIcon, Eye, Layers,
   RefreshCw,
 } from 'lucide-react';
-import ProductModal, { type ProductRadarPrefill } from './ProductModal';
+import ProductModal, { PRODUCT_FORM_FOCUS, type ProductFormFocus, type ProductRadarPrefill } from './ProductModal';
 import { growthRadarApi } from '@/lib/growthRadarApi';
+import { blackPepperApi } from '@/lib/blackPepperApi';
+import { insightFromUrl } from '../black/visitor-insights/_components/links';
 import RestockModal, { type RestockProduct } from '../components/RestockModal';
 import { useTheme } from '../SellerShell';
 import { useTranslations } from 'next-intl';
@@ -109,12 +111,18 @@ export default function ProductsPage() {
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
   // Opened from a Growth Radar card: prefill + the card to mark as applied on save
+  // (cardId 0 = a plain deep link with a focus, e.g. from Qualité des fiches)
   const [radar, setRadar] = useState<(ProductRadarPrefill & { cardId: number; kind: 'edit' | 'listing' }) | null>(null);
+  // Opened from an Analyse des visiteurs action: record it once really saved (before/after funnel)
+  const [insight, setInsight] = useState<{ productId: number; problem: string | null; stage: string | null } | null>(null);
 
   const openAddModal = () => setModal({ open: true, product: null });
-  const closeModal   = () => { setModal(MODAL_CLOSED); setRadar(null); };
+  const closeModal   = () => { setModal(MODAL_CLOSED); setRadar(null); setInsight(null); };
   const handleSaved  = () => {
-    if (radar) growthRadarApi.applied(radar.cardId, radar.kind).catch(() => {});
+    if (radar?.cardId) growthRadarApi.applied(radar.cardId, radar.kind).catch(() => {});
+    if (insight && modal.product?.id === insight.productId) {
+      blackPepperApi.insightApplied(insight.productId, 'edit', insight.problem, insight.stage).catch(() => {});
+    }
     closeModal(); fetchProducts();
   };
 
@@ -213,9 +221,11 @@ export default function ProductsPage() {
     if (!restockId && !editId && !create) return;
     window.history.replaceState(null, '', window.location.pathname);
     const focus = q.get('focus');
-    if (cardId) setRadar({
+    const validFocus = PRODUCT_FORM_FOCUS.includes(focus as ProductFormFocus) ? focus as ProductFormFocus : undefined;
+    setInsight(insightFromUrl(q));
+    if (cardId || validFocus) setRadar({
       cardId, kind: create ? 'listing' : 'edit',
-      focus: focus === 'photos' || focus === 'description' || focus === 'price' ? focus : undefined,
+      focus: validFocus,
       price: q.get('price') ? Number(q.get('price')) : undefined,
       name: q.get('name') ?? undefined,
       categoryId: Number(q.get('category')) || undefined,
@@ -629,6 +639,10 @@ export default function ProductsPage() {
           product={restockProduct}
           onClose={() => setRestockProduct(null)}
           onRestocked={() => {
+            if (insight && restockProduct?.id === insight.productId) {
+              blackPepperApi.insightApplied(insight.productId, 'restock', insight.problem, insight.stage).catch(() => {});
+              setInsight(null);
+            }
             setRestockProduct(null);
             fetchProducts();
           }}

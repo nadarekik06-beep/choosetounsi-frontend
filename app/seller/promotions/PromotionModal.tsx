@@ -44,6 +44,8 @@ export interface PromotionPrefill {
   endsAt?: string
   /** Growth Radar card this promotion answers — sent so the result can be measured */
   growthCardId?: number
+  /** Analyse des visiteurs action (product + problem it fixes) — same purpose */
+  insight?: { productId: number; problem: string | null; stage: string | null } | null
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -470,6 +472,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
       ends_at:        toISOFromInput(endsAt),
       product_ids:    selectedProductIds,
       ...(!isEdit && prefill?.growthCardId ? { growth_card_id: prefill.growthCardId } : {}),
+      ...(!isEdit && prefill?.insight ? { insight_product: prefill.insight.productId, insight_problem: prefill.insight.problem, insight_stage: prefill.insight.stage } : {}),
       ...(type === 'flash_sale' && flashStock
         ? { flash_stock: parseInt(flashStock) }
         : {}),

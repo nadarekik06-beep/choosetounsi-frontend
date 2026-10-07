@@ -3791,7 +3791,7 @@
         },
         "visitors": {
           "title": "Analyse des visiteurs",
-          "subtitle": "Produits qui attirent des visiteurs sans convertir — avec des solutions en langage simple."
+          "subtitle": "Où et pourquoi vos acheteurs décrochent — et quoi corriger."
         }
       }
     },
@@ -3831,24 +3831,6 @@
         "completed": "Terminée",
         "rejected": "Refusée"
       }
-    },
-    "funnel": {
-      "title": "Analyse des visiteurs",
-      "needAttention": "{count, plural, one {# à revoir} other {# à revoir}}",
-      "allGood": "Tout va bien",
-      "subtitleIssues": "{count, plural, one {# produit attire des visiteurs sans se vendre} other {# produits attirent des visiteurs sans se vendre}}",
-      "subtitleOk": "Vos produits attirent et convertissent bien les visiteurs",
-      "loadError": "Impossible de charger l'analyse des visiteurs.",
-      "retry": "Réessayer",
-      "okTitle": "Tout convertit bien",
-      "okText": "Aucun produit avec beaucoup de visites et peu de ventes pour le moment.",
-      "intro": "Ces produits reçoivent des visiteurs, mais personne n'achète. Une meilleure photo, un titre plus clair ou une petite remise peuvent faire toute la différence.",
-      "stats": {
-        "visitors": "Visiteurs",
-        "bought": "Achetés",
-        "opportunity": "Potentiel"
-      },
-      "try": "À essayer :"
     },
     "quality": {
       "score": {
@@ -4274,7 +4256,9 @@
           "rfm": "RFM"
         }
       },
-      "daysAgo": "il y a {count} j"
+      "daysAgo": "il y a {count} j",
+      "notEnoughData": "pas assez de données",
+      "notEnoughDataHint": "Moins de 30 visites : le taux ne serait pas fiable."
     },
     "orderDrawer": {
       "title": "Détails de la commande",
@@ -4682,7 +4666,11 @@
         "edit_description": "Améliorer la description",
         "edit_price": "Modifier le prix",
         "listing": "Mettre en vente un produit",
-        "bundle": "Trouver un pack"
+        "bundle": "Trouver un pack",
+        "edit_stock": "Corriger stock et variantes",
+        "edit_title": "Améliorer le titre",
+        "edit_attributes": "Compléter les caractéristiques",
+        "edit_category": "Corriger la catégorie"
       },
       "or": "ou",
       "dismiss": "Ignorer",
@@ -4748,7 +4736,215 @@
         "edit": "mise à jour de fiche",
         "listing": "nouveau produit",
         "bundle": "pack"
-      }
+      },
+      "viewAnalysis": "Voir l'analyse"
+    },
+    "insights": {
+      "title": "Analyse des visiteurs",
+      "subtitle": "Où vos acheteurs décrochent, pourquoi, et quoi faire — de l'affichage à la commande.",
+      "period": {
+        "label": "Période",
+        "days": "{count} jours",
+        "range": "Du {from} au {to} · comparé au {pfrom} – {pto}"
+      },
+      "kpi": {
+        "impressions": "Affichages",
+        "ctr": "Taux de clic",
+        "views": "Visites des fiches",
+        "unique_visitors": "Visiteurs uniques / jour",
+        "add_to_cart_rate": "Ajout au panier",
+        "cart_to_order": "Panier → commande",
+        "revenue_per_visit": "Revenu par visite",
+        "notTracked": "Suivi en cours",
+        "noPrevious": "Pas de période précédente",
+        "vsPrevious": "vs période préc."
+      },
+      "comparedTo": "comparé à : {scope}",
+      "scope": {
+        "subcategory": "la sous-catégorie",
+        "category": "la catégorie",
+        "platform": "toute la plateforme",
+        "own_previous": "votre période précédente",
+        "target": "l'objectif"
+      },
+      "scopeShort": {
+        "subcategory": "Sous-catégorie",
+        "category": "Catégorie",
+        "platform": "Plateforme",
+        "own_previous": "Votre période préc.",
+        "target": "Objectif"
+      },
+      "funnel": {
+        "title": "Parcours de vos acheteurs",
+        "subtitle": "De l'affichage à la commande, sur toute la boutique.",
+        "steps": {
+          "impressions": "Affichages",
+          "clicks": "Clics",
+          "views": "Visites fiche",
+          "carts": "Paniers",
+          "checkouts": "Paiements lancés",
+          "orders": "Commandes"
+        },
+        "continue": "{pct} continuent",
+        "bench": "{scope} : {pct}",
+        "leak": "Plus grosse perte vs la catégorie",
+        "leakDrop": "Plus forte chute",
+        "trackingSince": "Affichages et paiements lancés suivis depuis le {date} : les périodes plus anciennes les comptent partiellement.",
+        "today": "aujourd'hui",
+        "extraVisits": "+{count} visites hors listes (liens, accès direct)",
+        "benchSpan": "{from} → {to} : {you} · {scope} {pct}"
+      },
+      "traffic": {
+        "title": "D'où viennent vos visiteurs",
+        "subtitle": "Visites par source, et lesquelles achètent vraiment.",
+        "source": "Source",
+        "visits": "Visites",
+        "conversion": "Conversion",
+        "tip": "{visits} visites · {carts} paniers · {orders} commandes",
+        "best": "Source qui convertit le mieux",
+        "bestLine": "{source} convertit le mieux : {pct} des visites deviennent des commandes.",
+        "devices": "Appareils",
+        "convShort": "conv. {pct}"
+      },
+      "sources": {
+        "search": "Recherche",
+        "category": "Catégories",
+        "home": "Accueil & recos",
+        "sponsored": "Sponsorisé",
+        "storefront": "Votre boutique",
+        "external": "Sites externes",
+        "direct": "Accès direct"
+      },
+      "devices": {
+        "mobile": "Mobile",
+        "desktop": "Ordinateur",
+        "tablet": "Tablette",
+        "unknown": "Inconnu"
+      },
+      "stages": {
+        "click": "Perdus au clic",
+        "product_page": "Perdus sur la fiche",
+        "cart": "Perdus au panier",
+        "checkout": "Perdus au paiement"
+      },
+      "stageHints": {
+        "click": "Peu vus ou peu cliqués",
+        "product_page": "Visités mais pas ajoutés au panier",
+        "cart": "Au panier mais pas commandés",
+        "checkout": "Paiement lancé puis abandonné"
+      },
+      "problems": {
+        "low_visibility": "Presque personne ne voit ce produit : il manque de visibilité dans la recherche et les catégories.",
+        "low_ctr": "Il s'affiche souvent mais on clique peu : la photo principale ou le prix affiché n'attire pas.",
+        "price_high": "Les visiteurs repartent : le prix est nettement au-dessus des produits similaires.",
+        "listing_quality": "Les visiteurs repartent : la fiche est incomplète (photos, description ou caractéristiques).",
+        "no_reviews": "Les visiteurs hésitent : aucun avis client ne les rassure.",
+        "stock_variants": "Des tailles ou couleurs sont en rupture : les acheteurs ne trouvent pas ce qu'ils veulent.",
+        "low_add_to_cart": "Les visiteurs regardent sans ajouter au panier : la fiche ne convainc pas assez.",
+        "shipping_cost": "Les frais de livraison font abandonner la commande.",
+        "cart_abandon": "Ajouté au panier puis abandonné avant le paiement.",
+        "checkout_abandon": "Paiement lancé puis abandonné."
+      },
+      "problemsShort": {
+        "low_visibility": "Peu de visibilité",
+        "low_ctr": "Peu de clics",
+        "price_high": "Prix élevé",
+        "listing_quality": "Fiche incomplète",
+        "no_reviews": "Aucun avis",
+        "stock_variants": "Rupture de variantes",
+        "low_add_to_cart": "Peu d'ajouts au panier",
+        "shipping_cost": "Livraison chère",
+        "cart_abandon": "Panier abandonné",
+        "checkout_abandon": "Paiement abandonné"
+      },
+      "evidence": {
+        "views": "Visites : {value} · {scope} {bench}",
+        "ctr": "Taux de clic : {value} · {scope} {bench}",
+        "view_to_cart": "Ajout au panier : {value} · {scope} {bench}",
+        "cart_to_order": "Panier → commande : {value} · {scope} {bench}",
+        "checkout_to_order": "Paiements finalisés : {value}",
+        "price": "Prix : {value} · médiane {scope} {bench}",
+        "delivery_fee": "Livraison : {value} · médiane {scope} {bench}",
+        "quality_score": "Score de la fiche : {value}/100 (objectif {bench})",
+        "reviews": "Aucun avis client",
+        "stock": "En rupture de stock",
+        "variants_out": "{value} variantes sur {bench} en rupture"
+      },
+      "actions": {
+        "edit_photos": "Changer les photos",
+        "edit_description": "Améliorer la description",
+        "edit_title": "Améliorer le titre",
+        "edit_price": "Voir prix et livraison",
+        "edit_shipping": "Revoir les frais de livraison",
+        "edit_stock": "Corriger stock et variantes",
+        "edit_attributes": "Compléter les caractéristiques",
+        "edit_category": "Corriger la catégorie",
+        "discount": "Créer une remise de {pct} %",
+        "ai_description": "Générateur IA de description",
+        "boost": "Booster",
+        "restock": "Réapprovisionner",
+        "listing_quality": "Corriger dans Qualité des fiches"
+      },
+      "fix": {
+        "title": "À corriger cette semaine",
+        "subtitle": "Les 3 produits qui vous coûtent le plus d'acheteurs.",
+        "lost": "≈ {amount} perdus sur la période",
+        "noneFound": "Aucune fuite nette sur vos {count} produits analysés. Continuez à suivre l'évolution ici.",
+        "noneYet": "Pas encore assez de visites pour désigner un produit à corriger."
+      },
+      "groups": {
+        "title": "Où vous perdez des acheteurs",
+        "subtitle": "Vos produits classés par étape où les acheteurs décrochent.",
+        "none": "Aucun produit ne bloque à cette étape.",
+        "more": "+{count} autres",
+        "insufficient": "{count, plural, one {# produit n'a} other {# produits n'ont}} pas encore assez de visites (moins de 30) pour être analysés."
+      },
+      "lostExplained": "Revenu perdu estimé : {amount} — visites × (conversion de la catégorie − la vôtre) × prix. Une estimation pour prioriser, pas une promesse.",
+      "results": {
+        "title": "Résultats de vos actions",
+        "subtitle": "Avant / après chaque correction appliquée depuis cette page.",
+        "empty": "Aucune action appliquée pour l'instant. Utilisez les boutons ci-dessus : nous mesurerons l'effet ici.",
+        "appliedOn": "le {date}",
+        "measuring": "Mesure en cours — {done}/{needed} jours",
+        "insufficient": "Pas assez de visites pour mesurer l'effet.",
+        "then": "puis",
+        "kinds": {
+          "edit": "Fiche modifiée",
+          "restock": "Réapprovisionné",
+          "discount": "Remise",
+          "flash_sale": "Vente flash",
+          "coupon": "Code promo",
+          "boost": "Boost"
+        },
+        "metrics": {
+          "ctr": "Taux de clic",
+          "view_to_cart": "Ajout au panier",
+          "cart_to_order": "Panier → commande",
+          "conversion": "Conversion",
+          "views_per_day": "Visites / jour"
+        }
+      },
+      "states": {
+        "no_products": {
+          "title": "Pas encore de produits en ligne",
+          "text": "Dès que vos produits sont visibles, cette page montre où vos acheteurs décrochent et quoi corriger."
+        },
+        "low_data": {
+          "title": "Pas encore assez de visites pour conclure",
+          "text": "Il faut au moins 30 visites sur un produit pour un diagnostic fiable. En attendant, voici ce que nous voyons déjà."
+        },
+        "tracked": "Ce que nous suivons",
+        "trackedList": "Affichages dans la recherche, les catégories, l'accueil, le sponsorisé et votre boutique · clics · visites des fiches · ajouts au panier et aux favoris · paiements lancés · commandes. Vos propres visites, celles de l'équipe et des robots ne sont pas comptées.",
+        "tipsTitle": "Pour démarrer",
+        "tips": {
+          "addProduct": "Mettez en ligne un premier produit",
+          "photos": "Soignez photos et descriptions (Qualité des fiches)",
+          "share": "Partagez le lien de votre boutique sur vos réseaux",
+          "boost": "Boostez un produit pour obtenir vos premières visites"
+        }
+      },
+      "error": "Impossible de charger l'analyse.",
+      "retry": "Réessayer"
     }
   },
   "invoice": {

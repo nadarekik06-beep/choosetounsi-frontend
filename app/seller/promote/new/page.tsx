@@ -149,7 +149,13 @@ function Wizard() {
     try {
       // Opened from a Growth Radar card (?card=…): let the server measure the result
       const card = Number(search.get('card')) || undefined
-      const c = await sellerAdsApi.create(card ? { ...payload, growth_card_id: card } : payload)
+      // …or from an Analyse des visiteurs action (?insight=…&problem=…&stage=…): same, for the funnel before/after
+      const insight = Number(search.get('insight')) || undefined
+      const c = await sellerAdsApi.create({
+        ...payload,
+        ...(card ? { growth_card_id: card } : {}),
+        ...(insight ? { insight_product: insight, insight_problem: search.get('problem'), insight_stage: search.get('stage') } : {}),
+      })
       router.push(`/seller/promote/campaigns/${c.id}?launched=1`)
     } catch (e: any) {
       const err = e as AdsApiError
