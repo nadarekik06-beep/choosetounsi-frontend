@@ -9,7 +9,8 @@
  *   3. No original logic changed — only color values made theme-aware
  */
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { sellerComplaintApi } from '@/lib/complaintApi'
 import type { Complaint } from '@/types/complaint'
 import { STATUS_CONFIG, COMPLAINT_TYPE_LABELS } from '@/types/complaint'
@@ -956,6 +957,13 @@ interface StatsData {
   rejected: number
 }
 
+/** Opens the complaint from `?id=<id>` (links in seller e-mails and the notification bell). */
+function OpenComplaintFromQuery({ onOpen }: { onOpen: (id: number) => void }) {
+  const id = Number(useSearchParams().get('id'))
+  useEffect(() => { if (id > 0) onOpen(id) }, [id, onOpen])
+  return null
+}
+
 export default function SellerComplaintsPage() {
   const { dark } = useTheme()
   const t = useTranslations('seller.complaints')
@@ -998,6 +1006,13 @@ export default function SellerComplaintsPage() {
     }
   }
 
+  const openById = useCallback(async (id: number) => {
+    try {
+      const res = await sellerComplaintApi.getOne(id)
+      setSelected(res.data)
+    } catch { /* not this seller's complaint, or gone: stay on the list */ }
+  }, [])
+
   const statCards = stats ? [
     { icon: <IconInbox size={18} />,       label: t('stats.total'),         value: stats.total,           color: dark ? 'rgba(255,255,255,0.7)' : '#475569', delay: 0   },
     { icon: <IconClock size={18} />,       label: t('stats.needsAction'),   value: stats.needs_action,    color: C.amber,                                     delay: 60  },
@@ -1019,6 +1034,7 @@ export default function SellerComplaintsPage() {
   return (
     <>
       <style>{GLOBAL_CSS}</style>
+      <Suspense fallback={null}><OpenComplaintFromQuery onOpen={openById} /></Suspense>
 
       <div style={{ padding: '6px 0', maxWidth: 1100 }}>
 

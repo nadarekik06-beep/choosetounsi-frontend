@@ -7,9 +7,9 @@
  * Route: /complaints
  */
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { isAuthenticated } from '@/lib/auth'
 import { complaintApi } from '@/lib/complaintApi'
 import type { Complaint } from '@/types/complaint'
@@ -38,15 +38,26 @@ function StatusBadge({ status }: { status: Complaint['status'] }) {
   )
 }
 
-function ComplaintCard({ complaint }: { complaint: Complaint }) {
+/** Reads `?id=<id>` (notification bell, e-mails): that complaint opens. */
+function FocusFromQuery({ onFocus }: { onFocus: (id: number | null) => void }) {
+  const id = Number(useSearchParams().get('id')) || null
+  useEffect(() => { onFocus(id) }, [id, onFocus])
+  return null
+}
+
+function ComplaintCard({ complaint, focused = false }: { complaint: Complaint; focused?: boolean }) {
   const t   = useTranslations('complaints')
   const fmt = useFormat()
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(focused)
   const cfg = STATUS_CONFIG[complaint.status]
+  const cardRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (focused) cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [focused])
 
   return (
-    <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9',
-      overflow: 'hidden', marginBottom: 14, transition: 'box-shadow 0.2s ease' }}>
+    <div ref={cardRef} style={{ background: '#fff', borderRadius: 16, border: focused ? `1px solid ${cfg.color}` : '1px solid #f1f5f9',
+      overflow: 'hidden', marginBottom: 14, transition: 'box-shadow 0.2s ease', scrollMarginTop: 90 }}>
 
       {/* Left accent bar */}
       <div style={{ display: 'flex' }}>
@@ -159,6 +170,7 @@ export default function MyComplaintsPage() {
   const tc     = useTranslations('common')
   const router = useRouter()
   const [complaints, setComplaints] = useState<Complaint[]>([])
+  const [focusId,    setFocusId]    = useState<number | null>(null)
   const [loading,    setLoading]    = useState(true)
   // holds the navigation loader until the first load is done
   usePageLoading(loading)
@@ -266,8 +278,9 @@ export default function MyComplaintsPage() {
             </div>
           )}
 
+          <Suspense fallback={null}><FocusFromQuery onFocus={setFocusId} /></Suspense>
           {!loading && !error && complaints.map(c => (
-            <ComplaintCard key={c.id} complaint={c} />
+            <ComplaintCard key={c.id === focusId ? `${c.id}-focused` : c.id} complaint={c} focused={c.id === focusId} />
           ))}
         </div>
       </div>

@@ -32,7 +32,7 @@ import {
   Truck, RotateCcw, Store, Star, MapPin,
 } from 'lucide-react'
 import { isAuthenticated } from '@/lib/auth'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import ComplaintModal from '@/app/components/ComplaintModal'
 import ReviewSubmitModal from '@/app/components/reviews/ReviewSubmitModal'
 import { useTranslations } from 'next-intl'
@@ -607,12 +607,10 @@ export default function OrdersPage() {
   usePageLoading(loading)
   const [error,       setError]       = useState(false)
   const [reviewedMap, setReviewedMap] = useState<ReviewedMap>({})
-  const [focusId,     setFocusId]     = useState<number | null>(null)
-
-  // /orders?order=ID (links from the profile page) opens that order.
-  useEffect(() => {
-    setFocusId(Number(new URLSearchParams(window.location.search).get('order')) || null)
-  }, [])
+  // /orders?order=ID (profile page, notification bell, e-mails) opens that order —
+  // also when the bell navigates here while the page is already open.
+  const searchParams = useSearchParams()
+  const focusId = Number(searchParams.get('order')) || null
 
   // ── Review popup state ────────────────────────────────────────────────────
   // pendingPrompts: queue of prompts fetched from /api/client/reviews/prompts
@@ -668,7 +666,7 @@ export default function OrdersPage() {
 
       if (!json.success || !Array.isArray(json.data) || json.data.length === 0) return
 
-      const prompts: ReviewPrompt[] = json.data
+      const prompts: ReviewPrompt[] = json.data.map((p: ReviewPrompt & { prompt_id?: number }) => ({ ...p, id: p.prompt_id ?? p.id }))
 
       // Store the full queue
       setPendingPrompts(prompts)
@@ -823,7 +821,8 @@ export default function OrdersPage() {
 
           {!loading && !error && orders.map(order => (
             <OrderCard
-              key={order.id}
+              // remounts (opened) when a notification focuses it while the page is open
+              key={order.id === focusId ? `${order.id}-focused` : order.id}
               order={order}
               focused={order.id === focusId}
               reviewedMap={reviewedMap}
