@@ -2169,7 +2169,13 @@
         },
         "currentTag": "عرضك",
         "currentCta": "عرضك الحالي",
-        "currentActive": "نشط"
+        "currentActive": "نشط",
+        "ctaFree": "ابدأ مجانًا",
+        "ctaChoose": "اختر {plan}",
+        "loading": "جارٍ تحميل العروض",
+        "loadError": "تعذّر تحميل العروض حاليًا. حاول مرة أخرى بعد قليل.",
+        "retry": "إعادة المحاولة",
+        "empty": "ستتوفر عروضنا قريبًا."
       },
       "showcase": {
         "eyebrow": "يبيعون هنا بالفعل",

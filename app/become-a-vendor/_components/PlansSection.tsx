@@ -1,13 +1,15 @@
 'use client'
 
 import { forwardRef, useEffect, useRef, useState, type ReactNode, type PointerEvent as RPointerEvent } from 'react'
-import { Check, X, Package, Percent, CheckCircle2 } from 'lucide-react'
+import { Check, X, Percent, CheckCircle2, Package, Image as ImageIcon, Megaphone, RefreshCw, type LucideIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { formatCommission, type PlanKey, type SellerPlans, type SellerPlanInfo } from '@/lib/platformApi'
-import { ArrowIcon, PLAN_ORDER, PLAN_STYLES, Reveal, SectionHeading, usePlanPrice } from './shared'
+import { formatCommission, planList, type PlanLimit, type SellerPlans, type SellerPlanInfo } from '@/lib/platformApi'
+import { ArrowIcon, Reveal, SectionHeading, planStyleOf, usePlanPrice } from './shared'
+import { PLAN_ICONS } from './planIcons'
 
-// Feature flags exposed by /api/seller-plans (subscription_plans.features), in display order.
-export const FEATURE_ORDER = ['promotions', 'coupons', 'sponsorships', 'analytics', 'ai_tools', 'black_hub'] as const
+const LIMIT_ICON: Record<PlanLimit['key'], LucideIcon> = {
+  max_products: Package, max_images_per_product: ImageIcon, max_sponsored_products: Megaphone,
+}
 
 interface CardOptions {
   /** Glowing border + ribbon. */
@@ -19,17 +21,41 @@ interface CardOptions {
   hint: string
 }
 
-function PlanCard({ planKey, plan, index, onSelect, opts }: {
-  planKey: PlanKey; plan: SellerPlanInfo | undefined; index: number; onSelect: (k: PlanKey) => void; opts: CardOptions
+/** One ✓ / ✗ line. Excluded items stay visible, muted, for comparison. */
+function FeatureLine({ included, label, description, title, Icon, highlight = false }: {
+  included: boolean; label: string; description?: string | null; title?: string | null; Icon?: LucideIcon; highlight?: boolean
+}) {
+  const tl = useTranslations('vendor.landing.plans')
+  return (
+    <li className={`${included ? '' : 'is-off'}${highlight ? ' is-highlight' : ''}`} title={title ?? undefined}>
+      <span className="vl-plan__tick">{included ? <Check size={12} aria-hidden="true" /> : <X size={12} aria-hidden="true" />}</span>
+      <span className="vl-plan__ftext">
+        <span className="vl-plan__flabel">
+          {Icon && <Icon size={14} className="vl-plan__ficon" aria-hidden="true" />}
+          {label}
+        </span>
+        {description && <span className="vl-plan__fdesc">{description}</span>}
+      </span>
+      {!included && <span className="sr-only">{tl('notIncluded')}</span>}
+    </li>
+  )
+}
+
+/**
+ * A pricing card, rendered only from GET /api/seller-plans: limits first,
+ * then capabilities, then the admin's display features.
+ */
+function PlanCard({ plan, index, onSelect, opts }: {
+  plan: SellerPlanInfo; index: number; onSelect: (slug: string) => void; opts: CardOptions
 }) {
   const t  = useTranslations('vendor')
   const tl = useTranslations('vendor.landing.plans')
   const priceOf = usePlanPrice()
-  const style = PLAN_STYLES[planKey]
+  const style = planStyleOf(plan)
   const { Icon } = style
   const ref = useRef<HTMLElement>(null)
   const [pressed, setPressed] = useState(false)
-  const titleId = `vl-plan-${planKey}`
+  const titleId = `vl-plan-${plan.key}`
   const { highlighted, current } = opts
 
   const track = (e: RPointerEvent<HTMLElement>) => {
@@ -53,7 +79,7 @@ function PlanCard({ planKey, plan, index, onSelect, opts }: {
         onPointerUp={() => setPressed(false)}
         onPointerCancel={() => setPressed(false)}
         onPointerLeave={() => setPressed(false)}
-        onClick={current ? undefined : () => onSelect(planKey)}
+        onClick={current ? undefined : () => onSelect(plan.key)}
       >
         {highlighted && <span className="vl-plan__ring" aria-hidden="true" />}
         <div className="vl-plan__inner">
@@ -68,38 +94,32 @@ function PlanCard({ planKey, plan, index, onSelect, opts }: {
           <header className="vl-plan__head">
             <span className="vl-plan__icon"><Icon size={22} aria-hidden="true" /></span>
             <div>
-              <h3 id={titleId} className="vl-plan__name">{plan?.name ?? '…'}</h3>
-              <p className="vl-plan__target">{t(`plans.${style.key}.target`)}</p>
+              <h3 id={titleId} className="vl-plan__name">{plan.name}</h3>
+              {plan.tagline && <p className="vl-plan__target">{plan.tagline}</p>}
             </div>
           </header>
 
           <div className="vl-plan__price">
             <span className="vl-plan__amount ltr-iso">{priceOf(plan)}</span>
-            {plan && <span className="vl-plan__per">/{plan.price === 0 ? t('forever') : t('perMonthShort')}</span>}
+            <span className="vl-plan__per">/{plan.price === 0 ? t('forever') : t('perMonthShort')}</span>
           </div>
 
           <div className="vl-plan__meta">
             <span className="vl-plan__pill"><Percent size={13} aria-hidden="true" />{t('commission', { rate: formatCommission(plan) })}</span>
-            <span className="vl-plan__products">
-              <Package size={14} aria-hidden="true" />
-              {!plan ? '…' : plan.max_products === null ? t('unlimitedProducts') : t('maxProducts', { count: plan.max_products })}
-            </span>
           </div>
 
-          {plan?.features && (
-            <ul className="vl-plan__features">
-              {FEATURE_ORDER.filter(f => f in plan.features!).map(f => {
-                const ok = !!plan.features![f]
-                return (
-                  <li key={f} className={ok ? '' : 'is-off'}>
-                    <span className="vl-plan__tick">{ok ? <Check size={12} aria-hidden="true" /> : <X size={12} aria-hidden="true" />}</span>
-                    <span>{tl(`features.${f}`)}</span>
-                    {!ok && <span className="sr-only">{tl('notIncluded')}</span>}
-                  </li>
-                )
-              })}
-            </ul>
-          )}
+          <ul className="vl-plan__features">
+            {(plan.limits ?? []).map(l => (
+              <FeatureLine key={`l-${l.key}`} included label={l.label} Icon={LIMIT_ICON[l.key]} />
+            ))}
+            {(plan.capabilities ?? []).map(c => (
+              <FeatureLine key={`c-${c.key}`} included={c.included} label={c.label} title={c.description} />
+            ))}
+            {(plan.display_features ?? []).map((f, i) => (
+              <FeatureLine key={`d-${i}`} included={f.included} highlight={f.highlight} label={f.label}
+                description={f.description} Icon={f.icon ? PLAN_ICONS[f.icon] : undefined} />
+            ))}
+          </ul>
 
           {current ? (
             <div className="vl-plan__cta vl-plan__cta--current" aria-hidden="true">
@@ -107,7 +127,7 @@ function PlanCard({ planKey, plan, index, onSelect, opts }: {
             </div>
           ) : (
             <button type="button" className="vl-plan__cta"
-              onClick={e => { e.stopPropagation(); onSelect(planKey) }}>
+              onClick={e => { e.stopPropagation(); onSelect(plan.key) }}>
               {opts.ctaLabel}
               <ArrowIcon />
             </button>
@@ -119,33 +139,50 @@ function PlanCard({ planKey, plan, index, onSelect, opts }: {
   )
 }
 
+/** Card-shaped placeholder while /api/seller-plans loads. */
+function PlanSkeleton() {
+  return (
+    <li className="vl-plan-slot" aria-hidden="true">
+      <div className="vl-plan vl-plan--skeleton">
+        <div className="vl-plan__inner">
+          <i className="vl-plan-skel vl-plan-skel--head" />
+          <i className="vl-plan-skel vl-plan-skel--price" />
+          {[0, 1, 2, 3, 4, 5].map(i => <i key={i} className="vl-plan-skel vl-plan-skel--line" />)}
+          <i className="vl-plan-skel vl-plan-skel--cta" />
+        </div>
+      </div>
+    </li>
+  )
+}
+
 interface PlansSectionProps {
   plans: SellerPlans | null
-  onSelect: (key: PlanKey) => void
-  /** Seller's current plan (seller variants): shown muted with "your current plan". */
-  current?: PlanKey
-  /** Plan that gets the glow + ribbon (default: the brand's popular plan). */
-  highlight?: PlanKey
+  /** The request failed: show a fallback message instead of cards. */
+  failed?: boolean
+  onRetry?: () => void
+  onSelect: (slug: string) => void
+  /** Seller's current plan slug (seller variants): shown muted with "your current plan". */
+  current?: string
+  /** Plan that gets the glow + ribbon (default: the plan the admin marked as recommended). */
+  highlight?: string
   ribbon?: string
   heading?: { eyebrow: ReactNode; line1: ReactNode; line2: ReactNode; lead?: ReactNode }
   /** Footer pill under the cards; `null` hides it. */
   note?: ReactNode | null
-  ctaLabel?: (key: PlanKey, plan: SellerPlanInfo | undefined) => string
-  hint?: (key: PlanKey) => string
+  ctaLabel?: (plan: SellerPlanInfo) => string
+  hint?: (plan: SellerPlanInfo) => string
 }
 
 const PlansSection = forwardRef<HTMLElement, PlansSectionProps>(function PlansSection(
-  { plans, onSelect, current, highlight, ribbon, heading, note, ctaLabel, hint }, ref) {
-  const t  = useTranslations('vendor')
+  { plans, failed = false, onRetry, onSelect, current, highlight, ribbon, heading, note, ctaLabel, hint }, ref) {
   const tl = useTranslations('vendor.landing.plans')
   const trackRef = useRef<HTMLUListElement>(null)
   const [active, setActive] = useState(0)
 
-  // API order (by tier) when loaded; known keys only, since styling is per plan.
-  const keys: PlanKey[] = plans
-    ? (Object.values(plans).sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0)).map(p => p.key).filter(k => k in PLAN_STYLES))
-    : PLAN_ORDER
-  const highlighted = highlight ?? keys.find(k => PLAN_STYLES[k].popular)
+  const list = planList(plans)
+  const keys = list.map(p => p.key)
+  const highlighted = highlight ?? list.find(p => p.is_recommended)?.key
+  const loading = !plans && !failed
 
   // Mobile carousel: the card closest to the track's centre drives the pagination dots.
   useEffect(() => {
@@ -181,8 +218,8 @@ const PlansSection = forwardRef<HTMLElement, PlansSectionProps>(function PlansSe
   // track first comes into view (layout is settled then), instant, no page scroll.
   useEffect(() => {
     const track = trackRef.current
-    if (!highlight || !track) return
-    const i = keys.indexOf(highlight)
+    const i = highlighted ? keys.indexOf(highlighted) : -1
+    if (i < 0 || !track) return
     const io = new IntersectionObserver(([entry]) => {
       const slot = track.querySelectorAll<HTMLElement>('.vl-plan-slot')[i]
       if (!entry.isIntersecting || !slot || track.scrollWidth <= track.clientWidth + 1) return
@@ -194,7 +231,7 @@ const PlansSection = forwardRef<HTMLElement, PlansSectionProps>(function PlansSe
     io.observe(track)
     return () => io.disconnect()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [highlight, keys.length])
+  }, [highlighted, keys.length])
 
   const h = heading ?? { eyebrow: tl('eyebrow'), line1: tl('title1'), line2: tl('title2'), lead: tl('subtitle') }
 
@@ -203,25 +240,44 @@ const PlansSection = forwardRef<HTMLElement, PlansSectionProps>(function PlansSe
       <div className="vl-container">
         <SectionHeading id="vl-plans-title" eyebrow={h.eyebrow} line1={h.line1} line2={h.line2} lead={h.lead} />
 
-        <ul ref={trackRef} className="vl-plans" aria-busy={!plans}>
-          {keys.map((k, i) => (
-            <PlanCard key={k} planKey={k} plan={plans?.[k]} index={i} onSelect={onSelect} opts={{
-              highlighted: k === highlighted,
-              ribbon: ribbon ?? tl('popular'),
-              current: k === current,
-              ctaLabel: ctaLabel ? ctaLabel(k, plans?.[k]) : t(`plans.${PLAN_STYLES[k].key}.cta`),
-              hint: hint ? hint(k) : (k !== 'free' ? tl('afterApproval') : tl('noCard')),
-            }} />
-          ))}
-        </ul>
+        {failed && !plans ? (
+          <div className="vl-plans-state" role="alert">
+            <p>{tl('loadError')}</p>
+            {onRetry && (
+              <button type="button" className="vl-btn vl-btn--ghost" onClick={onRetry}>
+                <RefreshCw size={15} aria-hidden="true" />{tl('retry')}
+              </button>
+            )}
+          </div>
+        ) : plans && list.length === 0 ? (
+          <div className="vl-plans-state" role="status"><p>{tl('empty')}</p></div>
+        ) : (
+          <>
+            <ul ref={trackRef} className="vl-plans" aria-busy={loading} aria-label={loading ? tl('loading') : undefined}>
+              {loading
+                ? [0, 1, 2].map(i => <PlanSkeleton key={i} />)
+                : list.map((p, i) => (
+                  <PlanCard key={p.key} plan={p} index={i} onSelect={onSelect} opts={{
+                    highlighted: p.key === highlighted,
+                    ribbon: ribbon ?? tl('popular'),
+                    current: p.key === current,
+                    ctaLabel: ctaLabel ? ctaLabel(p) : (p.price === 0 ? tl('ctaFree') : tl('ctaChoose', { plan: p.name })),
+                    hint: hint ? hint(p) : (p.price === 0 ? tl('noCard') : tl('afterApproval')),
+                  }} />
+                ))}
+            </ul>
 
-        <div className="vl-dots" role="group" aria-label={tl('dotsLabel')}>
-          {keys.map((k, i) => (
-            <button key={k} type="button" className={`vl-dot${active === i ? ' is-active' : ''}`}
-              aria-label={plans?.[k]?.name ?? tl('dot', { n: i + 1 })} aria-current={active === i}
-              onClick={() => goTo(i)} />
-          ))}
-        </div>
+            {!loading && (
+              <div className="vl-dots" role="group" aria-label={tl('dotsLabel')}>
+                {list.map((p, i) => (
+                  <button key={p.key} type="button" className={`vl-dot${active === i ? ' is-active' : ''}`}
+                    aria-label={p.name || tl('dot', { n: i + 1 })} aria-current={active === i}
+                    onClick={() => goTo(i)} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
 
         {note !== null && (
           <Reveal className="vl-plans-note">

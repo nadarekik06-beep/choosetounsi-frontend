@@ -4,7 +4,6 @@ import { useState, type ReactNode } from 'react'
 import { Check, Package, Percent, Sparkles, BarChart3, Crown, Megaphone, Tag, TicketPercent, type LucideIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { formatCommission, type PlanKey, type SellerPlans } from '@/lib/platformApi'
-import { FEATURE_ORDER } from '../PlansSection'
 import { ArrowIcon, PLAN_STYLES, Reveal, SectionHeading } from '../shared'
 
 const FEATURE_ICON: Record<string, LucideIcon> = {
@@ -30,7 +29,6 @@ export default function UpgradeCompare({ plans, current, target, onUpgrade }: {
 }) {
   const t  = useTranslations('vendor.seller.compare')
   const tv = useTranslations('vendor')
-  const tf = useTranslations('vendor.landing.plans.features')
   const [open, setOpen] = useState<string | null>(null)
   const mine = plans?.[current]
   const theirs = plans?.[target]
@@ -44,9 +42,10 @@ export default function UpgradeCompare({ plans, current, target, onUpgrade }: {
     if (theirs.commission_max < mine.commission_max) {
       rows.push({ key: 'commission', Icon: Percent, label: t('commission'), mine: formatCommission(mine), theirs: formatCommission(theirs), locked: false })
     }
-    for (const f of FEATURE_ORDER) {
-      if (!mine.features?.[f] && theirs.features?.[f]) {
-        rows.push({ key: f, Icon: FEATURE_ICON[f], label: tf(f), mine: null, theirs: null, locked: true })
+    // Capabilities as the pricing page words them (admin-editable labels)
+    for (const c of theirs.capabilities ?? []) {
+      if (c.included && !mine.features?.[c.key]) {
+        rows.push({ key: c.key, Icon: FEATURE_ICON[c.key] ?? Check, label: c.label, mine: null, theirs: null, locked: true })
       }
     }
   }

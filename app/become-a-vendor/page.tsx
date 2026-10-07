@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { CheckCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { isAuthenticated } from '@/lib/auth'
-import { useSellerPlans, type PlanKey } from '@/lib/platformApi'
+import { useSellerPlansState } from '@/lib/platformApi'
 import { useReducedMotion } from '@/app/hooks/useReducedMotion'
 import Navbar from '@/app/components/layout/Navbar'
 import TunisianPattern from '@/app/components/home/illustrations/TunisianPattern'
@@ -59,17 +59,16 @@ export default function BecomeVendorPage() {
   const tc = useTranslations('common')
   const router    = useRouter()
   const reduced   = useReducedMotion()
-  const livePlans = useSellerPlans()
+  const { plans: livePlans, failed: plansFailed, retry: retryPlans } = useSellerPlansState()
 
   const heroRef  = useRef<HTMLElement>(null)
   const plansRef = useRef<HTMLElement>(null)
   const formRef  = useRef<HTMLElement>(null)
 
-  const [mounted,     setMounted]     = useState(false)
   const [vendor,      setVendor]      = useState<VendorState | null>(null)
   // holds the navigation loader until the first load is done
-  usePageLoading(!mounted || !vendor)
-  const [lockedModal, setLockedModal] = useState<'red' | 'black' | null>(null)
+  usePageLoading(!vendor)
+  const [lockedModal, setLockedModal] = useState<string | null>(null)
   const [success,     setSuccess]     = useState<{ wasUpdate: boolean } | null>(null)
   const [application, setApplication] = useState<ExistingApplication | null>(null)
   // Public stats + showcase only feed the client landing.
@@ -77,7 +76,6 @@ export default function BecomeVendorPage() {
 
   // ── Mount: auth gate (unchanged) + role/subscription → variant ───────────
   useEffect(() => {
-    setMounted(true)
     if (!isAuthenticated()) {
       router.push('/auth/login?redirect=/become-a-vendor')
       return
@@ -98,11 +96,12 @@ export default function BecomeVendorPage() {
   const scrollToPlans = useCallback(() => scrollToEl(plansRef.current, reduced), [reduced])
   const handleGreenClick = useCallback(() => { setTimeout(scrollToForm, 100) }, [scrollToForm])
 
-  // Plan selection logic as before: Green → application form, Red/Black → "approval first" modal.
-  const selectPlan = useCallback((key: PlanKey) => {
-    if (key === 'free') handleGreenClick()
-    else setLockedModal(key)
-  }, [handleGreenClick])
+  // Plan selection as before: the free plan → application form, paid plans → "approval first" modal.
+  const selectPlan = useCallback((slug: string) => {
+    const plan = livePlans?.[slug]
+    if (!plan || plan.price === 0) handleGreenClick()
+    else setLockedModal(slug)
+  }, [handleGreenClick, livePlans])
 
   const handleSuccess = useCallback((wasUpdate: boolean) => {
     setSuccess({ wasUpdate })
@@ -111,7 +110,8 @@ export default function BecomeVendorPage() {
 
   // ── Render guards ─────────────────────────────────────────────────────────
 
-  if (!mounted || !vendor) {
+  // vendor is only set client-side after mount, so this also covers hydration.
+  if (!vendor) {
     return (
       <>
         <style>{FONTS}</style>
@@ -180,8 +180,8 @@ export default function BecomeVendorPage() {
       <style>{FONTS}</style>
       <Navbar />
 
-      {lockedModal && (
-        <LockedPlanModal planKey={lockedModal} onClose={() => setLockedModal(null)} onScrollToForm={handleGreenClick} />
+      {lockedModal && livePlans?.[lockedModal] && (
+        <LockedPlanModal plan={livePlans[lockedModal]} onClose={() => setLockedModal(null)} onScrollToForm={handleGreenClick} />
       )}
 
       {pending ? (
@@ -198,7 +198,7 @@ export default function BecomeVendorPage() {
             <StatsStrip stats={landing.data?.stats ?? null} failed={landing.failed} />
             <WhySection />
             <HowItWorks />
-            <PlansSection ref={plansRef} plans={livePlans} onSelect={selectPlan} />
+            <PlansSection ref={plansRef} plans={livePlans} failed={plansFailed} onRetry={retryPlans} onSelect={selectPlan} />
             <SellerShowcase sellers={landing.data?.sellers} />
             {applySection}
             <FaqSection plans={livePlans} />

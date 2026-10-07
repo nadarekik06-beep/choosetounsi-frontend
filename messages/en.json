@@ -2169,7 +2169,13 @@
         },
         "currentTag": "Your plan",
         "currentCta": "Your current plan",
-        "currentActive": "Active"
+        "currentActive": "Active",
+        "ctaFree": "Start for free",
+        "ctaChoose": "Choose {plan}",
+        "loading": "Loading plans",
+        "loadError": "We couldn't load the plans right now. Please try again in a moment.",
+        "retry": "Try again",
+        "empty": "Our plans will be available soon."
       },
       "showcase": {
         "eyebrow": "Already selling here",

@@ -12,7 +12,7 @@ const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api')
 
 // ── Plans ─────────────────────────────────────────────────────────────────────
 
-/** Visual identity per plan. Everything factual (name, price, limits, features) comes from /api/seller-plans. */
+/** Visual identity per tier. Everything factual (name, price, limits, features) comes from /api/seller-plans. */
 export type PlanStyleKey = 'green' | 'red' | 'black'
 export const PLAN_STYLES: Record<PlanKey, { key: PlanStyleKey; Icon: LucideIcon; accent: string; dark: boolean; popular: boolean }> = {
   free:  { key: 'green', Icon: Leaf,  accent: '#198f41', dark: false, popular: false },
@@ -20,6 +20,12 @@ export const PLAN_STYLES: Record<PlanKey, { key: PlanStyleKey; Icon: LucideIcon;
   black: { key: 'black', Icon: Crown, accent: '#f59e0b', dark: true,  popular: false },
 }
 export const PLAN_ORDER: PlanKey[] = ['free', 'red', 'black']
+
+/** Look of any plan (admin-created ones included): its tier's style, accented with its badge colour. */
+export function planStyleOf(plan: SellerPlanInfo | null | undefined) {
+  const base = PLAN_STYLES[PLAN_ORDER[plan?.tier ?? 0] ?? 'free']
+  return { ...base, accent: plan?.badge_color || base.accent }
+}
 
 /** "49 DT" / "Gratuit": localized plan price. */
 export function usePlanPrice() {

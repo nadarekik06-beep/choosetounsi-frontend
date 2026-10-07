@@ -32,7 +32,7 @@ export default function SellerView({ state, plans }: { state: VendorState; plans
   const upgradeRef = useRef<HTMLElement>(null)
   const [upgradeTo, setUpgradeTo] = useState<PlanKey | null>(null)
 
-  const { user, status, planKey, tier } = state
+  const { user, status, planKey, tier, plan: planSlug } = state
   const premium  = tier > 0
   const sellerId = user?.id ?? null
   const myPlan   = plans?.[planKey]
@@ -85,10 +85,11 @@ export default function SellerView({ state, plans }: { state: VendorState; plans
       ) : (
         <>
           {nextKey && <UpgradeCompare plans={plans} current={planKey} target={nextKey} onUpgrade={startUpgrade} />}
-          <PlansSection ref={plansRef} plans={plans} onSelect={startUpgrade}
-            current={planKey} highlight={nextKey ?? undefined} ribbon={t('plans.ribbon')}
+          <PlansSection ref={plansRef} plans={plans}
+            onSelect={slug => { if ((PLAN_ORDER as string[]).includes(slug)) startUpgrade(slug as PlanKey) }}
+            current={plans?.[planSlug] ? planSlug : planKey} highlight={nextKey ?? undefined} ribbon={t('plans.ribbon')}
             heading={{ eyebrow: t('plans.eyebrow'), line1: t('plans.title1'), line2: t('plans.title2'), lead: t('plans.lead') }}
-            ctaLabel={(_, p) => t('plans.cta', { plan: p?.name ?? '…' })}
+            ctaLabel={p => t('plans.cta', { plan: p.name })}
             hint={() => t('plans.hint')}
             note={null} />
         </>
