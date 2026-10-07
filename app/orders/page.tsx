@@ -302,7 +302,8 @@ function ItemRow({ item, groupStatus, reviewed, onRate }: {
 }) {
   const t = useTranslations('orders')
   const { fmt } = useOrderFormat()
-  const img         = item.resolved_image_url ?? resolveImg(item.product?.primary_image_url)
+  // As bought (order snapshot); null → placeholder, never the product's cover (may be another color)
+  const img         = item.resolved_image_url ?? null
   const isDelivered = groupStatus === 'delivered'
   const isReturned  = !!item.is_returned   // ← NEW
  
@@ -693,7 +694,7 @@ export default function OrdersPage() {
 
   // ── Manual rate button (from "Rate Product" in item row) ─────────────────
   const handleRate = useCallback((item: OrderItem, orderItemId: number) => {
-    const img = item.resolved_image_url ?? resolveImg(item.product?.primary_image_url)
+    const img = item.resolved_image_url ?? null
     setCurrentPrompt({
       orderItemId,
       productName:  item.product_name,
