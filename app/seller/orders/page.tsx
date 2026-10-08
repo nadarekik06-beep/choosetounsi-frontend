@@ -39,6 +39,7 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled:        '#ef4444',
   refunded:         '#a855f7',
   out_for_delivery: '#8b5cf6',
+  partially_returned: '#d946ef',
 };
 
 function StatusBadge({ status, dark }: { status: string; dark: boolean }) {
@@ -210,8 +211,8 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
   return (
     <div style={{
       display: 'flex', gap: 14, padding: '14px 16px', borderBottom: `1px solid ${border}`, alignItems: 'flex-start',
-      background: item.item_status === 'returned' ? 'rgba(219,20,46,0.04)' : item.item_status === 'exchanged' ? 'rgba(245,158,11,0.04)' : 'transparent',
-      borderInlineStart: item.item_status === 'returned' ? '3px solid #db142e' : item.item_status === 'exchanged' ? '3px solid #f59e0b' : 'none',
+      background: item.item_status === 'returned' ? 'rgba(219,20,46,0.04)' : item.item_status === 'partially_returned' ? 'rgba(217,70,239,0.04)' : 'transparent',
+      borderInlineStart: item.item_status === 'returned' ? '3px solid #db142e' : item.item_status === 'partially_returned' ? '3px solid #d946ef' : 'none',
     }}>
       <div style={{ width: 72, height: 72, flexShrink: 0, borderRadius: 12, overflow: 'hidden', border: `1.5px solid ${border}`, background: dark ? 'rgba(255,255,255,0.04)' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
         {hasImage
@@ -227,11 +228,11 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <p style={{ fontWeight: 800, color: item.item_status ? (dark ? '#6b7280' : '#5b6472') : textMain, fontSize: 13, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: item.item_status ? 'line-through' : 'none' }}>
+          <p style={{ fontWeight: 800, color: item.item_status === 'returned' ? (dark ? '#6b7280' : '#5b6472') : textMain, fontSize: 13, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: item.item_status === 'returned' ? 'line-through' : 'none' }}>
             {item.product_name}
           </p>
           {item.item_status === 'returned' && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'rgba(219,20,46,0.15)', color: '#db142e', border: '1px solid rgba(219,20,46,0.35)' }}>{t('returned')}</span>}
-          {item.item_status === 'exchanged' && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'rgba(245,158,11,0.15)', color: ink('#f59e0b', dark), border: '1px solid rgba(245,158,11,0.35)' }}>{t('exchanged')}</span>}
+          {item.item_status === 'partially_returned' && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'rgba(217,70,239,0.15)', color: ink('#d946ef', dark), border: '1px solid rgba(217,70,239,0.35)' }}>{t('returnedQty', { count: item.returned_quantity ?? 0 })}</span>}
         </div>
 
         {hasVariant && (
@@ -254,7 +255,7 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: dark ? 'rgba(255,255,255,0.5)' : '#5b6472', background: dark ? 'rgba(255,255,255,0.06)' : '#f1f5f9', border: `1px solid ${border}`, padding: '2px 8px', borderRadius: 5 }}>
-            {t('qty', { count: item.quantity })}
+            {t('qty', { count: item.ordered_quantity ?? item.quantity })}
           </span>
           <span style={{ fontSize: 11, color: textMuted }}>{t('perUnit', { price: dt(item.unit_price) })}</span>
         </div>
@@ -376,7 +377,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
               {/* Status badges */}
               <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                 {[
-                  { label: t('orderStatus'),   node: <StatusBadge status={detail.order.status} dark={dark} /> },
+                  { label: t('orderStatus'),   node: <StatusBadge status={detail.order.display_status ?? detail.order.status} dark={dark} /> },
                   { label: t('paymentStatus'), node: <PaymentBadge status={detail.order.payment_status} /> },
                   { label: t('paymentMethod'), node: <MethodBadge method={detail.order.payment_method ?? null} /> },
                 ].map(({ label, node }) => (
@@ -626,7 +627,7 @@ export default function OrdersPage() {
         </div>
         <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} style={inputStyle}>
           <option value="">{t('allStatuses')}</option>
-          {['pending', 'confirmed', 'completed', 'delivered', 'cancelled'].map(s => (
+          {['pending', 'confirmed', 'completed', 'delivered', 'partially_returned', 'refunded', 'cancelled'].map(s => (
             <option key={s} value={s}>{statusLabel(s)}</option>
           ))}
         </select>
@@ -687,7 +688,7 @@ export default function OrdersPage() {
                         <p style={{ fontWeight: 700, color: textMain, margin: 0, fontSize: 12 }}>{order.user?.name ?? t('customerFallback', { id: order.user_id })}</p>
                       </td>
                       <td style={{ padding: '13px 20px', fontSize: 12, fontWeight: 500, color: textMuted }}>{order.wilaya ? wilaya(order.wilaya) : '—'}</td>
-                      <td style={{ padding: '13px 20px' }}><StatusBadge status={order.status} dark={dark} /></td>
+                      <td style={{ padding: '13px 20px' }}><StatusBadge status={order.display_status ?? order.status} dark={dark} /></td>
                       <td style={{ padding: '13px 20px' }}><PaymentBadge status={order.payment_status} /></td>
                       <td style={{ padding: '13px 20px' }}><MethodBadge method={order.payment_method} /></td>
                       <td style={{ padding: '13px 20px', textAlign: 'end', fontWeight: 900, color: textMain, fontSize: 12 }}>{dt(order.total_amount)}</td>

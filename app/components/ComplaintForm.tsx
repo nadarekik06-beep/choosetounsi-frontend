@@ -1,31 +1,18 @@
 'use client'
 
 /**
- * components/ComplaintForm.tsx  ← REPLACE
- *
- * BASE: original file (doc 33, 827 lines)
- *
- * CHANGES ADDED on top of the original:
- *   1. Import ResolutionType + RESOLUTION_TYPE_LABELS from types
- *   2. ResolutionPicker component (new, defined outside ComplaintForm like Field)
- *   3. selectedItemIds state (already existed in previous version)
- *   4. resolutionType state (NEW)
- *   5. step3Done now = !!resolutionType (resolution must be picked before type)
- *   6. Steps renumbered: Order(1)→Items(2)→Resolution(3)→Type(4)→Details(5)→Submit
- *   7. Section 3 = Resolution picker (inserted between Items and Complaint Type)
- *   8. validate() checks resolutionType
- *   9. handleSubmit passes resolution_type to complaintApi.submit()
- *   10. "No eligible orders" text updated to say 48h
- *
- * ALL original logic, styles, Field, Section, StepDot, ItemPicker,
- * baseInputStyle, TYPE_ICONS, brand tokens — 100% preserved.
+ * Return request form (/complaints/new). The only resolution is return +
+ * refund: the client returns the whole order or chosen items × quantity, with
+ * a reason, a description and at least one proof photo. Wants another item?
+ * They simply reorder.
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { complaintApi } from '@/lib/complaintApi'
-import type { Complaint, EligibleOrder, EligibleOrderItem, ComplaintType, ResolutionType } from '@/types/complaint'
-import { PurchasedItemThumb, VariantLabel } from '@/app/components/PurchasedItemRow'
-import { COMPLAINT_TYPE_LABELS, RESOLUTION_TYPE_LABELS } from '@/types/complaint'
+import type { Complaint, EligibleOrder, ComplaintType } from '@/types/complaint'
+import { COMPLAINT_TYPE_LABELS, SELLER_FAULT_TYPES } from '@/types/complaint'
+import ReturnItemsPicker, { returnLines } from '@/app/components/returns/ReturnItemsPicker'
+import ProofPhotosInput from '@/app/components/returns/ProofPhotosInput'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import BrandLoader from '@/components/brand/BrandLoader'
@@ -44,7 +31,6 @@ const TEXT      = '#0f172a'
 const TEXT_SEC  = '#475569'
 const MUTED     = '#94a3b8'
 const GREEN     = '#10b981'
-const ORANGE    = '#f97316'
 
 const TYPE_ICONS: Record<string, string> = {
   wrong_item:       '📦',
@@ -147,192 +133,6 @@ const baseInputStyle: React.CSSProperties = {
   boxSizing: 'border-box', transition: 'border-color 0.2s, box-shadow 0.2s',
 }
 
-// ── Item Picker ───────────────────────────────────────────────────────────────
-function ItemPicker({
-  items, selectedIds, onChange, error,
-}: {
-  items: EligibleOrderItem[]
-  selectedIds: number[]
-  onChange: (ids: number[]) => void
-  error?: string
-}) {
-  const t = useTranslations('complaintForm')
-  const { price } = useFormat()
-  const isSingle = items.length === 1
-
-  const toggle = (id: number) => {
-    if (selectedIds.includes(id)) onChange(selectedIds.filter(i => i !== id))
-    else onChange([...selectedIds, id])
-  }
-
-  if (isSingle) {
-    const item = items[0]
-    return (
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        padding: '10px 14px', borderRadius: 10,
-        background: RED_LIGHT, border: `1.5px solid ${RED}`,
-        animation: 'fadeSlideIn 0.2s ease',
-      }}>
-        <PurchasedItemThumb item={item} size={40} border={BORDER} />
-        <div style={{ flex: 1 }}>
-          <p style={{ fontSize: 13, fontWeight: 800, color: TEXT, margin: 0 }}>{item.product_name}</p>
-          <p style={{ fontSize: 11, color: TEXT_SEC, margin: '2px 0 0', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <VariantLabel item={item} color={TEXT_SEC} />
-            <span>{t('qty', { count: item.quantity })}</span>
-          </p>
-        </div>
-        <span style={{
-          fontSize: 10, fontWeight: 800, color: RED, background: RED_LIGHT,
-          padding: '3px 8px', borderRadius: 999, border: `1px solid ${RED}30`,
-        }}>{t('autoSelected')}</span>
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      <p style={{
-        fontSize: 11, color: TEXT_SEC, fontWeight: 600, marginBottom: 10,
-        display: 'flex', alignItems: 'center', gap: 6,
-      }}>
-        <span style={{
-          fontSize: 10, fontWeight: 800, color: RED,
-          background: RED_LIGHT, padding: '2px 7px', borderRadius: 999,
-          border: `1px solid ${RED}30`,
-        }}>{t('selectItemsBadge')}</span>
-        {t('whichItems')}
-      </p>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {items.map(item => {
-          const sel = selectedIds.includes(item.id)
-          return (
-            <button key={item.id} onClick={() => toggle(item.id)} aria-pressed={sel} style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '11px 14px', borderRadius: 12, cursor: 'pointer',
-              background: sel ? RED_LIGHT : CARD2,
-              border: `1.5px solid ${sel ? RED : BORDER}`,
-              textAlign: 'start', fontFamily: 'inherit',
-              boxShadow: sel ? `0 0 0 1px ${RED}, 0 2px 12px rgba(219,20,46,0.08)` : 'none',
-              transition: 'all 0.15s ease',
-            }}>
-              <div style={{
-                width: 20, height: 20, borderRadius: 6, flexShrink: 0,
-                border: `2px solid ${sel ? RED : BORDER}`,
-                background: sel ? RED : '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all 0.15s',
-              }}>
-                {sel && (
-                  <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
-                    <path d="M1 4L4 7L10 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </div>
-              <PurchasedItemThumb item={item} border={BORDER} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{
-                  fontSize: 13, fontWeight: 700, color: sel ? RED : TEXT,
-                  margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  transition: 'color 0.15s',
-                }}>{item.product_name}</p>
-                <p style={{ fontSize: 11, color: TEXT_SEC, margin: '2px 0 0', fontWeight: 500, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <VariantLabel item={item} color={TEXT_SEC} />
-                  <span>{t('qty', { count: item.quantity })} · {price(item.unit_price)}</span>
-                </p>
-              </div>
-            </button>
-          )
-        })}
-      </div>
-      {error && (
-        <span style={{ fontSize: 11, color: RED, fontWeight: 700, marginTop: 8, display: 'block' }}>
-          ⚠ {error}
-        </span>
-      )}
-    </div>
-  )
-}
-
-// ── Resolution Picker — NEW, defined outside ComplaintForm like Field ─────────
-function ResolutionPicker({
-  value, onChange, error,
-}: {
-  value: ResolutionType | ''; onChange: (v: ResolutionType) => void; error?: string
-}) {
-  const t = useTranslations('complaintForm')
-  const options: ResolutionType[] = ['return_refund', 'exchange']
-  return (
-    <div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        {options.map(opt => {
-          const cfg = RESOLUTION_TYPE_LABELS[opt]
-          const sel = value === opt
-          const accentColor = opt === 'return_refund' ? RED : ORANGE
-          const accentLight = opt === 'return_refund' ? RED_LIGHT : 'rgba(249,115,22,0.08)'
-          return (
-            <button key={opt} onClick={() => onChange(opt)} aria-pressed={sel} style={{
-              padding: '16px 14px', borderRadius: 12, cursor: 'pointer',
-              textAlign: 'start', fontFamily: 'inherit',
-              display: 'flex', flexDirection: 'column', gap: 8,
-              background: sel ? accentLight : CARD2,
-              border: `2px solid ${sel ? accentColor : BORDER}`,
-              boxShadow: sel
-                ? `0 0 0 1px ${accentColor}, 0 4px 16px ${accentColor}18`
-                : '0 1px 3px rgba(0,0,0,0.04)',
-              transition: 'all 0.18s ease',
-            }}>
-              <span style={{ fontSize: 28 }}>{cfg.icon}</span>
-              <div>
-                <p style={{ fontSize: 13, fontWeight: 800, color: sel ? accentColor : TEXT, margin: '0 0 3px' }}>
-                  {t(`resolution.${opt}.label`)}
-                </p>
-                <p style={{ fontSize: 11, color: TEXT_SEC, margin: 0, lineHeight: 1.4 }}>
-                  {t(`resolution.${opt}.description`)}
-                </p>
-              </div>
-              {sel && (
-                <div style={{
-                  width: 18, height: 18, borderRadius: '50%', background: accentColor,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-end',
-                }}>
-                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                    <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              )}
-            </button>
-          )
-        })}
-      </div>
-      {value === 'return_refund' && (
-        <div style={{
-          marginTop: 10, padding: '10px 14px', borderRadius: 9,
-          background: 'rgba(219,20,46,0.04)', border: '1px solid rgba(219,20,46,0.15)',
-          fontSize: 12, color: TEXT_SEC, lineHeight: 1.6,
-        }}>
-          {t('refundNote')}
-        </div>
-      )}
-      {value === 'exchange' && (
-        <div style={{
-          marginTop: 10, padding: '10px 14px', borderRadius: 9,
-          background: 'rgba(249,115,22,0.04)', border: '1px solid rgba(249,115,22,0.15)',
-          fontSize: 12, color: TEXT_SEC, lineHeight: 1.6,
-        }}>
-          {t('exchangeNote')}
-        </div>
-      )}
-      {error && (
-        <span style={{ fontSize: 11, color: RED, fontWeight: 700, marginTop: 8, display: 'block' }}>
-          ⚠ {error}
-        </span>
-      )}
-    </div>
-  )
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 interface ComplaintFormProps {
   prefilledOrderId?: number
@@ -353,95 +153,53 @@ export default function ComplaintForm({
   const [noEligible,     setNoEligible]     = useState(false)
 
   const [selectedOrderId, setSelectedOrderId] = useState<number | ''>(prefilledOrderId ?? '')
-  const [selectedItemIds, setSelectedItemIds] = useState<number[]>([])
-  const [resolutionType,  setResolutionType]  = useState<ResolutionType | ''>('')  // ← NEW
+  const [returnAll,       setReturnAll]       = useState(true)
+  const [quantities,      setQuantities]      = useState<Record<number, number>>({})
   const [complaintType,   setComplaintType]   = useState<ComplaintType | ''>('')
   const [otherReason,     setOtherReason]     = useState('')
   const [description,     setDescription]     = useState('')
-  const [imageFile,       setImageFile]       = useState<File | null>(null)
-  const [imagePreview,    setImagePreview]    = useState<string | null>(null)
+  const [photos,          setPhotos]          = useState<File[]>([])
+  const [returnFee,       setReturnFee]       = useState(0)
 
   const [focusedField, setFocusedField] = useState<string | null>(null)
   const [submitting,   setSubmitting]   = useState(false)
   const [errors,       setErrors]       = useState<Record<string, string>>({})
   const [serverError,  setServerError]  = useState('')
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const selectedOrder = eligibleOrders.find(o => o.id === selectedOrderId) ?? null
+  const lines         = selectedOrder ? returnLines(selectedOrder.items, returnAll, quantities) : []
 
   const step1Done = !!selectedOrderId
-  const step2Done = selectedItemIds.length > 0
-  const step3Done = !!resolutionType                                                          // ← NEW
-  const step4Done = !!complaintType && (complaintType !== 'other' || !!otherReason.trim())
-  const step5Done = description.trim().length >= 20
-  const allDone   = step1Done && step2Done && step3Done && step4Done && step5Done
+  const step2Done = lines.length > 0
+  const step3Done = !!complaintType && (complaintType !== 'other' || !!otherReason.trim())
+  const step4Done = description.trim().length >= 20 && photos.length > 0
+  const allDone   = step1Done && step2Done && step3Done && step4Done
 
-  // Steps: Order(1) Items(2) Resolution(3) Type(4) Details(5) Submit(6)
-  const currentStep = !step1Done ? 1 : !step2Done ? 2 : !step3Done ? 3 : !step4Done ? 4 : !step5Done ? 5 : 6
+  // Steps: Order(1) Items(2) Reason(3) Details(4) Submit(5)
+  const currentStep = !step1Done ? 1 : !step2Done ? 2 : !step3Done ? 3 : !step4Done ? 4 : 5
 
-  useEffect(() => {
-    if (!selectedOrderId) { setSelectedItemIds([]); return }
-    const order = eligibleOrders.find(o => o.id === selectedOrderId)
-    if (!order) return
-    if (order.items.length === 1) setSelectedItemIds([order.items[0].id])
-    else setSelectedItemIds([])
-  }, [selectedOrderId]) // eslint-disable-line react-hooks/exhaustive-deps
+  // A new order: start from "whole order", nothing chosen
+  useEffect(() => { setReturnAll(true); setQuantities({}) }, [selectedOrderId])
 
   useEffect(() => {
     complaintApi.getEligibleOrders()
       .then(res => {
         setEligibleOrders(res.data)
+        setReturnFee(Number(res.return_shipping_fee ?? 0))
         if (res.data.length === 0) setNoEligible(true)
       })
       .catch(() => setNoEligible(true))
       .finally(() => setLoadingOrders(false))
   }, [])
 
-  useEffect(() => {
-    if (prefilledOrderId && eligibleOrders.length > 0) {
-      const order = eligibleOrders.find(o => o.id === prefilledOrderId)
-      if (order && order.items.length === 1) setSelectedItemIds([order.items[0].id])
-    }
-  }, [eligibleOrders, prefilledOrderId])
-
-  const selectedOrder = eligibleOrders.find(o => o.id === selectedOrderId) ?? null
-
-  const processFile = (file: File) => {
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors(prev => ({ ...prev, image: t('errors.imageSize') }))
-      return
-    }
-    setErrors(prev => { const n = { ...prev }; delete n.image; return n })
-    setImageFile(file)
-    const reader = new FileReader()
-    reader.onload = ev => setImagePreview(ev.target?.result as string)
-    reader.readAsDataURL(file)
-  }
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) processFile(file)
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    const file = e.dataTransfer.files?.[0]
-    if (file && file.type.startsWith('image/')) processFile(file)
-  }
-
-  const removeImage = () => {
-    setImageFile(null); setImagePreview(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
-
   const validate = (): boolean => {
     const errs: Record<string, string> = {}
     if (!selectedOrderId)             errs.order_id       = t('errors.order')
-    if (selectedItemIds.length === 0) errs.item_ids       = t('errors.items')
-    if (!resolutionType)              errs.resolution_type = t('errors.resolution')
+    if (lines.length === 0)           errs.item_ids       = t('errors.items')
     if (!complaintType)               errs.complaint_type  = t('errors.type')
     if (complaintType === 'other' && !otherReason.trim()) errs.other_reason = t('errors.specify')
     if (description.trim().length < 20) errs.description  = t('charsNeeded', { count: 20 - description.trim().length })
-    if (!imageFile)                   errs.image           = t('errors.photo')
+    if (photos.length === 0)          errs.image           = t('errors.photo')
 
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -462,11 +220,11 @@ const scrollToFirstError = () => {
       const res = await complaintApi.submit({
         order_id:        selectedOrderId as number,
         complaint_type:  complaintType as ComplaintType,
-        resolution_type: resolutionType as ResolutionType,   // ← NEW
         other_reason:    complaintType === 'other' ? otherReason : undefined,
         description,
-        image:           imageFile,
-        item_ids:        selectedItemIds,
+        images:          photos,
+        return_all:      returnAll,
+        items:           lines,
       })
       onSuccess?.(res.data)
     } catch (err) {
@@ -515,14 +273,12 @@ const scrollToFirstError = () => {
     )
   }
 
-  // ── Step config — now 6 steps ─────────────────────────────────────────────
   const STEPS = [
     { n: 1, label: t('steps.order') },
     { n: 2, label: t('steps.items') },
-    { n: 3, label: t('steps.resolution') },
-    { n: 4, label: t('steps.type') },
-    { n: 5, label: t('steps.details') },
-    { n: 6, label: t('steps.submit') },
+    { n: 3, label: t('steps.type') },
+    { n: 4, label: t('steps.details') },
+    { n: 5, label: t('steps.submit') },
   ]
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -662,7 +418,7 @@ const scrollToFirstError = () => {
                 <span key={item.id} style={{
                   fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 6,
                   background: '#fff', color: TEXT_SEC, border: `1px solid ${BORDER}`,
-                }}>📦 {item.product_name}{item.variant_label ? ` (${item.variant_label})` : ''} ×{item.quantity}</span>
+                }}>📦 {item.product_name}{item.variant_label ? ` (${item.variant_label})` : ''} ×{item.returnable_quantity}</span>
               ))}
               <span style={{
                 marginInlineStart: 'auto', fontSize: 11, fontWeight: 800,
@@ -674,35 +430,32 @@ const scrollToFirstError = () => {
           )}
         </Section>
 
-        {/* ═══ 2 — ITEM SELECTION ═════════════════════════════════════════════ */}
+        {/* ═══ 2 — WHAT GOES BACK ═════════════════════════════════════════════ */}
         {selectedOrder && (
           <Section icon="📦" label={t('selectItems')} done={step2Done} delay="0.04s" hasError={!!errors.item_ids}>
-            <ItemPicker
+            <ReturnItemsPicker
               items={selectedOrder.items}
-              selectedIds={selectedItemIds}
-              onChange={ids => {
-                setSelectedItemIds(ids)
-                if (ids.length > 0) setErrors(p => { const n = { ...p }; delete n.item_ids; return n })
+              returnAll={returnAll}
+              onReturnAll={v => { setReturnAll(v); if (!v) setQuantities({}) }}
+              quantities={quantities}
+              onChange={q => {
+                setQuantities(q)
+                setErrors(p => { const n = { ...p }; delete n.item_ids; return n })
               }}
               error={errors.item_ids}
             />
+            <div style={{
+              marginTop: 12, padding: '10px 14px', borderRadius: 9,
+              background: 'rgba(219,20,46,0.04)', border: '1px solid rgba(219,20,46,0.15)',
+              fontSize: 12, color: TEXT_SEC, lineHeight: 1.6,
+            }}>
+              {t('refundNote')} <strong>{t('noExchange')}</strong>
+            </div>
           </Section>
         )}
 
-        {/* ═══ 3 — RESOLUTION TYPE — NEW ══════════════════════════════════════ */}
-        <Section icon="⚖️" label={t('whatWant')} done={step3Done} delay="0.08s" hasError={!!errors.resolution_type}>
-          <ResolutionPicker
-            value={resolutionType}
-            onChange={v => {
-              setResolutionType(v)
-              setErrors(p => { const n = { ...p }; delete n.resolution_type; return n })
-            }}
-            error={errors.resolution_type}
-          />
-        </Section>
-
-        {/* ═══ 4 — COMPLAINT TYPE ═════════════════════════════════════════════ */}
-        <Section icon="🏷️" label={t('type')} done={step4Done} delay="0.12s" hasError={!!errors.complaint_type}>
+        {/* ═══ 3 — REASON ════════════════════════════════════════════════════ */}
+        <Section icon="🏷️" label={t('type')} done={step3Done} delay="0.12s" hasError={!!errors.complaint_type}>
           <div style={{
             display: 'grid',
             gridTemplateColumns: compact ? 'repeat(2,1fr)' : 'repeat(auto-fill, minmax(138px, 1fr))',
@@ -740,6 +493,13 @@ const scrollToFirstError = () => {
           {errors.complaint_type && (
             <span style={{ fontSize: 11, color: RED, fontWeight: 700 }}>⚠ {errors.complaint_type}</span>
           )}
+          {complaintType && (
+            <p style={{ margin: '10px 0 0', fontSize: 11.5, color: TEXT_SEC, lineHeight: 1.55 }}>
+              {SELLER_FAULT_TYPES.includes(complaintType)
+                ? t('shippingSeller')
+                : t('shippingClient', { fee: returnFee.toFixed(3) })}
+            </p>
+          )}
           {complaintType === 'other' && (
             <div style={{ marginTop: 12, animation: 'fadeSlideIn 0.2s ease' }}>
               <Field label={t('specifyReason')} error={errors.other_reason} required>
@@ -758,8 +518,8 @@ const scrollToFirstError = () => {
           )}
         </Section>
 
-        {/* ═══ 5 — DESCRIPTION + PHOTO ════════════════════════════════════════ */}
-        <Section icon="✏️" label={t('describe')} done={step5Done} delay="0.16s" hasError={!!errors.description || !!errors.image}>
+        {/* ═══ 4 — DESCRIPTION + PHOTOS ═══════════════════════════════════════ */}
+        <Section icon="✏️" label={t('describe')} done={step4Done} delay="0.16s" hasError={!!errors.description || !!errors.image}>
           <Field label={t('description')} error={errors.description} hint={`${description.length} / 2000`} required>
             <textarea
               value={description}
@@ -794,53 +554,13 @@ const scrollToFirstError = () => {
 
           {/* Photo upload */}
           <div style={{ marginTop: 18 }}>
-              <Field label={t('proofPhoto')} error={errors.image} hint={t('proofHint')}>
-              {imagePreview ? (
-                <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: `1.5px solid ${BORDER}` }}>
-                  <img
-                    src={imagePreview} alt={t('preview')}
-                    style={{ width: '100%', maxHeight: 180, objectFit: 'cover', display: 'block' }}
-                  />
-                  <div style={{
-                    position: 'absolute', bottom: 0, insetInline: 0, padding: '10px 14px',
-                    background: 'linear-gradient(transparent, rgba(0,0,0,0.65))',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  }}>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
-                      📎 {imageFile?.name}
-                    </span>
-                    <button onClick={removeImage} style={{
-                      padding: '3px 10px', borderRadius: 6, background: RED,
-                      color: '#fff', border: 'none', cursor: 'pointer', fontSize: 11,
-                      fontWeight: 800, fontFamily: 'inherit',
-                    }}>{t('remove')}</button>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className="ct-upload"
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={e => e.preventDefault()}
-                  onDrop={handleDrop}
-                  style={{
-                        border: errors.image ? `2px dashed ${RED}` : `2px dashed #cbd5e1`,
-                        borderRadius: 10, padding: '24px 16px',
-                        textAlign: 'center', cursor: 'pointer',
-                        background: errors.image ? 'rgba(219,20,46,0.03)' : '#f8fafc',
-                        transition: 'all 0.2s ease',
-                      }}>
-                  <div style={{ fontSize: 30, marginBottom: 8 }}>📷</div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, margin: '0 0 4px' }}>
-                    {t.rich('drop', { b: c => <span style={{ color: RED }}>{c}</span> })}
-                  </p>
-                  <p style={{ fontSize: 11, color: MUTED, margin: 0 }}>JPEG · PNG · WEBP</p>
-                </div>
-              )}
-              <input
-                ref={fileInputRef} type="file"
-                accept="image/jpeg,image/png,image/jpg,image/webp"
-                style={{ display: 'none' }} onChange={handleFile}
-              />
+              <Field label={t('proofPhoto')} error={undefined} hint={t('proofHint')} required>
+                <ProofPhotosInput
+                  files={photos}
+                  onChange={f => { setPhotos(f); if (f.length) setErrors(p => { const n = { ...p }; delete n.image; return n }) }}
+                  onError={m => setErrors(p => (m ? { ...p, image: m } : p))}
+                  error={errors.image}
+                />
             </Field>
           </div>
         </Section>

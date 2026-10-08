@@ -25,6 +25,7 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled:        '#ef4444',
   refunded:         '#a855f7',
   out_for_delivery: '#8b5cf6',
+  partially_returned: '#d946ef',
 }
 
 const PAYOUT_COLORS: Record<string, string> = {
@@ -60,6 +61,7 @@ interface DrawerData {
   order_number: string | null
   created_at: string
   status: string
+  display_status?: string
   payment_method: string | null
   payout_status: string | null
   paid_out_at: string | null
@@ -263,7 +265,7 @@ export default function SellerOrderDrawer({ sellerOrderId, orderNumber, onClose 
                 </div>
                 <div>
                   <p style={label}>{t('status')}</p>
-                  <Chip color={STATUS_COLORS[data.status] ?? '#94a3b8'}>{statusLabel(data.status)}</Chip>
+                  <Chip color={STATUS_COLORS[data.display_status ?? data.status] ?? '#94a3b8'}>{statusLabel(data.display_status ?? data.status)}</Chip>
                 </div>
                 <div>
                   <p style={label}>{t('payment')}</p>

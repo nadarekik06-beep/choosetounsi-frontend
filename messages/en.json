@@ -1125,10 +1125,11 @@
     "completed": "Completed",
     "delivered": "Delivered",
     "cancelled": "Cancelled",
-    "refunded": "Refunded",
+    "refunded": "Returned (Refunded)",
     "confirmed": "Confirmed",
     "shipped": "Shipped",
-    "returned": "Returned"
+    "returned": "Returned",
+    "partially_returned": "Partially returned"
   },
   "paymentStatus": {
     "pending": "Pending",
@@ -1177,12 +1178,13 @@
       "delivered": "Delivered",
       "confirmed": "Confirmed",
       "cancelledTitle": "Order cancelled",
-      "refundedTitle": "Order refunded",
+      "refundedTitle": "Returned & refunded",
       "cancelledBody": "This order has been cancelled.",
-      "refundedBody": "Your refund has been processed.",
+      "refundedBody": "This order was returned and refunded.",
       "driverOnWay": "{name} is on the way",
       "pickedUp": "Picked up · {date}"
-    }
+    },
+    "returnedQty": "{count} returned"
   },
   "reviewForm": {
     "title": "Leave a review",
@@ -1229,12 +1231,12 @@
     "seconds": "{count}s"
   },
   "complaintModal": {
-    "title": "Report an issue",
+    "title": "Return & refund",
     "order": "Order",
     "hoursLeft": "{hours}h left",
     "close": "Close",
-    "successTitle": "Complaint submitted!",
-    "successBody": "Our support team will review your complaint for order <b>#{number}</b> and respond within <b>24–48 hours</b>.",
+    "successTitle": "Return requested!",
+    "successBody": "The shop and our team will review your return for order <b>#{number}</b>. You can follow every step.",
     "successEmail": "You'll be notified by email when it's reviewed.",
     "done": "Done",
     "blockedTitle": "Not delivered yet",
@@ -1250,17 +1252,11 @@
     "partialOthers": "The others are still {statuses}.",
     "loadingItems": "Loading items…",
     "item": "Item",
-    "whichItems": "Which item(s)?",
+    "whichItems": "What are you returning?",
     "qty": "Qty: {count}",
     "auto": "Auto",
     "selectItems": "Select the item(s) you have an issue with:",
-    "whatWant": "What do you want?",
-    "refund": "Return & refund",
-    "refundDesc": "Return the item and get your money back",
-    "exchange": "Exchange",
-    "exchangeDesc": "Receive a replacement item instead",
-    "refundNote": "📦 A delivery agent will collect the item(s) from you and return them to the seller.",
-    "exchangeNote": "🔄 A delivery agent will bring you a replacement item.",
+    "refundNote": "📦 A courier collects the item(s) and brings them back to the shop; you are refunded once they are checked.",
     "type": "Complaint type",
     "types": {
       "placeholder": "— Select a reason —",
@@ -1282,7 +1278,7 @@
     "descriptionPlaceholder": "Describe the issue clearly. What did you receive? What was expected? When did you notice it?",
     "charsNeeded": "{count} more chars needed",
     "charsOk": "✓ Good to go",
-    "proof": "Proof image",
+    "proof": "Proof photos",
     "required": "required",
     "preview": "Preview",
     "removePhoto": "Remove photo",
@@ -1292,32 +1288,35 @@
     "infoHours": "You have <b>{hours}h</b> left to file this complaint.",
     "infoTip": "Clear details and photos help us resolve issues faster.",
     "submitting": "Submitting…",
-    "submit": "Submit complaint",
+    "submit": "Request a return",
     "disclaimer": "Submitting confirms this issue is genuine and accurate.",
     "errors": {
       "imageType": "Please upload an image file.",
       "imageSize": "Image must be under 5 MB.",
       "type": "Please select a complaint type.",
-      "resolution": "Please select what you want: Exchange or Return & refund.",
       "minChars": "Description needs at least {count} characters.",
-      "photo": "A proof photo is required. Please upload one.",
-      "items": "Please select at least one item you are reporting an issue with.",
+      "photo": "At least one proof photo is required.",
+      "items": "Choose at least one item to return.",
       "submit": "Submission failed",
       "generic": "Something went wrong. Please try again."
-    }
+    },
+    "noExchange": "Want a different item? Simply reorder.",
+    "shippingSeller": "✓ Return shipping is paid by the shop for this reason.",
+    "shippingClient": "Return shipping ({fee} DT) is deducted from your refund for this reason.",
+    "track": "Track my return"
   },
   "complaints": {
-    "metaTitle": "My complaints",
-    "title": "My complaints",
+    "metaTitle": "My returns",
+    "title": "My returns",
     "myOrders": "My orders",
-    "count": "{count, plural, =0 {No complaints} one {# complaint} other {# complaints}}",
-    "new": "New complaint",
-    "file": "File a complaint",
-    "newSubtitle": "Report an issue with a delivered order",
+    "count": "{count, plural, =0 {No returns} one {# return} other {# returns}}",
+    "new": "New return",
+    "file": "Request a return",
+    "newSubtitle": "Return a delivered order or some of its items",
     "loading": "Loading your complaints…",
     "loadFailed": "Failed to load complaints. Please refresh the page.",
-    "emptyTitle": "No complaints yet",
-    "emptyBody": "If you have an issue with a delivered order, you can file a complaint.",
+    "emptyTitle": "No returns yet",
+    "emptyBody": "If something is wrong with a delivered order, you can return it for a refund.",
     "complaintN": "Complaint #{id}",
     "order": "Order",
     "hide": "Hide",
@@ -1327,30 +1326,30 @@
     "sellerResponse": "Seller response",
     "rejectionReason": "Rejection reason",
     "filedOn": "Filed on {date}",
-    "policyTitle": "Important — Complaint policy",
-    "policyBody": "Complaints can only be filed for <b>delivered orders</b> within <b>48 hours</b> of delivery. Only one complaint per order is allowed. A proof photo strengthens your case.",
-    "successTitle": "Complaint submitted successfully!",
-    "successBody": "Your complaint is now under review. Our team will investigate and contact you within <b>3–5 business days</b>.",
-    "successNotice": "You will receive an email and in-app notification when a decision is made.",
+    "policyTitle": "Return policy",
+    "policyBody": "Returns can be requested within <b>48 hours</b> of delivery, for the whole order or some items, with at least one photo. You are refunded once the item is back and checked — to your wallet, by transfer / D17, or to your card.",
+    "successTitle": "Return requested!",
+    "successBody": "The shop has <b>48 hours</b> to answer, then ChooseTounsi validates and organises the pick-up.",
+    "successNotice": "You will be notified (app + e-mail) at every step until the refund.",
     "viewOrders": "View my orders",
     "howItWorks": "How it works",
     "stepN": "Step {n}",
     "steps": {
       "s1": {
-        "title": "Submit",
-        "text": "Fill in the form with details about your issue"
+        "title": "Request",
+        "text": "Choose the items, the reason and add a photo"
       },
       "s2": {
-        "title": "Review",
-        "text": "Our team and the seller review your complaint"
+        "title": "Decision",
+        "text": "The shop answers, ChooseTounsi validates"
       },
       "s3": {
-        "title": "Decision",
-        "text": "Admin makes a final decision within 5 days"
+        "title": "Pick-up",
+        "text": "A courier collects the item at your address"
       },
       "s4": {
-        "title": "Resolution",
-        "text": "If approved: refund or replacement is processed"
+        "title": "Refund",
+        "text": "Refunded once the item is received and checked"
       }
     },
     "types": {
@@ -1382,8 +1381,8 @@
         "description": "Your complaint was not approved."
       }
     },
-    "newMetaTitle": "File a complaint",
-    "items": "Item(s) concerned",
+    "newMetaTitle": "Request a return",
+    "items": "Returned item(s)",
     "qty": "Qty: {count}"
   },
   "complaintForm": {
@@ -1391,25 +1390,13 @@
     "autoSelected": "Auto-selected",
     "selectItemsBadge": "Select items",
     "whichItems": "Which item(s) are you reporting an issue with?",
-    "resolution": {
-      "return_refund": {
-        "label": "Return & refund",
-        "description": "Return the item and get your money back"
-      },
-      "exchange": {
-        "label": "Exchange",
-        "description": "Receive a replacement item instead"
-      }
-    },
-    "refundNote": "📦 A delivery agent will collect the item(s) from you and return them to the seller. Your refund will be processed after pickup.",
-    "exchangeNote": "🔄 A delivery agent will bring you a replacement item. The seller will coordinate the exchange.",
+    "refundNote": "📦 A courier collects the item(s) and brings them back to the shop. You are refunded once they are received and checked.",
     "noEligibleTitle": "No eligible orders",
-    "noEligibleBody": "Complaints can only be filed on <b>delivered orders</b> within <b>48 hours</b> of delivery, once per order.",
+    "noEligibleBody": "Returns can be requested on <b>delivered orders</b> within <b>48 hours</b> of delivery, for the items not already returned.",
     "close": "Close",
     "steps": {
       "order": "Order",
       "items": "Items",
-      "resolution": "Resolution",
       "type": "Type",
       "details": "Details",
       "submit": "Submit"
@@ -1423,9 +1410,8 @@
     "chooseOrder": "— Choose an order —",
     "hoursLeft": "{hours}h left",
     "hoursRemaining": "{hours}h remaining",
-    "selectItems": "Select item(s)",
-    "whatWant": "What do you want?",
-    "type": "Complaint type",
+    "selectItems": "What are you returning?",
+    "type": "Reason",
     "specifyReason": "Specify your reason",
     "otherPlaceholder": "e.g. Item arrived in wrong packaging",
     "describe": "Describe the issue",
@@ -1433,26 +1419,28 @@
     "descriptionPlaceholder": "What happened? What did you receive vs. what was expected? The more detail, the faster we can resolve this…",
     "charsOk": "✓ Great detail — this strengthens your case",
     "charsNeeded": "{count} more characters needed",
-    "proofPhoto": "Proof photo",
-    "proofHint": "Required · max 5 MB",
+    "proofPhoto": "Proof photos",
+    "proofHint": "Required · 1 to 5 photos",
     "preview": "Preview",
     "remove": "Remove",
     "drop": "Drop photo here or <b>click to browse</b>",
     "cancel": "Cancel",
-    "submitting": "Submitting your complaint…",
-    "submit": "Submit complaint",
+    "submitting": "Sending your request…",
+    "submit": "Request a return",
     "ready": "Ready ✓",
     "disclaimer": "By submitting, you confirm this report is accurate. False complaints may result in account restrictions.",
     "errors": {
       "imageSize": "Image must be under 5 MB.",
       "order": "Please select an order.",
-      "items": "Please select at least one item.",
-      "resolution": "Please select a resolution.",
+      "items": "Choose at least one item to return.",
       "type": "Please select a type.",
       "specify": "Please specify.",
-      "photo": "A proof photo is required.",
+      "photo": "At least one proof photo is required.",
       "submit": "Failed to submit. Please try again."
-    }
+    },
+    "noExchange": "Want a different item? Simply place a new order.",
+    "shippingSeller": "✓ Wrong or defective item: return shipping is paid by the shop.",
+    "shippingClient": "Change of mind: return shipping ({fee} DT) is deducted from your refund."
   },
   "favorites": {
     "metaTitle": "My favorites",
@@ -3227,7 +3215,8 @@
         "method": "Method",
         "amount": "Amount",
         "date": "Date"
-      }
+      },
+      "returnedQty": "↩ {count} returned"
     },
     "earnings": {
       "loadFailed": "Failed to load earnings data.",
@@ -3269,7 +3258,9 @@
         "net": "Your Net",
         "orders": "Orders",
         "pending": "Pending Payout",
-        "paid": "Paid Out"
+        "paid": "Paid Out",
+        "returnDebits": "Return debits",
+        "returnDebitsNote": "Refunded returns after a payout and return shipping — deducted from your next settlement."
       },
       "splitCols": {
         "gross": "Gross Total",
@@ -3447,8 +3438,8 @@
       }
     },
     "complaints": {
-      "title": "Complaints",
-      "subtitle": "Customer complaints about your products",
+      "title": "Returns",
+      "subtitle": "Return requests on your sales",
       "refresh": "Refresh",
       "filter": "FILTER",
       "empty": "No complaints",
@@ -3472,17 +3463,17 @@
       "filedOn": "Filed on {date}",
       "reject": "Reject",
       "approve": "Approve",
-      "toastApproved": "✓ Complaint approved",
-      "toastRejected": "⚠ Rejection submitted for review",
+      "toastApproved": "✓ Return accepted",
+      "toastRejected": "✓ Refusal sent",
       "approveTitle": "Approve Complaint",
       "rejectTitle": "Reject Complaint",
-      "approveHint": "The customer will be notified immediately after approval.",
-      "rejectHint": "Admin will review and validate your rejection before it is final.",
+      "approveHint": "ChooseTounsi validates your acceptance, then a courier collects the item.",
+      "rejectHint": "The client is notified with your reason and may ask ChooseTounsi to decide.",
       "approvePlaceholder": "Optional message for the customer…",
       "rejectPlaceholder": "Explain why you are rejecting this complaint…",
       "rejectionReason": "Rejection Reason",
       "reasonPlaceholder": "Clearly state the reason (visible to customer if admin approves)…",
-      "adminWarning": "Your rejection goes to admin for final approval. Customer is notified only after admin confirms.",
+      "adminWarning": "Be precise: the client sees this reason and ChooseTounsi may override your decision.",
       "cancel": "Cancel",
       "submitting": "Submitting…",
       "confirmApproval": "Confirm Approval",
@@ -3492,7 +3483,18 @@
         "reviewing": "REVIEWING",
         "approved": "APPROVED",
         "awaitingAdmin": "AWAITING ADMIN",
-        "rejected": "REJECTED"
+        "rejected": "REJECTED",
+        "requested": "REQUESTED",
+        "seller_accepted": "ACCEPTED",
+        "seller_rejected": "REFUSED",
+        "escalated": "ESCALATED",
+        "admin_approved": "APPROVED",
+        "pickup_scheduled": "PICK-UP SCHEDULED",
+        "picked_up": "PICKED UP",
+        "returned_to_seller": "RECEIVED",
+        "refunded": "REFUNDED",
+        "cancelled": "CANCELLED",
+        "closed": "CLOSED"
       },
       "refund": {
         "pending": "Awaiting Pickup",
@@ -3505,7 +3507,10 @@
         "needsAction": "Needs Action",
         "approved": "Approved",
         "awaitingAdmin": "Awaiting Admin",
-        "rejected": "Rejected"
+        "rejected": "Rejected",
+        "inProgress": "In progress",
+        "refunded": "Refunded",
+        "refused": "Refused / closed"
       },
       "filters": {
         "all": "All",
@@ -3513,7 +3518,12 @@
         "reviewing": "Reviewing",
         "approved": "Approved",
         "awaitingAdmin": "Awaiting Admin",
-        "rejected": "Rejected"
+        "rejected": "Rejected",
+        "requested": "To answer",
+        "inProgress": "In progress",
+        "toReceive": "To receive",
+        "received": "Received / refunded",
+        "closed": "Closed"
       },
       "errors": {
         "noteShort": "Note must be at least 10 characters (or leave empty).",
@@ -3522,7 +3532,39 @@
         "failed": "Action failed. Please try again."
       },
       "items": "Item(s) concerned",
-      "qty": "Qty: {count}"
+      "qty": "Qty: {count}",
+      "explain": {
+        "seller_accepted": "You accepted this return. ChooseTounsi validates it, then a courier collects the item.",
+        "seller_rejected": "You refused this return. The client was notified and may ask ChooseTounsi to decide.",
+        "escalated": "The client contests your refusal: ChooseTounsi will decide.",
+        "admin_approved": "Approved by ChooseTounsi. The pick-up at the client is being scheduled.",
+        "pickup_scheduled": "A courier will collect the item at the client and bring it back to you.",
+        "picked_up": "The item is on its way back. When you receive it, confirm the reception and the condition of each item.",
+        "returned_to_seller": "Received and inspected. ChooseTounsi refunds the client; the sale will be removed from your earnings.",
+        "refunded": "The client was refunded. The returned amount was removed from your sales (and from your next payout if already paid).",
+        "rejected": "This return was rejected.",
+        "cancelled": "This return was cancelled.",
+        "closed": "This request is closed."
+      },
+      "receive": {
+        "open": "Confirm reception",
+        "title": "Return received",
+        "hint": "Check each returned item and tell us its condition.",
+        "resaleable": "Resaleable",
+        "damaged": "Damaged",
+        "confirm": "Confirm reception",
+        "conditionRequired": "Choose the condition of every item.",
+        "stockNote": "Resaleable items go back to stock on their exact variant. Damaged items are not restocked.",
+        "notePlaceholder": "Remarks (optional)…",
+        "toast": "✓ Reception confirmed",
+        "restocked": "↺ {count} back in stock"
+      },
+      "returnQty": "Returned: {count}",
+      "returnQtyOf": "Returned {count} of {total}",
+      "returnAmount": "Returned amount (price paid)",
+      "shippingSeller": "Return shipping ({fee}) is charged to you: wrong or defective item.",
+      "shippingClient": "Return shipping is paid by the client (change of mind).",
+      "confirmRejection": "Refuse the return"
     },
     "reviews": {
       "title": "Reviews & Reputation",
@@ -5734,6 +5776,96 @@
       "complaints": "No open complaints",
       "reviews": "No review reminders",
       "promotions": "No offers right now"
+    }
+  },
+  "returns": {
+    "reference": "Return {ref}",
+    "track": "Track return",
+    "tracking": "Return / Refund tracking",
+    "orderReturns": "Returns on this order",
+    "refundedWith": "Refunded {amount} · {method}",
+    "returnQty": "Returned: {count} of {total}",
+    "legacyExchange": "This request was filed as an exchange under the previous policy. It is handled by our team; new requests are returns with a refund.",
+    "shopReason": "Shop's reason",
+    "rejectionReason": "Reason",
+    "shopMessage": "Message from the shop",
+    "status": {
+      "requested": "Requested",
+      "seller_accepted": "Accepted by the shop",
+      "seller_rejected": "Refused by the shop",
+      "escalated": "Escalated to ChooseTounsi",
+      "admin_approved": "Approved",
+      "pickup_scheduled": "Pick-up scheduled",
+      "picked_up": "Picked up",
+      "returned_to_seller": "Received & inspected",
+      "refunded": "Refunded",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled",
+      "closed": "Closed"
+    },
+    "hint": {
+      "requested": "The shop has 48 hours to answer your request.",
+      "seller_accepted": "The shop accepted. ChooseTounsi validates and then plans the pick-up.",
+      "seller_rejected": "The shop refused your request. If you disagree, ask ChooseTounsi to decide.",
+      "escalated": "Our team is reviewing your request and will decide shortly.",
+      "admin_approved": "Approved! A courier will contact you to collect the item.",
+      "pickup_scheduled": "The pick-up is planned: keep the item ready, ideally in its original packaging.",
+      "picked_up": "The courier collected the item; it is on its way back to the shop.",
+      "returned_to_seller": "The item was received and checked. Your refund is being issued.",
+      "refunded": "Your refund has been issued.",
+      "rejected": "Your request was not accepted.",
+      "cancelled": "This request was cancelled.",
+      "closed": "This request is closed."
+    },
+    "steps": {
+      "seller_decision": "Shop's answer",
+      "skipped": "decided by ChooseTounsi"
+    },
+    "methods": {
+      "wallet": "ChooseTounsi wallet",
+      "bank_transfer": "Bank transfer",
+      "d17": "D17",
+      "original": "Original card"
+    },
+    "refund": {
+      "title": "Refund",
+      "items": "Returned items (price paid)",
+      "shipping": "Return shipping (your choice)",
+      "expected": "Expected refund",
+      "refunded": "Refunded",
+      "method": "Method",
+      "reference": "Reference",
+      "date": "Date",
+      "shippingSeller": "Return shipping is paid by the shop (wrong or defective item).",
+      "shippingClient": "Return shipping ({fee}) is deducted from the refund (change of mind).",
+      "afterInspection": "The refund is issued once the item is back and checked."
+    },
+    "actions": {
+      "escalateTitle": "Disagree with the shop?",
+      "escalateHint": "Ask ChooseTounsi to review your request. Our decision is final.",
+      "escalate": "Ask ChooseTounsi to decide",
+      "escalatePlaceholder": "Add details for our team (optional)…",
+      "escalateConfirm": "Send to ChooseTounsi",
+      "sending": "Sending…",
+      "cancel": "Withdraw my request",
+      "cancelConfirm": "Withdraw this return request?",
+      "failed": "Action failed. Please try again."
+    },
+    "form": {
+      "wholeOrder": "Whole order",
+      "someItems": "Some items",
+      "quantity": "Quantity to return",
+      "paidUnit": "{price} paid / unit",
+      "returnable": "{count} returnable",
+      "estimate": "Estimated refund (before return shipping)",
+      "dropPhotos": "Drop photos here or <b>browse</b>",
+      "addPhoto": "Add another photo",
+      "photosHint": "At least 1 photo, up to {count} · JPG, PNG, WEBP · 5 MB each",
+      "photoType": "Please upload an image file.",
+      "photoSize": "Each photo must be under 5 MB.",
+      "photoMax": "Up to {count} photos.",
+      "photoN": "Photo {n}",
+      "removePhoto": "Remove photo"
     }
   }
 }

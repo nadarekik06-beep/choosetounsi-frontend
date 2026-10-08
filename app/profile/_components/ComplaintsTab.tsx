@@ -11,19 +11,23 @@ import { EmptyState, Skeleton } from '@/components/profile/ui'
 
 interface Complaint {
   id: number
-  status: 'pending' | 'reviewing' | 'approved' | 'seller_rejected_pending_admin' | 'rejected'
+  reference: string | null
+  status: string
   complaint_type: string
   created_at: string
   order: { id: number; order_number: string } | null
 }
 
-const STATUS_CLASS: Record<Complaint['status'], string> = {
-  pending: 'pending', reviewing: 'confirmed', seller_rejected_pending_admin: 'shipped', approved: 'delivered', rejected: 'cancelled',
+const STATUS_CLASS: Record<string, string> = {
+  requested: 'pending', seller_accepted: 'confirmed', seller_rejected: 'shipped', escalated: 'shipped',
+  admin_approved: 'confirmed', pickup_scheduled: 'shipped', picked_up: 'shipped', returned_to_seller: 'shipped',
+  refunded: 'delivered', rejected: 'cancelled', cancelled: 'cancelled', closed: 'delivered',
 }
 
 export default function ComplaintsTab({ data }: { data: ProfileOverview | null }) {
   const t   = useTranslations('profile.complaintsTab')
   const tc  = useTranslations('complaints')
+  const tr  = useTranslations('returns')
   const fmt = useFormat()
   const [list, setList] = useState<Complaint[] | null>(null)
   const [error, setError] = useState(false)
@@ -57,12 +61,12 @@ export default function ComplaintsTab({ data }: { data: ProfileOverview | null }
         ) : (
           <div style={{ display: 'grid', gap: 10 }}>
             {list.map(x => (
-              <Link key={x.id} href="/complaints" className="pf-order">
+              <Link key={x.id} href={`/complaints?id=${x.id}`} className="pf-order">
                 <span className="pf-thumb" style={{ color: '#b45309', background: '#fff7e6' }} aria-hidden><AlertTriangle size={18} /></span>
                 <div className="pf-order-main">
                   <div className="pf-order-top">
-                    <span className="pf-order-num">{tc('complaintN', { id: x.id })}</span>
-                    <span className={`pf-status ${STATUS_CLASS[x.status] ?? 'neutral'}`}>{tc(`status.${x.status}.label`)}</span>
+                    <span className="pf-order-num">{x.reference ? tr('reference', { ref: x.reference }) : tc('complaintN', { id: x.id })}</span>
+                    <span className={`pf-status ${STATUS_CLASS[x.status] ?? 'neutral'}`}>{tr.has(`status.${x.status}`) ? tr(`status.${x.status}`) : x.status}</span>
                   </div>
                   <div className="pf-order-meta">
                     {tc.has(`types.${x.complaint_type}`) ? tc(`types.${x.complaint_type}`) : x.complaint_type}

@@ -1,8 +1,5 @@
 /**
- * FILE: lib/complaintApi.ts  (customer frontend — port 3000)  ← REPLACE
- *
- * Change: complaintApi.submit() now appends resolution_type to FormData.
- * Everything else is identical to the previous version.
+ * Returns API — client, seller (owner) and the storefront's legacy admin calls.
  */
 
 import { fallbackError } from '@/lib/i18n/clientLocale'
@@ -55,7 +52,7 @@ async function formRequest<T>(path: string, data: FormData): Promise<T> {
 
 export const complaintApi = {
   getEligibleOrders: () =>
-    jsonRequest<{ success: boolean; window_hours: number; window_days: number; data: EligibleOrder[] }>(
+    jsonRequest<{ success: boolean; window_hours: number; window_days: number; return_shipping_fee: number; data: EligibleOrder[] }>(
       'GET', '/client/complaints/eligible-orders'
     ),
 
@@ -69,19 +66,32 @@ export const complaintApi = {
   getOne: (id: number) =>
     jsonRequest<{ success: boolean; data: Complaint }>('GET', `/client/complaints/${id}`),
 
+  /** Multipart: proof photos + either return_all or items[i][order_item_id|quantity]. */
   submit: (payload: ComplaintFormPayload) => {
     const fd = new FormData()
-    fd.append('order_id',        String(payload.order_id))
-    fd.append('complaint_type',  payload.complaint_type)
-    fd.append('resolution_type', payload.resolution_type)   // ← NEW
-    fd.append('description',     payload.description)
+    fd.append('order_id',       String(payload.order_id))
+    fd.append('complaint_type', payload.complaint_type)
+    fd.append('description',    payload.description)
     if (payload.other_reason) fd.append('other_reason', payload.other_reason)
-    if (payload.image)        fd.append('image', payload.image)
-    if (payload.item_ids && payload.item_ids.length > 0) {
-      payload.item_ids.forEach(id => fd.append('item_ids[]', String(id)))
+    payload.images.forEach(f => fd.append('images[]', f))
+    if (payload.return_all) {
+      fd.append('return_all', '1')
+    } else {
+      (payload.items ?? []).forEach((l, i) => {
+        fd.append(`items[${i}][order_item_id]`, String(l.order_item_id))
+        fd.append(`items[${i}][quantity]`,      String(l.quantity))
+      })
     }
-    return formRequest<{ success: boolean; message: string; data: Complaint }>('/client/complaints', fd)
+    return formRequest<{ success: boolean; message: string; data: Complaint; returns: Complaint[] }>('/client/complaints', fd)
   },
+
+  /** Contest the shop's refusal: ChooseTounsi decides. */
+  escalate: (id: number, note?: string) =>
+    jsonRequest<{ success: boolean; message: string; data: Complaint }>('PATCH', `/client/complaints/${id}/escalate`, { note }),
+
+  /** Withdraw a request the shop hasn't answered yet. */
+  cancel: (id: number) =>
+    jsonRequest<{ success: boolean; message: string; data: Complaint }>('PATCH', `/client/complaints/${id}/cancel`),
 }
 
 // ─── Seller API ───────────────────────────────────────────────────────────────
@@ -113,6 +123,12 @@ export const sellerComplaintApi = {
   reject: (id: number, seller_note: string, rejection_reason: string) =>
     jsonRequest<{ success: boolean; message: string; data: Complaint }>(
       'PATCH', `/seller/complaints/${id}/reject`, { seller_note, rejection_reason }
+    ),
+
+  /** Parcel back at the shop: condition of each returned line (resaleable → restocked). */
+  receive: (id: number, conditions: Record<number, 'resaleable' | 'damaged'>, note?: string) =>
+    jsonRequest<{ success: boolean; message: string; data: Complaint }>(
+      'PATCH', `/seller/complaints/${id}/receive`, { conditions, note }
     ),
 }
 

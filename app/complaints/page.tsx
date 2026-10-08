@@ -1,10 +1,9 @@
 'use client'
 
 /**
- * app/complaints/page.tsx
- *
- * Client "My Complaints" page — complaint history with status tracking.
- * Route: /complaints
+ * app/complaints/page.tsx — the client's returns, each with its
+ * "Return / Refund tracking" (timeline, refund amount / method / reference).
+ * Route: /complaints  (?id= opens one: bell, e-mails, order page)
  */
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
@@ -13,7 +12,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { isAuthenticated } from '@/lib/auth'
 import { complaintApi } from '@/lib/complaintApi'
 import type { Complaint } from '@/types/complaint'
-import { STATUS_CONFIG } from '@/types/complaint'
+import { statusConfig } from '@/types/complaint'
+import ReturnTracking, { ReturnStatusBadge } from '@/app/components/returns/ReturnTracking'
 import { useTranslations } from 'next-intl'
 import PurchasedItemRow from '@/app/components/PurchasedItemRow'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -22,23 +22,6 @@ import BrandLoader from '@/components/brand/BrandLoader'
 
 const RED = '#db142e'
 
-function StatusBadge({ status }: { status: Complaint['status'] }) {
-  const t = useTranslations('complaints')
-  const cfg = STATUS_CONFIG[status]
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4,
-      fontSize: 11, fontWeight: 800, padding: '3px 10px', borderRadius: 999,
-      background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}30`,
-      textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-      {status === 'pending'   && '⏳'}
-      {status === 'reviewing' && '🔍'}
-      {status === 'approved'  && '✅'}
-      {status === 'rejected'  && '❌'}
-      {' '}{t(`status.${status}.label`)}
-    </span>
-  )
-}
-
 /** Reads `?id=<id>` (notification bell, e-mails): that complaint opens. */
 function FocusFromQuery({ onFocus }: { onFocus: (id: number | null) => void }) {
   const id = Number(useSearchParams().get('id')) || null
@@ -46,11 +29,13 @@ function FocusFromQuery({ onFocus }: { onFocus: (id: number | null) => void }) {
   return null
 }
 
-function ComplaintCard({ complaint, focused = false }: { complaint: Complaint; focused?: boolean }) {
+function ComplaintCard({ complaint: initial, focused = false }: { complaint: Complaint; focused?: boolean }) {
   const t   = useTranslations('complaints')
+  const tr  = useTranslations('returns')
   const fmt = useFormat()
+  const [complaint, setComplaint] = useState(initial)
   const [expanded, setExpanded] = useState(focused)
-  const cfg = STATUS_CONFIG[complaint.status]
+  const cfg = statusConfig(complaint.status)
   const cardRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (focused) cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -59,116 +44,80 @@ function ComplaintCard({ complaint, focused = false }: { complaint: Complaint; f
   return (
     <div ref={cardRef} style={{ background: '#fff', borderRadius: 16, border: focused ? `1px solid ${cfg.color}` : '1px solid #f1f5f9',
       overflow: 'hidden', marginBottom: 14, transition: 'box-shadow 0.2s ease', scrollMarginTop: 90 }}>
-
-      {/* Left accent bar */}
       <div style={{ display: 'flex' }}>
         <div style={{ width: 4, background: cfg.color, flexShrink: 0 }} />
 
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           {/* Header */}
           <div style={{ padding: '14px 20px', display: 'flex', alignItems: 'center',
             justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
               <div>
-                <p style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700,
-                  textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px' }}>
-                  {t('complaintN', { id: complaint.id })}
-                </p>
+                <p style={label}>{complaint.reference ? tr('reference', { ref: complaint.reference }) : t('complaintN', { id: complaint.id })}</p>
                 <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0 }}>
                   {t(`types.${complaint.complaint_type}`)}
-                  {complaint.complaint_type === 'other' && complaint.other_reason
-                    ? ` — ${complaint.other_reason}`
-                    : ''}
+                  {complaint.complaint_type === 'other' && complaint.other_reason ? ` — ${complaint.other_reason}` : ''}
                 </p>
               </div>
               <div>
-                <p style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700,
-                  textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px' }}>
-                  {t('order')}
-                </p>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0 }}>
+                <p style={label}>{t('order')}</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0 }} dir="ltr">
                   #{complaint.order?.order_number ?? complaint.order_id}
                 </p>
               </div>
-              <StatusBadge status={complaint.status} />
+              <ReturnStatusBadge status={complaint.status} />
             </div>
             <button onClick={() => setExpanded(e => !e)}
               style={{ fontSize: 12, fontWeight: 700, color: '#64748b', background: '#f8fafc',
                 border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 12px',
                 cursor: 'pointer', fontFamily: 'inherit' }}>
-              {expanded ? `▲ ${t('hide')}` : `▼ ${t('details')}`}
+              {expanded ? `▲ ${t('hide')}` : `▼ ${tr('track')}`}
             </button>
           </div>
 
-          {/* Complained items — image, name and variant as bought */}
+          {/* Returned items — as bought, with the quantity sent back */}
           {!!complaint.complained_items?.length && (
             <div style={{ padding: '0 20px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <p style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700,
-                textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
-                {t('items')}
-              </p>
+              <p style={{ ...label, margin: 0 }}>{t('items')}</p>
               {complaint.complained_items.map(item => (
-                <PurchasedItemRow key={item.id} item={item} qtyLabel={t('qty', { count: item.quantity })} />
+                <PurchasedItemRow key={item.id} item={item}
+                  qtyLabel={tr('returnQty', { count: item.return_quantity ?? item.quantity, total: item.quantity })} />
               ))}
             </div>
           )}
 
           {/* Status description bar */}
-          <div style={{ padding: '8px 20px 10px', background: `${cfg.bg}`,
-            borderTop: `1px solid ${cfg.color}20` }}>
+          <div style={{ padding: '8px 20px 10px', background: cfg.bg, borderTop: `1px solid ${cfg.color}20` }}>
             <p style={{ fontSize: 12, color: cfg.color, fontWeight: 600, margin: 0 }}>
-              {t(`status.${complaint.status}.description`)}
+              {tr.has(`hint.${complaint.status}`) ? tr(`hint.${complaint.status}`) : ''}
             </p>
           </div>
 
-          {/* Expanded details */}
+          {/* Tracking + details */}
           {expanded && (
-            <div style={{ padding: '16px 20px', borderTop: '1px solid #f1f5f9' }}>
-              <p style={{ fontSize: 13, color: '#374151', margin: '0 0 12px', lineHeight: 1.6 }}>
+            <div style={{ padding: '16px 20px', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <ReturnTracking complaint={complaint} onChanged={setComplaint} />
+
+              <p style={{ fontSize: 13, color: '#374151', margin: 0, lineHeight: 1.6 }}>
                 <strong>{t('description')}</strong> {complaint.description}
               </p>
 
-              {complaint.image_url && (
-                <div style={{ marginBottom: 12 }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8',
-                    textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
-                    {t('proofPhoto')}
-                  </p>
-                  <a href={complaint.image_url} target="_blank" rel="noreferrer">
-                    <img src={complaint.image_url} alt={t('proofPhoto')}
-                      style={{ maxWidth: 200, maxHeight: 150, objectFit: 'cover',
-                        borderRadius: 10, border: '1.5px solid #e5e7eb', cursor: 'zoom-in' }} />
-                  </a>
+              {(complaint.image_urls?.length ?? 0) > 0 && (
+                <div>
+                  <p style={{ ...label, margin: '0 0 8px' }}>{t('proofPhoto')}</p>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {complaint.image_urls.map(url => (
+                      <a key={url} href={url} target="_blank" rel="noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt={t('proofPhoto')} style={{ width: 110, height: 90, objectFit: 'cover',
+                          borderRadius: 10, border: '1.5px solid #e5e7eb', cursor: 'zoom-in' }} />
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {complaint.seller_note && (
-                <div style={{ background: 'rgba(59,130,246,0.06)', border: '1.5px solid rgba(59,130,246,0.2)',
-                  borderRadius: 10, padding: '12px 14px', marginBottom: 10 }}>
-                  <p style={{ fontSize: 12, fontWeight: 800, color: '#1e40af',
-                    margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {t('sellerResponse')}
-                  </p>
-                  <p style={{ fontSize: 13, color: '#3b82f6', margin: 0, lineHeight: 1.6 }}>
-                    {complaint.seller_note}
-                  </p>
-                </div>
-              )}
-
-              {complaint.status === 'rejected' && complaint.rejection_reason && (
-                <div style={{ background: 'rgba(239,68,68,0.06)', border: '1.5px solid rgba(239,68,68,0.2)',
-                  borderRadius: 10, padding: '12px 14px' }}>
-                  <p style={{ fontSize: 12, fontWeight: 800, color: '#dc2626',
-                    margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {t('rejectionReason')}
-                  </p>
-                  <p style={{ fontSize: 13, color: '#ef4444', margin: 0, lineHeight: 1.6 }}>
-                    {complaint.rejection_reason}
-                  </p>
-                </div>
-              )}
-
-              <p style={{ fontSize: 11, color: '#94a3b8', margin: '12px 0 0', fontWeight: 600 }}>
+              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0, fontWeight: 600 }}>
                 {t('filedOn', { date: fmt.date(complaint.created_at, 'long') })}
               </p>
             </div>
@@ -177,6 +126,10 @@ function ComplaintCard({ complaint, focused = false }: { complaint: Complaint; f
       </div>
     </div>
   )
+}
+
+const label: React.CSSProperties = {
+  fontSize: 11, color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px',
 }
 
 export default function MyComplaintsPage() {

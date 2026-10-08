@@ -34,6 +34,7 @@ import {
 import { isAuthenticated } from '@/lib/auth'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ComplaintModal from '@/app/components/ComplaintModal'
+import { ReturnStatusBadge } from '@/app/components/returns/ReturnTracking'
 import ReviewSubmitModal from '@/app/components/reviews/ReviewSubmitModal'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -68,6 +69,20 @@ interface OrderItem {
   seller_order_payment?: string | null
   product?: { slug: string; primary_image_url?: string | null }
   is_returned?: boolean
+  ordered_quantity?: number            // as bought (quantity = kept after refunded returns)
+  returned_quantity?: number
+  return_state?: 'returned' | 'partially_returned' | null
+}
+
+interface OrderReturn {
+  id: number
+  reference: string | null
+  status: string
+  refund_amount: number
+  refund_method: string | null
+  refund_reference: string | null
+  refunded_at: string | null
+  created_at: string
 }
 
 interface DeliveryTracking {
@@ -80,6 +95,7 @@ interface DeliveryTracking {
 interface SellerGroup {
   seller_order_id: number
   status: string
+  display_status?: string              // partially_returned when part of it came back
   payment_status: string
   subtotal: number
   coupon_code?: string | null
@@ -92,6 +108,8 @@ interface Order {
   id: number
   order_number: string
   status: string
+  display_status?: string
+  returns?: OrderReturn[]
   payment_status: string
   subtotal?: number            // items before coupon
   discount_amount?: number     // seller coupons, 0 when none
@@ -147,6 +165,7 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: React.Rea
   delivered:        { color: '#14b8a6', bg: 'rgba(20,184,166,0.1)',  icon: <Truck size={11} /> },
   cancelled:        { color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   icon: <XCircle size={11} /> },
   refunded:         { color: '#a855f7', bg: 'rgba(168,85,247,0.1)',  icon: <RotateCcw size={11} /> },
+  partially_returned: { color: '#d946ef', bg: 'rgba(217,70,239,0.1)', icon: <RotateCcw size={11} /> },
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -305,7 +324,9 @@ function ItemRow({ item, groupStatus, reviewed, onRate }: {
   // As bought (order snapshot); null → placeholder, never the product's cover (may be another color)
   const img         = item.resolved_image_url ?? null
   const isDelivered = groupStatus === 'delivered'
-  const isReturned  = !!item.is_returned   // ← NEW
+  const isReturned  = item.return_state === 'returned' || !!item.is_returned   // every unit came back
+  const ordered     = item.ordered_quantity ?? item.quantity
+  const returnedQty = item.returned_quantity ?? 0
  
   return (
     <div style={{
@@ -357,7 +378,10 @@ function ItemRow({ item, groupStatus, reviewed, onRate }: {
           </span>
         )}
         <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
-          {item.quantity} × {fmt(item.unit_price)}
+          {ordered} × {fmt(item.unit_price)}
+          {item.return_state === 'partially_returned' && (
+            <span style={{ marginInlineStart: 8, fontWeight: 800, color: '#d946ef' }}>↩ {t('returnedQty', { count: returnedQty })}</span>
+          )}
         </p>
       </div>
  
@@ -368,7 +392,7 @@ function ItemRow({ item, groupStatus, reviewed, onRate }: {
           color: isReturned ? '#94a3b8' : '#0f172a',
           textDecoration: isReturned ? 'line-through' : 'none',
         }}>
-          {fmt(item.total)}
+          {fmt(Number(item.unit_price) * ordered)}
         </span>
  
         {/* ← NEW: Returned badge — shown instead of Rate/Reviewed */}
@@ -437,7 +461,7 @@ function SellerGroupSection({ group, showSeparator, reviewedMap, onRate, order }
                 ⭐ {t('toReview', { count: pendingReviews })}
               </span>
             )}
-            <StatusBadge status={group.status} />
+            <StatusBadge status={group.display_status ?? group.status} />
             {Number(group.discount_amount ?? 0) > 0 && (
               <span style={{ fontSize: 10, fontWeight: 800, color: '#16a34a', background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.2)', padding: '2px 8px', borderRadius: 999 }}>
                 −{fmt(Number(group.discount_amount))}{group.coupon_code ? ` (${group.coupon_code})` : ''}
@@ -451,6 +475,39 @@ function SellerGroupSection({ group, showSeparator, reviewedMap, onRate, order }
       <div style={{ padding: '2px 20px' }}>
         {group.items.map(item => (
           <ItemRow key={item.id} item={item} groupStatus={group.status} reviewed={!!reviewedMap[item.id]} onRate={onRate} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Returns of the order ─────────────────────────────────────────────────────
+
+function OrderReturns({ returns }: { returns: OrderReturn[] }) {
+  const t  = useTranslations('returns')
+  const { fmt } = useOrderFormat()
+  return (
+    <div style={{ padding: '12px 20px', borderTop: '1px solid #f1f5f9', background: '#fcfcfd' }}>
+      <p style={{ fontSize: 11, color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
+        ↩ {t('orderReturns')}
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {returns.map(r => (
+          <a key={r.id} href={`/complaints?id=${r.id}`} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap',
+            padding: '9px 12px', borderRadius: 10, border: '1px solid #e5e7eb', background: '#fff', textDecoration: 'none',
+          }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12.5, fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }} dir="ltr">{r.reference ?? `#${r.id}`}</span>
+              <ReturnStatusBadge status={r.status} />
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>
+              {r.status === 'refunded'
+                ? t('refundedWith', { amount: fmt(Number(r.refund_amount)), method: r.refund_method ? t(`methods.${r.refund_method}`) : '' })
+                : `${t('refund.expected')}: ${fmt(Number(r.refund_amount))}`}
+              <span style={{ color: RED, marginInlineStart: 8 }}>{t('track')} →</span>
+            </span>
+          </a>
         ))}
       </div>
     </div>
@@ -481,7 +538,7 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed, focused = false }: 
 
   const sellerGroups: SellerGroup[] = (order.seller_groups && order.seller_groups.length > 0)
     ? order.seller_groups
-    : [{ seller_order_id: 0, status: order.status, payment_status: order.payment_status, subtotal: order.total_amount, items: order.items, tracking: undefined }]
+    : [{ seller_order_id: 0, status: order.status, display_status: order.display_status, payment_status: order.payment_status, subtotal: order.total_amount, items: order.items, tracking: undefined }]
 
   const isMultiSeller = sellerGroups.length > 1
 
@@ -493,9 +550,13 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed, focused = false }: 
     .flatMap(g => g.items)
     .filter(i => !reviewedMap[i.id]).length
 
-  const headerStatus = isMultiSeller
-    ? (sellerGroups.every(g => g.status === sellerGroups[0].status) ? sellerGroups[0].status : 'mixed')
-    : sellerGroups[0].status
+  // Whole order returned → "Returned (Refunded)"; part of it → "Partially returned"
+  const groupStatus  = (g: SellerGroup) => g.display_status ?? g.status
+  const headerStatus = order.display_status && ['refunded', 'partially_returned'].includes(order.display_status)
+    ? order.display_status
+    : isMultiSeller
+      ? (sellerGroups.every(g => groupStatus(g) === groupStatus(sellerGroups[0])) ? groupStatus(sellerGroups[0]) : 'mixed')
+      : groupStatus(sellerGroups[0])
 
   return (
     <>
@@ -560,6 +621,7 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed, focused = false }: 
             {sellerGroups.map((group, idx) => (
               <SellerGroupSection key={group.seller_order_id || idx} group={group} showSeparator={isMultiSeller} reviewedMap={reviewedMap} onRate={(item) => onRate(item, item.id)} order={order} />
             ))}
+            {!!order.returns?.length && <OrderReturns returns={order.returns} />}
             <div style={{ padding: '10px 20px 14px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, borderTop: '1px solid #f1f5f9' }}>
               {order.subtotal !== undefined && (
                 <>

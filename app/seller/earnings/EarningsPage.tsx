@@ -264,6 +264,22 @@ export default function EarningsPage() {
                         {fmt(kpis.paid_amount ?? 0)}
                       </p>
                     </div>
+
+                    {/* Return debits not settled yet (refunds after a payout, return shipping) */}
+                    {Number(kpis.pending_deductions ?? 0) !== 0 && (
+                      <div style={{ background: cardBg, border: '1px solid #ef444428', borderRadius: 14, padding: '16px 18px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                          <div style={{ width: 28, height: 28, borderRadius: 8, background: '#ef444415', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <TrendingDown size={13} color="#ef4444" />
+                          </div>
+                          <span style={{ fontSize: 9, fontWeight: 800, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('kpi.returnDebits')}</span>
+                        </div>
+                        <p style={{ fontSize: 18, fontWeight: 900, color: ink('#ef4444', dark), margin: '0 0 6px' }}>
+                          {fmt(kpis.pending_deductions ?? 0)}
+                        </p>
+                        <p style={{ fontSize: 9, color: textMuted, margin: 0, lineHeight: 1.5 }}>{t('kpi.returnDebitsNote')}</p>
+                      </div>
+                    )}
   
                   </div>
   

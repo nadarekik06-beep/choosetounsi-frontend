@@ -1,54 +1,26 @@
 'use client'
 
 /**
- * components/ComplaintModal.tsx  ← REPLACE
- *
- * BASE: original file (doc 34)
- *
- * CHANGES ADDED on top of the original:
- *   1. resolutionType state + hoursLeft state
- *   2. Reset resolutionType on close
- *   3. Resolution type picker UI (two cards: Return & Refund / Exchange)
- *     inserted between item picker and complaint type selector
- *   4. resolutionType validation in handleSubmit
- *   5. body.append('resolution_type', resolutionType) in FormData
- *   6. formProgress accounts for resolutionType
- *   7. hoursLeft shown in header next to order number
- *   8. hoursLeft fetched from eligible-orders response
- *
- * ALL original code preserved exactly:
- *   - All state variables
- *   - fetchOrderItems, handleFile, handleDrop, toggleItem
- *   - All CSS classes (.cd-*)
- *   - Success state, Blocked state, eligibility logic
- *   - Item picker (single + multi)
- *   - Complaint type dropdown
- *   - Description + progress bar
- *   - Proof image upload
- *   - Info note
- *   - Footer submit button
+ * Return request drawer opened from an order (/orders). Return + refund only:
+ * whole order or items × quantity, reason, description, proof photo(s).
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
-  X, AlertTriangle, ChevronDown, ImagePlus,
-  Trash2, Send, CheckCircle, ShieldAlert,
+  X, AlertTriangle, ChevronDown, Send, CheckCircle, ShieldAlert,
   Lock, Clock, PackageCheck,
 } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import BrandLoader from '@/components/brand/BrandLoader'
-import type { PurchasedItem } from '@/types/complaint'
-import { PurchasedItemThumb, VariantLabel } from '@/app/components/PurchasedItemRow'
+import Link from 'next/link'
+import type { ComplaintType, EligibleOrderItem } from '@/types/complaint'
+import { SELLER_FAULT_TYPES } from '@/types/complaint'
+import { complaintApi } from '@/lib/complaintApi'
+import ReturnItemsPicker, { returnLines } from '@/app/components/returns/ReturnItemsPicker'
+import ProofPhotosInput from '@/app/components/returns/ProofPhotosInput'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const RED     = '#db142e'
 const GREEN   = '#198f41'
-const ORANGE  = '#f97316'
-
-function getToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem('ct_auth_token') ?? localStorage.getItem('auth_token') ?? null
-}
 
 // Labels: complaintModal.types.<value> (empty value = placeholder)
 const COMPLAINT_TYPES = [
@@ -65,8 +37,8 @@ const ELIGIBLE_STATUSES = ['delivered', 'out_for_delivery', 'completed']
 // Labels: complaintModal.status.<status>
 const STATUS_KEYS = ['pending', 'processing', 'out_for_delivery', 'completed', 'delivered', 'cancelled']
 
-// Each order line as bought — image / name / variant from the order, not the live product
-type OrderItemInfo = PurchasedItem
+// Each order line as bought + how many units can still go back
+type OrderItemInfo = EligibleOrderItem
 
 interface Props {
   orderId:       number
@@ -86,22 +58,19 @@ export default function ComplaintModal({
   // ── All original state ────────────────────────────────────────────────────
   const [type,           setType]           = useState('')
   const [description,    setDescription]    = useState('')
-  const [imageFile,      setImageFile]      = useState<File | null>(null)
-  const [imagePreview,   setImagePreview]   = useState<string | null>(null)
+  const [photos,         setPhotos]         = useState<File[]>([])
   const [loading,        setLoading]        = useState(false)
   const [success,        setSuccess]        = useState(false)
   const [error,          setError]          = useState<string | null>(null)
-  const [isDragging,     setIsDragging]     = useState(false)
   const [mounted,        setMounted]        = useState(false)
   const [orderItems,     setOrderItems]     = useState<OrderItemInfo[]>([])
-  const [selectedItemIds,setSelectedItemIds]= useState<number[]>([])
+  const [returnAll,      setReturnAll]      = useState(true)
+  const [quantities,     setQuantities]     = useState<Record<number, number>>({})
+  const [createdId,      setCreatedId]      = useState<number | null>(null)
+  const [returnFee,      setReturnFee]      = useState(0)
   const [loadingItems,   setLoadingItems]   = useState(false)
 
-  // ── NEW state ─────────────────────────────────────────────────────────────
-  const [resolutionType, setResolutionType] = useState<'exchange' | 'return_refund' | ''>('')
   const [hoursLeft,      setHoursLeft]      = useState<number | null>(null)
-
-  const fileRef = useRef<HTMLInputElement>(null)
 
   const MIN_CHARS = 20
   const MAX_CHARS = 2000
@@ -119,24 +88,12 @@ export default function ComplaintModal({
     if (!isEligible) return
     setLoadingItems(true)
     try {
-      const token = getToken()
-      const res   = await fetch(`${API_URL}/client/complaints/eligible-orders`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-      })
-      const json = await res.json()
-      if (!json.success) return
-
-      const orders: { id: number; hours_left?: number; items?: OrderItemInfo[] }[] = json.data ?? []
-      const thisOrder = orders.find(o => o.id === orderId)
+      const json = await complaintApi.getEligibleOrders()
+      setReturnFee(Number(json.return_shipping_fee ?? 0))
+      const thisOrder = (json.data ?? []).find(o => o.id === orderId)
       if (!thisOrder) return
-
-      const items: OrderItemInfo[] = thisOrder.items ?? []
-      setOrderItems(items)
-      setHoursLeft(thisOrder.hours_left ?? null)  // ← NEW
-
-      if (items.length === 1) {
-        setSelectedItemIds([items[0].id])
-      }
+      setOrderItems(thisOrder.items ?? [])
+      setHoursLeft(thisOrder.hours_left ?? null)
     } catch {
       // Non-critical
     } finally {
@@ -160,10 +117,10 @@ export default function ComplaintModal({
   useEffect(() => {
     if (!isOpen) {
       const t = setTimeout(() => {
-        setType(''); setDescription(''); setImageFile(null)
-        setImagePreview(null); setSuccess(false); setError(null)
-        setOrderItems([]); setSelectedItemIds([])
-        setResolutionType(''); setHoursLeft(null)  // ← NEW resets
+        setType(''); setDescription(''); setPhotos([])
+        setSuccess(false); setError(null); setCreatedId(null)
+        setOrderItems([]); setReturnAll(true); setQuantities({})
+        setHoursLeft(null)
       }, 350)
       return () => clearTimeout(t)
     }
@@ -178,57 +135,24 @@ export default function ComplaintModal({
 
   if (!isOpen && !mounted) return null
 
-  // ── Original handlers ─────────────────────────────────────────────────────
-  function handleFile(file: File | null) {
-    if (!file) return
-    if (!file.type.startsWith('image/')) { setError(t('errors.imageType')); return }
-    if (file.size > 5 * 1024 * 1024)     { setError(t('errors.imageSize'));    return }
-    setError(null)
-    setImageFile(file)
-    const reader = new FileReader()
-    reader.onload = e => setImagePreview(e.target?.result as string)
-    reader.readAsDataURL(file)
-  }
+  const lines = returnLines(orderItems, returnAll, quantities)
 
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault(); setIsDragging(false)
-    handleFile(e.dataTransfer.files[0] ?? null)
-  }
-
-  const toggleItem = (id: number) => {
-    setSelectedItemIds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    )
-  }
-
-  // ── handleSubmit — original + resolution_type ─────────────────────────────
   async function handleSubmit() {
-    if (!type)           { setError(t('errors.type')); return }
-    if (!resolutionType) { setError(t('errors.resolution')); return }
-    if (!charOk)         { setError(t('errors.minChars', { count: MIN_CHARS })); return }
-    if (!imageFile)      { setError(t('errors.photo')); return }
-    if (orderItems.length > 0 && selectedItemIds.length === 0) {
-      setError(t('errors.items'))
-      return
-    }
+    if (lines.length === 0) { setError(t('errors.items')); return }
+    if (!type)              { setError(t('errors.type')); return }
+    if (!charOk)            { setError(t('errors.minChars', { count: MIN_CHARS })); return }
+    if (photos.length === 0) { setError(t('errors.photo')); return }
     setError(null); setLoading(true)
     try {
-      const token = getToken()
-      const body  = new FormData()
-      body.append('order_id',       String(orderId))
-      body.append('complaint_type', type)
-      body.append('resolution_type', resolutionType)  // ← NEW
-      body.append('description',    description)
-      if (imageFile) body.append('image', imageFile)
-      selectedItemIds.forEach(id => body.append('item_ids[]', String(id)))
-
-      const res  = await fetch(`${API_URL}/client/complaints`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        body,
+      const res = await complaintApi.submit({
+        order_id:       orderId,
+        complaint_type: type as ComplaintType,
+        description,
+        images:         photos,
+        return_all:     returnAll,
+        items:          lines,
       })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.message ?? t('errors.submit'))
+      setCreatedId(res.data?.id ?? null)
       setSuccess(true)
     } catch (err) {
       setError((err instanceof Error && err.message) || t('errors.generic'))
@@ -240,13 +164,11 @@ export default function ComplaintModal({
   const selectedType = COMPLAINT_TYPES.find(ct => ct.value === type)
   const charColor    = charCount === 0 ? '#94a3b8' : charOk ? GREEN : '#f59e0b'
 
-  // formProgress updated to include resolutionType
   const formProgress = Math.min(100,
-    (type ? 20 : 0) +
-    (resolutionType ? 20 : 0) +
-    (selectedItemIds.length > 0 ? 20 : 0) +
-    (charOk ? 20 : Math.min(20, (charCount / MIN_CHARS) * 20)) +
-    (imageFile ? 20 : 0)
+    (lines.length > 0 ? 25 : 0) +
+    (type ? 25 : 0) +
+    (charOk ? 25 : Math.min(25, (charCount / MIN_CHARS) * 25)) +
+    (photos.length > 0 ? 25 : 0)
   )
 
   // ── Styles — all original ─────────────────────────────────────────────────
@@ -473,7 +395,13 @@ export default function ComplaintModal({
                   {t('successEmail')}
                 </div>
               </div>
-              <div style={{ flexShrink: 0, padding: '14px 20px 20px', borderTop: '1px solid #f1f5f9', background: '#fff' }}>
+              <div style={{ flexShrink: 0, padding: '14px 20px 20px', borderTop: '1px solid #f1f5f9', background: '#fff', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {createdId && (
+                  <Link href={`/complaints?id=${createdId}`} onClick={onClose} style={{
+                    textAlign: 'center', padding: 11, borderRadius: 11, border: `1.5px solid ${GREEN}`,
+                    color: GREEN, fontSize: 13, fontWeight: 800, textDecoration: 'none',
+                  }}>{t('track')}</Link>
+                )}
                 <button onClick={onClose} style={{
                   width: '100%', padding: 13, borderRadius: 11, border: 'none',
                   background: `linear-gradient(135deg, ${GREEN}, #15803d)`,
@@ -616,133 +544,20 @@ export default function ComplaintModal({
                 {!loadingItems && orderItems.length > 0 && (
                   <div>
                     <label style={labelStyle}>
-                      {orderItems.length === 1 ? t('item') : t('whichItems')}{' '}
-                      <span style={{ color: RED }}>*</span>
+                      {t('whichItems')} <span style={{ color: RED }}>*</span>
                     </label>
-
-                    {orderItems.length === 1 ? (
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '10px 12px', borderRadius: 10,
-                        background: 'rgba(219,20,46,0.05)', border: `1.5px solid ${RED}`,
-                      }}>
-                        <PurchasedItemThumb item={orderItems[0]} size={36} />
-                        <div style={{ flex: 1 }}>
-                          <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                            {orderItems[0].product_name}
-                          </p>
-                          <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                            <VariantLabel item={orderItems[0]} />
-                            <span>{t('qty', { count: orderItems[0].quantity })}</span>
-                          </p>
-                        </div>
-                        <span style={{
-                          fontSize: 10, fontWeight: 800, color: RED,
-                          background: 'rgba(219,20,46,0.08)', padding: '2px 7px',
-                          borderRadius: 999, border: `1px solid ${RED}25`,
-                        }}>{t('auto')}</span>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                        <p style={{ fontSize: 11, color: '#64748b', fontWeight: 500, margin: '0 0 4px' }}>
-                          {t('selectItems')}
-                        </p>
-                        {orderItems.map(item => {
-                          const sel = selectedItemIds.includes(item.id)
-                          return (
-                            <button
-                              key={item.id}
-                              onClick={() => toggleItem(item.id)}
-                              className={`cd-item-row${sel ? ' selected' : ''}`}
-                              style={{ width: '100%', textAlign: 'start', cursor: 'pointer' }}
-                              aria-pressed={sel}
-                            >
-                              <div style={{
-                                width: 18, height: 18, borderRadius: 5, flexShrink: 0,
-                                border: `2px solid ${sel ? RED : '#e5e7eb'}`,
-                                background: sel ? RED : '#fff',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                transition: 'all 0.15s',
-                              }}>
-                                {sel && (
-                                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                                    <path d="M1 3.5L3.5 6L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                  </svg>
-                                )}
-                              </div>
-                              <PurchasedItemThumb item={item} size={38} />
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{
-                                  fontSize: 13, fontWeight: 700,
-                                  color: sel ? RED : '#0f172a',
-                                  margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                  transition: 'color 0.15s',
-                                }}>
-                                  {item.product_name}
-                                </p>
-                                <p style={{ fontSize: 11, color: '#94a3b8', margin: '1px 0 0', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                                  <VariantLabel item={item} color="#94a3b8" />
-                                  <span>{t('qty', { count: item.quantity })}</span>
-                                </p>
-                              </div>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    )}
+                    <ReturnItemsPicker
+                      items={orderItems}
+                      returnAll={returnAll}
+                      onReturnAll={v => { setReturnAll(v); if (!v) setQuantities({}); setError(null) }}
+                      quantities={quantities}
+                      onChange={q => { setQuantities(q); setError(null) }}
+                    />
+                    <p style={{ fontSize: 11, color: '#64748b', margin: '8px 0 0', padding: '8px 12px', background: 'rgba(219,20,46,0.04)', borderRadius: 8, border: '1px solid rgba(219,20,46,0.12)', lineHeight: 1.5 }}>
+                      {t('refundNote')} <strong>{t('noExchange')}</strong>
+                    </p>
                   </div>
                 )}
-
-                {/* ── Resolution Type — NEW ── */}
-                <div>
-                  <label style={labelStyle}>
-                    {t('whatWant')} <span style={{ color: RED }}>*</span>
-                  </label>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    {(['return_refund', 'exchange'] as const).map(opt => {
-                      const sel = resolutionType === opt
-                      const accentColor = opt === 'return_refund' ? RED : ORANGE
-                      const labels = {
-                        return_refund: { icon: '💰', label: t('refund'),   desc: t('refundDesc') },
-                        exchange:      { icon: '🔄', label: t('exchange'), desc: t('exchangeDesc') },
-                      }
-                      const cfg = labels[opt]
-                      return (
-                        <button
-                          key={opt}
-                          onClick={() => { setResolutionType(opt); setError(null) }}
-                          className="cd-res-btn"
-                          aria-pressed={sel}
-                          style={{
-                            border: `2px solid ${sel ? accentColor : '#e5e7eb'}`,
-                            background: sel ? `${accentColor}08` : '#f8fafc',
-                            boxShadow: sel ? `0 0 0 1px ${accentColor}` : 'none',
-                          }}
-                        >
-                          <span style={{ fontSize: 24 }}>{cfg.icon}</span>
-                          <div>
-                            <p style={{ fontSize: 12, fontWeight: 800, color: sel ? accentColor : '#374151', margin: '0 0 2px', fontFamily: "'Barlow', sans-serif" }}>
-                              {cfg.label}
-                            </p>
-                            <p style={{ fontSize: 10, color: '#64748b', margin: 0, lineHeight: 1.4, fontFamily: "'Barlow', sans-serif" }}>
-                              {cfg.desc}
-                            </p>
-                          </div>
-                        </button>
-                      )
-                    })}
-                  </div>
-                  {resolutionType === 'return_refund' && (
-                    <p style={{ fontSize: 11, color: '#64748b', margin: '8px 0 0', padding: '8px 12px', background: 'rgba(219,20,46,0.04)', borderRadius: 8, border: '1px solid rgba(219,20,46,0.12)', lineHeight: 1.5, fontFamily: "'Barlow', sans-serif" }}>
-                      {t('refundNote')}
-                    </p>
-                  )}
-                  {resolutionType === 'exchange' && (
-                    <p style={{ fontSize: 11, color: '#64748b', margin: '8px 0 0', padding: '8px 12px', background: 'rgba(249,115,22,0.04)', borderRadius: 8, border: '1px solid rgba(249,115,22,0.12)', lineHeight: 1.5, fontFamily: "'Barlow', sans-serif" }}>
-                      {t('exchangeNote')}
-                    </p>
-                  )}
-                </div>
 
                 {/* ── Complaint Type (original) ── */}
                 <div>
@@ -766,6 +581,13 @@ export default function ComplaintModal({
                       <ChevronDown size={14} />
                     </span>
                   </div>
+                  {selectedType?.value && (
+                    <p style={{ fontSize: 11, color: '#64748b', margin: '6px 0 0', lineHeight: 1.5 }}>
+                      {SELLER_FAULT_TYPES.includes(selectedType.value as ComplaintType)
+                        ? t('shippingSeller')
+                        : t('shippingClient', { fee: returnFee.toFixed(3) })}
+                    </p>
+                  )}
                   {selectedType?.value && (
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -809,7 +631,7 @@ export default function ComplaintModal({
                   </div>
                 </div>
 
-                {/* ── Proof Image (original) ── */}
+                {/* ── Proof photos ── */}
                 <div>
                   <label style={labelStyle}>
                     {t('proof')}{' '}
@@ -817,57 +639,7 @@ export default function ComplaintModal({
                       — {t('required')}
                     </span>
                   </label>
-                  {imagePreview ? (
-                    <div style={{ position: 'relative' }}>
-                      <img src={imagePreview} alt={t('preview')} style={{
-                        width: '100%', maxHeight: 150, objectFit: 'cover',
-                        borderRadius: 10, border: '1.5px solid #e5e7eb', display: 'block',
-                      }} />
-                      <button
-                        onClick={() => { setImageFile(null); setImagePreview(null) }}
-                        aria-label={t('removePhoto')}
-                        style={{
-                          position: 'absolute', top: 8, insetInlineEnd: 8,
-                          width: 28, height: 28, borderRadius: 7,
-                          border: 'none', background: 'rgba(0,0,0,0.55)',
-                          color: '#fff', cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '6px 0 0', fontWeight: 600 }}>
-                        📎 {imageFile?.name}
-                      </p>
-                    </div>
-                  ) : (
-                    <div
-                      className={`cd-upload-zone${isDragging ? ' dragging' : ''}`}
-                      onClick={() => fileRef.current?.click()}
-                      onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
-                      onDragLeave={() => setIsDragging(false)}
-                      onDrop={handleDrop}
-                    >
-                      <div style={{
-                        width: 36, height: 36, borderRadius: 9, margin: '0 auto 8px',
-                        background: 'rgba(219,20,46,0.07)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <ImagePlus size={18} color={RED} />
-                      </div>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 3px' }}>
-                        {t.rich('drop', { b: c => <span style={{ color: RED }}>{c}</span> })}
-                      </p>
-                      <p style={{ fontSize: 11, color: '#94a3b8', margin: 0, fontWeight: 500 }}>
-                        {t('fileHint')}
-                      </p>
-                    </div>
-                  )}
-                  <input
-                    ref={fileRef} type="file" accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={e => handleFile(e.target.files?.[0] ?? null)}
-                  />
+                  <ProofPhotosInput files={photos} onChange={f => { setPhotos(f); setError(null) }} onError={setError} />
                 </div>
 
                 {/* ── Info note (original + hours) ── */}
@@ -898,7 +670,7 @@ export default function ComplaintModal({
                 <button
                   className="cd-submit-btn"
                   onClick={handleSubmit}
-                  disabled={loading || !type || !resolutionType || !charOk}
+                  disabled={loading || !type || !charOk || photos.length === 0 || lines.length === 0}
                 >
                   {loading
                     ? <><BrandLoader variant="inline" size={15} /> {t('submitting')}</>

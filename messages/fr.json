@@ -1125,10 +1125,11 @@
     "completed": "Terminée",
     "delivered": "Livrée",
     "cancelled": "Annulée",
-    "refunded": "Remboursée",
+    "refunded": "Retournée (remboursée)",
     "confirmed": "Confirmée",
     "shipped": "Expédiée",
-    "returned": "Retournée"
+    "returned": "Retournée",
+    "partially_returned": "Partiellement retournée"
   },
   "paymentStatus": {
     "pending": "En attente",
@@ -1177,12 +1178,13 @@
       "delivered": "Livrée",
       "confirmed": "Confirmée",
       "cancelledTitle": "Commande annulée",
-      "refundedTitle": "Commande remboursée",
+      "refundedTitle": "Retournée et remboursée",
       "cancelledBody": "Cette commande a été annulée.",
-      "refundedBody": "Votre remboursement a été effectué.",
+      "refundedBody": "Cette commande a été retournée et remboursée.",
       "driverOnWay": "{name} est en route",
       "pickedUp": "Récupérée · {date}"
-    }
+    },
+    "returnedQty": "{count} retourné(s)"
   },
   "reviewForm": {
     "title": "Laisser un avis",
@@ -1229,12 +1231,12 @@
     "seconds": "{count} s"
   },
   "complaintModal": {
-    "title": "Signaler un problème",
+    "title": "Retour et remboursement",
     "order": "Commande",
     "hoursLeft": "{hours} h restantes",
     "close": "Fermer",
-    "successTitle": "Réclamation envoyée !",
-    "successBody": "Notre équipe va examiner votre réclamation pour la commande <b>#{number}</b> et vous répondra sous <b>24 à 48 heures</b>.",
+    "successTitle": "Retour demandé !",
+    "successBody": "La boutique et notre équipe vont examiner votre retour pour la commande <b>#{number}</b>. Suivez chaque étape.",
     "successEmail": "Vous serez averti par e-mail dès qu'elle aura été traitée.",
     "done": "Terminé",
     "blockedTitle": "Pas encore livrée",
@@ -1250,17 +1252,11 @@
     "partialOthers": "Les autres sont encore : {statuses}.",
     "loadingItems": "Chargement des articles…",
     "item": "Article",
-    "whichItems": "Quel(s) article(s) ?",
+    "whichItems": "Que retournez-vous ?",
     "qty": "Qté : {count}",
     "auto": "Auto",
     "selectItems": "Sélectionnez le ou les articles concernés :",
-    "whatWant": "Que souhaitez-vous ?",
-    "refund": "Retour et remboursement",
-    "refundDesc": "Renvoyez l'article et soyez remboursé",
-    "exchange": "Échange",
-    "exchangeDesc": "Recevez un article de remplacement",
-    "refundNote": "📦 Un livreur viendra récupérer le ou les articles et les retournera au vendeur.",
-    "exchangeNote": "🔄 Un livreur vous apportera un article de remplacement.",
+    "refundNote": "📦 Un livreur récupère le(s) article(s) pour la boutique ; vous êtes remboursé(e) après vérification.",
     "type": "Motif de la réclamation",
     "types": {
       "placeholder": "— Choisir un motif —",
@@ -1282,7 +1278,7 @@
     "descriptionPlaceholder": "Décrivez le problème : qu'avez-vous reçu ? Qu'attendiez-vous ? Quand l'avez-vous constaté ?",
     "charsNeeded": "Encore {count} caractères",
     "charsOk": "✓ C'est parfait",
-    "proof": "Photo justificative",
+    "proof": "Photos de preuve",
     "required": "obligatoire",
     "preview": "Aperçu",
     "removePhoto": "Retirer la photo",
@@ -1292,32 +1288,35 @@
     "infoHours": "Il vous reste <b>{hours} h</b> pour déposer cette réclamation.",
     "infoTip": "Des détails clairs et des photos nous aident à résoudre le problème plus vite.",
     "submitting": "Envoi…",
-    "submit": "Envoyer la réclamation",
+    "submit": "Demander un retour",
     "disclaimer": "En envoyant, vous confirmez que ce problème est réel et exact.",
     "errors": {
       "imageType": "Veuillez importer une image.",
       "imageSize": "L'image doit faire moins de 5 Mo.",
       "type": "Veuillez choisir un motif.",
-      "resolution": "Veuillez choisir : échange ou retour et remboursement.",
       "minChars": "La description doit contenir au moins {count} caractères.",
-      "photo": "Une photo justificative est obligatoire.",
-      "items": "Veuillez sélectionner au moins un article concerné.",
+      "photo": "Au moins une photo de preuve est obligatoire.",
+      "items": "Choisissez au moins un article à retourner.",
       "submit": "L'envoi a échoué",
       "generic": "Une erreur est survenue. Veuillez réessayer."
-    }
+    },
+    "noExchange": "Un autre article ? Repassez simplement commande.",
+    "shippingSeller": "✓ Pour ce motif, les frais de retour sont payés par la boutique.",
+    "shippingClient": "Pour ce motif, les frais de retour ({fee} DT) sont déduits de votre remboursement.",
+    "track": "Suivre mon retour"
   },
   "complaints": {
-    "metaTitle": "Mes réclamations",
-    "title": "Mes réclamations",
+    "metaTitle": "Mes retours",
+    "title": "Mes retours",
     "myOrders": "Mes commandes",
-    "count": "{count, plural, =0 {Aucune réclamation} one {# réclamation} other {# réclamations}}",
-    "new": "Nouvelle réclamation",
-    "file": "Déposer une réclamation",
-    "newSubtitle": "Signalez un problème sur une commande livrée",
+    "count": "{count, plural, =0 {Aucun retour} one {# retour} other {# retours}}",
+    "new": "Nouveau retour",
+    "file": "Demander un retour",
+    "newSubtitle": "Retourner une commande livrée ou certains de ses articles",
     "loading": "Chargement de vos réclamations…",
     "loadFailed": "Impossible de charger vos réclamations. Veuillez actualiser la page.",
-    "emptyTitle": "Aucune réclamation",
-    "emptyBody": "En cas de problème avec une commande livrée, vous pouvez déposer une réclamation.",
+    "emptyTitle": "Aucun retour",
+    "emptyBody": "Un problème avec une commande livrée ? Retournez-la pour être remboursé(e).",
     "complaintN": "Réclamation n°{id}",
     "order": "Commande",
     "hide": "Masquer",
@@ -1327,30 +1326,30 @@
     "sellerResponse": "Réponse du vendeur",
     "rejectionReason": "Motif du refus",
     "filedOn": "Déposée le {date}",
-    "policyTitle": "Important — Politique de réclamation",
-    "policyBody": "Les réclamations ne peuvent être déposées que pour les <b>commandes livrées</b>, dans les <b>48 heures</b> suivant la livraison. Une seule réclamation par commande est autorisée. Une photo justificative renforce votre dossier.",
-    "successTitle": "Réclamation envoyée avec succès !",
-    "successBody": "Votre réclamation est en cours d'examen. Notre équipe va l'étudier et vous recontacter sous <b>3 à 5 jours ouvrés</b>.",
-    "successNotice": "Vous recevrez un e-mail et une notification dès qu'une décision sera prise.",
+    "policyTitle": "Politique de retour",
+    "policyBody": "Un retour peut être demandé dans les <b>48 heures</b> suivant la livraison, pour toute la commande ou certains articles, avec au moins une photo. Vous êtes remboursé(e) dès que l'article est reçu et vérifié — sur votre portefeuille, par virement / D17 ou sur votre carte.",
+    "successTitle": "Retour demandé !",
+    "successBody": "La boutique a <b>48 heures</b> pour répondre, puis ChooseTounsi valide et organise l'enlèvement.",
+    "successNotice": "Vous serez prévenu(e) (appli + e-mail) à chaque étape jusqu'au remboursement.",
     "viewOrders": "Voir mes commandes",
     "howItWorks": "Comment ça marche",
     "stepN": "Étape {n}",
     "steps": {
       "s1": {
-        "title": "Envoi",
-        "text": "Remplissez le formulaire en détaillant votre problème"
+        "title": "Demande",
+        "text": "Choisissez les articles, le motif et ajoutez une photo"
       },
       "s2": {
-        "title": "Examen",
-        "text": "Notre équipe et le vendeur examinent votre réclamation"
+        "title": "Décision",
+        "text": "La boutique répond, ChooseTounsi valide"
       },
       "s3": {
-        "title": "Décision",
-        "text": "L'administration tranche sous 5 jours"
+        "title": "Enlèvement",
+        "text": "Un livreur récupère l'article à votre adresse"
       },
       "s4": {
-        "title": "Résolution",
-        "text": "Si elle est acceptée : remboursement ou remplacement"
+        "title": "Remboursement",
+        "text": "Remboursé dès que l'article est reçu et vérifié"
       }
     },
     "types": {
@@ -1382,8 +1381,8 @@
         "description": "Votre réclamation n'a pas été acceptée."
       }
     },
-    "newMetaTitle": "Déposer une réclamation",
-    "items": "Article(s) concerné(s)",
+    "newMetaTitle": "Demander un retour",
+    "items": "Article(s) retourné(s)",
     "qty": "Qté : {count}"
   },
   "complaintForm": {
@@ -1391,25 +1390,13 @@
     "autoSelected": "Sélectionné",
     "selectItemsBadge": "Articles",
     "whichItems": "Quel(s) article(s) pose(nt) problème ?",
-    "resolution": {
-      "return_refund": {
-        "label": "Retour et remboursement",
-        "description": "Renvoyez l'article et soyez remboursé"
-      },
-      "exchange": {
-        "label": "Échange",
-        "description": "Recevez un article de remplacement"
-      }
-    },
-    "refundNote": "📦 Un livreur viendra récupérer le ou les articles et les retournera au vendeur. Le remboursement sera effectué après la récupération.",
-    "exchangeNote": "🔄 Un livreur vous apportera un article de remplacement. Le vendeur organise l'échange.",
+    "refundNote": "📦 Un livreur récupère le(s) article(s) et les rapporte à la boutique. Vous êtes remboursé(e) dès leur réception et vérification.",
     "noEligibleTitle": "Aucune commande éligible",
-    "noEligibleBody": "Les réclamations ne concernent que les <b>commandes livrées</b>, dans les <b>48 heures</b> suivant la livraison, une fois par commande.",
+    "noEligibleBody": "Un retour peut être demandé sur une <b>commande livrée</b> dans les <b>48 heures</b> suivant la livraison, pour les articles non déjà retournés.",
     "close": "Fermer",
     "steps": {
       "order": "Commande",
       "items": "Articles",
-      "resolution": "Solution",
       "type": "Motif",
       "details": "Détails",
       "submit": "Envoi"
@@ -1423,9 +1410,8 @@
     "chooseOrder": "— Choisir une commande —",
     "hoursLeft": "{hours} h restantes",
     "hoursRemaining": "{hours} h restantes",
-    "selectItems": "Choisir le ou les articles",
-    "whatWant": "Que souhaitez-vous ?",
-    "type": "Motif de la réclamation",
+    "selectItems": "Que retournez-vous ?",
+    "type": "Motif",
     "specifyReason": "Précisez le motif",
     "otherPlaceholder": "ex. L'article est arrivé dans un mauvais emballage",
     "describe": "Décrivez le problème",
@@ -1433,26 +1419,28 @@
     "descriptionPlaceholder": "Que s'est-il passé ? Qu'avez-vous reçu et qu'attendiez-vous ? Plus vous donnez de détails, plus vite nous pourrons résoudre le problème…",
     "charsOk": "✓ Très clair — cela renforce votre dossier",
     "charsNeeded": "Encore {count} caractères",
-    "proofPhoto": "Photo justificative",
-    "proofHint": "Obligatoire · 5 Mo max.",
+    "proofPhoto": "Photos de preuve",
+    "proofHint": "Obligatoire · 1 à 5 photos",
     "preview": "Aperçu",
     "remove": "Retirer",
     "drop": "Déposez la photo ici ou <b>cliquez pour parcourir</b>",
     "cancel": "Annuler",
-    "submitting": "Envoi de votre réclamation…",
-    "submit": "Envoyer la réclamation",
+    "submitting": "Envoi de votre demande…",
+    "submit": "Demander un retour",
     "ready": "Prête ✓",
     "disclaimer": "En envoyant, vous confirmez l'exactitude de ce signalement. Les fausses réclamations peuvent entraîner des restrictions de compte.",
     "errors": {
       "imageSize": "L'image doit faire moins de 5 Mo.",
       "order": "Veuillez choisir une commande.",
-      "items": "Veuillez sélectionner au moins un article.",
-      "resolution": "Veuillez choisir une solution.",
+      "items": "Choisissez au moins un article à retourner.",
       "type": "Veuillez choisir un motif.",
       "specify": "Veuillez préciser.",
-      "photo": "Une photo justificative est obligatoire.",
+      "photo": "Au moins une photo de preuve est obligatoire.",
       "submit": "L'envoi a échoué. Veuillez réessayer."
-    }
+    },
+    "noExchange": "Vous voulez un autre article ? Repassez simplement commande.",
+    "shippingSeller": "✓ Article non conforme ou défectueux : les frais de retour sont payés par la boutique.",
+    "shippingClient": "Changement d'avis : les frais de retour ({fee} DT) sont déduits de votre remboursement."
   },
   "favorites": {
     "metaTitle": "Mes favoris",
@@ -3227,7 +3215,8 @@
         "method": "Mode",
         "amount": "Montant",
         "date": "Date"
-      }
+      },
+      "returnedQty": "↩ {count} retourné(s)"
     },
     "earnings": {
       "loadFailed": "Impossible de charger les revenus.",
@@ -3269,7 +3258,9 @@
         "net": "Votre net",
         "orders": "Commandes",
         "pending": "Versement en attente",
-        "paid": "Déjà versé"
+        "paid": "Déjà versé",
+        "returnDebits": "Débits retours",
+        "returnDebitsNote": "Retours remboursés après un versement et frais de retour — déduits de votre prochain règlement."
       },
       "splitCols": {
         "gross": "Total brut",
@@ -3447,8 +3438,8 @@
       }
     },
     "complaints": {
-      "title": "Réclamations",
-      "subtitle": "Réclamations des clients concernant vos produits",
+      "title": "Retours",
+      "subtitle": "Demandes de retour sur vos ventes",
       "refresh": "Actualiser",
       "filter": "FILTRER",
       "empty": "Aucune réclamation",
@@ -3472,17 +3463,17 @@
       "filedOn": "Déposée le {date}",
       "reject": "Refuser",
       "approve": "Accepter",
-      "toastApproved": "✓ Réclamation acceptée",
-      "toastRejected": "⚠ Refus envoyé pour examen",
+      "toastApproved": "✓ Retour accepté",
+      "toastRejected": "✓ Refus envoyé",
       "approveTitle": "Accepter la réclamation",
       "rejectTitle": "Refuser la réclamation",
-      "approveHint": "Le client sera averti dès l'acceptation.",
-      "rejectHint": "L'administrateur examinera et validera votre refus avant qu'il soit définitif.",
+      "approveHint": "ChooseTounsi valide votre accord, puis un livreur récupère l'article.",
+      "rejectHint": "Le client est notifié avec votre motif et peut demander l'arbitrage de ChooseTounsi.",
       "approvePlaceholder": "Message facultatif pour le client…",
       "rejectPlaceholder": "Expliquez pourquoi vous refusez cette réclamation…",
       "rejectionReason": "Motif du refus",
       "reasonPlaceholder": "Indiquez clairement le motif (visible par le client si l'administrateur valide)…",
-      "adminWarning": "Votre refus sera soumis à l'administrateur pour validation finale. Le client n'est averti qu'après sa confirmation.",
+      "adminWarning": "Soyez précis : le client voit ce motif et ChooseTounsi peut revenir sur votre décision.",
       "cancel": "Annuler",
       "submitting": "Envoi…",
       "confirmApproval": "Confirmer l'acceptation",
@@ -3492,7 +3483,18 @@
         "reviewing": "EN EXAMEN",
         "approved": "ACCEPTÉE",
         "awaitingAdmin": "EN ATTENTE ADMIN",
-        "rejected": "REFUSÉE"
+        "rejected": "REJETÉ",
+        "requested": "DEMANDÉ",
+        "seller_accepted": "ACCEPTÉ",
+        "seller_rejected": "REFUSÉ",
+        "escalated": "ARBITRAGE",
+        "admin_approved": "APPROUVÉ",
+        "pickup_scheduled": "ENLÈVEMENT PLANIFIÉ",
+        "picked_up": "RÉCUPÉRÉ",
+        "returned_to_seller": "REÇU",
+        "refunded": "REMBOURSÉ",
+        "cancelled": "ANNULÉ",
+        "closed": "CLÔTURÉ"
       },
       "refund": {
         "pending": "En attente d'enlèvement",
@@ -3505,7 +3507,10 @@
         "needsAction": "À traiter",
         "approved": "Acceptées",
         "awaitingAdmin": "En attente admin",
-        "rejected": "Refusées"
+        "rejected": "Refusées",
+        "inProgress": "En cours",
+        "refunded": "Remboursés",
+        "refused": "Refusés / clos"
       },
       "filters": {
         "all": "Toutes",
@@ -3513,7 +3518,12 @@
         "reviewing": "En examen",
         "approved": "Acceptées",
         "awaitingAdmin": "En attente admin",
-        "rejected": "Refusées"
+        "rejected": "Refusées",
+        "requested": "À traiter",
+        "inProgress": "En cours",
+        "toReceive": "À réceptionner",
+        "received": "Reçus / remboursés",
+        "closed": "Clos"
       },
       "errors": {
         "noteShort": "La note doit contenir au moins 10 caractères (ou restez vide).",
@@ -3522,7 +3532,39 @@
         "failed": "L'action a échoué. Veuillez réessayer."
       },
       "items": "Article(s) concerné(s)",
-      "qty": "Qté : {count}"
+      "qty": "Qté : {count}",
+      "explain": {
+        "seller_accepted": "Vous avez accepté ce retour. ChooseTounsi le valide, puis un livreur récupère l'article.",
+        "seller_rejected": "Vous avez refusé ce retour. Le client est notifié et peut demander l'arbitrage de ChooseTounsi.",
+        "escalated": "Le client conteste votre refus : ChooseTounsi va trancher.",
+        "admin_approved": "Approuvé par ChooseTounsi. L'enlèvement chez le client est en cours de planification.",
+        "pickup_scheduled": "Un livreur va récupérer l'article chez le client et vous le rapporter.",
+        "picked_up": "L'article revient vers vous. À réception, confirmez-la et indiquez l'état de chaque article.",
+        "returned_to_seller": "Reçu et vérifié. ChooseTounsi rembourse le client ; la vente sera retirée de vos gains.",
+        "refunded": "Le client a été remboursé. Le montant retourné a été retiré de vos ventes (et de votre prochain versement si déjà payé).",
+        "rejected": "Ce retour a été rejeté.",
+        "cancelled": "Ce retour a été annulé.",
+        "closed": "Cette demande est clôturée."
+      },
+      "receive": {
+        "open": "Confirmer la réception",
+        "title": "Retour reçu",
+        "hint": "Vérifiez chaque article retourné et indiquez son état.",
+        "resaleable": "Revendable",
+        "damaged": "Endommagé",
+        "confirm": "Confirmer la réception",
+        "conditionRequired": "Indiquez l'état de chaque article.",
+        "stockNote": "Les articles revendables reviennent en stock sur leur variante exacte. Les articles endommagés ne sont pas remis en stock.",
+        "notePlaceholder": "Remarques (facultatif)…",
+        "toast": "✓ Réception confirmée",
+        "restocked": "↺ {count} remis en stock"
+      },
+      "returnQty": "Retourné : {count}",
+      "returnQtyOf": "Retourné {count} sur {total}",
+      "returnAmount": "Montant retourné (prix payé)",
+      "shippingSeller": "Les frais de retour ({fee}) vous sont facturés : article non conforme ou défectueux.",
+      "shippingClient": "Les frais de retour sont payés par le client (changement d'avis).",
+      "confirmRejection": "Refuser le retour"
     },
     "reviews": {
       "title": "Avis et réputation",
@@ -5734,6 +5776,96 @@
       "complaints": "Aucune réclamation en cours",
       "reviews": "Aucun rappel d’avis",
       "promotions": "Aucune offre pour le moment"
+    }
+  },
+  "returns": {
+    "reference": "Retour {ref}",
+    "track": "Suivre le retour",
+    "tracking": "Suivi du retour / remboursement",
+    "orderReturns": "Retours sur cette commande",
+    "refundedWith": "{amount} remboursés · {method}",
+    "returnQty": "Retourné : {count} sur {total}",
+    "legacyExchange": "Cette demande a été déposée comme échange selon l'ancienne politique. Notre équipe s'en occupe ; les nouvelles demandes sont des retours avec remboursement.",
+    "shopReason": "Motif de la boutique",
+    "rejectionReason": "Motif",
+    "shopMessage": "Message de la boutique",
+    "status": {
+      "requested": "Demandé",
+      "seller_accepted": "Accepté par la boutique",
+      "seller_rejected": "Refusé par la boutique",
+      "escalated": "Transmis à ChooseTounsi",
+      "admin_approved": "Approuvé",
+      "pickup_scheduled": "Enlèvement planifié",
+      "picked_up": "Récupéré",
+      "returned_to_seller": "Reçu et vérifié",
+      "refunded": "Remboursé",
+      "rejected": "Refusé",
+      "cancelled": "Annulé",
+      "closed": "Clôturé"
+    },
+    "hint": {
+      "requested": "La boutique a 48 heures pour répondre à votre demande.",
+      "seller_accepted": "La boutique a accepté. ChooseTounsi valide puis planifie l'enlèvement.",
+      "seller_rejected": "La boutique a refusé votre demande. Si vous n'êtes pas d'accord, demandez l'arbitrage de ChooseTounsi.",
+      "escalated": "Notre équipe examine votre demande et va trancher rapidement.",
+      "admin_approved": "Approuvé ! Un livreur va vous contacter pour récupérer l'article.",
+      "pickup_scheduled": "L'enlèvement est planifié : gardez l'article prêt, idéalement dans son emballage d'origine.",
+      "picked_up": "Le livreur a récupéré l'article ; il retourne vers la boutique.",
+      "returned_to_seller": "L'article a été reçu et vérifié. Votre remboursement est en cours.",
+      "refunded": "Votre remboursement a été effectué.",
+      "rejected": "Votre demande n'a pas été acceptée.",
+      "cancelled": "Cette demande a été annulée.",
+      "closed": "Cette demande est clôturée."
+    },
+    "steps": {
+      "seller_decision": "Réponse de la boutique",
+      "skipped": "décidé par ChooseTounsi"
+    },
+    "methods": {
+      "wallet": "Portefeuille ChooseTounsi",
+      "bank_transfer": "Virement bancaire",
+      "d17": "D17",
+      "original": "Carte d'origine"
+    },
+    "refund": {
+      "title": "Remboursement",
+      "items": "Articles retournés (prix payé)",
+      "shipping": "Frais de retour (changement d'avis)",
+      "expected": "Remboursement prévu",
+      "refunded": "Remboursé",
+      "method": "Mode",
+      "reference": "Référence",
+      "date": "Date",
+      "shippingSeller": "Les frais de retour sont à la charge de la boutique (article non conforme ou défectueux).",
+      "shippingClient": "Les frais de retour ({fee}) sont déduits du remboursement (changement d'avis).",
+      "afterInspection": "Le remboursement est effectué dès que l'article est reçu et vérifié."
+    },
+    "actions": {
+      "escalateTitle": "Pas d'accord avec la boutique ?",
+      "escalateHint": "Demandez à ChooseTounsi de réexaminer votre demande. Notre décision est définitive.",
+      "escalate": "Demander l'arbitrage de ChooseTounsi",
+      "escalatePlaceholder": "Ajoutez des précisions pour notre équipe (facultatif)…",
+      "escalateConfirm": "Envoyer à ChooseTounsi",
+      "sending": "Envoi…",
+      "cancel": "Retirer ma demande",
+      "cancelConfirm": "Retirer cette demande de retour ?",
+      "failed": "L'action a échoué. Réessayez."
+    },
+    "form": {
+      "wholeOrder": "Toute la commande",
+      "someItems": "Certains articles",
+      "quantity": "Quantité à retourner",
+      "paidUnit": "{price} payé / unité",
+      "returnable": "{count} retournable(s)",
+      "estimate": "Remboursement estimé (hors frais de retour)",
+      "dropPhotos": "Déposez des photos ici ou <b>parcourez</b>",
+      "addPhoto": "Ajouter une photo",
+      "photosHint": "1 photo minimum, {count} maximum · JPG, PNG, WEBP · 5 Mo chacune",
+      "photoType": "Veuillez choisir une image.",
+      "photoSize": "Chaque photo doit faire moins de 5 Mo.",
+      "photoMax": "{count} photos maximum.",
+      "photoN": "Photo {n}",
+      "removePhoto": "Retirer la photo"
     }
   }
 }

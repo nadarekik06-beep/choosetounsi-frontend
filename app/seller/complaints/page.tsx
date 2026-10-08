@@ -13,7 +13,8 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { sellerComplaintApi } from '@/lib/complaintApi'
 import type { Complaint } from '@/types/complaint'
-import { STATUS_CONFIG, COMPLAINT_TYPE_LABELS } from '@/types/complaint'
+import { COMPLAINT_TYPE_LABELS } from '@/types/complaint'
+import type { ItemCondition } from '@/types/complaint'
 import { useTheme } from '../SellerShell'
 import { useTranslations } from 'next-intl'
 import PurchasedItemRow from '@/app/components/PurchasedItemRow'
@@ -196,13 +197,6 @@ const C = {
   blueDim:   'rgba(59,130,246,0.12)',
 }
 
-// Labels: seller.complaints.refund.<status>
-const REFUND_STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
-  pending:   { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
-  assigned:  { color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
-  picked_up: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)' },
-  completed: { color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-}
 // ─── Status meta ──────────────────────────────────────────────────────────────
 
 interface StatusMeta {
@@ -213,12 +207,24 @@ interface StatusMeta {
   border: string
 }
 
+const PURPLE = { color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.3)' }
+const INDIGO = { color: '#6366f1', bg: 'rgba(99,102,241,0.12)', border: 'rgba(99,102,241,0.3)' }
+const TEAL   = { color: '#14b8a6', bg: 'rgba(20,184,166,0.12)', border: 'rgba(20,184,166,0.3)' }
+const GREY   = { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.3)' }
+
 const STATUS_META: Record<string, StatusMeta> = {
-  pending:                       { icon: <IconClock size={11} />,        label: 'pending',       color: C.amber,  bg: C.amberDim,  border: 'rgba(245,158,11,0.3)'  },
-  reviewing:                     { icon: <IconSearch size={11} />,       label: 'reviewing',     color: C.blue,   bg: C.blueDim,   border: 'rgba(59,130,246,0.3)'  },
-  approved:                      { icon: <IconCheckCircle size={11} />,  label: 'approved',      color: C.green,  bg: C.greenDim,  border: 'rgba(25,143,65,0.3)'   },
-  seller_rejected_pending_admin: { icon: <IconShieldAlert size={11} />,  label: 'awaitingAdmin', color: C.orange, bg: C.orangeDim, border: 'rgba(249,115,22,0.3)'  },
-  rejected:                      { icon: <IconXCircle size={11} />,      label: 'rejected',      color: C.red,    bg: C.redDim,    border: 'rgba(219,20,46,0.3)'   },
+  requested:          { icon: <IconClock size={11} />,       label: 'requested',          color: C.amber,  bg: C.amberDim,  border: 'rgba(245,158,11,0.3)' },
+  seller_accepted:    { icon: <IconCheckCircle size={11} />, label: 'seller_accepted',    color: C.blue,   bg: C.blueDim,   border: 'rgba(59,130,246,0.3)' },
+  seller_rejected:    { icon: <IconXCircle size={11} />,     label: 'seller_rejected',    color: C.orange, bg: C.orangeDim, border: 'rgba(249,115,22,0.3)' },
+  escalated:          { icon: <IconShieldAlert size={11} />, label: 'escalated',          ...PURPLE },
+  admin_approved:     { icon: <IconCheckCircle size={11} />, label: 'admin_approved',     color: C.blue,   bg: C.blueDim,   border: 'rgba(59,130,246,0.3)' },
+  pickup_scheduled:   { icon: <IconPackage size={11} />,     label: 'pickup_scheduled',   ...INDIGO },
+  picked_up:          { icon: <IconPackage size={11} />,     label: 'picked_up',          ...INDIGO },
+  returned_to_seller: { icon: <IconInbox size={11} />,       label: 'returned_to_seller', ...TEAL },
+  refunded:           { icon: <IconCheckCircle size={11} />, label: 'refunded',           color: C.green,  bg: C.greenDim,  border: 'rgba(25,143,65,0.3)' },
+  rejected:           { icon: <IconXCircle size={11} />,     label: 'rejected',           color: C.red,    bg: C.redDim,    border: 'rgba(219,20,46,0.3)' },
+  cancelled:          { icon: <IconX size={11} />,           label: 'cancelled',          ...GREY },
+  closed:             { icon: <IconCheckCircle size={11} />, label: 'closed',             ...GREY },
 }
 
 // ─── Theme-aware color helpers ────────────────────────────────────────────────
@@ -296,7 +302,7 @@ const GLOBAL_CSS = `
 function StatusBadge({ status }: { status: Complaint['status'] }) {
   const { dark } = useTheme();
   const t = useTranslations('seller.complaints.status')
-  const m = STATUS_META[status] ?? STATUS_META['pending']
+  const m = STATUS_META[status] ?? STATUS_META['requested']
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -413,10 +419,6 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
         return
       }
     } else {
-      if (sellerNote.trim().length < 10) {
-        setError(t('errors.responseRequired'))
-        return
-      }
       if (rejectionReason.trim().length < 10) {
         setError(t('errors.reasonRequired'))
         return
@@ -508,9 +510,7 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
           textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8,
         }}>
           {t('yourResponse')}{' '}
-          {isApprove
-            ? <span style={{ fontWeight: 400, textTransform: 'none', color: T.textMuted }}>{t('optional')}</span>
-            : <span style={{ color: C.red }}>*</span>}
+          <span style={{ fontWeight: 400, textTransform: 'none', color: T.textMuted }}>{t('optional')}</span>
         </label>
         <textarea
           value={sellerNote}
@@ -600,9 +600,94 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
             ) : isApprove ? (
               <><IconCheckCircle size={15} /> {t('confirmApproval')}</>
             ) : (
-              <><IconShieldAlert size={15} /> {t('submitReview')}</>
+              <><IconXCircle size={15} /> {t('confirmRejection')}</>
             )}
           </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ─── Reception modal: condition of each returned line ─────────────────────────
+
+function ReceiveModal({ complaint, onClose, onDone, dark }: { complaint: Complaint; onClose: () => void; onDone: () => void; dark: boolean }) {
+  const t = useTranslations('seller.complaints')
+  const T = useColors(dark)
+  const items = complaint.complained_items ?? []
+  const [conditions, setConditions] = useState<Record<number, ItemCondition>>({})
+  const [note,   setNote]   = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error,  setError]  = useState('')
+
+  const submit = async () => {
+    if (items.some(i => !conditions[i.id])) { setError(t('receive.conditionRequired')); return }
+    setSaving(true); setError('')
+    try {
+      await sellerComplaintApi.receive(complaint.id, conditions, note.trim() || undefined)
+      onDone(); onClose()
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } }
+      setError(e?.response?.data?.message ?? t('errors.failed'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const choice = (active: boolean, color: string): React.CSSProperties => ({
+    flex: 1, padding: '8px 10px', borderRadius: 9, fontSize: 12, fontWeight: 800, cursor: 'pointer',
+    border: `1.5px solid ${active ? color : T.border}`, background: active ? `${color}1f` : 'transparent',
+    color: active ? ink(color, dark) : T.textMuted,
+  })
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', zIndex: 10000 }} />
+      <div role="dialog" aria-modal="true" aria-label={t('receive.title')} style={{
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '92%', maxWidth: 520,
+        maxHeight: '90vh', overflowY: 'auto', background: T.cardBg, border: `1px solid ${T.border}`, borderRadius: 20,
+        padding: '26px 26px 22px', zIndex: 10001, animation: 'pop 0.22s ease',
+        boxShadow: dark ? '0 40px 100px rgba(0,0,0,0.5)' : '0 24px 60px rgba(0,0,0,0.15)',
+      }}>
+        <h3 style={{ fontSize: 17, fontWeight: 800, color: T.textMain, margin: '0 0 5px' }}>{t('receive.title')}</h3>
+        <p style={{ fontSize: 12.5, color: T.textMuted, lineHeight: 1.5, margin: '0 0 18px' }}>{t('receive.hint')}</p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+          {items.map(item => (
+            <div key={item.id} style={{ background: T.cardBgSub, border: `1px solid ${T.border}`, borderRadius: 12, padding: '12px 14px' }}>
+              <PurchasedItemRow item={item} qtyLabel={t('returnQty', { count: item.return_quantity ?? item.quantity })}
+                textColor={T.textMain} mutedColor={T.textMuted} border={T.border} />
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button type="button" onClick={() => setConditions(c => ({ ...c, [item.id]: 'resaleable' }))}
+                  aria-pressed={conditions[item.id] === 'resaleable'} style={choice(conditions[item.id] === 'resaleable', C.green)}>
+                  ✓ {t('receive.resaleable')}
+                </button>
+                <button type="button" onClick={() => setConditions(c => ({ ...c, [item.id]: 'damaged' }))}
+                  aria-pressed={conditions[item.id] === 'damaged'} style={choice(conditions[item.id] === 'damaged', C.red)}>
+                  ✕ {t('receive.damaged')}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p style={{ fontSize: 11.5, color: T.textMuted, margin: '0 0 12px', lineHeight: 1.55 }}>{t('receive.stockNote')}</p>
+
+        <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} placeholder={t('receive.notePlaceholder')}
+          aria-label={t('receive.notePlaceholder')}
+          style={{ width: '100%', padding: '10px 12px', borderRadius: 10, fontSize: 13, border: `1.5px solid ${T.inputBorder}`,
+            background: T.inputBg, color: T.inputText, boxSizing: 'border-box', resize: 'vertical', marginBottom: 14 }} />
+
+        {error && <p style={{ fontSize: 12.5, color: C.red, fontWeight: 600, margin: '0 0 12px' }}>⚠ {error}</p>}
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} disabled={saving} className="action-btn" style={{
+            padding: '11px 22px', border: `1.5px solid ${T.border}`, borderRadius: 10, background: 'transparent',
+            color: T.textSub, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          }}>{t('cancel')}</button>
+          <button onClick={submit} disabled={saving} className="action-btn" style={{
+            padding: '11px 24px', borderRadius: 10, fontSize: 13, fontWeight: 800, border: 'none',
+            cursor: saving ? 'not-allowed' : 'pointer', background: C.green, color: '#fff', opacity: saving ? 0.7 : 1,
+          }}>{saving ? t('submitting') : t('receive.confirm')}</button>
         </div>
       </div>
     </>
@@ -649,13 +734,17 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
   const t = useTranslations('seller.complaints')
   const typeLabel = useComplaintType()
   const { date, isRtl } = useFormat()
+  const { price } = useFormat()
   const [decisionMode, setDecisionMode] = useState<'approve' | 'reject' | null>(null)
+  const [receiving,    setReceiving]    = useState(false)
   const [toast,        setToast]        = useState('')
   const T = useColors(dark)
 
   if (!complaint) return null
 
-  const canAct = ['pending', 'reviewing'].includes(complaint.status)
+  const canAct     = complaint.status === 'requested'
+  const canReceive = complaint.status === 'picked_up' && complaint.resolution_type !== 'exchange'
+  const photos     = complaint.image_urls?.length ? complaint.image_urls : (complaint.image_url ? [complaint.image_url] : [])
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
 
@@ -685,22 +774,10 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
         }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <span style={{ fontSize: 11, fontFamily: 'monospace', color: T.textMuted, fontWeight: 600 }}>
-                {t('complaintNumber', { id: complaint.id })}
+              <span style={{ fontSize: 11, fontFamily: 'monospace', color: T.textMuted, fontWeight: 600 }} dir="ltr">
+                {complaint.reference ?? t('complaintNumber', { id: complaint.id })}
               </span>
               <StatusBadge status={complaint.status} />
-              {/* ↓ NEW — refund delivery progress badge */}
-{complaint.refund_status && (
-  <span style={{
-    display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6,
-    fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999,
-    background: REFUND_STATUS_CONFIG[complaint.refund_status]?.bg ?? 'rgba(168,85,247,0.1)',
-    color: REFUND_STATUS_CONFIG[complaint.refund_status]?.color ?? ink('#a855f7', dark),
-    border: `1px solid ${REFUND_STATUS_CONFIG[complaint.refund_status]?.color ?? '#a855f7'}30`,
-  }}>
-    ↩️ {t('refundLabel', { status: t.has(`refund.${complaint.refund_status}`) ? t(`refund.${complaint.refund_status}`) : complaint.refund_status })}
-  </span>
-)}
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 800, color: T.textMain, margin: 0 }}>
               {typeLabel(complaint.complaint_type)}
@@ -765,9 +842,27 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
                 display: 'flex', flexDirection: 'column', gap: 10,
               }}>
                 {complaint.complained_items.map(item => (
-                  <PurchasedItemRow key={item.id} item={item} qtyLabel={t('qty', { count: item.quantity })}
-                    textColor={T.textMain} mutedColor={T.textMuted} border={T.drawerBorder} />
+                  <div key={item.id}>
+                    <PurchasedItemRow item={item}
+                      qtyLabel={`${t('returnQtyOf', { count: item.return_quantity ?? item.quantity, total: item.quantity })} · ${price(Number(item.return_amount ?? 0))}`}
+                      textColor={T.textMain} mutedColor={T.textMuted} border={T.drawerBorder} />
+                    {item.condition && (
+                      <span style={{ display: 'inline-block', marginTop: 6, fontSize: 10.5, fontWeight: 800, padding: '2px 8px', borderRadius: 6,
+                        color: item.condition === 'resaleable' ? ink(C.green, dark) : ink(C.red, dark),
+                        background: item.condition === 'resaleable' ? C.greenDim : C.redDim }}>
+                        {item.condition === 'resaleable' ? t('receive.restocked', { count: item.restocked_quantity ?? 0 }) : t('receive.damaged')}
+                      </span>
+                    )}
+                  </div>
                 ))}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, fontWeight: 700, color: T.textSub, borderTop: `1px dashed ${T.drawerBorder}`, paddingTop: 8 }}>
+                  <span>{t('returnAmount')}</span><span>{price(Number(complaint.items_amount ?? 0))}</span>
+                </div>
+                <p style={{ fontSize: 11.5, color: T.textMuted, margin: 0, lineHeight: 1.5 }}>
+                  {complaint.shipping_payer === 'seller'
+                    ? t('shippingSeller', { fee: price(Number(complaint.return_shipping_fee ?? 0)) })
+                    : t('shippingClient')}
+                </p>
               </div>
             </DrawerSection>
           )}
@@ -785,31 +880,16 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
             </div>
           </DrawerSection>
 
-          {/* Proof image */}
-          {complaint.image_url && (
+          {/* Proof photos */}
+          {photos.length > 0 && (
             <DrawerSection icon={<IconImageIcon size={13} />} label={t('proofPhoto')} dark={dark}>
-              <a
-                href={complaint.image_url}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  display: 'block', borderRadius: 12, overflow: 'hidden',
-                  border: `1px solid ${T.drawerBorder}`,
-                  transition: 'opacity 0.15s',
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = '0.85' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = '1' }}
-              >
-                <img
-                  src={complaint.image_url}
-                  alt={t('proofPhoto')}
-                  style={{
-                    width: '100%', maxHeight: 220, objectFit: 'contain',
-                    background: T.drawerBgSub,
-                    display: 'block',
-                  }}
-                />
-              </a>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8 }}>
+                {photos.map(url => (
+                  <a key={url} href={url} target="_blank" rel="noreferrer" style={{ display: 'block', borderRadius: 12, overflow: 'hidden', border: `1px solid ${T.drawerBorder}` }}>
+                    <img src={url} alt={t('proofPhoto')} style={{ width: '100%', height: 110, objectFit: 'cover', display: 'block', background: T.drawerBgSub }} />
+                  </a>
+                ))}
+              </div>
             </DrawerSection>
           )}
 
@@ -828,49 +908,21 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
             </DrawerSection>
           )}
 
-          {/* Awaiting admin */}
-          {complaint.status === 'seller_rejected_pending_admin' && (
-            <div style={{
-              display: 'flex', gap: 12, padding: '14px 16px',
-              background: C.orangeDim, border: `1px solid ${C.orange}35`, borderRadius: 12,
-            }}>
-              <IconShieldAlert size={18} color={C.orange} strokeWidth={2} />
-              <div>
-                <p style={{ fontSize: 12.5, fontWeight: 700, color: C.orange, margin: '0 0 5px' }}>
-                  {t('awaitingTitle')}
-                </p>
-                <p style={{ fontSize: 12.5, color: T.textMuted, margin: 0, lineHeight: 1.6 }}>
-                  {t('awaitingBody')}
-                </p>
-                {complaint.rejection_reason && (
-                  <p style={{ fontSize: 12, color: T.textFaint, margin: '8px 0 0', lineHeight: 1.6 }}>
-                    <strong style={{ color: T.textMuted }}>{t('yourReason')}</strong> {complaint.rejection_reason}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Final resolved */}
-          {['approved', 'rejected'].includes(complaint.status) && (
+          {/* Where the return stands, from the shop's side */}
+          {t.has(`explain.${complaint.status}`) && (
             <div style={{
               display: 'flex', gap: 12, padding: '14px 16px', borderRadius: 12,
-              background: complaint.status === 'approved' ? C.greenDim : C.redDim,
-              border: `1px solid ${complaint.status === 'approved' ? C.green : C.red}35`,
+              background: (STATUS_META[complaint.status] ?? STATUS_META.requested).bg,
+              border: `1px solid ${(STATUS_META[complaint.status] ?? STATUS_META.requested).border}`,
             }}>
-              {complaint.status === 'approved'
-                ? <IconCheckCircle size={18} color={C.green} strokeWidth={2} />
-                : <IconXCircle    size={18} color={C.red}   strokeWidth={2} />}
+              <IconShieldAlert size={18} color={ink((STATUS_META[complaint.status] ?? STATUS_META.requested).color, dark)} strokeWidth={2} />
               <div>
-                <p style={{
-                  fontSize: 12.5, fontWeight: 700, margin: '0 0 4px',
-                  color: complaint.status === 'approved' ? C.green : C.red,
-                }}>
-                  {complaint.status === 'approved' ? t('approvedFinal') : t('rejectedFinal')}
+                <p style={{ fontSize: 12.5, color: T.textSub, margin: 0, lineHeight: 1.6 }}>
+                  {t(`explain.${complaint.status}`)}
                 </p>
-                {complaint.rejection_reason && (
-                  <p style={{ fontSize: 12.5, color: T.textMuted, margin: 0 }}>
-                    {complaint.rejection_reason}
+                {complaint.rejection_reason && ['seller_rejected', 'escalated', 'rejected'].includes(complaint.status) && (
+                  <p style={{ fontSize: 12, color: T.textFaint, margin: '8px 0 0', lineHeight: 1.6 }}>
+                    <strong style={{ color: T.textMuted }}>{t('yourReason')}</strong> {complaint.rejection_reason}
                   </p>
                 )}
               </div>
@@ -881,6 +933,17 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
             {t('filedOn', { date: date(complaint.created_at, 'long') })}
           </p>
         </div>
+
+        {canReceive && (
+          <div style={{ padding: '14px 24px', borderTop: `1px solid ${T.drawerBorder}`, position: 'sticky', bottom: 0, background: T.drawerBg }}>
+            <button onClick={() => setReceiving(true)} className="action-btn" style={{
+              width: '100%', padding: '12px 0', background: C.green, color: '#fff', border: 'none', borderRadius: 10,
+              fontSize: 13, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}>
+              <IconInbox size={16} /> {t('receive.open')}
+            </button>
+          </div>
+        )}
 
         {/* Footer actions */}
         {canAct && (
@@ -920,6 +983,11 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
           </div>
         )}
       </div>
+
+      {receiving && (
+        <ReceiveModal complaint={complaint} dark={dark} onClose={() => setReceiving(false)}
+          onDone={() => { showToast(t('receive.toast')); onRefresh(); onClose() }} />
+      )}
 
       {/* Decision modal */}
       {decisionMode && (
@@ -963,9 +1031,10 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
 interface StatsData {
   total: number
   needs_action: number
-  approved: number
-  seller_rejected: number
-  rejected: number
+  requested: number
+  in_progress: number
+  refunded: number
+  refused: number
 }
 
 /** Opens the complaint from `?id=<id>` (links in seller e-mails and the notification bell). */
@@ -1027,19 +1096,19 @@ export default function SellerComplaintsPage() {
   const statCards = stats ? [
     { icon: <IconInbox size={18} />,       label: t('stats.total'),         value: stats.total,           color: dark ? 'rgba(255,255,255,0.7)' : '#475569', delay: 0   },
     { icon: <IconClock size={18} />,       label: t('stats.needsAction'),   value: stats.needs_action,    color: C.amber,                                     delay: 60  },
-    { icon: <IconCheckCircle size={18} />, label: t('stats.approved'),      value: stats.approved,        color: C.green,                                     delay: 120 },
-    { icon: <IconShieldAlert size={18} />, label: t('stats.awaitingAdmin'), value: stats.seller_rejected, color: C.orange,                                    delay: 180 },
-    { icon: <IconXCircle size={18} />,     label: t('stats.rejected'),      value: stats.rejected,        color: C.red,                                       delay: 240 },
+    { icon: <IconPackage size={18} />,     label: t('stats.inProgress'),    value: stats.in_progress,     color: C.blue,                                      delay: 120 },
+    { icon: <IconCheckCircle size={18} />, label: t('stats.refunded'),      value: stats.refunded,        color: C.green,                                     delay: 180 },
+    { icon: <IconXCircle size={18} />,     label: t('stats.refused'),       value: stats.refused,         color: C.red,                                       delay: 240 },
   ] : []
 
   interface FilterTab { val: string; label: string; icon: React.ReactNode }
   const FILTERS: FilterTab[] = [
     { val: '',                              label: t('filters.all'),           icon: <IconListFilter size={13} /> },
-    { val: 'pending',                       label: t('filters.pending'),       icon: <IconClock size={13} />      },
-    { val: 'reviewing',                     label: t('filters.reviewing'),     icon: <IconSearch size={13} />     },
-    { val: 'approved',                      label: t('filters.approved'),      icon: <IconCheckCircle size={13} />},
-    { val: 'seller_rejected_pending_admin', label: t('filters.awaitingAdmin'), icon: <IconShieldAlert size={13} />},
-    { val: 'rejected',                      label: t('filters.rejected'),      icon: <IconXCircle size={13} />    },
+    { val: 'requested',                                                  label: t('filters.requested'),  icon: <IconClock size={13} />      },
+    { val: 'seller_accepted,escalated,admin_approved,pickup_scheduled', label: t('filters.inProgress'), icon: <IconSearch size={13} />     },
+    { val: 'picked_up',                                                  label: t('filters.toReceive'),  icon: <IconInbox size={13} />      },
+    { val: 'returned_to_seller,refunded',                                label: t('filters.received'),   icon: <IconCheckCircle size={13} />},
+    { val: 'seller_rejected,rejected,cancelled,closed',                  label: t('filters.closed'),     icon: <IconXCircle size={13} />    },
   ]
 
   return (
@@ -1102,7 +1171,7 @@ export default function SellerComplaintsPage() {
           </span>
           {FILTERS.map(f => {
             const active = filter === f.val
-            const meta   = f.val ? STATUS_META[f.val] : null
+            const meta   = f.val ? STATUS_META[f.val.split(',')[0]] : null
             const color  = active ? (meta?.color  ?? C.red)        : T.textMuted
             const bg     = active ? (meta?.bg     ?? C.redDim)     : 'transparent'
             const brd    = active ? (meta?.border ?? `${C.red}40`) : T.border
@@ -1150,8 +1219,8 @@ export default function SellerComplaintsPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {complaints.map((c, idx) => {
-                const meta   = STATUS_META[c.status] ?? STATUS_META['pending']
-                const canAct = ['pending', 'reviewing'].includes(c.status)
+                const meta   = STATUS_META[c.status] ?? STATUS_META['requested']
+                const canAct = c.status === 'requested' || c.status === 'picked_up'
                 return (
                   <div
                     key={c.id}
@@ -1178,8 +1247,8 @@ export default function SellerComplaintsPage() {
                     }}>
                       {/* ID + type */}
                       <div style={{ minWidth: 160 }}>
-                        <p style={{ fontSize: 10, fontFamily: 'monospace', color: T.textFaint, margin: '0 0 4px', fontWeight: 600 }}>
-                          #{c.id}
+                        <p style={{ fontSize: 10, fontFamily: 'monospace', color: T.textFaint, margin: '0 0 4px', fontWeight: 600 }} dir="ltr">
+                          {c.reference ?? `#${c.id}`}
                         </p>
                         <p style={{ fontSize: 13.5, fontWeight: 700, color: T.textMain, margin: 0 }}>
                           {typeLabel(c.complaint_type)}

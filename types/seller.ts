@@ -128,7 +128,9 @@ export type OrderStatus =
   | 'completed'
   | 'cancelled'
   | 'delivered'
-  | 'refunded';
+  | 'refunded';            // whole sub-order returned ("Returned (Refunded)")
+/** status, or 'partially_returned' when part of the sub-order came back */
+export type OrderDisplayStatus = OrderStatus | 'partially_returned';
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
 
 export type PaymentMethod = 'cod' | 'card' | 'd17' | 'wallet';
@@ -152,6 +154,7 @@ export interface Order {
   order_number: string;
   total_amount: number;
   status: OrderStatus;
+  display_status?: OrderDisplayStatus;
   payment_status: PaymentStatus;
   payment_method: PaymentMethod | null;
   wilaya: string | null;
@@ -196,8 +199,12 @@ export interface OrderItem {
   commission_amount: number | null;      // platform fee in TND
   seller_amount: number | null;          // what seller receives in TND
   plan_used: 'free' | 'red' | 'black' | null;
-is_returned?: boolean
-  item_status?: 'returned' | 'exchanged' | null
+  is_returned?: boolean
+  // Refunded returns take their units off the line: quantity = kept
+  item_status?: 'returned' | 'partially_returned' | null
+  ordered_quantity?: number
+  returned_quantity?: number
+  returned_amount?: number
 }
 // ── Commission summary for the order detail modal ────────────────────────────
 export interface OrderCommissionSummary {
