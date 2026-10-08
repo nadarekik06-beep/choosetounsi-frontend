@@ -89,7 +89,9 @@ function ComplaintCard({ complaint: initial, focused = false }: { complaint: Com
           {/* Status description bar */}
           <div style={{ padding: '8px 20px 10px', background: cfg.bg, borderTop: `1px solid ${cfg.color}20` }}>
             <p style={{ fontSize: 12, color: cfg.color, fontWeight: 600, margin: 0 }}>
-              {tr.has(`hint.${complaint.status}`) ? tr(`hint.${complaint.status}`) : ''}
+              {complaint.cash_refund && tr.has(`hintCash.${complaint.status}`)
+                ? tr(`hintCash.${complaint.status}`, { amount: fmt.price(Number(complaint.refund_amount ?? 0)) })
+                : tr.has(`hint.${complaint.status}`) ? tr(`hint.${complaint.status}`) : ''}
             </p>
           </div>
 

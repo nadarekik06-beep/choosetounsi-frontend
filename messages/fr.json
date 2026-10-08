@@ -1256,7 +1256,7 @@
     "qty": "Qté : {count}",
     "auto": "Auto",
     "selectItems": "Sélectionnez le ou les articles concernés :",
-    "refundNote": "📦 Un livreur récupère le(s) article(s) pour la boutique ; vous êtes remboursé(e) après vérification.",
+    "refundNote": "📦 Un livreur récupère le(s) article(s). Payé à la livraison : il vous rembourse en espèces sur place. Payé en ligne : remboursement sur votre moyen de paiement après vérification.",
     "type": "Motif de la réclamation",
     "types": {
       "placeholder": "— Choisir un motif —",
@@ -1327,7 +1327,7 @@
     "rejectionReason": "Motif du refus",
     "filedOn": "Déposée le {date}",
     "policyTitle": "Politique de retour",
-    "policyBody": "Un retour peut être demandé dans les <b>48 heures</b> suivant la livraison, pour toute la commande ou certains articles, avec au moins une photo. Vous êtes remboursé(e) dès que l'article est reçu et vérifié — sur votre portefeuille, par virement / D17 ou sur votre carte.",
+    "policyBody": "Un retour peut être demandé dans les <b>48 heures</b> suivant la livraison, pour toute la commande ou certains articles, avec au moins une photo. Payé à la livraison : le livreur vous rembourse en espèces lors de l'enlèvement. Payé en ligne : remboursement sur votre carte, portefeuille ou D17 après vérification.",
     "successTitle": "Retour demandé !",
     "successBody": "La boutique a <b>48 heures</b> pour répondre, puis ChooseTounsi valide et organise l'enlèvement.",
     "successNotice": "Vous serez prévenu(e) (appli + e-mail) à chaque étape jusqu'au remboursement.",
@@ -1349,7 +1349,7 @@
       },
       "s4": {
         "title": "Remboursement",
-        "text": "Remboursé dès que l'article est reçu et vérifié"
+        "text": "En espèces par le livreur (paiement à la livraison) ou sur votre moyen de paiement"
       }
     },
     "types": {
@@ -1390,7 +1390,7 @@
     "autoSelected": "Sélectionné",
     "selectItemsBadge": "Articles",
     "whichItems": "Quel(s) article(s) pose(nt) problème ?",
-    "refundNote": "📦 Un livreur récupère le(s) article(s) et les rapporte à la boutique. Vous êtes remboursé(e) dès leur réception et vérification.",
+    "refundNote": "📦 Un livreur récupère le(s) article(s). Payé à la livraison ? Il vous rembourse en espèces sur place après vérification. Payé en ligne ? Remboursement sur votre moyen de paiement après vérification.",
     "noEligibleTitle": "Aucune commande éligible",
     "noEligibleBody": "Un retour peut être demandé sur une <b>commande livrée</b> dans les <b>48 heures</b> suivant la livraison, pour les articles non déjà retournés.",
     "close": "Fermer",
@@ -1754,11 +1754,11 @@
         },
         "missing-damaged": {
           "label": "Commande manquante / endommagée / incorrecte",
-          "response": "Toutes nos excuses. Déposez une réclamation dans les 48 heures suivant la livraison : choisissez le motif (mauvais produit, taille, couleur, article endommagé…), décrivez le problème, joignez une photo si possible et demandez un échange ou un retour avec remboursement."
+          "response": "Toutes nos excuses. Demandez un retour dans les 48 heures suivant la livraison : choisissez les articles, le motif (mauvais produit, taille, couleur, endommagé…), décrivez le problème et ajoutez une photo. Vous voulez un autre article ? Repassez simplement commande."
         },
         "return-order": {
           "label": "Comment retourner ma commande ?",
-          "response": "Vous pouvez demander un retour dans les 48 heures suivant la livraison, une réclamation par commande. Allez dans Réclamations → Nouvelle réclamation, choisissez la commande et les articles, décrivez le problème puis choisissez « Retour et remboursement » ou « Échange »."
+          "response": "Vous pouvez demander un retour dans les 48 heures suivant la livraison, pour toute la commande ou certains articles. Allez dans Mes retours → Nouveau retour, choisissez la commande, les articles et les quantités, décrivez le problème et ajoutez une photo."
         },
         "return-status": {
           "label": "Suivre mon retour",
@@ -1766,7 +1766,7 @@
         },
         "refund": {
           "label": "Quand serai-je remboursé ?",
-          "response": "Une fois votre retour accepté, un livreur récupère l'article puis votre remboursement est effectué. Vous pouvez suivre chaque étape dans Mes réclamations."
+          "response": "Payé à la livraison : le livreur vous rembourse en espèces quand il récupère l'article. Payé en ligne : remboursement sur votre carte, portefeuille ou D17 après vérification. Suivez chaque étape dans Mes retours."
         },
         "payment-issue": {
           "label": "Problème de paiement",
@@ -3539,8 +3539,8 @@
         "escalated": "Le client conteste votre refus : ChooseTounsi va trancher.",
         "admin_approved": "Approuvé par ChooseTounsi. L'enlèvement chez le client est en cours de planification.",
         "pickup_scheduled": "Un livreur va récupérer l'article chez le client et vous le rapporter.",
-        "picked_up": "L'article revient vers vous. À réception, confirmez-la et indiquez l'état de chaque article.",
-        "returned_to_seller": "Reçu et vérifié. ChooseTounsi rembourse le client ; la vente sera retirée de vos gains.",
+        "picked_up": "L'article revient vers vous (pour un paiement à la livraison, le livreur a déjà remboursé le client). À réception, confirmez-la et indiquez l'état de chaque article.",
+        "returned_to_seller": "Reçu et vérifié. Le client est remboursé sur son moyen de paiement ; la vente est retirée de vos gains.",
         "refunded": "Le client a été remboursé. Le montant retourné a été retiré de vos ventes (et de votre prochain versement si déjà payé).",
         "rejected": "Ce retour a été rejeté.",
         "cancelled": "Ce retour a été annulé.",
@@ -5825,7 +5825,8 @@
       "wallet": "Portefeuille ChooseTounsi",
       "bank_transfer": "Virement bancaire",
       "d17": "D17",
-      "original": "Carte d'origine"
+      "original": "Carte d'origine",
+      "cash": "Espèces, remises par le livreur"
     },
     "refund": {
       "title": "Remboursement",
@@ -5838,7 +5839,9 @@
       "date": "Date",
       "shippingSeller": "Les frais de retour sont à la charge de la boutique (article non conforme ou défectueux).",
       "shippingClient": "Les frais de retour ({fee}) sont déduits du remboursement (changement d'avis).",
-      "afterInspection": "Le remboursement est effectué dès que l'article est reçu et vérifié."
+      "afterInspection": "Le remboursement est effectué dès que l'article est reçu et vérifié.",
+      "cashNote": "Paiement à la livraison : le livreur vous rembourse {amount} en espèces au moment de l'enlèvement, après avoir vérifié l'article avec vos photos.",
+      "cashPaid": "Remboursé en espèces par le livreur lors de l'enlèvement."
     },
     "actions": {
       "escalateTitle": "Pas d'accord avec la boutique ?",
@@ -5866,6 +5869,13 @@
       "photoMax": "{count} photos maximum.",
       "photoN": "Photo {n}",
       "removePhoto": "Retirer la photo"
+    },
+    "hintCash": {
+      "admin_approved": "Approuvé ! Un livreur va vous contacter, vérifier l'article et vous rembourser {amount} en espèces.",
+      "pickup_scheduled": "Gardez l'article prêt : le livreur le vérifie avec vos photos et vous rembourse {amount} en espèces.",
+      "picked_up": "Le livreur a récupéré l'article et vous a remboursé en espèces. La boutique va le vérifier.",
+      "returned_to_seller": "La boutique a reçu l'article. Le livreur vous a déjà remboursé en espèces.",
+      "refunded": "Retour terminé — le livreur vous a remboursé en espèces."
     }
   }
 }

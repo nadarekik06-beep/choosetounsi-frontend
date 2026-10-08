@@ -1256,7 +1256,7 @@
     "qty": "Qty: {count}",
     "auto": "Auto",
     "selectItems": "Select the item(s) you have an issue with:",
-    "refundNote": "📦 A courier collects the item(s) and brings them back to the shop; you are refunded once they are checked.",
+    "refundNote": "📦 A courier collects the item(s). Paid cash on delivery: he pays you back in cash on the spot. Paid online: refunded to your payment method after checking.",
     "type": "Complaint type",
     "types": {
       "placeholder": "— Select a reason —",
@@ -1327,7 +1327,7 @@
     "rejectionReason": "Rejection reason",
     "filedOn": "Filed on {date}",
     "policyTitle": "Return policy",
-    "policyBody": "Returns can be requested within <b>48 hours</b> of delivery, for the whole order or some items, with at least one photo. You are refunded once the item is back and checked — to your wallet, by transfer / D17, or to your card.",
+    "policyBody": "Returns can be requested within <b>48 hours</b> of delivery, for the whole order or some items, with at least one photo. Paid cash on delivery: the courier pays you back in cash when he collects the item. Paid online: refunded to your card, wallet or D17 once the item is checked.",
     "successTitle": "Return requested!",
     "successBody": "The shop has <b>48 hours</b> to answer, then ChooseTounsi validates and organises the pick-up.",
     "successNotice": "You will be notified (app + e-mail) at every step until the refund.",
@@ -1349,7 +1349,7 @@
       },
       "s4": {
         "title": "Refund",
-        "text": "Refunded once the item is received and checked"
+        "text": "Cash from the courier (cash on delivery) or to your payment method"
       }
     },
     "types": {
@@ -1390,7 +1390,7 @@
     "autoSelected": "Auto-selected",
     "selectItemsBadge": "Select items",
     "whichItems": "Which item(s) are you reporting an issue with?",
-    "refundNote": "📦 A courier collects the item(s) and brings them back to the shop. You are refunded once they are received and checked.",
+    "refundNote": "📦 A courier collects the item(s). Paid cash on delivery? He pays you back in cash on the spot after checking the item. Paid online? You are refunded to your payment method once the item is checked.",
     "noEligibleTitle": "No eligible orders",
     "noEligibleBody": "Returns can be requested on <b>delivered orders</b> within <b>48 hours</b> of delivery, for the items not already returned.",
     "close": "Close",
@@ -1754,11 +1754,11 @@
         },
         "missing-damaged": {
           "label": "Order missing / damaged / incorrect",
-          "response": "We sincerely apologise. File a complaint within 48 hours of delivery: choose the reason (wrong product, size, color, damaged…), describe the problem, attach a photo if possible, and ask for an exchange or a return & refund."
+          "response": "We sincerely apologise. Request a return within 48 hours of delivery: choose the items, the reason (wrong product, size, color, damaged…), describe the problem and add a photo. Want another item? Simply place a new order."
         },
         "return-order": {
           "label": "How can I return my order?",
-          "response": "You can request a return within 48 hours of delivery, one complaint per order. Go to Complaints → New complaint, select the order and items, describe the problem and choose \"Return & refund\" or \"Exchange\"."
+          "response": "You can request a return within 48 hours of delivery, for the whole order or some items. Go to My returns → New return, select the order, the items and quantities, describe the problem and add a photo."
         },
         "return-status": {
           "label": "Check the status of my return",
@@ -1766,7 +1766,7 @@
         },
         "refund": {
           "label": "When will I receive my refund?",
-          "response": "Once your return is approved, a courier picks up the item and your refund is processed. You can follow each step under My complaints."
+          "response": "Paid cash on delivery: the courier pays you back in cash when he collects the item. Paid online: you are refunded to your card, wallet or D17 once the item is checked. Follow each step under My returns."
         },
         "payment-issue": {
           "label": "Problem with my payment",
@@ -3539,8 +3539,8 @@
         "escalated": "The client contests your refusal: ChooseTounsi will decide.",
         "admin_approved": "Approved by ChooseTounsi. The pick-up at the client is being scheduled.",
         "pickup_scheduled": "A courier will collect the item at the client and bring it back to you.",
-        "picked_up": "The item is on its way back. When you receive it, confirm the reception and the condition of each item.",
-        "returned_to_seller": "Received and inspected. ChooseTounsi refunds the client; the sale will be removed from your earnings.",
+        "picked_up": "The item is on its way back (the courier has paid the client back for cash-on-delivery orders). When you receive it, confirm the reception and the condition of each item.",
+        "returned_to_seller": "Received and inspected. The client is refunded to their payment method; the sale is removed from your earnings.",
         "refunded": "The client was refunded. The returned amount was removed from your sales (and from your next payout if already paid).",
         "rejected": "This return was rejected.",
         "cancelled": "This return was cancelled.",
@@ -5825,7 +5825,8 @@
       "wallet": "ChooseTounsi wallet",
       "bank_transfer": "Bank transfer",
       "d17": "D17",
-      "original": "Original card"
+      "original": "Original card",
+      "cash": "Cash, paid by the courier"
     },
     "refund": {
       "title": "Refund",
@@ -5838,7 +5839,9 @@
       "date": "Date",
       "shippingSeller": "Return shipping is paid by the shop (wrong or defective item).",
       "shippingClient": "Return shipping ({fee}) is deducted from the refund (change of mind).",
-      "afterInspection": "The refund is issued once the item is back and checked."
+      "afterInspection": "The refund is issued once the item is back and checked.",
+      "cashNote": "Cash on delivery: the courier pays you back {amount} in cash when he collects the item, after checking it against your photos.",
+      "cashPaid": "Paid back to you in cash by the courier at pick-up."
     },
     "actions": {
       "escalateTitle": "Disagree with the shop?",
@@ -5866,6 +5869,13 @@
       "photoMax": "Up to {count} photos.",
       "photoN": "Photo {n}",
       "removePhoto": "Remove photo"
+    },
+    "hintCash": {
+      "admin_approved": "Approved! A courier will contact you, check the item and pay you back {amount} in cash.",
+      "pickup_scheduled": "Keep the item ready: the courier checks it against your photos and pays you back {amount} in cash.",
+      "picked_up": "The courier collected the item and paid you back in cash. The shop will inspect it.",
+      "returned_to_seller": "The shop received the item. You were already paid back in cash by the courier.",
+      "refunded": "Return complete — you were paid back in cash by the courier."
     }
   }
 }

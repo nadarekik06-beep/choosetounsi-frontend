@@ -44,6 +44,8 @@ export default function ReturnTracking({ complaint, onChanged }: { complaint: Co
   const fee     = Number(complaint.return_shipping_fee ?? 0)
   const clientPaysShipping = complaint.shipping_payer === 'client' && fee > 0
   const isLegacyExchange   = complaint.resolution_type === 'exchange'
+  const cash               = !!complaint.cash_refund
+  const hint = (s: string) => (cash && t.has(`hintCash.${s}`) ? t(`hintCash.${s}`, { amount: fmt.price(refund) }) : t(`hint.${s}`))
 
   const run = async (kind: 'escalate' | 'cancel') => {
     setBusy(kind); setError(null)
@@ -95,7 +97,7 @@ export default function ReturnTracking({ complaint, onChanged }: { complaint: Co
                     </p>
                     {s.at && <p style={{ margin: '1px 0 0', fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{fmt.date(s.at, 'long')}</p>}
                     {s.current && (
-                      <p style={{ margin: '3px 0 0', fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>{t(`hint.${complaint.status}`)}</p>
+                      <p style={{ margin: '3px 0 0', fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>{hint(complaint.status)}</p>
                     )}
                   </div>
                 </li>
@@ -131,7 +133,9 @@ export default function ReturnTracking({ complaint, onChanged }: { complaint: Co
           {complaint.refunded_at && <Row label={t('refund.date')} value={fmt.date(complaint.refunded_at, 'long')} />}
           <p style={{ margin: '8px 0 0', fontSize: 11.5, color: '#64748b', lineHeight: 1.55 }}>
             {complaint.shipping_payer === 'seller' ? t('refund.shippingSeller') : t('refund.shippingClient', { fee: fmt.price(fee) })}
-            {' '}{complaint.status !== 'refunded' && t('refund.afterInspection')}
+            {' '}{cash
+              ? (complaint.refund_method === 'cash' ? t('refund.cashPaid') : t('refund.cashNote', { amount: fmt.price(refund) }))
+              : complaint.status !== 'refunded' && t('refund.afterInspection')}
           </p>
         </div>
       )}

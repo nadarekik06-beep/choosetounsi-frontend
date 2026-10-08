@@ -32,7 +32,8 @@ export type ComplaintType =
 /** Legacy only: 'exchange' can't be requested any more. */
 export type ResolutionType = 'return_refund' | 'exchange'
 
-export type RefundMethod = 'wallet' | 'bank_transfer' | 'd17' | 'original'
+/** cash = paid back by the courier at pick-up (cash on delivery orders) */
+export type RefundMethod = 'cash' | 'wallet' | 'bank_transfer' | 'd17' | 'original'
 
 export type ItemCondition = 'resaleable' | 'damaged'
 
@@ -180,6 +181,7 @@ export interface Complaint {
   image_urls:          string[]
   status:              ComplaintStatus
   can_escalate:        boolean
+  cash_refund?:        boolean   // COD: the courier pays the client back in cash at pick-up
   rejection_reason:    string | null
   seller_note:         string | null
   seller_decision:     'approved' | 'rejected' | null
