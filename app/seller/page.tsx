@@ -518,7 +518,7 @@ export default function SellerDashboardPage() {
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc }} />{statusLabel(order.status)}
                           </span>
                         </td>
-                        <td style={{ padding: '12px 20px', textAlign: 'end', fontWeight: 900, color: textMain, whiteSpace: 'nowrap' }}>{fmt(order.total_amount)}</td>
+                        <td style={{ padding: '12px 20px', textAlign: 'end', fontWeight: 900, color: textMain, whiteSpace: 'nowrap' }}>{order.is_cancelled && !!order.original_total && <span style={{ textDecoration: 'line-through', opacity: 0.6, fontWeight: 600, fontSize: '0.85em', marginInlineEnd: 6 }}>{fmt(order.original_total)}</span>}{fmt(order.total_amount)}</td>
                         <td style={{ padding: '12px 20px', color: textMuted, fontWeight: 500, whiteSpace: 'nowrap' }}>{date(order.created_at, 'short')}</td>
                       </tr>
                     );

@@ -37,7 +37,12 @@ export function OrderRow({ order }: { order: RecentOrder }) {
           {fmt.date(order.created_at, 'medium')} · {t('items', { count: order.items_count })}
         </div>
       </div>
-      <span className="pf-order-total">{fmt.price(order.total_amount)}</span>
+      <span className="pf-order-total">
+        {order.is_cancelled && !!order.original_total && (
+          <s style={{ color: 'var(--pf-muted, #94a3b8)', fontWeight: 600, fontSize: '0.85em', marginInlineEnd: 6 }}>{fmt.price(order.original_total)}</s>
+        )}
+        {fmt.price(order.total_amount)}
+      </span>
     </Link>
   )
 }

@@ -69,7 +69,9 @@ interface InvoiceData {
   discount_amount?: number     // seller coupon, 0 / absent on old invoices
   coupon_code?: string | null
   shipping_fee: number
-  grand_total: number
+  grand_total: number          // 0 when cancelled
+  original_total?: number      // checkout total, history only
+  is_cancelled?: boolean
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -536,7 +538,7 @@ export default function InvoicePage() {
                 borderRadius: '0 0 10px 10px',
                 overflow: 'hidden',
               }}>
-                <div style={totalRowStyle(false)}>
+                <div style={{ ...totalRowStyle(false), ...(data.is_cancelled ? { textDecoration: 'line-through', color: '#94a3b8' } : {}) }}>
                   <span>{t('subtotal')}</span>
                   <span>{fmt(data.subtotal)}</span>
                 </div>
@@ -554,6 +556,11 @@ export default function InvoicePage() {
                   <span>{t('grandTotal')}</span>
                   <span>{fmt(data.grand_total)}</span>
                 </div>
+                {data.is_cancelled && (
+                  <div style={{ ...totalRowStyle(false), color: '#dc2626', fontWeight: 700 }}>
+                    <span>{t('cancelledNote', { amount: fmt(Number(data.original_total ?? 0)) })}</span>
+                  </div>
+                )}
               </div>
             </div>
 

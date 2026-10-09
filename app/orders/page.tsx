@@ -115,7 +115,10 @@ interface Order {
   discount_amount?: number     // seller coupons, 0 when none
   coupon_codes?: string[]
   shipping_fee?: number
-  total_amount: number         // subtotal − discount + shipping (what the customer pays)
+  total_amount: number         // subtotal − discount + shipping (what the customer pays); 0 when cancelled
+  amount_due?: number
+  is_cancelled?: boolean       // nothing to pay: original_amounts are history only
+  original_amounts?: { subtotal: number; discount_amount: number; shipping_fee: number; total: number }
   wilaya: string | null
   address: string | null
   phone: string | null
@@ -467,7 +470,7 @@ function SellerGroupSection({ group, showSeparator, reviewedMap, onRate, order }
                 −{fmt(Number(group.discount_amount))}{group.coupon_code ? ` (${group.coupon_code})` : ''}
               </span>
             )}
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>{fmt(Number(group.subtotal) - Number(group.discount_amount ?? 0))}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textDecoration: group.status === 'cancelled' ? 'line-through' : undefined }}>{fmt(Number(group.subtotal) - Number(group.discount_amount ?? 0))}</span>
           </div>
         </div>
       )}
@@ -593,7 +596,16 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed, focused = false }: 
             </div>
             <div>
               <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, margin: '0 0 2px' }}>{tc('total')}</p>
-              <p style={{ fontSize: 15, fontWeight: 900, color: RED, margin: 0 }}>{fmt(order.total_amount)}</p>
+              {order.is_cancelled ? (
+                <p style={{ fontSize: 15, fontWeight: 900, color: '#64748b', margin: 0 }}>
+                  {fmt(0)}
+                  {!!order.original_amounts?.total && (
+                    <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textDecoration: 'line-through', marginInlineStart: 6 }}>{fmt(order.original_amounts.total)}</span>
+                  )}
+                </p>
+              ) : (
+                <p style={{ fontSize: 15, fontWeight: 900, color: RED, margin: 0 }}>{fmt(order.total_amount)}</p>
+              )}
             </div>
             {headerStatus === 'mixed' ? (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 800, padding: '3px 10px', borderRadius: 999, background: 'rgba(99,102,241,0.08)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.25)' }}>
@@ -623,7 +635,26 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed, focused = false }: 
             ))}
             {!!order.returns?.length && <OrderReturns returns={order.returns} />}
             <div style={{ padding: '10px 20px 14px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, borderTop: '1px solid #f1f5f9' }}>
-              {order.subtotal !== undefined && (
+              {order.is_cancelled && order.original_amounts ? (
+                <>
+                  {/* Checkout amounts kept as history, struck through */}
+                  <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#94a3b8', fontWeight: 600, textDecoration: 'line-through' }}>
+                    <span>{t('subtotal')}</span><span>{fmt(order.original_amounts.subtotal)}</span>
+                  </div>
+                  {order.original_amounts.discount_amount > 0 && (
+                    <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#94a3b8', fontWeight: 600, textDecoration: 'line-through' }}>
+                      <span>{t('coupon', { codes: '' })}</span><span>−{fmt(order.original_amounts.discount_amount)}</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#94a3b8', fontWeight: 600, textDecoration: 'line-through' }}>
+                    <span>{t('shipping')}</span><span>{order.original_amounts.shipping_fee > 0 ? fmt(order.original_amounts.shipping_fee) : tc('free')}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#94a3b8', fontWeight: 600, textDecoration: 'line-through' }}>
+                    <span>{t('orderTotal')}</span><span>{fmt(order.original_amounts.total)}</span>
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#ef4444', marginTop: 4 }}>{t('cancelledNoPayment')}</div>
+                </>
+              ) : order.subtotal !== undefined && (
                 <>
                   <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#64748b', fontWeight: 600 }}>
                     <span>{t('subtotal')}</span><span>{fmt(Number(order.subtotal))}</span>
@@ -640,8 +671,8 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed, focused = false }: 
                 </>
               )}
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>{t('orderTotal')}</span>
-                <span style={{ fontSize: 18, fontWeight: 900, color: RED }}>{fmt(order.total_amount)}</span>
+                <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>{order.is_cancelled ? t('amountDue') : t('orderTotal')}</span>
+                <span style={{ fontSize: 18, fontWeight: 900, color: order.is_cancelled ? '#0f172a' : RED }}>{fmt(order.total_amount)}</span>
               </div>
             </div>
           </div>

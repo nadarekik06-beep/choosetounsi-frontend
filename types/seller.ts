@@ -56,7 +56,9 @@ export interface RecentOrder {
   id: number;
   user_id: number;
   order_number: string;
-  total_amount: number;
+  total_amount: number;        // this seller's part; 0 when cancelled
+  is_cancelled?: boolean;
+  original_total?: number;     // history only (struck through when cancelled)
   status: OrderStatus;
   payment_status: PaymentStatus;
   created_at: string;
@@ -184,7 +186,9 @@ export interface Order {
   user_id: number;
   user?: Customer;
   order_number: string;
-  total_amount: number;
+  total_amount: number;        // 0 when cancelled
+  is_cancelled?: boolean;
+  original_total?: number;     // history only (struck through when cancelled)
   status: OrderStatus;
   display_status?: OrderDisplayStatus;
   payment_status: PaymentStatus;
@@ -258,7 +262,9 @@ export interface OrderDetail {
   coupon_code?: string | null;
   coupon_type?: 'percentage' | 'fixed' | null;
   coupon_value?: number | null;
-  seller_total?: number;      // seller_subtotal − discount_amount
+  seller_total?: number;      // seller_subtotal − discount_amount; 0 when cancelled
+  original_total?: number;    // seller_subtotal − discount_amount, history only
+  is_cancelled?: boolean;
   commission: OrderCommissionSummary;
 }
 

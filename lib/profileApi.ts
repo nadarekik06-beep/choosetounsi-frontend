@@ -65,7 +65,9 @@ export interface RecentOrder {
   status: string
   status_group: OrderStatusGroup
   payment_status: string
-  total_amount: number
+  total_amount: number      // amount due: 0 when cancelled
+  is_cancelled?: boolean
+  original_total?: number   // checkout total, history only
   created_at: string
   items_count: number
   thumbnails: { name: string | null; image: string | null }[]

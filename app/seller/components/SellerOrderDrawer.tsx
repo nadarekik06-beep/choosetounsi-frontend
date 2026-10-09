@@ -71,6 +71,8 @@ interface DrawerData {
   items: DrawerItem[]
   timeline: { key: 'placed' | 'delivered' | 'cash_collected' | 'paid_out'; at: string }[]
   earnings: {
+    is_cancelled?: boolean      // cancelled: every figure is 0
+    original_gross?: number     // history only
     gross: number
     subtotal_before_coupon: number
     discount_amount: number
@@ -358,7 +360,9 @@ export default function SellerOrderDrawer({ sellerOrderId, orderNumber, onClose 
                 <p style={label}>{t('earnings')}</p>
                 <Step
                   title={t('sale')}
-                  note={e.discount_amount > 0
+                  note={e.is_cancelled
+                    ? t('saleNoteCancelled', { amount: fmt(e.original_gross ?? 0) })
+                    : e.discount_amount > 0
                     ? t('saleNoteCoupon', { code: data.coupon_code || 'none', amount: fmt(e.discount_amount) })
                     : t('saleNote')}
                   value={fmt(e.gross)}

@@ -418,7 +418,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                   )}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: dark ? 'rgba(59,130,246,0.08)' : '#eff6ff', borderTop: `1px solid ${border}` }}>
                     <span style={{ fontSize: 12, fontWeight: 800, color: dark ? '#93c5fd' : '#1e40af' }}>{Number(detail.discount_amount ?? 0) > 0 ? t('totalAfterCoupon') : t('yourSubtotal')}</span>
-                    <span style={{ fontWeight: 900, color: ink('#3b82f6', dark), fontSize: 15 }}>{dt(detail.seller_total ?? detail.seller_subtotal)}</span>
+                    <span style={{ fontWeight: 900, color: ink('#3b82f6', dark), fontSize: 15 }}>{detail.is_cancelled && !!detail.original_total && <span style={{ textDecoration: 'line-through', opacity: 0.6, fontWeight: 600, fontSize: '0.85em', marginInlineEnd: 6 }}>{dt(detail.original_total)}</span>}{dt(detail.seller_total ?? detail.seller_subtotal)}</span>
                   </div>
                   {/* Free shipping: the customer paid 0, the agency cost comes off the seller's earnings */}
                   {Number(detail.commission?.shipping_paid_by_seller ?? 0) > 0 && (
@@ -691,7 +691,7 @@ export default function OrdersPage() {
                       <td style={{ padding: '13px 20px' }}><StatusBadge status={order.display_status ?? order.status} dark={dark} /></td>
                       <td style={{ padding: '13px 20px' }}><PaymentBadge status={order.payment_status} /></td>
                       <td style={{ padding: '13px 20px' }}><MethodBadge method={order.payment_method} /></td>
-                      <td style={{ padding: '13px 20px', textAlign: 'end', fontWeight: 900, color: textMain, fontSize: 12 }}>{dt(order.total_amount)}</td>
+                      <td style={{ padding: '13px 20px', textAlign: 'end', fontWeight: 900, color: textMain, fontSize: 12 }}>{order.is_cancelled && !!order.original_total && <span style={{ textDecoration: 'line-through', opacity: 0.6, fontWeight: 600, fontSize: '0.85em', marginInlineEnd: 6 }}>{dt(order.original_total)}</span>}{dt(order.total_amount)}</td>
                       <td style={{ padding: '13px 20px', fontSize: 11, color: textMuted, fontWeight: 500 }}>{date(order.created_at, 'short')}</td>
                       <td style={{ padding: '13px 20px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>

@@ -411,7 +411,10 @@ export default function EarningsPage() {
                                 </span>
                               )}
                             </td>
-                            <td style={{ ...td(true), color: textMuted }}>{fmt(row.gross ?? 0)}</td>
+                            <td style={{ ...td(true), color: textMuted }}>
+                              {row.status === 'cancelled' && Number(row.original_gross ?? 0) > 0 && <span style={{ textDecoration: 'line-through', opacity: 0.6, fontWeight: 600, fontSize: '0.85em', marginInlineEnd: 6 }}>{fmt(row.original_gross)}</span>}
+                              {fmt(row.gross ?? 0)}
+                            </td>
                             <td style={{ ...td(true), color: '#db142e', fontWeight: 700 }}>{fmt(row.commission_amount ?? 0)}</td>
                             <td style={{ ...td(true), color: ink('#f59e0b', dark), fontWeight: 700 }}>{Number(row.seller_shipping_charge ?? 0) > 0 ? '−' + fmt(row.seller_shipping_charge) : '—'}</td>
                             <td style={{ ...td(true), color: ink('#10b981', dark), fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
