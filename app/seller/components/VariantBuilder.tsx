@@ -61,7 +61,8 @@ export function normalizeVariantRow(
 }
 
 export function calculateTotalStock(variants: VariantRow[]): number {
-  return variants.reduce((sum, row) => sum + (Number(row.stock) || 0), 0)
+  // Inactive variants can't be sold: the product total only counts active ones (as the API does)
+  return variants.reduce((sum, row) => sum + (row.is_active === false ? 0 : (Number(row.stock) || 0)), 0)
 }
 
 export function validateVariantStocks(variants: VariantRow[]): Record<number, string> {

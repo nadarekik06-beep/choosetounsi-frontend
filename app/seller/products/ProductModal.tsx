@@ -271,6 +271,8 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
     short_description: (p?.short_description ?? '') as string,
     price:             radar?.price?.toString() ?? p?.price?.toString() ?? '',
     stock:             p?.stock?.toString()         ?? '0',
+    // '' = the shop's threshold (Paramètres de la boutique)
+    low_stock_threshold: (p as any)?.low_stock_threshold != null ? String((p as any).low_stock_threshold) : '',
     category_id:       p?.category_id?.toString()   ?? radar?.categoryId?.toString() ?? '',
     subcategory_id:    p?.subcategory_id != null ? String(p.subcategory_id) : '',
     is_active:         p?.is_active ?? true,
@@ -524,6 +526,7 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
         attributes:        serializeAttributes(attrValues),
         price:             baseDropped ? parseFloat(String(p?.price ?? 0)) : parseFloat(form.price),
         stock:             finalStock,
+        low_stock_threshold: form.low_stock_threshold.trim() === '' ? null : parseInt(form.low_stock_threshold, 10),
         category_id:       parseInt(form.category_id, 10),
       }
 
@@ -744,6 +747,14 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
                       className={inputCls(errors.stock ? 'err' : undefined)} />
                   </Field>
                 )}
+                <Field label={t('lowStockThreshold')} error={errors.low_stock_threshold} hint={t('lowStockThresholdHint')}>
+                  <input type="number" min="1" max="50" inputMode="numeric" value={form.low_stock_threshold}
+                    onChange={e => set('low_stock_threshold', e.target.value.replace(/\D/g, '').slice(0, 2))}
+                    placeholder={(p as any)?.shop_low_stock_threshold != null
+                      ? t('lowStockThresholdShop', { n: (p as any).shop_low_stock_threshold })
+                      : t('lowStockThresholdDefault')}
+                    className={inputCls(errors.low_stock_threshold ? 'err' : undefined)} />
+                </Field>
                 <Field label={t('status')}>
                   <select value={form.is_active ? 'active' : 'inactive'} onChange={e => set('is_active', e.target.value === 'active')} className={inputCls()}>
                     <option value="active">{t('active')}</option>

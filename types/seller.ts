@@ -107,6 +107,38 @@ export interface Product {
   primary_image_url?: string | null;
   views?: number;
   created_at: string;
+  /** Per-product low-stock threshold; null = shop default */
+  low_stock_threshold?: number | null;
+  shop_low_stock_threshold?: number;
+  stock_breakdown?: StockBreakdown;
+}
+
+/** out = 0 · low = at/below the alert threshold · inactive = variant switched off */
+export type StockState = 'ok' | 'low' | 'out' | 'inactive';
+
+export interface StockBreakdownVariant {
+  id: number;
+  label: string;
+  options: { attribute: string | null; value: string; color_hex: string | null }[];
+  stock: number;
+  /** Only when it differs from the base price */
+  price: number | null;
+  sku: string | null;
+  is_active: boolean;
+  state: StockState;
+}
+
+/** GET /api/seller/products/{id} → stock_breakdown (total = active variants) */
+export interface StockBreakdown {
+  has_variants: boolean;
+  total: number;
+  state: StockState;
+  threshold: number;
+  threshold_source: 'product' | 'shop';
+  low_count: number;
+  out_count: number;
+  inactive_count: number;
+  variants: StockBreakdownVariant[];
 }
 
 export interface ProductStats {

@@ -2597,7 +2597,7 @@
     },
     "settings": {
       "title": "Store Settings",
-      "subtitle": "Manage how your storefront page appears to customers.",
+      "subtitle": "Manage how your shop page looks to customers and your stock alerts.",
       "identityHint": "Store name and logo are set during seller application review.",
       "coverTitle": "Cover Photo",
       "coverHint": "Shown as the banner at the top of your public storefront. JPG, PNG or WEBP, up to 4MB.",
@@ -2608,7 +2608,26 @@
       "updated": "Cover photo updated.",
       "choose": "Choose Image",
       "uploading": "Uploading…",
-      "save": "Save Cover Photo"
+      "save": "Save Cover Photo",
+      "stockAlerts": {
+        "title": "Stock alerts",
+        "hint": "Get an alert when an item (or a variant) drops to your threshold after a sale — once per crossing, grouped per order. Sell-outs are always reported.",
+        "enabled": "Low-stock alerts",
+        "enabledOn": "On",
+        "enabledOff": "Off",
+        "threshold": "Alert threshold (units)",
+        "thresholdHint": "Alert when {n} unit(s) or fewer are left. Can be changed per product in the product form.",
+        "thresholdError": "Enter a number between 1 and 50.",
+        "channel": "Channel",
+        "channelInApp": "Dashboard notification",
+        "channelEmail": "Dashboard + e-mail",
+        "noEmail": "Your account has no e-mail address: only dashboard notifications will be sent.",
+        "grouping": "Alerts triggered less than {n} min apart are grouped into one notification.",
+        "save": "Save",
+        "saved": "Stock alerts saved.",
+        "loadFailed": "Could not load stock alerts.",
+        "saveFailed": "Saving failed."
+      }
     },
     "products": {
       "title": "Products",
@@ -2651,7 +2670,8 @@
       "deleteGone": "This product had already been deleted. The list has been refreshed.",
       "deleteFailed": "Deleting failed. Please try again.",
       "deleteNetwork": "Server unreachable: the product was not deleted. Check your connection and try again.",
-      "loadFailed": "Could not load your products. Please try again."
+      "loadFailed": "Could not load your products. Please try again.",
+      "stockVariantsTooltip": "Stock by variant"
     },
     "productForm": {
       "active": "Active",
@@ -2749,7 +2769,11 @@
       "packContentsPlaceholder": "e.g. 3 cotton t-shirts: white, black, grey",
       "categoriesFailed": "Could not load the categories. Check that the server is running.",
       "retry": "Retry",
-      "networkError": "Server unreachable: the product was not saved. Check your connection and try again."
+      "networkError": "Server unreachable: the product was not saved. Check your connection and try again.",
+      "lowStockThreshold": "Low-stock alert threshold",
+      "lowStockThresholdShop": "Shop: {n}",
+      "lowStockThresholdDefault": "Shop threshold",
+      "lowStockThresholdHint": "Empty = threshold set in your shop settings."
     },
     "variants": {
       "stockRequired": "Stock is required.",
@@ -3030,7 +3054,22 @@
       "rejectionReason": "Rejection Reason",
       "timeline": "Timeline",
       "created": "Created",
-      "updated": "Last Updated"
+      "updated": "Last Updated",
+      "stockByVariant": "Stock by variant",
+      "stockTotalActive": "Total (active variants)",
+      "stockOk": "OK",
+      "stockLow": "Low",
+      "stockOut": "Out of stock",
+      "variantInactive": "Inactive",
+      "thresholdShop": "Alert threshold: {n} (shop)",
+      "thresholdProduct": "Alert threshold: {n} (this product)",
+      "outCount": "{count, plural, one {# out of stock} other {# out of stock}}",
+      "lowCount": "{count, plural, one {# low} other {# low}}",
+      "pieces": "{count, plural, one {# unit} other {# units}}",
+      "variantSku": "SKU {sku}",
+      "variantPrice": "Price: {price}",
+      "colVariant": "Variant",
+      "colStock": "Stock"
     },
     "alerts": {
       "critical": "Critical",

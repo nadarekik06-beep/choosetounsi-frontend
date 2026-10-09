@@ -3,7 +3,7 @@
 /**
  * app/seller/settings/page.tsx
  *
- * Store profile settings: pickup address (for the courier) and the storefront cover photo —
+ * Store profile settings: pickup address (for the courier), stock alerts and the storefront cover photo —
  * business name/avatar are shown read-only here (they're edited through the
  * seller application flow, which forces a re-review; this page must NOT
  * trigger that).
@@ -23,6 +23,7 @@ import { useTheme } from '../SellerShell'
 import { useTranslations } from 'next-intl'
 import { ink } from '@/app/seller/ink';
 import PickupAddressCard from './PickupAddressCard'
+import StockAlertsCard from './StockAlertsCard'
 
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
@@ -169,6 +170,9 @@ export default function SellerSettingsPage() {
 
       {/* Pickup address (courier collection point) */}
       <PickupAddressCard dark={dark} cardBg={cardBg} border={border} textMain={textMain} textMuted={textMuted} />
+
+      {/* Low-stock alerts: on/off, threshold, channel */}
+      <StockAlertsCard dark={dark} cardBg={cardBg} border={border} textMain={textMain} textMuted={textMuted} />
 
       {/* Cover photo */}
       <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 14, padding: 18 }}>

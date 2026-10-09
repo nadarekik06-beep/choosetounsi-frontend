@@ -3,13 +3,15 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { productsApi, storageUrl } from '@/lib/sellerApi';
-import type { Product, ProductImage } from '@/types/seller';
+import type { Product, ProductImage, StockState } from '@/types/seller';
 import {
   ArrowLeft, Eye, Package, Tag, Layers, BarChart2,
   Calendar, Clock, Edit2, CheckCircle, XCircle, AlertTriangle,
   ChevronLeft, ChevronRight, Star, Hash, FileText,
 } from 'lucide-react';
 import ProductModal from '../ProductModal';
+import StockByVariant from './StockByVariant';
+import { useTheme } from '../../SellerShell';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import BrandLoader from '@/components/brand/BrandLoader'
@@ -22,6 +24,45 @@ interface ProductDetail extends Product {
   views: number;
   featured: boolean;
 }
+
+// ─── Dark theme ────────────────────────────────────────────────────────────────
+// The page is written with light Tailwind classes; in the dashboard's dark theme
+// they are remapped here (scoped to .pd-dark) to the seller dark palette.
+
+const PD_DARK_CSS = `
+.pd-dark .bg-white { background-color: #161b27; }
+.pd-dark .bg-white\\/90 { background-color: rgba(22,27,39,0.9); }
+.pd-dark .bg-slate-50 { background-color: rgba(255,255,255,0.04); }
+.pd-dark .bg-slate-100 { background-color: rgba(255,255,255,0.07); }
+.pd-dark .border-slate-50, .pd-dark .border-slate-100 { border-color: rgba(255,255,255,0.07); }
+.pd-dark .border-slate-200 { border-color: rgba(255,255,255,0.12); }
+.pd-dark .ring-slate-200 { --tw-ring-color: rgba(255,255,255,0.15); }
+.pd-dark .border-white { border-color: #161b27; }
+.pd-dark .text-slate-900, .pd-dark .text-slate-800 { color: #ffffff; }
+.pd-dark .text-slate-600 { color: rgba(255,255,255,0.75); }
+.pd-dark .text-slate-500 { color: rgba(255,255,255,0.6); }
+.pd-dark .text-slate-400 { color: rgba(255,255,255,0.5); }
+.pd-dark .text-slate-300 { color: rgba(255,255,255,0.3); }
+.pd-dark .shadow-sm { box-shadow: none; }
+.pd-dark .bg-emerald-50 { background-color: rgba(16,185,129,0.12); }
+.pd-dark .text-emerald-700, .pd-dark .text-emerald-600 { color: #34d399; }
+.pd-dark .border-emerald-200 { border-color: rgba(16,185,129,0.3); }
+.pd-dark .bg-amber-50, .pd-dark .bg-amber-50\\/60 { background-color: rgba(245,158,11,0.12); }
+.pd-dark .text-amber-700, .pd-dark .text-amber-600 { color: #fbbf24; }
+.pd-dark .border-amber-200 { border-color: rgba(245,158,11,0.3); }
+.pd-dark .bg-red-50, .pd-dark .bg-red-50\\/60 { background-color: rgba(239,68,68,0.12); }
+.pd-dark .text-red-700, .pd-dark .text-red-600, .pd-dark .text-red-500 { color: #f87171; }
+.pd-dark .border-red-100, .pd-dark .border-red-200 { border-color: rgba(239,68,68,0.3); }
+.pd-dark .bg-sky-50 { background-color: rgba(14,165,233,0.12); }
+.pd-dark .text-sky-800, .pd-dark .text-sky-700, .pd-dark .text-sky-600 { color: #7dd3fc; }
+.pd-dark .border-sky-100, .pd-dark .border-sky-200 { border-color: rgba(14,165,233,0.3); }
+.pd-dark .bg-blue-50 { background-color: rgba(59,130,246,0.12); }
+.pd-dark .text-blue-700 { color: #93c5fd; }
+.pd-dark .bg-rose-50 { background-color: rgba(219,20,46,0.12); }
+.pd-dark .border-rose-100 { border-color: rgba(219,20,46,0.3); }
+.pd-dark .text-rose-600 { color: #fb7185; }
+.pd-dark .decoration-slate-300 { text-decoration-color: rgba(255,255,255,0.3); }
+`;
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -64,12 +105,18 @@ function StatusBadge({ product }: { product: ProductDetail }) {
 
 // ─── Stock Badge ───────────────────────────────────────────────────────────────
 
-function StockBadge({ stock }: { stock: number }) {
+/** Stock state from the API (threshold = product override or shop setting); fallback for old payloads. */
+function stockStateOf(product: ProductDetail): StockState {
+  if (product.stock_breakdown) return product.stock_breakdown.state;
+  return product.stock <= 0 ? 'out' : product.stock <= 2 ? 'low' : 'ok';
+}
+
+function StockBadge({ state }: { state: StockState }) {
   const t = useTranslations('seller.productDetail');
-  if (stock === 0) {
+  if (state === 'out') {
     return <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">{t('outOfStock')}</span>;
   }
-  if (stock < 10) {
+  if (state === 'low') {
     return <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{t('lowStock')}</span>;
   }
   return <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{t('inStock')}</span>;
@@ -188,6 +235,7 @@ export default function ProductDetailPage() {
   const params  = useParams();
   const router  = useRouter();
   const t       = useTranslations('seller.productDetail');
+  const { dark }  = useTheme();
   const { price, number, date } = useFormat();
   const formatDateTime = (value: string) => date(value, 'datetime');
   const id      = Number(params.id);
@@ -283,14 +331,18 @@ export default function ProductDetailPage() {
     );
   }
 
-  const stockColor = product.stock === 0
+  // With variants: the total of the active variants (never the stored products.stock)
+  const stockTotal = product.stock_breakdown?.total ?? product.stock;
+  const stockState = stockStateOf(product);
+  const stockColor = stockState === 'out'
     ? 'text-red-600'
-    : product.stock < 10
+    : stockState === 'low'
       ? 'text-amber-600'
       : 'text-emerald-600';
 
   return (
-    <div className="space-y-5 max-w-6xl mx-auto">
+    <div className={`pd-root space-y-5 max-w-6xl mx-auto ${dark ? 'pd-dark' : ''}`}>
+      <style>{PD_DARK_CSS}</style>
 
       {/* ── Breadcrumb / Back ── */}
       <div className="flex items-center justify-between gap-3">
@@ -392,12 +444,17 @@ export default function ProductDetailPage() {
               <div className="text-end">
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">{t('stock')}</p>
                 <div className="flex items-center gap-2 justify-end">
-                  <p className={`text-2xl font-black ${stockColor}`}>{product.stock}</p>
-                  <StockBadge stock={product.stock} />
+                  <p className={`text-2xl font-black ${stockColor}`}>{stockTotal}</p>
+                  <StockBadge state={stockState} />
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Stock per variant (total above = active variants) */}
+          {product.stock_breakdown?.has_variants && (
+            <StockByVariant breakdown={product.stock_breakdown} />
+          )}
 
           {/* Details Card */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">

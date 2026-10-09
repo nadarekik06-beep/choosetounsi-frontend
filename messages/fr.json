@@ -2597,7 +2597,7 @@
     },
     "settings": {
       "title": "Paramètres de la boutique",
-      "subtitle": "Gérez l'apparence de votre page boutique pour les clients.",
+      "subtitle": "Gérez l'apparence de votre page boutique et vos alertes de stock.",
       "identityHint": "Le nom et le logo de la boutique sont définis lors de la validation de votre demande vendeur.",
       "coverTitle": "Photo de couverture",
       "coverHint": "Affichée en bannière en haut de votre boutique publique. JPG, PNG ou WEBP, 4 Mo maximum.",
@@ -2608,7 +2608,26 @@
       "updated": "Photo de couverture mise à jour.",
       "choose": "Choisir une image",
       "uploading": "Envoi…",
-      "save": "Enregistrer la couverture"
+      "save": "Enregistrer la couverture",
+      "stockAlerts": {
+        "title": "Alertes de stock",
+        "hint": "Recevez une alerte quand un article (ou une variante) passe sous votre seuil après une vente — une seule fois par passage, regroupée par commande. Les ruptures de stock sont toujours signalées.",
+        "enabled": "Alertes de stock faible",
+        "enabledOn": "Activées",
+        "enabledOff": "Désactivées",
+        "threshold": "Seuil d'alerte (pièces)",
+        "thresholdHint": "Alerte quand il reste {n} pièce(s) ou moins. Modifiable produit par produit dans le formulaire du produit.",
+        "thresholdError": "Entrez un nombre entre 1 et 50.",
+        "channel": "Canal",
+        "channelInApp": "Notification dans le tableau de bord",
+        "channelEmail": "Tableau de bord + e-mail",
+        "noEmail": "Aucune adresse e-mail sur votre compte : seules les notifications du tableau de bord seront envoyées.",
+        "grouping": "Les alertes déclenchées à moins de {n} min d'intervalle sont regroupées en une seule notification.",
+        "save": "Enregistrer",
+        "saved": "Alertes de stock enregistrées.",
+        "loadFailed": "Impossible de charger les alertes de stock.",
+        "saveFailed": "L'enregistrement a échoué."
+      }
     },
     "products": {
       "title": "Produits",
@@ -2651,7 +2670,8 @@
       "deleteGone": "Ce produit avait déjà été supprimé. La liste a été actualisée.",
       "deleteFailed": "La suppression a échoué. Veuillez réessayer.",
       "deleteNetwork": "Serveur injoignable : le produit n’a pas été supprimé. Vérifiez votre connexion et réessayez.",
-      "loadFailed": "Impossible de charger vos produits. Veuillez réessayer."
+      "loadFailed": "Impossible de charger vos produits. Veuillez réessayer.",
+      "stockVariantsTooltip": "Stock par variante"
     },
     "productForm": {
       "active": "Actif",
@@ -2749,7 +2769,11 @@
       "packContentsPlaceholder": "ex. 3 t-shirts en coton : blanc, noir, gris",
       "categoriesFailed": "Impossible de charger les catégories. Vérifiez que le serveur est démarré.",
       "retry": "Réessayer",
-      "networkError": "Serveur injoignable : le produit n’a pas été enregistré. Vérifiez votre connexion et réessayez."
+      "networkError": "Serveur injoignable : le produit n’a pas été enregistré. Vérifiez votre connexion et réessayez.",
+      "lowStockThreshold": "Seuil d'alerte stock",
+      "lowStockThresholdShop": "Boutique : {n}",
+      "lowStockThresholdDefault": "Seuil de la boutique",
+      "lowStockThresholdHint": "Vide = seuil défini dans les paramètres de la boutique."
     },
     "variants": {
       "stockRequired": "Le stock est obligatoire.",
@@ -3030,7 +3054,22 @@
       "rejectionReason": "Motif du refus",
       "timeline": "Historique",
       "created": "Créé le",
-      "updated": "Dernière modification"
+      "updated": "Dernière modification",
+      "stockByVariant": "Stock par variante",
+      "stockTotalActive": "Total (variantes actives)",
+      "stockOk": "OK",
+      "stockLow": "Faible",
+      "stockOut": "Rupture",
+      "variantInactive": "Inactive",
+      "thresholdShop": "Seuil d'alerte : {n} (boutique)",
+      "thresholdProduct": "Seuil d'alerte : {n} (ce produit)",
+      "outCount": "{count, plural, one {# en rupture} other {# en rupture}}",
+      "lowCount": "{count, plural, one {# faible} other {# faibles}}",
+      "pieces": "{count, plural, one {# pièce} other {# pièces}}",
+      "variantSku": "Réf. {sku}",
+      "variantPrice": "Prix : {price}",
+      "colVariant": "Variante",
+      "colStock": "Stock"
     },
     "alerts": {
       "critical": "Critique",

@@ -153,6 +153,11 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
     }
   })
 
+  // Low-stock threshold override: sent even when empty ('' = use the shop default)
+  if (payload.low_stock_threshold !== undefined) {
+    fd.append('low_stock_threshold', payload.low_stock_threshold === null ? '' : String(payload.low_stock_threshold))
+  }
+
   // ── Season / Occasion (omitted → backend keeps the stored value, or all_season) ──
   if (payload.occasions) {
     payload.occasions.forEach(o => fd.append('occasions[]', o))
@@ -257,6 +262,8 @@ export interface ProductPayload {
   short_description?: string
   price: number | string
   stock: number | string
+  /** Low-stock alert threshold for this product; null = shop default */
+  low_stock_threshold?: number | null
   category_id: number | string
   subcategory_id?: number | string | null
   is_active?: boolean
@@ -501,6 +508,27 @@ export const storeProfileApi = {
 
   /** PUT /api/seller/pickup-address — pickup fields only, no re-review */
   updatePickup: (data: PickupAddressInput) => jsonRequest<any>('PUT', '/seller/pickup-address', data),
+
+  /** GET /api/seller/stock-alerts — low-stock alert settings of the shop */
+  getStockAlerts: () => jsonRequest<{ success: boolean; data: StockAlertSettings }>('GET', '/seller/stock-alerts'),
+
+  /** PUT /api/seller/stock-alerts */
+  updateStockAlerts: (data: StockAlertSettingsInput) =>
+    jsonRequest<{ success: boolean; message?: string; data: StockAlertSettings }>('PUT', '/seller/stock-alerts', data),
+}
+
+export type StockAlertChannel = 'in_app' | 'in_app_email'
+
+export interface StockAlertSettingsInput {
+  enabled:   boolean
+  threshold: number
+  channel:   StockAlertChannel
+}
+
+export interface StockAlertSettings extends StockAlertSettingsInput {
+  has_email:    boolean
+  /** minutes: crossings within this window are grouped into one alert */
+  group_window: number
 }
 
 export interface PickupAddressInput {
