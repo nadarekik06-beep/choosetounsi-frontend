@@ -2644,6 +2644,21 @@
         "saved": "Alertes de stock enregistrées.",
         "loadFailed": "Impossible de charger les alertes de stock.",
         "saveFailed": "L'enregistrement a échoué."
+      },
+      "whatsapp": {
+        "title": "Notifications WhatsApp",
+        "hint": "Quand une commande est confirmée, Choose'Tounsi vous prévient sur WhatsApp depuis le {number} pour que vous la prépariez. Indiquez le numéro WhatsApp où vous souhaitez recevoir ces alertes.",
+        "number": "Numéro WhatsApp",
+        "numberHint": "Numéro mobile tunisien : 8 chiffres (ex. 22 345 678).",
+        "invalid": "Numéro invalide : saisissez un numéro mobile tunisien de 8 chiffres (commençant par 2, 4, 5 ou 9).",
+        "language": "Langue des messages",
+        "fallback": "Sans numéro WhatsApp, les messages sont envoyés au {phone}.",
+        "save": "Enregistrer",
+        "saved": "Numéro WhatsApp enregistré.",
+        "saveFailed": "Enregistrement impossible. Réessayez.",
+        "loadFailed": "Impossible de charger vos paramètres WhatsApp.",
+        "bannerMissing": "Ajoutez votre numéro WhatsApp pour recevoir les alertes de commandes confirmées de Choose'Tounsi.",
+        "bannerAction": "Ajouter"
       }
     },
     "products": {
@@ -3212,7 +3227,7 @@
       "waitingTitle": "En attente de confirmation par l'administrateur",
       "waitingBody": "L'administrateur appellera le client pour confirmer. Vous serez averti dès que ce sera prêt.",
       "readyTitle": "Prête à préparer",
-      "readyBody": "Cette commande a été confirmée par l'admin. Préparez les articles, puis indiquez que le colis a été remis au livreur lors du ramassage.",
+      "readyBody": "Cette commande a été confirmée par l'admin. Préparez les articles, cliquez sur « Marquer comme préparée », puis indiquez que le colis a été remis au livreur lors du ramassage.",
       "updating": "Mise à jour…",
       "packedTitle": "Commande emballée et prête",
       "packedBody": "En attente d'enlèvement par le livreur. L'équipe de livraison a été prévenue.",
@@ -3275,7 +3290,8 @@
       "actions": {
         "confirmed": "Confirmer la commande",
         "handed_to_courier": "Remis au livreur",
-        "cancelled": "Annuler ce colis"
+        "cancelled": "Annuler ce colis",
+        "prepared": "Marquer comme préparée"
       },
       "cancelConfirm": "Annuler ce colis ? Son stock est remis en vente et seul CHOOSE'Tounsi peut le rouvrir.",
       "statusUpdated": "Statut mis à jour.",
@@ -3284,7 +3300,9 @@
       "refusedTitle": "Refusé par le client",
       "refusedBody": "Le client a refusé le colis à la livraison. Il vous revient ; son stock est libéré dès son retour.",
       "returnedTitle": "Retourné chez vous",
-      "returnedBody": "Le colis refusé vous est revenu et son stock est de nouveau en vente."
+      "returnedBody": "Le colis refusé vous est revenu et son stock est de nouveau en vente.",
+      "preparedDone": "Commande marquée comme préparée. Merci !",
+      "preparedAt": "Préparée le {date} — en attente du livreur"
     },
     "earnings": {
       "loadFailed": "Impossible de charger les revenus.",

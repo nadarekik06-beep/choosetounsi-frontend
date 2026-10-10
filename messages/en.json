@@ -2644,6 +2644,21 @@
         "saved": "Stock alerts saved.",
         "loadFailed": "Could not load stock alerts.",
         "saveFailed": "Saving failed."
+      },
+      "whatsapp": {
+        "title": "WhatsApp notifications",
+        "hint": "When an order is confirmed, Choose'Tounsi lets you know on WhatsApp from {number} so you can prepare it. Enter the WhatsApp number where you want these alerts.",
+        "number": "WhatsApp number",
+        "numberHint": "Tunisian mobile number: 8 digits (e.g. 22 345 678).",
+        "invalid": "Invalid number: enter an 8-digit Tunisian mobile number (starting with 2, 4, 5 or 9).",
+        "language": "Message language",
+        "fallback": "Without a WhatsApp number, messages go to {phone}.",
+        "save": "Save",
+        "saved": "WhatsApp number saved.",
+        "saveFailed": "Could not save. Please try again.",
+        "loadFailed": "Could not load your WhatsApp settings.",
+        "bannerMissing": "Add your WhatsApp number to receive confirmed-order alerts from Choose'Tounsi.",
+        "bannerAction": "Add it"
       }
     },
     "products": {
@@ -3212,7 +3227,7 @@
       "waitingTitle": "Waiting for Admin Confirmation",
       "waitingBody": "The admin will call the client to confirm. You'll be notified when ready.",
       "readyTitle": "Ready to Prepare",
-      "readyBody": "This order has been confirmed by admin. Pack the items, then mark the parcel as handed to the courier when it is picked up.",
+      "readyBody": "This order has been confirmed by admin. Pack the items, click \"Mark as prepared\", then mark the parcel as handed to the courier when it is picked up.",
       "updating": "Updating…",
       "packedTitle": "Order Packed & Ready",
       "packedBody": "Waiting for delivery pickup. The delivery team has been notified.",
@@ -3275,7 +3290,8 @@
       "actions": {
         "confirmed": "Confirm the order",
         "handed_to_courier": "Handed to the courier",
-        "cancelled": "Cancel this parcel"
+        "cancelled": "Cancel this parcel",
+        "prepared": "Mark as prepared"
       },
       "cancelConfirm": "Cancel this parcel? Its stock goes back on sale and only CHOOSE'Tounsi can re-open it.",
       "statusUpdated": "Status updated.",
@@ -3284,7 +3300,9 @@
       "refusedTitle": "Refused by the client",
       "refusedBody": "The client refused the parcel at the door. It is coming back to you; its stock is released once it is returned.",
       "returnedTitle": "Returned to you",
-      "returnedBody": "The refused parcel is back with you and its stock is on sale again."
+      "returnedBody": "The refused parcel is back with you and its stock is on sale again.",
+      "preparedDone": "Order marked as prepared. Thank you!",
+      "preparedAt": "Prepared on {date} — waiting for the courier"
     },
     "earnings": {
       "loadFailed": "Failed to load earnings data.",

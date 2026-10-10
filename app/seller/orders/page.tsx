@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../SellerShell';
 import SellerOrderDrawer from '../components/SellerOrderDrawer';
+import WhatsAppNumberBanner from '../components/WhatsAppNumberBanner';
 import type { Order, OrderDetail, OrderItem, VariantAttribute, PaginatedResponse, OrderCommissionSummary, SellerNextStatus } from '@/types/seller';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
@@ -305,6 +306,22 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
   const allowedNext: SellerNextStatus[] = detail?.order.allowed_next ?? [];
   const can = (s: SellerNextStatus) => allowedNext.includes(s);
 
+  const handlePrepared = async () => {
+    setUpdatingStatus(true);
+    setError('');
+    setSuccessMsg('');
+    try {
+      await ordersApi.markPrepared(orderId);
+      setSuccessMsg(t('preparedDone'));
+      onUpdated();
+    } catch (e: any) {
+      setError(e?.message || t('updateFailed'));
+    } finally {
+      ordersApi.getOne(orderId).then(res => setDetail(res.data)).catch(() => {});
+      setUpdatingStatus(false);
+    }
+  };
+
   const handleTransition = async (status: SellerNextStatus) => {
     if (status === 'cancelled' && !window.confirm(t('cancelConfirm'))) return;
     setUpdatingStatus(true);
@@ -487,6 +504,29 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                     </div>
                   ))}
 
+                  {/* Step 1: packed → "prepared" (stops CHOOSE'Tounsi's WhatsApp reminders) */}
+                  {detail.order.can_mark_prepared ? (
+                    <button
+                      onClick={handlePrepared}
+                      disabled={updatingStatus}
+                      style={{
+                        width: '100%', marginTop: 6, padding: '14px 20px', borderRadius: 12, border: 'none',
+                        background: updatingStatus ? 'rgba(25,143,65,0.4)' : 'linear-gradient(135deg,#198f41,#146f33)',
+                        color: '#fff', fontWeight: 800, fontSize: 14,
+                        cursor: updatingStatus ? 'not-allowed' : 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                        boxShadow: '0 4px 20px rgba(25,143,65,0.35)', fontFamily: 'inherit',
+                      }}
+                    >
+                      {updatingStatus ? <BrandLoader variant="inline" size={16} /> : <span style={{ fontSize: 16 }}>📦</span>}
+                      {t('actions.prepared')}
+                    </button>
+                  ) : detail.order.prepared_at && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, padding: '10px 14px', borderRadius: 12, background: 'rgba(25,143,65,0.1)', border: '1px solid rgba(25,143,65,0.3)', fontSize: 12, fontWeight: 800, color: ink('#4ade80', dark) }}>
+                      ✓ {t('preparedAt', { date: date(detail.order.prepared_at, 'medium') })}
+                    </div>
+                  )}
+
                   {can('handed_to_courier') && (
                   <button
                     onClick={() => handleTransition('handed_to_courier')}
@@ -658,6 +698,8 @@ export default function OrdersPage() {
       <Suspense fallback={<RouteLoading area minHeight="60vh" />}>
         <OpenOrderFromQuery onOpen={setSelectedId} />
       </Suspense>
+
+      <WhatsAppNumberBanner dark={dark} />
 
       {/* Header */}
       <div>

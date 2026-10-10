@@ -261,7 +261,11 @@ export interface OrderCommissionSummary {
 }
 
 export interface OrderDetail {
-  order: Order & { customer: Customer; allowed_next?: SellerNextStatus[] };
+  order: Order & {
+    customer: Customer; allowed_next?: SellerNextStatus[];
+    /** Marked prepared (packed, waiting for the courier): CHOOSE'Tounsi's WhatsApp reminders stop */
+    prepared_at?: string | null; can_mark_prepared?: boolean;
+  };
   items: OrderItem[];
   seller_subtotal: number;
   discount_amount?: number;

@@ -335,6 +335,9 @@ export const ordersApi = {
     jsonRequest<any>('PATCH', `/seller/orders/${id}/status`, { status }),
   updatePayment: (id: number, payment_status: string) =>
     jsonRequest<any>('PATCH', `/seller/orders/${id}/payment`, { payment_status }),
+  /** POST /api/seller/orders/{id}/prepared — packed, waiting for the courier (stops WhatsApp reminders) */
+  markPrepared: (id: number) =>
+    jsonRequest<{ success: boolean; message?: string; data: { id: number; prepared_at: string | null } }>('POST', `/seller/orders/${id}/prepared`),
 }
 
 // ─── Seller Products API ──────────────────────────────────────────────────────
@@ -516,6 +519,27 @@ export const storeProfileApi = {
   /** PUT /api/seller/stock-alerts */
   updateStockAlerts: (data: StockAlertSettingsInput) =>
     jsonRequest<{ success: boolean; message?: string; data: StockAlertSettings }>('PUT', '/seller/stock-alerts', data),
+
+  /** GET /api/seller/whatsapp — number CHOOSE'Tounsi messages about confirmed orders */
+  getWhatsApp: () => jsonRequest<{ success: boolean; data: WhatsAppSettings }>('GET', '/seller/whatsapp'),
+
+  /** PUT /api/seller/whatsapp — any Tunisian mobile format ("22 345 678", "+216…", "00216…") */
+  updateWhatsApp: (data: { whatsapp_number: string; language: WhatsAppLanguage }) =>
+    jsonRequest<{ success: boolean; message?: string; data: WhatsAppSettings }>('PUT', '/seller/whatsapp', data),
+}
+
+export type WhatsAppLanguage = 'fr' | 'ar'
+
+export interface WhatsAppSettings {
+  /** "216XXXXXXXX" or null when not set */
+  whatsapp_number: string | null
+  /** "+216 22 345 678" */
+  display_number:  string | null
+  language:        WhatsAppLanguage
+  /** Where messages go while no WhatsApp number is set (account / shop phone) */
+  fallback_phone:  string | null
+  /** CHOOSE'Tounsi's business WhatsApp, "+216 57 252 576" */
+  business_number: string
 }
 
 export type StockAlertChannel = 'in_app' | 'in_app_email'
