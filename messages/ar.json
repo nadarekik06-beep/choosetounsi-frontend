@@ -687,7 +687,9 @@
       "d17Badge": "تونسي",
       "card": "بطاقة بنكية",
       "cardDesc": "ادفع بأمان ببطاقة Visa أو Mastercard عبر Stripe.",
-      "cardBadge": "آمن"
+      "cardBadge": "آمن",
+      "comingSoon": "قريبًا",
+      "comingSoonAlert": "الدفع عبر الإنترنت قريبًا. حاليًا، ادفع نقدًا عند الاستلام."
     },
     "reassure": {
       "cod": "🔒 دفع نقدي عند الاستلام · سهل وآمن",
@@ -722,7 +724,14 @@
       "d17Reference": "المرجع: <b>{number}</b>",
       "contactSupport": "تواصل مع الدعم",
       "viewOrders": "عرض طلباتي"
-    }
+    },
+    "delivery": "التوصيل",
+    "deliveryPerShop": "كل متجر يرسل طرده الخاص: يُحتسب التوصيل لكل متجر.",
+    "payCashOnDelivery": "الدفع نقدًا عند الاستلام",
+    "codToPay": "تدفع {amount} نقدًا لعامل التوصيل.",
+    "codToPayParcels": "تدفع {amount} نقدًا، على {count} طرود (طرد لكل متجر).",
+    "quoteLoading": "جارٍ الحساب…",
+    "quoteFailed": "تعذّر حساب المجموع. يرجى المحاولة مرة أخرى."
   },
   "auth": {
     "logoAlt": "ChooseTounsi",
@@ -1121,15 +1130,18 @@
   "orderStatus": {
     "pending": "قيد الانتظار",
     "processing": "قيد التجهيز",
-    "out_for_delivery": "في طريقه إليك",
+    "out_for_delivery": "في الطريق إليك",
     "completed": "مكتمل",
     "delivered": "تم التوصيل",
     "cancelled": "ملغى",
     "refunded": "مُرجعة (تم الاسترجاع)",
-    "confirmed": "مؤكَّد",
+    "confirmed": "مؤكدة",
     "shipped": "تم الشحن",
     "returned": "تم الإرجاع",
-    "partially_returned": "مُرجعة جزئياً"
+    "partially_returned": "مُرجعة جزئياً",
+    "handed_to_courier": "سُلّمت لشركة التوصيل",
+    "refused": "مرفوضة عند التسليم",
+    "returned_to_seller": "مرفوضة – أُعيدت إلى البائع"
   },
   "paymentStatus": {
     "pending": "قيد الانتظار",
@@ -1185,7 +1197,9 @@
       "cancelledBody": "تم إلغاء هذا الطلب.",
       "refundedBody": "تم إرجاع هذا الطلب واسترجاع مبلغه.",
       "driverOnWay": "{name} في الطريق إليك",
-      "pickedUp": "تم الاستلام · {date}"
+      "pickedUp": "تم الاستلام · {date}",
+      "refusedTitle": "مرفوضة عند التسليم",
+      "refusedBody": "تم رفض هذا الطرد عند التسليم. لا يوجد أي مبلغ مستحق."
     },
     "returnedQty": "{count} مُرجع"
   },
@@ -2687,8 +2701,8 @@
       "freeDeliveryYes": "سيرى الحرفاء «توصيل مجاني» ولن يدفعوا معاليم التوصيل — أنت من يدفعها.",
       "freeDeliveryNo": "يدفع الحريف معاليم التوصيل العادية ({fee}) عند الطلب.",
       "freeDeliveryActive": "التوصيل المجاني مفعّل لهذا المنتج",
-      "freeDeliveryExplain": "يُطبّق عندما تحتوي السلة على منتجات بتوصيل مجاني فقط. وإذا احتوت أيضاً على منتجات عادية، يدفع الحريف معاليم {fee} ولا يُخصم منك شيء.",
-      "freeDeliverySellerPays": "توصيل مجاني لحرفائك. تكلفة التوصيل (≈ {cost} لكل طلب) ستُخصم من أرباحك.",
+      "freeDeliveryExplain": "يكون طرد متجرك مجانيًا فقط إذا كانت كل منتجاته بتوصيل مجاني. وإلا يدفع الحريف رسوم التوصيل {fee} ولا يُخصم منك شيء.",
+      "freeDeliverySellerPays": "التوصيل المجاني يكلّفك {cost} عن كل شحنة طلب، تُخصم من أرباحك.",
       "editTitle": "تعديل المنتج",
       "addTitle": "منتج جديد",
       "reviewNotice": "ستتم مراجعته من الإدارة قبل نشره.",
@@ -2776,7 +2790,8 @@
       "lowStockThreshold": "حد تنبيه المخزون",
       "lowStockThresholdShop": "المتجر: {n}",
       "lowStockThresholdDefault": "حد المتجر",
-      "lowStockThresholdHint": "فارغ = الحد المحدد في إعدادات المتجر."
+      "lowStockThresholdHint": "فارغ = الحد المحدد في إعدادات المتجر.",
+      "freeDeliveryCostHint": "إذا فعّلته، يكلّفك التوصيل المجاني {cost} عن كل شحنة طلب."
     },
     "variants": {
       "stockRequired": "المخزون مطلوب.",
@@ -3175,7 +3190,6 @@
       "qty": "الكمية: {count}",
       "perUnit": "{price} للوحدة",
       "loadFailed": "تعذّر تحميل تفاصيل الطلب.",
-      "markedCompleted": "تم تعليم الطلب كمكتمل! تم إعلام فريق التوصيل.",
       "updateFailed": "تعذّر تحديث حالة الطلب.",
       "details": "تفاصيل الطلب",
       "printInvoice": "🖨 طباعة الفاتورة",
@@ -3198,9 +3212,8 @@
       "waitingTitle": "في انتظار تأكيد الإدارة",
       "waitingBody": "ستتصل الإدارة بالحريف للتأكيد. ستصلك إشعار عند الجاهزية.",
       "readyTitle": "جاهز للتجهيز",
-      "readyBody": "أكّدت الإدارة هذا الطلب. جهّز المنتجات ثم علّمه كمكتمل.",
+      "readyBody": "تم تأكيد هذا الطلب من قبل الإدارة. جهّز المنتجات، ثم أشِر إلى أن الطرد سُلّم لشركة التوصيل عند استلامه.",
       "updating": "جارٍ التحديث…",
-      "markCompleted": "تعليم كمكتمل",
       "packedTitle": "الطلب مجهّز وجاهز",
       "packedBody": "في انتظار استلامه من عون التوصيل. تم إعلام فريق التوصيل.",
       "title": "الطلبات",
@@ -3258,7 +3271,20 @@
         "amount": "المبلغ",
         "date": "التاريخ"
       },
-      "returnedQty": "↩ {count} مُرجع"
+      "returnedQty": "↩ {count} مُرجع",
+      "actions": {
+        "confirmed": "تأكيد الطلب",
+        "handed_to_courier": "سُلّم لشركة التوصيل",
+        "cancelled": "إلغاء هذا الطرد"
+      },
+      "cancelConfirm": "إلغاء هذا الطرد؟ يعود مخزونه للبيع ولا يمكن إعادة فتحه إلا من قبل CHOOSE'Tounsi.",
+      "statusUpdated": "تم تحديث الحالة.",
+      "courierTitle": "لدى شركة التوصيل",
+      "courierBody": "طردك لدى شركة التوصيل. تسجّل CHOOSE'Tounsi التسليم أو الرفض.",
+      "refusedTitle": "رفضه الحريف",
+      "refusedBody": "رفض الحريف الطرد عند التسليم. سيعود إليك، ويُحرَّر مخزونه عند إرجاعه.",
+      "returnedTitle": "أُعيد إليك",
+      "returnedBody": "عاد الطرد المرفوض إليك وأصبح مخزونه متاحاً للبيع من جديد."
     },
     "earnings": {
       "loadFailed": "تعذّر تحميل بيانات الأرباح.",
@@ -3281,7 +3307,10 @@
         "paid": "مدفوع",
         "cancelled": "ملغى",
         "draft": "مسودة",
-        "processing": "قيد المعالجة"
+        "processing": "قيد المعالجة",
+        "pending_delivery": "في انتظار التسليم",
+        "payable": "مستحق الدفع",
+        "none": "لا يوجد دفع"
       },
       "tabs": {
         "overview": "📊 نظرة عامة",
@@ -3325,7 +3354,7 @@
         "net": "الربح الصافي",
         "order": "الطلب",
         "platformFee": "عمولة المنصة",
-        "shipping": "التوصيل (على حسابك)",
+        "shipping": "التوصيل المجاني (على حسابك)",
         "yourNet": "صافي ربحك",
         "payoutStatus": "حالة الدفع",
         "settled": "تاريخ التسوية",

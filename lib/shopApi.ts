@@ -99,9 +99,9 @@ export interface CartItem {
   pack_id?: number | null
   pack_slug?: string | null
   pack_selections?: { pack_item_id: number; variant_id: number | null }[]
-  // ── Delivery fields (NEW) ────────────────────────────────────────────────
-  is_free_delivery?: boolean   // ← true when seller enabled free delivery for this product
-  delivery_fee?: number        // ← 0 if free, 8 if default, X if custom
+  // Free delivery offered by the seller. The fee itself is per seller parcel,
+  // priced by the server: checkoutApi.quote()
+  is_free_delivery?: boolean
 }
 
 export interface CartResponse {
@@ -167,6 +167,43 @@ export interface BuyNowPayload {
   coupon_code?: string
 }
 
+/** One seller = one parcel, with its own delivery fee and cash-on-delivery amount. */
+export interface QuoteParcel {
+  seller_id: number | null
+  seller_name: string
+  items_subtotal: number
+  coupon_code: string | null
+  coupon_discount: number
+  is_free_delivery: boolean
+  delivery_fee: number
+  total: number
+  cod_amount: number
+}
+
+export type PaymentMethodSwitches = Record<'cod' | 'card' | 'd17' | 'wallet', boolean>
+
+/** What the order costs — computed by the server, only displayed here. */
+export interface CheckoutQuote {
+  parcels: QuoteParcel[]
+  subtotal: number
+  discount_amount: number
+  delivery_fee: number
+  total: number
+  parcel_count: number
+  pack_price_changed: boolean
+  payment_methods: PaymentMethodSwitches
+}
+
+export interface QuotePayload {
+  item_ids?: number[]
+  coupon_codes?: string[]
+  // buy now
+  product_id?: number
+  variant_id?: number | null
+  quantity?: number
+  coupon_code?: string
+}
+
 export interface CheckoutResponse {
   success: boolean
   message: string
@@ -175,6 +212,7 @@ export interface CheckoutResponse {
   total: number
   discount_amount?: number
   delivery_fee?: number
+  parcels?: QuoteParcel[]
   needs_payment?: boolean
 }
 
@@ -237,6 +275,13 @@ export const favoritesApi = {
 // ─── Checkout API ─────────────────────────────────────────────────────────────
 
 export const checkoutApi = {
+  /**
+   * Per-parcel price of the cart (or of one product for buy-now).
+   * POST /api/checkout/quote
+   */
+  quote: (payload: QuotePayload) =>
+    request<{ success: boolean; data: CheckoutQuote }>('POST', '/checkout/quote', payload),
+
   /**
    * Cart-based checkout — unchanged.
    * POST /api/checkout

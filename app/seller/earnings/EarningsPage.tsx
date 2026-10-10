@@ -17,6 +17,10 @@ const PAYOUT_COLORS: Record<string, string> = {
   ready:     '#3b82f6',
   paid:      '#10b981',
   cancelled: '#ef4444',
+  // Per order: payable only once the parcel is delivered and the courier's cash reached us
+  pending_delivery: '#f59e0b',
+  payable:   '#3b82f6',
+  none:      '#94a3b8',
 }
 
 function PayoutBadge({ status }: { status: string }) {
@@ -418,7 +422,7 @@ export default function EarningsPage() {
                             <td style={{ ...td(true), color: '#db142e', fontWeight: 700 }}>{fmt(row.commission_amount ?? 0)}</td>
                             <td style={{ ...td(true), color: ink('#f59e0b', dark), fontWeight: 700 }}>{Number(row.seller_shipping_charge ?? 0) > 0 ? '−' + fmt(row.seller_shipping_charge) : '—'}</td>
                             <td style={{ ...td(true), color: ink('#10b981', dark), fontWeight: 800 }}>{fmt(row.net_earnings ?? 0)}</td>
-                            <td style={{ ...td(true) }}><PayoutBadge status={row.payout_status ?? 'pending'} /></td>
+                            <td style={{ ...td(true) }}><PayoutBadge status={row.payout_stage ?? row.payout_status ?? 'pending'} /></td>
                             <td style={{ ...td(true), color: textMuted, fontSize: 11 }}>
                               {row.settled_at ? date(row.settled_at, 'short') : '—'}
                             </td>

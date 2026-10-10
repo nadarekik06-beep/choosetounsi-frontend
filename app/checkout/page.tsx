@@ -2,7 +2,10 @@
 
 /**
  * app/(client)/checkout/page.tsx
- * Full payment system: COD · Card (Stripe) · D17 · Wallet
+ * Payment: cash on delivery. Card (Stripe) · D17 · Wallet are switched by the
+ * admin; while off they show "Coming soon" and the API refuses them.
+ * Every amount (per-shop delivery, coupons, total) comes from the server's
+ * quote (POST /checkout/quote): this page never computes a price.
  *
  * Fix: selectedIds is read from sessionStorage into a REF synchronously on
  * the very first render (not inside a useEffect), so the value is available
@@ -20,9 +23,9 @@ import {
   Smartphone, Truck, AlertCircle, Ticket, X,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
-import { checkoutApi, walletApi, paymentApi, type BuyNowPayload } from '@/lib/shopApi'
+import { checkoutApi, walletApi, paymentApi, type BuyNowPayload, type CheckoutQuote, type QuotePayload } from '@/lib/shopApi'
 import { isAuthenticated } from '@/lib/auth'
-import { fetchPaymentInfo } from '@/lib/platformApi'
+import { fetchPaymentInfo, COD_ONLY, type PaymentInfo } from '@/lib/platformApi'
 import type { UserAddress } from '@/app/account/addresses/page'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -62,9 +65,6 @@ function getToken(): string | null {
 
 type PaymentMethod = 'cod' | 'card' | 'd17' | 'wallet'
 
-/** Millime precision, as the server rounds totals. */
-const round3 = (n: number) => Math.round(n * 1000) / 1000
-
 interface BuyNowProduct {
   id: number
   name: string
@@ -72,7 +72,6 @@ interface BuyNowProduct {
   final_price?: string | number          // after promotion: what buy-now charges
   primary_image_url: string | null
   is_free_delivery?: boolean
-  effective_delivery_fee?: string | number
   images?: { image_path: string; url?: string; color_option_id?: number | null }[]
   variants?: { id: number; price: string | number; final_price?: string | number; effective_price?: string | number; sku: string | null; image_urls: string[] }[]
   seller?: { id: number; name: string } | null
@@ -136,6 +135,7 @@ function CouponBox({
 function PaymentMethodCard({
   method, selected, onSelect, disabled, disabledReason,
   icon: Icon, label, description, badge, badgeColor,
+  comingSoon, comingSoonLabel, comingSoonMessage, onComingSoon,
 }: {
   method: PaymentMethod
   selected: boolean
@@ -147,9 +147,50 @@ function PaymentMethodCard({
   description: string
   badge?: string
   badgeColor?: string
+  /** Switched off by the admin: visible, greyed, not selectable */
+  comingSoon?: boolean
+  comingSoonLabel?: string
+  comingSoonMessage?: string
+  onComingSoon?: () => void
 }) {
+  if (comingSoon) {
+    return (
+      <button
+        type="button"
+        aria-disabled="true"
+        title={comingSoonMessage}
+        onClick={onComingSoon}
+        data-method={method}
+        style={{
+          display: 'flex', alignItems: 'flex-start', gap: 14,
+          padding: '14px 16px', borderRadius: 14, cursor: 'not-allowed',
+          border: '2px dashed #e5e7eb', background: '#f9fafb',
+          textAlign: 'start', fontFamily: 'inherit', width: '100%', opacity: 0.7,
+        }}
+      >
+        <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 2, border: '2px solid #e5e7eb', background: '#f1f5f9' }} />
+        <div style={{
+          width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: '#f1f5f9',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e5e7eb',
+        }}>
+          <Icon size={17} color="#94a3b8" />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 14, fontWeight: 800, color: '#94a3b8' }}>{label}</span>
+            <span style={{
+              fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.04em',
+              background: 'rgba(219,20,46,0.08)', color: '#db142e', border: '1px solid rgba(219,20,46,0.2)',
+            }}>{comingSoonLabel}</span>
+          </div>
+          <p style={{ fontSize: 12, color: '#94a3b8', margin: 0, lineHeight: 1.4 }}>{description}</p>
+        </div>
+      </button>
+    )
+  }
   return (
     <button
+      type="button"
       onClick={disabled ? undefined : onSelect}
       disabled={disabled}
       style={{
@@ -330,6 +371,23 @@ function AddressSelector({
   )
 }
 
+// ─── Delivery amount of one parcel ────────────────────────────────────────────
+
+function DeliveryAmount({ free, amount, freeLabel, fmt, small }: {
+  free: boolean; amount: number; freeLabel: string; fmt: (n: number) => string; small?: boolean
+}) {
+  return free ? (
+    <span style={{
+      fontSize: small ? 11 : 12, fontWeight: 800, color: '#059669', background: 'rgba(16,185,129,0.1)',
+      padding: '1px 8px', borderRadius: 999, border: '1px solid rgba(16,185,129,0.25)', whiteSpace: 'nowrap', flexShrink: 0,
+    }}>
+      {freeLabel}
+    </span>
+  ) : (
+    <span style={{ fontSize: small ? 12 : 13, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', flexShrink: 0 }}>{fmt(amount)}</span>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CheckoutPage() {
@@ -417,7 +475,6 @@ export default function CheckoutPage() {
 
   // Recalculate count and subtotal from the filtered items only
   const count    = isBuyNow ? bnQuantity : items.reduce((s, i) => s + i.quantity, 0)
-  const subtotal = isBuyNow ? 0          : items.reduce((s, i) => s + i.line_total, 0)
 
   // Buy Now product state
   const [bnProduct,  setBnProduct]  = useState<BuyNowProduct | null>(null)
@@ -436,15 +493,20 @@ export default function CheckoutPage() {
   // D17 account number comes from the backend .env (D17_ACCOUNT_NUMBER); null until it is set.
   const [d17Account, setD17Account] = useState<string | null>(null)
   const [d17Loading, setD17Loading] = useState(true)
+  // Admin switches: launch = cash on delivery only, the others show "Coming soon"
+  const [methods, setMethods] = useState<PaymentInfo['payment_methods']>(COD_ONLY)
+  const [comingSoonNotice, setComingSoonNotice] = useState(false)
   useEffect(() => {
     fetchPaymentInfo()
-      .then(info => setD17Account(info.d17_account_number))
-      .catch(() => setD17Account(null))
+      .then(info => { setD17Account(info.d17_account_number); setMethods(info.payment_methods) })
+      .catch(() => { setD17Account(null); setMethods(COD_ONLY) })
       .finally(() => setD17Loading(false))
   }, [])
   useEffect(() => {
     if (!d17Loading && !d17Account && paymentMethod === 'd17') setPaymentMethod('cod')
-  }, [d17Loading, d17Account, paymentMethod])
+    if (!methods[paymentMethod]) setPaymentMethod('cod')
+  }, [d17Loading, d17Account, paymentMethod, methods])
+  const showComingSoon = () => setComingSoonNotice(true)
 
   const [stripeLoading,      setStripeLoading]      = useState(false)
 
@@ -518,7 +580,60 @@ export default function CheckoutPage() {
     }
   }
 
-  const totalDiscount = Object.values(couponStates).reduce((s, c) => s + (c.applied ? c.discount : 0), 0)
+  // ── Server quote: per-shop delivery, coupons and total (never computed here) ──
+  const [quote,        setQuote]        = useState<CheckoutQuote | null>(null)
+  const [quoteLoading, setQuoteLoading] = useState(false)
+  const [quoteError,   setQuoteError]   = useState('')
+  const quoteSeq = useRef(0)
+
+  const appliedCodes = useMemo(
+    () => Object.values(couponStates).filter(c => c.applied).map(c => c.applied as string).sort(),
+    [couponStates],
+  )
+  const quotePayload = useCallback((): QuotePayload | null => {
+    if (isBuyNow) {
+      if (!bnProduct) return null
+      const bnCoupon = bnProduct.seller ? couponStates[bnProduct.seller.id] : undefined
+      return {
+        product_id: bnProduct.id, variant_id: bnVariantId, quantity: bnQuantity,
+        ...(bnCoupon?.applied ? { coupon_code: bnCoupon.applied } : {}),
+      }
+    }
+    if (items.length === 0) return null
+    const sel = selectedIdsRef.current
+    return {
+      ...(sel && sel.size > 0 ? { item_ids: [...sel] } : {}),
+      ...(appliedCodes.length > 0 ? { coupon_codes: appliedCodes } : {}),
+    }
+  }, [isBuyNow, bnProduct, bnVariantId, bnQuantity, couponStates, items.length, appliedCodes])
+
+  const loadQuote = useCallback(async () => {
+    const payload = quotePayload()
+    if (!payload) { setQuote(null); return null }
+    const seq = ++quoteSeq.current
+    setQuoteLoading(true)
+    setQuoteError('')
+    try {
+      const res = await checkoutApi.quote(payload)
+      if (seq === quoteSeq.current) setQuote(res.data)
+      return res.data
+    } catch (err: any) {
+      if (seq === quoteSeq.current) { setQuote(null); setQuoteError(err.message ?? t('quoteFailed')) }
+      return null
+    } finally {
+      if (seq === quoteSeq.current) setQuoteLoading(false)
+    }
+  }, [quotePayload, t])
+
+  // Re-quote whenever the lines or the applied coupons change
+  const quoteKey = JSON.stringify([quotePayload(), items.map(i => [i.id, i.quantity, i.line_total])])
+  useEffect(() => {
+    if (!cartReady || !isAuthenticated()) return
+    loadQuote()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartReady, quoteKey])
+
+  const totalDiscount = quote?.discount_amount ?? 0
 
   useEffect(() => {
     if (!isAuthenticated()) router.push('/auth/login?redirect=/checkout')
@@ -605,7 +720,8 @@ export default function CheckoutPage() {
   const bnEffectivePrice = bnVariant
     ? Number(bnVariant.final_price ?? bnVariant.effective_price ?? bnVariant.price)
     : bnProduct ? Number(bnProduct.final_price ?? bnProduct.price) : 0
-  const bnLineTotal      = round3(bnEffectivePrice * bnQuantity)
+  // Display only (the quote below is what is charged)
+  const bnLineTotal      = Math.round(bnEffectivePrice * bnQuantity * 1000) / 1000
   const bnImage = (() => {
     if (!bnProduct) return null
     if (bnVariant && bnVariant.image_urls?.length > 0) return bnVariant.image_urls[0]
@@ -617,30 +733,19 @@ export default function CheckoutPage() {
     return resolveImg(bnProduct.primary_image_url)
   })()
 
-const summarySubtotal = isBuyNow ? bnLineTotal : subtotal
- 
-// Delivery fee — mirrors backend Product::orderDeliveryFee(): one shipment per order,
-// free only when every product ships free, otherwise the highest fee among the
-// others (a seller's custom fee or the platform default; packs count at the default).
-const PLATFORM_DELIVERY_FEE = 8
-
-const deliveryFee = (() => {
-  const lines: { free: boolean; fee: number }[] = isBuyNow
-    ? (bnProduct ? [{ free: bnProduct.is_free_delivery === true, fee: Number(bnProduct.effective_delivery_fee ?? PLATFORM_DELIVERY_FEE) }] : [])
-    : items.map(i => i.is_pack
-        ? { free: false, fee: PLATFORM_DELIVERY_FEE }
-        : { free: i.is_free_delivery === true, fee: Number(i.delivery_fee ?? PLATFORM_DELIVERY_FEE) })
-  return round3(lines.reduce((max, l) => l.free ? max : Math.max(max, l.fee), 0))
-})()
-const isFreeDelivery = deliveryFee === 0
-const summaryTotal    = round3(Math.max(0, summarySubtotal - totalDiscount) + deliveryFee)
-const walletInsufficient = walletBalance !== null && walletBalance < summaryTotal
+  // What is charged, from the server: one delivery fee per shop (parcel)
+  const summarySubtotal = quote?.subtotal ?? null
+  const summaryTotal    = quote?.total ?? null
+  const parcels         = quote?.parcels ?? []
+  const walletInsufficient = walletBalance !== null && summaryTotal !== null && walletBalance < summaryTotal
 
   // ── Submit ────────────────────────────────────────────────────────────────
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
+    if (summaryTotal === null) return   // no quote yet: nothing to confirm
+    if (!methods[paymentMethod]) { showComingSoon(); return }
     const address = shippingAddressPayload(form)
     setLoading(true)
     setApiError('')
@@ -707,11 +812,16 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
         return
       }
       setApiError(err.message ?? t('errors.placeFailed'))
+      if (err.data?.code === 'payment_method_unavailable') {
+        setPaymentMethod('cod')
+        showComingSoon()
+      }
       if (err.data?.code === 'price_changed' || err.data?.code === 'flash_sold_out') {
         await (isBuyNow ? loadBuyNowProduct() : refreshCart())
         for (const [sid, c] of Object.entries(couponStates)) {
           if (c.applied) await applyCoupon(Number(sid))
         }
+        await loadQuote()   // the new total the customer confirms
       }
     } finally {
       setLoading(false)
@@ -913,10 +1023,22 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
               </div>
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <PaymentMethodCard method="cod" selected={paymentMethod === 'cod'} onSelect={() => setPaymentMethod('cod')} icon={Truck} label={t('pay.cod')} description={t('pay.codDesc')} badge={t('pay.codBadge')} badgeColor="#198f41" />
-                <PaymentMethodCard method="wallet" selected={paymentMethod === 'wallet'} onSelect={() => !walletInsufficient && setPaymentMethod('wallet')} disabled={walletLoading || walletInsufficient} disabledReason={walletLoading ? t('pay.walletLoading') : t('pay.walletInsufficient', { amount: fmt(walletBalance ?? 0) })} icon={Wallet} label={t('pay.wallet')} description={walletLoading ? t('pay.walletChecking') : t('pay.walletBalance', { amount: fmt(walletBalance ?? 0) })} badge={!walletLoading && !walletInsufficient ? t('pay.walletBadge') : undefined} badgeColor="#6366f1" />
-                <PaymentMethodCard method="d17" selected={paymentMethod === 'd17'} onSelect={() => d17Account && setPaymentMethod('d17')} disabled={d17Loading || !d17Account} disabledReason={d17Loading ? tc('loading') : t('pay.d17Unavailable')} icon={Smartphone} label="D17" description={t('pay.d17Desc')} badge={t('pay.d17Badge')} badgeColor="#0284c7" />
-                <PaymentMethodCard method="card" selected={paymentMethod === 'card'} onSelect={() => setPaymentMethod('card')} icon={CreditCard} label={t('pay.card')} description={t('pay.cardDesc')} badge={t('pay.cardBadge')} badgeColor="#7c3aed" />
-                {paymentMethod === 'd17' && d17Account && <D17Instructions total={summaryTotal} accountNumber={d17Account} />}
+                <PaymentMethodCard method="wallet" selected={paymentMethod === 'wallet'} onSelect={() => !walletInsufficient && setPaymentMethod('wallet')} disabled={walletLoading || walletInsufficient} disabledReason={walletLoading ? t('pay.walletLoading') : t('pay.walletInsufficient', { amount: fmt(walletBalance ?? 0) })} icon={Wallet} label={t('pay.wallet')} description={walletLoading ? t('pay.walletChecking') : t('pay.walletBalance', { amount: fmt(walletBalance ?? 0) })} badge={!walletLoading && !walletInsufficient ? t('pay.walletBadge') : undefined} badgeColor="#6366f1"
+                  comingSoon={!methods.wallet} comingSoonLabel={t('pay.comingSoon')} comingSoonMessage={t('pay.comingSoonAlert')} onComingSoon={showComingSoon} />
+                <PaymentMethodCard method="d17" selected={paymentMethod === 'd17'} onSelect={() => d17Account && setPaymentMethod('d17')} disabled={d17Loading || !d17Account} disabledReason={d17Loading ? tc('loading') : t('pay.d17Unavailable')} icon={Smartphone} label="D17" description={t('pay.d17Desc')} badge={t('pay.d17Badge')} badgeColor="#0284c7"
+                  comingSoon={!methods.d17} comingSoonLabel={t('pay.comingSoon')} comingSoonMessage={t('pay.comingSoonAlert')} onComingSoon={showComingSoon} />
+                <PaymentMethodCard method="card" selected={paymentMethod === 'card'} onSelect={() => setPaymentMethod('card')} icon={CreditCard} label={t('pay.card')} description={t('pay.cardDesc')} badge={t('pay.cardBadge')} badgeColor="#7c3aed"
+                  comingSoon={!methods.card} comingSoonLabel={t('pay.comingSoon')} comingSoonMessage={t('pay.comingSoonAlert')} onComingSoon={showComingSoon} />
+                {comingSoonNotice && (
+                  <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 12px', fontSize: 12, fontWeight: 600, color: '#92400e' }}>
+                    <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span style={{ flex: 1 }}>{t('pay.comingSoonAlert')}</span>
+                    <button type="button" onClick={() => setComingSoonNotice(false)} aria-label={tc('close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#b45309', display: 'flex', padding: 0 }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+                {paymentMethod === 'd17' && d17Account && summaryTotal !== null && <D17Instructions total={summaryTotal} accountNumber={d17Account} />}
                 {paymentMethod === 'card' && <StripeNotice />}
               </div>
             </div>
@@ -1000,9 +1122,14 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
               )}
 
               <div style={{ padding: '14px 20px', borderTop: '1px solid #f1f5f9' }}>
+                {quoteError && (
+                  <p role="alert" style={{ fontSize: 12, color: '#dc2626', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <AlertCircle size={13} /> {quoteError}
+                  </p>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>{tc('subtotal')}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{fmt(summarySubtotal)}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{summarySubtotal !== null ? fmt(summarySubtotal) : '…'}</span>
                 </div>
                 {totalDiscount > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -1010,38 +1137,53 @@ const walletInsufficient = walletBalance !== null && walletBalance < summaryTota
                     <span style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>-{fmt(totalDiscount)}</span>
                   </div>
                 )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>{tc('shipping')}</span>
-                    {isFreeDelivery ? (
-                      <span style={{
-                        fontSize: 12, fontWeight: 800,
-                        color: '#059669',
-                        background: 'rgba(16,185,129,0.1)',
-                        padding: '2px 8px', borderRadius: 999,
-                        border: '1px solid rgba(16,185,129,0.25)',
-                        display: 'flex', alignItems: 'center', gap: 4,
-                      }}>
-                        🚚 {tc('free')}
-                      </span>
-                    ) : (
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-                        {fmt(PLATFORM_DELIVERY_FEE)}
-                      </span>
-                    )}
+                {/* Delivery: one line per shop (each shop = one parcel) */}
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Truck size={13} /> {t('delivery')}
+                    </span>
+                    {(quoteLoading || !quote) && <span style={{ fontSize: 12, color: '#94a3b8' }}>{t('quoteLoading')}</span>}
+                    {quote && parcels.length === 1 && <DeliveryAmount free={parcels[0].is_free_delivery} amount={parcels[0].delivery_fee} freeLabel={tc('free')} fmt={fmt} />}
                   </div>
+                  {quote && parcels.length > 1 && (
+                    <div style={{ marginTop: 6, paddingInlineStart: 19, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {parcels.map(p => (
+                        <div key={p.seller_id ?? 'platform'} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                          <span dir="auto" style={{ fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{p.seller_name}</span>
+                          <DeliveryAmount free={p.is_free_delivery} amount={p.delivery_fee} freeLabel={tc('free')} fmt={fmt} small />
+                        </div>
+                      ))}
+                      <p style={{ fontSize: 10.5, color: '#94a3b8', margin: '2px 0 0', lineHeight: 1.4 }}>{t('deliveryPerShop')}</p>
+                    </div>
+                  )}
+                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14, padding: '8px 10px', background: '#f8fafc', borderRadius: 8 }}>
                   <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{t('payment')}</span>
                   <span style={{ fontSize: 12, fontWeight: 800, color: '#374151' }}>
                     {{ cod: `🚚 ${t('pay.cod')}`, card: `💳 ${t('pay.card')}`, d17: '📱 D17', wallet: `💰 ${t('pay.wallet')}` }[paymentMethod]}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, borderTop: '2px solid #f1f5f9', marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, borderTop: '2px solid #f1f5f9', marginBottom: paymentMethod === 'cod' ? 8 : 16 }}>
                   <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{tc('total')}</span>
-                  <span style={{ fontSize: 20, fontWeight: 900, color: '#dc2626' }}>{fmt(summaryTotal)}</span>
+                  <span style={{ fontSize: 20, fontWeight: 900, color: '#dc2626' }}>{summaryTotal !== null ? fmt(summaryTotal) : '…'}</span>
                 </div>
+                {paymentMethod === 'cod' && summaryTotal !== null && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 16, padding: '9px 12px', background: 'rgba(25,143,65,0.07)', border: '1px solid rgba(25,143,65,0.25)', borderRadius: 10 }}>
+                    <Truck size={15} color="#198f41" style={{ flexShrink: 0, marginTop: 1 }} />
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 12.5, fontWeight: 800, color: '#14532d', margin: 0 }}>{t('payCashOnDelivery')}</p>
+                      <p style={{ fontSize: 11.5, color: '#166534', margin: '2px 0 0', lineHeight: 1.4 }}>
+                        {parcels.length > 1
+                          ? t('codToPayParcels', { amount: fmt(summaryTotal), count: parcels.length })
+                          : t('codToPay', { amount: fmt(summaryTotal) })}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <button
                   onClick={handleSubmit as any}
-                  disabled={loading || stripeLoading || (paymentMethod === 'wallet' && walletInsufficient)}
+                  disabled={loading || stripeLoading || quoteLoading || summaryTotal === null || (paymentMethod === 'wallet' && walletInsufficient)}
                   style={{
                     width: '100%', padding: '14px 0',
                     background: (loading || stripeLoading) ? '#e5e7eb' : 'linear-gradient(135deg,#dc2626,#b91c1c)',

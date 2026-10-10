@@ -25,6 +25,9 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled:        '#ef4444',
   refunded:         '#a855f7',
   out_for_delivery: '#8b5cf6',
+  handed_to_courier: '#6366f1',
+  refused:          '#f97316',
+  returned_to_seller: '#ea580c',
   partially_returned: '#d946ef',
 }
 

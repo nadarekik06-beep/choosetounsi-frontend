@@ -139,13 +139,21 @@ export function formatMaxProducts(plan: SellerPlanInfo | undefined | null): stri
 
 export interface PaymentInfo {
   d17_account_number: string | null
+  /** Admin switches: a disabled method shows "Coming soon" and the API refuses it */
+  payment_methods: Record<'cod' | 'card' | 'd17' | 'wallet', boolean>
 }
+
+/** Launch: cash on delivery only, until the admin turns a method on. */
+export const COD_ONLY: PaymentInfo['payment_methods'] = { cod: true, card: false, d17: false, wallet: false }
 
 export async function fetchPaymentInfo(): Promise<PaymentInfo> {
   const res = await fetch(`${API_URL}/checkout/payment-info`, { headers: { Accept: 'application/json' } })
   if (!res.ok) throw new Error(`payment-info ${res.status}`)
   const json = await res.json()
-  return { d17_account_number: json?.data?.d17_account_number ?? null }
+  return {
+    d17_account_number: json?.data?.d17_account_number ?? null,
+    payment_methods: { ...COD_ONLY, ...(json?.data?.payment_methods ?? {}), cod: true },
+  }
 }
 
 // ── Site features (GET /api/site-features) ─────────────────────────────────

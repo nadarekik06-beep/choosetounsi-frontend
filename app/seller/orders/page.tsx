@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../SellerShell';
 import SellerOrderDrawer from '../components/SellerOrderDrawer';
-import type { Order, OrderDetail, OrderItem, VariantAttribute, PaginatedResponse, OrderCommissionSummary } from '@/types/seller';
+import type { Order, OrderDetail, OrderItem, VariantAttribute, PaginatedResponse, OrderCommissionSummary, SellerNextStatus } from '@/types/seller';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { useStatusLabel } from '@/lib/i18n/useStatusLabel';
@@ -39,6 +39,9 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled:        '#ef4444',
   refunded:         '#a855f7',
   out_for_delivery: '#8b5cf6',
+  handed_to_courier: '#6366f1',
+  refused:          '#f97316',
+  returned_to_seller: '#ea580c',
   partially_returned: '#d946ef',
 };
 
@@ -298,18 +301,24 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
       .finally(() => setLoading(false));
   }, [orderId]);
 
-  const handleMarkCompleted = async () => {
+  // Only what the backend allows for this parcel (ParcelStatus), never a guess
+  const allowedNext: SellerNextStatus[] = detail?.order.allowed_next ?? [];
+  const can = (s: SellerNextStatus) => allowedNext.includes(s);
+
+  const handleTransition = async (status: SellerNextStatus) => {
+    if (status === 'cancelled' && !window.confirm(t('cancelConfirm'))) return;
     setUpdatingStatus(true);
     setError('');
+    setSuccessMsg('');
     try {
-      await ordersApi.updateStatus(orderId, 'completed');
-      setSuccessMsg(t('markedCompleted'));
-      const res = await ordersApi.getOne(orderId);
-      setDetail(res.data);
+      await ordersApi.updateStatus(orderId, status);
+      setSuccessMsg(t('statusUpdated'));
       onUpdated();
-    } catch {
-      setError(t('updateFailed'));
+    } catch (e: any) {
+      setError(e?.message || t('updateFailed'));
     } finally {
+      // Fresh allowed_next either way: the buttons follow the backend
+      ordersApi.getOne(orderId).then(res => setDetail(res.data)).catch(() => {});
       setUpdatingStatus(false);
     }
   };
@@ -478,8 +487,9 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                     </div>
                   ))}
 
+                  {can('handed_to_courier') && (
                   <button
-                    onClick={handleMarkCompleted}
+                    onClick={() => handleTransition('handed_to_courier')}
                     disabled={updatingStatus}
                     style={{
                       width: '100%', marginTop: 6, padding: '14px 20px', borderRadius: 12, border: 'none',
@@ -497,12 +507,48 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                       ? <BrandLoader variant="inline" size={16} />
                       : <span style={{ fontSize: 16 }}>✅</span>
                     }
-                    {updatingStatus ? t('updating') : t('markCompleted')}
+                    {updatingStatus ? t('updating') : t('actions.handed_to_courier')}
                   </button>
+                  )}
                 </div>
               )}
 
-              {/* COMPLETED — waiting for pickup */}
+              {/* Other moves this seller may make right now (from allowed_next) */}
+              {(can('confirmed') || can('cancelled')) && (
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  {can('confirmed') && (
+                    <button onClick={() => handleTransition('confirmed')} disabled={updatingStatus}
+                      style={{ flex: 1, minWidth: 160, padding: '11px 16px', borderRadius: 12, border: '1px solid rgba(59,130,246,0.35)', background: dark ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)', color: ink('#3b82f6', dark), fontWeight: 800, fontSize: 13, cursor: updatingStatus ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+                      {t('actions.confirmed')}
+                    </button>
+                  )}
+                  {can('cancelled') && (
+                    <button onClick={() => handleTransition('cancelled')} disabled={updatingStatus}
+                      style={{ flex: 1, minWidth: 160, padding: '11px 16px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.35)', background: dark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.05)', color: ink('#ef4444', dark), fontWeight: 800, fontSize: 13, cursor: updatingStatus ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+                      {t('actions.cancelled')}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* With the courier / refused: the outcome is CHOOSE'Tounsi's to record */}
+              {(['handed_to_courier', 'out_for_delivery', 'refused', 'returned_to_seller'] as string[]).includes(detail.order.status) && (() => {
+                const key = detail.order.status === 'refused' ? 'refused' : detail.order.status === 'returned_to_seller' ? 'returned' : 'courier';
+                const color = key === 'courier' ? '#6366f1' : '#f97316';
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: `${color}10`, border: `1px solid ${color}40`, borderRadius: 14, padding: '14px 18px' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: `${color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Package size={16} color={color} />
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 800, color: ink(color, dark), margin: 0 }}>{t(`${key}Title`)}</p>
+                      <p style={{ fontSize: 11, color: dark ? 'rgba(255,255,255,0.55)' : '#5b6472', margin: '2px 0 0' }}>{t(`${key}Body`)}</p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* COMPLETED (legacy) — waiting for pickup */}
               {detail.order.status === 'completed' && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: dark ? 'rgba(16,185,129,0.08)' : 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 14, padding: '14px 18px' }}>
                   <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -627,7 +673,7 @@ export default function OrdersPage() {
         </div>
         <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} style={inputStyle}>
           <option value="">{t('allStatuses')}</option>
-          {['pending', 'confirmed', 'completed', 'delivered', 'partially_returned', 'refunded', 'cancelled'].map(s => (
+          {['pending', 'confirmed', 'handed_to_courier', 'out_for_delivery', 'delivered', 'partially_returned', 'refunded', 'refused', 'returned_to_seller', 'cancelled'].map(s => (
             <option key={s} value={s}>{statusLabel(s)}</option>
           ))}
         </select>

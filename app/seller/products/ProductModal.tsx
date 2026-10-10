@@ -129,15 +129,16 @@ function OccasionPicker({ selected, onChange }: { selected: Occasion[]; onChange
 function FreeDeliveryToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   const t = useTranslations('seller.productForm')
   const { price } = useFormat()
-  // Free shipping isn't free: the agency still bills the order and the seller pays it.
-  const [shipping, setShipping] = useState({ cost: 8, fee: 8 })
+  // Free delivery isn't free: the seller pays the admin's contribution per
+  // shipment. Both amounts are admin settings, read live (never hardcoded).
+  const [shipping, setShipping] = useState<{ cost: number; fee: number } | null>(null)
   useEffect(() => {
     shippingApi.cost()
-      .then(r => setShipping({ cost: Number(r.data.shipping_cost), fee: Number(r.data.customer_delivery_fee) }))
+      .then(r => setShipping({ cost: Number(r.data.free_delivery_contribution), fee: Number(r.data.customer_delivery_fee) }))
       .catch(() => {})
   }, [])
-  const cost = price(shipping.cost)
-  const fee  = price(shipping.fee)
+  const cost = shipping ? price(shipping.cost) : '…'
+  const fee  = shipping ? price(shipping.fee) : '…'
   return (
     <div style={{ marginTop: 14 }}>
       <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none', width: 'fit-content' }}>
@@ -172,6 +173,11 @@ function FreeDeliveryToggle({ value, onChange }: { value: boolean; onChange: (v:
           <p style={{ fontSize: 11, color: '#5b6472', margin: '2px 0 0' }}>
             {value ? t('freeDeliveryYes') : t('freeDeliveryNo', { fee })}
           </p>
+          {!value && (
+            <p style={{ fontSize: 11, color: '#b45309', fontWeight: 600, margin: '2px 0 0' }}>
+              {t('freeDeliveryCostHint', { cost })}
+            </p>
+          )}
         </div>
       </label>
       {value && (

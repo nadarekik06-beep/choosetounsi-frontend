@@ -37,6 +37,7 @@ import ComplaintModal from '@/app/components/ComplaintModal'
 import { ReturnStatusBadge } from '@/app/components/returns/ReturnTracking'
 import ReviewSubmitModal from '@/app/components/reviews/ReviewSubmitModal'
 import { useTranslations } from 'next-intl'
+import { useStatusLabel } from '@/lib/i18n/useStatusLabel'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { useWilayaLabel } from '@/lib/i18n/wilayas'
 import BrandLoader from '@/components/brand/BrandLoader'
@@ -163,7 +164,11 @@ function resolveImg(path: string | null | undefined): string | null {
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
   pending:          { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  icon: <Clock size={11} /> },
   processing:       { color: '#3b82f6', bg: 'rgba(59,130,246,0.1)',  icon: <RotateCcw size={11} /> },
+  confirmed:        { color: '#3b82f6', bg: 'rgba(59,130,246,0.1)',  icon: <CheckCircle size={11} /> },
+  handed_to_courier: { color: '#6366f1', bg: 'rgba(99,102,241,0.1)', icon: <Package size={11} /> },
   out_for_delivery: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)',  icon: <Truck size={11} /> },
+  refused:          { color: '#f97316', bg: 'rgba(249,115,22,0.1)',  icon: <XCircle size={11} /> },
+  returned_to_seller: { color: '#f97316', bg: 'rgba(249,115,22,0.1)', icon: <XCircle size={11} /> },
   completed:        { color: '#10b981', bg: 'rgba(16,185,129,0.1)',  icon: <CheckCircle size={11} /> },
   delivered:        { color: '#14b8a6', bg: 'rgba(20,184,166,0.1)',  icon: <Truck size={11} /> },
   cancelled:        { color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   icon: <XCircle size={11} /> },
@@ -172,9 +177,9 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: React.Rea
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const tStatus = useTranslations('orderStatus')
-  const known = status in STATUS_CONFIG
-  const cfg = { label: known ? tStatus(status) : status, ...(STATUS_CONFIG[status] ?? { color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', icon: null }) }
+  const label = useStatusLabel()
+  // Never a raw code: unknown statuses fall back to a neutral label
+  const cfg = { label: label(status) === status ? label('pending') : label(status), ...(STATUS_CONFIG[status] ?? { color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', icon: null }) }
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -197,9 +202,10 @@ function OrderTracker({ order, group }: { order: Order; group: SellerGroup }) {
 
   const isCancelled = status === 'cancelled'
   const isRefunded  = status === 'refunded'
+  const isRefused   = status === 'refused' || status === 'returned_to_seller'
 
   const statusRank: Record<string, number> = {
-    pending: 0, processing: 1, out_for_delivery: 2, completed: 2, delivered: 3, refunded: 4, cancelled: -1,
+    pending: 0, processing: 1, confirmed: 1, handed_to_courier: 2, out_for_delivery: 2, completed: 2, delivered: 3, refunded: 4, cancelled: -1,
   }
   const currentRank = statusRank[status] ?? 0
 
@@ -231,6 +237,23 @@ function OrderTracker({ order, group }: { order: Order; group: SellerGroup }) {
       isCompleted: currentRank >= 3, isActive: status === 'delivered',
     },
   ]
+
+  if (isRefused) {
+    return (
+      <div style={{
+        margin: '12px 20px 16px', background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.2)',
+        borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10,
+      }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: 'rgba(249,115,22,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f97316' }}>
+          <XCircle size={16} />
+        </div>
+        <div>
+          <p style={{ fontSize: 13, fontWeight: 800, color: '#f97316', margin: 0 }}>{t('track.refusedTitle')}</p>
+          <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>{t('track.refusedBody')}</p>
+        </div>
+      </div>
+    )
+  }
 
   if (isCancelled || isRefunded) {
     return (

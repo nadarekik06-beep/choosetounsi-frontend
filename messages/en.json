@@ -687,7 +687,9 @@
       "d17Badge": "Tunisian",
       "card": "Bank card",
       "cardDesc": "Pay securely with Visa or Mastercard via Stripe.",
-      "cardBadge": "Secure"
+      "cardBadge": "Secure",
+      "comingSoon": "Coming soon",
+      "comingSoonAlert": "Online payment is coming soon. For now, pay cash on delivery."
     },
     "reassure": {
       "cod": "🔒 Pay cash on delivery · Safe & easy",
@@ -722,7 +724,14 @@
       "d17Reference": "Reference: <b>{number}</b>",
       "contactSupport": "contact support",
       "viewOrders": "View orders"
-    }
+    },
+    "delivery": "Delivery",
+    "deliveryPerShop": "Each shop ships its own parcel: delivery is charged per shop.",
+    "payCashOnDelivery": "Pay cash on delivery",
+    "codToPay": "You pay {amount} in cash to the courier.",
+    "codToPayParcels": "You pay {amount} in cash, across {count} parcels (one per shop).",
+    "quoteLoading": "Calculating…",
+    "quoteFailed": "We couldn't calculate your total. Please try again."
   },
   "auth": {
     "logoAlt": "ChooseTounsi",
@@ -1129,7 +1138,10 @@
     "confirmed": "Confirmed",
     "shipped": "Shipped",
     "returned": "Returned",
-    "partially_returned": "Partially returned"
+    "partially_returned": "Partially returned",
+    "handed_to_courier": "Handed to courier",
+    "refused": "Refused at delivery",
+    "returned_to_seller": "Refused – returned to seller"
   },
   "paymentStatus": {
     "pending": "Pending",
@@ -1185,7 +1197,9 @@
       "cancelledBody": "This order has been cancelled.",
       "refundedBody": "This order was returned and refunded.",
       "driverOnWay": "{name} is on the way",
-      "pickedUp": "Picked up · {date}"
+      "pickedUp": "Picked up · {date}",
+      "refusedTitle": "Refused at delivery",
+      "refusedBody": "This parcel was refused at the door. Nothing is owed for it."
     },
     "returnedQty": "{count} returned"
   },
@@ -2687,8 +2701,8 @@
       "freeDeliveryYes": "Customers will see \"Free Delivery\" and pay no shipping — you pay it instead.",
       "freeDeliveryNo": "The customer pays the standard delivery fee ({fee}) at checkout.",
       "freeDeliveryActive": "Free Delivery is active for this product",
-      "freeDeliveryExplain": "Applies when the cart contains only free-delivery products. If it also has standard products, the customer pays the {fee} fee and nothing is deducted from you.",
-      "freeDeliverySellerPays": "Free shipping for your customers. The shipping cost (≈ {cost} per order) will be deducted from your earnings.",
+      "freeDeliveryExplain": "A shipment from your shop is free only if every product in it offers free delivery. Otherwise the customer pays the {fee} delivery fee and nothing is deducted from you.",
+      "freeDeliverySellerPays": "Free delivery costs you {cost} per order shipment, deducted from your earnings.",
       "editTitle": "Edit Product",
       "addTitle": "Add New Product",
       "reviewNotice": "Will be reviewed by admin before going live.",
@@ -2776,7 +2790,8 @@
       "lowStockThreshold": "Low-stock alert threshold",
       "lowStockThresholdShop": "Shop: {n}",
       "lowStockThresholdDefault": "Shop threshold",
-      "lowStockThresholdHint": "Empty = threshold set in your shop settings."
+      "lowStockThresholdHint": "Empty = threshold set in your shop settings.",
+      "freeDeliveryCostHint": "If you turn it on, free delivery costs you {cost} per order shipment."
     },
     "variants": {
       "stockRequired": "Stock is required.",
@@ -3175,7 +3190,6 @@
       "qty": "Qty: {count}",
       "perUnit": "{price} / unit",
       "loadFailed": "Failed to load order details.",
-      "markedCompleted": "Order marked as completed! Delivery team notified.",
       "updateFailed": "Failed to update order status.",
       "details": "Order Details",
       "printInvoice": "🖨 Print Invoice",
@@ -3198,9 +3212,8 @@
       "waitingTitle": "Waiting for Admin Confirmation",
       "waitingBody": "The admin will call the client to confirm. You'll be notified when ready.",
       "readyTitle": "Ready to Prepare",
-      "readyBody": "This order has been confirmed by admin. Pack the items and mark as completed.",
+      "readyBody": "This order has been confirmed by admin. Pack the items, then mark the parcel as handed to the courier when it is picked up.",
       "updating": "Updating…",
-      "markCompleted": "Mark as Completed",
       "packedTitle": "Order Packed & Ready",
       "packedBody": "Waiting for delivery pickup. The delivery team has been notified.",
       "title": "Orders",
@@ -3258,7 +3271,20 @@
         "amount": "Amount",
         "date": "Date"
       },
-      "returnedQty": "↩ {count} returned"
+      "returnedQty": "↩ {count} returned",
+      "actions": {
+        "confirmed": "Confirm the order",
+        "handed_to_courier": "Handed to the courier",
+        "cancelled": "Cancel this parcel"
+      },
+      "cancelConfirm": "Cancel this parcel? Its stock goes back on sale and only CHOOSE'Tounsi can re-open it.",
+      "statusUpdated": "Status updated.",
+      "courierTitle": "With the courier",
+      "courierBody": "The delivery company has your parcel. CHOOSE'Tounsi records when it is delivered or refused.",
+      "refusedTitle": "Refused by the client",
+      "refusedBody": "The client refused the parcel at the door. It is coming back to you; its stock is released once it is returned.",
+      "returnedTitle": "Returned to you",
+      "returnedBody": "The refused parcel is back with you and its stock is on sale again."
     },
     "earnings": {
       "loadFailed": "Failed to load earnings data.",
@@ -3281,7 +3307,10 @@
         "paid": "Paid",
         "cancelled": "Cancelled",
         "draft": "Draft",
-        "processing": "Processing"
+        "processing": "Processing",
+        "pending_delivery": "Pending delivery",
+        "payable": "Payable",
+        "none": "No payout"
       },
       "tabs": {
         "overview": "📊 Overview",
@@ -3325,7 +3354,7 @@
         "net": "Net Earnings",
         "order": "Order",
         "platformFee": "Platform Fee",
-        "shipping": "Shipping (paid by you)",
+        "shipping": "Free delivery (paid by you)",
         "yourNet": "Your Net",
         "payoutStatus": "Payout Status",
         "settled": "Settled",

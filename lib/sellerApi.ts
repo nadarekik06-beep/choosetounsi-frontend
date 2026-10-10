@@ -314,7 +314,8 @@ export const dashboardApi = {
 
 export const shippingApi = {
   cost: () =>
-    jsonRequest<{ data: { shipping_cost: number; customer_delivery_fee: number } }>('GET', '/seller/shipping-cost'),
+    // free_delivery_contribution: what free delivery costs the seller per shipment (admin setting)
+    jsonRequest<{ data: { free_delivery_contribution: number; shipping_cost: number; customer_delivery_fee: number } }>('GET', '/seller/shipping-cost'),
 }
 
 // ─── Seller Orders API ────────────────────────────────────────────────────────

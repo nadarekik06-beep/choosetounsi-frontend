@@ -29,7 +29,6 @@ import BrandLoader from '@/components/brand/BrandLoader'
 type CartItem = BaseCartItem & {
   is_pack?: boolean
   is_free_delivery?: boolean   
-  delivery_fee?: number        
   pack_id?: number | null
   pack_slug?: string | null
   pack_selections?: { pack_item_id: number; variant_id: number | null }[]

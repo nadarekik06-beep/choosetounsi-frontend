@@ -158,11 +158,17 @@ export interface ProductStats {
 export type OrderStatus =
   | 'pending'
   | 'confirmed'
+  | 'handed_to_courier'
   | 'out_for_delivery'
-  | 'completed'
+  | 'completed'             // legacy
   | 'cancelled'
   | 'delivered'
+  | 'refused'               // refused at the door, on its way back
+  | 'returned_to_seller'    // refused parcel back at the seller (stock released)
   | 'refunded';            // whole sub-order returned ("Returned (Refunded)")
+
+/** Statuses a seller may set (backend ParcelStatus::SELLER_TARGETS). The API sends allowed_next per parcel. */
+export type SellerNextStatus = 'confirmed' | 'handed_to_courier' | 'cancelled';
 /** status, or 'partially_returned' when part of the sub-order came back */
 export type OrderDisplayStatus = OrderStatus | 'partially_returned';
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
@@ -255,7 +261,7 @@ export interface OrderCommissionSummary {
 }
 
 export interface OrderDetail {
-  order: Order & { customer: Customer };
+  order: Order & { customer: Customer; allowed_next?: SellerNextStatus[] };
   items: OrderItem[];
   seller_subtotal: number;
   discount_amount?: number;
