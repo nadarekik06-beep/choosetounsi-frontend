@@ -337,7 +337,7 @@ export const ordersApi = {
     jsonRequest<any>('PATCH', `/seller/orders/${id}/payment`, { payment_status }),
   /** POST /api/seller/orders/{id}/prepared — packed, waiting for the courier (stops WhatsApp reminders) */
   markPrepared: (id: number) =>
-    jsonRequest<{ success: boolean; message?: string; data: { id: number; prepared_at: string | null } }>('POST', `/seller/orders/${id}/prepared`),
+    jsonRequest<{ success: boolean; message?: string; data: { id: number; prepared_at: string | null; delivery?: import('@/types/seller').ParcelDelivery } }>('POST', `/seller/orders/${id}/prepared`),
 }
 
 // ─── Seller Products API ──────────────────────────────────────────────────────

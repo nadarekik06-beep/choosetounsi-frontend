@@ -7,9 +7,10 @@
  */
 
 import { useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { User, MapPin, Hash, FileText } from 'lucide-react'
 import { WILAYAS, useWilayaLabel } from '@/lib/i18n/wilayas'
+import { useRegions, useDistricts, regionLabel } from '@/lib/regions'
 import {
   validateTunisianPhone,
   type ShippingAddressForm, type ShippingAddressErrors,
@@ -35,7 +36,25 @@ export default function ShippingAddressFields({ value, errors, onChange }: {
   const tp          = useTranslations('checkout.phone')
   const tc          = useTranslations('common')
   const wilayaLabel = useWilayaLabel()
+  const locale      = useLocale()
   const [phoneTouched, setPhoneTouched] = useState(false)
+  // The courier's governorates / delegations (free text until the backend has synced them)
+  const regions     = useRegions()
+  const cityId      = value.intigo_city_id ? Number(value.intigo_city_id) : null
+  const { districts, loading: districtsLoading } = useDistricts(regions.available ? cityId : null)
+
+  const pickCity = (id: string) => {
+    const city = regions.cities.find(c => String(c.id) === id)
+    onChange('intigo_city_id', id)
+    onChange('wilaya', city?.wilaya ?? city?.name ?? '')
+    onChange('intigo_district_id', '')
+    onChange('delegation', '')
+  }
+  const pickDistrict = (id: string) => {
+    const d = districts.find(x => String(x.id) === id)
+    onChange('intigo_district_id', id)
+    onChange('delegation', d?.name ?? '')
+  }
 
   const err = (k: keyof ShippingAddressForm) => (errors[k] ? t(`errors.${errors[k]}`) : undefined)
   const Err = ({ k }: { k: keyof ShippingAddressForm }) =>
@@ -88,7 +107,36 @@ export default function ShippingAddressFields({ value, errors, onChange }: {
         {phoneInput('phone_secondary', t('secondPhone'), false)}
       </div>
 
-      {/* Governorate + delegation */}
+      {/* Governorate + delegation: the courier's lists once synced, else free text */}
+      {regions.available ? (
+      <div className="sa-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div>
+          <label style={labelStyle}><MapPin size={10} style={{ verticalAlign: '-1px' }} /> {t('wilaya')} <Req /></label>
+          <select value={value.intigo_city_id} onChange={e => pickCity(e.target.value)}
+            aria-label={t('wilaya')} aria-invalid={!!errors.wilaya}
+            style={inputStyle(err('wilaya'), { color: value.intigo_city_id ? '#0f172a' : '#94a3b8' })}>
+            <option value="">{t('selectWilaya')}</option>
+            {[...regions.cities]
+              .sort((a, b) => regionLabel(a, locale).localeCompare(regionLabel(b, locale), locale))
+              .map(c => <option key={c.id} value={String(c.id)}>{regionLabel(c, locale)}</option>)}
+          </select>
+          <Err k="wilaya" />
+        </div>
+        <div>
+          <label style={labelStyle}>{t('delegation')} <Req /></label>
+          <select value={value.intigo_district_id} onChange={e => pickDistrict(e.target.value)}
+            disabled={!cityId || districtsLoading}
+            aria-label={t('delegation')} aria-invalid={!!errors.delegation}
+            style={inputStyle(err('delegation'), { color: value.intigo_district_id ? '#0f172a' : '#94a3b8', opacity: cityId ? 1 : 0.6 })}>
+            <option value="">{!cityId ? t('selectWilayaFirst') : districtsLoading ? t('loadingDelegations') : t('selectDelegation')}</option>
+            {[...districts]
+              .sort((a, b) => regionLabel(a, locale).localeCompare(regionLabel(b, locale), locale))
+              .map(d => <option key={d.id} value={String(d.id)}>{regionLabel(d, locale)}</option>)}
+          </select>
+          <Err k="delegation" />
+        </div>
+      </div>
+      ) : (
       <div className="sa-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
           <label style={labelStyle}><MapPin size={10} style={{ verticalAlign: '-1px' }} /> {t('wilaya')} <Req /></label>
@@ -109,6 +157,7 @@ export default function ShippingAddressFields({ value, errors, onChange }: {
           <Err k="delegation" />
         </div>
       </div>
+      )}
 
       {/* Street + postal code */}
       <div className="sa-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 130px', gap: 12 }}>

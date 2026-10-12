@@ -202,6 +202,17 @@ export interface Order {
   wilaya: string | null;
   created_at: string;
   items_count?: number;   // this seller's line items only
+  /** Delivery request at the courier (Intigo) */
+  delivery?: ParcelDelivery;
+}
+
+/** The parcel's delivery request: nid = the reference to write on the package. */
+export interface ParcelDelivery {
+  state: 'sent' | 'pending' | 'failed' | 'cancelled' | null;
+  nid: string | null;
+  status_code: number | null;
+  status_label: string | null;
+  parcel_size: 'S' | 'L' | 'XL';
 }
 
 /**

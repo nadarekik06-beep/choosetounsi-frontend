@@ -27,6 +27,7 @@ import { isAuthenticated } from '@/lib/auth'
 import { useTranslations } from 'next-intl'
 import { useWilayaLabel } from '@/lib/i18n/wilayas'
 import ShippingAddressFields from '@/components/address/ShippingAddressFields'
+import { useRegions } from '@/lib/regions'
 import {
   emptyShippingAddress, shippingAddressFrom, validateShippingAddress, isCompleteShippingAddress,
   shippingAddressPayload, formatShippingAddress, type ShippingAddressForm,
@@ -58,6 +59,9 @@ export interface UserAddress {
   recipient_name: string | null
   wilaya: string
   delegation: string | null
+  // Picked from the courier's lists (null on older addresses: asked again at checkout)
+  intigo_city_id?: number | null
+  intigo_district_id?: number | null
   address: string
   postal_code: string | null
   phone: string
@@ -110,6 +114,7 @@ function AddressCard({
 }) {
   const t = useTranslations('addresses')
   const tsa = useTranslations('shippingAddress')
+  const regionsAvailable = useRegions().available
   const labelText = useAddressLabel()
   const wilayaLabel = useWilayaLabel()
   const labelIcon = addr.label.toLowerCase().includes('work')
@@ -164,7 +169,7 @@ function AddressCard({
       <p style={{ fontSize: 12, color: '#94a3b8', margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
         <Phone size={11} /> <span dir="ltr">{addr.phone}{addr.phone_secondary ? ` / ${addr.phone_secondary}` : ''}</span>
       </p>
-      {!isCompleteShippingAddress(shippingAddressFrom(addr)) && (
+      {!isCompleteShippingAddress(shippingAddressFrom(addr), regionsAvailable) && (
         <p style={{ fontSize: 11, color: '#b45309', margin: '6px 0 0', fontWeight: 600 }}>{tsa('completeSaved')}</p>
       )}
       {addr.notes && (

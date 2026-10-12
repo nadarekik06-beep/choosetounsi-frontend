@@ -194,6 +194,8 @@ export interface SavedAddress {
   recipient_name: string | null
   wilaya: string
   delegation: string | null
+  intigo_city_id?: number | null
+  intigo_district_id?: number | null
   address: string
   postal_code: string | null
   phone: string

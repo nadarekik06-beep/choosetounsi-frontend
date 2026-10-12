@@ -286,6 +286,8 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
     pack_quantity:     (p as any)?.pack_quantity != null ? String((p as any).pack_quantity) : '',
     pack_contents:     ((p as any)?.pack_contents ?? '') as string,
     occasions:         normalizeOccasions((p as any)?.occasions),
+    // Parcel size for the courier (S / L / XL): required, sets the delivery price
+    parcel_size:       ((p as any)?.parcel_size ?? '') as '' | 'S' | 'L' | 'XL',
     // FIX: initialise free_delivery from existing product data
     free_delivery:     (p as any)?.delivery_fee !== undefined &&
                        (p as any)?.delivery_fee !== null &&
@@ -411,6 +413,7 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
   const e: Record<string, string> = {}
 
   if (!form.name.trim()) e.name = t('errors.name')
+  if (!form.parcel_size) e.parcel_size = t('errors.parcelSize')
 
   if (!form.category_id) e.category_id = t('errors.category')
 
@@ -528,6 +531,7 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
         occasions:         occasionsApply ? form.occasions : undefined,
         // FIX: map free_delivery boolean to delivery_fee value for the backend
         delivery_fee:      form.free_delivery ? '0' : '',
+        parcel_size:       form.parcel_size,
         ...buildImageManifest(images, groupKeys),
         attributes:        serializeAttributes(attrValues),
         price:             baseDropped ? parseFloat(String(p?.price ?? 0)) : parseFloat(form.price),
@@ -810,6 +814,17 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
                     </Field>
                   </div>
                 )}
+              </div>
+
+              {/* Parcel size: the courier's package size, and the delivery price of the parcel */}
+              <div id="pf-parcel-size" style={{ marginTop: 14 }}>
+                <Field label={t('parcelSize')} required error={errors.parcel_size} hint={t('parcelSizeHint')}>
+                  <select value={form.parcel_size} onChange={e => set('parcel_size', e.target.value as '' | 'S' | 'L' | 'XL')}
+                    aria-required="true" className={inputCls(errors.parcel_size)}>
+                    <option value="">{t('parcelSizeSelect')}</option>
+                    {(['S', 'L', 'XL'] as const).map(s => <option key={s} value={s}>{t(`parcelSizes.${s}`)}</option>)}
+                  </select>
+                </Field>
               </div>
 
               {/* ── FIX: FreeDeliveryToggle is now a proper component called here ── */}

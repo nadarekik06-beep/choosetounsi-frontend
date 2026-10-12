@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { MapPin, Plus, Pencil, Trash2, Star, Home, Briefcase, Phone, AlertTriangle } from 'lucide-react'
 import { useWilayaLabel } from '@/lib/i18n/wilayas'
 import { formatShippingAddress, isCompleteShippingAddress, shippingAddressFrom } from '@/lib/shippingAddress'
+import { useRegions } from '@/lib/regions'
 import { addressApi, type Profile, type SavedAddress } from '@/lib/profileApi'
 import AddressForm from '@/components/profile/AddressForm'
 import { EmptyState, Modal, Skeleton } from '@/components/profile/ui'
@@ -22,6 +23,7 @@ export default function AddressesTab({ profile, onChanged, toast, autoAdd }: {
   autoAdd?: boolean
 }) {
   const t  = useTranslations('profile.addresses')
+  const regionsAvailable = useRegions().available
   const ta = useTranslations('addresses')
   const tl = useTranslations('addresses.labels')
   const wilayaLabel = useWilayaLabel()
@@ -100,7 +102,7 @@ export default function AddressesTab({ profile, onChanged, toast, autoAdd }: {
         ) : (
           <div style={{ display: 'grid', gap: 10 }}>
             {list.map(a => {
-              const needsFix = !isCompleteShippingAddress(shippingAddressFrom(a))
+              const needsFix = !isCompleteShippingAddress(shippingAddressFrom(a), regionsAvailable)
               return (
                 <article key={a.id} className={`pf-addr${a.is_default ? ' default' : ''}`} aria-busy={busyId === a.id}>
                   <span className="pf-addr-icon" aria-hidden>

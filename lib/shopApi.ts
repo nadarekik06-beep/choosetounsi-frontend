@@ -175,6 +175,8 @@ export interface QuoteParcel {
   coupon_code: string | null
   coupon_discount: number
   is_free_delivery: boolean
+  /** S | L | XL: the largest item of the parcel; the delivery fee is the one for that size */
+  parcel_size?: 'S' | 'L' | 'XL'
   delivery_fee: number
   total: number
   cod_amount: number

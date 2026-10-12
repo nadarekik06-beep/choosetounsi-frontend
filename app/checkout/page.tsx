@@ -31,6 +31,7 @@ import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { useWilayaLabel } from '@/lib/i18n/wilayas'
 import ShippingAddressFields from '@/components/address/ShippingAddressFields'
+import { useRegions } from '@/lib/regions'
 import {
   emptyShippingAddress, shippingAddressFrom, validateShippingAddress, isCompleteShippingAddress,
   shippingAddressPayload, formatShippingAddress, type ShippingAddressForm,
@@ -373,6 +374,15 @@ function AddressSelector({
 
 // ─── Delivery amount of one parcel ────────────────────────────────────────────
 
+/** Parcel size (S / L / XL) next to a shop's delivery fee: the fee depends on it. */
+function SizeChip({ size, title }: { size: string; title: string }) {
+  return (
+    <span title={title} aria-label={title} style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: '0.04em', color: '#475569', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 5, padding: '1px 5px', lineHeight: 1.4 }}>
+      {size}
+    </span>
+  )
+}
+
 function DeliveryAmount({ free, amount, freeLabel, fmt, small }: {
   free: boolean; amount: number; freeLabel: string; fmt: (n: number) => string; small?: boolean
 }) {
@@ -522,6 +532,8 @@ export default function CheckoutPage() {
   const [form,     setForm]     = useState<ShippingAddressForm>(emptyShippingAddress())
   // The selected saved address predates structured addresses: show the form to complete it
   const [savedNeedsCompletion, setSavedNeedsCompletion] = useState(false)
+  // The courier's governorate / delegation lists: a saved address without them is reselected
+  const regions = useRegions()
   const [errors,   setErrors]   = useState<Record<string, string>>({})
   const [loading,  setLoading]  = useState(false)
   const [success,  setSuccess]  = useState<{ order_number: string; total: number; payment_method: PaymentMethod } | null>(null)
@@ -687,6 +699,13 @@ export default function CheckoutPage() {
     bnFetchedRef.current = true
     loadBuyNowProduct()
   }, [isBuyNow, bnSlug, loadBuyNowProduct])
+
+  // Once the lists are known, re-check the selected saved address against them
+  useEffect(() => {
+    if (!regions.ready || selectedAddressId === null) return
+    setSavedNeedsCompletion(!isCompleteShippingAddress(form, regions.available))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [regions.ready, regions.available, selectedAddressId])
 
   const set = (field: keyof ShippingAddressForm, value: string) => {
     setForm(f => ({ ...f, [field]: value }))
@@ -996,7 +1015,7 @@ export default function CheckoutPage() {
                   <>
                     {savedNeedsCompletion && selectedAddressId !== null && (
                       <div role="status" style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#92400e', fontWeight: 600, display: 'flex', gap: 8 }}>
-                        <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} /> {tsa('completeSaved')}
+                        <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} /> {regions.available && !form.intigo_district_id ? tsa('reselectRegion') : tsa('completeSaved')}
                       </div>
                     )}
                     <ShippingAddressFields value={form} errors={errors} onChange={set} />
@@ -1144,14 +1163,22 @@ export default function CheckoutPage() {
                       <Truck size={13} /> {t('delivery')}
                     </span>
                     {(quoteLoading || !quote) && <span style={{ fontSize: 12, color: '#94a3b8' }}>{t('quoteLoading')}</span>}
-                    {quote && parcels.length === 1 && <DeliveryAmount free={parcels[0].is_free_delivery} amount={parcels[0].delivery_fee} freeLabel={tc('free')} fmt={fmt} />}
+                    {quote && parcels.length === 1 && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        {parcels[0].parcel_size && <SizeChip size={parcels[0].parcel_size} title={t('parcelSizeTitle', { size: parcels[0].parcel_size })} />}
+                        <DeliveryAmount free={parcels[0].is_free_delivery} amount={parcels[0].delivery_fee} freeLabel={tc('free')} fmt={fmt} />
+                      </span>
+                    )}
                   </div>
                   {quote && parcels.length > 1 && (
                     <div style={{ marginTop: 6, paddingInlineStart: 19, display: 'flex', flexDirection: 'column', gap: 4 }}>
                       {parcels.map(p => (
                         <div key={p.seller_id ?? 'platform'} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                           <span dir="auto" style={{ fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{p.seller_name}</span>
-                          <DeliveryAmount free={p.is_free_delivery} amount={p.delivery_fee} freeLabel={tc('free')} fmt={fmt} small />
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                            {p.parcel_size && <SizeChip size={p.parcel_size} title={t('parcelSizeTitle', { size: p.parcel_size })} />}
+                            <DeliveryAmount free={p.is_free_delivery} amount={p.delivery_fee} freeLabel={tc('free')} fmt={fmt} small />
+                          </span>
                         </div>
                       ))}
                       <p style={{ fontSize: 10.5, color: '#94a3b8', margin: '2px 0 0', lineHeight: 1.4 }}>{t('deliveryPerShop')}</p>

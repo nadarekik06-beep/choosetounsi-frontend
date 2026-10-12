@@ -731,7 +731,8 @@
     "codToPay": "You pay {amount} in cash to the courier.",
     "codToPayParcels": "You pay {amount} in cash, across {count} parcels (one per shop).",
     "quoteLoading": "Calculating…",
-    "quoteFailed": "We couldn't calculate your total. Please try again."
+    "quoteFailed": "We couldn't calculate your total. Please try again.",
+    "parcelSizeTitle": "Parcel size {size}: the delivery fee depends on it"
   },
   "auth": {
     "logoAlt": "ChooseTounsi",
@@ -1201,7 +1202,22 @@
       "refusedTitle": "Refused at delivery",
       "refusedBody": "This parcel was refused at the door. Nothing is owed for it."
     },
-    "returnedQty": "{count} returned"
+    "returnedQty": "{count} returned",
+    "delivery": {
+      "label": "Delivery",
+      "ref": "Courier ref.",
+      "stages": {
+        "pending": "Waiting for confirmation",
+        "preparing": "Being prepared by the shop",
+        "awaiting_pickup": "Ready, waiting for the courier",
+        "in_transit": "With the courier, in transit",
+        "out_for_delivery": "Out for delivery today",
+        "delivered": "Delivered",
+        "returning": "Not delivered, returning to the shop",
+        "returned": "Returned to the shop",
+        "cancelled": "Cancelled"
+      }
+    }
   },
   "reviewForm": {
     "title": "Leave a review",
@@ -2774,7 +2790,8 @@
         "saveFailed": "Failed to save. Please try again.",
         "occasions": "Select at least one season / occasion.",
         "packQuantity": "Enter a whole number of units, at least 2.",
-        "packContents": "Keep the pack contents under 500 characters."
+        "packContents": "Keep the pack contents under 500 characters.",
+        "parcelSize": "Choose the parcel size (S, L or XL)."
       },
       "liveNotice": "Live product — your changes go online as soon as you save",
       "priceLowerHint": "To lower the price, create a discount so customers see the old price crossed out.",
@@ -2806,7 +2823,15 @@
       "lowStockThresholdShop": "Shop: {n}",
       "lowStockThresholdDefault": "Shop threshold",
       "lowStockThresholdHint": "Empty = threshold set in your shop settings.",
-      "freeDeliveryCostHint": "If you turn it on, free delivery costs you {cost} per order shipment."
+      "freeDeliveryCostHint": "If you turn it on, free delivery costs you {cost} per order shipment.",
+      "parcelSize": "Parcel size",
+      "parcelSizeSelect": "Choose the size of the packed item",
+      "parcelSizeHint": "S: fits in a shoebox (clothes, jewelry, cosmetics). L: a large box (shoes, small appliances, bags). XL: bulky or heavy (furniture, large appliances, carpets). The delivery price depends on it.",
+      "parcelSizes": {
+        "S": "S: small",
+        "L": "L: large",
+        "XL": "XL: extra large"
+      }
     },
     "variants": {
       "stockRequired": "Stock is required.",
@@ -3302,7 +3327,20 @@
       "returnedTitle": "Returned to you",
       "returnedBody": "The refused parcel is back with you and its stock is on sale again.",
       "preparedDone": "Order marked as prepared. Thank you!",
-      "preparedAt": "Prepared on {date} — waiting for the courier"
+      "preparedAt": "Prepared on {date} — waiting for the courier",
+      "delivery": {
+        "sent": "Sent to delivery",
+        "ref": "Reference",
+        "writeOnParcel": "Write this reference clearly on the parcel. The driver will pick it up at your address.",
+        "carrierStatus": "Courier status: {status}",
+        "pending": "Delivery request pending: it will be sent in a few moments.",
+        "failed": "The delivery request failed. The CHOOSE’Tounsi team has been notified and will handle it.",
+        "cancelled": "The delivery request was cancelled. The CHOOSE’Tounsi team will contact you.",
+        "size": "Parcel size: {size}",
+        "sentToast": "Prepared. Sent to delivery, ref. {nid}: write it on the parcel.",
+        "failedToast": "Prepared. The delivery request failed: the admin has been notified.",
+        "refTitle": "Delivery reference: write it on the parcel"
+      }
     },
     "earnings": {
       "loadFailed": "Failed to load earnings data.",
@@ -5587,8 +5625,13 @@
       "wilaya": "Please select your governorate.",
       "delegation": "Please enter your delegation or city.",
       "address": "Please enter your street address.",
-      "postalCode": "Postal code must be 4 digits."
-    }
+      "postalCode": "Postal code must be 4 digits.",
+      "delegationPick": "Please select your delegation from the list."
+    },
+    "selectWilayaFirst": "Choose the governorate first",
+    "selectDelegation": "Select your delegation",
+    "loadingDelegations": "Loading delegations…",
+    "reselectRegion": "Please select your governorate and delegation again from the list: our delivery partner needs the exact names. We’ll update this saved address for next time."
   },
   "sellerPickup": {
     "title": "Pickup address",

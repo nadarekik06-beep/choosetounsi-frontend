@@ -10,7 +10,7 @@ import {
 import { useTheme } from '../SellerShell';
 import SellerOrderDrawer from '../components/SellerOrderDrawer';
 import WhatsAppNumberBanner from '../components/WhatsAppNumberBanner';
-import type { Order, OrderDetail, OrderItem, VariantAttribute, PaginatedResponse, OrderCommissionSummary, SellerNextStatus } from '@/types/seller';
+import type { Order, OrderDetail, OrderItem, VariantAttribute, PaginatedResponse, OrderCommissionSummary, SellerNextStatus, ParcelDelivery } from '@/types/seller';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { useStatusLabel } from '@/lib/i18n/useStatusLabel';
@@ -276,6 +276,32 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
 
 // ─── Order Detail Modal ───────────────────────────────────────────────────────
 
+/** "Sent to delivery — ref {nid}" (write it on the package) / pending / failed (the admin was told). */
+function DeliveryRequest({ delivery, dark }: { delivery: ParcelDelivery; dark: boolean }) {
+  const t = useTranslations('seller.orders.delivery');
+  const tone = delivery.state === 'sent' ? '#198f41' : delivery.state === 'pending' ? '#d97706' : '#dc2626';
+  return (
+    <div role="status" style={{ marginTop: 8, padding: '12px 14px', borderRadius: 12, background: `${tone}14`, border: `1px solid ${tone}55`, fontSize: 12, color: dark ? '#e2e8f0' : '#0f172a' }}>
+      {delivery.state === 'sent' && delivery.nid ? (
+        <>
+          <div style={{ fontWeight: 800, color: ink(tone, dark) }}>🚚 {t('sent')}</div>
+          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, opacity: 0.75 }}>{t('ref')}</span>
+            <span dir="ltr" style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 900, letterSpacing: '0.04em' }}>{delivery.nid}</span>
+          </div>
+          <div style={{ marginTop: 4, fontSize: 11, opacity: 0.8 }}>{t('writeOnParcel')}</div>
+          {delivery.status_label && <div style={{ marginTop: 4, fontSize: 11, opacity: 0.8 }}>{t('carrierStatus', { status: delivery.status_label })}</div>}
+        </>
+      ) : delivery.state === 'pending' ? (
+        <div style={{ fontWeight: 700, color: ink(tone, dark) }}>⏳ {t('pending')}</div>
+      ) : (
+        <div style={{ fontWeight: 700, color: ink(tone, dark) }}>⚠ {delivery.state === 'cancelled' ? t('cancelled') : t('failed')}</div>
+      )}
+      <div style={{ marginTop: 6, fontSize: 10.5, opacity: 0.7 }}>{t('size', { size: delivery.parcel_size })}</div>
+    </div>
+  );
+}
+
 function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
   orderId: number; onClose: () => void; onUpdated: () => void; dark: boolean;
 }) {
@@ -311,8 +337,11 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
     setError('');
     setSuccessMsg('');
     try {
-      await ordersApi.markPrepared(orderId);
-      setSuccessMsg(t('preparedDone'));
+      const res = await ordersApi.markPrepared(orderId);
+      const delivery = res?.data?.delivery;
+      setSuccessMsg(delivery?.state === 'sent' && delivery.nid
+        ? t('delivery.sentToast', { nid: delivery.nid })
+        : delivery?.state === 'failed' ? t('delivery.failedToast') : t('preparedDone'));
       onUpdated();
     } catch (e: any) {
       setError(e?.message || t('updateFailed'));
@@ -526,6 +555,9 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                       ✓ {t('preparedAt', { date: date(detail.order.prepared_at, 'medium') })}
                     </div>
                   )}
+
+                  {/* Delivery request (Intigo): the reference to write on the package */}
+                  {detail.order.delivery?.state && <DeliveryRequest delivery={detail.order.delivery} dark={dark} />}
 
                   {can('handed_to_courier') && (
                   <button
@@ -767,6 +799,11 @@ export default function OrdersPage() {
                             {order.items_count != null && (
                               <span style={{ display: 'block', marginTop: 4, fontSize: 9, fontWeight: 800, color: textMuted }}>
                                 {t('itemCount', { count: order.items_count })}
+                              </span>
+                            )}
+                            {order.delivery?.state === 'sent' && order.delivery.nid && (
+                              <span title={t('delivery.refTitle')} style={{ display: 'inline-block', marginTop: 4, fontFamily: 'monospace', fontSize: 10, fontWeight: 800, color: ink('#198f41', dark), background: 'rgba(25,143,65,0.1)', border: '1px solid rgba(25,143,65,0.25)', padding: '1px 6px', borderRadius: 5 }}>
+                                🚚 {order.delivery.nid}
                               </span>
                             )}
                           </div>

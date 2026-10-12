@@ -103,6 +103,8 @@ interface SellerGroup {
   discount_amount?: number
   items: OrderItem[]
   tracking?: DeliveryTracking
+  /** Where this shop's parcel is at the courier (orders.delivery.stages.*) */
+  delivery?: { stage: string; tracking_ref: string | null; updated_at: string | null }
 }
 
 interface Order {
@@ -250,6 +252,7 @@ function OrderTracker({ order, group }: { order: Order; group: SellerGroup }) {
         <div>
           <p style={{ fontSize: 13, fontWeight: 800, color: '#f97316', margin: 0 }}>{t('track.refusedTitle')}</p>
           <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>{t('track.refusedBody')}</p>
+          {group.delivery?.stage && <p style={{ fontSize: 11, color: '#64748b', margin: '4px 0 0', fontWeight: 700 }}>{t(`delivery.stages.${group.delivery.stage}`)}</p>}
         </div>
       </div>
     )
@@ -316,6 +319,20 @@ function OrderTracker({ order, group }: { order: Order; group: SellerGroup }) {
             </div>
           ))}
         </div>
+
+        {/* Courier status of this shop's parcel */}
+        {group.delivery?.stage && !['pending', 'cancelled'].includes(group.delivery.stage) && (
+          <div style={{ marginTop: 14, padding: '9px 12px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11.5, fontWeight: 800, color: '#374151', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Truck size={12} color="#64748b" /> {t('delivery.label')}: {t(`delivery.stages.${group.delivery.stage}`)}
+            </span>
+            {group.delivery.tracking_ref && (
+              <span style={{ fontSize: 10.5, color: '#64748b' }}>
+                {t('delivery.ref')} <span dir="ltr" style={{ fontFamily: 'monospace', fontWeight: 800, color: '#0f172a' }}>{group.delivery.tracking_ref}</span>
+              </span>
+            )}
+          </div>
+        )}
 
         {tracking?.delivery_guy && status === 'out_for_delivery' && (
           <div style={{ marginTop: 16, padding: '10px 14px', background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10 }}>

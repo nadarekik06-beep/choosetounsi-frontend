@@ -731,7 +731,8 @@
     "codToPay": "Vous payez {amount} en espèces au livreur.",
     "codToPayParcels": "Vous payez {amount} en espèces, en {count} colis (un par boutique).",
     "quoteLoading": "Calcul en cours…",
-    "quoteFailed": "Impossible de calculer votre total. Veuillez réessayer."
+    "quoteFailed": "Impossible de calculer votre total. Veuillez réessayer.",
+    "parcelSizeTitle": "Colis de taille {size} : les frais de livraison en dépendent"
   },
   "auth": {
     "logoAlt": "ChooseTounsi",
@@ -1201,7 +1202,22 @@
       "refusedTitle": "Refusée à la livraison",
       "refusedBody": "Ce colis a été refusé à la livraison. Rien n'est dû."
     },
-    "returnedQty": "{count} retourné(s)"
+    "returnedQty": "{count} retourné(s)",
+    "delivery": {
+      "label": "Livraison",
+      "ref": "Réf. transporteur",
+      "stages": {
+        "pending": "En attente de confirmation",
+        "preparing": "En préparation par la boutique",
+        "awaiting_pickup": "Prêt, en attente du livreur",
+        "in_transit": "Chez le transporteur, en transit",
+        "out_for_delivery": "En cours de livraison aujourd’hui",
+        "delivered": "Livré",
+        "returning": "Non livré, en retour vers la boutique",
+        "returned": "Retourné à la boutique",
+        "cancelled": "Annulé"
+      }
+    }
   },
   "reviewForm": {
     "title": "Laisser un avis",
@@ -2774,7 +2790,8 @@
         "saveFailed": "Échec de l'enregistrement. Veuillez réessayer.",
         "occasions": "Choisissez au moins une saison / occasion.",
         "packQuantity": "Indiquez un nombre entier d'unités, au moins 2.",
-        "packContents": "Le contenu du pack doit faire moins de 500 caractères."
+        "packContents": "Le contenu du pack doit faire moins de 500 caractères.",
+        "parcelSize": "Choisissez la taille du colis (S, L ou XL)."
       },
       "liveNotice": "Produit en ligne — vos modifications sont publiées dès l’enregistrement",
       "priceLowerHint": "Pour baisser le prix, créez une réduction : les clients verront l’ancien prix barré.",
@@ -2806,7 +2823,15 @@
       "lowStockThresholdShop": "Boutique : {n}",
       "lowStockThresholdDefault": "Seuil de la boutique",
       "lowStockThresholdHint": "Vide = seuil défini dans les paramètres de la boutique.",
-      "freeDeliveryCostHint": "Si vous l'activez, la livraison gratuite vous coûte {cost} par expédition de commande."
+      "freeDeliveryCostHint": "Si vous l'activez, la livraison gratuite vous coûte {cost} par expédition de commande.",
+      "parcelSize": "Taille du colis",
+      "parcelSizeSelect": "Choisissez la taille de l’article emballé",
+      "parcelSizeHint": "S : tient dans une boîte à chaussures (vêtements, bijoux, cosmétiques). L : un grand carton (chaussures, petit électroménager, sacs). XL : volumineux ou lourd (meubles, gros électroménager, tapis). Le prix de la livraison en dépend.",
+      "parcelSizes": {
+        "S": "S : petit",
+        "L": "L : grand",
+        "XL": "XL : très grand"
+      }
     },
     "variants": {
       "stockRequired": "Le stock est obligatoire.",
@@ -3302,7 +3327,20 @@
       "returnedTitle": "Retourné chez vous",
       "returnedBody": "Le colis refusé vous est revenu et son stock est de nouveau en vente.",
       "preparedDone": "Commande marquée comme préparée. Merci !",
-      "preparedAt": "Préparée le {date} — en attente du livreur"
+      "preparedAt": "Préparée le {date} — en attente du livreur",
+      "delivery": {
+        "sent": "Envoyé à la livraison",
+        "ref": "Référence",
+        "writeOnParcel": "Écrivez cette référence lisiblement sur le colis. Le livreur viendra le ramasser à votre adresse.",
+        "carrierStatus": "Statut transporteur : {status}",
+        "pending": "Demande de livraison en cours : elle sera envoyée dans quelques instants.",
+        "failed": "La demande de livraison a échoué. L’équipe CHOOSE’Tounsi a été prévenue et s’en occupe.",
+        "cancelled": "La demande de livraison a été annulée. L’équipe CHOOSE’Tounsi va vous contacter.",
+        "size": "Taille du colis : {size}",
+        "sentToast": "Préparé. Envoyé à la livraison, réf. {nid} : écrivez-la sur le colis.",
+        "failedToast": "Préparé. La demande de livraison a échoué : l’administrateur a été prévenu.",
+        "refTitle": "Référence de livraison : à écrire sur le colis"
+      }
     },
     "earnings": {
       "loadFailed": "Impossible de charger les revenus.",
@@ -5587,8 +5625,13 @@
       "wilaya": "Veuillez choisir votre gouvernorat.",
       "delegation": "Veuillez saisir votre délégation ou ville.",
       "address": "Veuillez saisir votre adresse.",
-      "postalCode": "Le code postal doit comporter 4 chiffres."
-    }
+      "postalCode": "Le code postal doit comporter 4 chiffres.",
+      "delegationPick": "Veuillez choisir votre délégation dans la liste."
+    },
+    "selectWilayaFirst": "Choisissez d’abord le gouvernorat",
+    "selectDelegation": "Choisissez votre délégation",
+    "loadingDelegations": "Chargement des délégations…",
+    "reselectRegion": "Veuillez resélectionner votre gouvernorat et votre délégation dans la liste : notre transporteur a besoin des noms exacts. Nous mettrons à jour cette adresse pour la prochaine fois."
   },
   "sellerPickup": {
     "title": "Adresse d’enlèvement",
