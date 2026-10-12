@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from 'react'
 import { complaintApi } from '@/lib/complaintApi'
-import type { Complaint, EligibleOrder, ComplaintType } from '@/types/complaint'
+import type { BuyerComplaint, EligibleOrder, ComplaintType } from '@/types/complaint'
 import { COMPLAINT_TYPE_LABELS, SELLER_FAULT_TYPES } from '@/types/complaint'
 import ReturnItemsPicker, { returnLines } from '@/app/components/returns/ReturnItemsPicker'
 import ProofPhotosInput from '@/app/components/returns/ProofPhotosInput'
@@ -136,7 +136,7 @@ const baseInputStyle: React.CSSProperties = {
 // ─────────────────────────────────────────────────────────────────────────────
 interface ComplaintFormProps {
   prefilledOrderId?: number
-  onSuccess?: (complaint: Complaint) => void
+  onSuccess?: (complaint: BuyerComplaint) => void
   onCancel?: () => void
   compact?: boolean
 }

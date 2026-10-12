@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { complaintApi } from '@/lib/complaintApi'
-import type { Complaint, TimelineStep } from '@/types/complaint'
+import type { BuyerComplaint, TimelineStep } from '@/types/complaint'
 import { statusConfig } from '@/types/complaint'
 import { useFormat } from '@/lib/i18n/useFormat'
 
@@ -30,7 +30,7 @@ export function ReturnStatusBadge({ status }: { status: string }) {
  * (amount, method, reference once refunded) and the client's actions —
  * escalate a shop refusal, or withdraw a request not answered yet.
  */
-export default function ReturnTracking({ complaint, onChanged }: { complaint: Complaint; onChanged?: (c: Complaint) => void }) {
+export default function ReturnTracking({ complaint, onChanged }: { complaint: BuyerComplaint; onChanged?: (c: BuyerComplaint) => void }) {
   const t   = useTranslations('returns')
   const fmt = useFormat()
   const [busy, setBusy]       = useState<null | 'escalate' | 'cancel'>(null)

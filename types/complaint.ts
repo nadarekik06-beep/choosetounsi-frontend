@@ -205,6 +205,17 @@ export interface Complaint {
   refund_task_id?:     number | null
 }
 
+/**
+ * A return as the BUYER receives it (/api/client/complaints…, backend
+ * BuyerComplaintResource): no internal ids, staff notes or seller/finance data.
+ * Seller and admin screens keep the full Complaint.
+ */
+export type BuyerComplaint = Omit<Complaint,
+  'user_id' | 'seller_id' | 'order_item_ids' | 'image_path' | 'reviewed_at' | 'refund_task_id' | 'user' | 'seller' | 'order'
+> & {
+  order?: { id: number; order_number: string; status: string; created_at?: string | null } | null
+}
+
 export interface ReturnLineInput {
   order_item_id: number
   quantity:      number

@@ -3,7 +3,7 @@
  */
 
 import { fallbackError } from '@/lib/i18n/clientLocale'
-import type { Complaint, ComplaintFormPayload, EligibleOrder } from '@/types/complaint'
+import type { BuyerComplaint, Complaint, ComplaintFormPayload, EligibleOrder } from '@/types/complaint'
 
 const RAW_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 const API_URL = RAW_URL.endsWith('/api') ? RAW_URL : `${RAW_URL}/api`
@@ -64,7 +64,7 @@ export const complaintApi = {
   },
 
   getOne: (id: number) =>
-    jsonRequest<{ success: boolean; data: Complaint }>('GET', `/client/complaints/${id}`),
+    jsonRequest<{ success: boolean; data: BuyerComplaint }>('GET', `/client/complaints/${id}`),
 
   /** Multipart: proof photos + either return_all or items[i][order_item_id|quantity]. */
   submit: (payload: ComplaintFormPayload) => {
@@ -82,16 +82,16 @@ export const complaintApi = {
         fd.append(`items[${i}][quantity]`,      String(l.quantity))
       })
     }
-    return formRequest<{ success: boolean; message: string; data: Complaint; returns: Complaint[] }>('/client/complaints', fd)
+    return formRequest<{ success: boolean; message: string; data: BuyerComplaint; returns: BuyerComplaint[] }>('/client/complaints', fd)
   },
 
   /** Contest the shop's refusal: ChooseTounsi decides. */
   escalate: (id: number, note?: string) =>
-    jsonRequest<{ success: boolean; message: string; data: Complaint }>('PATCH', `/client/complaints/${id}/escalate`, { note }),
+    jsonRequest<{ success: boolean; message: string; data: BuyerComplaint }>('PATCH', `/client/complaints/${id}/escalate`, { note }),
 
   /** Withdraw a request the shop hasn't answered yet. */
   cancel: (id: number) =>
-    jsonRequest<{ success: boolean; message: string; data: Complaint }>('PATCH', `/client/complaints/${id}/cancel`),
+    jsonRequest<{ success: boolean; message: string; data: BuyerComplaint }>('PATCH', `/client/complaints/${id}/cancel`),
 }
 
 // ─── Seller API ───────────────────────────────────────────────────────────────

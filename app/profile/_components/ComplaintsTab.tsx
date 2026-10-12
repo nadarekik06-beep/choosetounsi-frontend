@@ -9,7 +9,7 @@ import { useFormat } from '@/lib/i18n/useFormat'
 import type { ProfileOverview } from '@/lib/profileApi'
 import { EmptyState, Skeleton } from '@/components/profile/ui'
 
-interface Complaint {
+interface BuyerComplaint {
   id: number
   reference: string | null
   status: string
@@ -29,11 +29,11 @@ export default function ComplaintsTab({ data }: { data: ProfileOverview | null }
   const tc  = useTranslations('complaints')
   const tr  = useTranslations('returns')
   const fmt = useFormat()
-  const [list, setList] = useState<Complaint[] | null>(null)
+  const [list, setList] = useState<BuyerComplaint[] | null>(null)
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    api.get<{ data: { data: Complaint[] } }>('/client/complaints', { params: { per_page: 10 } })
+    api.get<{ data: { data: BuyerComplaint[] } }>('/client/complaints', { params: { per_page: 10 } })
       .then(r => setList(r.data.data.data))
       .catch(() => setError(true))
   }, [])

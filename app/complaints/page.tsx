@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { isAuthenticated } from '@/lib/auth'
 import { complaintApi } from '@/lib/complaintApi'
-import type { Complaint } from '@/types/complaint'
+import type { BuyerComplaint } from '@/types/complaint'
 import { statusConfig } from '@/types/complaint'
 import ReturnTracking, { ReturnStatusBadge } from '@/app/components/returns/ReturnTracking'
 import { useTranslations } from 'next-intl'
@@ -29,7 +29,7 @@ function FocusFromQuery({ onFocus }: { onFocus: (id: number | null) => void }) {
   return null
 }
 
-function ComplaintCard({ complaint: initial, focused = false }: { complaint: Complaint; focused?: boolean }) {
+function ComplaintCard({ complaint: initial, focused = false }: { complaint: BuyerComplaint; focused?: boolean }) {
   const t   = useTranslations('complaints')
   const tr  = useTranslations('returns')
   const fmt = useFormat()
@@ -138,7 +138,7 @@ export default function MyComplaintsPage() {
   const t      = useTranslations('complaints')
   const tc     = useTranslations('common')
   const router = useRouter()
-  const [complaints, setComplaints] = useState<Complaint[]>([])
+  const [complaints, setComplaints] = useState<BuyerComplaint[]>([])
   const [focusId,    setFocusId]    = useState<number | null>(null)
   const [loading,    setLoading]    = useState(true)
   // holds the navigation loader until the first load is done
