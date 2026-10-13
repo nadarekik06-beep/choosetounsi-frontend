@@ -6012,5 +6012,65 @@
       "returned_to_seller": "La boutique a reçu l'article. Le livreur vous a déjà remboursé en espèces.",
       "refunded": "Retour terminé — le livreur vous a remboursé en espèces."
     }
+  },
+  "pickupAddress": {
+    "title": "Adresse d'enlèvement",
+    "subtitle": "Là où le livreur Intigo récupère vos colis. Soyez précis : une mauvaise adresse envoie le livreur au mauvais endroit.",
+    "adresse": "Adresse complète",
+    "adressePlaceholder": "Ex. : 12 Rue des Fleurs, Imm. Jasmin, Apt 4",
+    "zone": "Zone (Délégation/Secteur)",
+    "zonePlaceholder": "Tapez pour chercher : Bab Bhar, La Soukra…",
+    "zoneHint": "Choisissez votre délégation ou votre secteur dans la liste.",
+    "zoneLoading": "Recherche…",
+    "zoneNoResults": "Aucune zone trouvée. Essayez un autre nom.",
+    "zoneFailed": "Recherche impossible pour le moment. Réessayez.",
+    "zoneMustPick": "Choisissez une zone dans la liste (le texte libre n’est pas accepté).",
+    "zoneClear": "Effacer la zone",
+    "badge": {
+      "DELEGATION": "Délégation",
+      "SECTEUR": "Secteur"
+    },
+    "gouvernorat": "Gouvernorat",
+    "map": "Position sur la carte",
+    "mapHelp": "Cliquez sur la carte pour placer le marqueur ou utilisez 'Ma Position'",
+    "myPosition": "Ma Position",
+    "locating": "Localisation…",
+    "geoDenied": "Accès à la position refusé. Placez le marqueur à la main sur la carte.",
+    "geoUnavailable": "Position indisponible. Placez le marqueur à la main sur la carte.",
+    "mapLoading": "Chargement de la carte…",
+    "mapFailed": "La carte n’a pas pu être chargée. Rechargez la page.",
+    "coords": "Coordonnées",
+    "pinMissing": "Aucun marqueur placé pour l’instant.",
+    "pinFar": "Le marqueur est à environ {km} km de « {zone} ». Vérifiez qu’il est bien sur votre local.",
+    "contact": "Personne à contacter",
+    "phone": "Téléphone",
+    "postalCode": "Code postal",
+    "notes": "Indications pour le livreur",
+    "notesPlaceholder": "Horaires, étage, repère…",
+    "save": "Enregistrer l’adresse",
+    "saved": "Adresse enregistrée.",
+    "unchanged": "Aucune modification.",
+    "loadFailed": "Impossible de charger votre adresse d’enlèvement.",
+    "pendingTitle": "Validation en attente",
+    "pendingNotice": "Votre adresse a été modifiée. Elle doit être validée par l’équipe CHOOSE’Tounsi avant vos prochains enlèvements : les nouvelles commandes attendront cette validation.",
+    "needsReviewNotice": "Complétez votre adresse avec la zone Intigo et la position sur la carte : le livreur en a besoin pour venir chercher vos colis.",
+    "verifiedNotice": "Adresse validée par l’équipe CHOOSE’Tounsi.",
+    "status": {
+      "needs_review": "À compléter",
+      "changed": "Modifiée, en attente de validation",
+      "unverified": "En attente de validation",
+      "verified": "Validée, activation en cours",
+      "created": "Validée et active"
+    },
+    "errors": {
+      "adresse": "Saisissez l’adresse complète (au moins 5 caractères).",
+      "adresseTooLong": "Adresse trop longue (200 caractères max).",
+      "zone": "Choisissez une zone dans la liste.",
+      "pin": "Placez le marqueur sur la carte (ou utilisez « Ma Position »).",
+      "pinOutside": "Le marqueur doit être placé en Tunisie.",
+      "contact": "Saisissez la personne à contacter.",
+      "phone": "Numéro tunisien invalide : 8 chiffres commençant par 2, 4, 5 ou 9.",
+      "postalCode": "Le code postal doit comporter 4 chiffres."
+    }
   }
 }

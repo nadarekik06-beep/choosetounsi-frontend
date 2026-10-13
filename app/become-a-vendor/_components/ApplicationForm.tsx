@@ -2,14 +2,18 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import {
-  X, Upload, CheckCircle, AlertCircle, ChevronDown,
+  X, Upload, CheckCircle, AlertCircle,
   User, Check, Clock, RefreshCw, Eye,
 } from 'lucide-react'
 import { api, getUser } from '@/lib/auth'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
-import { WILAYAS, useWilayaLabel } from '@/lib/i18n/wilayas'
 import { validateTunisianPhone } from '@/lib/shippingAddress'
+import PickupAddressFields from '@/components/pickup/PickupAddressFields'
+import {
+  emptyPickupAddress, pickupErrorsFromApi, pickupFromApi, pickupPayload, validatePickupAddress,
+  type PickupAddressValue, type PickupErrors,
+} from '@/lib/pickupAddress'
 
 import BrandLoader from '@/components/brand/BrandLoader'
 const FALLBACK_CATEGORIES = [
@@ -24,8 +28,8 @@ const COMPLETENESS_WEIGHTS = {
   business_name:        10,
   categories:           10,
   subcategories:        5,
-  wilaya:               8,
-  city:                 7,
+  pickup_zone:          8,
+  pickup_pin:           7,
   profile_picture:      20,
   sample_images:        15,
   sample_images_bonus:  5,
@@ -39,12 +43,7 @@ interface FormState {
   full_name: string
   phone_number: string
   business_name: string
-  wilaya: string
-  city: string
-  // Pickup point for the courier — printed on every delivery slip
-  pickup_address: string
-  pickup_postal_code: string
-  pickup_notes: string
+  // The pickup address (Intigo form fields) lives in its own state: PickupAddressValue
   facebook_url: string
   instagram_url: string
   website_url: string
@@ -97,9 +96,7 @@ export interface ExistingApplication {
   pricing_range: string | null
   wilaya: string
   city: string
-  pickup_address?: string | null
-  pickup_postal_code?: string | null
-  pickup_notes?: string | null
+  pickup?: Record<string, unknown> | null
   business_description: string | null
   profile_picture_url: string | null
   sample_images_urls: string[]
@@ -220,7 +217,7 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
   const t   = useTranslations('vendor')
   const tc  = useTranslations('common')
   const tsp = useTranslations('sellerPickup')
-  const wilayaLabel = useWilayaLabel()
+  const tpa = useTranslations('pickupAddress')
 
   const [existingApp,  setExistingApp]  = useState<ExistingApplication | null>(null)
   const [appLoading,   setAppLoading]   = useState(false)
@@ -236,11 +233,13 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
     const user = typeof window !== 'undefined' ? getUser() : null
     return {
       full_name: user?.name ?? '', phone_number: '', business_name: '',
-      wilaya: '', city: '', pickup_address: '', pickup_postal_code: '', pickup_notes: '',
       facebook_url: '', instagram_url: '', website_url: '',
       pricing_range: '', business_description: '',
     }
   })
+
+  const [pickup,       setPickup]       = useState<PickupAddressValue>(emptyPickupAddress)
+  const [pickupErrors, setPickupErrors] = useState<PickupErrors>({})
 
   const [namePrefilled] = useState<boolean>(() =>
     !!(typeof window !== 'undefined' ? getUser()?.name : null)
@@ -268,8 +267,8 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
     if (form.business_name.trim())     score += COMPLETENESS_WEIGHTS.business_name
     if (selectedCategories.length > 0) score += COMPLETENESS_WEIGHTS.categories
     if (selectedSubcats.length > 0)    score += COMPLETENESS_WEIGHTS.subcategories
-    if (form.wilaya)                   score += COMPLETENESS_WEIGHTS.wilaya
-    if (form.city.trim())              score += COMPLETENESS_WEIGHTS.city
+    if (pickup.zone)                   score += COMPLETENESS_WEIGHTS.pickup_zone
+    if (pickup.latitude != null)       score += COMPLETENESS_WEIGHTS.pickup_pin
     if (profilePic || profilePicExisting) score += COMPLETENESS_WEIGHTS.profile_picture
     if (samples.length >= 1)           score += COMPLETENESS_WEIGHTS.sample_images
     if (samples.length >= 2)           score += COMPLETENESS_WEIGHTS.sample_images_bonus
@@ -288,7 +287,7 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
     if (selectedCategories.length === 0) return t('hints.category')
     if (selectedSubcats.length === 0 && Object.keys(subcategoriesMap).length > 0)
       return t('hints.subcategory')
-    if (!form.wilaya || !form.city.trim()) return t('hints.location')
+    if (!pickup.zone || pickup.latitude == null) return t('hints.location')
     if (!profilePic && !profilePicExisting)
       return t('hints.picture')
     if (samples.length === 0) return t('hints.sample')
@@ -376,17 +375,14 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
         full_name:            app.full_name            ?? '',
         phone_number:         app.phone_number         ?? '',
         business_name:        app.business_name        ?? '',
-        wilaya:               app.wilaya               ?? '',
-        city:                 app.city                 ?? '',
-        pickup_address:       app.pickup_address       ?? '',
-        pickup_postal_code:   app.pickup_postal_code   ?? '',
-        pickup_notes:         app.pickup_notes         ?? '',
         facebook_url:         app.facebook_url         ?? '',
         instagram_url:        app.instagram_url        ?? '',
         website_url:          app.website_url          ?? '',
         pricing_range:        (app.pricing_range as FormState['pricing_range']) ?? '',
         business_description: app.business_description ?? '',
       })
+
+      setPickup(pickupFromApi(app.pickup ?? null))
 
       setSelectedCategories(app.business_categories    ?? [])
       setSelectedSubcats(app.business_subcategories    ?? [])
@@ -482,10 +478,9 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
       if (selectedCategories.length === 0) errs.business_category = t('errors.category')
     }
     if (s === 2) {
-      if (!form.wilaya)      errs.wilaya = t('errors.wilaya')
-      if (!form.city.trim()) errs.city   = t('errors.city')
-      if (form.pickup_address.trim().length < 5)          errs.pickup_address     = tsp('errors.street')
-      if (!/^\d{4}$/.test(form.pickup_postal_code.trim())) errs.pickup_postal_code = tsp('errors.postalCode')
+      const pe = validatePickupAddress(pickup)
+      setPickupErrors(pe)
+      if (Object.keys(pe).length) errs.pickup = 'invalid'
     }
     if (s === 3) {
       if (!profilePic && !profilePicExisting) errs.profile_picture = t('errors.picture')
@@ -495,7 +490,28 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
     return Object.keys(errs).length === 0
   }
 
-  const next = () => { if (validateStep(step)) setStep(s => (s < 3 ? (s + 1) as 1|2|3 : s)) }
+  const next = () => {
+    if (!validateStep(step)) return
+    // The contact for the courier defaults to the applicant
+    if (step === 1) {
+      setPickup(p => ({
+        ...p,
+        contact_name: p.contact_name || form.full_name,
+        phone:        p.phone || form.phone_number,
+      }))
+    }
+    setStep(s => (s < 3 ? (s + 1) as 1|2|3 : s))
+  }
+
+  const changePickup = (v: PickupAddressValue) => {
+    setPickup(v)
+    setPickupErrors(prev => {
+      const now = validatePickupAddress(v)
+      const next: PickupErrors = {}
+      for (const k of Object.keys(prev) as (keyof PickupErrors)[]) if (now[k]) next[k] = prev[k]
+      return next
+    })
+  }
   const prev = () => setStep(s => (s > 1 ? (s - 1) as 1|2|3 : s))
 
   // ── Submit ────────────────────────────────────────────────────────────
@@ -508,11 +524,11 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
     try {
       const fd = new FormData()
       const scalarFields: (keyof FormState)[] = [
-        'full_name', 'phone_number', 'business_name', 'wilaya', 'city',
-        'pickup_address', 'pickup_postal_code', 'pickup_notes',
+        'full_name', 'phone_number', 'business_name',
         'facebook_url', 'instagram_url', 'website_url', 'pricing_range', 'business_description',
       ]
       scalarFields.forEach(k => { if (form[k]) fd.append(k, form[k] as string) })
+      Object.entries(pickupPayload(pickup)).forEach(([k, v]) => { if (v !== null && v !== '') fd.append(k, String(v)) })
       fd.append('business_category', selectedCategories[0] ?? '')
       selectedCategories.forEach((cat, i) => fd.append(`business_categories[${i}]`, cat))
       selectedSubcats.forEach((sub, i)    => fd.append(`business_subcategories[${i}]`, sub))
@@ -550,6 +566,9 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
       const mapped: Record<string, string> = {}
       Object.entries(be).forEach(([k, v]) => { mapped[k] = Array.isArray(v) ? (v[0] as string) : String(v) })
       if (Object.keys(mapped).length) setErrors(mapped)
+      // Address errors: show them on step 2, next to the field
+      const pe = pickupErrorsFromApi(be as Record<string, string[]>)
+      if (Object.keys(pe).length) { setPickupErrors(pe); setStep(2) }
     } finally {
       setLoading(false)
     }
@@ -781,29 +800,9 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
                     <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:12, padding:'12px 16px' }}>
                       <p style={{ fontSize:'0.78rem', color:'#dc2626', fontWeight:600, margin:0 }}>{t('locationNote')}</p>
                     </div>
-                    <Field label={t('fields.wilaya')} id="wilaya" error={errors.wilaya}>
-                      <div style={{ position:'relative' }}>
-                        <select id="wilaya" value={form.wilaya} onChange={handleChange('wilaya')} className={inputCls(errors.wilaya) + ' appearance-none pe-10'}>
-                          <option value="">{t('fields.wilayaPlaceholder')}</option>
-                          {WILAYAS.map(w => <option key={w} value={w}>{wilayaLabel(w)}</option>)}
-                        </select>
-                        <ChevronDown size={15} style={{ position:'absolute', insetInlineEnd:12, top:'50%', transform:'translateY(-50%)', color:'#aaa', pointerEvents:'none' }} />
-                      </div>
-                    </Field>
-                    <Field label={t('fields.city')} id="city" error={errors.city}>
-                      <input id="city" type="text" placeholder={t('fields.cityPlaceholder')} value={form.city} onChange={handleChange('city')} className={inputCls(errors.city)} />
-                    </Field>
-                    {/* Pickup point: where the courier collects parcels (printed on delivery slips) */}
-                    <p style={{ fontSize:'0.78rem', color:'#6b7280', margin:0 }}>{tsp('subtitle')}</p>
-                    <Field label={tsp('street')} id="pickup_address" error={errors.pickup_address}>
-                      <input id="pickup_address" type="text" dir="auto" autoComplete="street-address" placeholder={tsp('streetPlaceholder')} value={form.pickup_address} onChange={handleChange('pickup_address')} className={inputCls(errors.pickup_address)} maxLength={500} />
-                    </Field>
-                    <Field label={tsp('postalCode')} id="pickup_postal_code" error={errors.pickup_postal_code}>
-                      <input id="pickup_postal_code" type="text" dir="ltr" inputMode="numeric" autoComplete="postal-code" placeholder="1000" maxLength={4} value={form.pickup_postal_code} onChange={handleChange('pickup_postal_code')} className={inputCls(errors.pickup_postal_code)} />
-                    </Field>
-                    <Field label={tsp('notes')} id="pickup_notes" error={errors.pickup_notes} optional>
-                      <input id="pickup_notes" type="text" dir="auto" placeholder={tsp('notesPlaceholder')} value={form.pickup_notes} onChange={handleChange('pickup_notes')} className={inputCls(errors.pickup_notes)} maxLength={500} />
-                    </Field>
+                    {/* Pickup address: Intigo's "Nouvelle adresse" fields (zone + map pin required) */}
+                    <p style={{ fontSize:'0.78rem', color:'#6b7280', margin:0 }}>{tpa('subtitle')}</p>
+                    <PickupAddressFields value={pickup} onChange={changePickup} errors={pickupErrors} disabled={loading} idPrefix="apply-pk" />
                   </>
                 )}
 

@@ -6012,5 +6012,65 @@
       "returned_to_seller": "The shop received the item. You were already paid back in cash by the courier.",
       "refunded": "Return complete — you were paid back in cash by the courier."
     }
+  },
+  "pickupAddress": {
+    "title": "Pickup address",
+    "subtitle": "Where the Intigo courier collects your parcels. Be precise: a wrong address sends the courier to the wrong place.",
+    "adresse": "Full address",
+    "adressePlaceholder": "e.g. 12 Rue des Fleurs, Imm. Jasmin, Apt 4",
+    "zone": "Zone (Delegation/Sector)",
+    "zonePlaceholder": "Type to search: Bab Bhar, La Soukra…",
+    "zoneHint": "Pick your delegation or sector from the list.",
+    "zoneLoading": "Searching…",
+    "zoneNoResults": "No zone found. Try another name.",
+    "zoneFailed": "Search unavailable right now. Try again.",
+    "zoneMustPick": "Pick a zone from the list (free text is not accepted).",
+    "zoneClear": "Clear the zone",
+    "badge": {
+      "DELEGATION": "Delegation",
+      "SECTEUR": "Sector"
+    },
+    "gouvernorat": "Governorate",
+    "map": "Position on the map",
+    "mapHelp": "Click the map to place the marker or use 'My position'",
+    "myPosition": "My position",
+    "locating": "Locating…",
+    "geoDenied": "Location access denied. Place the marker on the map by hand.",
+    "geoUnavailable": "Location unavailable. Place the marker on the map by hand.",
+    "mapLoading": "Loading the map…",
+    "mapFailed": "The map could not be loaded. Reload the page.",
+    "coords": "Coordinates",
+    "pinMissing": "No marker placed yet.",
+    "pinFar": "The marker is about {km} km from “{zone}”. Check that it is on your premises.",
+    "contact": "Contact person",
+    "phone": "Phone",
+    "postalCode": "Postal code",
+    "notes": "Notes for the courier",
+    "notesPlaceholder": "Opening hours, floor, landmark…",
+    "save": "Save address",
+    "saved": "Address saved.",
+    "unchanged": "Nothing changed.",
+    "loadFailed": "Could not load your pickup address.",
+    "pendingTitle": "Validation pending",
+    "pendingNotice": "Your address was changed. The CHOOSE’Tounsi team must validate it before your next pickups: new orders will wait for this validation.",
+    "needsReviewNotice": "Complete your address with the Intigo zone and the map position: the courier needs them to collect your parcels.",
+    "verifiedNotice": "Address validated by the CHOOSE’Tounsi team.",
+    "status": {
+      "needs_review": "To complete",
+      "changed": "Changed, awaiting validation",
+      "unverified": "Awaiting validation",
+      "verified": "Validated, activation in progress",
+      "created": "Validated and active"
+    },
+    "errors": {
+      "adresse": "Enter the full address (at least 5 characters).",
+      "adresseTooLong": "Address too long (200 characters max).",
+      "zone": "Pick a zone from the list.",
+      "pin": "Place the marker on the map (or use “My position”).",
+      "pinOutside": "The marker must be in Tunisia.",
+      "contact": "Enter the contact person.",
+      "phone": "Invalid Tunisian number. Enter 8 digits starting with 2, 4, 5 or 9.",
+      "postalCode": "Postal code must be 4 digits."
+    }
   }
 }

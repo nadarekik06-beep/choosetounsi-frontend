@@ -510,7 +510,7 @@ export const storeProfileApi = {
   /** GET /api/seller/pickup-address — where the courier collects parcels (+ missing fields) */
   getPickup: () => jsonRequest<any>('GET', '/seller/pickup-address'),
 
-  /** PUT /api/seller/pickup-address — pickup fields only, no re-review */
+  /** PUT /api/seller/pickup-address — pickup fields only, no re-review (admin re-validates the address) */
   updatePickup: (data: PickupAddressInput) => jsonRequest<any>('PUT', '/seller/pickup-address', data),
 
   /** GET /api/seller/stock-alerts — low-stock alert settings of the shop */
@@ -556,14 +556,7 @@ export interface StockAlertSettings extends StockAlertSettingsInput {
   group_window: number
 }
 
-export interface PickupAddressInput {
-  full_name:          string
-  phone_number:       string
-  pickup_address:     string
-  city:               string
-  pickup_postal_code: string
-  wilaya:             string
-  pickup_notes?:      string
-}
+/** Body of PUT /api/seller/pickup-address (lib/pickupAddress.ts pickupPayload()). */
+export type PickupAddressInput = Record<string, string | number | null>
 
 export default api
