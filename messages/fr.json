@@ -663,7 +663,8 @@
       "phoneRequired": "Le numéro de téléphone est obligatoire.",
       "phoneInvalid": "Numéro tunisien invalide : 8 chiffres commençant par 2, 4, 5 ou 9.",
       "productMissing": "Informations produit manquantes.",
-      "placeFailed": "Impossible de passer la commande. Veuillez réessayer."
+      "placeFailed": "Impossible de passer la commande. Veuillez réessayer.",
+      "fixAddress": "Certaines informations de livraison sont à corriger : vérifiez les champs en rouge."
     },
     "phone": {
       "hintDigits": "{count}/8 chiffres",

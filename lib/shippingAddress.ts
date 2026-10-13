@@ -89,6 +89,27 @@ export function validateShippingAddress(f: ShippingAddressForm, regions: boolean
   return e
 }
 
+/**
+ * A 422 from /checkout, /checkout/buy-now or /addresses (Laravel `errors`:
+ * field → messages) → the same message keys the client-side check uses, so
+ * the fields light up in the reader's language. The courier ids land on the
+ * governorate / delegation dropdowns.
+ */
+export function shippingAddressErrorsFromServer(errors: Record<string, unknown> | undefined): ShippingAddressErrors {
+  const e: ShippingAddressErrors = {}
+  if (!errors) return e
+  const has = (k: string) => k in errors
+  if (has('recipient_name')) e.recipient_name = 'recipient'
+  if (has('phone')) e.phone = 'phoneInvalid'
+  if (has('phone_secondary')) e.phone_secondary = 'phoneInvalid'
+  if (has('wilaya') || has('intigo_city_id')) e.wilaya = 'wilaya'
+  if (has('intigo_district_id')) e.delegation = 'delegationPick'
+  else if (has('delegation')) e.delegation = 'delegation'
+  if (has('address')) e.address = 'address'
+  if (has('postal_code')) e.postal_code = 'postalCode'
+  return e
+}
+
 /** A saved address from before structured addresses / the courier's lists: needs completing at checkout. */
 export const isCompleteShippingAddress = (f: ShippingAddressForm, regions: boolean = regionsRequired()) =>
   Object.keys(validateShippingAddress(f, regions)).length === 0

@@ -9,8 +9,8 @@
  * Cached for the page's lifetime: the lists change a few times a year.
  */
 
-import { useEffect, useState } from 'react'
-import { API_URL } from '@/lib/constants'
+import { useCallback, useEffect, useState } from 'react'
+import { API_BASE } from '@/lib/constants'
 
 export interface RegionCity { id: number; name: string; name_ar: string | null; wilaya: string | null }
 export interface RegionDistrict { id: number; name: string; name_ar: string | null }
@@ -19,14 +19,18 @@ let citiesCache: { available: boolean; cities: RegionCity[] } | null = null
 let citiesPromise: Promise<{ available: boolean; cities: RegionCity[] }> | null = null
 const districtsCache = new Map<number, RegionDistrict[]>()
 const districtsPromises = new Map<number, Promise<RegionDistrict[]>>()
+type CitiesState = { available: boolean; cities: RegionCity[] }
+const citiesListeners = new Set<(c: CitiesState) => void>()   // mounted useRegions() hooks
 
 export function loadCities(): Promise<{ available: boolean; cities: RegionCity[] }> {
   if (citiesCache) return Promise.resolve(citiesCache)
-  citiesPromise ??= fetch(`${API_URL}/regions/cities`, { headers: { Accept: 'application/json' } })
+  citiesPromise ??= fetch(`${API_BASE}/regions/cities`, { headers: { Accept: 'application/json' } })
     .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
     .then(json => {
-      citiesCache = { available: Boolean(json.available) && Array.isArray(json.data) && json.data.length > 0, cities: json.data ?? [] }
-      return citiesCache
+      const loaded: CitiesState = { available: Boolean(json.available) && Array.isArray(json.data) && json.data.length > 0, cities: json.data ?? [] }
+      citiesCache = loaded
+      citiesListeners.forEach(l => l(loaded))
+      return loaded
     })
     .catch(() => {
       citiesPromise = null   // try again next time; free-text fields meanwhile
@@ -40,7 +44,7 @@ export function loadDistricts(cityId: number): Promise<RegionDistrict[]> {
   if (cached) return Promise.resolve(cached)
   let p = districtsPromises.get(cityId)
   if (!p) {
-    p = fetch(`${API_URL}/regions/cities/${cityId}/districts`, { headers: { Accept: 'application/json' } })
+    p = fetch(`${API_BASE}/regions/cities/${cityId}/districts`, { headers: { Accept: 'application/json' } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then(json => {
         const list: RegionDistrict[] = json.data ?? []
@@ -56,15 +60,22 @@ export function loadDistricts(cityId: number): Promise<RegionDistrict[]> {
 /** Last known availability (false until the lists are loaded). */
 export const regionsRequired = (): boolean => citiesCache?.available ?? false
 
-/** { ready, available, cities } — re-renders once the lists arrive. */
+/**
+ * { ready, available, cities, reload } — re-renders once the lists arrive.
+ * reload() asks again after a failed load (e.g. the server said a city must be
+ * picked); every mounted hook gets the lists when they arrive.
+ */
 export function useRegions() {
   const [state, setState] = useState(() => ({ ready: citiesCache !== null, available: citiesCache?.available ?? false, cities: citiesCache?.cities ?? [] }))
   useEffect(() => {
     let alive = true
-    loadCities().then(c => { if (alive) setState({ ready: true, available: c.available, cities: c.cities }) })
-    return () => { alive = false }
+    const listener = (c: CitiesState) => { if (alive) setState({ ready: true, available: c.available, cities: c.cities }) }
+    citiesListeners.add(listener)
+    loadCities().then(listener)
+    return () => { alive = false; citiesListeners.delete(listener) }
   }, [])
-  return state
+  const reload = useCallback(() => loadCities(), [])
+  return { ...state, reload }
 }
 
 export function useDistricts(cityId: number | null) {

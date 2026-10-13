@@ -663,7 +663,8 @@
       "phoneRequired": "Phone number is required.",
       "phoneInvalid": "Invalid Tunisian number. Enter 8 digits starting with 2, 4, 5 or 9.",
       "productMissing": "Product data missing.",
-      "placeFailed": "Failed to place order. Please try again."
+      "placeFailed": "Failed to place order. Please try again.",
+      "fixAddress": "Some delivery details need fixing: check the fields in red."
     },
     "phone": {
       "hintDigits": "{count}/8 digits",

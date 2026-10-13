@@ -34,7 +34,7 @@ import ShippingAddressFields from '@/components/address/ShippingAddressFields'
 import { useRegions } from '@/lib/regions'
 import {
   emptyShippingAddress, shippingAddressFrom, validateShippingAddress, isCompleteShippingAddress,
-  shippingAddressPayload, formatShippingAddress, type ShippingAddressForm,
+  shippingAddressPayload, shippingAddressErrorsFromServer, formatShippingAddress, type ShippingAddressForm,
 } from '@/lib/shippingAddress'
 
 import BrandLoader from '@/components/brand/BrandLoader'
@@ -538,6 +538,7 @@ export default function CheckoutPage() {
   const [loading,  setLoading]  = useState(false)
   const [success,  setSuccess]  = useState<{ order_number: string; total: number; payment_method: PaymentMethod } | null>(null)
   const [apiError, setApiError] = useState('')
+  const deliveryRef = useRef<HTMLDivElement>(null)
 
   // ── Coupons — keyed by seller_id, one code per seller ──────────────────────
   const [couponStates, setCouponStates] = useState<Record<number, CouponState>>({})
@@ -731,7 +732,17 @@ export default function CheckoutPage() {
   const validate = (): boolean => {
     const e = validateShippingAddress(form) as Record<string, string>
     setErrors(e)
-    return Object.keys(e).length === 0
+    const ok = Object.keys(e).length === 0
+    if (!ok) showAddressErrors()
+    return ok
+  }
+
+  // Address errors (ours or the server's): show the form on the faulty fields
+  // (a saved address is hidden behind its summary) and say so by the button
+  const showAddressErrors = () => {
+    if (selectedAddressId !== null) setSavedNeedsCompletion(true)
+    setApiError(t('errors.fixAddress'))
+    requestAnimationFrame(() => deliveryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
   const bnVariant        = bnProduct?.variants?.find(v => v.id === bnVariantId) ?? null
@@ -830,7 +841,18 @@ export default function CheckoutPage() {
         router.push(`/complete-profile?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)
         return
       }
-      setApiError(err.message ?? t('errors.placeFailed'))
+      // Validation (422 with field errors): mark the fields, in the reader's language
+      const fieldErrors = err.status === 422 ? shippingAddressErrorsFromServer(err.data?.errors) : {}
+      if (Object.keys(fieldErrors).length > 0) {
+        setErrors(fieldErrors as Record<string, string>)
+        showAddressErrors()
+        // The server wants a governorate / delegation from the courier's lists we could not load: ask again
+        if (err.data?.errors && ('intigo_city_id' in err.data.errors || 'intigo_district_id' in err.data.errors) && !regions.available) {
+          regions.reload()
+        }
+        return
+      }
+      setApiError(err.message || t('errors.placeFailed'))
       if (err.data?.code === 'payment_method_unavailable') {
         setPaymentMethod('cod')
         showComingSoon()
@@ -992,14 +1014,14 @@ export default function CheckoutPage() {
           <form onSubmit={handleSubmit} style={{ animation: 'fadeUp 0.4s ease both', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* Delivery Information */}
-            <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
+            <div ref={deliveryRef} style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', overflow: 'hidden', scrollMarginTop: 90 }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <MapPin size={16} color="#dc2626" />
                 <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>{t('deliveryInfo')}</h2>
               </div>
               <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {apiError && (
-                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 14px', fontSize: 13, color: '#dc2626', fontWeight: 600 }}>
+                  <div role="alert" style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 14px', fontSize: 13, color: '#dc2626', fontWeight: 600 }}>
                     {apiError}
                   </div>
                 )}
@@ -1206,6 +1228,12 @@ export default function CheckoutPage() {
                           : t('codToPay', { amount: fmt(summaryTotal) })}
                       </p>
                     </div>
+                  </div>
+                )}
+                {apiError && (
+                  <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 12, padding: '9px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, fontSize: 12.5, fontWeight: 600, color: '#dc2626' }}>
+                    <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span>{apiError}</span>
                   </div>
                 )}
                 <button
