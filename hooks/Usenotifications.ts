@@ -7,6 +7,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { NOTIFICATIONS_CHANGED, type AppNotification, type NotificationListResponse } from '@/lib/notificationApi'
 
+// Same token keys lib/sellerApi.ts sends: no token = signed out, nothing to fetch.
+function hasToken(): boolean {
+  if (typeof window === 'undefined') return false
+  return ['ct_auth_token', 'auth_token', 'token', 'access_token']
+    .some(k => !!(localStorage.getItem(k) ?? sessionStorage.getItem(k)))
+}
+
 interface NotificationApi {
   getAll(page?: number): Promise<NotificationListResponse>
   getUnreadCount(): Promise<number>
@@ -45,9 +52,11 @@ export function useNotifications({
 
   const prevUnread = useRef(0)
   const mounted    = useRef(true)
+  const failures   = useRef(0)   // consecutive failed calls: polling backs off while > 0
 
   // ── Fetch full list ───────────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
+    if (!hasToken()) return
     setLoading(true)
     try {
       const res = await api.getAll(1)
@@ -56,6 +65,7 @@ export function useNotifications({
       // Defensive: ensure data is always an array
       const data = Array.isArray(res?.data) ? res.data : []
       setItems(data)
+      failures.current = 0
 
       // Exact badge count: the list only holds the latest 20 rows
       try {
@@ -67,9 +77,9 @@ export function useNotifications({
       } catch {
         setUnreadCount(data.filter(n => !n.is_read).length)
       }
-    } catch (err) {
-      console.error('[useNotifications] fetchAll error:', err)
-      // Keep existing items on error — don't reset to undefined
+    } catch {
+      // Keep existing items on error (API down, network blip); polling backs off
+      failures.current++
     } finally {
       if (mounted.current) setLoading(false)
     }
@@ -79,9 +89,11 @@ export function useNotifications({
   const pollCount = useCallback(async () => {
     // Background tab: skip this tick (the next visible one catches up).
     if (typeof document !== 'undefined' && document.hidden) return
+    if (!hasToken()) return
     try {
       const count = await api.getUnreadCount()
       if (!mounted.current) return
+      failures.current = 0
 
       const n = typeof count === 'number' ? count : 0
       setUnreadCount(n)
@@ -94,7 +106,8 @@ export function useNotifications({
       }
       prevUnread.current = n
     } catch {
-      // Silently ignore poll errors (network blip etc.)
+      // Silently ignore poll errors (network blip etc.); the next tick waits longer
+      failures.current++
     }
   }, [api, fetchAll, onNewNotifications])
 
@@ -106,10 +119,20 @@ export function useNotifications({
   }, [fetchAll])
 
   // ── Polling ───────────────────────────────────────────────────────────────
+  // After repeated failures the delay doubles (up to 10× the interval); one success resets it.
   useEffect(() => {
     if (pollInterval <= 0) return
-    const id = setInterval(pollCount, pollInterval)
-    return () => clearInterval(id)
+    let id: ReturnType<typeof setTimeout>
+    let cancelled = false
+    const schedule = () => {
+      const delay = pollInterval * Math.min(2 ** Math.max(0, failures.current - 1), 10)
+      id = setTimeout(async () => {
+        await pollCount()
+        if (!cancelled) schedule()
+      }, delay)
+    }
+    schedule()
+    return () => { cancelled = true; clearTimeout(id) }
   }, [pollCount, pollInterval])
 
   // ── Back to the tab / window: catch up right away ────────────────────────

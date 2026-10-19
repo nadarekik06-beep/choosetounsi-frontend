@@ -23,7 +23,7 @@ import {
   Smartphone, Truck, AlertCircle, Ticket, X,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
-import { checkoutApi, walletApi, paymentApi, type BuyNowPayload, type CheckoutQuote, type QuotePayload } from '@/lib/shopApi'
+import { checkoutApi, walletApi, paymentApi, type BuyNowPayload, type CheckoutQuote, type CheckoutResponse, type QuotePayload } from '@/lib/shopApi'
 import { isAuthenticated } from '@/lib/auth'
 import { fetchPaymentInfo, COD_ONLY, type PaymentInfo } from '@/lib/platformApi'
 import type { UserAddress } from '@/app/account/addresses/page'
@@ -374,15 +374,6 @@ function AddressSelector({
 
 // ─── Delivery amount of one parcel ────────────────────────────────────────────
 
-/** Parcel size (S / L / XL) next to a shop's delivery fee: the fee depends on it. */
-function SizeChip({ size, title }: { size: string; title: string }) {
-  return (
-    <span title={title} aria-label={title} style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: '0.04em', color: '#475569', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 5, padding: '1px 5px', lineHeight: 1.4 }}>
-      {size}
-    </span>
-  )
-}
-
 function DeliveryAmount({ free, amount, freeLabel, fmt, small }: {
   free: boolean; amount: number; freeLabel: string; fmt: (n: number) => string; small?: boolean
 }) {
@@ -549,9 +540,9 @@ export default function CheckoutPage() {
     }
     const map = new Map<number, { sellerId: number; sellerName: string }>()
     for (const item of items) {
-      const sid = (item as any).seller_id
+      const sid = item.seller_id
       if (!sid) continue
-      if (!map.has(sid)) map.set(sid, { sellerId: sid, sellerName: (item as any).seller_name ?? t('sellerN', { id: sid }) })
+      if (!map.has(sid)) map.set(sid, { sellerId: sid, sellerName: item.seller_name ?? t('sellerN', { id: sid }) })
     }
     return Array.from(map.values())
   }, [isBuyNow, items, bnProduct, t])
@@ -630,7 +621,8 @@ export default function CheckoutPage() {
       const res = await checkoutApi.quote(payload)
       if (seq === quoteSeq.current) setQuote(res.data)
       return res.data
-    } catch (err: any) {
+    } catch (caught) {
+      const err = caught as Error
       if (seq === quoteSeq.current) { setQuote(null); setQuoteError(err.message ?? t('quoteFailed')) }
       return null
     } finally {
@@ -781,7 +773,7 @@ export default function CheckoutPage() {
     setApiError('')
 
     try {
-      let res: any
+      let res: CheckoutResponse
 
       if (isBuyNow) {
         if (!bnProduct) throw new Error(t('errors.productMissing'))
@@ -836,7 +828,8 @@ export default function CheckoutPage() {
         total:          res.total,
         payment_method: paymentMethod,
       })
-    } catch (err: any) {
+    } catch (caught) {
+      const err = caught as Error & { status?: number; data?: { code?: string; errors?: Record<string, string[]> } }
       if (err.data?.code === 'profile_incomplete') {
         router.push(`/complete-profile?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)
         return
@@ -1131,7 +1124,7 @@ export default function CheckoutPage() {
                         <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
                         {item.variant_label && (
                           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
-                            {variantEntries.map((opt: any, i: number) =>
+                            {variantEntries.map((opt, i) =>
                               opt.color_hex
                                 ? <span key={i} style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: opt.color_hex, border: '1px solid rgba(0,0,0,0.1)' }} />
                                 : <span key={i} style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 6px', borderRadius: 4 }}>{opt.value}</span>
@@ -1187,7 +1180,6 @@ export default function CheckoutPage() {
                     {(quoteLoading || !quote) && <span style={{ fontSize: 12, color: '#94a3b8' }}>{t('quoteLoading')}</span>}
                     {quote && parcels.length === 1 && (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        {parcels[0].parcel_size && <SizeChip size={parcels[0].parcel_size} title={t('parcelSizeTitle', { size: parcels[0].parcel_size })} />}
                         <DeliveryAmount free={parcels[0].is_free_delivery} amount={parcels[0].delivery_fee} freeLabel={tc('free')} fmt={fmt} />
                       </span>
                     )}
@@ -1198,7 +1190,6 @@ export default function CheckoutPage() {
                         <div key={p.seller_id ?? 'platform'} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                           <span dir="auto" style={{ fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{p.seller_name}</span>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                            {p.parcel_size && <SizeChip size={p.parcel_size} title={t('parcelSizeTitle', { size: p.parcel_size })} />}
                             <DeliveryAmount free={p.is_free_delivery} amount={p.delivery_fee} freeLabel={tc('free')} fmt={fmt} small />
                           </span>
                         </div>
@@ -1237,7 +1228,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 <button
-                  onClick={handleSubmit as any}
+                  onClick={handleSubmit}
                   disabled={loading || stripeLoading || quoteLoading || summaryTotal === null || (paymentMethod === 'wallet' && walletInsufficient)}
                   style={{
                     width: '100%', padding: '14px 0',

@@ -209,21 +209,22 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
   const [tagFilter, setTagFilter] = useState<number | null>(null);
   const [reportModal, setReportModal] = useState<{ id: number } | null>(null);
 
-  const fetchReviews = useCallback(async (reset = false) => {
+  const fetchReviews = useCallback(async (pageNum: number, signal?: AbortSignal) => {
+    const reset = pageNum === 1;
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (filter) params.set('filter', filter);
       if (ratingFilter) params.set('rating', String(ratingFilter));
       if (tagFilter) params.set('tag_id', String(tagFilter));
-      params.set('page', String(reset ? 1 : page));
+      params.set('page', String(pageNum));
       params.set('per_page', '8');
 
       const headers: Record<string, string> = { Accept: 'application/json' };
       const token = getToken();
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res  = await fetch(`${API_URL}/products/${slug}/reviews?${params}`, { headers });
+      const res  = await fetch(`${API_URL}/products/${slug}/reviews?${params}`, { headers, signal });
       const json = await res.json();
 
       if (json.success) {
@@ -238,13 +239,21 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
         setHasMore(json.meta.current_page < json.meta.last_page);
       }
     } catch (e) {
-      console.error(e);
+      if (signal?.aborted || (e instanceof DOMException && e.name === 'AbortError')) return;
+      // Network failure (API down): fall back to the empty state, no red console error.
+      if (process.env.NODE_ENV !== 'production') console.warn('[reviews] fetch failed', e);
+      if (reset) setReviews([]);
+      setHasMore(false);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  }, [slug, filter, ratingFilter, tagFilter, page]);
+  }, [slug, filter, ratingFilter, tagFilter]);
 
-  useEffect(() => { fetchReviews(true); }, [slug, filter, ratingFilter, tagFilter]); // eslint-disable-line
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchReviews(1, controller.signal);
+    return () => controller.abort();
+  }, [fetchReviews]);
 
   const handleVote = async (reviewId: number, type: 'helpful' | 'not_helpful') => {
     if (!isAuthenticated()) return;
@@ -254,7 +263,7 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ type }),
     });
-    fetchReviews(true);
+    fetchReviews(1);
   };
 
   const handleReport = async (reviewId: number, reason: string) => {
@@ -419,7 +428,7 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
         {hasMore && (
           <div style={{ textAlign: 'center', marginTop: 24 }}>
             <button className="rev-load-btn"
-              onClick={() => fetchReviews(false)}
+              onClick={() => fetchReviews(page)}
               disabled={loading}
               style={{
                 padding: '12px 32px', borderRadius: 12, fontSize: 13, fontWeight: 800,
