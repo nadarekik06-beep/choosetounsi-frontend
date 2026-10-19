@@ -16,6 +16,8 @@ import ReviewPromptPopup from '@/app/components/reviews/ReviewPromptPopup';
 import EntryPopup from '@/components/ads/EntryPopup';
 import ProfileGate from '@/components/profile/ProfileGate';
 import { NavigationLoaderProvider, NavigationLoaderHost } from '@/components/brand/NavigationLoader';
+import Script from 'next/script';
+import { SELLER_THEME_BOOT } from '@/app/seller/themeBoot';
 
 const syne = Syne({
   subsets: ["latin"],
@@ -62,6 +64,7 @@ export default async function RootLayout({
     // elements' own attributes, not the app below them.
     <html lang={locale} dir={dirOf(locale)} className={fontClass} suppressHydrationWarning>
       <body className="antialiased text-zinc-900" suppressHydrationWarning>
+        <Script id="ct-seller-theme-boot" strategy="beforeInteractive">{SELLER_THEME_BOOT}</Script>
         <NextIntlClientProvider messages={messages}>
           <LanguageProvider>
             <CartProvider>
