@@ -143,6 +143,8 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
   const scalars: string[] = [
     'name', 'slug', 'sku', 'description', 'short_description',
     'price', 'stock', 'category_id', 'subcategory_id', 'delivery_fee',
+    // Intigo parcel size: required on create, kept as is on update when omitted
+    'parcel_size',
   ]
   scalars.forEach(key => {
     const val = (payload as Record<string, any>)[key]
@@ -270,6 +272,7 @@ export interface ProductPayload {
   pack_contents?: string
   occasions?: string[]
   delivery_fee?: string      
+  parcel_size?: '' | 'S' | 'L' | 'XL'
   images?: File[]
   delete_image_ids?: number[]
   attributes?: Record<string, string>
