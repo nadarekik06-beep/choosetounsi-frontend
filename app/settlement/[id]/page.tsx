@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
+import { API_BASE } from '@/lib/constants'
 
 interface SettlementOrder {
   id: number
@@ -63,9 +64,8 @@ export default function SettlementReceiptPage() {
 
   useEffect(() => {
     if (!id) return
-    const base = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/api\/?$/, '')
     // ✅ FIX: call seller-scoped endpoint, not admin endpoint
-    fetch(`${base}/api/seller/earnings/settlement/${id}`, {
+    fetch(`${API_BASE}/seller/earnings/settlement/${id}`, {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${getToken()}`,

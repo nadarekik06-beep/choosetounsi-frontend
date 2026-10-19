@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
 import BrandLoader from '@/components/brand/BrandLoader'
+import { API_BASE } from '@/lib/constants'
 function useDt() {
   const { price } = useFormat()
   return (n: number) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
@@ -72,9 +73,6 @@ function computeEffectivePrice(
   return Math.max(0, basePrice - discountValue)
 }
 
-const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
-const BASE_URL = RAW_URL.replace(/\/api\/?$/, '')
-const API_URL  = `${BASE_URL}/api`
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
@@ -162,7 +160,7 @@ function PromotionCommissionPreview({
         const effectivePrice = computeEffectivePrice(p.price, discountType, discountNum)
         if (effectivePrice <= 0) return { id: p.id, data: null }
         try {
-          const res  = await fetch(`${API_URL}/seller/commission/calculate`, {
+          const res  = await fetch(`${API_BASE}/seller/commission/calculate`, {
             method: 'POST', headers,
             body: JSON.stringify({ price: effectivePrice, quantity: 1 }),
           })
@@ -379,9 +377,8 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
     setProdLoading(true)
     try {
       const token   = localStorage.getItem('ct_auth_token')
-      const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/api\/?$/, '')
       const res     = await fetch(
-        `${apiBase}/api/seller/products?is_approved=true&is_active=true&per_page=100${q ? `&search=${q}` : ''}`,
+        `${API_BASE}/seller/products?is_approved=true&is_active=true&per_page=100${q ? `&search=${q}` : ''}`,
         { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
       )
       const json = await res.json()

@@ -17,8 +17,8 @@ import { X, Star, Mail } from 'lucide-react';
 import ReviewSubmitModal from './ReviewSubmitModal';
 import { isAuthenticated } from '@/lib/auth';
 import { useTranslations } from 'next-intl';
+import { API_BASE } from '@/lib/constants'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
 
 /** Match the token key used throughout the storefront */
 const getToken = (): string | null => {
@@ -64,7 +64,7 @@ export default function ReviewPromptPopup() {
 
     const load = async () => {
       try {
-        const res  = await fetch(`${API_URL}/client/reviews/prompts`, {
+        const res  = await fetch(`${API_BASE}/client/reviews/prompts`, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json',
@@ -122,7 +122,7 @@ export default function ReviewPromptPopup() {
     try {
       const token = getToken();
       if (!token) return;
-      await fetch(`${API_URL}/client/reviews/prompts/${prompt.prompt_id}/dismiss`, {
+      await fetch(`${API_BASE}/client/reviews/prompts/${prompt.prompt_id}/dismiss`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

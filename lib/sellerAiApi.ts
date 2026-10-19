@@ -1,12 +1,10 @@
+import { API_BASE } from '@/lib/constants'
 /**
  * lib/sellerAiApi.ts
  *
  * Seller analytics + AI tools API (price optimizer, recommender, product descriptions).
  */
 
-const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
-const BASE_URL = RAW_URL.replace(/\/api\/?$/, '');
-const API_URL  = `${BASE_URL}/api`;
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -24,7 +22,7 @@ function authHeaders(): Record<string, string> {
 }
 
 async function jsonRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...authHeaders() },
     body: body != null ? JSON.stringify(body) : undefined,

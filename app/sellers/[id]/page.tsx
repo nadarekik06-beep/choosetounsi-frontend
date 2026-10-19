@@ -20,9 +20,8 @@ import { parseSellerId, storePath } from '@/lib/storeLink'
 import { ShareStoreButtons } from '@/app/components/seller/ShareStore'
 import BrandLoader, { BusyLabel } from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
+import { API_BASE, STORAGE_URL } from '@/lib/constants'
 
-const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
-const API_URL      = `${STORAGE_BASE}/api`
 
 const RED   = '#db142e'
 const GREEN = '#198f41'
@@ -30,7 +29,7 @@ const GREEN = '#198f41'
 function resolveImg(path: string | null | undefined): string | null {
   if (!path) return null
   if (path.startsWith('http')) return path
-  return `${STORAGE_BASE}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
+  return `${STORAGE_URL}/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
 }
 
 function authHeaders(): Record<string, string> {
@@ -331,7 +330,7 @@ export default function SellerStorefrontPage() {
     if (!id) { setSellerError(true); setSellerLoading(false); return }
     setSellerLoading(true)
     setSellerError(false)
-    fetch(`${API_URL}/sellers/${id}`, { headers: { Accept: 'application/json' } })
+    fetch(`${API_BASE}/sellers/${id}`, { headers: { Accept: 'application/json' } })
       .then(r => { if (!r.ok) throw new Error('not found'); return r.json() })
       .then(json => {
         if (json.success) { setSeller(json.data); setFollowersCount(json.data.followers_count) }
@@ -343,7 +342,7 @@ export default function SellerStorefrontPage() {
 
   useEffect(() => {
     if (!id || !isAuthenticated()) return
-    fetch(`${API_URL}/seller-follows/check/${id}`, { headers: { Accept: 'application/json', ...authHeaders() } })
+    fetch(`${API_BASE}/seller-follows/check/${id}`, { headers: { Accept: 'application/json', ...authHeaders() } })
       .then(r => r.json())
       .then(json => { if (json.success) setFollowing(json.data.following) })
       .catch(() => {})
@@ -353,7 +352,7 @@ export default function SellerStorefrontPage() {
   useEffect(() => {
     if (!id) return
     setRecentLoading(true)
-    fetch(`${API_URL}/products?seller_id=${id}&sort=created_at&per_page=8`, { headers: { Accept: 'application/json' } })
+    fetch(`${API_BASE}/products?seller_id=${id}&sort=created_at&per_page=8`, { headers: { Accept: 'application/json' } })
       .then(r => r.json())
       .then((json: { success: boolean; data: Paginated<GridProduct> }) => { if (json.success) setRecent(json.data.data) })
       .catch(() => {})
@@ -364,7 +363,7 @@ export default function SellerStorefrontPage() {
   useEffect(() => {
     if (!id) return
     setPacksLoading(true)
-    fetch(`${API_URL}/packs?seller_id=${id}&per_page=12`, { headers: { Accept: 'application/json' } })
+    fetch(`${API_BASE}/packs?seller_id=${id}&per_page=12`, { headers: { Accept: 'application/json' } })
       .then(r => r.json())
       .then((json: { success: boolean; data: Paginated<Pack> }) => { if (json.success) setPacks(json.data.data) })
       .catch(() => {})
@@ -396,7 +395,7 @@ export default function SellerStorefrontPage() {
     if (chips.freeShipping) qp.set('free_delivery', '1')
     if (chips.couponDeals) qp.set('has_coupon', '1')
 
-    fetch(`${API_URL}/products?${qp}`, { headers: { Accept: 'application/json' } })
+    fetch(`${API_BASE}/products?${qp}`, { headers: { Accept: 'application/json' } })
       .then(r => r.json())
       .then((json: { success: boolean; data: Paginated<GridProduct> }) => {
         if (!json.success) return
@@ -434,7 +433,7 @@ export default function SellerStorefrontPage() {
     }
     setFollowLoading(true)
     try {
-      const res = await fetch(`${API_URL}/seller-follows/${id}`, { method: 'POST', headers: { Accept: 'application/json', ...authHeaders() } })
+      const res = await fetch(`${API_BASE}/seller-follows/${id}`, { method: 'POST', headers: { Accept: 'application/json', ...authHeaders() } })
       const json = await res.json()
       if (json.success) { setFollowing(json.data.following); setFollowersCount(json.data.followers_count) }
     } catch { /* button stays in its previous state */ }

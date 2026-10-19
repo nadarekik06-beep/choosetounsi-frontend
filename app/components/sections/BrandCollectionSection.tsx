@@ -6,8 +6,8 @@ import { useTranslations } from 'next-intl'
 import type { PricedProduct } from '@/app/components/promotions/ProductPrice'
 import ProductCard, { ProductCardSkeleton } from '@/app/components/product/ProductCard'
 import type { CardSwatch } from '@/app/components/product/cardData'
+import { API_BASE } from '@/lib/constants'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 interface Product extends PricedProduct {
   id: number
@@ -53,7 +53,7 @@ export default function BrandCollectionSection() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    fetch(`${API_URL}/api/brand-products?per_page=8&sort=created_at`, {
+    fetch(`${API_BASE}/brand-products?per_page=8&sort=created_at`, {
 
       headers: { Accept: 'application/json' },
     })

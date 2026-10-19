@@ -4,9 +4,8 @@
 
 import { fallbackError } from '@/lib/i18n/clientLocale'
 import type { BuyerComplaint, Complaint, ComplaintFormPayload, EligibleOrder } from '@/types/complaint'
+import { API_BASE } from '@/lib/constants'
 
-const RAW_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
-const API_URL = RAW_URL.endsWith('/api') ? RAW_URL : `${RAW_URL}/api`
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
@@ -19,7 +18,7 @@ function authHeaders(): Record<string, string> {
 }
 
 async function jsonRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...authHeaders() },
     body: body != null ? JSON.stringify(body) : undefined,
@@ -34,7 +33,7 @@ async function jsonRequest<T>(method: string, path: string, body?: unknown): Pro
 }
 
 async function formRequest<T>(path: string, data: FormData): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     headers: { Accept: 'application/json', ...authHeaders() },
     body: data,

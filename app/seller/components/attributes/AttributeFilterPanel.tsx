@@ -16,8 +16,8 @@
 
 import { useEffect, useState } from 'react'
 import type { Attribute, AttributeOption } from '@/types/Attributes'
+import { API_BASE } from '@/lib/constants'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 // Filters: attribute slug → array of selected option IDs
 export type ActiveAttrFilters = Record<string, number[]>
@@ -41,8 +41,8 @@ export default function AttributeFilterPanel({
     setLoading(true)
 
     const url = subcategorySlug
-      ? `${API_URL}/api/subcategories/${subcategorySlug}/attributes`
-      : `${API_URL}/api/categories/${categorySlug}/filter-attributes`
+      ? `${API_BASE}/subcategories/${subcategorySlug}/attributes`
+      : `${API_BASE}/categories/${categorySlug}/filter-attributes`
 
     fetch(url, { headers: { Accept: 'application/json' } })
       .then(r => r.json())

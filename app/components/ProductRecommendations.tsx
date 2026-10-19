@@ -17,8 +17,8 @@ import type { PricedProduct } from '@/app/components/promotions/ProductPrice'
 import ProductCard, { ProductCardSkeleton } from '@/app/components/product/ProductCard'
 import type { CardSwatch } from '@/app/components/product/cardData'
 import { useTranslations } from 'next-intl'
+import { API_BASE } from '@/lib/constants'
 
-const API_URL      = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -93,7 +93,7 @@ function RecommendationSection({
 
   useEffect(() => {
     const token = getToken()
-    fetch(`${API_URL}/products/${slug}/${endpoint}`, {
+    fetch(`${API_BASE}/products/${slug}/${endpoint}`, {
       headers: {
         Accept: 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -144,7 +144,7 @@ function FromSellerSection({ slug }: { slug: string }) {
 
   useEffect(() => {
     const token = getToken()
-    fetch(`${API_URL}/products/${slug}/from-seller`, {
+    fetch(`${API_BASE}/products/${slug}/from-seller`, {
       headers: {
         Accept: 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),

@@ -26,10 +26,10 @@ import type { CardSwatch } from '@/app/components/product/cardData'
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
 import { RefreshCover } from '@/components/brand/BrandLoader'
+import { API_BASE } from '@/lib/constants'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api')
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────

@@ -40,6 +40,7 @@ import {
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
 import { trackCheckoutStart, clearCheckoutAttempt } from '@/lib/tracking'
+import { API_BASE, STORAGE_URL } from '@/lib/constants'
 function usePrice() {
   const { price } = useFormat()
   return (n: number) => price(n, { maximumFractionDigits: 3 })
@@ -50,13 +51,11 @@ const SELECTED_ITEMS_KEY = 'ct_selected_items'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
-const API_URL      = `${STORAGE_BASE}/api`
 
 function resolveImg(path: string | null | undefined): string | null {
   if (!path) return null
   if (path.startsWith('http')) return path
-  return `${STORAGE_BASE}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
+  return `${STORAGE_URL}/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
 }
 
 function getToken(): string | null {
@@ -566,7 +565,7 @@ export default function CheckoutPage() {
     if (!cur.input.trim()) return
     setCouponStates(prev => ({ ...prev, [sellerId]: { ...cur, loading: true, error: null } }))
     try {
-      const res = await fetch(`${API_URL}/coupons/validate`, {
+      const res = await fetch(`${API_BASE}/coupons/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ code: cur.input.trim(), ...checkoutLines() }),
@@ -656,7 +655,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!isAuthenticated()) return
     setAddressesLoading(true)
-    fetch(`${API_URL}/addresses`, {
+    fetch(`${API_BASE}/addresses`, {
       headers: { Accept: 'application/json', Authorization: `Bearer ${getToken()}` },
     })
       .then(r => r.ok ? r.json() : Promise.reject())
@@ -680,7 +679,7 @@ export default function CheckoutPage() {
   const loadBuyNowProduct = useCallback(() => {
     if (!bnSlug) return Promise.resolve()
     setBnLoading(true)
-    return fetch(`${API_URL}/products/${bnSlug}`, { headers: { Accept: 'application/json' } })
+    return fetch(`${API_BASE}/products/${bnSlug}`, { headers: { Accept: 'application/json' } })
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(json => setBnProduct(json.data))
       .catch(() => setBnError(true))
@@ -805,7 +804,7 @@ export default function CheckoutPage() {
 
       if (savedNeedsCompletion && selectedAddressId !== null) {
         const saved = savedAddresses.find(a => a.id === selectedAddressId)
-        fetch(`${API_URL}/addresses/${selectedAddressId}`, {
+        fetch(`${API_BASE}/addresses/${selectedAddressId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${getToken()}` },
           body: JSON.stringify({ ...address, label: saved?.label }),

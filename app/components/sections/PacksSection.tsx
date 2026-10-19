@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { Package2, TrendingDown, Tag, ArrowRight } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
+import { API_BASE } from '@/lib/constants'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 interface PackItem {
   id: number
@@ -202,7 +202,7 @@ export default function PacksSection() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(`${API_URL}/api/packs?per_page=6`, {
+    fetch(`${API_BASE}/packs?per_page=6`, {
       headers: { Accept: 'application/json' },
     })
       .then(r => r.json())

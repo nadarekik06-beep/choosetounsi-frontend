@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { API_BASE } from '@/lib/constants'
 
 /**
  * Live platform facts from the backend (single source of truth):
@@ -12,8 +13,6 @@ import { useEffect, useState } from 'react'
  * Pages must display these values instead of hardcoding them.
  */
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api')
-  .replace(/\/api\/?$/, '') + '/api'
 
 /** Base experience (tier) a plan belongs to: Green / Red / Black Pepper. */
 export type PlanKey = 'free' | 'red' | 'black'
@@ -75,7 +74,7 @@ let plansPromise: Promise<SellerPlans> | null = null
 
 export function fetchSellerPlans(): Promise<SellerPlans> {
   if (!plansPromise) {
-    plansPromise = fetch(`${API_URL}/seller-plans`, { headers: { Accept: 'application/json' } })
+    plansPromise = fetch(`${API_BASE}/seller-plans`, { headers: { Accept: 'application/json' } })
       .then(res => {
         if (!res.ok) throw new Error(`seller-plans ${res.status}`)
         return res.json()
@@ -147,7 +146,7 @@ export interface PaymentInfo {
 export const COD_ONLY: PaymentInfo['payment_methods'] = { cod: true, card: false, d17: false, wallet: false }
 
 export async function fetchPaymentInfo(): Promise<PaymentInfo> {
-  const res = await fetch(`${API_URL}/checkout/payment-info`, { headers: { Accept: 'application/json' } })
+  const res = await fetch(`${API_BASE}/checkout/payment-info`, { headers: { Accept: 'application/json' } })
   if (!res.ok) throw new Error(`payment-info ${res.status}`)
   const json = await res.json()
   return {
@@ -168,7 +167,7 @@ let featuresPromise: Promise<SiteFeatures> | null = null
 
 export function fetchSiteFeatures(): Promise<SiteFeatures> {
   if (!featuresPromise) {
-    featuresPromise = fetch(`${API_URL}/site-features`, { headers: { Accept: 'application/json' } })
+    featuresPromise = fetch(`${API_BASE}/site-features`, { headers: { Accept: 'application/json' } })
       .then(r => r.json())
       .then(j => ({ ...FEATURES_OFF, ...(j?.data ?? {}) }) as SiteFeatures)
       .catch(() => { featuresPromise = null; return FEATURES_OFF })

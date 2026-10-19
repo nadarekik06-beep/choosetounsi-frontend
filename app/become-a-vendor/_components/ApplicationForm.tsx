@@ -16,6 +16,7 @@ import {
 } from '@/lib/pickupAddress'
 
 import BrandLoader from '@/components/brand/BrandLoader'
+import { API_BASE } from '@/lib/constants'
 const FALLBACK_CATEGORIES = [
   'Fashion & Clothing','Electronics & Tech','Home & Living','Food & Grocery',
   'Beauty & Personal Care','Health & Wellness','Sports & Outdoors',
@@ -300,8 +301,7 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
   // ── Fetch categories ──────────────────────────────────────────────────
   useEffect(() => {
     setCategoriesLoading(true)
-    const base = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/api\/?$/, '')
-    fetch(`${base}/api/categories`)
+    fetch(`${API_BASE}/categories`)
       .then(r => r.json())
       .then(json => setApiCategories(withBaseName(json?.data ?? [])))
       .catch(() => {})
@@ -311,7 +311,6 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
   // ── Fetch subcategories when categories change ────────────────────────
   useEffect(() => {
     if (selectedCategories.length === 0) return
-    const base = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/api\/?$/, '')
     const toFetch = selectedCategories.filter(catName => {
       const cat = apiCategories.find(c => c.name === catName)
       return cat && !subcategoriesMap[catName]
@@ -322,7 +321,7 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
       toFetch.map(catName => {
         const cat = apiCategories.find(c => c.name === catName)
         if (!cat) return Promise.resolve({ catName, subs: [] as ApiSubcategory[] })
-        return fetch(`${base}/api/categories/${cat.slug}/subcategories`)
+        return fetch(`${API_BASE}/categories/${cat.slug}/subcategories`)
           .then(r => r.json())
           .then(json => ({ catName, subs: withBaseName(json?.data ?? []) as ApiSubcategory[] }))
           .catch(() => ({ catName, subs: [] as ApiSubcategory[] }))

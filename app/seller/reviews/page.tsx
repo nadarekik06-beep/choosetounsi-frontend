@@ -11,8 +11,8 @@ import { useFormat } from '@/lib/i18n/useFormat';
 import { ink } from '@/app/seller/ink';
 import { usePageLoading } from '@/components/brand/NavigationLoader'
 import BrandLoader, { BusyLabel, RefreshCover } from '@/components/brand/BrandLoader'
+import { API_BASE } from '@/lib/constants'
 
-const API_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
 const getToken = () => typeof window !== 'undefined'
   ? (localStorage.getItem('ct_auth_token') ?? localStorage.getItem('auth_token') ?? null)
   : null;
@@ -102,7 +102,7 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
     if (!reason) { setError(t('selectReasonError')); return; }
     setSending(true); setError('');
     try {
-      const res  = await fetch(`${API_URL}/seller/reviews/${reviewId}/report`, {
+      const res  = await fetch(`${API_BASE}/seller/reviews/${reviewId}/report`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -238,7 +238,7 @@ function ReplyModal({ reviewId, existing, dark, onClose, onSaved }: {
     if (!body.trim()) return;
     setSaving(true);
     try {
-      await fetch(`${API_URL}/seller/reviews/${reviewId}/reply`, {
+      await fetch(`${API_BASE}/seller/reviews/${reviewId}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ body }),
@@ -380,7 +380,7 @@ export default function SellerReviewsPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const res  = await fetch(`${API_URL}/seller/reviews/stats`, {
+      const res  = await fetch(`${API_BASE}/seller/reviews/stats`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const json = await res.json();
@@ -393,7 +393,7 @@ export default function SellerReviewsPage() {
     try {
       const params = new URLSearchParams({ page: String(page), per_page: '10' });
       if (rFilter) params.set('rating', String(rFilter));
-      const res  = await fetch(`${API_URL}/seller/reviews?${params}`, {
+      const res  = await fetch(`${API_BASE}/seller/reviews?${params}`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const json = await res.json();

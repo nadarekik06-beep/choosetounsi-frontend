@@ -19,9 +19,8 @@ import { createAndOpenWhatsApp, paymentRequestsApi, type ManualPaymentConfig, ty
 import { ManualPaymentConfirmation, PaymentRequestHistory } from '@/app/components/seller/ManualPayment'
 import { Button, Kpi, Notice, PageFrame, Panel, usePalette, GOLD } from '../_components/ui'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
+import { API_BASE } from '@/lib/constants'
 
-const RAW_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
-const API_URL = `${RAW_URL.replace(/\/api\/?$/, '')}/api`
 
 /** Gateways the WhatsApp method replaces while it is switched on. */
 const REPLACED_BY_WHATSAPP = ['sandbox', 'manual']
@@ -69,7 +68,7 @@ export default function AdWalletPage() {
 
   useEffect(() => {
     load().catch(e => setNotice({ tone: 'error', text: e?.message ?? t('error') }))
-    fetch(`${API_URL}/checkout/payment-info`, { headers: { Accept: 'application/json' } })
+    fetch(`${API_BASE}/checkout/payment-info`, { headers: { Accept: 'application/json' } })
       .then(r => (r.ok ? r.json() : null)).then(j => setD17(j?.data?.d17_account_number ?? '')).catch(() => {})
   }, [load, t])
 

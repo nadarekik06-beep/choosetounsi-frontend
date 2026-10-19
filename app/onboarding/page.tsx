@@ -18,7 +18,7 @@ import { useTranslations } from 'next-intl'
 
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
+import { API_BASE } from '@/lib/constants'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -81,7 +81,7 @@ export default function OnboardingPage() {
     const token = getToken()
     if (!token) return
 
-    fetch(`${API_URL}/preferences/onboarding-data`, {
+    fetch(`${API_BASE}/preferences/onboarding-data`, {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
     })
       .then(r => r.json())
@@ -123,7 +123,7 @@ export default function OnboardingPage() {
         body.price_max = selectedPriceRange.max
       }
 
-      const res = await fetch(`${API_URL}/preferences`, {
+      const res = await fetch(`${API_BASE}/preferences`, {
         method: 'POST',
         headers: {
           Authorization:  `Bearer ${token}`,
@@ -151,7 +151,7 @@ export default function OnboardingPage() {
     if (!token) { router.replace(redirect); return }
 
     try {
-      await fetch(`${API_URL}/preferences/skip`, {
+      await fetch(`${API_BASE}/preferences/skip`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       })

@@ -1,14 +1,15 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
+import { API_ORIGIN } from './lib/constants';
 
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
-// Product images are served by the Laravel API's /storage; allow whatever host
-// NEXT_PUBLIC_API_URL points at (production) on top of the local dev server.
+// Product images are served by the Laravel API's /storage: allow the host
+// NEXT_PUBLIC_API_URL points at (see lib/constants.ts; localhost:8000 when unset).
 const apiStorage = (() => {
   try {
-    const u = new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000');
+    const u = new URL(API_ORIGIN);
     return [{
       protocol: u.protocol.replace(':', '') as 'http' | 'https',
       hostname: u.hostname,
@@ -63,13 +64,6 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'lh6.googleusercontent.com',
-      },
-      {
-        // Laravel local storage
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '8000',
-        pathname: '/storage/**',
       },
       ...apiStorage,
     ],

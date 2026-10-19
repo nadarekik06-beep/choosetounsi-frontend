@@ -4,9 +4,8 @@
 // built by the backend (admin-editable template), never here.
 
 import { currentLocale } from '@/lib/i18n/clientLocale'
+import { API_BASE } from '@/lib/constants'
 
-const RAW_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
-const API_URL = `${RAW_URL.replace(/\/api\/?$/, '')}/api`
 
 export type PaymentRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled'
 export type PaymentRequestType = 'wallet_topup' | 'plan_upgrade'
@@ -50,7 +49,7 @@ function token(): string | null {
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const t = token()
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
       Accept: 'application/json',

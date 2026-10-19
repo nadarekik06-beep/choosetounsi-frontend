@@ -20,6 +20,7 @@ import { useFormat } from '@/lib/i18n/useFormat'
 import { useStatusLabel } from '@/lib/i18n/useStatusLabel'
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
+import { API_BASE } from '@/lib/constants'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -105,7 +106,7 @@ export default function InvoicePage() {
     if (!id) return
     // Call the dedicated invoice endpoint
     fetch(
-      `${(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/api\/?$/, '')}/api/seller/orders/${id}/invoice`,
+      `${API_BASE}/seller/orders/${id}/invoice`,
       {
         headers: {
           Accept: 'application/json',

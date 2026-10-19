@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { API_BASE, STORAGE_URL } from '@/lib/constants'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Category {
@@ -15,12 +16,11 @@ interface Category {
 }
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 function resolveImageSrc(image: string | null): string | null {
   if (!image) return null
   if (image.startsWith('http://') || image.startsWith('https://')) return image
-  return `${API_URL}/storage/${image}`
+  return `${STORAGE_URL}/${image}`
 }
 
 // ─── Skeleton card ────────────────────────────────────────────────────────────
@@ -96,7 +96,7 @@ export default function CategoryShowcase() {
       try {
         setLoading(true)
         setError(false)
-        const res = await fetch(`${API_URL}/api/categories`, {
+        const res = await fetch(`${API_BASE}/categories`, {
           signal: controller.signal,
           headers: { Accept: 'application/json' },
         })
@@ -351,7 +351,7 @@ export default function CategoryShowcase() {
           {!loading && error && (
             <p className="category-showcase__state">
               Could not load categories — make sure your API is running at{' '}
-              <code>{API_URL}/api/categories</code>
+              <code>{API_BASE}/categories</code>
             </p>
           )}
 

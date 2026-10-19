@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import { getLocale, getTranslations } from 'next-intl/server'
 import { fetchLocalized } from '@/lib/i18n/metadata'
 import { parseSellerId, siteUrl, storeUrl } from '@/lib/storeLink'
+import { STORAGE_URL } from '@/lib/constants'
 
 type Props = { params: Promise<{ id: string }>; children: React.ReactNode }
 
@@ -14,12 +15,11 @@ interface SellerMeta {
   cover_photo?: string | null
 }
 
-const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 
 function absoluteImage(path: string | null | undefined): string | null {
   if (!path) return null
   if (/^https?:\/\//.test(path)) return path
-  return `${STORAGE_BASE}/storage/${path.replace(/^\/?storage\//, '').replace(/^\//, '')}`
+  return `${STORAGE_URL}/${path.replace(/^\/?storage\//, '').replace(/^\//, '')}`
 }
 
 /** Origin of this request — only used when NEXT_PUBLIC_SITE_URL is missing. */

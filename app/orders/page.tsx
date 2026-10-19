@@ -42,9 +42,8 @@ import { useFormat } from '@/lib/i18n/useFormat'
 import { useWilayaLabel } from '@/lib/i18n/wilayas'
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
+import { API_BASE, STORAGE_URL } from '@/lib/constants'
 
-const API_URL      = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
-const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api$/, '')
 const RED          = '#db142e'
 const GREEN        = '#198f41'
 
@@ -157,7 +156,7 @@ function useOrderFormat() {
 function resolveImg(path: string | null | undefined): string | null {
   if (!path) return null
   if (path.startsWith('http')) return path
-  return `${STORAGE_BASE}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
+  return `${STORAGE_URL}/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
 }
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -763,7 +762,7 @@ export default function OrdersPage() {
     setLoading(true)
     try {
       const token = getToken()
-      const res   = await fetch(`${API_URL}/client/orders`, {
+      const res   = await fetch(`${API_BASE}/client/orders`, {
         headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
       })
       if (!res.ok) throw new Error()
@@ -793,7 +792,7 @@ export default function OrdersPage() {
       const token = getToken()
       if (!token) return
 
-      const res  = await fetch(`${API_URL}/client/reviews/prompts`, {
+      const res  = await fetch(`${API_BASE}/client/reviews/prompts`, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       })
       const json = await res.json()
@@ -847,7 +846,7 @@ export default function OrdersPage() {
     // Dismiss the prompt so it doesn't reappear
     if (currentPrompt.promptId > 0) {
       const token = getToken()
-      fetch(`${API_URL}/client/reviews/prompts/${currentPrompt.promptId}/dismiss`, {
+      fetch(`${API_BASE}/client/reviews/prompts/${currentPrompt.promptId}/dismiss`, {
         method:  'POST',
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       }).catch(() => {})  // non-critical
@@ -878,7 +877,7 @@ export default function OrdersPage() {
     // Dismiss the current prompt so it doesn't reappear on next visit
     if (currentPrompt.promptId > 0) {
       const token = getToken()
-      fetch(`${API_URL}/client/reviews/prompts/${currentPrompt.promptId}/dismiss`, {
+      fetch(`${API_BASE}/client/reviews/prompts/${currentPrompt.promptId}/dismiss`, {
         method:  'POST',
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       }).catch(() => {})

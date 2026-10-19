@@ -7,8 +7,8 @@
  */
 
 import { useEffect, useState } from 'react'
+import { API_BASE } from '@/lib/constants'
 
-const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
 
 export const OCCASIONS = [
   { value: 'all_season',     emoji: '🌍' },
@@ -39,7 +39,7 @@ let cache: Promise<string[]> | null = null
 export function useOccasionCategories(): string[] | null {
   const [slugs, setSlugs] = useState<string[] | null>(null)
   useEffect(() => {
-    cache ??= fetch(`${ORIGIN}/api/product-occasions`, { headers: { Accept: 'application/json' } })
+    cache ??= fetch(`${API_BASE}/product-occasions`, { headers: { Accept: 'application/json' } })
       .then(r => r.json())
       .then(j => (j?.data?.category_slugs ?? []) as string[])
       .catch(() => { cache = null; return [] })

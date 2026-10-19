@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
 import BrandLoader from '@/components/brand/BrandLoader'
+import { API_BASE } from '@/lib/constants'
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
 interface SellerProduct {
@@ -78,9 +79,8 @@ export default function CouponModal({ coupon, prefill, onClose, onSaved }: Coupo
     setProdLoading(true)
     try {
       const token   = localStorage.getItem('ct_auth_token')
-      const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/api\/?$/, '')
       const res     = await fetch(
-        `${apiBase}/api/seller/products?is_approved=true&is_active=true&per_page=100${q ? `&search=${q}` : ''}`,
+        `${API_BASE}/seller/products?is_approved=true&is_active=true&per_page=100${q ? `&search=${q}` : ''}`,
         { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
       )
       const json = await res.json()

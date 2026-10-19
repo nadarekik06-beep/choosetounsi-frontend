@@ -23,9 +23,8 @@ import { useTranslations } from 'next-intl'
 import { canScrollNext, canScrollPrev, scrollCarousel } from '@/lib/i18n/rtlScroll'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
 import { RouteLoading } from '@/components/brand/NavigationLoader'
+import { API_BASE } from '@/lib/constants'
 
-const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
-const API    = `${ORIGIN}/api`
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface PImg { id: number; image_path: string; is_primary: boolean; url?: string; color_option_id?: number | null }
@@ -189,7 +188,7 @@ function Inner() {
   }, [])
 
   useEffect(()=>{
-    fetch(`${API}/categories`,{headers:{Accept:'application/json'}})
+    fetch(`${API_BASE}/categories`,{headers:{Accept:'application/json'}})
       .then(r=>r.ok?r.json():Promise.reject())
       .then(j=>setAllC((Array.isArray(j)?j:(j.data??[])).filter((c:Category)=>c.slug!=='other')))
       .catch(()=>{})
@@ -205,7 +204,7 @@ function Inner() {
       qp.set('page',String(page)); qp.set('sort',f.sort); qp.set('category_slug',slug)
       if(subSlug) qp.set('subcategory_slug',subSlug)
       appendFilterParams(qp,f)
-      const r=await fetch(`${API}/products?${qp}`,{headers:{Accept:'application/json'}})
+      const r=await fetch(`${API_BASE}/products?${qp}`,{headers:{Accept:'application/json'}})
       if(!r.ok) throw new Error()
       setProds((await r.json()).data)
     } catch { setProds(null) } finally { setLoad(false) }

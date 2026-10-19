@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { API_BASE } from '@/lib/constants'
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api')
-  .replace(/\/api\/?$/, '/api');
 
 export async function POST(req: NextRequest) {
   const body = await req.json();

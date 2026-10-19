@@ -6,8 +6,8 @@ import type { PricedProduct } from '@/app/components/promotions/ProductPrice'
 import ProductCard from '@/app/components/product/ProductCard'
 import type { CardSwatch } from '@/app/components/product/cardData'
 import { useTranslations } from 'next-intl'
+import { API_BASE } from '@/lib/constants'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 interface FlashProduct extends PricedProduct {
   id: number
@@ -71,7 +71,7 @@ export default function FlashDealsSection() {
   const [loading,    setLoading]    = useState(true)
 
   useEffect(() => {
-    fetch(`${API_URL}/api/flash-sales`, { headers: { Accept: 'application/json' } })
+    fetch(`${API_BASE}/flash-sales`, { headers: { Accept: 'application/json' } })
       .then(r => r.json())
       .then((json: { success: boolean; data: FlashPromotion[] }) => {
         const data = json.data ?? []

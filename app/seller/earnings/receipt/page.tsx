@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
+import { API_BASE } from '@/lib/constants'
 
 interface SellerInfo {
   name: string
@@ -72,8 +73,7 @@ export default function FullReceiptPage() {
   useEffect(() => { setOrigin(window.location.origin) }, [])
 
   useEffect(() => {
-    const base = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/api\/?$/, '')
-    fetch(`${base}/api/seller/earnings/receipt`, {
+    fetch(`${API_BASE}/seller/earnings/receipt`, {
       headers: { Accept: 'application/json', Authorization: `Bearer ${getToken()}` },
     })
       .then(r => r.ok ? r.json() : Promise.reject())

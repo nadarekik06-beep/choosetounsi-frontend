@@ -7,8 +7,8 @@ import { useInView } from '@/app/hooks/useInView'
 import { useReducedMotion } from '@/app/hooks/useReducedMotion'
 import { useFormat } from '@/lib/i18n/useFormat'
 import type { SellerPlanInfo, PlanKey } from '@/lib/platformApi'
+import { API_BASE } from '@/lib/constants'
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/api\/?$/, '') + '/api'
 
 // ── Plans ─────────────────────────────────────────────────────────────────────
 
@@ -63,7 +63,7 @@ export function useLandingData(enabled = true) {
   useEffect(() => {
     if (!enabled) return
     let alive = true
-    fetch(`${API_URL}/seller-landing`, { headers: { Accept: 'application/json' } })
+    fetch(`${API_BASE}/seller-landing`, { headers: { Accept: 'application/json' } })
       .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
       .then(json => { if (alive) setData(json.data) })
       .catch(() => { if (alive) setFailed(true) })

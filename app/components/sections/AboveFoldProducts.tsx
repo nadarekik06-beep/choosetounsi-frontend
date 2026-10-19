@@ -7,8 +7,8 @@ import { isAuthenticated } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import ProductPrice, { ProductPromoOverlay, type PricedProduct } from '@/app/components/promotions/ProductPrice'
 import { useTranslations } from 'next-intl'
+import { API_BASE } from '@/lib/constants'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 interface ActivePromotion {
   id: number
@@ -134,7 +134,7 @@ export default function AboveFoldProducts() {
   const [loading,  setLoading]  = useState(true)
 
   useEffect(() => {
-    fetch(`${API_URL}/api/products?per_page=8&sort=latest`, { headers: { Accept: 'application/json' } })
+    fetch(`${API_BASE}/products?per_page=8&sort=latest`, { headers: { Accept: 'application/json' } })
       .then(r => r.json())
       .then(json => setProducts(json.data?.data ?? json.data ?? []))
       .catch(() => {})

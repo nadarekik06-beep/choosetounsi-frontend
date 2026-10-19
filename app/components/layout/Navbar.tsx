@@ -25,12 +25,12 @@ interface PopularProduct {
 }
 import { useFormat } from "@/lib/i18n/useFormat";
 import { LanguageLink, LanguageInlineSelect } from "@/components/i18n/LanguageSwitcher";
+import { API_BASE } from '@/lib/constants'
 
 interface ApiCategory {
   id: number; name: string; name_ar: string; slug: string;
   icon: string | null; image: string | null;
 }
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 /* ─── Mega menu data ─────────────────────────────────────────── */
 // Labels live in messages: mega.groups.<group> and mega.items.<slug>
@@ -235,7 +235,7 @@ function SearchDropdown({
 
   // Load the most-viewed products once on mount
   useEffect(() => {
-    fetch(`${API_URL}/api/products?sort=views&per_page=4`, { headers: { Accept: "application/json" } })
+    fetch(`${API_BASE}/products?sort=views&per_page=4`, { headers: { Accept: "application/json" } })
       .then(r => (r.ok ? r.json() : null))
       .then(res => setProducts(res?.data?.data ?? []))
       .catch(() => {})
@@ -705,7 +705,7 @@ export default function Navbar() {
 
   useEffect(()=>{ if(isAuthenticated()) setUser(getUser()); },[]);
   useEffect(()=>{
-    fetch(`${API_URL}/api/categories`,{headers:{Accept:"application/json"}})
+    fetch(`${API_BASE}/categories`,{headers:{Accept:"application/json"}})
       .then(r=>r.json()).then(j=>setCategories(j.data??[])).catch(()=>{});
   },[]);
   useEffect(()=>{
@@ -738,7 +738,7 @@ export default function Navbar() {
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `${API_URL}/api/search/suggestions?q=${encodeURIComponent(q)}&limit=10`,
+          `${API_BASE}/search/suggestions?q=${encodeURIComponent(q)}&limit=10`,
           { headers: { Accept: "application/json" } }
         );
         if (!res.ok) return;

@@ -1,9 +1,7 @@
 // lib/couponsApi.ts
 
 import { fallbackError } from '@/lib/i18n/clientLocale'
-const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
-const BASE_URL = RAW_URL.replace(/\/api\/?$/, '')
-const API_URL  = `${BASE_URL}/api`
+import { API_BASE } from '@/lib/constants'
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
@@ -16,7 +14,7 @@ function authHeaders(): Record<string, string> {
 }
 
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...authHeaders() },
     body: body != null ? JSON.stringify(body) : undefined,

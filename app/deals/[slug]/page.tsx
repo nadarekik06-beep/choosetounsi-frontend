@@ -16,13 +16,12 @@ import { useFormat } from '@/lib/i18n/useFormat'
 
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
-const ORIGIN  = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
-const API_URL = `${ORIGIN}/api`
+import { API_BASE, STORAGE_URL } from '@/lib/constants'
 
 function resolveImg(path: string | null | undefined): string | null {
   if (!path) return null
   if (path.startsWith('http')) return path
-  return `${ORIGIN}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
+  return `${STORAGE_URL}/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
 }
 
 function usePackPrice() {
@@ -415,7 +414,7 @@ export default function PackDetailPage() {
   useEffect(() => {
     if (!slug) return
     setLoading(true)
-    fetch(`${API_URL}/packs/${slug}`, { headers: { Accept: 'application/json' } })
+    fetch(`${API_BASE}/packs/${slug}`, { headers: { Accept: 'application/json' } })
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(json => {
         const p: PackDetail = json.data

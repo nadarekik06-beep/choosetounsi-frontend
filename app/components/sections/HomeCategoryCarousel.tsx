@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import { canScrollNext, canScrollPrev, scrollCarousel } from '@/lib/i18n/rtlScroll'
+import { API_BASE, STORAGE_URL } from '@/lib/constants'
 
 interface Category {
   id: number
@@ -16,12 +17,11 @@ interface Category {
   image: string | null
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 function resolveImageSrc(image: string | null): string | null {
   if (!image) return null
   if (image.startsWith('http://') || image.startsWith('https://')) return image
-  return `${API_URL}/storage/${image}`
+  return `${STORAGE_URL}/${image}`
 }
 
 const CATEGORY_IMAGE_MAP: { keywords: string[]; src: string }[] = [
@@ -86,7 +86,7 @@ export default function HomeCategoryCarousel() {
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch(`${API_URL}/api/categories`, { signal: controller.signal, headers: { Accept: 'application/json' } })
+    fetch(`${API_BASE}/categories`, { signal: controller.signal, headers: { Accept: 'application/json' } })
       .then(r => r.json())
       .then(json => setCategories(json.data ?? []))
       .catch(() => {})

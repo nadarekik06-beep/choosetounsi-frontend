@@ -1,6 +1,7 @@
 // Client-side access to the active locale + Accept-Language on every API call.
 
 import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, defaultLocale, dirOf, isLocale, type Locale } from '@/i18n/config'
+import { API_ORIGIN } from '@/lib/constants'
 
 export function currentLocale(): Locale {
   if (typeof document === 'undefined') return defaultLocale
@@ -19,7 +20,7 @@ export function persistLocale(locale: Locale) {
 
 function apiOrigin(): string | null {
   try {
-    return new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').origin
+    return new URL(API_ORIGIN).origin
   } catch {
     return null
   }

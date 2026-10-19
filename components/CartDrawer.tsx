@@ -25,6 +25,7 @@ import { useFormat } from '@/lib/i18n/useFormat'
 import ProductPrice from '@/app/components/promotions/ProductPrice'
 
 import BrandLoader from '@/components/brand/BrandLoader'
+import { STORAGE_URL } from '@/lib/constants'
 // ─── Extend CartItem with sponsored + pack fields ─────────────────────────────
 type CartItem = BaseCartItem & {
   is_pack?: boolean
@@ -36,12 +37,11 @@ type CartItem = BaseCartItem & {
 
 const SELECTED_ITEMS_KEY = 'ct_selected_items'
 
-const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api$/, '')
 
 function resolveImg(path: string | null | undefined): string | null {
   if (!path) return null
   if (path.startsWith('http')) return path
-  return `${STORAGE_BASE}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
+  return `${STORAGE_URL}/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
 }
 
 function usePrice() {

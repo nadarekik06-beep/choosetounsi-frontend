@@ -35,7 +35,7 @@ import {
 
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
+import { API_BASE } from '@/lib/constants'
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
@@ -81,7 +81,7 @@ const emptyForm = (): FormState => ({ ...emptyShippingAddress(), label: 'Home', 
 // ─── API helpers ──────────────────────────────────────────────────────────────
 
 async function apiRequest(method: string, path: string, body?: object) {
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
       'Content-Type': 'application/json',

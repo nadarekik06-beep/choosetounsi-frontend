@@ -14,7 +14,7 @@ import { Star, X, Upload, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import BrandLoader from '@/components/brand/BrandLoader'
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
+import { API_BASE } from '@/lib/constants'
 
 /** Consistent token lookup — matches the rest of the storefront */
 const getToken = (): string | null => {
@@ -74,7 +74,7 @@ export default function ReviewSubmitModal({
     const token = getToken();
     if (!token) return;
 
-    fetch(`${API_URL}/client/reviews/tags`, {
+    fetch(`${API_BASE}/client/reviews/tags`, {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/json',
@@ -148,7 +148,7 @@ export default function ReviewSubmitModal({
       selectedTags.forEach(id => fd.append('tag_ids[]', String(id)));
       images.forEach(img => fd.append('images[]', img));
 
-      const res  = await fetch(`${API_URL}/client/reviews`, {
+      const res  = await fetch(`${API_BASE}/client/reviews`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: fd,

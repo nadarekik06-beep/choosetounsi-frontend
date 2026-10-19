@@ -1,3 +1,4 @@
+import { API_BASE } from '@/lib/constants'
 /**
  * lib/sellerForecastApi.ts — Outils IA → Ventes (sales forecast).
  *
@@ -6,9 +7,6 @@
  * recompute from the page is "Actualiser", limited to once per 10 minutes.
  */
 
-const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
-const BASE_URL = RAW_URL.replace(/\/api\/?$/, '');
-const API_URL  = `${BASE_URL}/api`;
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -24,7 +22,7 @@ export type ApiError = Error & { response?: { status: number; data: { message?: 
 
 async function jsonRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
   const token = getToken();
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
       'Content-Type': 'application/json', Accept: 'application/json',

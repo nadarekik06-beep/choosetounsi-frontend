@@ -1,11 +1,9 @@
+import { API_BASE } from '@/lib/constants'
 /**
  * lib/blackPepperApi.ts
  * Black Pepper endpoints (daily brief, Centre de profit, visitor insights, quality audit, VIP).
  */
 
-const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
-const BASE_URL = RAW_URL.replace(/\/api\/?$/, '');
-const API_URL  = `${BASE_URL}/api`;
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -23,7 +21,7 @@ function authHeaders(): Record<string, string> {
 }
 
 async function jsonRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...authHeaders() },
     body: body != null ? JSON.stringify(body) : undefined,
@@ -294,7 +292,7 @@ export const blackPepperApi = {
 
   /** Monthly CSV report, saved through a blob link (the token lives in storage, not a cookie). */
   exportProfitCsv: async (month: string) => {
-    const res = await fetch(`${API_URL}/seller/black/profit-center/export?month=${month}`, { headers: { Accept: 'text/csv', ...authHeaders() } });
+    const res = await fetch(`${API_BASE}/seller/black/profit-center/export?month=${month}`, { headers: { Accept: 'text/csv', ...authHeaders() } });
     if (!res.ok) throw new Error('Export failed');
     const url = URL.createObjectURL(await res.blob());
     const a = Object.assign(document.createElement('a'), { href: url, download: `centre-de-profit-${month}.csv` });

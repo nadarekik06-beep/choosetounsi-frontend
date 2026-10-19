@@ -19,8 +19,8 @@ import { identityHeaders } from "@/lib/tracking";
 import { usePageLoading } from '@/components/brand/NavigationLoader'
 import { RouteLoading } from '@/components/brand/NavigationLoader'
 import "./search.css";
+import { API_BASE } from '@/lib/constants'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 interface SearchProduct extends PricedProduct {
   id:               number;
@@ -96,7 +96,7 @@ function InlineSearchBar({ initialQuery }: { initialQuery: string }) {
   const fetchSuggs = useCallback(async (val: string) => {
     if (val.length < 2) { setSuggs([]); return; }
     try {
-      const res = await fetch(`${API_URL}/api/search/suggestions?q=${encodeURIComponent(val)}&limit=8`, { headers: { Accept:"application/json" } });
+      const res = await fetch(`${API_BASE}/search/suggestions?q=${encodeURIComponent(val)}&limit=8`, { headers: { Accept:"application/json" } });
       if (!res.ok) return;
       setSuggs((await res.json()).suggestions ?? []);
     } catch { setSuggs([]); }
@@ -349,7 +349,7 @@ function SearchPageContent() {
 
   // Trending: the most-viewed products (also fills "You might also like" on thin results)
   useEffect(() => {
-    fetch(`${API_URL}/api/products?sort=views&per_page=12`, { headers: { Accept:"application/json" } })
+    fetch(`${API_BASE}/products?sort=views&per_page=12`, { headers: { Accept:"application/json" } })
       .then(r => r.ok ? r.json() : null).then(data => {
         if (!data) return;
         type ListedProduct = Omit<SearchProduct, "category_name" | "category_slug"> & {
@@ -374,7 +374,7 @@ function SearchPageContent() {
   async function doTextSearch(q: string) {
     setLoading(true); setError(null); setOriginalQuery(q);
     try {
-      const res = await fetch(`${API_URL}/api/search/text`, {
+      const res = await fetch(`${API_BASE}/search/text`, {
         method:"POST",
         // identityHeaders: guest id / token, so the search counts for personalization and Growth Radar
         headers:{ "Content-Type":"application/json", Accept:"application/json", ...identityHeaders() },

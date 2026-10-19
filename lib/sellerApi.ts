@@ -1,4 +1,5 @@
 'use client'
+import { API_BASE, STORAGE_URL } from '@/lib/constants'
 
 /**
  * lib/sellerApi.ts
@@ -14,15 +15,12 @@
  * Everything else is IDENTICAL to the original.
  */
 
-const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
-const BASE_URL = RAW_URL.replace(/\/api\/?$/, '')
-const API_URL  = `${BASE_URL}/api`
 
 export function storageUrl(path: string | null | undefined): string | null {
   if (!path) return null
   if (path.startsWith('http')) return path
   const clean = path.replace(/^\/storage\//, '').replace(/^\//, '')
-  return `${BASE_URL}/storage/${clean}`
+  return `${STORAGE_URL}/${clean}`
 }
 
 function getToken(): string | null {
@@ -66,7 +64,7 @@ export function isNetworkError(err: unknown): boolean {
 async function send<T>(path: string, init: RequestInit): Promise<T> {
   let res: Response
   try {
-    res = await fetch(`${API_URL}${path}`, init)
+    res = await fetch(`${API_BASE}${path}`, init)
   } catch {
     throw apiError('Network error', 0)
   }
@@ -103,7 +101,7 @@ function jsonRequest<T>(method: string, path: string, body?: unknown): Promise<T
 function uploadRequest<T>(path: string, data: FormData, onProgress?: (percent: number) => void): Promise<T> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-    xhr.open('POST', `${API_URL}${path}`)
+    xhr.open('POST', `${API_BASE}${path}`)
     xhr.setRequestHeader('Accept', 'application/json')
     Object.entries(authHeaders()).forEach(([k, v]) => xhr.setRequestHeader(k, v))
     if (onProgress) {

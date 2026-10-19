@@ -2,9 +2,8 @@
 // All numbers (floors, discounts, credits, gateways) come from the backend: nothing is priced here.
 
 import { currentLocale } from '@/lib/i18n/clientLocale'
+import { API_BASE } from '@/lib/constants'
 
-const RAW_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
-const API_URL = `${RAW_URL.replace(/\/api\/?$/, '')}/api`
 
 export type CampaignStatus = 'draft' | 'active' | 'paused' | 'completed' | 'cancelled' | 'rejected' | 'expired'
 export type PauseReason = 'manual' | 'budget_exhausted_today' | 'wallet_empty' | 'out_of_stock' | 'plan_downgrade' | 'product_inactive' | 'admin'
@@ -158,7 +157,7 @@ function token(): string | null {
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const t = token()
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
       Accept: 'application/json',

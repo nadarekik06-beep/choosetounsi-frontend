@@ -10,13 +10,12 @@ import ChatActions, { CHAT_ACTIONS_CSS, sanitizeActions, type ChatAction } from 
 import { useLocale, useTranslations } from 'next-intl'
 import { isLocale } from '@/i18n/config'
 import BrandLoader from '@/components/brand/BrandLoader'
+import { API_BASE } from '@/lib/constants'
 
 const RED   = '#db142e'
 const GREEN = '#198f41'
 const DARK  = '#9b0f1f'
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api')
-  .replace(/\/api\/?$/, '') + '/api'
 
 const AI_TIMEOUT_MS = 30_000
 
@@ -140,7 +139,7 @@ async function aiChatApi(userMessage: string, sessionId: string, locale: ChatLan
 
   let res: Response
   try {
-    res = await fetch(`${API_URL}/ai/chat`, {
+    res = await fetch(`${API_BASE}/ai/chat`, {
       method: 'POST',
       signal: controller.signal,
       headers: {

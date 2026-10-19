@@ -24,8 +24,8 @@ import { isAuthenticated } from '@/lib/auth';
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import { BusyLabel } from '@/components/brand/BrandLoader'
+import { API_BASE } from '@/lib/constants'
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api');
 const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -224,7 +224,7 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
       const token = getToken();
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res  = await fetch(`${API_URL}/products/${slug}/reviews?${params}`, { headers, signal });
+      const res  = await fetch(`${API_BASE}/products/${slug}/reviews?${params}`, { headers, signal });
       const json = await res.json();
 
       if (json.success) {
@@ -258,7 +258,7 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
   const handleVote = async (reviewId: number, type: 'helpful' | 'not_helpful') => {
     if (!isAuthenticated()) return;
     const token = getToken();
-    await fetch(`${API_URL}/reviews/${reviewId}/vote`, {
+    await fetch(`${API_BASE}/reviews/${reviewId}/vote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ type }),
@@ -269,7 +269,7 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
   const handleReport = async (reviewId: number, reason: string) => {
     if (!isAuthenticated()) return;
     const token = getToken();
-    await fetch(`${API_URL}/reviews/${reviewId}/report`, {
+    await fetch(`${API_BASE}/reviews/${reviewId}/report`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ reason }),

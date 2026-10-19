@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { AppNotification, NotificationListResponse } from '@/lib/notificationApi';
+import { API_BASE } from '@/lib/constants'
 
 declare global {
   interface Window {
@@ -57,11 +58,10 @@ export function usePusherNotifications({
             ? (document.cookie.match(/admin_token=([^;]+)/) ?? [])[1]
             : localStorage.getItem('ct_auth_token');
 
-        const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
         const authEndpoint =
           userType === 'admin'
-            ? `${BASE}/admin/broadcasting/auth`
-            : `${BASE}/broadcasting/auth`;
+            ? `${API_BASE}/admin/broadcasting/auth`
+            : `${API_BASE}/broadcasting/auth`;
 
         echoRef.current = new Echo({
           broadcaster:  'pusher',

@@ -6,8 +6,8 @@
 // so a reload can search again (the backend caches results per photo for a few minutes).
 
 import { useCallback, useEffect, useState } from 'react'
+import { API_BASE } from '@/lib/constants'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 const STORE_KEY = 'imageSearch'
 export const MAX_SIDE = 512
 export const OPEN_EVENT = 'open-image-search'
@@ -76,7 +76,7 @@ export async function searchByPhoto<P>(blob: Blob): Promise<ImageSearchOutcome<P
   const form = new FormData()
   form.append('image', blob, 'photo.jpg')
   try {
-    const res = await fetch(`${API_URL}/api/search/image`, {
+    const res = await fetch(`${API_BASE}/search/image`, {
       method: 'POST', body: form,
       headers: { Accept: 'application/json' },   // Accept-Language: added by clientLocale's fetch patch
     })
@@ -92,7 +92,7 @@ export async function searchByPhoto<P>(blob: Blob): Promise<ImageSearchOutcome<P
 
 export async function fetchPhotoSearchAvailable(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_URL}/api/search/image/status`, { headers: { Accept: 'application/json' } })
+    const res = await fetch(`${API_BASE}/search/image/status`, { headers: { Accept: 'application/json' } })
     return res.ok ? !!(await res.json()).available : false
   } catch {
     return false
@@ -118,7 +118,7 @@ export function usePhotoSearchAvailable(): [boolean | null, () => Promise<boolea
 /** Which result was opened (first click per search; tunes the thresholds). */
 export function logPhotoSearchClick(searchId: number | undefined, productId: number, rank: number) {
   if (!searchId) return
-  fetch(`${API_URL}/api/search/image/click`, {
+  fetch(`${API_BASE}/search/image/click`, {
     method: 'POST', keepalive: true,
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ search_id: searchId, product_id: productId, rank }),

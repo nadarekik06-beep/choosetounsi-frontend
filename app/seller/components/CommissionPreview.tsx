@@ -30,6 +30,7 @@ import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
 import BrandLoader from '@/components/brand/BrandLoader'
+import { API_BASE } from '@/lib/constants'
 interface CommissionData {
   unit_price:             number
   total_price:            number
@@ -51,9 +52,6 @@ interface CommissionData {
   }>
 }
 
-const RAW_URL  = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
-const BASE_URL = RAW_URL.replace(/\/api\/?$/, '')
-const API_URL  = `${BASE_URL}/api`
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
@@ -117,7 +115,7 @@ export default function CommissionPreview({
       setError(false)
       try {
         const token = getToken()
-        const res = await fetch(`${API_URL}/seller/commission/calculate`, {
+        const res = await fetch(`${API_BASE}/seller/commission/calculate`, {
           method:  'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -21,13 +21,12 @@ import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
-const STORAGE_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
-const API_URL      = `${STORAGE_BASE}/api`
+import { API_BASE, STORAGE_URL } from '@/lib/constants'
 
 function resolveImg(path: string | null | undefined): string | null {
   if (!path) return null
   if (path.startsWith('http')) return path
-  return `${STORAGE_BASE}/storage/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
+  return `${STORAGE_URL}/${path.replace(/^\/storage\//, '').replace(/^\//, '')}`
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -402,7 +401,7 @@ export default function ProductDetailPage() {
     setLoading(true)
     setSelectedOptions({})
     setActivePromotion(null)
-    fetch(`${API_URL}/products/${slug}`, { headers: { Accept: 'application/json' } })
+    fetch(`${API_BASE}/products/${slug}`, { headers: { Accept: 'application/json' } })
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(json => {
         const prod: Product = json.data

@@ -24,9 +24,8 @@ import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { OCCASIONS, DEFAULT_OCCASION, useOccasionCategories } from '@/lib/occasions'
 import { PepperShape } from '@/app/components/home/illustrations/AnimatedPepper'
+import { API_BASE } from '@/lib/constants'
 
-const ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '')
-const API    = `${ORIGIN}/api`
 
 export type Sort = 'created_at' | 'views' | 'price_asc' | 'price_desc' | 'rating'
 
@@ -141,18 +140,18 @@ export default function ProductFilterSidebar({
     ;(async () => {
       try {
         if (subSlug) {
-          const r1 = await fetch(`${API}/categories/${catSlug}/subcategories`, { headers: { Accept: 'application/json' } })
+          const r1 = await fetch(`${API_BASE}/categories/${catSlug}/subcategories`, { headers: { Accept: 'application/json' } })
           const j1 = await r1.json()
           const sub = (j1.data ?? []).find((s: any) => s.slug === subSlug)
           if (sub) {
-            const r2 = await fetch(`${API}/subcategories/${sub.id}/attributes`, { headers: { Accept: 'application/json' } })
+            const r2 = await fetch(`${API_BASE}/subcategories/${sub.id}/attributes`, { headers: { Accept: 'application/json' } })
             const j2 = await r2.json()
             setAttrs((j2.attributes ?? []).filter((a: any) => a.is_filterable !== false && a.options?.length))
             return
           }
         }
         const qs = sellerId ? `?seller_id=${sellerId}` : ''
-        const r = await fetch(`${API}/categories/${catSlug}/filter-attributes${qs}`, { headers: { Accept: 'application/json' } })
+        const r = await fetch(`${API_BASE}/categories/${catSlug}/filter-attributes${qs}`, { headers: { Accept: 'application/json' } })
         const j = await r.json()
         setAttrs((j.data ?? j.attributes ?? []).filter((a: Attr) => a.options?.length))
       } catch { setAttrs([]) } finally { setALoad(false) }

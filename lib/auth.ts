@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { currentLocale, fallbackError } from '@/lib/i18n/clientLocale';
 import { mergeGuestHistory } from '@/lib/tracking';
+import { API_BASE } from '@/lib/constants'
 export interface AuthUser {
   id: number;
   name: string;
@@ -55,7 +56,7 @@ const TOKEN_KEY = 'ct_auth_token';
 const USER_KEY  = 'ct_auth_user';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api',
+  baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
   timeout: 15_000,
 });
@@ -235,8 +236,7 @@ export async function refreshUser(): Promise<AuthUser | null> {
 }
 
 export async function loginWithGoogle(): Promise<void> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
-  const res = await fetch(`${baseUrl}/auth/google/redirect`);
+  const res = await fetch(`${API_BASE}/auth/google/redirect`);
   const data = await res.json();
   window.location.href = data.url;
 }
