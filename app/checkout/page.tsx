@@ -135,7 +135,7 @@ function CouponBox({
 function PaymentMethodCard({
   method, selected, onSelect, disabled, disabledReason,
   icon: Icon, label, description, badge, badgeColor,
-  comingSoon, comingSoonLabel, comingSoonMessage, onComingSoon,
+  comingSoon, comingSoonLabel, comingSoonMessage,
 }: {
   method: PaymentMethod
   selected: boolean
@@ -151,19 +151,17 @@ function PaymentMethodCard({
   comingSoon?: boolean
   comingSoonLabel?: string
   comingSoonMessage?: string
-  onComingSoon?: () => void
 }) {
   if (comingSoon) {
+    // Not a button: nothing to click, focus or select until the admin turns the method on.
     return (
-      <button
-        type="button"
+      <div
         aria-disabled="true"
         title={comingSoonMessage}
-        onClick={onComingSoon}
         data-method={method}
         style={{
           display: 'flex', alignItems: 'flex-start', gap: 14,
-          padding: '14px 16px', borderRadius: 14, cursor: 'not-allowed',
+          padding: '14px 16px', borderRadius: 14, cursor: 'not-allowed', userSelect: 'none',
           border: '2px dashed #e5e7eb', background: '#f9fafb',
           textAlign: 'start', fontFamily: 'inherit', width: '100%', opacity: 0.7,
         }}
@@ -185,7 +183,7 @@ function PaymentMethodCard({
           </div>
           <p style={{ fontSize: 12, color: '#94a3b8', margin: 0, lineHeight: 1.4 }}>{description}</p>
         </div>
-      </button>
+      </div>
     )
   }
   return (
@@ -1057,11 +1055,11 @@ export default function CheckoutPage() {
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <PaymentMethodCard method="cod" selected={paymentMethod === 'cod'} onSelect={() => setPaymentMethod('cod')} icon={Truck} label={t('pay.cod')} description={t('pay.codDesc')} badge={t('pay.codBadge')} badgeColor="#198f41" />
                 <PaymentMethodCard method="wallet" selected={paymentMethod === 'wallet'} onSelect={() => !walletInsufficient && setPaymentMethod('wallet')} disabled={walletLoading || walletInsufficient} disabledReason={walletLoading ? t('pay.walletLoading') : t('pay.walletInsufficient', { amount: fmt(walletBalance ?? 0) })} icon={Wallet} label={t('pay.wallet')} description={walletLoading ? t('pay.walletChecking') : t('pay.walletBalance', { amount: fmt(walletBalance ?? 0) })} badge={!walletLoading && !walletInsufficient ? t('pay.walletBadge') : undefined} badgeColor="#6366f1"
-                  comingSoon={!methods.wallet} comingSoonLabel={t('pay.comingSoon')} comingSoonMessage={t('pay.comingSoonAlert')} onComingSoon={showComingSoon} />
+                  comingSoon={!methods.wallet} comingSoonLabel={t('pay.comingSoon')} comingSoonMessage={t('pay.comingSoonAlert')} />
                 <PaymentMethodCard method="d17" selected={paymentMethod === 'd17'} onSelect={() => d17Account && setPaymentMethod('d17')} disabled={d17Loading || !d17Account} disabledReason={d17Loading ? tc('loading') : t('pay.d17Unavailable')} icon={Smartphone} label="D17" description={t('pay.d17Desc')} badge={t('pay.d17Badge')} badgeColor="#0284c7"
-                  comingSoon={!methods.d17} comingSoonLabel={t('pay.comingSoon')} comingSoonMessage={t('pay.comingSoonAlert')} onComingSoon={showComingSoon} />
+                  comingSoon={!methods.d17} comingSoonLabel={t('pay.comingSoon')} comingSoonMessage={t('pay.comingSoonAlert')} />
                 <PaymentMethodCard method="card" selected={paymentMethod === 'card'} onSelect={() => setPaymentMethod('card')} icon={CreditCard} label={t('pay.card')} description={t('pay.cardDesc')} badge={t('pay.cardBadge')} badgeColor="#7c3aed"
-                  comingSoon={!methods.card} comingSoonLabel={t('pay.comingSoon')} comingSoonMessage={t('pay.comingSoonAlert')} onComingSoon={showComingSoon} />
+                  comingSoon={!methods.card} comingSoonLabel={t('pay.comingSoon')} comingSoonMessage={t('pay.comingSoonAlert')} />
                 {comingSoonNotice && (
                   <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 12px', fontSize: 12, fontWeight: 600, color: '#92400e' }}>
                     <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
