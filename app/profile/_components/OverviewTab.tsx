@@ -106,7 +106,7 @@ export function CompletionCard({ data, onFix }: { data: ProfileOverview | null; 
         </div>
       </div>
       {!done && required.length > 0 && (
-        <Link href="/complete-profile?redirect=/profile" className="pf-btn primary">{t('cta')}</Link>
+        <Link href="/complete-profile?redirect=/profile" className="pf-btn outline sm">{t('cta')}</Link>
       )}
     </section>
   )

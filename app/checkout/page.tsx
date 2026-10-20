@@ -24,7 +24,8 @@ import {
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { checkoutApi, walletApi, paymentApi, type BuyNowPayload, type CheckoutQuote, type CheckoutResponse, type QuotePayload } from '@/lib/shopApi'
-import { isAuthenticated } from '@/lib/auth'
+import { api, getUser, isAuthenticated, updateSessionUser, type AuthUser } from '@/lib/auth'
+import { profileApi } from '@/lib/profileApi'
 import { fetchPaymentInfo, COD_ONLY, type PaymentInfo } from '@/lib/platformApi'
 import type { UserAddress } from '@/app/account/addresses/page'
 import { useTranslations } from 'next-intl'
@@ -668,6 +669,12 @@ export default function CheckoutPage() {
           setSavedNeedsCompletion(!isCompleteShippingAddress(f))
         } else {
           setSelectedAddressId(null)
+          // No saved address yet (profile skipped): start from the profile's name and phone
+          profileApi.get().then(p => setForm(f => ({
+            ...f,
+            recipient_name: f.recipient_name || [p.first_name ?? p.suggested_first_name, p.last_name ?? p.suggested_last_name].filter(Boolean).join(' '),
+            phone:          f.phone || p.phone || '',
+          }))).catch(() => {})
         }
       })
       .catch(() => { setSavedAddresses([]); setSelectedAddressId(null) })
@@ -812,6 +819,13 @@ export default function CheckoutPage() {
       // The order exists: the next checkout is a new attempt
       clearCheckoutAttempt()
 
+      // The server saved the delivery details to an incomplete profile: refresh the cached flag
+      if (getUser()?.profile_completed === false) {
+        api.get<{ user: AuthUser }>('/auth/user')
+          .then(({ data }) => { const u = getUser(); if (u) updateSessionUser({ ...u, ...data.user }) })
+          .catch(() => {})
+      }
+
       if (paymentMethod === 'card' && res.needs_payment) {
         setLoading(false)
         setStripeLoading(true)
@@ -827,10 +841,6 @@ export default function CheckoutPage() {
       })
     } catch (caught) {
       const err = caught as Error & { status?: number; data?: { code?: string; errors?: Record<string, string[]> } }
-      if (err.data?.code === 'profile_incomplete') {
-        router.push(`/complete-profile?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)
-        return
-      }
       // Validation (422 with field errors): mark the fields, in the reader's language
       const fieldErrors = err.status === 422 ? shippingAddressErrorsFromServer(err.data?.errors) : {}
       if (Object.keys(fieldErrors).length > 0) {

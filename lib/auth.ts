@@ -14,6 +14,8 @@ export interface AuthUser {
   onboarding_completed: boolean;
   /** Shoppers only: name, phone and a delivery address are set. Absent on old sessions. */
   profile_completed?: boolean;
+  /** Last "Skip for now" on /complete-profile (ISO), null if never. */
+  profile_prompt_skipped_at?: string | null;
 }
 
 export interface LoginCredentials {
@@ -141,11 +143,18 @@ export function clearLocalSession(): void {
  * Used by both login() and verifyEmail() to keep redirect logic consistent.
  */
 export function resolveRedirectPath(user: AuthUser, after = '/'): string {
-  if (needsProfileCompletion(user)) return `/complete-profile?redirect=${encodeURIComponent(after)}`;
-  if (user.role === 'client' && !user.onboarding_completed) return '/onboarding';
-  if (user.role === 'seller') return '/seller';
+  if (shouldPromptProfile(user)) return `/complete-profile?redirect=${encodeURIComponent(after)}`;
+  if (user.role === 'client' && !user.onboarding_completed) {
+    return after === '/' ? '/onboarding' : `/onboarding?redirect=${encodeURIComponent(after)}`;
+  }
+  if (user.role === 'seller') return after.startsWith('/seller') ? after : '/seller';
   if (user.role === 'admin')  return '/admin';
-  return '/';
+  return after;
+}
+
+/** A post-login destination from the URL: same-site paths only, never another origin. */
+export function safeAfterLogin(raw: string | null | undefined): string | null {
+  return raw && raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth') ? raw : null;
 }
 
 export async function login(credentials: LoginCredentials): Promise<{ user: AuthUser; redirectTo: string }> {
@@ -235,15 +244,58 @@ export async function refreshUser(): Promise<AuthUser | null> {
   } catch { clearSession(); return null; }
 }
 
-export async function loginWithGoogle(): Promise<void> {
+const GOOGLE_AFTER_KEY = 'ct_google_after';
+
+/** `after`: where to land once signed in — kept across the Google round trip. */
+export async function loginWithGoogle(after?: string | null): Promise<void> {
+  try {
+    if (after) sessionStorage.setItem(GOOGLE_AFTER_KEY, after);
+    else sessionStorage.removeItem(GOOGLE_AFTER_KEY);
+  } catch {}
   const res = await fetch(`${API_BASE}/auth/google/redirect`);
   const data = await res.json();
   window.location.href = data.url;
 }
 
-/** Shoppers must complete their profile before using the store (backend: ProfileCompletion). */
+/** The page the shopper wanted before the Google sign-in (same-site paths only), read once. */
+export function takeGoogleAfter(): string | null {
+  try {
+    const raw = sessionStorage.getItem(GOOGLE_AFTER_KEY);
+    sessionStorage.removeItem(GOOGLE_AFTER_KEY);
+    return safeAfterLogin(raw);
+  } catch { return null; }
+}
+
+/** Shopper whose name, phone or delivery address is missing (backend: ProfileCompletion). */
 export function needsProfileCompletion(user: AuthUser | null = getUser()): boolean {
   return !!(user && user.role === 'client' && user.profile_completed === false);
+}
+
+// "Skip for now" on /complete-profile: the prompt comes back at most once every 7 days,
+// and only right after signing in — never in the middle of a visit.
+const PROFILE_SKIP_KEY = 'ct_profile_prompt_skipped_at';
+const PROFILE_PROMPT_EVERY_MS = 7 * 24 * 60 * 60 * 1000;
+
+function lastProfileSkip(user: AuthUser): number {
+  let local = 0;
+  try { local = Date.parse(localStorage.getItem(PROFILE_SKIP_KEY) ?? '') || 0; } catch {}
+  const server = Date.parse(user.profile_prompt_skipped_at ?? '') || 0;
+  return Math.max(local, server);
+}
+
+/** Send this shopper to /complete-profile after sign-in? */
+export function shouldPromptProfile(user: AuthUser | null = getUser()): boolean {
+  if (!user || !needsProfileCompletion(user)) return false;
+  return Date.now() - lastProfileSkip(user) >= PROFILE_PROMPT_EVERY_MS;
+}
+
+/** Remember a skip on this device and on the account (best effort). */
+export async function rememberProfileSkip(): Promise<void> {
+  const now = new Date().toISOString();
+  try { localStorage.setItem(PROFILE_SKIP_KEY, now); } catch {}
+  const user = getUser();
+  if (user) updateSessionUser({ ...user, profile_prompt_skipped_at: now });
+  try { await api.post('/profile/skip-prompt'); } catch {}
 }
 
 export function needsOnboarding(): boolean {

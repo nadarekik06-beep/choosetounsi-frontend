@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { login, loginWithGoogle, getToken, getUser, clearLocalSession, needsProfileCompletion, resolveRedirectPath } from '@/lib/auth';
+import { login, loginWithGoogle, getToken, getUser, clearLocalSession, resolveRedirectPath, safeAfterLogin } from '@/lib/auth';
 import {
   Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle2,
   ShoppingBag, Store, TrendingUp, Shield,
@@ -26,7 +26,8 @@ function LoginForm() {
   const t            = useTranslations('auth');
   const router       = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl  = useRef(searchParams.get('callbackUrl')).current;
+  // Where to go after login: ?callbackUrl= or ?redirect= (checkout uses the latter), same-site paths only
+  const callbackUrl  = useRef(safeAfterLogin(searchParams.get('callbackUrl') ?? searchParams.get('redirect'))).current;
 
   const [email,         setEmail]         = useState('');
   const [password,      setPassword]      = useState('');
@@ -64,10 +65,8 @@ function LoginForm() {
     setError('');
     setSuccess('');
     try {
-      const { user, redirectTo } = await login({ email: email.trim(), password });
-      router.push(needsProfileCompletion(user)
-        ? resolveRedirectPath(user, callbackUrl ?? '/')
-        : (callbackUrl?.startsWith('/seller') ? callbackUrl : redirectTo) ?? '/');
+      const { user } = await login({ email: email.trim(), password });
+      router.push(resolveRedirectPath(user, callbackUrl ?? '/'));
     } catch (err: any) {
       if (err?.needs_verification && err?.email) {
         router.push(`/auth/verify-email?email=${encodeURIComponent(err.email)}`);
@@ -83,7 +82,7 @@ function LoginForm() {
     setError('');
     setSuccess('');
     try {
-      await loginWithGoogle();
+      await loginWithGoogle(callbackUrl);
     } catch {
       setError(t('errors.googleConnect'));
       setGoogleLoading(false);

@@ -2,7 +2,7 @@
 
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { saveSession, needsProfileCompletion, AuthUser } from '@/lib/auth';
+import { saveSession, shouldPromptProfile, takeGoogleAfter, AuthUser } from '@/lib/auth';
 import { useTranslations } from 'next-intl';
 import BrandLoader from '@/components/brand/BrandLoader'
 
@@ -23,14 +23,16 @@ function GoogleCallbackHandler() {
     try {
       const user: AuthUser = JSON.parse(atob(userRaw));
       saveSession(token, user);
+      // Where they were heading before Google (set by loginWithGoogle)
+      const after = takeGoogleAfter() ?? '/';
 
-      // ── Profile completion, then preference onboarding, for clients ─────
-      if (needsProfileCompletion(user)) {
-        router.replace('/complete-profile?redirect=/');
+      // ── Profile completion (skippable), then preference onboarding, for clients ─────
+      if (shouldPromptProfile(user)) {
+        router.replace(`/complete-profile?redirect=${encodeURIComponent(after)}`);
         return;
       }
       if (user.role === 'client' && !user.onboarding_completed) {
-        router.replace('/onboarding?redirect=/');
+        router.replace(`/onboarding?redirect=${encodeURIComponent(after)}`);
         return;
       }
 
@@ -38,7 +40,7 @@ function GoogleCallbackHandler() {
       const redirectPath =
         user.active_plan === 'red' || user.active_plan === 'black'
           ? '/seller/dashboard/red'
-          : '/';
+          : user.role === 'client' ? after : '/';
 
       router.replace(redirectPath);
     } catch {

@@ -2,7 +2,7 @@
 
 /** First/last name, phone, birth date, gender — profile Settings and /complete-profile. */
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { validateTunisianPhone } from '@/lib/shippingAddress'
 import { profileApi, syncSessionUser, ApiError, type Profile } from '@/lib/profileApi'
@@ -21,12 +21,14 @@ function maxBirthDate() {
   return d.toISOString().slice(0, 10)
 }
 
-export default function PersonalInfoForm({ profile, onSaved, showOptional = true, submitLabel, onCancel }: {
+export default function PersonalInfoForm({ profile, onSaved, showOptional = true, submitLabel, onCancel, extraAction }: {
   profile: Profile
   onSaved: (p: Profile) => void
   showOptional?: boolean
   submitLabel?: string
   onCancel?: () => void
+  /** Secondary button shown next to the submit one (e.g. "Skip for now"). */
+  extraAction?: ReactNode
 }) {
   const t  = useTranslations('profile.settings')
   const te = useTranslations('profile.errors')
@@ -125,6 +127,7 @@ export default function PersonalInfoForm({ profile, onSaved, showOptional = true
 
       <div className="pf-actions">
         {onCancel && <button type="button" className="pf-btn light" onClick={onCancel}>{tc('cancel')}</button>}
+        {extraAction}
         <button type="submit" className="pf-btn primary" disabled={saving}>
           {saving && <BrandLoader variant="inline" size={15} />}
           {saving ? tc('saving') : (submitLabel ?? tc('save'))}

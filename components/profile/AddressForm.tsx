@@ -6,7 +6,7 @@
  * passes checkout.
  */
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import ShippingAddressFields from '@/components/address/ShippingAddressFields'
 import {
@@ -20,7 +20,7 @@ import BrandLoader from '@/components/brand/BrandLoader'
 // Stored values stay in English; only their label is translated (same as the address book).
 const LABELS = ['Home', 'Work', 'Parents', 'Other'] as const
 
-export default function AddressForm({ initial, prefill, forceDefault, onSaved, onCancel, submitLabel, cancelLabel }: {
+export default function AddressForm({ initial, prefill, forceDefault, onSaved, onCancel, submitLabel, cancelLabel, extraAction }: {
   initial?: SavedAddress
   prefill?: Partial<ShippingAddressForm>
   /** First address: always the default, no toggle. */
@@ -29,6 +29,8 @@ export default function AddressForm({ initial, prefill, forceDefault, onSaved, o
   onCancel?: () => void
   submitLabel?: string
   cancelLabel?: string
+  /** Secondary button shown next to the submit one (e.g. "Skip for now"). */
+  extraAction?: ReactNode
 }) {
   const t  = useTranslations('profile.addresses')
   const tl = useTranslations('addresses.labels')
@@ -93,6 +95,7 @@ export default function AddressForm({ initial, prefill, forceDefault, onSaved, o
 
       <div className="pf-actions">
         {onCancel && <button type="button" className="pf-btn light" onClick={onCancel}>{cancelLabel ?? tc('cancel')}</button>}
+        {extraAction}
         <button type="submit" className="pf-btn primary" disabled={saving}>
           {saving && <BrandLoader variant="inline" size={15} />}
           {saving ? tc('saving') : (submitLabel ?? t('save'))}

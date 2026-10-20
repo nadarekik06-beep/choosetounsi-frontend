@@ -14,7 +14,6 @@ import SupportChatWidget from '@/components/SupportChatWidget';
 import SiteFooter from '@/components/layout/SiteFooter';
 import ReviewPromptPopup from '@/app/components/reviews/ReviewPromptPopup';
 import EntryPopup from '@/components/ads/EntryPopup';
-import ProfileGate from '@/components/profile/ProfileGate';
 import { NavigationLoaderProvider, NavigationLoaderHost } from '@/components/brand/NavigationLoader';
 import Script from 'next/script';
 import { SELLER_THEME_BOOT } from '@/app/seller/themeBoot';
@@ -81,7 +80,6 @@ export default async function RootLayout({
                 <SupportChatWidget />
                 <ReviewPromptPopup />
                 <EntryPopup />
-                <ProfileGate />
                 {/* fullscreen; the seller dashboard mounts its own over its content area */}
                 <NavigationLoaderHost />
               </NavigationLoaderProvider>

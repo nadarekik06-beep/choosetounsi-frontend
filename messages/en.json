@@ -864,7 +864,7 @@
       "title": "Complete your profile",
       "doneTitle": "Almost perfect!",
       "doneBody": "You can order. Add the optional details to reach 100%.",
-      "requiredBody": "Your name, phone and a delivery address are needed before your first order.",
+      "requiredBody": "Add your name, phone and a delivery address for faster orders — now, or at checkout.",
       "cta": "Complete now",
       "fields": {
         "first_name": "First name",
@@ -5688,7 +5688,9 @@
     "finish": "Save and continue",
     "back": "Back",
     "privacy": "Your data stays private",
-    "whyDelivery": "Needed to deliver your orders"
+    "whyDelivery": "Needed to deliver your orders",
+    "skip": "Skip for now",
+    "skipHint": "You can complete your profile later from your account. Your address will be asked at checkout."
   },
   "shopPage": {
     "hero": {

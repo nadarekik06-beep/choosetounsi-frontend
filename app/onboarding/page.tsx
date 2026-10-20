@@ -45,7 +45,9 @@ export default function OnboardingPage() {
   const t            = useTranslations('onboarding')
   const router       = useRouter()
   const searchParams = useSearchParams()
-  const redirect     = searchParams.get('redirect') ?? '/'
+  // Same-site paths only: never bounce to another origin
+  const rawRedirect  = searchParams.get('redirect')
+  const redirect     = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/'
 
   const [data,         setData]         = useState<OnboardingData | null>(null)
   const [loading,      setLoading]      = useState(true)
@@ -193,6 +195,18 @@ export default function OnboardingPage() {
       `}</style>
 
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #fdf9f9 0%, #f9fafb 100%)', fontFamily: "'Barlow', sans-serif", display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
+
+        {/* Skip — visible on every step; marks onboarding done so it never comes back */}
+        <div style={{ width: '100%', maxWidth: 520, display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <button
+            type="button"
+            onClick={handleSkip}
+            disabled={saving}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 10, border: '1.5px solid #198f41', background: '#fff', color: '#198f41', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            <X size={14} /> {t('skip')}
+          </button>
+        </div>
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 32, animation: 'fadeUp 0.4s ease' }}>
@@ -359,12 +373,14 @@ export default function OnboardingPage() {
 
           {/* Navigation buttons */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-            <button
-              onClick={stepIndex === 0 ? handleSkip : goBack}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#fff', color: '#64748b', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
-            >
-              {stepIndex === 0 ? <><X size={14} /> {t('skip')}</> : <><ChevronLeft size={14} /> {t('back')}</>}
-            </button>
+            {stepIndex === 0 ? <span /> : (
+              <button
+                onClick={goBack}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#fff', color: '#64748b', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                <ChevronLeft size={14} /> {t('back')}
+              </button>
+            )}
 
             {stepIndex < STEPS.length - 1 ? (
               <button

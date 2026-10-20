@@ -1,18 +1,19 @@
 'use client'
 
 /**
- * Mandatory profile completion for shoppers (ProfileGate sends them here):
+ * Profile completion for shoppers, shown right after sign-in (shouldPromptProfile):
  * 1. about you — first name, last name, phone
  * 2. a delivery address (governorate, city, street) — reused by checkout
  * Then on to preference onboarding (if not done yet) or back where they were.
- * There is no skip: the backend refuses checkout until this is done.
+ * "Skip for now" goes straight back; the prompt returns at most once a week,
+ * and checkout asks for the address (and saves it to the profile) instead.
  */
 
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { LogOut, ShieldCheck, Truck, UserRound, MapPin, Check } from 'lucide-react'
-import { getUser, isAuthenticated, logout, updateSessionUser } from '@/lib/auth'
+import { LogOut, ShieldCheck, Truck, UserRound, MapPin, Check, Info } from 'lucide-react'
+import { getUser, isAuthenticated, logout, rememberProfileSkip, updateSessionUser } from '@/lib/auth'
 import { addressApi, profileApi, syncSessionUser, type Profile, type SavedAddress } from '@/lib/profileApi'
 import PersonalInfoForm from '@/components/profile/PersonalInfoForm'
 import AddressForm from '@/components/profile/AddressForm'
@@ -84,6 +85,21 @@ function CompleteProfile() {
 
   const doLogout = async () => { await logout(); router.replace('/auth/login') }
 
+  const [skipping, setSkipping] = useState(false)
+  const skip = () => {
+    setSkipping(true)
+    // Recorded in the background: the shopper goes on right away —
+    // through preference onboarding once (it has its own skip), like after saving.
+    void rememberProfileSkip()
+    const user = getUser()
+    router.replace(user && user.role === 'client' && !user.onboarding_completed
+      ? `/onboarding?redirect=${encodeURIComponent(redirect)}`
+      : redirect)
+  }
+  const skipButton = (
+    <button type="button" className="pf-btn outline" onClick={skip} disabled={skipping}>{t('skip')}</button>
+  )
+
   // An existing address that predates structured addresses only needs completing.
   const incomplete = addresses.find(a => !a.delegation || !a.address)
 
@@ -111,7 +127,10 @@ function CompleteProfile() {
               <p>{t('doneBody')}</p>
             </div>
           ) : error ? (
-            <div className="pf-alert error" role="alert">{error}</div>
+            <div style={{ display: 'grid', gap: 14 }}>
+              <div className="pf-alert error" role="alert">{error}</div>
+              <div className="pf-actions">{skipButton}</div>
+            </div>
           ) : !profile ? (
             <div style={{ display: 'grid', gap: 14 }}>
               <Skeleton h={6} /><Skeleton w="60%" h={20} /><Skeleton h={44} /><Skeleton h={44} /><Skeleton h={44} />
@@ -127,7 +146,7 @@ function CompleteProfile() {
               <p style={{ margin: '0 0 18px', fontSize: '0.84rem', color: '#6b6b76' }}>{step === 1 ? t('step1Body') : t('step2Body')}</p>
 
               {step === 1 ? (
-                <PersonalInfoForm profile={profile} onSaved={afterPersonal} showOptional={false} submitLabel={t('continue')} />
+                <PersonalInfoForm profile={profile} onSaved={afterPersonal} showOptional={false} submitLabel={t('continue')} extraAction={skipButton} />
               ) : (
                 <AddressForm
                   key={incomplete?.id ?? 'new'}
@@ -141,8 +160,13 @@ function CompleteProfile() {
                   onCancel={() => setStep(1)}
                   submitLabel={t('finish')}
                   cancelLabel={t('back')}
+                  extraAction={skipButton}
                 />
               )}
+              <p style={{ margin: '16px 0 0', fontSize: '0.8rem', color: '#6b6b76', lineHeight: 1.5, display: 'flex', gap: 7, alignItems: 'flex-start' }}>
+                <Info size={15} color="#198f41" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden />
+                {t('skipHint')}
+              </p>
             </>
           )}
         </div>

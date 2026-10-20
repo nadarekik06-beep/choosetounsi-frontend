@@ -864,7 +864,7 @@
       "title": "Complétez votre profil",
       "doneTitle": "Presque parfait !",
       "doneBody": "Vous pouvez commander. Ajoutez les infos facultatives pour atteindre 100 %.",
-      "requiredBody": "Votre nom, votre téléphone et une adresse de livraison sont nécessaires avant votre première commande.",
+      "requiredBody": "Ajoutez votre nom, votre téléphone et une adresse de livraison pour commander plus vite — maintenant ou au moment de la commande.",
       "cta": "Compléter maintenant",
       "fields": {
         "first_name": "Prénom",
@@ -5688,7 +5688,9 @@
     "finish": "Enregistrer et continuer",
     "back": "Retour",
     "privacy": "Vos données restent privées",
-    "whyDelivery": "Nécessaire pour livrer vos commandes"
+    "whyDelivery": "Nécessaire pour livrer vos commandes",
+    "skip": "Passer pour l'instant",
+    "skipHint": "Vous pourrez compléter votre profil plus tard depuis votre compte. Votre adresse vous sera demandée au moment de la commande."
   },
   "shopPage": {
     "hero": {
