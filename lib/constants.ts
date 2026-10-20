@@ -9,3 +9,6 @@ export const STORAGE_URL = `${API_ORIGIN}/storage`
 
 /** apiUrl('/products?page=2') → https://api.choosetounsi.tn/api/products?page=2 */
 export const apiUrl = (path: string) => `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`
+
+/** Canonical public origin for SEO files (sitemap, robots, JSON-LD); NEXT_PUBLIC_SITE_URL overrides it. */
+export const SITE_ORIGIN = (process.env.NEXT_PUBLIC_SITE_URL || 'https://choosetounsi.tn').replace(/\/+$/, '')

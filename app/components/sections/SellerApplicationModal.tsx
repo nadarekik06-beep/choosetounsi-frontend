@@ -249,7 +249,7 @@ export default function SellerApplicationModal({ onClose }: Props) {
           <span className="text-red-500 text-xs font-bold tracking-widest uppercase">Choose Tounsi</span>
         </div>
         <h2 className="text-xl font-black text-gray-900">Become a Vendor</h2>
-        <p className="text-gray-400 text-xs mt-0.5">Join 450+ local businesses selling on our platform</p>
+        <p className="text-gray-400 text-xs mt-0.5">Join the Tunisian sellers on ChooseTounsi</p>
 
         {/* Steps */}
         <div className="flex items-center gap-2 mt-4">

@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "ChooseTounsi — Tunisia's #1 Multi-Vendor Marketplace",
-    "description": "Shop from hundreds of local Tunisian vendors. Fashion, electronics, home goods and more, delivered across Tunisia."
+    "title": "ChooseTounsi — The marketplace for Tunisian sellers",
+    "description": "Shop online from 100% Tunisian sellers. Fashion, home, beauty, electronics and more, delivered anywhere in Tunisia. Cash on delivery."
   },
   "language": {
     "label": "Language",
@@ -277,7 +277,7 @@
     }
   },
   "footer": {
-    "tagline": "The marketplace for Tunisian sellers. Shop local with confidence.",
+    "tagline": "The marketplace for Tunisian sellers. Shop with confidence.",
     "shop": "Shop",
     "help": "Help",
     "sell": "Sell",
@@ -394,15 +394,13 @@
     "exploreTag": "Explore our brands",
     "shopTitle1": "Shop the",
     "shopTitle2": "Collection",
-    "shopSubtitle": "Discover curated Tunisian fashion, handmade goods and local brands — all in one place.",
-    "statProducts": "Products",
-    "statBrands": "Brands",
-    "statLocal": "100% Local",
+    "shopSubtitle": "Fashion, home, beauty, electronics and more — from 100% Tunisian sellers, all in one place.",
+    "statLocal": "100% Tunisian sellers",
     "exploreNow": "Explore now",
-    "sellTag": "🏪 Join Tunisia's #1 marketplace",
+    "sellTag": "🏪 Join the marketplace for Tunisian sellers",
     "sellTitle1": "Start Selling",
     "sellTitle2": "Today",
-    "sellSubtitle": "Set up your store in minutes. Reach thousands of buyers across Tunisia.",
+    "sellSubtitle": "Set up your store in minutes and sell to buyers across Tunisia.",
     "perk1": "Free to register — no setup fee",
     "perk2": "Verified seller badge included",
     "perk3": "Dedicated seller dashboard",
@@ -410,17 +408,19 @@
     "trust1": "Free forever",
     "trust2": "No credit card",
     "trust3": "Start in 2 minutes",
-    "badgeRating": "4.8/5",
     "badgeDelivery": "24–48h delivery",
-    "badgeLocal": "100% local",
+    "badgeLocal": "Tunisian sellers",
     "storeSign": "My Store",
     "storeOpen": "OPEN",
-    "chipSellers": "120+ sellers",
+    "chipSellers": "Tunisian sellers",
     "chipVerified": "Verified badge",
     "chipOrder": "New order",
     "chipOrderSub": "Ceramic vase · Nabeul",
     "becomeSeller": "Become a seller",
-    "orLabel": "or"
+    "orLabel": "or",
+    "statCod": "Cash on delivery",
+    "statDelivery": "Delivery across Tunisia",
+    "badgeCod": "Cash on delivery"
   },
   "cartDrawer": {
     "title": "Your Cart",
@@ -745,7 +745,7 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "continueGoogle": "Continue with Google",
-    "panelTagline": "Tunisia's marketplace for authentic local products.",
+    "panelTagline": "The marketplace for Tunisian sellers.",
     "perkSecure": "Secure & verified",
     "backToSignIn": "Back to sign in",
     "completingSignIn": "Completing sign-in…",
@@ -787,7 +787,7 @@
       "haveAccount": "Already have an account?",
       "signIn": "Sign in",
       "panelTitle": "Join",
-      "perk1": "Shop local vendors",
+      "perk1": "Shop from Tunisian sellers",
       "perk2": "Exclusive deals",
       "marketingOptIn": "Send me personalised picks and deals by e-mail (you can unsubscribe at any time)."
     },
@@ -910,7 +910,7 @@
       "viewAll": "All orders",
       "items": "{count, plural, =0 {No items} one {# item} other {# items}}",
       "emptyTitle": "No orders yet",
-      "emptyBody": "Thousands of Tunisian products are waiting for you.",
+      "emptyBody": "Products from Tunisian sellers are waiting for you.",
       "emptyCta": "Start shopping"
     },
     "quick": {
@@ -1535,7 +1535,7 @@
     "alsoLikeSub": "Other products you may find interesting",
     "trending": "Trending now",
     "heroEyebrow": "Search Choose’Tounsi",
-    "heroTagline": "Tunisian sellers, local products, delivered across Tunisia.",
+    "heroTagline": "100% Tunisian sellers, delivered across Tunisia.",
     "fewResultsTitle": "You might also like",
     "fewResultsSub": "More picks close to “{query}”",
     "noResultsSub": "Popular picks while you refine your search",
@@ -1700,7 +1700,7 @@
   },
   "storefront": {
     "metaTitle": "Seller store",
-    "metaDescription": "Discover products from {name} on ChooseTounsi, the made-in-Tunisia marketplace.",
+    "metaDescription": "Discover products from {name} on ChooseTounsi, the marketplace for Tunisian sellers.",
     "flash": "FLASH",
     "packItems": "{count, plural, one {# ITEM} other {# ITEMS}}",
     "save": "Save {amount}",
@@ -1941,8 +1941,8 @@
     },
     "benefits": {
       "buyers": {
-        "title": "12,000+ active buyers",
-        "desc": "Access Tunisia's fastest-growing marketplace"
+        "title": "Buyers across Tunisia",
+        "desc": "Sell to customers nationwide"
       },
       "growth": {
         "title": "Avg. 340% revenue growth",
@@ -2015,7 +2015,7 @@
       "title1": "SELL TO ALL",
       "title2": "TUNISIA",
       "title3": "FROM YOUR PHONE",
-      "subtitle": "Join <b>450+ local sellers</b> already growing their business on the fastest-growing Tunisian marketplace.",
+      "subtitle": "Join <b>Tunisian sellers</b> already growing their business on ChooseTounsi.",
       "chip1": "12,000+ active buyers",
       "chip2": "24h setup",
       "chip3": "AI-powered tools",
@@ -2100,7 +2100,7 @@
     "update": "Update application",
     "submit": "Submit application",
     "ctaTitle": "READY TO START SELLING? 🇹🇳",
-    "ctaBody": "Join hundreds of Tunisian entrepreneurs already building their online business with ChooseTounsi.",
+    "ctaBody": "Join the Tunisian entrepreneurs already building their online business with ChooseTounsi.",
     "applyNow": "Apply now",
     "landing": {
       "sticky": "Become a seller",
@@ -5769,7 +5769,7 @@
       "tabsLabel": "Product lists"
     },
     "local": {
-      "eyebrow": "Made in Tunisia",
+      "eyebrow": "Spotlight",
       "brandTitle1": "WearTounsi",
       "brandTitle2": "& local brands",
       "brandLead": "Our own label, designed and made in Tunisia.",
@@ -5882,7 +5882,7 @@
   },
   "loader": {
     "loading": "Loading…",
-    "tagline": "Made in Tunisia, chosen by you",
+    "tagline": "The marketplace for Tunisian sellers",
     "aiTyping": "Thinking…",
     "analyzingImage": "Analyzing your image…",
     "forecasting": "Calculating your forecast…",

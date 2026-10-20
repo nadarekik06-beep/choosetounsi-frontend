@@ -11,7 +11,6 @@
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useInView } from '@/app/hooks/useInView'
-import CountUp from './CountUp'
 import AnimatedDiscoverBag from './illustrations/AnimatedDiscoverBag'
 import AnimatedStore from './illustrations/AnimatedStore'
 import AnimatedPepper, { PEPPER_CSS } from './illustrations/AnimatedPepper'
@@ -160,7 +159,6 @@ export default function DualCTASection() {
         .dcta-chip--c { bottom: 6%; inset-inline-start: 6%; animation-duration: 10s; animation-delay: -6s; }
         .dcta-chip--d { top: 6%;  inset-inline-end: 2%;   animation-duration: 10s; animation-delay: -2s; }
         .dcta-chip--e { top: 40%; inset-inline-start: 0;  animation-duration: 12s; animation-delay: -5s; }
-        .dcta-star { color: #f59e0b; }
         .dcta-avatars { display: inline-flex; }
         .dcta-avatars i {
           width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff;
@@ -418,7 +416,7 @@ export default function DualCTASection() {
               <AnimatedPepper color="red" size={34} rotate={24} delay={-1} className="dcta-pep--1" />
               <AnimatedPepper color="green" size={18} rotate={-30} delay={-3.2} className="dcta-pep--2 dcta-pep--sm" />
               <AnimatedPepper color="green" size={24} rotate={60} delay={-4.5} className="dcta-pep--3 dcta-pep--sm" />
-              <span className="dcta-chip dcta-chip--a"><span className="dcta-star" aria-hidden="true">★</span><b className="ltr-iso">{t('badgeRating')}</b></span>
+              <span className="dcta-chip dcta-chip--a"><span aria-hidden="true">💵</span>{t('badgeCod')}</span>
               <span className="dcta-chip dcta-chip--b"><span aria-hidden="true">🚚</span>{t('badgeDelivery')}</span>
               <span className="dcta-chip dcta-chip--c"><TunisiaFlag size={12} />{t('badgeLocal')}</span>
             </div>
@@ -432,16 +430,16 @@ export default function DualCTASection() {
 
               <ul className="dcta-stats">
                 <li className="dcta-stat">
-                  <div className="dcta-stat__num"><CountUp end={500} start={shopSeen} suffix="+" /></div>
-                  <div className="dcta-stat__label">{t('statProducts')}</div>
-                </li>
-                <li className="dcta-stat">
-                  <div className="dcta-stat__num"><CountUp end={50} start={shopSeen} suffix="+" duration={1300} /></div>
-                  <div className="dcta-stat__label">{t('statBrands')}</div>
-                </li>
-                <li className="dcta-stat">
                   <div className="dcta-stat__num"><TunisiaFlag size={20} /></div>
                   <div className="dcta-stat__label">{t('statLocal')}</div>
+                </li>
+                <li className="dcta-stat">
+                  <div className="dcta-stat__num" aria-hidden="true">💵</div>
+                  <div className="dcta-stat__label">{t('statCod')}</div>
+                </li>
+                <li className="dcta-stat">
+                  <div className="dcta-stat__num" aria-hidden="true">🚚</div>
+                  <div className="dcta-stat__label">{t('statDelivery')}</div>
                 </li>
               </ul>
 

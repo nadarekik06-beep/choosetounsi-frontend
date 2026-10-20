@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "ChooseTounsi — La marketplace n°1 des vendeurs tunisiens",
-    "description": "Achetez auprès de centaines de vendeurs tunisiens : mode, électronique, maison et bien plus. Livraison partout en Tunisie."
+    "title": "ChooseTounsi — La marketplace des vendeurs tunisiens",
+    "description": "Achetez en ligne auprès de vendeurs 100 % tunisiens. Mode, maison, beauté, high-tech et plus, livrés partout en Tunisie. Paiement à la livraison."
   },
   "language": {
     "label": "Langue",
@@ -277,7 +277,7 @@
     }
   },
   "footer": {
-    "tagline": "La marketplace des vendeurs tunisiens. Achetez local, en toute confiance.",
+    "tagline": "La marketplace des vendeurs tunisiens. Achetez en toute confiance.",
     "shop": "Acheter",
     "help": "Aide",
     "sell": "Vendre",
@@ -394,15 +394,13 @@
     "exploreTag": "Découvrez nos marques",
     "shopTitle1": "Découvrez la",
     "shopTitle2": "Collection",
-    "shopSubtitle": "Mode tunisienne, artisanat et marques locales sélectionnés avec soin — tout au même endroit.",
-    "statProducts": "Produits",
-    "statBrands": "Marques",
-    "statLocal": "100 % local",
+    "shopSubtitle": "Mode, maison, beauté, high-tech et plus — proposés par des vendeurs 100 % tunisiens, au même endroit.",
+    "statLocal": "Vendeurs 100 % tunisiens",
     "exploreNow": "Explorer",
-    "sellTag": "🏪 Rejoignez la marketplace n°1 en Tunisie",
+    "sellTag": "🏪 Rejoignez la marketplace des vendeurs tunisiens",
     "sellTitle1": "Commencez à vendre",
     "sellTitle2": "dès aujourd'hui",
-    "sellSubtitle": "Créez votre boutique en quelques minutes et touchez des milliers d'acheteurs partout en Tunisie.",
+    "sellSubtitle": "Créez votre boutique en quelques minutes et vendez à des acheteurs partout en Tunisie.",
     "perk1": "Inscription gratuite, sans frais de mise en place",
     "perk2": "Badge de vendeur vérifié inclus",
     "perk3": "Tableau de bord vendeur dédié",
@@ -410,17 +408,19 @@
     "trust1": "Gratuit",
     "trust2": "Sans carte bancaire",
     "trust3": "Prêt en 2 minutes",
-    "badgeRating": "4,8/5",
     "badgeDelivery": "Livraison 24–48h",
-    "badgeLocal": "100 % local",
+    "badgeLocal": "Vendeurs tunisiens",
     "storeSign": "Ma Boutique",
     "storeOpen": "OUVERT",
-    "chipSellers": "+120 vendeurs",
+    "chipSellers": "Vendeurs tunisiens",
     "chipVerified": "Badge vérifié",
     "chipOrder": "Commande reçue",
     "chipOrderSub": "Vase en céramique · Nabeul",
     "becomeSeller": "Devenir vendeur",
-    "orLabel": "ou"
+    "orLabel": "ou",
+    "statCod": "Paiement à la livraison",
+    "statDelivery": "Livraison partout en Tunisie",
+    "badgeCod": "Paiement à la livraison"
   },
   "cartDrawer": {
     "title": "Mon panier",
@@ -745,7 +745,7 @@
     "showPassword": "Afficher le mot de passe",
     "hidePassword": "Masquer le mot de passe",
     "continueGoogle": "Continuer avec Google",
-    "panelTagline": "La marketplace tunisienne des produits locaux authentiques.",
+    "panelTagline": "La marketplace des vendeurs tunisiens.",
     "perkSecure": "Sécurisé et vérifié",
     "backToSignIn": "Retour à la connexion",
     "completingSignIn": "Connexion en cours…",
@@ -787,7 +787,7 @@
       "haveAccount": "Vous avez déjà un compte ?",
       "signIn": "Se connecter",
       "panelTitle": "Rejoignez",
-      "perk1": "Achetez auprès de vendeurs locaux",
+      "perk1": "Achetez auprès de vendeurs tunisiens",
       "perk2": "Des offres exclusives",
       "marketingOptIn": "Recevoir par e-mail des sélections et offres personnalisées (désabonnement possible à tout moment)."
     },
@@ -910,7 +910,7 @@
       "viewAll": "Toutes les commandes",
       "items": "{count, plural, =0 {Aucun article} one {# article} other {# articles}}",
       "emptyTitle": "Aucune commande pour l'instant",
-      "emptyBody": "Des milliers de produits tunisiens vous attendent.",
+      "emptyBody": "Les produits des vendeurs tunisiens vous attendent.",
       "emptyCta": "Commencer mes achats"
     },
     "quick": {
@@ -1535,7 +1535,7 @@
     "alsoLikeSub": "D'autres produits qui pourraient vous plaire",
     "trending": "Tendances",
     "heroEyebrow": "Rechercher sur Choose’Tounsi",
-    "heroTagline": "Vendeurs tunisiens, produits locaux, livrés partout en Tunisie.",
+    "heroTagline": "Des vendeurs 100 % tunisiens, livrés partout en Tunisie.",
     "fewResultsTitle": "Vous aimerez aussi",
     "fewResultsSub": "D’autres idées proches de « {query} »",
     "noResultsSub": "Les coups de cœur du moment, en attendant d’affiner votre recherche",
@@ -1700,7 +1700,7 @@
   },
   "storefront": {
     "metaTitle": "Boutique vendeur",
-    "metaDescription": "Découvrez les produits de {name} sur ChooseTounsi, la marketplace du made in Tunisia.",
+    "metaDescription": "Découvrez les produits de {name} sur ChooseTounsi, la marketplace des vendeurs tunisiens.",
     "flash": "FLASH",
     "packItems": "{count, plural, one {# ARTICLE} other {# ARTICLES}}",
     "save": "-{amount}",
@@ -1941,8 +1941,8 @@
     },
     "benefits": {
       "buyers": {
-        "title": "12 000+ acheteurs actifs",
-        "desc": "La marketplace qui grandit le plus vite en Tunisie"
+        "title": "Des acheteurs partout en Tunisie",
+        "desc": "Vendez à des clients dans tout le pays"
       },
       "growth": {
         "title": "+340 % de chiffre d'affaires en moyenne",
@@ -2015,7 +2015,7 @@
       "title1": "VENDEZ DANS TOUTE LA",
       "title2": "TUNISIE",
       "title3": "DEPUIS VOTRE TÉLÉPHONE",
-      "subtitle": "Rejoignez <b>450+ vendeurs locaux</b> qui développent déjà leur activité sur la marketplace tunisienne à la croissance la plus rapide.",
+      "subtitle": "Rejoignez <b>les vendeurs tunisiens</b> qui développent déjà leur activité sur ChooseTounsi.",
       "chip1": "12 000+ acheteurs actifs",
       "chip2": "Prêt en 24 h",
       "chip3": "Outils IA",
@@ -2100,7 +2100,7 @@
     "update": "Mettre à jour ma candidature",
     "submit": "Envoyer ma candidature",
     "ctaTitle": "PRÊT À VENDRE ? 🇹🇳",
-    "ctaBody": "Rejoignez des centaines d'entrepreneurs tunisiens qui développent déjà leur activité en ligne avec ChooseTounsi.",
+    "ctaBody": "Rejoignez les entrepreneurs tunisiens qui développent déjà leur activité en ligne avec ChooseTounsi.",
     "applyNow": "Postuler",
     "landing": {
       "sticky": "Devenir vendeur",
@@ -5769,7 +5769,7 @@
       "tabsLabel": "Listes de produits"
     },
     "local": {
-      "eyebrow": "Made in Tunisia",
+      "eyebrow": "À la une",
       "brandTitle1": "WearTounsi",
       "brandTitle2": "& marques locales",
       "brandLead": "Notre propre marque, dessinée et fabriquée en Tunisie.",
@@ -5882,7 +5882,7 @@
   },
   "loader": {
     "loading": "Chargement…",
-    "tagline": "Fait en Tunisie, choisi par vous",
+    "tagline": "La marketplace des vendeurs tunisiens",
     "aiTyping": "Réflexion…",
     "analyzingImage": "Analyse de votre image…",
     "forecasting": "Calcul de vos prévisions…",
