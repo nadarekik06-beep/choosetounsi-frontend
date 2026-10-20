@@ -859,7 +859,7 @@ export default function Navbar() {
         {/* ── ROW 1: Announcement bar ── */}
         <div className="nb-ann" style={{background:"#09090b",color:"#fff",fontSize:11,padding:"7px 0",letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:500}}>
           <div className="nb-ann-in" style={{maxWidth:1400,margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <span className="nb-ann-text">{t("announcement",{amount:fmt.price(50,{maximumFractionDigits:0,minimumFractionDigits:0})})}<span className="nb-hide-sm">{t("announcementTail")}</span></span>
+            <span className="nb-ann-text">{t("announcement")}<span className="nb-hide-sm">{t("announcementTail")}</span></span>
             <button className="nb-ann-help" onClick={handleSupport} style={{display:"flex",alignItems:"center",gap:5,background:"transparent",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.8)",fontSize:11,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",fontFamily:"inherit",padding:0,transition:"color 0.15s"}}
               onMouseEnter={e=>(e.currentTarget.style.color="#fff")}
               onMouseLeave={e=>(e.currentTarget.style.color="rgba(255,255,255,0.8)")}>
