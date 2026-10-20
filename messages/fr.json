@@ -1816,18 +1816,18 @@
         },
         "contact": {
           "label": "Contacter le support",
-          "response": "Notre équipe est disponible du samedi au jeudi, de 9 h à 18 h (heure de Tunis). Écrivez-nous à support@choosetounsi.tn."
+          "response": "Notre équipe est disponible du samedi au jeudi, de 9 h à 18 h (heure de Tunis). Écrivez-nous via la page Contact (https://choosetounsi.tn/contact) ou sur WhatsApp au +216 57 252 576."
         },
         "other": {
           "label": "Autre chose",
-          "response": "Pas de souci ! Écrivez-nous à support@choosetounsi.tn en décrivant votre problème en détail. Nous répondons généralement sous 4 heures ouvrées."
+          "response": "Pas de souci ! Décrivez votre problème en détail via la page Contact (https://choosetounsi.tn/contact) ou sur WhatsApp au +216 57 252 576. Nous répondons généralement sous 4 heures ouvrées."
         }
       },
       "a": {
         "viewOrders": "📦 Voir mes commandes",
         "trackNow": "🔍 Suivre maintenant",
         "checkStatus": "📋 Voir le statut",
-        "contactSupport": "✉️ Contacter le support",
+        "contactSupport": "💬 Contacter le support",
         "fileComplaint": "🚨 Déposer une réclamation",
         "reportIssue": "📸 Signaler un problème",
         "myOrders": "📦 Mes commandes",
@@ -1836,8 +1836,8 @@
         "checkComplaint": "🚨 Suivre ma réclamation",
         "myProfile": "👤 Mon profil",
         "resetPassword": "🔑 Réinitialiser le mot de passe",
-        "emailSupport": "✉️ Écrire au support",
-        "emailUs": "✉️ Nous écrire"
+        "contactPage": "📝 Page Contact",
+        "whatsapp": "💬 WhatsApp"
       }
     }
   },

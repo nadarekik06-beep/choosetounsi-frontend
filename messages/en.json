@@ -1816,18 +1816,18 @@
         },
         "contact": {
           "label": "Contact support",
-          "response": "Our support team is available Saturday–Thursday, 9 AM – 6 PM (Tunisia time). You can reach us at support@choosetounsi.tn."
+          "response": "Our support team is available Saturday–Thursday, 9 AM – 6 PM (Tunisia time). Reach us through the contact page (https://choosetounsi.tn/contact) or on WhatsApp at +216 57 252 576."
         },
         "other": {
           "label": "Something else",
-          "response": "No problem! Please email us at support@choosetounsi.tn and describe your issue in detail. We typically respond within 4 business hours."
+          "response": "No problem! Describe your issue in detail through the contact page (https://choosetounsi.tn/contact) or on WhatsApp at +216 57 252 576. We typically respond within 4 business hours."
         }
       },
       "a": {
         "viewOrders": "📦 View my orders",
         "trackNow": "🔍 Track now",
         "checkStatus": "📋 Check order status",
-        "contactSupport": "✉️ Contact support",
+        "contactSupport": "💬 Contact support",
         "fileComplaint": "🚨 File a complaint",
         "reportIssue": "📸 Report issue",
         "myOrders": "📦 My orders",
@@ -1836,8 +1836,8 @@
         "checkComplaint": "🚨 Check complaint status",
         "myProfile": "👤 My profile",
         "resetPassword": "🔑 Reset password",
-        "emailSupport": "✉️ Email support",
-        "emailUs": "✉️ Email us"
+        "contactPage": "📝 Contact page",
+        "whatsapp": "💬 WhatsApp"
       }
     }
   },

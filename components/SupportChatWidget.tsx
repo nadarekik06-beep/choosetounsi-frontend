@@ -11,6 +11,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { isLocale } from '@/i18n/config'
 import BrandLoader from '@/components/brand/BrandLoader'
 import { API_BASE } from '@/lib/constants'
+import { WHATSAPP_URL } from '@/lib/contactInfo'
 
 const RED   = '#db142e'
 const GREEN = '#198f41'
@@ -248,10 +249,10 @@ const FAQ_TREE: { group: string; questions: { id: string; actions: { key: string
   { group: 'orders', questions: [
     { id: 'where-order',   actions: [{ key: 'viewOrders', href: '/orders' }] },
     { id: 'track-order',   actions: [{ key: 'trackNow', href: '/orders' }] },
-    { id: 'delayed-order', actions: [{ key: 'checkStatus', href: '/orders' }, { key: 'contactSupport', href: 'mailto:support@choosetounsi.tn' }] },
+    { id: 'delayed-order', actions: [{ key: 'checkStatus', href: '/orders' }, { key: 'contactSupport', href: '/contact' }] },
   ] },
   { group: 'delivery', questions: [
-    { id: 'wrong-person',    actions: [{ key: 'fileComplaint', href: '/complaints/new' }, { key: 'contactSupport', href: 'mailto:support@choosetounsi.tn' }] },
+    { id: 'wrong-person',    actions: [{ key: 'fileComplaint', href: '/complaints/new' }, { key: 'contactSupport', href: '/contact' }] },
     { id: 'missing-damaged', actions: [{ key: 'reportIssue', href: '/complaints/new' }, { key: 'myOrders', href: '/orders' }] },
   ] },
   { group: 'returns', questions: [
@@ -260,12 +261,12 @@ const FAQ_TREE: { group: string; questions: { id: string; actions: { key: string
     { id: 'refund',        actions: [{ key: 'checkComplaint', href: '/complaints' }] },
   ] },
   { group: 'account', questions: [
-    { id: 'payment-issue',  actions: [{ key: 'contactSupport', href: 'mailto:support@choosetounsi.tn' }] },
+    { id: 'payment-issue',  actions: [{ key: 'contactSupport', href: '/contact' }] },
     { id: 'update-account', actions: [{ key: 'myProfile', href: '/profile' }, { key: 'resetPassword', href: '/auth/forgot-password' }] },
   ] },
   { group: 'general', questions: [
-    { id: 'contact', actions: [{ key: 'emailSupport', href: 'mailto:support@choosetounsi.tn' }] },
-    { id: 'other',   actions: [{ key: 'emailUs', href: 'mailto:support@choosetounsi.tn' }] },
+    { id: 'contact', actions: [{ key: 'contactPage', href: '/contact' }, { key: 'whatsapp', href: WHATSAPP_URL }] },
+    { id: 'other',   actions: [{ key: 'contactPage', href: '/contact' }, { key: 'whatsapp', href: WHATSAPP_URL }] },
   ] },
 ]
 
@@ -545,7 +546,19 @@ function Bubble({ msg, onRetry, onQuickReply, onNavigate, onOpenCart, busy }: { 
         {!msg.typing && msg.actions && msg.actions.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingInlineStart: 2 }}>
             {msg.actions.map((action, i) => (
-              action.href ? (
+              action.href && /^https?:\/\//.test(action.href) ? (
+                // Outside link (WhatsApp): new tab, the chat stays open here
+                <a key={i} href={action.href} target="_blank" rel="noopener noreferrer" style={{
+                  fontSize: 12, fontWeight: 700, color: GREEN,
+                  border: `1.5px solid ${GREEN}`,
+                  borderRadius: 8, padding: '5px 12px',
+                  textDecoration: 'none', background: `${GREEN}0d`,
+                  transition: 'all 0.15s', display: 'inline-block',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {action.label}
+                </a>
+              ) : action.href ? (
                 <Link key={i} href={action.href} style={{
                   fontSize: 12, fontWeight: 700, color: GREEN,
                   border: `1.5px solid ${GREEN}`,
