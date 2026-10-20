@@ -804,7 +804,7 @@ export default function ProductDetailPage() {
                   title: product.is_free_delivery ? t('freeDelivery') : t('trustDelivery'),
                   desc: product.is_free_delivery
                     ? t('trustFreeDeliveryDesc')
-                    : t('trustDeliveryDesc', { amount: format.price(50, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }),
+                    : t('trustDeliveryDesc'),
                 },
                 { icon: <RotateCcw size={18} color="#3b82f6" />,   title: t('trustReturns'),  desc: t('trustReturnsDesc') },
                 { icon: <Shield size={18} color="#f59e0b" />,      title: t('trustPayment'),  desc: t('trustPaymentDesc') },

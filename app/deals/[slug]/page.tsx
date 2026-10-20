@@ -58,6 +58,8 @@ interface PackDetail {
   image_url: string | null
   pack_price: number; original_price: number; savings: number
   is_active: boolean
+  /** Every product in the pack ships free (absent on older API responses). */
+  is_free_delivery?: boolean
   seller: { id: number; name: string } | null
   items: PackItemData[]
   items_count: number
@@ -389,7 +391,6 @@ export default function PackDetailPage() {
   const t      = useTranslations('packDetail')
   const tc     = useTranslations('common')
   const tp     = useTranslations('product')
-  const format = useFormat()
   const fmt    = usePackPrice()
   const params = useParams()
   const router = useRouter()
@@ -759,7 +760,9 @@ export default function PackDetailPage() {
             {/* Trust badges */}
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden', marginBottom: 20 }}>
               {[
-                { icon: <Truck size={17} color="#10b981" />,       title: tp('freeDelivery'),  desc: tp('trustDeliveryDesc', { amount: format.price(50, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }) },
+                pack.is_free_delivery
+                  ? { icon: <Truck size={17} color="#10b981" />,   title: tp('freeDelivery'),  desc: tp('trustFreeDeliveryPackDesc') }
+                  : { icon: <Truck size={17} color="#10b981" />,   title: tp('trustDelivery'), desc: tp('trustDeliveryDesc') },
                 { icon: <RotateCcw size={17} color="#3b82f6" />,   title: tp('trustReturns'),  desc: tp('trustReturnsDesc') },
                 { icon: <Shield size={17} color="#f59e0b" />,      title: tp('trustPayment'),  desc: tp('trustPaymentDesc') },
                 { icon: <CheckCircle size={17} color="#db142e" />, title: t('verifiedBundle'), desc: tp('trustSellerDesc') },
