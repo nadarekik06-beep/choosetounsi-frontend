@@ -292,7 +292,11 @@
     "sellerSpace": "Seller space",
     "language": "Language",
     "rights": "© {year} ChooseTounsi. All rights reserved.",
-    "madeIn": "Made with ❤️ in Tunisia"
+    "madeIn": "Made with ❤️ in Tunisia",
+    "legal": "Information",
+    "contactPage": "Contact",
+    "privacy": "Privacy",
+    "terms": "Terms of use"
   },
   "home": {
     "trendingNow": "🔥 Trending Now",
@@ -6084,5 +6088,79 @@
       "phone": "Invalid Tunisian number. Enter 8 digits starting with 2, 4, 5 or 9.",
       "postalCode": "Postal code must be 4 digits."
     }
+  },
+  "legal": {
+    "eyebrow": "Legal information",
+    "related": "Other useful pages",
+    "privacy": {
+      "title": "Privacy Policy"
+    },
+    "terms": {
+      "title": "Terms of Use"
+    },
+    "contact": {
+      "title": "Contact us"
+    }
+  },
+  "contactPage": {
+    "metaTitle": "Contact",
+    "eyebrow": "Support",
+    "title": "Contact us",
+    "intro": "A question about an order, a return or selling on ChooseTounsi? Write to us on WhatsApp or with the form: we answer as soon as we can.",
+    "channels": {
+      "title": "Our channels",
+      "subtitle": "Fastest: WhatsApp.",
+      "whatsapp": "WhatsApp",
+      "email": "E-mail",
+      "hours": "We reply by e-mail or WhatsApp, in French, Arabic or English.",
+      "orders": "To follow an order or return an item, the easiest is <orders>My orders</orders> or <complaints>Complaints</complaints>."
+    },
+    "form": {
+      "title": "Send a message",
+      "subtitle": "All fields are required except the phone number.",
+      "name": "Name",
+      "email": "E-mail",
+      "phone": "Phone",
+      "optional": "optional",
+      "topic": "Subject",
+      "message": "Message",
+      "messagePlaceholder": "Describe your request (with your order number if you have one).",
+      "topics": {
+        "order": "Order / delivery",
+        "return": "Return / refund",
+        "seller": "Selling on ChooseTounsi",
+        "account": "My account",
+        "other": "Other"
+      },
+      "send": "Send",
+      "sending": "Sending…",
+      "another": "Send another message",
+      "sent": "Thank you! Your message has been sent. We will reply by e-mail as soon as possible.",
+      "failed": "Sending failed. Please try again or write to us on WhatsApp.",
+      "privacyNote": "Your details are only used to answer your message (see the Privacy Policy).",
+      "errors": {
+        "name": "Please enter your name.",
+        "email": "Invalid e-mail address.",
+        "phone": "Invalid phone number.",
+        "message": "Your message must be at least 10 characters."
+      }
+    }
+  },
+  "unsubscribe": {
+    "metaTitle": "Unsubscribe",
+    "title": "Unsubscribe from e-mails",
+    "body": "You will no longer receive our recommendation and deals e-mails. E-mails about your orders and your account will keep coming.",
+    "confirm": "Unsubscribe me",
+    "checking": "Checking…",
+    "sending": "Unsubscribing…",
+    "keep": "Stay subscribed",
+    "error": "Something went wrong. Please try again in a moment.",
+    "doneTitle": "Done",
+    "doneBody": "You are unsubscribed. You can turn these e-mails back on at any time in your profile.",
+    "backToShop": "Back to the shop",
+    "manage": "Manage my e-mails",
+    "invalidTitle": "Invalid link",
+    "invalidBody": "This unsubscribe link is no longer valid. You can manage your e-mails in your profile settings.",
+    "contact": "Contact us"
   }
 }

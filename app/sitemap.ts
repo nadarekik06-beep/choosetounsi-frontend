@@ -10,6 +10,9 @@ const STATIC_PAGES: { path: string; priority: number; changeFrequency: 'daily' |
   { path: '/discover',        priority: 0.7, changeFrequency: 'daily' },
   { path: '/brand',           priority: 0.6, changeFrequency: 'weekly' },
   { path: '/become-a-vendor', priority: 0.6, changeFrequency: 'weekly' },
+  { path: '/contact',         priority: 0.4, changeFrequency: 'weekly' },
+  { path: '/privacy',         priority: 0.3, changeFrequency: 'weekly' },
+  { path: '/terms',           priority: 0.3, changeFrequency: 'weekly' },
 ]
 
 /** Category slugs from the API; the sitemap still lists the main pages if the API is down. */

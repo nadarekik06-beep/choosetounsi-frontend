@@ -50,6 +50,13 @@ export default function SiteFooter() {
           <Link href="/seller">{t('sellerSpace')}</Link>
         </nav>
 
+        <nav className="sf-col" aria-label={t('legal')}>
+          <p className="sf-h">{t('legal')}</p>
+          <Link href="/contact">{t('contactPage')}</Link>
+          <Link href="/privacy">{t('privacy')}</Link>
+          <Link href="/terms">{t('terms')}</Link>
+        </nav>
+
         <div className="sf-col">
           <p className="sf-h">{t('language')}</p>
           <LanguageInlineSelect tone="dark" />
@@ -65,7 +72,7 @@ export default function SiteFooter() {
 
       <style>{`
         .sf{background:#09090b;color:rgba(255,255,255,.72);margin-top:48px;border-top:3px solid #db142e}
-        .sf-in{max-width:1400px;margin:0 auto;padding:40px 24px 28px;display:grid;grid-template-columns:1.6fr repeat(3,1fr) 1.4fr;gap:28px}
+        .sf-in{max-width:1400px;margin:0 auto;padding:40px 24px 28px;display:grid;grid-template-columns:1.6fr repeat(4,1fr) 1.4fr;gap:28px}
         .sf-logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:#fff;font-size:18px;font-weight:900}
         .sf-logo img{background:#fff;border-radius:8px;padding:2px;box-shadow:0 0 0 1.5px #198f41}
         .sf-logo b{color:#22c55e;font-weight:900}

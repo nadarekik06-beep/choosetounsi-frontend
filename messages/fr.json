@@ -292,7 +292,11 @@
     "sellerSpace": "Espace vendeur",
     "language": "Langue",
     "rights": "© {year} ChooseTounsi. Tous droits réservés.",
-    "madeIn": "Fait avec ❤️ en Tunisie"
+    "madeIn": "Fait avec ❤️ en Tunisie",
+    "legal": "Informations",
+    "contactPage": "Contact",
+    "privacy": "Confidentialité",
+    "terms": "Conditions d’utilisation"
   },
   "home": {
     "trendingNow": "🔥 Tendances du moment",
@@ -6084,5 +6088,79 @@
       "phone": "Numéro tunisien invalide : 8 chiffres commençant par 2, 4, 5 ou 9.",
       "postalCode": "Le code postal doit comporter 4 chiffres."
     }
+  },
+  "legal": {
+    "eyebrow": "Informations légales",
+    "related": "Autres pages utiles",
+    "privacy": {
+      "title": "Politique de confidentialité"
+    },
+    "terms": {
+      "title": "Conditions d’utilisation"
+    },
+    "contact": {
+      "title": "Nous contacter"
+    }
+  },
+  "contactPage": {
+    "metaTitle": "Contact",
+    "eyebrow": "Support",
+    "title": "Nous contacter",
+    "intro": "Une question sur une commande, un retour ou la vente sur ChooseTounsi ? Écrivez-nous sur WhatsApp ou avec le formulaire : nous répondons au plus vite.",
+    "channels": {
+      "title": "Nos canaux",
+      "subtitle": "Le plus rapide : WhatsApp.",
+      "whatsapp": "WhatsApp",
+      "email": "E-mail",
+      "hours": "Nous répondons par e-mail ou WhatsApp, en français, en arabe ou en anglais.",
+      "orders": "Pour suivre une commande ou faire un retour, le plus simple est <orders>Mes commandes</orders> ou <complaints>Réclamations</complaints>."
+    },
+    "form": {
+      "title": "Envoyer un message",
+      "subtitle": "Tous les champs sont obligatoires sauf le téléphone.",
+      "name": "Nom",
+      "email": "E-mail",
+      "phone": "Téléphone",
+      "optional": "facultatif",
+      "topic": "Sujet",
+      "message": "Message",
+      "messagePlaceholder": "Décrivez votre demande (numéro de commande si vous en avez un).",
+      "topics": {
+        "order": "Commande / livraison",
+        "return": "Retour / remboursement",
+        "seller": "Vendre sur ChooseTounsi",
+        "account": "Mon compte",
+        "other": "Autre"
+      },
+      "send": "Envoyer",
+      "sending": "Envoi…",
+      "another": "Envoyer un autre message",
+      "sent": "Merci ! Votre message a bien été envoyé. Nous vous répondons par e-mail au plus vite.",
+      "failed": "L’envoi a échoué. Réessayez ou écrivez-nous sur WhatsApp.",
+      "privacyNote": "Vos informations servent uniquement à répondre à votre message (voir la Politique de confidentialité).",
+      "errors": {
+        "name": "Indiquez votre nom.",
+        "email": "Adresse e-mail invalide.",
+        "phone": "Numéro de téléphone invalide.",
+        "message": "Votre message doit contenir au moins 10 caractères."
+      }
+    }
+  },
+  "unsubscribe": {
+    "metaTitle": "Se désabonner",
+    "title": "Se désabonner des e-mails",
+    "body": "Vous ne recevrez plus nos e-mails de recommandations et de bons plans. Les e-mails sur vos commandes et votre compte continueront d’arriver.",
+    "confirm": "Me désabonner",
+    "checking": "Vérification…",
+    "sending": "Désabonnement…",
+    "keep": "Rester abonné(e)",
+    "error": "Une erreur est survenue. Réessayez dans un instant.",
+    "doneTitle": "C’est fait",
+    "doneBody": "Vous êtes désabonné(e). Vous pouvez réactiver ces e-mails à tout moment dans votre profil.",
+    "backToShop": "Retour à la boutique",
+    "manage": "Gérer mes e-mails",
+    "invalidTitle": "Lien non valide",
+    "invalidBody": "Ce lien de désabonnement n’est plus valide. Vous pouvez gérer vos e-mails dans les paramètres de votre profil.",
+    "contact": "Nous contacter"
   }
 }
