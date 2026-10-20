@@ -156,7 +156,6 @@ export default function DualCTASection() {
         .dcta-chip b { font-weight: 800; }
         .dcta-chip--a { top: 8%;  inset-inline-start: 2%; }
         .dcta-chip--b { top: 44%; inset-inline-end: 0;    animation-duration: 11s; animation-delay: -3s; }
-        .dcta-chip--c { bottom: 6%; inset-inline-start: 6%; animation-duration: 10s; animation-delay: -6s; }
         .dcta-chip--d { top: 6%;  inset-inline-end: 2%;   animation-duration: 10s; animation-delay: -2s; }
         .dcta-chip--e { top: 40%; inset-inline-start: 0;  animation-duration: 12s; animation-delay: -5s; }
         .dcta-avatars { display: inline-flex; }
@@ -372,7 +371,6 @@ export default function DualCTASection() {
           .dcta-art { width: 210px; height: 210px; }
           .dcta-chip { font-size: 10.5px; padding: 5px 9px; gap: 5px; }
           .dcta-chip--b { top: auto; bottom: 6%; inset-inline-start: auto; inset-inline-end: 2%; }
-          .dcta-chip--c { bottom: 6%; inset-inline-start: 2%; }
           .dcta-chip--e { display: none; }
           .dcta-pep--sm { display: none; }
           .dcta-pep--1 { top: 8%; inset-inline-end: 6%; }
@@ -418,7 +416,6 @@ export default function DualCTASection() {
               <AnimatedPepper color="green" size={24} rotate={60} delay={-4.5} className="dcta-pep--3 dcta-pep--sm" />
               <span className="dcta-chip dcta-chip--a"><span aria-hidden="true">💵</span>{t('badgeCod')}</span>
               <span className="dcta-chip dcta-chip--b"><span aria-hidden="true">🚚</span>{t('badgeDelivery')}</span>
-              <span className="dcta-chip dcta-chip--c"><TunisiaFlag size={12} />{t('badgeLocal')}</span>
             </div>
 
             <div className="dcta-body">
