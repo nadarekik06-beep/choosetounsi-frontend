@@ -6048,7 +6048,7 @@
     },
     "gouvernorat": "Gouvernorat",
     "map": "Position sur la carte",
-    "mapHelp": "Cliquez sur la carte pour placer le marqueur ou utilisez 'Ma Position'",
+    "mapHelp": "Zoomez jusqu’à voir votre rue, puis cliquez exactement sur votre local (le marqueur se déplace aussi en le faisant glisser). « Ma Position » ne fonctionne que si vous êtes au local.",
     "myPosition": "Ma Position",
     "locating": "Localisation…",
     "geoDenied": "Accès à la position refusé. Placez le marqueur à la main sur la carte.",
@@ -6087,7 +6087,9 @@
       "contact": "Saisissez la personne à contacter.",
       "phone": "Numéro tunisien invalide : 8 chiffres commençant par 2, 4, 5 ou 9.",
       "postalCode": "Le code postal doit comporter 4 chiffres."
-    }
+    },
+    "mapZoomIn": "Zoomez d’abord : cliquez ensuite exactement sur votre local pour placer le marqueur.",
+    "geoImprecise": "Position trop approximative (± {m} m) : la carte est centrée dessus, cliquez exactement sur votre local pour placer le marqueur."
   },
   "legal": {
     "eyebrow": "Informations légales",

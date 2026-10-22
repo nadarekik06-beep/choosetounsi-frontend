@@ -45,8 +45,28 @@ export type PickupErrors = Partial<Record<PickupField, string>>
 /** Status of the address on the admin side (seller_pickup_addresses). */
 export type PickupStatus = 'needs_review' | 'changed' | 'unverified' | 'verified' | 'created'
 
-/** Tunisia's bounding box: a pin outside is refused (backend too). */
-export const TUNISIA_BOUNDS = { latMin: 30.2, latMax: 37.6, lngMin: 7.5, lngMax: 11.7 }
+/** Tunisia's bounding box: first, cheap check (a swapped lat/lng always falls outside). */
+export const TUNISIA_BOUNDS = { latMin: 30.0, latMax: 37.6, lngMin: 7.3, lngMax: 11.8 }
+
+/**
+ * Tunisia's outline, simplified, [lat, lng], drawn ~15-25 km outside the border and coast:
+ * border towns and the islands are in, Algeria / Libya / the open sea are out.
+ * SAME polygon as the backend (App\Services\Intigo\ZoneGeocoder::TUNISIA_POLYGON).
+ */
+export const TUNISIA_POLYGON: ReadonlyArray<readonly [number, number]> = [
+  [37.10, 8.58], [37.60, 8.80], [37.65, 9.90], [37.45, 10.55], [37.25, 11.25], [36.70, 11.35],
+  [36.40, 10.95], [36.05, 10.80], [35.75, 11.05], [35.55, 11.35], [35.05, 11.45], [34.55, 11.60],
+  [34.15, 10.75], [33.95, 11.15], [33.55, 11.40], [33.20, 11.75], [32.60, 11.75], [31.90, 11.20],
+  [31.30, 10.60], [30.60, 10.25], [30.18, 9.70], [30.18, 9.35], [30.60, 9.05], [31.40, 8.55],
+  [32.30, 8.05], [33.10, 7.65], [33.75, 7.30], [34.30, 7.75], [34.60, 7.98], [34.90, 8.25],
+  [35.40, 8.18], [35.95, 8.22], [36.50, 8.32], [36.85, 8.52],
+]
+
+/** "Ma position" is only used as the pin when the device knows it to this precision (metres). */
+export const GEO_MAX_ACCURACY_M = 100
+
+/** Below this map zoom a click only zooms in: a pin placed from far away is off by hundreds of metres. */
+export const MIN_PLACE_ZOOM = 15
 export const TUNISIA_CENTER: [number, number] = [34.0, 9.6]
 
 export const emptyPickupAddress = (): PickupAddressValue => ({
@@ -88,7 +108,16 @@ export function pickupPayload(v: PickupAddressValue): Record<string, string | nu
 
 export function inTunisia(lat: number | null, lng: number | null): boolean {
   const b = TUNISIA_BOUNDS
-  return lat != null && lng != null && lat >= b.latMin && lat <= b.latMax && lng >= b.lngMin && lng <= b.lngMax
+  if (lat == null || lng == null || lat < b.latMin || lat > b.latMax || lng < b.lngMin || lng > b.lngMax) return false
+  // Ray casting on the outline (lat = y, lng = x), same as the backend
+  let inside = false
+  const p = TUNISIA_POLYGON
+  for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
+    const [yi, xi] = p[i]
+    const [yj, xj] = p[j]
+    if ((yi > lat) !== (yj > lat) && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside
+  }
+  return inside
 }
 
 /** Error keys (pickupAddress.errors.*), same rules as the backend. */

@@ -6048,7 +6048,7 @@
     },
     "gouvernorat": "Governorate",
     "map": "Position on the map",
-    "mapHelp": "Click the map to place the marker or use 'My position'",
+    "mapHelp": "Zoom in until you see your street, then click exactly on your shop (you can also drag the pin). “My position” only works if you are at the shop.",
     "myPosition": "My position",
     "locating": "Locating…",
     "geoDenied": "Location access denied. Place the marker on the map by hand.",
@@ -6087,7 +6087,9 @@
       "contact": "Enter the contact person.",
       "phone": "Invalid Tunisian number. Enter 8 digits starting with 2, 4, 5 or 9.",
       "postalCode": "Postal code must be 4 digits."
-    }
+    },
+    "mapZoomIn": "Zoom in first, then click exactly on your shop to place the pin.",
+    "geoImprecise": "Your position is too approximate (± {m} m): the map is centred on it, click exactly on your shop to place the pin."
   },
   "legal": {
     "eyebrow": "Legal information",

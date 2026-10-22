@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'react'
 import type * as Leaflet from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { TUNISIA_CENTER } from '@/lib/pickupAddress'
+import { MIN_PLACE_ZOOM, TUNISIA_CENTER } from '@/lib/pickupAddress'
 
 export interface MapFocus {
   latitude: number
@@ -29,7 +29,8 @@ interface Props {
   focus?: MapFocus | null
   height?: number
   dark?: boolean
-  labels: { loading: string; failed: string; attribution?: string }
+  /** zoomIn: shown when a click at low zoom only zooms in (the pin is placed on a closer view) */
+  labels: { loading: string; failed: string; attribution?: string; zoomIn?: string }
 }
 
 const OPENFREEMAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty'
@@ -55,6 +56,8 @@ export default function PickupMap({ latitude, longitude, onChange, focus, height
   const LRef      = useRef<typeof Leaflet | null>(null)
   const changeRef = useRef(onChange)
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>('loading')
+  const [zoomHint, setZoomHint] = useState(false)
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   changeRef.current = onChange
   const editable = !!onChange
@@ -103,7 +106,18 @@ export default function PickupMap({ latitude, longitude, onChange, focus, height
         }
 
         if (editable) {
-          map.on('click', (e: Leaflet.LeafletMouseEvent) => changeRef.current?.(e.latlng.lat, e.latlng.lng))
+          map.on('click', (e: Leaflet.LeafletMouseEvent) => {
+            // From far away a click is hundreds of metres off: zoom in on it first, place on the next click
+            if (map.getZoom() < MIN_PLACE_ZOOM) {
+              map.setView(e.latlng, 17)
+              setZoomHint(true)
+              if (hintTimer.current) clearTimeout(hintTimer.current)
+              hintTimer.current = setTimeout(() => setZoomHint(false), 3500)
+              return
+            }
+            // Exactly the clicked point, [lat, lng] as Leaflet gives it
+            changeRef.current?.(e.latlng.lat, e.latlng.lng)
+          })
         }
         setState('ready')
         // The container may have been laid out after the map (tabs, steps)
@@ -115,6 +129,7 @@ export default function PickupMap({ latitude, longitude, onChange, focus, height
 
     return () => {
       cancelled = true
+      if (hintTimer.current) clearTimeout(hintTimer.current)
       mapRef.current?.remove()
       mapRef.current = null
       markerRef.current = null
@@ -167,6 +182,11 @@ export default function PickupMap({ latitude, longitude, onChange, focus, height
       {state !== 'ready' && (
         <div role="status" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: dark ? 'rgba(255,255,255,0.6)' : '#6b7280', pointerEvents: 'none' }}>
           {state === 'loading' ? labels.loading : labels.failed}
+        </div>
+      )}
+      {zoomHint && state === 'ready' && (
+        <div role="status" style={{ position: 'absolute', left: 10, right: 10, top: 10, zIndex: 1000, padding: '8px 12px', borderRadius: 10, fontSize: 12, fontWeight: 700, textAlign: 'center', pointerEvents: 'none', background: 'rgba(17,24,39,0.85)', color: '#fff' }}>
+          {labels.zoomIn ?? 'Zoom in, then click exactly on your shop to place the pin.'}
         </div>
       )}
       <style>{`

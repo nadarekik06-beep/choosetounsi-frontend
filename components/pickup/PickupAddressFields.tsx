@@ -22,7 +22,7 @@ import { AlertTriangle, Crosshair, LocateFixed, MapPinned } from 'lucide-react'
 import ZoneCombobox from './ZoneCombobox'
 import type { MapFocus } from './PickupMap'
 import {
-  distanceKm, inTunisia, zoneCenter,
+  distanceKm, GEO_MAX_ACCURACY_M, inTunisia, zoneCenter,
   type PickupAddressValue, type PickupErrors, type ZoneCenter,
 } from '@/lib/pickupAddress'
 
@@ -85,9 +85,16 @@ export default function PickupAddressFields({ value, onChange, errors = {}, dark
     navigator.geolocation.getCurrentPosition(
       pos => {
         setLocating(false)
-        const { latitude, longitude } = pos.coords
+        const { latitude, longitude, accuracy } = pos.coords
         if (!inTunisia(latitude, longitude)) { setGeoError(t('errors.pinOutside')); return }
-        onChange({ ...value, latitude, longitude })
+        // A computer often guesses its position from the internet line (km off): never use an
+        // imprecise position as the pin, only centre the map there and let the seller click the shop
+        if (!(accuracy > 0) || accuracy > GEO_MAX_ACCURACY_M) {
+          setFocus({ latitude, longitude, zoom: 16, key: `me-${Date.now()}` })
+          setGeoError(t('geoImprecise', { m: Math.round(accuracy || 0) }))
+          return
+        }
+        onChange({ ...value, latitude: Number(latitude.toFixed(7)), longitude: Number(longitude.toFixed(7)) })
         setFocus({ latitude, longitude, zoom: 17, key: `me-${Date.now()}` })
       },
       err => {
@@ -166,7 +173,7 @@ export default function PickupAddressFields({ value, onChange, errors = {}, dark
           onChange={disabled ? undefined : placePin}
           focus={focus}
           dark={dark}
-          labels={{ loading: t('mapLoading'), failed: t('mapFailed') }}
+          labels={{ loading: t('mapLoading'), failed: t('mapFailed'), zoomIn: t('mapZoomIn') }}
         />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 8, fontSize: 12, color: muted }}>
           <Crosshair size={13} aria-hidden />
