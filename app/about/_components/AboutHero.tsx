@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useReducedMotion } from '@/app/hooks/useReducedMotion'
 
-// Slide duration lives in about.css (the progress-bar fill animation drives autoplay).
+// Time each photo stays on screen. A JS timer drives autoplay; the progress bar only mirrors it.
+const SLIDE_MS = 3500
 // Intrinsic sizes of the JPG/WebP pairs in /public/images/about (width × height).
 const SIZES: Record<string, [number, number]> = {
   'about-1-together': [1200, 1600],
@@ -52,7 +53,6 @@ export default function AboutHero({ slides, text }: { slides: Slide[]; text: Tex
   const [active, setActive] = useState(0)
   const [prev, setPrev] = useState<number | null>(null)
   const [userPaused, setUserPaused] = useState(false)
-  const [hovered, setHovered] = useState(false)
   const [focused, setFocused] = useState(false)
   const [tabHidden, setTabHidden] = useState(false)
   const [onScreen, setOnScreen] = useState(true)
@@ -60,7 +60,7 @@ export default function AboutHero({ slides, text }: { slides: Slide[]; text: Tex
   const rootRef = useRef<HTMLElement>(null)
   const swipe = useRef<{ x: number; y: number } | null>(null)
 
-  const playing = !reduced && !userPaused && !hovered && !focused && !tabHidden && onScreen
+  const playing = !reduced && !userPaused && !focused && !tabHidden && onScreen
 
   const activeRef = useRef(0)
   const go = useCallback((target: number) => {
@@ -72,6 +72,19 @@ export default function AboutHero({ slides, text }: { slides: Slide[]; text: Tex
     setActive(next)
   }, [count])
   const step = useCallback((delta: number) => go(activeRef.current + delta), [go])
+
+  // Autoplay: one timer per slide. Pausing keeps the time already spent, so resuming finishes the slide.
+  const remainingRef = useRef(SLIDE_MS)
+  useEffect(() => { remainingRef.current = SLIDE_MS }, [active])
+  useEffect(() => {
+    if (!playing) return
+    const started = performance.now()
+    const id = window.setTimeout(() => step(1), remainingRef.current)
+    return () => {
+      window.clearTimeout(id)
+      remainingRef.current = Math.max(0, remainingRef.current - (performance.now() - started))
+    }
+  }, [playing, active, step])
 
   // Reveal the text once when the section enters the viewport; pause autoplay while it is off-screen.
   useEffect(() => {
@@ -124,14 +137,13 @@ export default function AboutHero({ slides, text }: { slides: Slide[]; text: Tex
       className="ab-hero"
       data-in={revealed}
       data-playing={playing}
+      style={{ '--ab-slide': `${SLIDE_MS}ms` } as React.CSSProperties}
       aria-roledescription="carousel"
       aria-label={text.carousel}
       onKeyDown={onKeyDown}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
       onPointerCancel={() => { swipe.current = null }}
-      onPointerEnter={e => { if (e.pointerType === 'mouse') setHovered(true) }}
-      onPointerLeave={e => { if (e.pointerType === 'mouse') setHovered(false) }}
       onFocus={e => { if ((e.target as HTMLElement).matches?.(':focus-visible')) setFocused(true) }}
       onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocused(false) }}
     >
@@ -175,7 +187,7 @@ export default function AboutHero({ slides, text }: { slides: Slide[]; text: Tex
                 >
                   <span className="ab-bar__track">
                     {i === active
-                      ? <span key={`f${active}`} className="ab-bar__fill" onAnimationEnd={() => step(1)} />
+                      ? <span key={`f${active}`} className="ab-bar__fill" />
                       : <span className="ab-bar__fill" />}
                   </span>
                 </button>

@@ -5,7 +5,7 @@
   --ab-gold: #e9c873;
   --ab-gold-line: rgba(233, 200, 115, .55);
   --ab-origin: left;
-  --ab-fade: 1.4s;
+  --ab-fade: 1s;
   background: var(--ct-night);
 }
 [dir="rtl"] .ab { --ab-origin: right; }
@@ -79,7 +79,7 @@
 /* Ken Burns — runs on the incoming and the outgoing slide so nothing snaps during the crossfade.
    Kept gentle (≤ 6 % zoom) so faces and the newspaper never leave the frame. */
 .ab-slide.is-active .ab-slide__img, .ab-slide.is-prev .ab-slide__img {
-  animation: ab-kb-a 9s linear both;
+  animation: ab-kb-a 5s linear both; /* covers one 3.5 s slide + the 1 s crossfade */
   animation-play-state: var(--ab-play, running);
 }
 .ab-slide--2.is-active .ab-slide__img, .ab-slide--2.is-prev .ab-slide__img { animation-name: ab-kb-b; }
@@ -103,7 +103,7 @@
 }
 [dir="rtl"] .ab-bar__fill { background: linear-gradient(270deg, var(--ct-red), #ff5a6e); }
 .ab-bar.is-done .ab-bar__fill { transform: scaleX(1); background: rgba(255, 255, 255, .75); }
-.ab-bar.is-active .ab-bar__fill { animation: ab-fill 6s linear forwards; animation-play-state: var(--ab-play, running); }
+.ab-bar.is-active .ab-bar__fill { animation: ab-fill var(--ab-slide, 3.5s) linear forwards; /* visual only: the JS timer advances */ animation-play-state: var(--ab-play, running); }
 .ab-bar:hover .ab-bar__track { background: rgba(255, 255, 255, .38); }
 .ab-bar:focus-visible { outline: none; }
 .ab-bar:focus-visible .ab-bar__track { box-shadow: 0 0 0 2px var(--ab-gold); }
