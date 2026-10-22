@@ -15,3 +15,6 @@ export const COMPANY = {
   city: 'Sfax',
   country: { fr: 'Tunisie', en: 'Tunisia', ar: 'تونس' },
 } as const
+
+/** Same handle on Instagram and TikTok. */
+export const SOCIAL_HANDLE = '@choosetounsi'

@@ -1,3 +1,5 @@
+// Text fields accept **bold** markers (rendered as <strong> by LegalDocument).
+
 export interface LegalSection {
   id: string
   heading: string
@@ -5,8 +7,12 @@ export interface LegalSection {
   body?: string[]
   /** Bullet list after the paragraphs. */
   items?: string[]
-  /** Paragraphs after the list. */
+  /** Numbered steps after the bullets. */
+  steps?: string[]
+  /** Paragraphs after the lists. */
   after?: string[]
+  /** Highlighted tip shown at the end of the section. */
+  note?: string
 }
 
 export interface LegalDoc {
@@ -18,4 +24,10 @@ export interface LegalDoc {
   draftNotice?: string
   tocTitle: string
   sections: LegalSection[]
+}
+
+/** "Made by" block shown at the end of the legal pages. */
+export interface MadeBy {
+  title: string
+  body: string
 }
