@@ -43,13 +43,14 @@
     radial-gradient(120% 90% at 50% 50%, transparent 40%, rgba(0, 0, 0, .55) 100%);
 }
 
-/* ── Layout ── */
+/* ── Layout: photo and story side by side (≥1024px), never overlapping ── */
 .ab-stage {
   position: relative;
   width: 100%;
-  max-width: 1180px;
+  max-width: 1240px;
   display: grid;
-  grid-template-columns: auto minmax(0, 580px);
+  grid-template-columns: auto minmax(0, 640px);
+  column-gap: clamp(40px, 5vw, 80px);
   align-items: center;
   justify-content: center;
 }
@@ -58,7 +59,9 @@
 /* ── Framed photo ── */
 .ab-frame {
   position: relative;
-  height: clamp(420px, calc(100svh - 133px - 136px), 660px);
+  /* 3:4 = the photos' own ratio, so they are shown whole (the two slightly wider ones lose only
+     a sliver of background at the sides). 133px navbar + 140px for padding and the bars. */
+  height: clamp(440px, calc(100svh - 133px - 140px), 680px);
   aspect-ratio: 3 / 4;
   border-radius: 22px;
   overflow: hidden;
@@ -70,10 +73,11 @@
 .ab-slide.is-prev { opacity: 1; z-index: 1; transition: none; }
 .ab-slide.is-active { opacity: 1; z-index: 2; }
 .ab-slide picture, .ab-bg__layer picture { display: contents; }
-.ab-slide__img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 35%; transform-origin: 50% 40%; }
+.ab-slide__img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; transform-origin: 50% 45%; }
 .ab-shade { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: linear-gradient(to top, rgba(0, 0, 0, .28), transparent 35%); }
 
-/* Ken Burns — runs on the incoming and the outgoing slide so nothing snaps during the crossfade */
+/* Ken Burns — runs on the incoming and the outgoing slide so nothing snaps during the crossfade.
+   Kept gentle (≤ 6 % zoom) so faces and the newspaper never leave the frame. */
 .ab-slide.is-active .ab-slide__img, .ab-slide.is-prev .ab-slide__img {
   animation: ab-kb-a 9s linear both;
   animation-play-state: var(--ab-play, running);
@@ -82,10 +86,10 @@
 .ab-slide--3.is-active .ab-slide__img, .ab-slide--3.is-prev .ab-slide__img { animation-name: ab-kb-c; }
 .ab-slide--4.is-active .ab-slide__img, .ab-slide--4.is-prev .ab-slide__img { animation-name: ab-kb-d; }
 .ab-hero[data-playing="false"] { --ab-play: paused; }
-@keyframes ab-kb-a { from { transform: scale(1.04) translate3d(0, 0, 0); } to { transform: scale(1.15) translate3d(-1.5%, -1.5%, 0); } }
-@keyframes ab-kb-b { from { transform: scale(1.15) translate3d(1.5%, -1%, 0); } to { transform: scale(1.04) translate3d(0, 0, 0); } }
-@keyframes ab-kb-c { from { transform: scale(1.05) translate3d(0, 1.5%, 0); } to { transform: scale(1.15) translate3d(1.5%, -1%, 0); } }
-@keyframes ab-kb-d { from { transform: scale(1.14) translate3d(0, -2%, 0); } to { transform: scale(1.04) translate3d(0, 1%, 0); } }
+@keyframes ab-kb-a { from { transform: scale(1); } to { transform: scale(1.06) translate3d(-.8%, -.8%, 0); } }
+@keyframes ab-kb-b { from { transform: scale(1.06) translate3d(.8%, -.6%, 0); } to { transform: scale(1); } }
+@keyframes ab-kb-c { from { transform: scale(1); } to { transform: scale(1.06) translate3d(.8%, -.6%, 0); } }
+@keyframes ab-kb-d { from { transform: scale(1.06) translate3d(0, -1%, 0); } to { transform: scale(1); } }
 
 /* ── Progress bars + pause ── */
 .ab-controls { display: flex; align-items: center; gap: 12px; }
@@ -115,7 +119,6 @@
 /* ── Frosted story panel ── */
 .ab-panel {
   position: relative; z-index: 2;
-  margin-inline-start: -84px;
   padding: 40px 44px 36px;
   border-radius: 26px;
   background: rgba(16, 16, 20, .5);
@@ -187,36 +190,50 @@ html[lang="ar"] .ab-signature { font-family: var(--ab-hand-ar), var(--ab-hand), 
 .ab-btn--ghost { color: var(--ct-ink); border: 1.5px solid rgba(17, 17, 17, .18); background: #fff; }
 .ab-btn--ghost:hover { border-color: var(--ct-green); color: var(--ct-green-dark); }
 
-/* ── Tablet: narrower frame ── */
-@media (max-width: 1100px) {
-  .ab-frame { height: clamp(400px, calc(100svh - 133px - 136px), 560px); }
-  .ab-panel { margin-inline-start: -64px; padding: 32px 32px 28px; }
-  .ab-story { font-size: 15px; }
+/* ── Small laptops (1024–1279px): tighter card ── */
+@media (max-width: 1279px) {
+  .ab-panel { padding: 32px 32px 28px; }
+  .ab-headline { font-size: clamp(34px, 3.4vw, 44px); }
+  .ab-story { font-size: 15px; line-height: 1.68; }
+  .ab-signature { font-size: 27px; margin-top: 18px; }
 }
 
-/* ── Mobile: full-bleed story-style slider ── */
-@media (max-width: 899px) {
-  .ab-hero { display: block; min-height: 100svh; padding: 0; }
-  .ab-bg { display: none; }
-  .ab-stage { display: block; position: static; max-width: none; }
-  /* the photo fills the first screen (below the ~140px mobile header) and fades into the page */
-  .ab-media { position: absolute; top: 0; inset-inline: 0; height: max(460px, calc(100svh - 140px)); gap: 0; }
-  .ab-frame { position: absolute; inset: 0; height: auto; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
-  .ab-slide__img { object-position: 50% 20%; }
-  .ab-shade {
-    background: linear-gradient(to top, #09090b 0%, rgba(9, 9, 11, .9) 30%, rgba(9, 9, 11, .55) 50%, rgba(9, 9, 11, 0) 68%),
-                linear-gradient(to bottom, rgba(0, 0, 0, .45), transparent 18%);
-  }
-  .ab-controls { position: absolute; top: 10px; inset-inline: 12px; z-index: 4; gap: 8px; }
+/* ── Short laptop screens (≤ 900px tall): denser card so the hero stays about one screen tall ── */
+@media (min-width: 1024px) and (max-height: 900px) {
+  .ab-hero { padding-block: 28px; }
+  .ab-panel { padding: 28px 36px 24px; }
+  .ab-eyebrow { margin-bottom: 10px; }
+  .ab-headline { font-size: clamp(32px, 2.9vw, 42px); }
+  .ab-accent { margin: 14px 0 14px; }
+  .ab-story { font-size: 15px; line-height: 1.58; }
+  .ab-line + .ab-line { margin-top: .2em; }
+  .ab-signature { font-size: 26px; margin-top: 14px; }
+}
+
+/* ── Tablet and mobile (< 1024px): photo above the story, full width, no overlap ── */
+@media (max-width: 1023px) {
+  .ab-hero { display: block; min-height: 0; padding: 32px 24px 48px; }
+  .ab-stage { display: flex; flex-direction: column; align-items: center; gap: 28px; max-width: 640px; margin: 0 auto; }
+  .ab-media { width: 100%; max-width: 560px; gap: 12px; }
+  .ab-frame { width: 100%; height: auto; }
+  .ab-panel { width: 100%; padding: 32px 28px 28px; }
+  .ab-headline { font-size: clamp(32px, 6vw, 44px); }
+  .ab-story { font-size: 15.5px; }
+}
+@media (max-width: 639px) {
+  .ab-hero { padding: 0 0 36px; }
+  .ab-stage { gap: 24px; }
+  .ab-media { max-width: none; }
+  .ab-frame { border-radius: 0; box-shadow: none; }
+  .ab-controls { padding: 0 16px; gap: 8px; }
   .ab-bars { gap: 4px; }
   .ab-bar { padding: 8px 0; }
-  .ab-bar__track { height: 2.5px; }
-  .ab-toggle { width: 28px; height: 28px; background: rgba(0, 0, 0, .25); }
+  .ab-toggle { width: 28px; height: 28px; }
   .ab-panel {
-    margin: 0; padding: max(250px, calc((100svh - 140px) * .5)) 20px 36px; border: 0; border-radius: 0; box-shadow: none;
+    padding: 0 20px; border: 0; border-radius: 0; box-shadow: none;
     background: none; -webkit-backdrop-filter: none; backdrop-filter: none;
   }
-  .ab-headline { font-size: clamp(32px, 9vw, 40px); text-shadow: 0 2px 20px rgba(0, 0, 0, .5); }
+  .ab-headline { font-size: clamp(30px, 9vw, 38px); }
   .ab-accent { margin: 14px 0 16px; width: 72px; }
   .ab-story { font-size: 15px; line-height: 1.65; color: rgba(255, 255, 255, .9); }
   html[lang="ar"] .ab-story { font-size: 16px; line-height: 1.85; }
