@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import { currentLocale, fallbackError } from '@/lib/i18n/clientLocale';
 import { mergeGuestHistory } from '@/lib/tracking';
 import { API_BASE } from '@/lib/constants'
@@ -112,8 +112,28 @@ export function saveSession(token: string, user: AuthUser): void {
 
 /** Refresh the cached user (same token) without the login side effects. */
 export function updateSessionUser(user: AuthUser): void {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  const next = JSON.stringify(user);
+  // Unchanged: no event, so listeners (cart, favorites) don't reload for nothing.
+  if (localStorage.getItem(USER_KEY) === next) return;
+  localStorage.setItem(USER_KEY, next);
   notifyAuthChange();
+}
+
+/** Raw cached user (JSON string), for useSyncExternalStore snapshots: stable while unchanged. */
+export function getUserSnapshot(): string | null {
+  if (typeof window === 'undefined') return null;
+  try { return localStorage.getItem(USER_KEY); } catch { return null; }
+}
+
+/** Calls back when the cached user changes in this tab (AUTH_CHANGE_EVENT) or another one (storage). */
+export function subscribeAuth(cb: () => void): () => void {
+  const onStorage = (e: StorageEvent) => { if (e.key === null || e.key === USER_KEY || e.key === TOKEN_KEY) cb(); };
+  window.addEventListener(AUTH_CHANGE_EVENT, cb);
+  window.addEventListener('storage', onStorage);
+  return () => {
+    window.removeEventListener(AUTH_CHANGE_EVENT, cb);
+    window.removeEventListener('storage', onStorage);
+  };
 }
 
 /** Fired on login / logout so session-bound state (cart, favorites) reloads without a page refresh. */
@@ -235,13 +255,50 @@ export async function logout(): Promise<void> {
   finally { clearSession(); }
 }
 
-export async function refreshUser(): Promise<AuthUser | null> {
-  try {
-    const { data } = await api.get<{ user: AuthUser }>('/auth/user');
-    const token = getToken();
-    if (token) saveSession(token, data.user);
-    return data.user;
-  } catch { clearSession(); return null; }
+// ── Live user: role / seller status always re-read from the API ────────────
+// The user is cached in localStorage at login. The role can change server-side
+// at any time (admin approves the seller application, removes the seller role),
+// so the cache is refreshed on: the seller-approved notification, the tab
+// coming back (focus / visible), and page navigation when older than a minute.
+
+let lastUserCheck = 0;
+let userRequest: Promise<AuthUser | null> | null = null;
+
+/**
+ * Re-read the signed-in user from /auth/user and update the cached copy (every
+ * useAuthUser() re-renders on a change). Concurrent calls share one request.
+ * 401 = token gone: signed out. Network / server errors keep the cached user.
+ */
+export function refreshUser(): Promise<AuthUser | null> {
+  if (userRequest) return userRequest;
+  const token = getToken();
+  if (!token) return Promise.resolve(null);
+  userRequest = (async () => {
+    try {
+      const { data } = await api.get<{ user: AuthUser }>('/auth/user', {
+        headers: { 'Cache-Control': 'no-cache' },
+        params: { _: Date.now() },   // never served from an HTTP cache
+      });
+      lastUserCheck = Date.now();
+      // Signed out / another account in the meantime: don't overwrite that session.
+      if (getToken() !== token || !data?.user) return getUser();
+      updateSessionUser(data.user);
+      return data.user;
+    } catch (err) {
+      if (isAxiosError(err) && err.response?.status === 401 && getToken() === token) { clearSession(); return null; }
+      return getUser();
+    } finally {
+      userRequest = null;
+    }
+  })();
+  return userRequest;
+}
+
+/** refreshUser() only when the cached user was last checked more than maxAgeMs ago. */
+export function refreshUserIfStale(maxAgeMs = 60_000): Promise<AuthUser | null> {
+  if (!getToken()) return Promise.resolve(null);
+  if (Date.now() - lastUserCheck < maxAgeMs) return Promise.resolve(getUser());
+  return refreshUser();
 }
 
 const GOOGLE_AFTER_KEY = 'ct_google_after';

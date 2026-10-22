@@ -17,6 +17,7 @@ import ReviewPromptPopup from '@/app/components/reviews/ReviewPromptPopup';
 import EntryPopup from '@/components/ads/EntryPopup';
 import { NavigationLoaderProvider, NavigationLoaderHost } from '@/components/brand/NavigationLoader';
 import Script from 'next/script';
+import AuthSync from '@/components/auth/AuthSync';
 import { SELLER_THEME_BOOT } from '@/app/seller/themeBoot';
 
 const syne = Syne({
@@ -93,6 +94,8 @@ export default async function RootLayout({
                   {children}
                   <SiteFooter />
                 </Fragment>
+                {/* role / seller status: re-read from the API, no logout needed */}
+                <AuthSync />
                 <FlashToast />
                 <CartDrawer />
                 <SupportChatWidget />

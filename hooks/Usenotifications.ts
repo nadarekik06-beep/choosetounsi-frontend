@@ -6,6 +6,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { NOTIFICATIONS_CHANGED, type AppNotification, type NotificationListResponse } from '@/lib/notificationApi'
+import { refreshUser } from '@/lib/auth'
+
+/** Notifications that change the user's role: the cached user is re-read when one arrives. */
+const ROLE_CHANGING_TYPES = new Set(['seller_application_reviewed'])
 
 // Same token keys lib/sellerApi.ts sends: no token = signed out, nothing to fetch.
 function hasToken(): boolean {
@@ -53,6 +57,7 @@ export function useNotifications({
   const prevUnread = useRef(0)
   const mounted    = useRef(true)
   const failures   = useRef(0)   // consecutive failed calls: polling backs off while > 0
+  const roleSeen   = useRef(new Set<string>())   // role-changing notifications already acted on
 
   // ── Fetch full list ───────────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
@@ -65,6 +70,13 @@ export function useNotifications({
       // Defensive: ensure data is always an array
       const data = Array.isArray(res?.data) ? res.data : []
       setItems(data)
+
+      // "Application approved" just arrived: seller badge, menu and /seller without a re-login
+      const roleChange = data.filter(n => !n.is_read && ROLE_CHANGING_TYPES.has(n.data?.type) && !roleSeen.current.has(n.id))
+      if (roleChange.length) {
+        roleChange.forEach(n => roleSeen.current.add(n.id))
+        refreshUser()
+      }
       failures.current = 0
 
       // Exact badge count: the list only holds the latest 20 rows

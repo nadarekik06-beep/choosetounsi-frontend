@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { api, getUser, type AuthUser } from '@/lib/auth'
+import { api, getUser, refreshUser, type AuthUser } from '@/lib/auth'
 import { subscriptionApi, planTier, type SubscriptionStatus } from '@/lib/subscriptionApi'
 import type { PlanKey } from '@/lib/platformApi'
 
@@ -49,13 +49,14 @@ export async function loadVendorState(): Promise<VendorState> {
   // /seller/subscription carries the role-level answer (is_approved_seller), so one
   // request settles the variant. Only if it failed or predates that field is the
   // user re-read (the stored copy can be stale, e.g. approved since login).
-  if (status && status.is_approved_seller !== undefined) return resolveVendorState(getUser(), status)
-  const fresh = await api.get('/auth/user')
-    .then(r => {
-      const u = (r.data?.user ?? r.data?.data ?? r.data) as AuthUser
-      return u && typeof u === 'object' && 'role' in u ? u : null
-    })
-    .catch(() => null)
+  if (status && status.is_approved_seller !== undefined) {
+    // Server and cached role disagree (approved / removed since login): update the
+    // cached user too, so the navbar badge and "Ma boutique" follow right away.
+    const cached = getUser()
+    if (status.is_approved_seller !== (cached?.role === 'seller' && !!cached.is_approved)) refreshUser()
+    return resolveVendorState(getUser(), status)
+  }
+  const fresh = await refreshUser()
   return resolveVendorState(fresh ?? getUser(), status)
 }
 

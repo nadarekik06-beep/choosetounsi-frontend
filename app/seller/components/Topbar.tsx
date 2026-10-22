@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Menu, Sun, Moon, Flame, Crown, Globe } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useLanguage } from '@/components/i18n/LanguageSwitcher';
 import { formatDate } from '@/lib/i18n/format';
 import { useRouter } from 'next/navigation';
-import { getUser, AuthUser } from '@/lib/auth';
+import { useAuthUser } from '@/hooks/useAuthUser';
 import { useTheme } from '../SellerShell';
 import NotificationBell from '@/app/components/NotificationBell';
 import { sellerNotificationApi } from '@/lib/notificationApi';
@@ -143,10 +143,8 @@ export default function Topbar({ onMobileMenuOpen }: { onMobileMenuOpen: () => v
   const { openModal: openLanguage } = useLanguage();
   const { isRed, isBlack }  = useSubscription();
   const router               = useRouter();
-  const [user,   setUser]   = useState<AuthUser | null>(null);
+  const user                 = useAuthUser();
   const [imgErr, setImgErr] = useState(false);
-
-  useEffect(() => { setUser(getUser()); }, []);
 
   const baseBg     = dark ? '#161b27' : '#ffffff';
   const baseBorder = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';

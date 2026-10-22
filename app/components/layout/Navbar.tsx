@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { logout, isAuthenticated, getUser, AuthUser } from "@/lib/auth";
+import { logout, AuthUser } from "@/lib/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import { useCart } from "@/context/CartContext";
 import { Heart, ShoppingBag, ClipboardList, AlertCircle } from "lucide-react";
 import NotificationBell from "@/app/components/NotificationBell";
@@ -675,7 +676,8 @@ export default function Navbar() {
   const fmt = useFormat();
   const [menuOpen,   setMenuOpen]   = useState(false);
   const [dropOpen,   setDropOpen]   = useState(false);
-  const [user,       setUser]       = useState<AuthUser|null>(null);
+  // live: badge, "Ma boutique" and seller menu follow role changes without a re-login
+  const user = useAuthUser();
   const [scrolled,   setScrolled]   = useState(false);
   const [megaOpen,   setMegaOpen]   = useState(false);
   const [categories, setCategories] = useState<ApiCategory[]>([]);
@@ -703,7 +705,6 @@ export default function Navbar() {
   // Show suggestions dropdown when focused AND query has text AND suggestions exist
   const showSuggestionsDropdown = searchFocused && searchQuery.trim().length >= 2 && suggItems.length > 0;
 
-  useEffect(()=>{ if(isAuthenticated()) setUser(getUser()); },[]);
   useEffect(()=>{
     fetch(`${API_BASE}/categories`,{headers:{Accept:"application/json"}})
       .then(r=>r.json()).then(j=>setCategories(j.data??[])).catch(()=>{});
@@ -776,7 +777,7 @@ export default function Navbar() {
   }, [searchQuery, categories]);
 
   const closeAll = () => { setMegaOpen(false); setDropOpen(false); setMenuOpen(false); setSearchFocused(false); };
-  const handleLogout = async () => { closeAll(); await logout(); setUser(null); router.push("/auth/login"); };
+  const handleLogout = async () => { closeAll(); await logout(); router.push("/auth/login"); };
   const handleCart   = () => { closeAll(); openDrawer(); };
   const handleSupport = () => { closeAll(); window.dispatchEvent(new Event("open-support-chat")); };
 
