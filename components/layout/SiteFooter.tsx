@@ -52,6 +52,7 @@ export default function SiteFooter() {
 
         <nav className="sf-col" aria-label={t('legal')}>
           <p className="sf-h">{t('legal')}</p>
+          <Link href="/about">{t('about')}</Link>
           <Link href="/contact">{t('contactPage')}</Link>
           <Link href="/privacy">{t('privacy')}</Link>
           <Link href="/terms">{t('terms')}</Link>

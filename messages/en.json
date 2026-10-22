@@ -277,6 +277,7 @@
     }
   },
   "footer": {
+    "about": "About us",
     "tagline": "The marketplace for Tunisian sellers. Shop with confidence.",
     "shop": "Shop",
     "help": "Help",
@@ -6164,5 +6165,25 @@
     "invalidTitle": "Invalid link",
     "invalidBody": "This unsubscribe link is no longer valid. You can manage your e-mails in your profile settings.",
     "contact": "Contact us"
+  },
+  "about": {
+    "metaTitle": "About us — our story",
+    "metaDescription": "Two students, one dream: the story of Abdou and Nada, founders of Choose'Tounsi, the marketplace for Tunisian sellers.",
+    "eyebrow": "Our story",
+    "headline": "Two students, one dream.",
+    "story": "From a shared vision and an unwavering commitment, Choose'Tounsi was born. Two students, one dream, and an unshakeable belief that Tunisia deserves better. Every decision we made, every feature we built, carried a piece of who we are. This platform is our love letter to every Tunisian seller who dared to believe, and every buyer who chose to trust. It is proof that when passion meets purpose, something beautiful is born. We didn't just build a platform — we built a piece of ourselves.",
+    "signature": "— Abdou & Nada, founders of Choose'Tounsi",
+    "carousel": "Photos from our story",
+    "slide": "Photo {n} of {total}",
+    "goTo": "Show photo {n}",
+    "pause": "Pause the slideshow",
+    "play": "Resume the slideshow",
+    "alt1": "Abdou and Nada in graduation gowns, holding a “We did it!” newspaper, flowers and their Choose'Tounsi project report",
+    "alt2": "Nada and Abdou smiling at each other, diplomas and flowers in hand",
+    "alt3": "Abdou and Nada walking hand in hand across the campus lawn",
+    "alt4": "Abdou and Nada seen from behind, holding hands at the top of a staircase, ready for what comes next",
+    "ctaLine": "Our story continues with you.",
+    "ctaVendor": "Become a vendor",
+    "ctaShop": "Discover the products"
   }
 }

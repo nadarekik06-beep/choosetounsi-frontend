@@ -277,6 +277,7 @@
     }
   },
   "footer": {
+    "about": "À propos",
     "tagline": "La marketplace des vendeurs tunisiens. Achetez en toute confiance.",
     "shop": "Acheter",
     "help": "Aide",
@@ -6164,5 +6165,25 @@
     "invalidTitle": "Lien non valide",
     "invalidBody": "Ce lien de désabonnement n’est plus valide. Vous pouvez gérer vos e-mails dans les paramètres de votre profil.",
     "contact": "Nous contacter"
+  },
+  "about": {
+    "metaTitle": "À propos — notre histoire",
+    "metaDescription": "Deux étudiants, un seul rêve : découvrez l'histoire d'Abdou et Nada, fondateurs de Choose'Tounsi, la marketplace des vendeurs tunisiens.",
+    "eyebrow": "Notre histoire",
+    "headline": "Deux étudiants, un seul rêve.",
+    "story": "D'une vision partagée et d'un engagement sans faille est né Choose'Tounsi. Deux étudiants, un rêve, et la conviction inébranlable que la Tunisie mérite mieux. Chaque décision prise, chaque fonctionnalité construite porte une part de ce que nous sommes. Cette plateforme est notre lettre d'amour à chaque vendeur tunisien qui a osé y croire, et à chaque acheteur qui a choisi de faire confiance. Elle est la preuve que lorsque la passion rencontre un but, quelque chose de beau voit le jour. Nous n'avons pas seulement construit une plateforme : nous y avons mis une part de nous-mêmes.",
+    "signature": "— Abdou & Nada, fondateurs de Choose'Tounsi",
+    "carousel": "Photos de notre histoire",
+    "slide": "Photo {n} sur {total}",
+    "goTo": "Afficher la photo {n}",
+    "pause": "Mettre le diaporama en pause",
+    "play": "Relancer le diaporama",
+    "alt1": "Abdou et Nada en toge le jour de leur remise de diplôme, avec un journal « We did it! », des fleurs et le rapport du projet Choose'Tounsi",
+    "alt2": "Nada et Abdou se regardent en souriant, diplômes et fleurs à la main",
+    "alt3": "Abdou et Nada marchent main dans la main sur la pelouse du campus",
+    "alt4": "Abdou et Nada de dos, main dans la main en haut d'un escalier, prêts pour la suite",
+    "ctaLine": "Notre histoire continue avec vous.",
+    "ctaVendor": "Devenir vendeur",
+    "ctaShop": "Découvrir les produits"
   }
 }
