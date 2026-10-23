@@ -267,28 +267,45 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
           height: 66, borderBottom: `1px solid ${SB_BORDER}`,
           flexShrink: 0, justifyContent: collapsed ? 'center' : 'flex-start',
         }}>
-          <div style={{
-            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-            background: '#fff', padding: 4, overflow: 'hidden',
-            boxShadow: isBlack
-              ? '0 0 0 2.5px #f59e0b, 0 0 14px rgba(245,158,11,0.55)'
-              : '0 0 0 2.5px #198f41, 0 0 14px rgba(25,143,65,0.45)',
-          }}>
-            <img src="/images/logo-chili.png" alt="ChooseTounsi"
-              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}/>
-          </div>
-
-          {!collapsed && (
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <p style={{ fontWeight: 900, fontSize: 14.5, color: TXT_ACTIVE, margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1 }}>
-                Choose<span style={{ color: '#db142e' }}>Tounsi</span>
-              </p>
-              <p style={{ fontSize: 9, fontWeight: 800, margin: 0, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1,
-                color: isBlack ? (dark ? '#f59e0b' : '#92400e') : (dark ? '#4ade80' : '#15803d') }}>
-                {isBlack ? t('elitePortal') : t('portal')}
-              </p>
+          {/* Logo + name: back to the storefront home (session is kept) */}
+          <Link
+            href="/"
+            onClick={onMobileClose}
+            aria-label={t('backToHome')}
+            title={t('backToHome')}
+            className="sb3-brand"
+            style={{
+              display: 'flex', alignItems: 'center',
+              gap: collapsed ? 0 : 12,
+              flex: collapsed ? '0 0 auto' : 1, minWidth: 0,
+              padding: 4, margin: -4, borderRadius: 14,
+              textDecoration: 'none', color: 'inherit',
+              transition: 'background 0.14s',
+            }}
+          >
+            <div style={{
+              width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+              background: '#fff', padding: 4, overflow: 'hidden',
+              boxShadow: isBlack
+                ? '0 0 0 2.5px #f59e0b, 0 0 14px rgba(245,158,11,0.55)'
+                : '0 0 0 2.5px #198f41, 0 0 14px rgba(25,143,65,0.45)',
+            }}>
+              <img src="/images/logo-chili.png" alt="ChooseTounsi"
+                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}/>
             </div>
-          )}
+
+            {!collapsed && (
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <p style={{ fontWeight: 900, fontSize: 14.5, color: TXT_ACTIVE, margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1 }}>
+                  Choose<span style={{ color: '#db142e' }}>Tounsi</span>
+                </p>
+                <p style={{ fontSize: 9, fontWeight: 800, margin: 0, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1,
+                  color: isBlack ? (dark ? '#f59e0b' : '#92400e') : (dark ? '#4ade80' : '#15803d') }}>
+                  {isBlack ? t('elitePortal') : t('portal')}
+                </p>
+              </div>
+            )}
+          </Link>
 
           {/* Close button (mobile drawer only) */}
           {!collapsed && (
@@ -377,6 +394,8 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
         .sb3-footer:hover svg, .sb3-close:hover svg { color: ${TXT_ACTIVE} !important; stroke: currentColor !important; }
         .sb3-danger:hover { background: rgba(239,68,68,0.12) !important; color: ${DANGER} !important; }
         .sb3-danger:hover span, .sb3-danger:hover svg { color: ${DANGER} !important; stroke: currentColor !important; }
+        .sb3-brand:hover { background: ${HOVER_BG}; }
+        .sb3-brand:focus-visible { outline: 2px solid #db142e; outline-offset: 2px; background: ${HOVER_BG}; }
         .sb3-section:hover { background: none !important; }
         .sb3-section:hover span, .sb3-section:hover svg { color: ${TXT_ACTIVE} !important; stroke: currentColor !important; }
 
