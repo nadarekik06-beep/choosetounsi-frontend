@@ -312,11 +312,11 @@ export default function Sidebar({ collapsed: collapsedProp, onCollapse, mobileOp
             <button
               onClick={onMobileClose}
               aria-label={t('closeMenu')}
-              className="lg:hidden sb3-close"
+              className="flex lg:hidden sb3-close"
               style={{
                 width: 34, height: 34, borderRadius: 9, flexShrink: 0,
                 background: HOVER_BG, border: 'none', cursor: 'pointer',
-                color: TXT_BASE, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: TXT_BASE, alignItems: 'center', justifyContent: 'center',
               }}
             >
               <X size={18}/>
