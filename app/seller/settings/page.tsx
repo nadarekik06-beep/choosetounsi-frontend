@@ -3,10 +3,10 @@
 /**
  * app/seller/settings/page.tsx
  *
- * Store profile settings: pickup address (for the courier), WhatsApp number for order alerts, stock alerts and the storefront cover photo —
- * business name/avatar are shown read-only here (they're edited through the
- * seller application flow, which forces a re-review; this page must NOT
- * trigger that).
+ * Store profile settings: store profile (logo, description, activity
+ * categories), pickup address (for the courier), WhatsApp number for order
+ * alerts, stock alerts and the storefront cover photo. The business name is
+ * shown read-only (admin-only); nothing here re-opens the application review.
  *
  * Route: /seller/settings
  * Layout: seller dashboard layout (inherits dark theme, sidebar)
@@ -25,6 +25,7 @@ import { ink } from '@/app/seller/ink';
 import PickupAddressCard from './PickupAddressCard'
 import StockAlertsCard from './StockAlertsCard'
 import WhatsAppCard from './WhatsAppCard'
+import StoreProfileCard from './StoreProfileCard'
 
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
@@ -34,8 +35,10 @@ const ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
 interface StoreProfile {
   business_name: string
   business_description: string | null
+  business_categories: string[]
   avatar: string | null
   cover_photo: string | null
+  can_edit?: boolean
 }
 
 export default function SellerSettingsPage() {
@@ -144,13 +147,25 @@ export default function SellerSettingsPage() {
             : (profile?.business_name ?? '?').charAt(0).toUpperCase()
           }
         </div>
-        <div>
-          <p style={{ fontSize: 14, fontWeight: 800, color: textMain, margin: 0 }}>{profile?.business_name}</p>
+        <div style={{ minWidth: 0 }}>
+          <p style={{ fontSize: 14, fontWeight: 800, color: textMain, margin: 0, overflowWrap: 'anywhere' }}>{profile?.business_name}</p>
           <p style={{ fontSize: 12, color: textMuted, margin: 0 }}>
             {t('identityHint')}
           </p>
         </div>
       </div>
+
+      {/* Store profile: logo, description, activity categories (live at once) */}
+      {profile && profile.can_edit !== false && (
+        <StoreProfileCard
+          dark={dark} cardBg={cardBg} border={border} textMain={textMain} textMuted={textMuted}
+          initial={{
+            business_name: profile.business_name, logo: profile.avatar,
+            business_description: profile.business_description, business_categories: profile.business_categories ?? [],
+          }}
+          onLogoChange={url => setProfile(p => p ? { ...p, avatar: url } : p)}
+        />
+      )}
 
       {/* Public store link: copy, share, QR code for flyers and packaging */}
       {sellerId && profile?.business_name && (

@@ -508,6 +508,29 @@ export const storeProfileApi = {
     return formRequest<any>('POST', '/seller/store-profile/cover-photo', fd)
   },
 
+  /** POST /api/seller/store-profile/logo — square image (cropped in the browser, re-encoded server-side) */
+  updateLogo: (file: Blob, locale: string) => {
+    const fd = new FormData()
+    fd.append('logo', file, file instanceof File ? file.name : 'logo.webp')
+    return send<StoreProfileResponse>('/seller/store-profile/logo', {
+      method: 'POST', headers: { Accept: 'application/json', 'Accept-Language': locale, ...authHeaders() }, body: fd,
+    })
+  },
+
+  /** PUT /api/seller/store-profile/description — plain text, line breaks kept, 2000 characters max */
+  updateDescription: (business_description: string, locale: string) =>
+    send<StoreProfileResponse>('/seller/store-profile/description', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'Accept-Language': locale, ...authHeaders() },
+      body: JSON.stringify({ business_description }),
+    }),
+
+  /** PUT /api/seller/store-profile/categories — activity categories from the platform list (max 5) */
+  updateCategories: (categories: string[], locale: string) =>
+    send<StoreProfileResponse>('/seller/store-profile/categories', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'Accept-Language': locale, ...authHeaders() },
+      body: JSON.stringify({ categories }),
+    }),
+
   /** GET /api/seller/pickup-address — where the courier collects parcels (+ missing fields) */
   getPickup: () => jsonRequest<any>('GET', '/seller/pickup-address'),
 
@@ -527,6 +550,21 @@ export const storeProfileApi = {
   /** PUT /api/seller/whatsapp — any Tunisian mobile format ("22 345 678", "+216…", "00216…") */
   updateWhatsApp: (data: { whatsapp_number: string; language: WhatsAppLanguage }) =>
     jsonRequest<{ success: boolean; message?: string; data: WhatsAppSettings }>('PUT', '/seller/whatsapp', data),
+}
+
+export interface StoreProfileData {
+  business_name: string | null
+  logo: string | null
+  business_description: string | null
+  /** stored (English) platform category names */
+  business_categories: string[]
+}
+
+export interface StoreProfileResponse {
+  success: boolean
+  changed?: boolean
+  message?: string
+  data: StoreProfileData
 }
 
 export type WhatsAppLanguage = 'fr' | 'ar'

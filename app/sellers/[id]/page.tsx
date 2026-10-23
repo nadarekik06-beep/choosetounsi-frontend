@@ -543,7 +543,7 @@ export default function SellerStorefrontPage() {
         </div>
 
         {seller.business_description && (
-          <p style={{ maxWidth: 700, margin: '16px auto 0', fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.6 }}>
+          <p dir="auto" style={{ maxWidth: 700, margin: '16px auto 0', fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.6, whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>
             {seller.business_description}
           </p>
         )}
