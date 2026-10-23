@@ -162,16 +162,16 @@ export default function CouponModal({ coupon, prefill, onClose, onSaved }: Coupo
   }
 
   return (
-    <div style={{
+    <div data-ct-modal="" style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
       zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
     }}>
-      <div style={{
+      <div className="ct-sheet" style={{
         background: '#fff', borderRadius: 20, boxShadow: '0 24px 64px rgba(0,0,0,0.2)',
         width: '100%', maxWidth: 780, maxHeight: '92vh', overflowY: 'auto',
         display: 'flex', flexDirection: 'column',
       }}>
-        <div style={{
+        <div className="ct-sheet-head" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '18px 24px', borderBottom: '1px solid #f0f0f0',
           position: 'sticky', top: 0, background: '#fff', zIndex: 10, borderRadius: '20px 20px 0 0',
@@ -207,7 +207,7 @@ export default function CouponModal({ coupon, prefill, onClose, onSaved }: Coupo
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
+          <div className="ct-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
             {/* ══ LEFT ══ */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <SLabel>{t('details')}</SLabel>
@@ -224,7 +224,7 @@ export default function CouponModal({ coupon, prefill, onClose, onSaved }: Coupo
                 {isEdit && <p style={{ fontSize: 10, color: '#5b6472', margin: '4px 0 0' }}>{t('codeLocked')}</p>}
               </Field>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className="ct-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <Field label={tp('discountType')} required>
                   <select value={discountType} onChange={e => setDiscountType(e.target.value as any)} style={inputBase}>
                     <option value="percentage">{tp('percentage')}</option>
@@ -260,7 +260,7 @@ export default function CouponModal({ coupon, prefill, onClose, onSaved }: Coupo
                 </p>
               </Field>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className="ct-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <Field label={t('totalUses')} error={errors.usage_limit}>
                   <input
                     type="number" min="1" step="1"
@@ -363,7 +363,7 @@ export default function CouponModal({ coupon, prefill, onClose, onSaved }: Coupo
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 12, paddingTop: 12, position: 'sticky', bottom: 0, background: '#fff', borderTop: '1px solid #f0f0f0' }}>
+          <div className="ct-sheet-bar" style={{ display: 'flex', gap: 12, paddingTop: 12, position: 'sticky', bottom: 0, background: '#fff', borderTop: '1px solid #f0f0f0' }}>
             <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px 0', border: '1.5px solid #e5e7eb', background: '#fff', color: '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
               {tp('cancel')}
             </button>

@@ -192,7 +192,7 @@ export default function ReviewSubmitModal({
       `}</style>
 
       {/* Overlay */}
-      <div
+      <div data-ct-modal=""
         onClick={onClose}
         style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 10000,

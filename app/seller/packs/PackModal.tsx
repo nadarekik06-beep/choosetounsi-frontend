@@ -208,14 +208,14 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{
+    <div data-ct-modal="" style={{
       position: 'fixed', inset: 0,
       background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
       zIndex: 9999,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 16,
     }}>
-      <div
+      <div className="ct-sheet"
         role="dialog" aria-modal="true" aria-labelledby="pack-modal-title"
         style={{
           background: '#fff', borderRadius: 20,

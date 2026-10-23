@@ -547,7 +547,7 @@ export default function NotificationBell({
       {/* Mobile sheet — portalled out of the sticky header's stacking context */}
       {open && mobile && typeof document !== 'undefined' && createPortal(
         <>
-          <div
+          <div data-ct-modal=""
             onClick={() => setOpen(false)}
             aria-hidden="true"
             style={{

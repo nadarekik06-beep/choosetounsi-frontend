@@ -109,6 +109,12 @@ export default function SettlementReceiptPage() {
         .receipt-outer { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 32px 16px 48px; gap: 16px; }
         .action-bar { width: 210mm; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .receipt-sheet { width: 210mm; min-height: 297mm; background: #fff; box-shadow: 0 4px 32px rgba(0,0,0,0.12); border-radius: 4px; overflow: hidden; animation: fadeIn 0.3s ease both; }
+        /* Phones: the A4 sheet fits the screen (printing still uses the A4 rules below) */
+        @media screen and (max-width: 820px) {
+          .action-bar, .receipt-sheet { width: 100%; }
+          .receipt-sheet { min-height: 0; }
+          .action-bar { flex-wrap: wrap; }
+        }
         @media print {
           @page { size: A4; margin: 0; }
           body { background: white; }
@@ -174,7 +180,7 @@ export default function SettlementReceiptPage() {
             </div>
 
             {/* Meta strip */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: '#e2e8f0', borderRadius: 10, overflow: 'hidden', marginBottom: 28 }}>
+            <div className="ct-grid2-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: '#e2e8f0', borderRadius: 10, overflow: 'hidden', marginBottom: 28 }}>
               {[
                 { label: t('reference'),      value: data.batch_reference },
                 { label: t('settlementDate'), value: paidDate },

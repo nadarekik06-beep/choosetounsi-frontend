@@ -40,7 +40,7 @@ export default function SubcategoryNav({ subcategories, activeSlug, onSelect, lo
         .subcat-pill { transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.18s; }
         .subcat-pill:hover { border-color: #dc2626 !important; color: #dc2626 !important; transform: translateY(-1px); }
       `}</style>
-      <div style={{
+      <div className="ct-wrap-mobile" style={{
         display: 'flex', gap: 8, overflowX: 'auto', padding: '12px 0',
         scrollbarWidth: 'none', msOverflowStyle: 'none',
       }}>

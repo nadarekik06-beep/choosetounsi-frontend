@@ -266,6 +266,7 @@ export default function ComplaintModal({
       <div
         role="dialog"
         aria-modal="true"
+        data-ct-modal={isOpen ? '' : undefined}
         aria-label={t('title')}
         style={{
           position: 'fixed',
@@ -294,7 +295,7 @@ export default function ComplaintModal({
             position: 'fixed',
             top: 0, insetInlineEnd: 0, bottom: 0,
             width: '100%', maxWidth: 460,
-            height: '100vh',
+            height: '100dvh',
             background: '#ffffff',
             display: 'flex', flexDirection: 'column',
             boxShadow: '-12px 0 60px rgba(0,0,0,0.18)',

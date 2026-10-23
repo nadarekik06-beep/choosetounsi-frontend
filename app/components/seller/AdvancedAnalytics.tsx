@@ -149,7 +149,7 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <style>{`@keyframes shimmer{0%{opacity:0.4}50%{opacity:0.8}100%{opacity:0.4}}`}</style>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+      <div className="ct-grid2-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
         {[...Array(4)].map((_, i) => (
           <div key={i} style={{ height: 100, borderRadius: 16, background: dark ? 'rgba(255,255,255,0.05)' : '#e5e7eb', animation: 'shimmer 1.4s infinite linear' }} />
         ))}
@@ -221,7 +221,7 @@ export default function AdvancedAnalytics({ dark }: { dark: boolean }) {
       {activeTab === 'overview' && (
         <>
           {/* Period KPIs */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          <div className="ct-grid2-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
             <MiniKPI dark={dark} icon={TrendingUp} accent="#db142e" label={t('kpi.week')} value={fmt(overview.period_stats.this_week)} change={overview.period_stats.week_growth} />
             <MiniKPI dark={dark} icon={TrendingUp} accent="#3b82f6" label={t('kpi.month')} value={fmt(overview.period_stats.this_month)} change={overview.period_stats.month_growth} />
             <MiniKPI dark={dark} icon={ShoppingCart} accent="#10b981" label={t('kpi.aov')} value={fmt(overview.avg_order_value)} />

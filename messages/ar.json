@@ -113,6 +113,7 @@
     "register": "إنشاء حساب",
     "myProfile": "ملفي الشخصي",
     "myStore": "متجري",
+    "notifications": "الإشعارات",
     "logout": "تسجيل الخروج",
     "categories": "الأقسام",
     "shop": "المتجر",
@@ -2534,7 +2535,14 @@
         "amount": "المبلغ",
         "date": "التاريخ"
       },
-      "thousandsShort": "{value} ألف"
+      "thousandsShort": "{value} ألف",
+      "quick": {
+        "label": "إجراءات سريعة",
+        "product": "+ منتج",
+        "pack": "+ باقة",
+        "promotion": "+ عرض ترويجي",
+        "toPrepare": "طلبات للتحضير"
+      }
     },
     "charts": {
       "revenue": "المداخيل",

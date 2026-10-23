@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:mobile": "node scripts/check-mobile-overflow.mjs"
   },
   "dependencies": {
     "@maplibre/maplibre-gl-leaflet": "0.1.4",
@@ -35,6 +36,7 @@
     "autoprefixer": "^10.4.24",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
+    "playwright-core": "^1.56.1",
     "tailwindcss": "^4.2.0",
     "typescript": "5.9.3"
   }

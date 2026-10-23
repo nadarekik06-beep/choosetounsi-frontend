@@ -174,7 +174,7 @@ function Wizard() {
   return (
     <PageFrame title={t('wizard.title')}>
       {/* Steps */}
-      <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', gap: 6, overflowX: 'auto' }} aria-label={t('wizard.title')}>
+      <ol className="ct-wrap-mobile" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', gap: 6, overflowX: 'auto' }} aria-label={t('wizard.title')}>
         {STEPS.map((s, i) => (
           <li key={s} aria-current={s === step ? 'step' : undefined} style={{
             flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800,

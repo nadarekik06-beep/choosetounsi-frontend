@@ -385,7 +385,7 @@ export default function BlackOverviewPage() {
         </div>
 
         {/* ── 4 Metric cards ── */}
-        <div className="bk-section" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+        <div className="bk-section ct-grid2-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
           {metrics.map(m => (
             <MetricCard key={m.label} label={m.label} value={m.value} icon={m.icon} accent={m.color} dark={dark} />
           ))}

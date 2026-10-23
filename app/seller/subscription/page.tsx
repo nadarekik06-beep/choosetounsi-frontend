@@ -96,7 +96,7 @@ function DowngradeModal({ currentPlan, targetPlan, billingCycleEnd, daysRemainin
   const lostFeatures    = currentFeatures.filter(f => !targetFeatures.has(f))
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+    <div data-ct-modal="" style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
       onClick={onCancel}>
       <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 460, background: cardBg, borderRadius: 20, border: '1.5px solid rgba(239,68,68,0.3)', boxShadow: '0 40px 80px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
         <div style={{ height: 3, background: 'linear-gradient(90deg, #ef4444, #f97316)' }} />

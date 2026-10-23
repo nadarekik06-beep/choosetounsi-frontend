@@ -143,6 +143,7 @@
   box-shadow: 0 8px 26px rgba(0,0,0,0.06);
 }
 .pf-tabs::-webkit-scrollbar { display: none; }
+@media (max-width: 767px) { .pf-tabs { flex-wrap: wrap; overflow-x: visible; } .pf-tab { flex: 1 1 auto; justify-content: center; } }
 .pf-tab {
   flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 14px;
   border-radius: 11px; border: 0; background: transparent; color: var(--pf-muted); cursor: pointer;

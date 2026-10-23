@@ -269,13 +269,13 @@ export default function RestockModal({ product, onClose, onRestocked }: Props) {
   const hasVariants = product.has_variants && variants.length > 0
 
   return (
-    <div style={{
+    <div data-ct-modal="" style={{
       position: 'fixed', inset: 0,
       background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)',
       zIndex: 10000,
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
     }}>
-      <div style={{
+      <div className="ct-sheet" style={{
         background: '#fff', borderRadius: 22,
         boxShadow: '0 32px 80px rgba(0,0,0,0.2)',
         width: '100%', maxWidth: hasVariants ? 560 : 420,
@@ -284,7 +284,7 @@ export default function RestockModal({ product, onClose, onRestocked }: Props) {
       }}>
 
         {/* Header */}
-        <div style={{
+        <div className="ct-sheet-head" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '20px 24px 16px', borderBottom: '1px solid #f0f2f5',
           position: 'sticky', top: 0, background: '#fff', zIndex: 10,
@@ -548,7 +548,7 @@ export default function RestockModal({ product, onClose, onRestocked }: Props) {
 
         {/* Footer */}
         {!success && (
-          <div style={{ display: 'flex', gap: 10, padding: '16px 24px 20px', borderTop: '1px solid #f0f2f5', position: 'sticky', bottom: 0, background: '#fff', borderRadius: '0 0 22px 22px' }}>
+          <div className="ct-sheet-bar" style={{ display: 'flex', gap: 10, padding: '16px 24px 20px', borderTop: '1px solid #f0f2f5', position: 'sticky', bottom: 0, background: '#fff', borderRadius: '0 0 22px 22px' }}>
             <button type="button" onClick={onClose} style={{ flex: 1, padding: '11px 0', border: '1.5px solid #e5e7eb', background: '#fff', color: '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
               {t('cancel')}
             </button>

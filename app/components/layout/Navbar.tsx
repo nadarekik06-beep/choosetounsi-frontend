@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { logout, AuthUser } from "@/lib/auth";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useCart } from "@/context/CartContext";
-import { Heart, ShoppingBag, ClipboardList, AlertCircle } from "lucide-react";
+import { Heart, ShoppingBag, ClipboardList, AlertCircle, Store, Bell, User } from "lucide-react";
 import NotificationBell from "@/app/components/NotificationBell";
 import { buyerNotificationApi } from "@/lib/notificationApi";
 import BrandLogoCircle from "@/components/BrandLogoCircle";
@@ -1083,6 +1083,14 @@ export default function Navbar() {
               )}
             </div>
 
+            {/* Mobile: sellers reach their dashboard in one tap */}
+            {loggedIn&&isSeller&&(
+              <Link href="/seller" className="nb-cart-m nb-store-m" aria-label={t("myStore")} title={t("myStore")}
+                style={{display:"none",alignItems:"center",justifyContent:"center",width:40,height:40,borderRadius:10,background:"#fef2f2",border:"1px solid #fecaca",color:"#dc2626",flexShrink:0,textDecoration:"none"}}>
+                <Store size={20}/>
+              </Link>
+            )}
+
             {/* Mobile bell (buyer notifications, every signed-in user) */}
             {loggedIn&&(
               <span className="nb-cart-m" style={{display:"none",flexShrink:0}}>
@@ -1141,6 +1149,12 @@ export default function Navbar() {
                 </div>
               </div>
             )}
+            {loggedIn&&isSeller&&(
+              <Link href="/seller" onClick={()=>setMenuOpen(false)}
+                style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,minHeight:46,borderRadius:10,background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"#fff",fontWeight:800,fontSize:14,textDecoration:"none"}}>
+                <Store size={18}/>{t("myStore")}
+              </Link>
+            )}
             {/* Mobile search (hidden ≤960px: the header search row replaces it) */}
             <div className="nb-drawer-search" style={{display:"flex",border:"1.5px solid #e5e7eb",borderRadius:8,overflow:"hidden",height:42}}>
               <input type="text" placeholder={t("searchShort")} aria-label={t("searchPlaceholder")} value={searchQuery}
@@ -1165,7 +1179,12 @@ export default function Navbar() {
             <button onClick={handleCart} style={{fontSize:14,fontWeight:600,color:"#374151",background:"none",border:"none",cursor:"pointer",textAlign:"start",padding:"8px 0",borderBottom:"1px solid #f5f5f5",display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}>
               <ShoppingBag size={16}/>{t("cart")}{count>0&&<span style={{background:"#dc2626",color:"#fff",fontSize:10,fontWeight:900,borderRadius:999,padding:"1px 6px"}}>{count}</span>}
             </button>
-            {loggedIn&&isSeller&&<Link href="/seller" onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>{t("myStore")}</Link>}
+            {loggedIn&&(
+              <>
+                <Link href="/profile" onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5",display:"flex",alignItems:"center",gap:8}}><User size={16}/>{t("myProfile")}</Link>
+                <Link href="/notifications" onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5",display:"flex",alignItems:"center",gap:8}}><Bell size={16}/>{t("notifications")}</Link>
+              </>
+            )}
             {!loggedIn?(
               <>
                 <Link href="/auth/login"    onClick={()=>setMenuOpen(false)} style={{fontSize:14,fontWeight:600,color:"#374151",textDecoration:"none",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>{t("login")}</Link>

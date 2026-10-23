@@ -298,14 +298,14 @@ export default function ProductsPage() {
               style={{ ...inputStyle, width: '100%', paddingInlineStart: 32 }}
             />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0, maxWidth: '100%' }}>
             <Filter size={13} style={{ color: textMuted, flexShrink: 0 }} />
-            <select value={isActive} onChange={e => { setIsActive(e.target.value); setPage(1); }} style={inputStyle}>
+            <select value={isActive} onChange={e => { setIsActive(e.target.value); setPage(1); }} style={{ ...inputStyle, flex: '1 1 140px', minWidth: 0, maxWidth: '100%' }}>
               <option value="">{t('allStatus')}</option>
               <option value="true">{t('active')}</option>
               <option value="false">{t('inactive')}</option>
             </select>
-            <select value={isApproved} onChange={e => { setIsApproved(e.target.value); setPage(1); }} style={inputStyle}>
+            <select value={isApproved} onChange={e => { setIsApproved(e.target.value); setPage(1); }} style={{ ...inputStyle, flex: '1 1 140px', minWidth: 0, maxWidth: '100%' }}>
               <option value="">{t('allApprovals')}</option>
               <option value="true">{t('approved')}</option>
               <option value="false">{t('pending')}</option>
@@ -326,7 +326,7 @@ export default function ProductsPage() {
               <BrandLoader variant="section" theme={dark ? 'dark' : 'light'} minHeight={220} />
             ) : (
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <table data-ct-show="0,2,3,4" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
                     <tr style={{ background: theadBg }}>
                       {(['product', 'category', 'price', 'stock', 'status', 'approval', 'actions'] as const).map(h => (

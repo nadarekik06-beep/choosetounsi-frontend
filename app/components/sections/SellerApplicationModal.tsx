@@ -51,7 +51,7 @@ function Field({ label, id, error, children }: {
 
 function ModalShell({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div data-ct-modal="" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div
         className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
         style={{ animation: 'slideUp 0.3s cubic-bezier(.16,1,.3,1)' }}

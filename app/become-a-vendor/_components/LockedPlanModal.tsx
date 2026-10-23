@@ -20,7 +20,7 @@ export default function LockedPlanModal({ plan, onClose, onScrollToForm }: {
   const isRed       = !darkBg
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'modalBackdropIn 0.22s ease both' }}>
+    <div data-ct-modal="" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'modalBackdropIn 0.22s ease both' }}>
       <div onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={planName} style={{ width: '100%', maxWidth: 440, borderRadius: 24, overflow: 'hidden', boxShadow: `0 40px 80px rgba(0,0,0,0.4), 0 8px 24px ${accentColor}30`, animation: 'modalCardIn 0.28s cubic-bezier(.34,1.56,.64,1) both', border: `2px solid ${accentColor}40`, background: darkBg ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' : 'white' }}>
         <div style={{ height: 4, background: isRed ? `linear-gradient(90deg, ${accentColor}, ${accentColor}cc)` : 'linear-gradient(90deg, #f59e0b, #fbbf24)' }} />
         <div style={{ padding: '28px 28px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>

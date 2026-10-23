@@ -113,6 +113,13 @@ export default function FullReceiptPage() {
         .outer { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 32px 16px 48px; gap: 16px; }
         .bar   { width: 210mm; display: flex; align-items: center; justify-content: space-between; }
         .sheet { width: 210mm; min-height: 297mm; background: #fff; box-shadow: 0 4px 32px rgba(0,0,0,0.12); border-radius: 4px; overflow: hidden; animation: fadeIn 0.3s ease both; }
+        /* Phones: the A4 sheet fits the screen (printing still uses the A4 rules below) */
+        @media screen and (max-width: 820px) {
+          .outer { padding: 12px 0 32px; }
+          .bar, .sheet { width: 100%; }
+          .sheet { min-height: 0; }
+          .bar { flex-wrap: wrap; gap: 8px; }
+        }
         @media print {
           @page { size: A4; margin: 0; }
           body { background: white; }
@@ -143,7 +150,7 @@ export default function FullReceiptPage() {
 
         <div className="sheet">
           {/* Header */}
-          <div style={{ background: 'linear-gradient(135deg,#db142e 0%,#a50f22 100%)', padding: '28px 40px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+          <div className="ct-wrap-mobile" style={{ background: 'linear-gradient(135deg,#db142e 0%,#a50f22 100%)', padding: '28px 40px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <img src={`${origin}/images/logo-chili.png`} alt="ChooseTounsi" style={{ height: 56 }} />
               <div>
@@ -168,7 +175,7 @@ export default function FullReceiptPage() {
           <div style={{ padding: '32px 40px' }}>
 
             {/* Seller + Subscription info */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 28 }}>
+            <div className="ct-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 28 }}>
               <div style={card}>
                 <p style={lbl}>{t('seller')}</p>
                 <p style={name}>{seller.business_name}</p>
@@ -202,7 +209,7 @@ export default function FullReceiptPage() {
             <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#5b6472', marginBottom: 10 }}>
               {t('summary')}
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: '#e2e8f0', borderRadius: 10, overflow: 'hidden', marginBottom: 8 }}>
+            <div className="ct-grid2-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: '#e2e8f0', borderRadius: 10, overflow: 'hidden', marginBottom: 8 }}>
               {[
                 { label: t('kpi.orders'),     value: number(totals.orders_count),   color: '#1d4ed8' },
                 { label: t('kpi.gross'),      value: fmt(totals.gross_revenue),     color: '#5b6472' },
@@ -215,7 +222,7 @@ export default function FullReceiptPage() {
                 </div>
               ))}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, background: '#e2e8f0', borderRadius: 10, overflow: 'hidden', marginBottom: 28 }}>
+            <div className="ct-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, background: '#e2e8f0', borderRadius: 10, overflow: 'hidden', marginBottom: 28 }}>
               {[
                 { label: t('kpi.paid'),    value: fmt(totals.total_paid),    color: '#047857' },
                 { label: t('kpi.ready'),   value: fmt(totals.total_ready),   color: '#1d4ed8' },
@@ -317,7 +324,7 @@ export default function FullReceiptPage() {
             )}
 
             {/* Footer */}
-            <div style={{ marginTop: 36, paddingTop: 20, borderTop: '2px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+            <div className="ct-wrap-mobile" style={{ marginTop: 36, paddingTop: 20, borderTop: '2px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
               <div>
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 3 }}>{t('thanks')}</p>
                 <p style={{ fontSize: 10, color: '#5b6472' }}>{t('disclaimer')}</p>

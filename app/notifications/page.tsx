@@ -110,6 +110,7 @@ export default function NotificationsPage() {
         @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
         .np-tabs { display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
         .np-tabs::-webkit-scrollbar { display:none; }
+        @media (max-width: 767px) { .np-tabs { flex-wrap:wrap; overflow-x:visible; } }
         .np-tab { flex-shrink:0; display:inline-flex; align-items:center; gap:6px; padding:8px 14px; min-height:38px;
           border-radius:999px; border:1px solid #e5e7eb; background:#fff; color:#475569; font-size:13px; font-weight:700;
           cursor:pointer; font-family:inherit; transition:all .15s; }

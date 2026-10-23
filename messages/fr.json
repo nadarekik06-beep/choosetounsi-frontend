@@ -113,6 +113,7 @@
     "register": "S'inscrire",
     "myProfile": "Mon profil",
     "myStore": "Ma boutique",
+    "notifications": "Notifications",
     "logout": "Se déconnecter",
     "categories": "Catégories",
     "shop": "Shop",
@@ -2534,7 +2535,14 @@
         "amount": "Montant",
         "date": "Date"
       },
-      "thousandsShort": "{value} k"
+      "thousandsShort": "{value} k",
+      "quick": {
+        "label": "Actions rapides",
+        "product": "+ Produit",
+        "pack": "+ Pack",
+        "promotion": "+ Promotion",
+        "toPrepare": "Commandes à préparer"
+      }
     },
     "charts": {
       "revenue": "Chiffre d'affaires",

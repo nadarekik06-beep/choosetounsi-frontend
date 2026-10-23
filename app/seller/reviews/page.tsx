@@ -125,7 +125,7 @@ function ReportModal({ reviewId, dark, onClose, onDone }: {
   };
 
   return (
-    <div
+    <div data-ct-modal=""
       onClick={onClose}
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
     >
@@ -248,7 +248,7 @@ function ReplyModal({ reviewId, existing, dark, onClose, onSaved }: {
   };
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+    <div data-ct-modal="" onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
       <div onClick={e => e.stopPropagation()} style={{ background: dark ? '#1a2035' : '#fff', borderRadius: 20, padding: 24, maxWidth: 460, width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.3)' }}>
         <h3 style={{ fontSize: 17, fontWeight: 900, color: dark ? '#fff' : '#0f172a', margin: '0 0 16px' }}>{t('replyTitle')}</h3>
         <textarea
@@ -428,7 +428,7 @@ export default function SellerReviewsPage() {
 
         {/* KPI Cards */}
         {stats && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+          <div className="ct-grid2-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
             <KpiCard dark={dark} title={t('kpi.average')}   value={number(stats.average_rating, { maximumFractionDigits: 1 })} subtitle={t('kpi.totalReviews', { count: stats.total })} accent="#f59e0b" icon={Star} />
             <KpiCard dark={dark} title={t('kpi.positive')}  value={`${stats.total > 0 ? Math.round((stats.positive_count / stats.total) * 100) : 0}%`} subtitle={t('kpi.positiveCount', { count: stats.positive_count })} accent="#10b981" icon={ThumbsUp} />
             <KpiCard dark={dark} title={t('kpi.response')}  value={`${stats.response_rate}%`} subtitle={t('kpi.responseHint')} accent="#3b82f6" icon={MessageSquare} />

@@ -453,7 +453,7 @@ function DecisionModal({ complaint, mode, isOpen, onClose, onDone, dark }: Decis
 
   return (
     <>
-      <div
+      <div data-ct-modal=""
         onClick={onClose}
         style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', zIndex: 10000 }}
       />
@@ -642,7 +642,7 @@ function ReceiveModal({ complaint, onClose, onDone, dark }: { complaint: Complai
 
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', zIndex: 10000 }} />
+      <div data-ct-modal="" onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', zIndex: 10000 }} />
       <div role="dialog" aria-modal="true" aria-label={t('receive.title')} style={{
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '92%', maxWidth: 520,
         maxHeight: '90vh', overflowY: 'auto', background: T.cardBg, border: `1px solid ${T.border}`, borderRadius: 20,
@@ -750,7 +750,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
 
   return (
     <>
-      <div
+      <div data-ct-modal=""
         onClick={onClose}
         style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(3px)', zIndex: 9000 }}
       />
@@ -804,7 +804,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
         <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 22 }}>
 
           {/* Client + Order */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="ct-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div style={{
               background: T.drawerBgSub,
               border: `1px solid ${T.drawerBorder}`,

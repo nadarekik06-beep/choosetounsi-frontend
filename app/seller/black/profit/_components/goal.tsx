@@ -405,7 +405,7 @@ export function GoalModal({ data, p, onClose, onSaved }: { data: ProfitCenterDat
   const label: React.CSSProperties = { fontSize: 12, fontWeight: 800, color: p.muted, display: 'block', margin: '0 0 5px' };
 
   return (
-    <div role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }} style={{
+    <div data-ct-modal="" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }} style={{
       position: 'fixed', inset: 0, zIndex: 10020, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
     }}>
       <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="pc-goal-title" style={{

@@ -45,7 +45,7 @@ export default function PriceDecreaseDialog({ drops, windowDays, busy, onCreateD
   const fmt = (n: number) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="price-dialog-title" style={{
+    <div data-ct-modal="" role="dialog" aria-modal="true" aria-labelledby="price-dialog-title" style={{
       position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(3px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
     }}>

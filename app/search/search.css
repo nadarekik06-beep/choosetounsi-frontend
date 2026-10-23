@@ -67,6 +67,7 @@
 
 .sr-sort { display: flex; align-items: center; gap: 8px; padding-bottom: 16px; overflow-x: auto; scrollbar-width: none; }
 .sr-sort::-webkit-scrollbar { display: none; }
+@media (max-width: 767px) { .sr-sort { flex-wrap: wrap; overflow-x: visible; } .sort-btn { min-height: 40px; } }
 .sr-sort__label { flex-shrink: 0; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: .07em; }
 .sort-btn {
   flex-shrink: 0; background: rgba(255, 255, 255, .8); border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 6px 14px;

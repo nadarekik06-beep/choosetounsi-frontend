@@ -205,7 +205,7 @@ export default function SellerOrderDrawer({ sellerOrderId, orderNumber, onClose 
   return (
     <>
       {/* Backdrop — click outside closes */}
-      <div onClick={onClose} className="so-backdrop" style={{
+      <div data-ct-modal="" onClick={onClose} className="so-backdrop" style={{
         position: 'fixed', inset: 0, zIndex: 200,
         background: dark ? 'rgba(0,0,0,0.65)' : 'rgba(15,23,42,0.35)', backdropFilter: 'blur(3px)',
       }} />

@@ -182,7 +182,7 @@ function ReviewCard({ review, onVote, onReport }: {
 
       {/* Lightbox */}
       {lightbox && (
-        <div onClick={() => setLightbox(null)} style={{
+        <div data-ct-modal="" onClick={() => setLightbox(null)} style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out',
         }}>
@@ -295,15 +295,20 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
         .rev-chip{transition:all 0.15s;cursor:pointer}
         .rev-chip:hover{border-color:#db142e!important;color:#db142e!important}
         .rev-load-btn:hover{background:#db142e!important;color:#fff!important}
+        @media (max-width: 640px){
+          .rev-section{padding:32px 16px!important}
+          .rev-summary{grid-template-columns:1fr!important;padding:16px!important;gap:16px!important}
+          .rev-summary>div:first-child{border-inline-end:none!important;padding-inline-end:0!important}
+        }
       `}</style>
 
-      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px', fontFamily: "'Barlow', sans-serif" }}>
+      <section className="rev-section" style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px', fontFamily: "'Barlow', sans-serif" }}>
         <h2 style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', margin: '0 0 28px', letterSpacing: '-0.02em' }}>
           {t('title', { count: fmt.number(summary.total) })}
         </h2>
 
         {/* ── Summary Block ─────────────────────────────────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 24, marginBottom: 28, background: '#fff', borderRadius: 20, border: '1px solid #f1f5f9', padding: 24 }}>
+        <div className="rev-summary" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 24, marginBottom: 28, background: '#fff', borderRadius: 20, border: '1px solid #f1f5f9', padding: 24 }}>
           {/* Left: Score */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, borderInlineEnd: '1px solid #f1f5f9', paddingInlineEnd: 24 }}>
             <span style={{ fontSize: 64, fontWeight: 900, color: '#0f172a', lineHeight: 1, letterSpacing: '-0.04em' }}>{fmt.number(summary.average, { maximumFractionDigits: 1 })}</span>
@@ -347,7 +352,7 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
             <p style={{ fontSize: 13, fontWeight: 800, color: '#64748b', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {t('customerPhotos', { count: summary.photo_count })}
             </p>
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+            <div className="ct-wrap-mobile" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
               {summary.recent_photos.map(photo => (
                 <div key={photo.id} style={{ width: 80, height: 80, borderRadius: 10, overflow: 'hidden', flexShrink: 0, border: '1.5px solid #e5e7eb', cursor: 'pointer' }}>
                   <img src={photo.url} alt={t('reviewPhotoAlt')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -444,7 +449,7 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
 
       {/* ── Report Modal ──────────────────────────────────────────────── */}
       {reportModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        <div data-ct-modal="" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setReportModal(null)}>
           <div onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t('reportTitle')} style={{ background: '#fff', borderRadius: 20, padding: 28, maxWidth: 360, width: '100%', margin: '0 16px' }}>
             <h3 style={{ fontSize: 17, fontWeight: 900, color: '#0f172a', margin: '0 0 16px' }}>{t('reportTitle')}</h3>

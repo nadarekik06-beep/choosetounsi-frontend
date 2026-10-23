@@ -133,7 +133,14 @@ export default function PromotionsPage() {
     const create = q.get('create')
     const ids = (q.get('product') ?? '').split(',').map(Number).filter(n => n > 0)
     const card = Number(q.get('card')) || undefined
-    if (!create || !ids.length) return
+    if (!create) return
+    // no product given (quick action on the overview): open an empty form
+    if (!ids.length) {
+      if (create === 'coupon') { setSection('coupons'); setCouponModal({ open: true, coupon: null }) }
+      else { setSection('promotions'); setModal({ open: true, promotion: null }) }
+      window.history.replaceState(null, '', window.location.pathname)
+      return
+    }
     if (create === 'coupon') {
       setSection('coupons')
       setCouponPrefill({

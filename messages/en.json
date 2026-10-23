@@ -113,6 +113,7 @@
     "register": "Register",
     "myProfile": "My Profile",
     "myStore": "My Store",
+    "notifications": "Notifications",
     "logout": "Log out",
     "categories": "Categories",
     "shop": "Shop",
@@ -2534,7 +2535,14 @@
         "amount": "Amount",
         "date": "Date"
       },
-      "thousandsShort": "{value}k"
+      "thousandsShort": "{value}k",
+      "quick": {
+        "label": "Quick actions",
+        "product": "+ Product",
+        "pack": "+ Pack",
+        "promotion": "+ Promotion",
+        "toPrepare": "Orders to prepare"
+      }
     },
     "charts": {
       "revenue": "Revenue",

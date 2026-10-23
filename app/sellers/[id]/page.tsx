@@ -551,8 +551,8 @@ export default function SellerStorefrontPage() {
 
       {/* Promo/coupon chip strip — informational, jumps to Special Offers */}
       {(seller.promotions.length > 0 || seller.coupons.length > 0) && (
-        <div style={{ background: '#fafafa', borderBottom: '1px solid #f3f4f6', padding: '10px 24px', overflowX: 'auto' }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="ct-wrap-mobile" style={{ background: '#fafafa', borderBottom: '1px solid #f3f4f6', padding: '10px 24px', overflowX: 'auto' }}>
+          <div className="ct-wrap-mobile" style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 8, alignItems: 'center' }}>
             {seller.promotions.map(promo => (
               <button
                 key={`promo-${promo.id}`}

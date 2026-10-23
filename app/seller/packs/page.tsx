@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { packsApi } from '@/lib/sellerApi'
 import { useTheme } from '../SellerShell'
 import {
@@ -17,6 +18,18 @@ import BrandLoader, { BusyLabel, RefreshCover } from '@/components/brand/BrandLo
 function useFmt() {
   const { price } = useFormat()
   return (n: number) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+}
+
+/** `?create=1` (quick action on the seller overview) opens an empty pack form. */
+function CreateFromQuery({ onCreate }: { onCreate: () => void }) {
+  const create = useSearchParams().get('create') === '1'
+  const router = useRouter()
+  useEffect(() => {
+    if (!create) return
+    onCreate()
+    router.replace('/seller/packs', { scroll: false })
+  }, [create, onCreate, router])
+  return null
 }
 
 export default function PacksPage() {
@@ -47,6 +60,7 @@ export default function PacksPage() {
   }
 
   useEffect(load, [])
+  const openCreate = useCallback(() => setModal({ open: true, pack: null }), [])
 
   const handleDelete = async (id: number) => {
     if (!confirm(t('confirmDelete'))) return
@@ -73,6 +87,7 @@ export default function PacksPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <Suspense fallback={null}><CreateFromQuery onCreate={openCreate} /></Suspense>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

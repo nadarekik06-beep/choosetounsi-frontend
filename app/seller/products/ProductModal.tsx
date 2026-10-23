@@ -626,19 +626,19 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
 
   return (
     <>
-      <div style={{
+      <div data-ct-modal="" style={{
         position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
         backdropFilter: 'blur(4px)', zIndex: 9999,
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
       }}>
-        <div style={{
+        <div className="ct-sheet" style={{
           background: '#fff', borderRadius: 20, boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
           width: '100%', maxWidth: 780, maxHeight: '92vh', overflowY: 'auto',
           display: 'flex', flexDirection: 'column',
         }}>
 
           {/* Header */}
-          <div style={{
+          <div className="ct-sheet-head" style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '18px 24px', borderBottom: '1px solid #f0f0f0',
             position: 'sticky', top: 0, background: '#fff', zIndex: 10, borderRadius: '20px 20px 0 0',
@@ -662,7 +662,7 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
           </div>
 
 
-          <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <form className="ct-sheet-body" onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {apiError && (
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '12px 14px', fontSize: 13, color: '#dc2626' }}>
@@ -677,7 +677,7 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
                 <Field label={t('name')} required error={errors.name}>
                   <input value={form.name} onChange={e => set('name', e.target.value)} placeholder={t('namePlaceholder')} className={inputCls(errors.name)} />
                 </Field>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="ct-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <Field label={t('slug')} hint={t('slugHint')}>
                     <input value={form.slug} onChange={e => { slugTouched.current = true; set('slug', e.target.value) }} placeholder="my-product-name" dir="ltr" className={inputCls()} />
                   </Field>
@@ -803,7 +803,7 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
                 </label>
                 <p style={{ fontSize: 11, color: '#5b6472', marginBlock: '4px 0', marginInlineStart: 26 }}>{t('isPackHint')}</p>
                 {form.is_pack && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, 160px) 1fr', gap: 12, marginTop: 10, marginInlineStart: 26 }}>
+                  <div className="ct-stack" style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, 160px) 1fr', gap: 12, marginTop: 10, marginInlineStart: 26 }}>
                     <Field label={t('packQuantity')} required error={errors.pack_quantity} hint={t('packQuantityHint')}>
                       <input type="number" min={2} max={1000} step={1} inputMode="numeric" value={form.pack_quantity}
                         onChange={e => set('pack_quantity', e.target.value)} className={inputCls(errors.pack_quantity)} />
@@ -837,7 +837,7 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
             {/* ── Category ── */}
             <section id="pf-category">
               <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>{t('sections.category')}</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="ct-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <Field label={t('category')} required error={errors.category_id}>
                   <select value={form.category_id} onChange={e => { set('category_id', e.target.value); set('subcategory_id', ''); setAttrValues({}); setVariantRows([]); setVariantAxes([]); setInfoAxes([]); setStockMode('auto'); setVariantStockErrors({}) }}
                     className={inputCls(errors.category_id)} disabled={catLoading}>
@@ -938,7 +938,7 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
                 {uploadPct < 100 ? t('uploadingImages', { percent: uploadPct }) : t('savingProduct')}
               </div>
             )}
-            <div style={{ display: 'flex', gap: 12, paddingTop: 4, position: 'sticky', bottom: 0, background: '#fff', paddingBottom: 2 }}>
+            <div className="ct-sheet-bar" style={{ display: 'flex', gap: 12, paddingTop: 4, position: 'sticky', bottom: 0, background: '#fff', paddingBottom: 2 }}>
               <button type="button" onClick={onClose} style={{ flex: 1, padding: '11px 0', border: '1.5px solid #e5e7eb', background: '#fff', color: '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{t('cancel')}</button>
               <button type="submit" disabled={saving || catLoading} style={{ flex: 1, padding: '11px 0', background: 'linear-gradient(135deg,#dc2626,#b91c1c)', color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(220,38,38,0.3)', opacity: (saving || catLoading) ? 0.6 : 1, fontFamily: 'inherit' }}>
                 {saving && <BrandLoader variant="inline" size={14} />}

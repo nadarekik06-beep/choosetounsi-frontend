@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ordersApi } from '@/lib/sellerApi';
 import {
@@ -370,11 +370,11 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ background: bg, borderRadius: 20, width: '100%', maxWidth: 720, maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.4)', border: `1px solid ${border}` }}>
+    <div data-ct-modal="" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div className="ct-sheet" style={{ background: bg, borderRadius: 20, width: '100%', maxWidth: 720, maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.4)', border: `1px solid ${border}` }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: `1px solid ${border}` }}>
+        <div className="ct-sheet-head" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: `1px solid ${border}` }}>
           <h2 style={{ fontSize: 15, fontWeight: 800, color: textMain, margin: 0 }}>{t('details')}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
@@ -642,6 +642,13 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
   );
 }
 
+/** `?status=confirmed` (overview quick action "orders to prepare") pre-selects the status filter. */
+function StatusFromQuery({ onStatus }: { onStatus: (status: string) => void }) {
+  const status = useSearchParams().get('status');
+  useEffect(() => { if (status) onStatus(status); }, [status, onStatus]);
+  return null;
+}
+
 /** Opens the order from `?order=<id>` (links in seller e-mails and the notification bell). */
 function OpenOrderFromQuery({ onOpen }: { onOpen: (id: number) => void }) {
   const id = Number(useSearchParams().get('order'));
@@ -684,7 +691,11 @@ export default function OrdersPage() {
 
   const empty: PaginatedResponse<Order> = { data: [], current_page: 1, last_page: 1, per_page: 12, total: 0, from: 0, to: 0 };
 
+  // Only the latest request may fill the list: a slower earlier response (e.g. before a
+  // filter from the URL was applied) must not overwrite it.
+  const requestSeq = useRef(0);
   const fetchData = useCallback(async () => {
+    const seq = ++requestSeq.current;
     setLoading(true);
     try {
       const res = await ordersApi.getAll({
@@ -693,10 +704,11 @@ export default function OrdersPage() {
         ...(filterStatus  && { status: filterStatus }),
         ...(filterPayment && { payment_status: filterPayment }),
       });
+      if (seq !== requestSeq.current) return;
       const payload = (res as any)?.data ?? res;
       setData(Array.isArray(payload?.data) ? payload : empty);
-    } catch { setData(empty); }
-    finally { setLoading(false); }
+    } catch { if (seq === requestSeq.current) setData(empty); }
+    finally { if (seq === requestSeq.current) setLoading(false); }
   }, [page, search, filterStatus, filterPayment]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -729,6 +741,7 @@ export default function OrdersPage() {
 
       <Suspense fallback={<RouteLoading area minHeight="60vh" />}>
         <OpenOrderFromQuery onOpen={setSelectedId} />
+        <StatusFromQuery onStatus={setFilterStatus} />
       </Suspense>
 
       <WhatsAppNumberBanner dark={dark} />
@@ -768,7 +781,7 @@ export default function OrdersPage() {
             <BrandLoader variant="section" theme={dark ? 'dark' : 'light'} minHeight={220} />
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <table data-ct-show="0,1,3,6" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: theadBg }}>
                     {(['order', 'customer', 'wilaya', 'status', 'payment', 'method', 'amount', 'date', ''] as const).map((h, i) => (

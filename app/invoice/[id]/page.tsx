@@ -366,7 +366,7 @@ export default function InvoicePage() {
             </div>
 
             {/* ── Order meta strip ── */}
-            <div style={{
+            <div className="ct-grid2-mobile" style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(4, 1fr)',
               gap: 1,

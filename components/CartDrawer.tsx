@@ -424,7 +424,7 @@ export default function CartDrawer() {
       `}</style>
 
       {drawerOpen && (
-        <div
+        <div data-ct-modal=""
           ref={overlayRef}
           onClick={closeDrawer}
           style={{

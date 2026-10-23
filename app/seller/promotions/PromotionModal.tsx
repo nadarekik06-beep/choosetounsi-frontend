@@ -526,14 +526,14 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
   }
 
   return (
-    <div style={{
+    <div data-ct-modal="" style={{
       position: 'fixed', inset: 0,
       background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
       zIndex: 9999,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 16,
     }}>
-      <div style={{
+      <div className="ct-sheet" style={{
         background: '#fff', borderRadius: 20,
         boxShadow: '0 24px 64px rgba(0,0,0,0.2)',
         width: '100%', maxWidth: 780,
@@ -542,7 +542,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
       }}>
 
         {/* ── Header ── */}
-        <div style={{
+        <div className="ct-sheet-head" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '18px 24px', borderBottom: '1px solid #f0f0f0',
           position: 'sticky', top: 0, background: '#fff', zIndex: 10,
@@ -587,7 +587,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
           )}
 
           {/* ── Two-column grid ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
+          <div className="ct-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
 
             {/* ══ LEFT ══ */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -631,7 +631,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
               </Field>
 
               {/* Discount type + value */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className="ct-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <Field label={t('discountType')} required>
                   <select
                     value={discountType}
@@ -668,7 +668,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
               </div>
 
               {/* Start / End */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className="ct-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <Field label={t('startsAt')} required error={errors.starts_at}>
                  <input
                     type="datetime-local"
@@ -884,7 +884,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
           </div>
 
           {/* ── Actions ── */}
-          <div style={{
+          <div className="ct-sheet-bar" style={{
             display: 'flex', gap: 12,
             paddingTop: 12,
             position: 'sticky', bottom: 0, background: '#fff',

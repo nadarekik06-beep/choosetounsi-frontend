@@ -9,8 +9,9 @@ import {
   DollarSign, ShoppingBag, Package, Clock,
   MapPin, Award, AlertCircle, RefreshCw,
   TrendingUp, TrendingDown, ArrowUpRight,
-  Star, Eye, BarChart2,
+  Star, Eye, BarChart2, Plus, Layers, Zap,
 } from 'lucide-react';
+import Link from 'next/link';
 import { SubscriptionBadge } from '@/app/components/seller/SubscriptionBadge';
 import CommissionUpgradeNudge from './components/CommissionUpgradeNudge';
 import PickupAddressBanner from './components/PickupAddressBanner';
@@ -30,6 +31,12 @@ const RESPONSIVE_CSS = `
   .sd-pair  { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
   .sd-top   { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr)); gap:14px; }
   .sd-cell  { min-width:0; }
+  /* Phones / tablets: one-tap shortcuts to the daily seller tasks */
+  .sd-quick { display:none; }
+  @media (max-width:1023px) {
+    .sd-quick { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .sd-quick a { display:flex; align-items:center; gap:8px; min-height:48px; padding:10px 12px; border-radius:14px; font-size:13px; font-weight:800; text-decoration:none; }
+  }
 
   @media (max-width:1100px) {
     .sd-kpi   { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -307,6 +314,23 @@ export default function SellerDashboardPage() {
           </div>
         </div>
 
+        {/* ─── QUICK ACTIONS (phones / tablets) ─── */}
+        <nav className="sd-quick" aria-label={t('quick.label')}>
+          {([
+            { href: '/seller/products?create=1',          label: t('quick.product'),   icon: Plus,        accent: '#db142e' },
+            { href: '/seller/packs?create=1',             label: t('quick.pack'),      icon: Layers,      accent: '#8b5cf6' },
+            { href: '/seller/promotions?create=promotion', label: t('quick.promotion'), icon: Zap,         accent: '#f59e0b' },
+            { href: '/seller/orders?status=confirmed',     label: t('quick.toPrepare'), icon: ShoppingBag, accent: '#3b82f6' },
+          ] as const).map(({ href, label, icon: Icon, accent }) => (
+            <Link key={href} href={href} style={{ background: cardBg, border: `1px solid ${border}`, color: textMain }}>
+              <span style={{ width: 30, height: 30, borderRadius: 9, background: `${accent}1a`, color: ink(accent, dark), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon size={16} />
+              </span>
+              <span style={{ minWidth: 0, lineHeight: 1.2 }}>{label}</span>
+            </Link>
+          ))}
+        </nav>
+
         {/* ─── KPI CARDS ─── */}
         <div className={`fade-up sd-kpi ${visible?'show':''}`}>
           <KpiCard dark={dark} title={t('totalRevenue')} icon={DollarSign} accent="#db142e" value={fmt(summary.total_revenue)} subtitle={t('completedPaid')} change={summary.revenue_growth} />
@@ -498,7 +522,7 @@ export default function SellerDashboardPage() {
             </a>
           </div>
           <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', fontSize: 12 }}>
+            <table data-ct-show="0,1,2,3" style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr style={{ background: dark ? 'rgba(255,255,255,0.03)' : '#f9fafb' }}>
                   {(['order','customer','status','amount','date'] as const).map((h, i) => (

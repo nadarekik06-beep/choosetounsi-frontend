@@ -722,8 +722,31 @@ opacity: atMax ? 0.4 : 1,
             </div>
           )}
 
+          {/* Phones: each combination becomes a small card (stock / price / SKU / active), no sideways scroll */}
+          <style>{`
+            .vb-mlabel { display: none; }
+            @media (max-width: 640px) {
+              .vb-head { display: none !important; }
+              .vb-row {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 10px !important;
+                padding: 12px !important;
+                border-top: 1px solid #e5e7eb !important;
+                border-radius: 12px !important;
+                margin-bottom: 8px;
+              }
+              .vb-row > .vb-name { grid-column: 1 / -1; padding-top: 0 !important; }
+              .vb-row > .vb-name > span:last-child { white-space: normal !important; }
+              .vb-mlabel { display: block; font-size: 11px; font-weight: 700; color: #5b6472; margin: 0 0 4px; }
+              .vb-row > .vb-active { justify-content: flex-start !important; align-items: center; gap: 10px; padding-top: 0 !important; min-height: 44px; }
+              .vb-row > .vb-active > .vb-mlabel { margin: 0; }
+              .vb-row > .vb-active input { width: 24px !important; height: 24px !important; }
+              .vb-quick button { min-height: 40px; }
+            }
+          `}</style>
+
           {/* Table header */}
-          <div style={{
+          <div className="vb-head" style={{
             display: 'grid',
             gridTemplateColumns: '1fr 100px 120px 120px 80px',
             gap: 8, padding: '6px 12px',
@@ -769,6 +792,7 @@ opacity: atMax ? 0.4 : 1,
             return (
               <div
                 key={row.option_ids.join('-')}
+                className="vb-row"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr 100px 120px 120px 80px',
@@ -781,7 +805,7 @@ opacity: atMax ? 0.4 : 1,
                 }}
               >
                 {/* Label */}
-                <div style={{
+                <div className="vb-name" style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   minWidth: 0, paddingTop: 6,
                 }}>
@@ -806,8 +830,9 @@ opacity: atMax ? 0.4 : 1,
 
                 {/* Stock */}
                 <div>
+                  <span className="vb-mlabel" style={{ color: '#dc2626' }}>{t('cols.stock', { currency })}</span>
                   <input
-                    type="number" min="0" step="1" required
+                    type="number" min="0" step="1" inputMode="numeric" required
                     value={row.stock ?? ''}
                     onChange={e => {
                       const raw    = e.target.value
@@ -829,27 +854,34 @@ opacity: atMax ? 0.4 : 1,
                 </div>
 
                 {/* Price override */}
-                <input
-                  type="number" min="0" step="0.001"
-                  value={row.price_override ?? ''}
-                  onChange={e => updateRow(rowIdx, 'price_override', e.target.value)}
-                  placeholder={basePrice || t('basePlaceholder')}
-                  disabled={disabled}
-                  style={inputStyle()}
-                />
+                <div>
+                  <span className="vb-mlabel">{t('cols.price', { currency })}</span>
+                  <input
+                    type="number" min="0" step="0.001" inputMode="decimal"
+                    value={row.price_override ?? ''}
+                    onChange={e => updateRow(rowIdx, 'price_override', e.target.value)}
+                    placeholder={basePrice || t('basePlaceholder')}
+                    disabled={disabled}
+                    style={inputStyle()}
+                  />
+                </div>
 
                 {/* SKU */}
-                <input
-                  type="text"
-                  value={row.sku ?? ''}
-                  onChange={e => updateRow(rowIdx, 'sku', e.target.value)}
-                  placeholder={t('optional')}
-                  disabled={disabled}
-                  style={inputStyle()}
-                />
+                <div>
+                  <span className="vb-mlabel">{t('cols.sku', { currency })}</span>
+                  <input
+                    type="text"
+                    value={row.sku ?? ''}
+                    onChange={e => updateRow(rowIdx, 'sku', e.target.value)}
+                    placeholder={t('optional')}
+                    disabled={disabled}
+                    style={inputStyle()}
+                  />
+                </div>
 
                 {/* Active */}
-                <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 6 }}>
+                <label className="vb-active" style={{ display: 'flex', justifyContent: 'center', paddingTop: 6 }}>
+                  <span className="vb-mlabel">{t('cols.active', { currency })}</span>
                   <input
                     type="checkbox"
                     checked={row.is_active}
@@ -857,13 +889,13 @@ opacity: atMax ? 0.4 : 1,
                     disabled={disabled}
                     style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#dc2626' }}
                   />
-                </div>
+                </label>
               </div>
             )
           })}
 
           {/* Quick fill */}
-          <div style={{
+          <div className="vb-quick" style={{
             display: 'flex', gap: 10, marginTop: 10,
             flexWrap: 'wrap', alignItems: 'center',
           }}>
