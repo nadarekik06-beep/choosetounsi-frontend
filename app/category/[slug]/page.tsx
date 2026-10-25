@@ -9,7 +9,7 @@ import {
   useState, useEffect, useCallback,
   useMemo, useRef, Suspense,
 } from 'react'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useParams, useSearchParams, useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import type { PricedProduct } from '@/app/components/promotions/ProductPrice'
 import ProductCard, { ProductCardSkeleton } from '@/app/components/product/ProductCard'
@@ -24,6 +24,8 @@ import { canScrollNext, canScrollPrev, scrollCarousel } from '@/lib/i18n/rtlScro
 import { usePageLoading } from '@/components/brand/NavigationLoader'
 import { RouteLoading } from '@/components/brand/NavigationLoader'
 import { API_BASE } from '@/lib/constants'
+import { parseGender, type Gender } from '@/lib/gender'
+import GenderSubcategoryBar from '@/app/components/category/GenderSubcategoryBar'
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -69,7 +71,7 @@ interface Product extends PricedProduct {
   reviews_count?: number
 }
 
-interface Category { id: number; name: string; slug: string; icon: string | null; description?: string | null }
+interface Category { id: number; name: string; slug: string; icon: string | null; description?: string | null; is_gendered?: boolean }
 interface Paginated { data: Product[]; current_page: number; last_page: number; total: number }
 type View = 'grid' | 'list'
 
@@ -161,8 +163,24 @@ function Inner() {
   const sp      = useSearchParams()
   const slug    = params?.slug as string
   const subSlug = sp.get('sub') ?? ''
+  const router   = useRouter()
+  const pathname = usePathname()
 
   const [allC, setAllC]  = useState<Category[]>([])
+  const [catsLoaded, setCatsLoaded] = useState(false)
+  // ?gender=women|men only counts on a gendered category (Mode & Vêtements); ignored elsewhere
+  const isGendered = !!allC.find(c => c.slug === slug)?.is_gendered
+  const urlGender  = parseGender(sp.get('gender'))
+  const gender: Gender | '' = isGendered ? urlGender : ''
+  // Wait for the category list before the first fetch when a gender is in the URL (no flash of unfiltered products)
+  const waitGender = !!urlGender && !catsLoaded
+  const setGender = useCallback((g: Gender | '') => {
+    const qp = new URLSearchParams(sp.toString())
+    if (g) qp.set('gender', g); else qp.delete('gender')
+    const qs = qp.toString()
+    // push (not replace) so the back button returns to the previous gender
+    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+  }, [sp, router, pathname])
   const [prods,setProds] = useState<Paginated|null>(null)
   const [load, setLoad]  = useState(true)
   // holds the navigation loader until the first load is done
@@ -192,6 +210,7 @@ function Inner() {
       .then(r=>r.ok?r.json():Promise.reject())
       .then(j=>setAllC((Array.isArray(j)?j:(j.data??[])).filter((c:Category)=>c.slug!=='other')))
       .catch(()=>{})
+      .finally(()=>setCatsLoaded(true))
   },[])
 
   // Every server-side filter: a change refetches and goes back to page 1
@@ -199,20 +218,22 @@ function Inner() {
 
   const fetchP=useCallback(async()=>{
     if(!slug) return; setLoad(true)
+    if(waitGender) return
     try {
       const qp=new URLSearchParams()
       qp.set('page',String(page)); qp.set('sort',f.sort); qp.set('category_slug',slug)
       if(subSlug) qp.set('subcategory_slug',subSlug)
+      if(gender) qp.set('gender',gender)
       appendFilterParams(qp,f)
       const r=await fetch(`${API_BASE}/products?${qp}`,{headers:{Accept:'application/json'}})
       if(!r.ok) throw new Error()
       setProds((await r.json()).data)
     } catch { setProds(null) } finally { setLoad(false) }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- filterKey covers f's server-side filters
-  },[slug,subSlug,f.sort,filterKey,page])
+  },[slug,subSlug,gender,waitGender,f.sort,filterKey,page])
 
   useEffect(()=>{ fetchP() },[fetchP])
-  useEffect(()=>{ setPage(1) },[f.sort,filterKey,subSlug])
+  useEffect(()=>{ setPage(1) },[f.sort,filterKey,subSlug,gender])
 
   const displayed=useMemo(()=>{
     if(!prods?.data) return []
@@ -221,14 +242,16 @@ function Inner() {
   },[prods,f.q])
 
   const subLabel=tMega.has(`items.${subSlug}`)?tMega(`items.${subSlug}`):subSlug.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
-  const fCount=[f.q!=='',f.inStock,f.isPack,f.occasions.length>0,f.pMin!==''||f.pMax!=='',subSlug!=='',Object.values(f.attrs).some(v=>v.length)].filter(Boolean).length
+  const fCount=[f.q!=='',f.inStock,f.isPack,f.occasions.length>0,f.pMin!==''||f.pMax!=='',subSlug!=='',Object.values(f.attrs).some(v=>v.length),gender!==''].filter(Boolean).length
   const filtered=hasActiveFilters(f)||f.q!==''
+  const genderProp=useMemo(()=>isGendered?{value:gender,onChange:setGender}:undefined,[isGendered,gender,setGender])
 
   // Sponsored products (category_top, this category) and promo flyers between the organic
   // cards; organic order and the chosen sort are untouched. Not on a filtered list: a paid
   // card must never look like it matches a price / stock / attribute filter it doesn't.
   const pageIds=useMemo(()=>(prods?.data??[]).map(p=>p.id),[prods])
-  const extras=useGridExtras({ placement:'category_top', categorySlug:slug, ids:pageIds, enabled:!load&&pageIds.length>0&&!filtered })
+  // Not with a gender either: a paid card could be of the other gender
+  const extras=useGridExtras({ placement:'category_top', categorySlug:slug, ids:pageIds, enabled:!load&&pageIds.length>0&&!filtered&&!gender })
   const cells=useMemo(()=>fillGrid(displayed,extras,{ adEvery:extras.adEvery, flyerEvery:view==='grid'?extras.flyerEvery:0 }).cells,[displayed,extras,view])
 
   return (
@@ -353,9 +376,10 @@ function Inner() {
 
       <div className="shpage">
         <CatBar cats={allC} active={slug} view={view} setView={setView} mOpen={mOpen} setMOpen={setMOpen} fCount={fCount} shown={displayed.length} total={prods?.total??0}/>
+        {gender&&<GenderSubcategoryBar categorySlug={slug} gender={gender} activeSub={subSlug}/>}
 
         <div className="shlayout">
-          <ProductFilterSidebar f={f} setF={setF} total={prods?.total??0} catSlug={slug} subSlug={subSlug}
+          <ProductFilterSidebar f={f} setF={setF} total={prods?.total??0} catSlug={slug} subSlug={subSlug} gender={genderProp}
             searchPlaceholder={t('searchInCategory')} mOpen={mOpen} setMOpen={setMOpen}/>
 
           <div>

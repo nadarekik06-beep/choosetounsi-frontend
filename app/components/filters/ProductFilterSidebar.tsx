@@ -108,14 +108,17 @@ interface Props {
   extended?: boolean
   /** Category picker (catalogue-wide grids); sets f.cat. */
   categories?: { slug: string; label: string; count: number }[]
+  /** Gendered category: "Genre" section (Femme / Homme) kept in the page URL; hides the generic "gender" attribute. */
+  gender?: { value: '' | 'women' | 'men'; onChange: (g: '' | 'women' | 'men') => void }
   mOpen: boolean
   setMOpen: (v: boolean) => void
 }
 
 export default function ProductFilterSidebar({
   f, setF, total, catSlug: catProp = '', subSlug = '', sellerId, searchPlaceholder, hideSearch = false,
-  hideSort = false, extended = false, categories, mOpen, setMOpen,
+  hideSort = false, extended = false, categories, gender, mOpen, setMOpen,
 }: Props) {
+  const tm  = useTranslations('mega')
   // Attributes follow the page's category, or the one picked in the category filter
   const catSlug = catProp || f.cat || ''
   const t   = useTranslations('filters')
@@ -131,7 +134,7 @@ export default function ProductFilterSidebar({
     : t('rangeBetween', { min: fmt.number(mn), max: whole(mx) })
   const [attrs, setAttrs] = useState<Attr[]>([])
   const [aLoad, setALoad] = useState(false)
-  const [open, setOpen]   = useState(new Set<string>(['sort', 'price', 'avail', 'cat', 'rating', 'tier', 'offers']))
+  const [open, setOpen]   = useState(new Set<string>(['sort', 'price', 'avail', 'cat', 'rating', 'tier', 'offers', 'genre']))
   const upd = (p: Partial<F>) => setF({ ...f, ...p })
 
   useEffect(() => {
@@ -167,7 +170,10 @@ export default function ProductFilterSidebar({
   const togP  = (p: string) => { const c = f.plans ?? []; upd({ plans: c.includes(p) ? c.filter(x => x !== p) : [...c, p] }) }
   // A new category has other attributes: drop the old attribute picks
   const pickCat = (slug: string) => upd({ cat: f.cat === slug ? '' : slug, attrs: {} })
-  const hasAny = !!f.q || hasActiveFilters(f)
+  const hasAny = !!f.q || hasActiveFilters(f) || !!gender?.value
+  // The Genre section replaces the generic "gender" attribute filter on gendered categories
+  const shownAttrs = gender ? attrs.filter(a => a.slug !== 'gender') : attrs
+  const clearAll = () => { setF({ ...DEFAULT_FILTERS, sort: f.sort }); if (gender?.value) gender.onChange('') }
 
   const Acc = ({ k, label }: { k: string; label: string }) => (
     <button className="pfs-head" onClick={() => tog(k)} aria-expanded={open.has(k)}>
@@ -183,7 +189,7 @@ export default function ProductFilterSidebar({
     <aside className="pfs">
       <div className="pfs-hd">
         <div><p className="pfs-title">{t('title')}</p><p className="pfs-count">{t('productCount', { count: total })}</p></div>
-        {hasAny && <button className="pfs-clear" onClick={() => setF({ ...DEFAULT_FILTERS, sort: f.sort })}>{t('clear')}</button>}
+        {hasAny && <button className="pfs-clear" onClick={clearAll}>{t('clear')}</button>}
       </div>
       {!hideSearch && (
         <div className="pfs-blk">
@@ -203,6 +209,14 @@ export default function ProductFilterSidebar({
             {f.sort === s.k && <svg width="9" height="9" fill="none" stroke="#db142e" strokeWidth="2.5" viewBox="0 0 24 24" style={{ marginInlineStart: 'auto' }}><path d="M20 6L9 17l-5-5" /></svg>}
           </button>
         ))}</div>}
+      </div>}
+      {gender && <div className="pfs-acc"><Acc k="genre" label={t('gender')} />
+        {open.has('genre') && <div className="pfs-body">
+          {(['', 'women', 'men'] as const).map(g => (
+            <button key={g || 'all'} className={`pfs-pr${gender.value === g ? ' on' : ''}`} aria-pressed={gender.value === g}
+              onClick={() => gender.onChange(g)}>{g ? tm(g) : t('genderAll')}</button>
+          ))}
+        </div>}
       </div>}
       {categories && categories.length > 0 && <div className="pfs-acc"><Acc k="cat" label={t('category')} />
         {open.has('cat') && <div className="pfs-body">
@@ -299,7 +313,7 @@ export default function ProductFilterSidebar({
           <div className="pfs-skln" style={{ height: 25, borderRadius: 8 }} />
         </div>
       ))}
-      {!aLoad && attrs.map(a => {
+      {!aLoad && shownAttrs.map(a => {
         const isOpen = open.has(a.slug); const sel = f.attrs[a.slug] ?? []
         return (
           <div key={a.id} className="pfs-acc">

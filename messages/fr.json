@@ -275,7 +275,11 @@
       "essential-oil": "Huiles essentielles",
       "herbal-tea": "Tisanes",
       "medical-device": "Matériel médical"
-    }
+    },
+    "women": "Femme",
+    "men": "Homme",
+    "genderSwitch": "Choisir : Femme ou Homme",
+    "viewAllGender": "Tout voir : {name} {gender}"
   },
   "footer": {
     "about": "À propos",
@@ -495,7 +499,9 @@
     "sellerTier": "Niveau du vendeur",
     "offers": "Offres",
     "onSale": "En promotion",
-    "freeDelivery": "Livraison gratuite"
+    "freeDelivery": "Livraison gratuite",
+    "gender": "Genre",
+    "genderAll": "Tous"
   },
   "category": {
     "sponsored": "Sponsorisé",
@@ -515,7 +521,10 @@
     "emptyHint": "Essayez de modifier vos filtres ou explorez d'autres catégories.",
     "browseAll": "Tout parcourir",
     "metaTitle": "{name} — Achat en ligne",
-    "metaDescription": "Découvrez notre sélection {name} auprès de vendeurs tunisiens. Livraison partout en Tunisie."
+    "metaDescription": "Découvrez notre sélection {name} auprès de vendeurs tunisiens. Livraison partout en Tunisie.",
+    "genderBar": "Sous-catégories",
+    "genderBarPrev": "Sous-catégories précédentes",
+    "genderBarNext": "Sous-catégories suivantes"
   },
   "product": {
     "selectOptions": "Veuillez choisir : {options}.",

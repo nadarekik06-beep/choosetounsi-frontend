@@ -275,7 +275,11 @@
       "essential-oil": "زيوت عطرية",
       "herbal-tea": "شاي الأعشاب",
       "medical-device": "أجهزة طبية"
-    }
+    },
+    "women": "نساء",
+    "men": "رجال",
+    "genderSwitch": "اختر: نساء أو رجال",
+    "viewAllGender": "عرض الكل: {name} {gender}"
   },
   "footer": {
     "about": "من نحن",
@@ -495,7 +499,9 @@
     "sellerTier": "فئة البائع",
     "offers": "العروض",
     "onSale": "في التخفيض",
-    "freeDelivery": "توصيل مجاني"
+    "freeDelivery": "توصيل مجاني",
+    "gender": "الجنس",
+    "genderAll": "الكل"
   },
   "category": {
     "sponsored": "مُموَّل",
@@ -515,7 +521,10 @@
     "emptyHint": "جرّب تعديل الفلاتر أو تصفّح أقساماً أخرى.",
     "browseAll": "تصفّح الكل",
     "metaTitle": "{name} — تسوّق أونلاين",
-    "metaDescription": "اكتشف تشكيلة {name} من بائعين تونسيين. توصيل إلى كامل أنحاء تونس."
+    "metaDescription": "اكتشف تشكيلة {name} من بائعين تونسيين. توصيل إلى كامل أنحاء تونس.",
+    "genderBar": "الفئات الفرعية",
+    "genderBarPrev": "الفئات الفرعية السابقة",
+    "genderBarNext": "الفئات الفرعية التالية"
   },
   "product": {
     "selectOptions": "يرجى اختيار: {options}.",

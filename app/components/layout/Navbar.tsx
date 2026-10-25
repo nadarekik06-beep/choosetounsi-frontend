@@ -27,6 +27,8 @@ interface PopularProduct {
 import { useFormat } from "@/lib/i18n/useFormat";
 import { LanguageLink, LanguageInlineSelect } from "@/components/i18n/LanguageSwitcher";
 import { API_BASE } from '@/lib/constants'
+import { useGenderMenu } from '@/lib/gender'
+import GenderMegaBody from './GenderMegaBody'
 
 interface ApiCategory {
   id: number; name: string; name_ar: string; slug: string;
@@ -151,9 +153,12 @@ function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible
   const t=useTranslations("mega");
   const[activeSlug,setSlug]=useState("");
   useEffect(()=>{ if(visible&&categories.length>0&&!activeSlug) setSlug(categories[0].slug); },[visible,categories,activeSlug]);
+  // Gendered categories (Mode & Vêtements) get Femme | Homme columns from the admin gender menu
+  const genderMenu=useGenderMenu();
   if(!visible) return null;
   const subs=MEGA[activeSlug]??[];
   const activeCat=categories.find(c=>c.slug===activeSlug);
+  const gendered=genderMenu?.find(c=>c.slug===activeSlug);
   return(
     <>
       <div className="mm-back" onClick={onClose} style={{position:"fixed",inset:0,top:132,background:"rgba(0,0,0,0.45)",zIndex:9997}}/>
@@ -174,7 +179,9 @@ function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible
           ))}
         </div>
         <div className="mm-body" style={{flex:1,minWidth:0,overflowY:"auto",padding:"24px 32px 32px"}}>
-          {subs.length===0?(
+          {gendered?(
+            <GenderMegaBody key={gendered.slug} cat={gendered} catName={activeCat?.name ?? ""} onClose={onClose}/>
+          ):subs.length===0?(
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:14,color:"#9ca3af",minHeight:200}}>
               <p style={{fontSize:14,fontWeight:600}}>{t("explore",{name:activeCat?.name ?? ""})}</p>
               <Link href={`/category/${activeSlug}`} onClick={onClose} style={{fontSize:13,fontWeight:700,color:"#dc2626",textDecoration:"none",padding:"8px 20px",border:"1.5px solid #dc2626",borderRadius:999}}>{t("viewAllProducts")}</Link>
