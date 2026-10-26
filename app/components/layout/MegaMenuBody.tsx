@@ -3,7 +3,8 @@
 // Mega-menu body of one category, from the admin-managed menu (GET /categories/mega-menu).
 //   - gendered category (Mode & Vêtements): Femme | Homme switch, then that gender's own columns
 //   - other categories: their columns
-// Only subcategories with products come from the API, so links never lead to an empty page.
+// The API lists every active subcategory (or only those with products when the admin turns
+// on "Masquer les sous-catégories vides dans le mega-menu").
 // Same look as the former hardcoded mega-menu columns (Navbar.tsx).
 
 import { useState } from 'react'

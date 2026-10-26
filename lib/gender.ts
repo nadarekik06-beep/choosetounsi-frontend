@@ -30,6 +30,8 @@ export interface GenderMenuCategory extends Localized {
   is_gendered?: boolean
   has_products?: boolean
   product_count?: number
+  /** false only when the admin hides empty categories; missing from older APIs */
+  show_in_menu?: boolean
   /** Gendered categories (Mode & Vêtements): Femme / Homme columns */
   genders?: Record<Gender, GenderMenuGroup[]>
   /** Other categories: one set of columns */

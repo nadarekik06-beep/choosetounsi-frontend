@@ -152,13 +152,18 @@ function AskAIPill({ onClick }: { onClick: () => void }) {
 function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible:boolean;onClose:()=>void}){
   const t=useTranslations("mega");
   const[activeSlug,setSlug]=useState("");
-  // Admin-managed menu for every category (Femme | Homme columns on gendered ones). Categories without
-  // products are left out of the rail; if none has products yet, the rail keeps them all (never empty).
+  // Admin-managed menu for every category (Femme | Homme columns on gendered ones). Every category shows,
+  // unless the admin hides empty ones (show_in_menu); the rail is never left empty.
   // The hardcoded MEGA list is only a fallback when the menu API is unreachable.
   const menu=useMegaMenu();
   const rail=useMemo(()=>{
     // Older API (no has_products): keep every category
     if(!menu||menu.length===0||menu.every(m=>m.has_products===undefined)) return categories;
+    // The backend decides (admin setting "hide empty", off by default → every category shows)
+    if(menu.some(m=>m.show_in_menu!==undefined)){
+      const shown=categories.filter(c=>menu.find(m=>m.slug===c.slug)?.show_in_menu!==false);
+      return shown.length>0?shown:categories;
+    }
     const withProducts=categories.filter(c=>menu.find(m=>m.slug===c.slug)?.has_products);
     return withProducts.length>0?withProducts:categories;
   },[menu,categories]);
