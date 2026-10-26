@@ -209,6 +209,11 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
     })
   }
 
+  // Multicolore description: sent even when empty, so clearing it reaches the backend
+  if (typeof payload.multicolor_label === 'string') {
+    fd.append('multicolor_label', payload.multicolor_label)
+  }
+
   // ── Color group images ─────────────────────────────────────────────────────
   // The '|' → '_' replacement is the existing fix for the Laravel key parsing bug.
   if (payload.color_images) {
@@ -281,6 +286,8 @@ export interface ProductPayload {
   /** JSON: { gallery: Item[], color_groups: { color_option_ids, items: Item[] }[] }, Item = {id} | {upload, replaces?} */
   image_manifest?: string
   uploads?: Record<string, File>
+  /** Description of the Multicolore color ("Noir / Blanc"), max 40 characters */
+  multicolor_label?: string
   [key: string]: any
 }
 

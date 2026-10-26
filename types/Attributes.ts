@@ -5,6 +5,8 @@ export interface AttributeOption {
   value: string
   value_ar?: string
   color_hex?: string | null
+  /** The "Multicolore" color (several colors on the same item); color_hex is then a gradient */
+  is_multicolor?: boolean
   order?: number
 }
 

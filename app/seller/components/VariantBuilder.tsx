@@ -3,37 +3,26 @@
 /**
  * app/seller/components/VariantBuilder.tsx
  *
- * WHAT CHANGED vs previous version
- * ──────────────────────────────────────────────────────────────────────────
- * Color axis now supports MULTIPLE color groups.
+ * Seller variants: colors × the other axes (Taille, Pointure…).
  *
- * OLD:  one set of colors (all selected colors = one shared group)
- *       cartesian: [Red+Blue] × [S,M,L] → 3 rows
- *
- * NEW:  seller can create N groups, each group is an independent
- *       multi-select of up to MAX_COLORS_PER_GROUP colors.
- *       cartesian: group1 × sizes, group2 × sizes, … concatenated
- *       e.g.  [Beige+Khaki] × [S,M,L]  +  [Black+Gold] × [S,M,L]  =  6 rows
- *
- * Rules
+ * Colors
  * ──────
- *  • A color option can only belong to ONE group at a time.
- *    Options already used by another group are rendered disabled.
- *  • No hard limit on the number of groups (max 5 colors per group).
- *  • When there is NO color axis the component behaves exactly as before
- *    (single-select per non-color axis, unchanged cartesian).
+ *  • One color per "Couleur N" slot (radio): a variant has exactly one color option.
+ *    Clicking another swatch replaces it. A color used by another slot is disabled.
+ *  • "Multicolore" (option flagged is_multicolor) is for items with several colors on
+ *    the same article. One per product, with an optional description ("Noir / Blanc")
+ *    shown instead of "Multicolore". A second one shows an error and makes no rows.
+ *  • Legacy products may have several colors in one variant: they load as one slot
+ *    showing all its colors ("Noir + Blanc"), still editable / removable.
  *
- * Everything else is identical to the original:
- *  • normalizeVariantRow, calculateTotalStock, validateVariantStocks
- *  • Non-color axes remain single-select
- *  • Table columns, quick-fill buttons, stock validation
- * ──────────────────────────────────────────────────────────────────────────
+ * Rows: slot1 × other axes, slot2 × other axes… (grouped by color in the table).
+ * Unchanged: VariantRow, normalizeVariantRow, calculateTotalStock, validateVariantStocks.
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Info, AlertCircle, Plus, Trash2 } from 'lucide-react'
+import { Info, AlertCircle, Plus, Trash2, ChevronDown, HelpCircle } from 'lucide-react'
 import type { Attribute, AttributeOption } from '@/types/Attributes'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
 // ─── Public types (unchanged) ─────────────────────────────────────────────────
@@ -78,22 +67,38 @@ export function validateVariantStocks(variants: VariantRow[]): Record<number, st
   return errors
 }
 
+/** Setup problems reported to the form (blocks the submit). Message keys in seller.variants.errors */
+export type VariantIssue =
+  | { code: 'noColor' }
+  | { code: 'emptyColor' }
+  | { code: 'multicolorOnce' }
+  | { code: 'noAxis'; axis: string }
+
+/** Gradient of the Multicolore swatch (the API serves the same one in color_hex). */
+export const MULTICOLOR_BG = 'linear-gradient(135deg, #ef4444 0%, #f59e0b 25%, #22c55e 50%, #3b82f6 75%, #a855f7 100%)'
+
+export function swatchBackground(opt?: Pick<AttributeOption, 'color_hex' | 'is_multicolor'> | null): string {
+  if (opt?.is_multicolor) return MULTICOLOR_BG
+  return opt?.color_hex ?? '#e5e7eb'
+}
+
 // ─── Internal types ───────────────────────────────────────────────────────────
 
-/** One color group managed by the seller */
+/** One "Couleur N" slot */
 interface ColorGroup {
   /** Stable client-side ID (never sent to server) */
   id: string
-  /** Ordered list of selected color option IDs (max MAX_COLORS_PER_GROUP) */
+  /** One color id (several only for legacy products) */
   colorOptionIds: number[]
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MAX_COLORS_PER_GROUP = 5
-const MAX_COLOR_GROUPS     = 10
+const MAX_COLOR_GROUPS = 10
+const MULTICOLOR_LABEL_MAX = 40
+const HELP_PREF_KEY = 'ct.seller.variantsHelp'
 
-// ─── Props (unchanged) ────────────────────────────────────────────────────────
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
   axes: Attribute[]
@@ -102,6 +107,13 @@ interface Props {
   basePrice: string
   disabled?: boolean
   externalStockErrors?: Record<number, string>
+  /** Multicolore description (one per product) */
+  multicolorLabel?: string
+  onMulticolorLabelChange?: (label: string) => void
+  /** Setup problems, for the form's submit check */
+  onIssuesChange?: (issues: VariantIssue[]) => void
+  /** Show the setup problems inline (after a submit attempt) */
+  showErrors?: boolean
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -121,33 +133,34 @@ function makeGroupId() {
   return Math.random().toString(36).slice(2, 9)
 }
 
+function readHelpOpen(): boolean {
+  try { return window.localStorage.getItem(HELP_PREF_KEY) !== 'closed' } catch { return true }
+}
+
+function writeHelpOpen(open: boolean) {
+  try { window.localStorage.setItem(HELP_PREF_KEY, open ? 'open' : 'closed') } catch { /* private mode */ }
+}
+
 /**
- * Re-hydrate color groups from existing variant rows.
- *
- * Each unique sorted set of color IDs across the rows becomes one group.
- * e.g. rows with color IDs [3,7] and [11,15] → two groups.
+ * Re-hydrate color slots from existing variant rows: each unique set of color ids
+ * becomes one slot (one id; several for legacy rows).
  */
 function hydrateColorGroups(
   existingVariants: VariantRow[],
   colorAxis: Attribute | null,
 ): ColorGroup[] {
-  if (!colorAxis || existingVariants.length === 0) return []
+  if (!colorAxis) return []
+  if (existingVariants.length === 0) return [{ id: makeGroupId(), colorOptionIds: [] }]
 
   const seen = new Map<string, ColorGroup>()
-
   for (const row of existingVariants) {
     const colorIds = row.option_ids
       .filter(id => colorAxis.options.some(o => o.id === id))
       .sort((a, b) => a - b)
-
     if (colorIds.length === 0) continue
-
     const key = colorIds.join('|')
-    if (!seen.has(key)) {
-      seen.set(key, { id: makeGroupId(), colorOptionIds: colorIds })
-    }
+    if (!seen.has(key)) seen.set(key, { id: makeGroupId(), colorOptionIds: colorIds })
   }
-
   return Array.from(seen.values())
 }
 
@@ -160,20 +173,30 @@ export default function VariantBuilder({
   basePrice,
   disabled = false,
   externalStockErrors = {},
+  multicolorLabel = '',
+  onMulticolorLabelChange,
+  onIssuesChange,
+  showErrors = false,
 }: Props) {
   const t = useTranslations('seller.variants')
   const { currency } = useFormat()
+  // List separator for the summary (Arabic comma in Arabic)
+  const sep = useLocale() === 'ar' ? '، ' : ', '
 
   // ── Identify the color axis ────────────────────────────────────────────────
   const colorAxis    = useMemo(() => axes.find(a => a.type === 'color') ?? null, [axes])
   const nonColorAxes = useMemo(() => axes.filter(a => a.type !== 'color'), [axes])
+  // Palette with Multicolore last
+  const palette = useMemo(() => colorAxis
+    ? [...colorAxis.options].sort((a, b) => Number(!!a.is_multicolor) - Number(!!b.is_multicolor))
+    : [], [colorAxis])
+  const multicolorId = useMemo(() => colorAxis?.options.find(o => o.is_multicolor)?.id ?? null, [colorAxis])
 
-  // ── Color groups (NEW) ────────────────────────────────────────────────────
   const [colorGroups, setColorGroups] = useState<ColorGroup[]>(() =>
     hydrateColorGroups(existingVariants, colorAxis)
   )
 
-  // ── Selections for NON-COLOR axes (unchanged single-select behaviour) ──────
+  // ── Selections for NON-COLOR axes ──────────────────────────────────────────
   // Index matches nonColorAxes[], not axes[].
   const [nonColorSelected, setNonColorSelected] = useState<number[][]>(() => {
     if (existingVariants.length === 0 || nonColorAxes.length === 0) {
@@ -192,9 +215,27 @@ export default function VariantBuilder({
     return perAxis.map(s => Array.from(s))
   })
 
+  // Legacy products saved without an axis (e.g. no size): that axis stays optional
+  // for them, so the existing rows still load and save.
+  const [legacyFreeAxes] = useState<Set<number>>(() => new Set(
+    existingVariants.length === 0 ? [] : nonColorAxes
+      .filter(axis => !existingVariants.some(row => row.option_ids.some(id => axis.options.some(o => o.id === id))))
+      .map(a => a.id)
+  ))
+
   const [rows,        setRows]        = useState<VariantRow[]>(() => existingVariants.map(normalizeVariantRow))
   const [stockErrors, setStockErrors] = useState<Record<number, string>>({})
+  const [helpOpen,    setHelpOpen]    = useState<boolean>(readHelpOpen)
+  const [bulkStock,   setBulkStock]   = useState('')
+  const [bulkPrice,   setBulkPrice]   = useState('')
 
+  // Slots holding Multicolore after the first one: an error, they make no rows
+  const duplicateMulticolor = useMemo(() => {
+    const ids = new Set<string>()
+    if (multicolorId == null) return ids
+    colorGroups.filter(g => g.colorOptionIds.includes(multicolorId)).slice(1).forEach(g => ids.add(g.id))
+    return ids
+  }, [colorGroups, multicolorId])
 
   // ── Notify parent ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -203,79 +244,61 @@ export default function VariantBuilder({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows])
 
-  // ── Regenerate rows whenever groups or non-color selections change ──────────
+  // ── Setup problems ─────────────────────────────────────────────────────────
+  const issues = useMemo((): VariantIssue[] => {
+    const out: VariantIssue[] = []
+    if (colorAxis) {
+      if (colorGroups.length === 0) out.push({ code: 'noColor' })
+      else if (colorGroups.some(g => g.colorOptionIds.length === 0)) out.push({ code: 'emptyColor' })
+      if (duplicateMulticolor.size > 0) out.push({ code: 'multicolorOnce' })
+    }
+    nonColorAxes.forEach((axis, i) => {
+      if ((nonColorSelected[i] ?? []).length === 0 && !legacyFreeAxes.has(axis.id)) {
+        out.push({ code: 'noAxis', axis: axis.name })
+      }
+    })
+    return out
+  }, [colorAxis, colorGroups, duplicateMulticolor, nonColorAxes, nonColorSelected, legacyFreeAxes])
+
+  useEffect(() => {
+    onIssuesChange?.(issues)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [issues])
+
+  // ── Regenerate rows whenever slots or non-color selections change ──────────
   useEffect(() => {
     if (axes.length === 0) return
 
-    // ── Case A: no color axis → original cartesian of non-color axes only ────
-    if (!colorAxis) {
-      const anyEmpty = nonColorSelected.some(sel => sel.length === 0)
-      if (anyEmpty) { setRows([]); return }
+    // Axes taking part in the combinations (legacy axis-free ones only when chosen)
+    const activeSel = nonColorSelected.filter((sel, i) => sel.length > 0 || !legacyFreeAxes.has(nonColorAxes[i]?.id))
+    const anyEmpty  = activeSel.some(sel => sel.length === 0)
 
-      const combos = cartesian(nonColorSelected)
-      setRows(prev => {
-        const existingMap = new Map(prev.map(r => [comboKey(r.option_ids), r]))
-        return combos.map(combo => {
-          const key     = comboKey(combo)
-          const existing = existingMap.get(key)
-          return existing
-            ? { ...existing, option_ids: combo }
-            : normalizeVariantRow({ option_ids: combo })
-        })
+    const merge = (combos: number[][]) => setRows(prev => {
+      const existingMap = new Map(prev.map(r => [comboKey(r.option_ids), r]))
+      return combos.map(combo => {
+        const existing = existingMap.get(comboKey(combo))
+        return existing ? { ...existing, option_ids: combo } : normalizeVariantRow({ option_ids: combo })
       })
+    })
+
+    // ── Case A: no color axis → cartesian of the other axes ───────────────────
+    if (!colorAxis) {
+      if (anyEmpty || activeSel.length === 0) { setRows([]); return }
+      merge(cartesian(activeSel))
       return
     }
 
-    // ── Case B: color axis present ────────────────────────────────────────────
-    // Need at least one valid group AND all non-color axes selected.
-    const validGroups = colorGroups.filter(g => g.colorOptionIds.length > 0)
-    if (validGroups.length === 0) { setRows([]); return }
+    // ── Case B: color axis → each slot × the other axes, slot after slot ──────
+    const validGroups = colorGroups.filter(g => g.colorOptionIds.length > 0 && !duplicateMulticolor.has(g.id))
+    if (validGroups.length === 0 || anyEmpty) { setRows([]); return }
 
-    const anyNonColorEmpty = nonColorSelected.some(sel => sel.length === 0)
-    if (anyNonColorEmpty && nonColorAxes.length > 0) { setRows([]); return }
-
-    // For each valid group, generate its subset of rows:
-    //   group.colorOptionIds × nonColorSelected[0] × nonColorSelected[1] × …
-    // Then concatenate all subsets.
-    const COLOR_SEP = '|'
-
-    const allCombos: number[][] = validGroups.flatMap(group => {
-      // Encode the whole color group as one token for cartesian()
-      const colorToken = group.colorOptionIds.join(COLOR_SEP)
-
-      const slotArrays: (number | string)[][] =
-        nonColorAxes.length > 0
-          ? [[colorToken], ...nonColorSelected]    // [colorGroup, sizeIds, ...]
-          : [[colorToken]]                          // color only, no other axes
-
-      const rawCombos = cartesian(slotArrays as number[][])
-
-      // Decode back: the first element is the encoded color group token
-      return rawCombos.map(combo =>
-        combo.flatMap((token, slotIdx) => {
-          if (slotIdx === 0) {
-            // Color group token → expand back to individual IDs
-            return String(token).split(COLOR_SEP).map(Number)
-          }
-          return [Number(token)]
-        })
-      )
-    })
-
-    setRows(prev => {
-      const existingMap = new Map(prev.map(r => [comboKey(r.option_ids), r]))
-      return allCombos.map(combo => {
-        const key      = comboKey(combo)
-        const existing = existingMap.get(key)
-        return existing
-          ? { ...existing, option_ids: combo }
-          : normalizeVariantRow({ option_ids: combo })
-      })
-    })
+    merge(validGroups.flatMap(group =>
+      cartesian(activeSel).map(rest => [...group.colorOptionIds, ...rest])
+    ))
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [colorGroups, nonColorSelected])
+  }, [colorGroups, nonColorSelected, duplicateMulticolor])
 
-  // ── Color group management ────────────────────────────────────────────────
+  // ── Color slot management ─────────────────────────────────────────────────
 
   const addGroup = useCallback(() => {
     setColorGroups(prev => [...prev, { id: makeGroupId(), colorOptionIds: [] }])
@@ -285,25 +308,11 @@ export default function VariantBuilder({
     setColorGroups(prev => prev.filter(g => g.id !== groupId))
   }, [])
 
-  /**
-   * Toggle a color option inside a specific group.
-   * A color already used in another group cannot be added (button is disabled).
-   */
-const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
-  setColorGroups(prev => prev.map(g => {
-    if (g.id !== groupId) return g
+  /** One color per slot: clicking a swatch replaces the slot's color. */
+  const selectColor = useCallback((groupId: string, optId: number) => {
+    setColorGroups(prev => prev.map(g => g.id === groupId ? { ...g, colorOptionIds: [optId] } : g))
+  }, [])
 
-    const pos = g.colorOptionIds.indexOf(optId)
-    if (pos === -1) {
-      if (g.colorOptionIds.length >= MAX_COLORS_PER_GROUP) return g  // max 5 per group
-      return { ...g, colorOptionIds: [...g.colorOptionIds, optId] }
-    } else {
-      return { ...g, colorOptionIds: g.colorOptionIds.filter(id => id !== optId) }
-    }
-  }))
-}, [])                          
-
-  // ── Non-color axis toggle (single-select, unchanged) ──────────────────────
   const toggleNonColor = useCallback((axisIdx: number, optId: number) => {
     setNonColorSelected(prev => {
       const copy    = prev.map(a => [...a])
@@ -328,13 +337,64 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
     })
   }, [])
 
+  /** Bulk stock / price, on every row or on one color's rows. */
+  const applyBulk = (colorKey?: string) => {
+    const stock = bulkStock.trim() === '' ? null : Math.max(0, Math.floor(Number(bulkStock))) || 0
+    const price = bulkPrice.trim()
+    if (stock === null && price === '') return
+    setRows(prev => prev.map(r => {
+      if (colorKey !== undefined && colorKeyOf(r) !== colorKey) return r
+      return { ...r, ...(stock !== null ? { stock } : {}), ...(price !== '' ? { price_override: price } : {}) }
+    }))
+  }
+
+  // ── Labels ────────────────────────────────────────────────────────────────
+
+  const mcLabel = multicolorLabel.trim()
+  const optionLabel = (opt?: AttributeOption) =>
+    !opt ? '?' : (opt.is_multicolor && mcLabel ? mcLabel : opt.value)
+  const colorOpt = (id: number) => colorAxis?.options.find(o => o.id === id)
+  const isColorId = (id: number) => !!colorAxis?.options.some(o => o.id === id)
+  const colorIdsOf = (r: VariantRow) => r.option_ids.filter(isColorId)
+  const colorKeyOf = (r: VariantRow) => colorIdsOf(r).slice().sort((a, b) => a - b).join('|')
+  const colorNameOf = (ids: number[]) => ids.map(id => optionLabel(colorOpt(id))).join(' + ')
+  const otherLabel = (ids: number[]) => ids.map(id => {
+    for (const axis of nonColorAxes) {
+      const opt = axis.options.find(o => o.id === id)
+      if (opt) return opt.value
+    }
+    return '?'
+  })
+
   // ── Derived display values ────────────────────────────────────────────────
 
   const mergedStockErrors: Record<number, string> = { ...stockErrors, ...externalStockErrors }
-  const totalStock    = calculateTotalStock(rows)
+  const totalStock     = calculateTotalStock(rows)
   const hasStockErrors = Object.keys(mergedStockErrors).length > 0
+  const totalCombinations = rows.length
 
-  const totalCombinations = rows.length   // always in sync
+  // "Noir (38, 39), Blanc (38, 39)"
+  const summary = useMemo(() => {
+    if (!colorAxis) return ''
+    const byColor = new Map<string, { ids: number[]; others: string[][] }>()
+    rows.forEach(r => {
+      const key = colorKeyOf(r)
+      const entry = byColor.get(key) ?? { ids: colorIdsOf(r), others: nonColorAxes.map(() => []) }
+      nonColorAxes.forEach((axis, i) => {
+        const opt = axis.options.find(o => r.option_ids.includes(o.id))
+        if (opt && !entry.others[i].includes(opt.value)) entry.others[i].push(opt.value)
+      })
+      byColor.set(key, entry)
+    })
+    return Array.from(byColor.values()).map(({ ids, others }) => {
+      const detail = others.filter(o => o.length).map(o => o.join(sep)).join(' · ')
+      return detail ? `${colorNameOf(ids)} (${detail})` : colorNameOf(ids)
+    }).join(sep)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, colorAxis, nonColorAxes, mcLabel, sep])
+
+  const issueText = (i: VariantIssue) =>
+    i.code === 'noAxis' ? t('errors.noAxis', { axis: i.axis }) : t(`errors.${i.code}`)
 
   // ── Early exit when no axes ───────────────────────────────────────────────
   if (axes.length === 0) return null
@@ -352,10 +412,63 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
     fontFamily: 'inherit',
     transition: 'border-color 0.15s, background 0.15s',
   })
+  const hintStyle: React.CSSProperties = { fontSize: 11, color: '#5b6472', margin: '8px 0 0', lineHeight: 1.45 }
+  const errorLine = (text: string) => (
+    <p role="alert" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#dc2626', fontWeight: 700, margin: '8px 0 0' }}>
+      <AlertCircle size={12} style={{ flexShrink: 0 }} /> {text}
+    </p>
+  )
+  const smallBtn = (color: string, bg: string, bd: string): React.CSSProperties => ({
+    fontSize: 11, fontWeight: 700, color, background: bg, border: `1px solid ${bd}`,
+    borderRadius: 6, padding: '4px 10px', cursor: disabled ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+  })
+  const dot = (opt: AttributeOption | undefined, size: number) => (
+    <span title={optionLabel(opt)} style={{
+      display: 'inline-block', width: size, height: size, borderRadius: '50%',
+      background: swatchBackground(opt), border: '1px solid rgba(0,0,0,0.3)', flexShrink: 0,
+    }} />
+  )
+
+  const sizeHint = (axis: Attribute) => {
+    const unique = axis.options.some(o => /taille unique|one size|مقاس واحد/i.test(o.value))
+    return unique ? `${t('sizeHint')} ${t('sizeHintUnique')}` : t('sizeHint')
+  }
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div>
+
+      {/* ── How-to box (open the first time, then remembered) ─────────────── */}
+      <div style={{
+        background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 12,
+        marginBottom: 16, overflow: 'hidden',
+      }}>
+        <button
+          type="button"
+          aria-expanded={helpOpen}
+          onClick={() => { setHelpOpen(o => { writeHelpOpen(!o); return !o }) }}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+            padding: '10px 14px', background: 'transparent', border: 'none',
+            cursor: 'pointer', fontFamily: 'inherit', textAlign: 'start',
+            fontSize: 13, fontWeight: 800, color: '#075985',
+          }}
+        >
+          <Info size={14} style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1 }}>{t('help.title')}</span>
+          <ChevronDown size={14} style={{ transform: helpOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
+        </button>
+        {helpOpen && (
+          <div style={{ padding: '0 14px 12px', fontSize: 12, color: '#0c4a6e', lineHeight: 1.5 }}>
+            <ol style={{ margin: '0 0 8px', paddingInlineStart: 18, listStyle: 'decimal' }}>
+              <li>{t('help.step1')}</li>
+              <li>{t('help.step2')}</li>
+              <li>{t('help.step3')}</li>
+            </ol>
+            <p style={{ margin: 0, color: '#0369a1', fontStyle: 'italic' }}>{t('help.example')}</p>
+          </div>
+        )}
+      </div>
 
       {/* ══════════════════════════════════════════════════════════════════
           STEP 1 — Select options
@@ -370,149 +483,139 @@ const toggleColorInGroup = useCallback((groupId: string, optId: number) => {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* ── COLOR GROUPS section (only when colorAxis exists) ────────── */}
+          {/* ── COLORS (one per slot) ─────────────────────────────────────── */}
           {colorAxis && (
             <div style={{
               background: '#f8fafc', border: '1px solid #e5e7eb',
               borderRadius: 12, padding: '12px 14px',
             }}>
-              {/* Header row */}
               <div style={{
-                display: 'flex', alignItems: 'center',
-                justifyContent: 'space-between', marginBottom: 12,
+                display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8,
+                justifyContent: 'space-between', marginBottom: 6,
               }}>
                 <p style={{
                   fontSize: 11, fontWeight: 800, textTransform: 'uppercase',
                   letterSpacing: '0.07em', color: '#64748b', margin: 0,
                 }}>
                   {colorAxis.name}
-                  <span style={{
-                    marginInlineStart: 8, fontSize: 9, fontWeight: 700,
-                    color: '#4338ca',
-                    background: 'rgba(99,102,241,0.08)',
-                    border: '1px solid rgba(99,102,241,0.2)',
-                    padding: '1px 6px', borderRadius: 4,
-                    textTransform: 'none', letterSpacing: 0,
-                  }}>
-                    {t('multiGroup', { max: MAX_COLORS_PER_GROUP })}
-                  </span>
                 </p>
 
-                {/* Add group button */}
                 <button
                   type="button"
                   disabled={disabled || colorGroups.length >= MAX_COLOR_GROUPS}
-
                   onClick={addGroup}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 5,
-                    fontSize: 11, fontWeight: 700,
+                    fontSize: 12, fontWeight: 700,
                     color: '#dc2626',
                     background: 'rgba(220,38,38,0.06)',
                     border: '1px solid rgba(220,38,38,0.2)',
-                    borderRadius: 6, padding: '4px 10px',
-                    cursor: disabled ? 'not-allowed' : 'pointer',
+                    borderRadius: 6, padding: '6px 10px', minHeight: 32,
+                    cursor: disabled || colorGroups.length >= MAX_COLOR_GROUPS ? 'not-allowed' : 'pointer',
+                    opacity: colorGroups.length >= MAX_COLOR_GROUPS ? 0.5 : 1,
                     fontFamily: 'inherit',
                   }}
                 >
-                  <Plus size={11} /> {t('addGroup')}
+                  <Plus size={12} /> {t('addColor')}
                 </button>
               </div>
+              <p style={{ ...hintStyle, margin: '0 0 12px' }}>{t('colorHint')}</p>
 
-              {/* Empty state */}
               {colorGroups.length === 0 && (
                 <div style={{
                   border: '1px dashed #e5e7eb', borderRadius: 8,
                   padding: '12px', textAlign: 'center',
                   fontSize: 12, color: '#5b6472',
                 }}>
-                  {t.rich('noGroups', { b: (chunks) => <strong>{chunks}</strong> })}
+                  {t.rich('noColors', { b: (chunks) => <strong>{chunks}</strong> })}
                 </div>
               )}
 
-              {/* One card per group */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {colorGroups.map((group, groupIdx) => {
-                  const selected = group.colorOptionIds
+                  const selected  = group.colorOptionIds
+                  const legacy    = selected.length > 1
+                  const isDupMc   = duplicateMulticolor.has(group.id)
+                  const hasMc     = multicolorId != null && selected.includes(multicolorId) && !isDupMc
+                  const usedElsewhere = new Set(colorGroups.filter(g => g.id !== group.id).flatMap(g => g.colorOptionIds))
+                  const empty     = selected.length === 0
 
                   return (
                     <div
                       key={group.id}
                       style={{
                         background: '#fff',
-                        border: '1px solid #e5e7eb',
+                        border: `1px solid ${(showErrors && empty) || isDupMc ? '#fca5a5' : '#e5e7eb'}`,
                         borderRadius: 10, padding: '10px 12px',
                       }}
                     >
-                      {/* Group header */}
                       <div style={{
-                        display: 'flex', alignItems: 'center',
+                        display: 'flex', alignItems: 'center', gap: 8,
                         justifyContent: 'space-between', marginBottom: 8,
                       }}>
                         <span style={{
-                          fontSize: 10, fontWeight: 800,
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          fontSize: 11, fontWeight: 800,
                           background: 'rgba(220,38,38,0.08)', color: '#dc2626',
                           border: '1px solid rgba(220,38,38,0.15)',
-                          padding: '2px 8px', borderRadius: 4,
+                          padding: '2px 8px', borderRadius: 4, minWidth: 0,
                         }}>
-                          {t('group', { n: groupIdx + 1 })}
-                          <span style={{
-                            marginInlineStart: 6, fontWeight: 500, color: '#5b6472',
-                          }}>
-                            ({selected.length}/{MAX_COLORS_PER_GROUP})
-                          </span>
+                          {t('colorN', { n: groupIdx + 1 })}
+                          {!empty && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 600, color: '#374151', minWidth: 0 }}>
+                              {selected.map(id => <span key={id} style={{ display: 'inline-flex' }}>{dot(colorOpt(id), 10)}</span>)}
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{colorNameOf(selected)}</span>
+                            </span>
+                          )}
                         </span>
 
-                        {/* Remove group */}
                         <button
                           type="button"
                           disabled={disabled}
                           onClick={() => removeGroup(group.id)}
+                          aria-label={t('remove')}
                           style={{
                             display: 'inline-flex', alignItems: 'center', gap: 4,
-                            fontSize: 10, fontWeight: 700,
+                            fontSize: 11, fontWeight: 700,
                             color: '#5b6472',
                             background: 'transparent',
                             border: '1px solid #e5e7eb',
-                            borderRadius: 5, padding: '2px 7px',
+                            borderRadius: 5, padding: '4px 8px', minHeight: 28,
                             cursor: disabled ? 'not-allowed' : 'pointer',
-                            fontFamily: 'inherit',
+                            fontFamily: 'inherit', flexShrink: 0,
                           }}
                         >
-                          <Trash2 size={9} /> {t('remove')}
+                          <Trash2 size={10} /> {t('remove')}
                         </button>
                       </div>
 
-                      {/* Color swatches */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {colorAxis.options.map(opt => {
-                          const isSelected    = selected.includes(opt.id)
-                          
-                          const atMax         = !isSelected && selected.length >= MAX_COLORS_PER_GROUP
+                      {legacy && <p style={{ ...hintStyle, margin: '0 0 8px', color: '#92400e' }}>{t('legacyGroup')}</p>}
 
+                      {/* Swatches: one choice per slot */}
+                      <div role="radiogroup" aria-label={t('colorN', { n: groupIdx + 1 })} style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {palette.map(opt => {
+                          const isSelected = selected.length === 1 && selected[0] === opt.id
+                          const taken      = !opt.is_multicolor && usedElsewhere.has(opt.id)
                           return (
                             <button
                               key={opt.id}
                               type="button"
-                              disabled={disabled || disabled || atMax}
-                              onClick={() => toggleColorInGroup(group.id, opt.id)}
-                            title={opt.value}
-
+                              role="radio"
+                              aria-checked={isSelected}
+                              disabled={disabled || taken}
+                              onClick={() => selectColor(group.id, opt.id)}
+                              title={taken ? `${opt.value} — ${t('colorTaken')}` : opt.value}
                               style={{
                                 position: 'relative',
                                 display: 'inline-flex', alignItems: 'center',
                                 justifyContent: 'center',
                                 width: 32, height: 32, borderRadius: '50%',
                                 padding: 0,
-                                cursor: (disabled || atMax) ? 'not-allowed' : 'pointer',
-                                border: isSelected
-                                  ? '2.5px solid #dc2626'
-                                  : '2px solid #e5e7eb',
-                                background: opt.color_hex ?? '#e5e7eb',
-opacity: atMax ? 0.4 : 1,
-                                outline: isSelected
-                                  ? '2px solid rgba(220,38,38,0.25)'
-                                  : 'none',
+                                cursor: (disabled || taken) ? 'not-allowed' : 'pointer',
+                                border: isSelected ? '2.5px solid #dc2626' : '2px solid #e5e7eb',
+                                background: swatchBackground(opt),
+                                opacity: taken ? 0.3 : 1,
+                                outline: isSelected ? '2px solid rgba(220,38,38,0.25)' : 'none',
                                 outlineOffset: 1,
                                 transition: 'all 0.15s',
                                 fontFamily: 'inherit',
@@ -522,74 +625,51 @@ opacity: atMax ? 0.4 : 1,
                               {isSelected && (
                                 <span style={{
                                   position: 'absolute', inset: 0,
-                                  display: 'flex', alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: 10, fontWeight: 900,
-                                  color: '#fff',
-                                  textShadow: '0 0 3px rgba(0,0,0,0.7)',
-                                  pointerEvents: 'none',
-                                }}>
-                                  {selected.indexOf(opt.id) + 1}
-                                </span>
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: 13, fontWeight: 900, color: '#fff',
+                                  textShadow: '0 0 3px rgba(0,0,0,0.8)', pointerEvents: 'none',
+                                }}>✓</span>
                               )}
                             </button>
                           )
                         })}
                       </div>
 
-                      {/* Selected color name pills */}
-                      {selected.length > 0 && (
-                        <div style={{
-                          display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8,
-                        }}>
-                          {selected.map((id, pos) => {
-                            const opt = colorAxis.options.find(o => o.id === id)
-                            return opt ? (
-                              <span key={id} style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 5,
-                                fontSize: 11, fontWeight: 700,
-                                background: 'rgba(220,38,38,0.06)',
-                                border: '1px solid rgba(220,38,38,0.2)',
-                                color: '#dc2626',
-                                padding: '3px 8px', borderRadius: 999,
-                              }}>
-                                <span style={{
-                                  fontSize: 9, fontWeight: 900,
-                                  background: '#dc2626', color: '#fff',
-                                  borderRadius: '50%',
-                                  width: 13, height: 13,
-                                  display: 'inline-flex', alignItems: 'center',
-                                  justifyContent: 'center', flexShrink: 0,
-                                }}>
-                                  {pos + 1}
-                                </span>
-                                {opt.color_hex && (
-                                  <span style={{
-                                    width: 7, height: 7, borderRadius: '50%',
-                                    background: opt.color_hex,
-                                    border: '1px solid rgba(0,0,0,0.15)',
-                                    display: 'inline-block', flexShrink: 0,
-                                  }} />
-                                )}
-                                {opt.value}
-                              </span>
-                            ) : null
-                          })}
-                        </div>
+                      {/* Multicolore: optional description */}
+                      {hasMc && (
+                        <label style={{ display: 'block', marginTop: 10 }}>
+                          <span style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#374151', marginBottom: 4 }}>
+                            {t('multicolorLabel')}
+                          </span>
+                          <input
+                            type="text"
+                            maxLength={MULTICOLOR_LABEL_MAX}
+                            value={multicolorLabel}
+                            onChange={e => onMulticolorLabelChange?.(e.target.value.slice(0, MULTICOLOR_LABEL_MAX))}
+                            placeholder={t('multicolorPlaceholder')}
+                            disabled={disabled}
+                            style={{ ...inputStyle(), maxWidth: 320 }}
+                          />
+                        </label>
                       )}
+
+                      {isDupMc && errorLine(t('errors.multicolorOnce'))}
+                      {showErrors && empty && errorLine(t('errors.emptyColor'))}
                     </div>
                   )
                 })}
               </div>
+              {showErrors && colorGroups.length === 0 && errorLine(t('errors.noColor'))}
             </div>
           )}
 
-          {/* ── NON-COLOR axes (unchanged single-select) ─────────────────── */}
+          {/* ── OTHER axes (multi-select chips) ───────────────────────────── */}
           {nonColorAxes.map((axis, axisIdx) => {
             const selected = nonColorSelected[axisIdx] ?? []
+            const missing  = showErrors && selected.length === 0 && !legacyFreeAxes.has(axis.id)
             return (
               <div key={axis.id} style={{
-                background: '#f8fafc', border: '1px solid #e5e7eb',
+                background: '#f8fafc', border: `1px solid ${missing ? '#fca5a5' : '#e5e7eb'}`,
                 borderRadius: 12, padding: '12px 14px',
               }}>
                 <p style={{
@@ -613,10 +693,11 @@ opacity: atMax ? 0.4 : 1,
                         key={opt.id}
                         type="button"
                         disabled={disabled}
+                        aria-pressed={isSelected}
                         onClick={() => toggleNonColor(axisIdx, opt.id)}
                         style={{
                           display: 'inline-flex', alignItems: 'center', gap: 6,
-                          padding: '5px 12px', borderRadius: 8,
+                          padding: '6px 12px', minHeight: 34, borderRadius: 8,
                           cursor: disabled ? 'not-allowed' : 'pointer',
                           border: isSelected ? '2.5px solid #dc2626' : '1.5px solid #e5e7eb',
                           background: isSelected ? 'rgba(220,38,38,0.06)' : '#fff',
@@ -634,40 +715,39 @@ opacity: atMax ? 0.4 : 1,
                     )
                   })}
                 </div>
+                <p style={hintStyle}>{sizeHint(axis)}</p>
+                {missing && errorLine(t('errors.noAxis', { axis: axis.name }))}
               </div>
             )
           })}
         </div>
 
-        {/* Combination count banner */}
+        {/* Live summary */}
         {totalCombinations > 0 && (
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 8, marginTop: 12,
+            display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 12,
             background: '#eff6ff', border: '1px solid #bfdbfe',
             borderRadius: 10, padding: '8px 12px',
           }}>
-            <Info size={13} style={{ color: '#1d4ed8', flexShrink: 0 }} />
-            <p style={{ fontSize: 12, color: '#1e40af', margin: 0 }}>
-              {t('willGenerate', { count: totalCombinations })}
+            <Info size={13} style={{ color: '#1d4ed8', flexShrink: 0, marginTop: 2 }} />
+            <p style={{ fontSize: 12, color: '#1e40af', margin: 0, lineHeight: 1.45 }}>
+              {summary
+                ? t('summary', { count: totalCombinations, detail: summary })
+                : t('summaryNoColor', { count: totalCombinations })}
             </p>
           </div>
         )}
 
-        {/* Warning: incomplete selection */}
-        {totalCombinations === 0
-          && (colorGroups.length > 0 || nonColorAxes.some((_, i) => nonColorSelected[i]?.length > 0))
-          && (
+        {/* Incomplete selection (before any submit) */}
+        {!showErrors && totalCombinations === 0 && issues.length > 0
+          && (colorGroups.some(g => g.colorOptionIds.length > 0) || nonColorSelected.some(s => s.length > 0)) && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8, marginTop: 12,
             background: '#fffbeb', border: '1px solid #fde68a',
             borderRadius: 10, padding: '8px 12px',
           }}>
             <Info size={13} style={{ color: '#92400e', flexShrink: 0 }} />
-            <p style={{ fontSize: 12, color: '#92400e', margin: 0 }}>
-              {colorAxis
-                ? t('incompleteColor')
-                : t('incomplete')}
-            </p>
+            <p style={{ fontSize: 12, color: '#92400e', margin: 0 }}>{issueText(issues[0])}</p>
           </div>
         )}
       </div>
@@ -678,14 +758,14 @@ opacity: atMax ? 0.4 : 1,
       {rows.length > 0 && (
         <div>
           <div style={{
-            display: 'flex', alignItems: 'center',
+            display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8,
             justifyContent: 'space-between', marginBottom: 12,
           }}>
             <p style={{
               fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
               letterSpacing: '0.1em', color: '#5b6472', margin: 0,
             }}>
-              Step 2 — Set stock & price per combination ({rows.length} variants)
+              {t('step2', { count: rows.length })}
             </p>
 
             <div style={{
@@ -722,6 +802,30 @@ opacity: atMax ? 0.4 : 1,
             </div>
           )}
 
+          {/* Apply to all */}
+          <div className="vb-bulk" style={{
+            display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 8,
+            background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10,
+            padding: '10px 12px', marginBottom: 10,
+          }}>
+            <label style={{ width: 110 }}>
+              <span style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#5b6472', marginBottom: 3 }}>{t('applyStock')}</span>
+              <input type="number" min="0" step="1" inputMode="numeric" value={bulkStock}
+                onChange={e => setBulkStock(e.target.value)} placeholder="0" disabled={disabled} style={inputStyle()} />
+            </label>
+            <label style={{ width: 130 }}>
+              <span style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#5b6472', marginBottom: 3 }}>{t('applyPrice', { currency })}</span>
+              <input type="number" min="0" step="0.001" inputMode="decimal" value={bulkPrice}
+                onChange={e => setBulkPrice(e.target.value)} placeholder={basePrice || t('basePlaceholder')}
+                title={t('priceHelp')} disabled={disabled} style={inputStyle()} />
+            </label>
+            <button type="button" disabled={disabled || (bulkStock.trim() === '' && bulkPrice.trim() === '')}
+              onClick={() => applyBulk()}
+              style={{ ...smallBtn('#4338ca', 'rgba(99,102,241,0.08)', 'rgba(99,102,241,0.25)'), padding: '7px 12px', minHeight: 34 }}>
+              {t('applyAll')}
+            </button>
+          </div>
+
           {/* Phones: each combination becomes a small card (stock / price / SKU / active), no sideways scroll */}
           <style>{`
             .vb-mlabel { display: none; }
@@ -735,13 +839,15 @@ opacity: atMax ? 0.4 : 1,
                 border-radius: 12px !important;
                 margin-bottom: 8px;
               }
+              .vb-color { border-radius: 10px !important; margin-bottom: 8px; border-top: 1px solid #e5e7eb !important; }
               .vb-row > .vb-name { grid-column: 1 / -1; padding-top: 0 !important; }
               .vb-row > .vb-name > span:last-child { white-space: normal !important; }
               .vb-mlabel { display: block; font-size: 11px; font-weight: 700; color: #5b6472; margin: 0 0 4px; }
               .vb-row > .vb-active { justify-content: flex-start !important; align-items: center; gap: 10px; padding-top: 0 !important; min-height: 44px; }
               .vb-row > .vb-active > .vb-mlabel { margin: 0; }
               .vb-row > .vb-active input { width: 24px !important; height: 24px !important; }
-              .vb-quick button { min-height: 40px; }
+              .vb-quick button, .vb-bulk button, .vb-color button { min-height: 40px !important; }
+              .vb-bulk label { flex: 1 1 120px; }
             }
           `}</style>
 
@@ -754,147 +860,147 @@ opacity: atMax ? 0.4 : 1,
             border: '1px solid #e5e7eb', borderBottom: 'none',
           }}>
             {(['combination', 'stock', 'price', 'sku', 'active'] as const).map(h => (
-              <span key={h} style={{
+              <span key={h} title={h === 'price' ? t('priceHelp') : undefined} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 3,
                 fontSize: 9, fontWeight: 800, textTransform: 'uppercase',
                 letterSpacing: '0.08em',
                 color: h === 'stock' ? '#dc2626' : '#5b6472',
+                cursor: h === 'price' ? 'help' : undefined,
               }}>
                 {t(`cols.${h}`, { currency })}
+                {h === 'price' && <HelpCircle size={10} aria-label={t('priceHelp')} />}
               </span>
             ))}
           </div>
 
           {rows.map((row, rowIdx) => {
-            // Build the human-readable label for this row
-            const colorOptIds = colorAxis
-              ? row.option_ids.filter(id => colorAxis.options.some(o => o.id === id))
-              : []
-            const otherOptIds = colorAxis
-              ? row.option_ids.filter(id => !colorAxis.options.some(o => o.id === id))
-              : row.option_ids
-
-            const colorLabel = colorOptIds
-              .map(id => colorAxis?.options.find(o => o.id === id)?.value ?? '?')
-              .join('+')
-
-            const otherLabel = otherOptIds.map(id => {
-              for (const axis of axes) {
-                const opt = axis.options.find(o => o.id === id)
-                if (opt) return opt.value
-              }
-              return '?'
-            }).join(' / ')
-
-            const label      = [colorLabel, otherLabel].filter(Boolean).join(' / ')
-            const isLast     = rowIdx === rows.length - 1
-            const stockError = mergedStockErrors[rowIdx]
+            const colorOptIds = colorIdsOf(row)
+            const otherOptIds = row.option_ids.filter(id => !isColorId(id))
+            const label       = colorAxis ? otherLabel(otherOptIds).join(' / ') || colorNameOf(colorOptIds) : otherLabel(otherOptIds).join(' / ')
+            const isLast      = rowIdx === rows.length - 1
+            const stockError  = mergedStockErrors[rowIdx]
+            const key         = colorKeyOf(row)
+            const newColor    = !!colorAxis && colorOptIds.length > 0 && (rowIdx === 0 || colorKeyOf(rows[rowIdx - 1]) !== key)
 
             return (
-              <div
-                key={row.option_ids.join('-')}
-                className="vb-row"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 100px 120px 120px 80px',
-                  gap: 8, padding: '8px 12px',
-                  background: row.is_active ? '#fff' : '#fafafa',
-                  border: '1px solid #e5e7eb',
-                  borderTop: 'none',
-                  borderRadius: isLast ? '0 0 8px 8px' : 0,
-                  alignItems: 'start',
-                }}
-              >
-                {/* Label */}
-                <div className="vb-name" style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  minWidth: 0, paddingTop: 6,
-                }}>
-                  {colorAxis && colorOptIds.map(id => {
-                    const opt = colorAxis.options.find(o => o.id === id)
-                    if (!opt?.color_hex) return null
-                    return (
-                      <span key={id} title={opt.value} style={{
-                        display: 'inline-block', width: 14, height: 14,
-                        borderRadius: '50%', background: opt.color_hex,
-                        border: '1px solid rgba(0,0,0,0.12)', flexShrink: 0,
-                      }} />
-                    )
-                  })}
-                  <span style={{
-                    fontSize: 13, fontWeight: 600, color: '#374151',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              <div key={row.option_ids.join('-')}>
+                {/* Color header */}
+                {newColor && (
+                  <div className="vb-color" style={{
+                    display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+                    padding: '6px 12px', background: '#fff7f7',
+                    border: '1px solid #e5e7eb', borderTop: rowIdx === 0 ? '1px solid #e5e7eb' : 'none',
                   }}>
-                    {label}
-                  </span>
-                </div>
+                    {colorOptIds.map(id => <span key={id} style={{ display: 'inline-flex' }}>{dot(colorOpt(id), 12)}</span>)}
+                    <span style={{ fontSize: 12, fontWeight: 800, color: '#111' }}>{colorNameOf(colorOptIds)}</span>
+                    <button type="button"
+                      disabled={disabled || (bulkStock.trim() === '' && bulkPrice.trim() === '')}
+                      onClick={() => applyBulk(key)}
+                      title={t('applyColorHint')}
+                      style={{ ...smallBtn('#4338ca', 'transparent', 'rgba(99,102,241,0.25)'), marginInlineStart: 'auto', padding: '2px 8px',
+                        opacity: (bulkStock.trim() === '' && bulkPrice.trim() === '') ? 0.5 : 1 }}>
+                      {t('applyColor')}
+                    </button>
+                  </div>
+                )}
 
-                {/* Stock */}
-                <div>
-                  <span className="vb-mlabel" style={{ color: '#dc2626' }}>{t('cols.stock', { currency })}</span>
-                  <input
-                    type="number" min="0" step="1" inputMode="numeric" required
-                    value={row.stock ?? ''}
-                    onChange={e => {
-                      const raw    = e.target.value
-                      const parsed = raw === '' ? 0 : Math.max(0, Math.floor(Number(raw)))
-                      updateRow(rowIdx, 'stock', parsed)
-                    }}
-                    onBlur={e => {
-                      if (e.target.value === '') updateRow(rowIdx, 'stock', 0)
-                    }}
-                    disabled={disabled}
-                    placeholder="0"
-                    style={inputStyle(!!stockError)}
-                  />
-                  {stockError && (
-                    <p style={{ fontSize: 10, color: '#b91c1c', margin: '3px 0 0', fontWeight: 600 }}>
-                      {t(stockError as 'stockRequired' | 'stockWhole')}
-                    </p>
-                  )}
-                </div>
+                <div
+                  className="vb-row"
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 100px 120px 120px 80px',
+                    gap: 8, padding: '8px 12px',
+                    background: row.is_active ? '#fff' : '#fafafa',
+                    border: '1px solid #e5e7eb',
+                    borderTop: 'none',
+                    borderRadius: isLast ? '0 0 8px 8px' : 0,
+                    alignItems: 'start',
+                  }}
+                >
+                  {/* Label */}
+                  <div className="vb-name" style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    minWidth: 0, paddingTop: 6,
+                  }}>
+                    <span style={{
+                      fontSize: 13, fontWeight: 600, color: '#374151',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {label}
+                    </span>
+                  </div>
 
-                {/* Price override */}
-                <div>
-                  <span className="vb-mlabel">{t('cols.price', { currency })}</span>
-                  <input
-                    type="number" min="0" step="0.001" inputMode="decimal"
-                    value={row.price_override ?? ''}
-                    onChange={e => updateRow(rowIdx, 'price_override', e.target.value)}
-                    placeholder={basePrice || t('basePlaceholder')}
-                    disabled={disabled}
-                    style={inputStyle()}
-                  />
-                </div>
+                  {/* Stock */}
+                  <div>
+                    <span className="vb-mlabel" style={{ color: '#dc2626' }}>{t('cols.stock', { currency })}</span>
+                    <input
+                      type="number" min="0" step="1" inputMode="numeric" required
+                      value={row.stock ?? ''}
+                      onChange={e => {
+                        const raw    = e.target.value
+                        const parsed = raw === '' ? 0 : Math.max(0, Math.floor(Number(raw)))
+                        updateRow(rowIdx, 'stock', parsed)
+                      }}
+                      onBlur={e => {
+                        if (e.target.value === '') updateRow(rowIdx, 'stock', 0)
+                      }}
+                      disabled={disabled}
+                      placeholder="0"
+                      style={inputStyle(!!stockError)}
+                    />
+                    {stockError && (
+                      <p style={{ fontSize: 10, color: '#b91c1c', margin: '3px 0 0', fontWeight: 600 }}>
+                        {t(stockError as 'stockRequired' | 'stockWhole')}
+                      </p>
+                    )}
+                  </div>
 
-                {/* SKU */}
-                <div>
-                  <span className="vb-mlabel">{t('cols.sku', { currency })}</span>
-                  <input
-                    type="text"
-                    value={row.sku ?? ''}
-                    onChange={e => updateRow(rowIdx, 'sku', e.target.value)}
-                    placeholder={t('optional')}
-                    disabled={disabled}
-                    style={inputStyle()}
-                  />
-                </div>
+                  {/* Price override */}
+                  <div>
+                    <span className="vb-mlabel">{t('cols.price', { currency })}</span>
+                    <input
+                      type="number" min="0" step="0.001" inputMode="decimal"
+                      value={row.price_override ?? ''}
+                      onChange={e => updateRow(rowIdx, 'price_override', e.target.value)}
+                      placeholder={basePrice || t('basePlaceholder')}
+                      title={t('priceHelp')}
+                      disabled={disabled}
+                      style={inputStyle()}
+                    />
+                  </div>
 
-                {/* Active */}
-                <label className="vb-active" style={{ display: 'flex', justifyContent: 'center', paddingTop: 6 }}>
-                  <span className="vb-mlabel">{t('cols.active', { currency })}</span>
-                  <input
-                    type="checkbox"
-                    checked={row.is_active}
-                    onChange={e => updateRow(rowIdx, 'is_active', e.target.checked)}
-                    disabled={disabled}
-                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#dc2626' }}
-                  />
-                </label>
+                  {/* SKU */}
+                  <div>
+                    <span className="vb-mlabel">{t('cols.sku', { currency })}</span>
+                    <input
+                      type="text"
+                      value={row.sku ?? ''}
+                      onChange={e => updateRow(rowIdx, 'sku', e.target.value)}
+                      placeholder={t('optional')}
+                      disabled={disabled}
+                      style={inputStyle()}
+                    />
+                  </div>
+
+                  {/* Active */}
+                  <label className="vb-active" style={{ display: 'flex', justifyContent: 'center', paddingTop: 6 }}>
+                    <span className="vb-mlabel">{t('cols.active', { currency })}</span>
+                    <input
+                      type="checkbox"
+                      checked={row.is_active}
+                      onChange={e => updateRow(rowIdx, 'is_active', e.target.checked)}
+                      disabled={disabled}
+                      style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#dc2626' }}
+                    />
+                  </label>
+                </div>
               </div>
             )
           })}
 
-          {/* Quick fill */}
+          <p style={{ ...hintStyle, marginTop: 8 }}>{t('priceHelp')}</p>
+
+          {/* Quick actions */}
           <div className="vb-quick" style={{
             display: 'flex', gap: 10, marginTop: 10,
             flexWrap: 'wrap', alignItems: 'center',
@@ -902,58 +1008,27 @@ opacity: atMax ? 0.4 : 1,
             <span style={{ fontSize: 11, color: '#5b6472', fontWeight: 600 }}>{t('quickFill')}</span>
             <button
               type="button" disabled={disabled}
-              onClick={() => {
-                const s = prompt(t('setAllPrompt'))
-                if (s === null) return
-                const stock = Math.max(0, Math.floor(Number(s))) || 0
-                setRows(prev => prev.map(r => ({ ...r, stock })))
-              }}
-              style={{
-                fontSize: 11, fontWeight: 700, color: '#4338ca',
-                background: 'rgba(99,102,241,0.08)',
-                border: '1px solid rgba(99,102,241,0.2)',
-                borderRadius: 6, padding: '4px 10px',
-                cursor: 'pointer', fontFamily: 'inherit',
-              }}
-            >{t('setAllStock')}</button>
-            <button
-              type="button" disabled={disabled}
               onClick={() => setRows(prev => prev.map(r => ({ ...r, is_active: true })))}
-              style={{
-                fontSize: 11, fontWeight: 700, color: '#047857',
-                background: 'rgba(16,185,129,0.08)',
-                border: '1px solid rgba(16,185,129,0.2)',
-                borderRadius: 6, padding: '4px 10px',
-                cursor: 'pointer', fontFamily: 'inherit',
-              }}
+              style={smallBtn('#047857', 'rgba(16,185,129,0.08)', 'rgba(16,185,129,0.2)')}
             >{t('enableAll')}</button>
             <button
               type="button" disabled={disabled}
               onClick={() => setRows(prev => prev.map(r => ({ ...r, is_active: false })))}
-              style={{
-                fontSize: 11, fontWeight: 700, color: '#b91c1c',
-                background: 'rgba(239,68,68,0.08)',
-                border: '1px solid rgba(239,68,68,0.2)',
-                borderRadius: 6, padding: '4px 10px',
-                cursor: 'pointer', fontFamily: 'inherit',
-              }}
+              style={smallBtn('#b91c1c', 'rgba(239,68,68,0.08)', 'rgba(239,68,68,0.2)')}
             >{t('disableAll')}</button>
           </div>
         </div>
       )}
 
-      {/* Empty hint */}
-      {rows.length === 0
-        && colorGroups.length === 0
+      {/* Empty hint (no color axis, nothing chosen yet) */}
+      {rows.length === 0 && !colorAxis
         && nonColorSelected.every(a => a.length === 0) && (
         <div style={{
           background: '#f8fafc', border: '1px dashed #e5e7eb',
           borderRadius: 10, padding: 16,
           textAlign: 'center', fontSize: 12, color: '#5b6472',
         }}>
-          {colorAxis
-            ? t('hintColor')
-            : t('hint')}
+          {t('hint')}
         </div>
       )}
     </div>

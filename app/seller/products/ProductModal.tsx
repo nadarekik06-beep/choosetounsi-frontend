@@ -11,6 +11,8 @@ import VariantBuilder, {
   normalizeVariantRow,
   calculateTotalStock,
   validateVariantStocks,
+  swatchBackground,
+  type VariantIssue,
 } from '../components/VariantBuilder'
 import ProductImagesEditor, {
   type ImagesState, type ColorGroupDef,
@@ -40,6 +42,8 @@ interface FullProduct {
   is_approved?: boolean
   existing_attributes?: AttributeValues
   variant_rows?: VariantRow[]
+  /** Description of the Multicolore color ("Noir / Blanc") */
+  multicolor_label?: string | null
   images?: Array<{
     id: number; url?: string | null; image_path: string
     is_primary: boolean; order: number
@@ -260,6 +264,7 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
   }
   const router   = useRouter()
   const t = useTranslations('seller.productForm')
+  const tv = useTranslations('seller.variants')
   const { currency } = useFormat()
   const [priceDrops, setPriceDrops] = useState<PriceDrop[] | null>(null)
   useEffect(() => {
@@ -302,6 +307,10 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
 
   const [stockMode, setStockMode] = useState<'auto' | 'manual'>('auto')
   const [variantStockErrors, setVariantStockErrors] = useState<Record<number, string>>({})
+  // Multicolore description (one per product) and the builder's setup problems
+  const [multicolorLabel, setMulticolorLabel] = useState<string>(p?.multicolor_label ?? '')
+  const [variantIssues, setVariantIssues]     = useState<VariantIssue[]>([])
+  const [showVariantErrors, setShowVariantErrors] = useState(false)
   const hasVariantRows    = variantRows.length > 0
   const variantTotalStock = useMemo(() => calculateTotalStock(variantRows), [variantRows])
 
@@ -394,16 +403,17 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
       if (!seen.has(key)) {
         seen.set(key, { key, swatches: ids.map(id => {
           const o = colorAxis.options.find(x => x.id === id)
-          return { id, value: o?.value ?? '?', color_hex: o?.color_hex }
+          return { id, value: o?.is_multicolor && multicolorLabel.trim() ? multicolorLabel.trim() : (o?.value ?? '?'), color_hex: o ? swatchBackground(o) : undefined }
         }) })
       }
     }
     return Array.from(seen.values())
-  }, [colorAxis, variantRows])
+  }, [colorAxis, variantRows, multicolorLabel])
   const groupKeys  = colorGroups?.map(g => g.key) ?? null
   const removedKeys = removedColorKeys(images, groupKeys)
   const colorLabel = (key: string) => key.split('|').map(id => {
     const opt = colorAxis?.options.find(o => o.id === Number(id))
+    if (opt?.is_multicolor && multicolorLabel.trim()) return multicolorLabel.trim()
     return opt?.value ?? (p as any)?.image_sets?.color_groups?.find((g: any) => g.key === key)?.label ?? `#${id}`
   }).join(' + ')
   const totalImages = images.gallery.length + Object.entries(images.colors)
@@ -432,11 +442,22 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
   }
   if (form.pack_contents.length > 500) e.pack_contents = t('errors.packContents')
 
+  // Variants: a color in every slot, the size / pointure chosen, some stock (new products)
+  if (variantAxes.length > 0) {
+    setShowVariantErrors(true)
+    const issue = variantIssues[0]
+    if (issue) {
+      e.variants = issue.code === 'noAxis' ? tv('errors.noAxis', { axis: issue.axis }) : tv(`errors.${issue.code}`)
+    } else if (hasVariantRows && !isEdit && variantTotalStock <= 0) {
+      e.variants = tv('errors.noStock')
+    }
+  }
+
   if (hasVariantRows) {
     const varStockErrs = validateVariantStocks(variantRows)
     if (Object.keys(varStockErrs).length > 0) {
       setVariantStockErrors(varStockErrs)
-      e.variants = t('errors.variants')
+      e.variants ??= t('errors.variants')
     } else {
       setVariantStockErrors({})
     }
@@ -541,7 +562,11 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
       }
 
       if (subId !== null) payload.subcategory_id = subId
-      if (validVariants.length > 0) payload.variants = validVariants
+      if (validVariants.length > 0) {
+        payload.variants = validVariants
+        // Kept by the server only while a Multicolore variant exists
+        payload.multicolor_label = multicolorLabel.trim()
+      }
 
       const hasUploads = Object.keys(payload.uploads ?? {}).length > 0
       setUploadPct(hasUploads ? 0 : null)
@@ -571,6 +596,7 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
           mapped[k] ??= (msgs as string[])[0]
         })
         setErrors(mapped)
+        if (mapped.variants || mapped.multicolor_label) scrollToFirstError()
         const imageMsg = Object.entries(mapped).find(([k]) => k.startsWith('images'))?.[1]
         if (imageMsg) setApiError(imageMsg)
       } else if (isNetworkError(err)) {
@@ -584,15 +610,19 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
     }
   }
 
+  function scrollToFirstError() {
+    setTimeout(() => {
+      const firstErr = document.querySelector(
+        '.border-red-300, [style*="fecaca"], [role="alert"]'
+      ) as HTMLElement | null
+      if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 50)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) {
-      setTimeout(() => {
-        const firstErr = document.querySelector(
-          '.border-red-300, [style*="fecaca"], [role="alert"]'
-        ) as HTMLElement | null
-        if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }, 50)
+      scrollToFirstError()
       return
     }
     if (removedKeys.length && !window.confirm(t('confirmRemovedColors', { colors: removedKeys.map(colorLabel).join(', ') }))) return
@@ -884,7 +914,15 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
                 {!axesLoading && variantAxes.length === 0 && <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#5b6472' }}>{t('noVariantAxes')}</div>}
                 {!axesLoading && variantAxes.length > 0 && (
                   <>
-                    <VariantBuilder axes={variantAxes} existingVariants={variantRows} onChange={rows => { setVariantRows(rows); setVariantStockErrors({}) }} basePrice={form.price} disabled={saving} externalStockErrors={variantStockErrors} />
+                    <VariantBuilder axes={variantAxes} existingVariants={variantRows} onChange={rows => { setVariantRows(rows); setVariantStockErrors({}); setErrors(prev => prev.variants ? Object.fromEntries(Object.entries(prev).filter(([k]) => k !== 'variants')) : prev) }} basePrice={form.price} disabled={saving} externalStockErrors={variantStockErrors}
+                      multicolorLabel={multicolorLabel} onMulticolorLabelChange={setMulticolorLabel}
+                      onIssuesChange={setVariantIssues} showErrors={showVariantErrors} />
+                    {/* Setup problems are already shown inline by the builder */}
+                    {(errors.variants || errors.multicolor_label) && !(showVariantErrors && variantIssues.length > 0) && (
+                      <p role="alert" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#dc2626', fontWeight: 700, margin: '12px 0 0' }}>
+                        <AlertCircle size={13} style={{ flexShrink: 0 }} /> {errors.variants ?? errors.multicolor_label}
+                      </p>
+                    )}
                     {variantRows.length > 0 && (
                       <div style={{ marginTop: 14 }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(220,38,38,0.05)', border: '1.5px solid rgba(220,38,38,0.2)', borderRadius: 12, padding: '10px 16px' }}>
