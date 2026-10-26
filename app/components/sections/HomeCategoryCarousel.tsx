@@ -39,9 +39,20 @@ const CATEGORY_IMAGE_MAP: { keywords: string[]; src: string }[] = [
   { keywords: ['other','autre','divers','misc','general','various'], src: '/images/box.png' },
 ]
 
+// Exact slug → card, checked before the keywords (e.g. "Home Appliances" would otherwise match "home")
+const CATEGORY_IMAGE_BY_SLUG: Record<string, string> = {
+  'home-appliances':     '/images/home-appliances.png',
+  'diy-garden':          '/images/diy-garden.png',
+  'pets':                '/images/pets.png',
+  'weddings-events':     '/images/weddings-events.png',
+  'musical-instruments': '/images/musical-instruments.png',
+  'office-business':     '/images/office-business.png',
+}
+
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=85&auto=format&fit=crop'
 
 function getFallbackImage(cat: Category): string {
+  if (CATEGORY_IMAGE_BY_SLUG[cat.slug]) return CATEGORY_IMAGE_BY_SLUG[cat.slug]
   const searchStr = `${cat.base_name ?? ''} ${cat.name} ${cat.slug}`.toLowerCase()
   for (const entry of CATEGORY_IMAGE_MAP) {
     if (entry.keywords.some(kw => searchStr.includes(kw))) return entry.src
