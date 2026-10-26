@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { logout, AuthUser } from "@/lib/auth";
@@ -27,8 +27,8 @@ interface PopularProduct {
 import { useFormat } from "@/lib/i18n/useFormat";
 import { LanguageLink, LanguageInlineSelect } from "@/components/i18n/LanguageSwitcher";
 import { API_BASE } from '@/lib/constants'
-import { useGenderMenu } from '@/lib/gender'
-import GenderMegaBody from './GenderMegaBody'
+import { useMegaMenu } from '@/lib/gender'
+import MegaMenuBody from './MegaMenuBody'
 
 interface ApiCategory {
   id: number; name: string; name_ar: string; slug: string;
@@ -152,13 +152,22 @@ function AskAIPill({ onClick }: { onClick: () => void }) {
 function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible:boolean;onClose:()=>void}){
   const t=useTranslations("mega");
   const[activeSlug,setSlug]=useState("");
-  useEffect(()=>{ if(visible&&categories.length>0&&!activeSlug) setSlug(categories[0].slug); },[visible,categories,activeSlug]);
-  // Gendered categories (Mode & Vêtements) get Femme | Homme columns from the admin gender menu
-  const genderMenu=useGenderMenu();
+  // Admin-managed menu for every category (Femme | Homme columns on gendered ones). Categories without
+  // products are left out of the rail; if none has products yet, the rail keeps them all (never empty).
+  // The hardcoded MEGA list is only a fallback when the menu API is unreachable.
+  const menu=useMegaMenu();
+  const rail=useMemo(()=>{
+    // Older API (no has_products): keep every category
+    if(!menu||menu.length===0||menu.every(m=>m.has_products===undefined)) return categories;
+    const withProducts=categories.filter(c=>menu.find(m=>m.slug===c.slug)?.has_products);
+    return withProducts.length>0?withProducts:categories;
+  },[menu,categories]);
+  useEffect(()=>{ if(visible&&rail.length>0&&!rail.some(c=>c.slug===activeSlug)) setSlug(rail[0].slug); },[visible,rail,activeSlug]);
   if(!visible) return null;
   const subs=MEGA[activeSlug]??[];
   const activeCat=categories.find(c=>c.slug===activeSlug);
-  const gendered=genderMenu?.find(c=>c.slug===activeSlug);
+  // Older API only listed gendered categories: the others keep the hardcoded MEGA columns
+  const entry=menu?.find(c=>c.slug===activeSlug&&(c.genders||c.groups));
   return(
     <>
       <div className="mm-back" onClick={onClose} style={{position:"fixed",inset:0,top:132,background:"rgba(0,0,0,0.45)",zIndex:9997}}/>
@@ -166,7 +175,7 @@ function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible
         <style>{`@keyframes megaIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}.mcat:hover{background:#fff5f5!important;color:#dc2626!important}.mcat.on{background:#fef2f2!important;color:#dc2626!important;border-inline-start:3px solid #dc2626!important}.msub:hover{color:#dc2626!important}.mmore:hover{color:#dc2626!important}.mm-close{display:none}@media(max-width:960px){.mm-back{top:0!important}.mm-panel{top:0!important;bottom:0!important;max-height:none!important;height:100vh;height:100dvh;border-top:none!important}.mm-close{display:flex;position:absolute;top:8px;inset-inline-end:10px;width:38px;height:38px;align-items:center;justify-content:center;border:none;background:#f3f4f6;border-radius:50%;cursor:pointer;color:#374151;z-index:2}.mm-rail{width:118px!important}.mcat{padding:10px 8px!important;gap:6px!important;font-size:12px!important}.mcat>span:first-child{width:26px!important;height:26px!important}.mcat>svg{display:none!important}.mcat>span:nth-child(2){white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.2}.mm-body{padding:56px 16px 28px!important}.mm-grid{grid-template-columns:1fr!important;gap:18px!important}}`}</style>
         <button className="mm-close" onClick={onClose} aria-label={t("close")}><svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         <div className="mm-rail" style={{width:220,flexShrink:0,background:"#fafafa",borderInlineEnd:"1px solid #f3f4f6",overflowY:"auto",padding:"8px 0"}}>
-          {categories.map(cat=>(
+          {rail.map(cat=>(
             <button key={cat.slug} onMouseEnter={()=>setSlug(cat.slug)} onClick={()=>setSlug(cat.slug)}
               className={`mcat ${activeSlug===cat.slug?"on":""}`}
               style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 16px",textAlign:"start",background:"transparent",border:"none",borderInlineStart:"3px solid transparent",cursor:"pointer",fontSize:13,fontWeight:activeSlug===cat.slug?700:500,color:activeSlug===cat.slug?"#dc2626":"#374151"}}>
@@ -179,8 +188,8 @@ function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible
           ))}
         </div>
         <div className="mm-body" style={{flex:1,minWidth:0,overflowY:"auto",padding:"24px 32px 32px"}}>
-          {gendered?(
-            <GenderMegaBody key={gendered.slug} cat={gendered} catName={activeCat?.name ?? ""} onClose={onClose}/>
+          {entry?(
+            <MegaMenuBody key={entry.slug} cat={entry} catName={activeCat?.name ?? ""} onClose={onClose}/>
           ):subs.length===0?(
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:14,color:"#9ca3af",minHeight:200}}>
               <p style={{fontSize:14,fontWeight:600}}>{t("explore",{name:activeCat?.name ?? ""})}</p>

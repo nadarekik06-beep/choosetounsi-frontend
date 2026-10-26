@@ -21,11 +21,19 @@ export function localName(item: Localized, locale: string): string {
   return item.name
 }
 
-export interface GenderMenuItem extends Localized { id: number; slug: string; category_slug: string }
+export interface GenderMenuItem extends Localized { id: number; slug: string; category_slug: string; count?: number }
 export interface GenderMenuGroup extends Localized { key: string; items: GenderMenuItem[] }
+/** One category of the admin-managed mega-menu (only subcategories with products are listed). */
 export interface GenderMenuCategory extends Localized {
   id: number; slug: string
-  genders: Record<Gender, GenderMenuGroup[]>
+  // Optional: missing from the older API (gendered categories only), so both shapes keep working
+  is_gendered?: boolean
+  has_products?: boolean
+  product_count?: number
+  /** Gendered categories (Mode & Vêtements): Femme / Homme columns */
+  genders?: Record<Gender, GenderMenuGroup[]>
+  /** Other categories: one set of columns */
+  groups?: GenderMenuGroup[]
 }
 export interface GenderBarItem extends Localized {
   id: number; slug: string; category_slug: string
@@ -44,8 +52,8 @@ function loadMenu(): Promise<GenderMenuCategory[]> {
   return menuPromise
 }
 
-/** Gendered categories with their Femme / Homme columns; null while loading. */
-export function useGenderMenu(): GenderMenuCategory[] | null {
+/** Mega-menu of every active category (null while loading, [] if the request failed). */
+export function useMegaMenu(): GenderMenuCategory[] | null {
   const [data, setData] = useState<GenderMenuCategory[] | null>(null)
   useEffect(() => {
     let alive = true
