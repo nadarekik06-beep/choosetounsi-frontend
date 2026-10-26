@@ -1,6 +1,21 @@
 /* Line icon for a top-level category, matched on its slug / name (mega menu, /shop category bar). */
 
+import { Briefcase, Guitar, Hammer, PartyPopper, PawPrint, WashingMachine, type LucideIcon } from "lucide-react";
+
+// Exact slug → icon, checked before the keyword rules below (e.g. "home-appliances" would match /home/).
+// Drawn like the inline icons below: 24×24, currentColor, stroke 1.8, default caps.
+const ICON_BY_SLUG: Record<string, LucideIcon> = {
+  "home-appliances":     WashingMachine,
+  "diy-garden":          Hammer,
+  "pets":                PawPrint,
+  "weddings-events":     PartyPopper,
+  "musical-instruments": Guitar,
+  "office-business":     Briefcase,
+};
+
 export default function CatIcon({ slug, name, size = 17 }: { slug: string; name: string; size?: number }) {
+  const BySlug = ICON_BY_SLUG[slug];
+  if (BySlug) return <BySlug size={size} aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="butt" strokeLinejoin="miter" />;
   const s = (slug + " " + name).toLowerCase();
   if (/fashion|clothing|wear|tenue/.test(s)) return <svg width={size} height={size} aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>;
   if (/electronic|tech|phone|computer/.test(s)) return <svg width={size} height={size} aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>;
