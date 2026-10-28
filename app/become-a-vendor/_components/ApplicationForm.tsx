@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   X, Upload, CheckCircle, AlertCircle,
-  User, Check, Clock, RefreshCw, Eye,
+  User, Check, Clock, RefreshCw, Eye, UserPlus, Paperclip,
 } from 'lucide-react'
 import { api, getUser } from '@/lib/auth'
 import { useTranslations } from 'next-intl'
@@ -16,6 +16,7 @@ import {
 } from '@/lib/pickupAddress'
 
 import BrandLoader from '@/components/brand/BrandLoader'
+import { saveApplicationDraft, readApplicationDraft, clearApplicationDraft } from './applicationDraft'
 import { API_BASE } from '@/lib/constants'
 const FALLBACK_CATEGORIES = [
   'Fashion & Clothing','Electronics & Tech','Home & Living','Food & Grocery',
@@ -212,13 +213,27 @@ interface ApplicationFormProps {
   onApplication: (app: ExistingApplication | null) => void
   /** Scrolls the page to the top of the form section. */
   scrollToForm: () => void
+  /** Not signed in: the form is usable, an account is asked for on submit. */
+  guest?: boolean
+  /** Signed in from the modal, the page is re-checking role / application. */
+  resolvingAuth?: boolean
+  /** Opens the in-page sign-up / sign-in modal. */
+  onRequireAuth?: (tab: 'register' | 'login') => void
 }
 
-export default function ApplicationForm({ onSuccess, onApplication, scrollToForm }: ApplicationFormProps) {
+const FORM_KEYS = [
+  'full_name', 'phone_number', 'business_name', 'facebook_url', 'instagram_url',
+  'website_url', 'pricing_range', 'business_description',
+] as const
+
+export default function ApplicationForm({
+  onSuccess, onApplication, scrollToForm, guest = false, resolvingAuth = false, onRequireAuth,
+}: ApplicationFormProps) {
   const t   = useTranslations('vendor')
   const tc  = useTranslations('common')
   const tsp = useTranslations('sellerPickup')
   const tpa = useTranslations('pickupAddress')
+  const tg  = useTranslations('vendor.guest')
 
   const [existingApp,  setExistingApp]  = useState<ExistingApplication | null>(null)
   const [appLoading,   setAppLoading]   = useState(false)
@@ -342,8 +357,12 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
     setSelectedSubcats(prev => prev.filter(s => validSubNames.has(s)))
   }, [selectedCategories, subcategoriesMap])
 
+  // Subcategories loaded with their categories (existing application, guest draft):
+  // applied once those categories' lists have loaded, or the cleanup above drops them.
+  const pendingSubcats = useRef<string[] | null>(null)
+
   // ── Load existing application ─────────────────────────────────────────
-  const loadExistingApplication = useCallback(async () => {
+  const loadExistingApplication = useCallback(async (): Promise<'none' | 'exists' | 'failed'> => {
     setAppLoading(true)
     setLoadFailed(false)
     try {
@@ -364,7 +383,7 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
       if (!app || typeof app.id !== 'number') {
         setExistingApp(null)
         setExistingId(null)
-        return
+        return 'none'
       }
 
       setExistingApp(app)
@@ -384,7 +403,7 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
       setPickup(pickupFromApi(app.pickup ?? null))
 
       setSelectedCategories(app.business_categories    ?? [])
-      setSelectedSubcats(app.business_subcategories    ?? [])
+      pendingSubcats.current = app.business_subcategories ?? []
 
       if (app.profile_picture_url) {
         setProfilePicPreview(app.profile_picture_url)
@@ -398,21 +417,85 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
           isExisting: true,
         })))
       }
+      return 'exists'
     } catch (err) {
       setExistingApp(null)
       setExistingId(null)
       // A 404 means "no application": fresh form. Any other failure (network,
       // timeout, 5xx) must not show a blank form, or an applicant could submit
       // a duplicate application: offer a retry instead.
-      if ((err as { response?: { status?: number } })?.response?.status !== 404) setLoadFailed(true)
+      if ((err as { response?: { status?: number } })?.response?.status !== 404) { setLoadFailed(true); return 'failed' }
+      return 'none'
     } finally {
       setAppLoading(false)
     }
   }, [])
 
-  // The page only mounts the form for signed-in, non-approved users, so this
-  // runs exactly when the old page-level mount effect used to call it.
-  useEffect(() => { loadExistingApplication() }, [loadExistingApplication])
+  // ── Guest draft (sessionStorage) ──────────────────────────────────────
+  // Saved before the sign-in modal opens; restored after a reload or the Google
+  // round trip (files can't be kept: the applicant re-attaches them).
+  const awaitingAuth   = useRef(false)          // guest clicked Submit: send once signed in
+  const submitRef      = useRef<() => Promise<void>>(async () => {})
+  const startedAsGuest = useRef(guest)          // the live form already holds the guest data
+  const [resuming, setResuming] = useState(false)
+  const [restored, setRestored] = useState(false)
+
+  const saveDraft = () => saveApplicationDraft({
+    step, form: { ...form }, pickup, categories: selectedCategories, subcategories: selectedSubcats,
+  })
+
+  const restoreDraft = useCallback((): boolean => {
+    const d = readApplicationDraft()
+    if (!d) return false
+    setForm(prev => {
+      const next = { ...prev }
+      FORM_KEYS.forEach(k => { if (typeof d.form[k] === 'string') (next as Record<string, string>)[k] = d.form[k] })
+      return next
+    })
+    setPickup({ ...emptyPickupAddress(), ...d.pickup })
+    setSelectedCategories(Array.isArray(d.categories) ? d.categories.slice(0, 5) : [])
+    // Subcategories are re-applied once their lists have loaded (see below).
+    pendingSubcats.current = Array.isArray(d.subcategories) ? d.subcategories : []
+    setStep(d.step === 2 || d.step === 3 ? d.step : 1)
+    setRestored(true)
+    setTimeout(scrollToForm, 300)
+    return true
+  }, [scrollToForm])
+
+  // Signed-in users: load their application (as before). Guests: no API call.
+  // Signed in from the modal after clicking Submit: same check, then send.
+  useEffect(() => {
+    if (guest) { restoreDraft(); return }
+    let alive = true
+    if (awaitingAuth.current) setResuming(true)
+    loadExistingApplication().then(async result => {
+      if (!alive) return
+      if (awaitingAuth.current) {
+        awaitingAuth.current = false
+        if (result === 'none') await submitRef.current()
+        else if (result === 'exists') clearApplicationDraft()  // pending / rejected: existing banner, nothing sent
+        setResuming(false)
+        return
+      }
+      if (result === 'none') { if (!startedAsGuest.current) restoreDraft() }
+      else if (result === 'exists') clearApplicationDraft()
+    })
+    return () => { alive = false }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guest])
+
+  // Pending subcategories (see pendingSubcats): applied once every selected category's list has loaded.
+  useEffect(() => {
+    const want = pendingSubcats.current
+    if (!want) return
+    if (want.length === 0) { pendingSubcats.current = null; return }
+    // Wait for the restored categories and every one of their subcategory lists.
+    if (!apiCategories.length || selectedCategories.length === 0) return
+    if (selectedCategories.some(c => apiCategories.some(a => a.name === c) && !subcategoriesMap[c])) return
+    pendingSubcats.current = null
+    const valid = new Set(selectedCategories.flatMap(c => subcategoriesMap[c] ?? []).map(s => s.name))
+    setSelectedSubcats(want.filter(s => valid.has(s)))
+  }, [selectedCategories, subcategoriesMap, apiCategories])
   useEffect(() => { onApplication(existingApp) }, [existingApp, onApplication])
 
   const handleChange = (key: keyof FormState) =>
@@ -517,6 +600,13 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
 
   const handleSubmit = async () => {
     if (!validateStep(step)) return
+    // Guest: keep the draft, ask for an account; the application is sent once signed in.
+    if (guest) {
+      saveDraft()
+      awaitingAuth.current = true
+      onRequireAuth?.('register')
+      return
+    }
     setLoading(true); setError(null)
     // Read before the request: a new submission sets existingId on success.
     const wasUpdate = !!existingId
@@ -541,7 +631,9 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
       // So the application object is at response.data.data
       let response: { data?: { data?: ExistingApplication | null } }
       if (existingId) {
-        response = await api.put(`/seller-applications/${existingId}`, fd, {
+        // PHP only parses multipart bodies on POST: same PUT route via Laravel's _method override.
+        fd.append('_method', 'PUT')
+        response = await api.post(`/seller-applications/${existingId}`, fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
       } else {
@@ -557,6 +649,7 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
         setExistingId(savedApp.id)
       }
 
+      clearApplicationDraft()
       onSuccess(wasUpdate)
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string; errors?: Record<string, unknown> } } }
@@ -573,6 +666,8 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
     }
   }
 
+  useEffect(() => { submitRef.current = handleSubmit })
+
   // ── Derived ───────────────────────────────────────────────────────────
 
   const catLabel = (name: string) => apiCategories.find(c => c.name === name)?.label ?? name
@@ -583,9 +678,18 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
   // OR when user explicitly clicked Edit.
   // existingApp being null means: loaded and confirmed no application exists.
   const showForm = (!existingApp || isEditing) && !loadFailed
+  const needsReattach = restored && (!(profilePic || profilePicExisting) || samples.length === 0)
 
   return (
         <>
+          {(resolvingAuth || resuming) && (
+            <div role="status" aria-live="polite" style={{ position:'fixed', inset:0, zIndex:9998, background:'rgba(255,255,255,0.82)', backdropFilter:'blur(3px)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:14, padding:24, textAlign:'center' }}>
+              <BrandLoader variant="section" />
+              <p style={{ margin:0, fontWeight:800, fontSize:'1rem', color:'#111' }}>{resuming ? tg('sendingTitle') : tg('checkingTitle')}</p>
+              <p style={{ margin:0, fontSize:'0.85rem', color:'#6b7280', maxWidth:360 }}>{tg('sendingBody')}</p>
+            </div>
+          )}
+
           {!appLoading && loadFailed && (
             <div role="alert" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between', gap:12, background:'#fff7ed', border:'1.5px solid #fed7aa', borderRadius:16, padding:'16px 20px' }}>
               <span style={{ display:'flex', alignItems:'center', gap:8, fontSize:'0.85rem', fontWeight:600, color:'#9a3412' }}>
@@ -617,6 +721,28 @@ export default function ApplicationForm({ onSuccess, onApplication, scrollToForm
 
           {!appLoading && showForm && (
             <div className="form-section">
+              {/* Guest: account needed to send (not blocking) / restored draft: re-attach files */}
+              {(guest || needsReattach) && (
+                <div style={{ padding:'16px 28px 0', display:'flex', flexDirection:'column', gap:10 }}>
+                  {guest && (
+                    <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:'8px 12px', background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:12, padding:'10px 14px' }}>
+                      <UserPlus size={16} color="#198f41" aria-hidden="true" style={{ flexShrink:0 }} />
+                      <span style={{ flex:'1 1 220px', fontSize:'0.8rem', color:'#166534', lineHeight:1.5 }}>{tg('notice')}</span>
+                      <button type="button" onClick={() => { saveDraft(); awaitingAuth.current = false; onRequireAuth?.('login') }}
+                        style={{ background:'none', border:'none', padding:0, fontSize:'0.78rem', fontWeight:800, color:'#198f41', textDecoration:'underline', cursor:'pointer', fontFamily:'inherit' }}>
+                        {tg('loginLink')}
+                      </button>
+                    </div>
+                  )}
+                  {needsReattach && (
+                    <div role="status" style={{ display:'flex', alignItems:'flex-start', gap:10, background:'#fffbeb', border:'1px solid #fde68a', borderRadius:12, padding:'10px 14px' }}>
+                      <Paperclip size={16} color="#b45309" aria-hidden="true" style={{ flexShrink:0, marginTop:2 }} />
+                      <span style={{ fontSize:'0.8rem', color:'#92400e', lineHeight:1.5 }}>{tg('reattach')}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Step indicator */}
               <div style={{ padding:'24px 28px', borderBottom:'1px solid #f0f0f0' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:10 }}>

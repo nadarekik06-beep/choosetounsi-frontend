@@ -2,11 +2,11 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { isAuthenticated } from '@/lib/auth'
+import AuthModal, { type AuthModalTab } from '@/components/auth/AuthModal'
 import { useSellerPlansState } from '@/lib/platformApi'
 import { useReducedMotion } from '@/app/hooks/useReducedMotion'
 import Navbar from '@/app/components/layout/Navbar'
@@ -24,7 +24,8 @@ import LockedPlanModal from './_components/LockedPlanModal'
 import ApplicationForm, { type ExistingApplication } from './_components/ApplicationForm'
 import { PendingHero, PendingNext } from './_components/PendingView'
 import SellerView from './_components/seller/SellerView'
-import { loadVendorState, type VendorState } from './_components/vendorState'
+import { loadVendorState, resolveVendorState, type VendorState } from './_components/vendorState'
+import { clearApplicationDraft } from './_components/applicationDraft'
 import { SectionHeading, scrollToEl, useLandingData } from './_components/shared'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
 import './_components/landing.css'
@@ -57,7 +58,6 @@ export default function BecomeVendorPage() {
   const t  = useTranslations('vendor')
   const tl = useTranslations('vendor.landing')
   const tc = useTranslations('common')
-  const router    = useRouter()
   const reduced   = useReducedMotion()
   const { plans: livePlans, failed: plansFailed, retry: retryPlans } = useSellerPlansState()
 
@@ -71,19 +71,40 @@ export default function BecomeVendorPage() {
   const [lockedModal, setLockedModal] = useState<string | null>(null)
   const [success,     setSuccess]     = useState<{ wasUpdate: boolean } | null>(null)
   const [application, setApplication] = useState<ExistingApplication | null>(null)
+  // Guests browse everything; an account is asked for only when they submit.
+  const [guest,       setGuest]       = useState(false)
+  const [authTab,     setAuthTab]     = useState<AuthModalTab | null>(null)
+  const [resolving,   setResolving]   = useState(false)   // signed in via the modal, re-checking role/application
   // Public stats + showcase only feed the client landing.
   const landing = useLandingData(vendor?.variant === 'client')
 
-  // ── Mount: auth gate (unchanged) + role/subscription → variant ───────────
+  // ── Mount: role/subscription → variant. Guests get the visitor page (no API call). ──
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/auth/login?redirect=/become-a-vendor')
-      return
-    }
+    const signedIn = isAuthenticated()
     let alive = true
-    loadVendorState().then(s => { if (alive) setVendor(s) })
+    const load = signedIn ? loadVendorState() : Promise.resolve(resolveVendorState(null, null))
+    load.then(s => {
+      if (!alive) return
+      if (!signedIn) setGuest(true)
+      // Back from Google as a seller / applicant: the guest draft no longer applies.
+      else if (s.variant !== 'client') clearApplicationDraft()
+      setVendor(s)
+    })
     return () => { alive = false }
-  }, [router])
+  }, [])
+
+  // Signed in from the modal: the same role/application check the page runs on load
+  // for signed-in users. The form stays mounted meanwhile, so attached files are kept.
+  const handleAuthenticated = useCallback(() => {
+    setAuthTab(null)
+    setResolving(true)
+    loadVendorState().then(s => {
+      if (s.variant !== 'client') clearApplicationDraft()
+      setVendor(s)
+      setGuest(false)
+      setResolving(false)
+    })
+  }, [])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setLockedModal(null) }
@@ -170,7 +191,8 @@ export default function BecomeVendorPage() {
           line1={pending ? t('pending.applyTitle1') : tl('form.title1')}
           line2={pending ? t('pending.applyTitle2') : tl('form.title2')}
           lead={pending ? undefined : t('formSubtitle')} />
-        <ApplicationForm onSuccess={handleSuccess} onApplication={setApplication} scrollToForm={scrollToForm} />
+        <ApplicationForm onSuccess={handleSuccess} onApplication={setApplication} scrollToForm={scrollToForm}
+          guest={guest} resolvingAuth={resolving} onRequireAuth={setAuthTab} />
       </div>
     </section>
   )
@@ -179,6 +201,17 @@ export default function BecomeVendorPage() {
     <>
       <style>{FONTS}</style>
       <Navbar />
+
+      {authTab && (
+        <AuthModal
+          initialTab={authTab}
+          title={t('guest.modalTitle')}
+          subtitle={t('guest.modalSubtitle')}
+          googleAfter="/become-a-vendor"
+          onAuthenticated={handleAuthenticated}
+          onClose={() => setAuthTab(null)}
+        />
+      )}
 
       {lockedModal && livePlans?.[lockedModal] && (
         <LockedPlanModal plan={livePlans[lockedModal]} onClose={() => setLockedModal(null)} onScrollToForm={handleGreenClick} />

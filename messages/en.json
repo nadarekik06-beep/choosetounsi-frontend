@@ -2434,7 +2434,17 @@
       }
     },
     "loadFailed": "We couldn’t load your application right now.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "guest": {
+      "notice": "You can fill in everything now. To send your application you'll need a free ChooseTounsi account: we'll ask for it when you click Submit.",
+      "loginLink": "Already have an account? Log in",
+      "modalTitle": "Create your free account to send your application",
+      "modalSubtitle": "Your answers are kept. Your application is sent as soon as you are signed in.",
+      "checkingTitle": "Signed in! Checking your account…",
+      "sendingTitle": "Your account is ready. Sending your application…",
+      "sendingBody": "Please keep this page open, it only takes a few seconds.",
+      "reattach": "Welcome back! Your answers have been restored. For security, files cannot be kept: please re-attach your logo and product photos, then click Submit."
+    }
   },
   "seller": {
     "nav": {

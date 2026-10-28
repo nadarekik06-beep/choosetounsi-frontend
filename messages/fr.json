@@ -2021,7 +2021,7 @@
       "submittedTitle": "CANDIDATURE ENVOYÉE !",
       "updatedBody": "Votre candidature a été renvoyée pour examen.",
       "submittedBody": "Votre candidature a bien été reçue et est en cours d'examen.",
-      "planNote": "Vous démarrez avec l'<b>offre gratuite (Green Pepper)</b> pendant que notre équipe examine votre boutique (2 à 3 jours ouvrés).",
+      "planNote": "Vous démarrez avec l''<b>offre gratuite (Green Pepper)</b> pendant que notre équipe examine votre boutique (2 à 3 jours ouvrés).",
       "upgradeNote": "Une fois validé, vous pourrez passer à Red ou Black Pepper à tout moment."
     },
     "hero": {
@@ -2434,7 +2434,17 @@
       }
     },
     "loadFailed": "Impossible de charger votre candidature pour le moment.",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "guest": {
+      "notice": "Vous pouvez tout remplir dès maintenant. Pour envoyer votre candidature, il vous faudra un compte ChooseTounsi gratuit : nous vous le demanderons au moment de cliquer sur Envoyer.",
+      "loginLink": "Déjà un compte ? Se connecter",
+      "modalTitle": "Créez votre compte gratuit pour envoyer votre candidature",
+      "modalSubtitle": "Vos réponses sont conservées. Votre candidature est envoyée dès que vous êtes connecté.",
+      "checkingTitle": "Connecté ! Vérification de votre compte…",
+      "sendingTitle": "Votre compte est prêt. Envoi de votre candidature…",
+      "sendingBody": "Merci de garder cette page ouverte, cela ne prend que quelques secondes.",
+      "reattach": "Bon retour ! Vos réponses ont été restaurées. Par sécurité, les fichiers ne peuvent pas être conservés : rajoutez votre logo et vos photos de produits, puis cliquez sur Envoyer."
+    }
   },
   "seller": {
     "nav": {
