@@ -53,6 +53,11 @@ pre, table {
 /* The AI assistant button never covers an open modal / sheet (its own panel included) */
 body:has([data-ct-modal]) .ct-fab { display: none !important; }
 
+/* Wizard stepper (product modal): scrolls sideways only, with no visible scrollbar */
+.ct-stepper { scrollbar-width: none; -ms-overflow-style: none; }
+.ct-stepper::-webkit-scrollbar { display: none; }
+@media (max-width: 640px) { .ct-stepper { padding-inline: 16px !important; scroll-padding-inline: 16px; } }
+
 /* Phones: big modals become full-screen sheets (.ct-sheet on the panel inside a
    [data-ct-modal] overlay); side-by-side fields (.ct-stack) go one per line;
    the sticky action bar (.ct-sheet-bar) clears the iPhone home bar. */

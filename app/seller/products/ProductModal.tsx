@@ -651,6 +651,7 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
   const [oosConfirm, setOosConfirm]   = useState(false)
   const [builderKey, setBuilderKey]   = useState(0)
   const sheetRef = useRef<HTMLDivElement>(null)
+  const stepperRef = useRef<HTMLElement>(null)
   const liveErrors = computeErrors()
   const hide = (s: WizardStep): React.CSSProperties | undefined => (wizard && step !== s ? { display: 'none' } : undefined)
   const stepErrorCount = (s: WizardStep) => Object.keys(liveErrors).filter(k => stepOfKey(k, priceInVariants) === s).length
@@ -661,6 +662,18 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
     setStepIdx(Math.max(0, Math.min(i, steps.length - 1)))
     setTimeout(() => sheetRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 0)
   }
+
+  // Keep the active step visible when the stepper is wider than the screen.
+  // Sideways scroll only, so the sheet's own vertical scroll isn't touched.
+  useEffect(() => {
+    const nav = stepperRef.current
+    const active = nav?.querySelector<HTMLElement>('[aria-current="step"]')
+    if (!nav || !active || nav.scrollWidth <= nav.clientWidth) return
+    const navBox = nav.getBoundingClientRect()
+    const box = active.getBoundingClientRect()
+    const left = nav.scrollLeft + (box.left - navBox.left) - (navBox.width - box.width) / 2
+    nav.scrollTo({ left, behavior: 'smooth' })
+  }, [stepIdx])
 
   /** Validates the current step; the 0-stock dialog comes first so nobody continues with 0. */
   const goNext = () => {
@@ -1044,9 +1057,13 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
           </div>
 
 
-          {/* ── Wizard progress ── */}
+          {/* ── Wizard progress ──
+              flexShrink 0: a scroll container inside the column sheet would otherwise
+              shrink to nothing on tall steps (clipped pills + an inner vertical scrollbar) */}
           {wizard && (
-            <nav aria-label={tw('stepOf', { current: stepIdx + 1, total: steps.length })} style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '12px 24px', borderBottom: '1px solid #f0f0f0', background: '#fcfcfd' }}>
+            <nav ref={stepperRef} className="ct-stepper" aria-label={tw('stepOf', { current: stepIdx + 1, total: steps.length })}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, overflowX: 'auto', overflowY: 'hidden',
+                padding: '14px 24px', borderBottom: '1px solid #f0f0f0', background: '#fcfcfd', WebkitOverflowScrolling: 'touch' }}>
               {steps.map((s, i) => {
                 const current = i === stepIdx
                 const done = i < stepIdx && stepErrorCount(s) === 0
