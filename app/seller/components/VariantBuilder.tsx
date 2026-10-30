@@ -935,6 +935,7 @@ export default function VariantBuilder({
                     <span className="vb-mlabel" style={{ color: '#dc2626' }}>{t('cols.stock', { currency })}</span>
                     <input
                       type="number" min="0" step="1" inputMode="numeric" required
+                      data-variant-stock=""
                       value={row.stock ?? ''}
                       onChange={e => {
                         const raw    = e.target.value
