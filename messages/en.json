@@ -748,7 +748,52 @@
     "codToPayParcels": "You pay {amount} in cash, across {count} parcels (one per shop).",
     "quoteLoading": "Calculating…",
     "quoteFailed": "We couldn't calculate your total. Please try again.",
-    "parcelSizeTitle": "Parcel size {size}: the delivery fee depends on it"
+    "parcelSizeTitle": "Parcel size {size}: the delivery fee depends on it",
+    "guest": {
+      "chooseTitle": "How do you want to order?",
+      "asGuest": "Continue as guest",
+      "asGuestHint": "No account needed — just your delivery details",
+      "loginOrSignup": "Log in / Sign up",
+      "loginHint": "Follow your orders and save your addresses",
+      "login": "Log in",
+      "signup": "Sign up",
+      "google": "Continue with Google",
+      "cartKept": "Your cart is kept when you log in.",
+      "email": "E-mail",
+      "optional": "optional",
+      "emailPlaceholder": "you@example.com",
+      "emailHint": "Only to send you the order confirmation and tracking link.",
+      "emailInvalid": "This e-mail address does not look right.",
+      "codOnly": "Without an account, you pay cash on delivery.",
+      "sessionExpired": "Your session has expired. You can order as a guest below, or log in again.",
+      "willCall": "The delivery agent will call you on <b>{phone}</b> to confirm your order.",
+      "codReminder": "You will pay {total} in cash on delivery.",
+      "trackTitle": "Track your order",
+      "trackHint": "Keep this link: it shows where your order is at any time.",
+      "trackButton": "Track my order",
+      "copyLink": "Copy link",
+      "copied": "Copied",
+      "emailSent": "Confirmation sent to",
+      "existing": {
+        "title": "You already have an account",
+        "body": "This e-mail or phone number belongs to an account. Log in to add this order to it and follow it there.",
+        "login": "Log in"
+      },
+      "account": {
+        "title": "Create your account in one step",
+        "body": "Just choose a password: your name and details are already filled in. Your orders will appear in your account.",
+        "emailPlaceholder": "Your e-mail",
+        "passwordPlaceholder": "Choose a password (8 characters min.)",
+        "create": "Create my account",
+        "creating": "Creating…",
+        "optional": "Optional — your order is placed either way.",
+        "emailInvalid": "Enter a valid e-mail address.",
+        "passwordShort": "The password needs at least 8 characters.",
+        "failed": "Could not create the account. Please try again."
+      },
+      "continueShopping": "Continue shopping",
+      "sessionExpiredCart": "Your session has expired. Log in again to find the cart saved in your account."
+    }
   },
   "auth": {
     "logoAlt": "ChooseTounsi",
@@ -3516,7 +3561,8 @@
         "sentToast": "Prepared. Sent to delivery, ref. {nid}: write it on the parcel.",
         "failedToast": "Prepared. The delivery request failed: the admin has been notified.",
         "refTitle": "Delivery reference: write it on the parcel"
-      }
+      },
+      "guestBadge": "Guest"
     },
     "earnings": {
       "loadFailed": "Failed to load earnings data.",
@@ -6345,5 +6391,58 @@
     "ctaLine": "Our story continues with you.",
     "ctaVendor": "Become a vendor",
     "ctaShop": "Discover the products"
+  },
+  "orderTrack": {
+    "metaTitle": "Track my order",
+    "title": "Order tracking",
+    "placedOn": "Placed on {date}",
+    "notFoundTitle": "Order not found",
+    "notFoundBody": "This link is not valid any more. Find your order with its number and your phone number.",
+    "findByNumber": "Find my order",
+    "shop": "Shop",
+    "progress": "Order progress",
+    "steps": {
+      "placed": "Placed",
+      "confirmed": "Confirmed",
+      "packed": "Packed",
+      "shipped": "On its way",
+      "delivered": "Delivered"
+    },
+    "stopped": {
+      "cancelled": "This parcel was cancelled.",
+      "refused": "This parcel was refused at delivery.",
+      "refunded": "This parcel was returned and refunded."
+    },
+    "courier": "Courier",
+    "money": {
+      "subtotal": "Items",
+      "discount": "Discount",
+      "delivery": "Delivery",
+      "toPay": "To pay on delivery",
+      "total": "Total"
+    },
+    "codNote": "Cash on delivery: you pay when you receive the parcel.",
+    "returnTitle": "A problem with your order?",
+    "returnBody": "Ask for a return or refund on WhatsApp — your order number is filled in.",
+    "returnMessage": "Hello, I would like to request a return / refund for my order {number}.",
+    "claimTitle": "Add this order to my account",
+    "claimBody": "It was placed without logging in. If it was placed with your e-mail or phone number, it can be added to your account.",
+    "claimButton": "Add to my account",
+    "claimDone": "Added to your account.",
+    "claimFailed": "Could not add this order. Please try again.",
+    "seeInOrders": "See it in my orders",
+    "continueShopping": "Continue shopping",
+    "lookup": {
+      "title": "Find my order",
+      "body": "Ordered without an account? Enter your order number and the phone number used for the order.",
+      "lastOrder": "Your last order on this device:",
+      "number": "Order number",
+      "phone": "Phone number",
+      "submit": "Find my order",
+      "required": "Enter the order number and the phone number.",
+      "failed": "Something went wrong. Please try again.",
+      "accountHint": "You have an account?",
+      "myOrders": "My orders"
+    }
   }
 }

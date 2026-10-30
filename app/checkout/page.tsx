@@ -13,7 +13,7 @@
  * This eliminates the race condition where filter() ran on an empty array.
  */
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -24,7 +24,10 @@ import {
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { checkoutApi, walletApi, paymentApi, type BuyNowPayload, type CheckoutQuote, type CheckoutResponse, type QuotePayload } from '@/lib/shopApi'
-import { api, getUser, isAuthenticated, updateSessionUser, type AuthUser } from '@/lib/auth'
+import { api, getUser, isAuthenticated, updateSessionUser, subscribeAuth, type AuthUser } from '@/lib/auth'
+import { guestCheckoutEnabled, guestHeaders, clearCartToken, rememberGuestOrder, isSignedInSnapshot, notSignedInOnServer, sessionExpired } from '@/lib/guestCart'
+import GuestCheckoutChoice from '@/components/checkout/GuestCheckoutChoice'
+import GuestOrderSuccess, { type GuestSuccess } from '@/components/checkout/GuestOrderSuccess'
 import { profileApi } from '@/lib/profileApi'
 import { fetchPaymentInfo, COD_ONLY, type PaymentInfo } from '@/lib/platformApi'
 import type { UserAddress } from '@/app/account/addresses/page'
@@ -63,6 +66,20 @@ function getToken(): string | null {
   if (typeof window === 'undefined') return null
   return localStorage.getItem('ct_auth_token')
 }
+
+/** Signed in: the token, as before. Guest: the guest cart + session headers. */
+function buyerHeaders(): Record<string, string> {
+  const token = getToken()
+  return token ? { Authorization: `Bearer ${token}` } : guestHeaders()
+}
+
+/** "+216 22 333 444" → "22333444" when it is a Tunisian mobile, else null. */
+function tunisianPhone(raw: string): string | null {
+  const d = (raw ?? '').replace(/[\s\-.()]/g, '').replace(/^(\+216|00216)/, '')
+  return /^[2459]\d{7}$/.test(d) ? d : null
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 type PaymentMethod = 'cod' | 'card' | 'd17' | 'wallet'
 
@@ -405,6 +422,19 @@ export default function CheckoutPage() {
 
   const { items: allCartItems, refreshCart, cartLoading } = useCart()
 
+  // ── Guest checkout ────────────────────────────────────────────────────────
+  // Signed in or not, live (login / logout / expired token switch it without a reload)
+  const authed = useSyncExternalStore(subscribeAuth, isSignedInSnapshot, notSignedInOnServer)
+  // null until the server said whether orders without an account are open
+  const [guestEnabled, setGuestEnabled] = useState<boolean | null>(null)
+  useEffect(() => { guestCheckoutEnabled().then(setGuestEnabled) }, [])
+  const isGuest = !authed
+  const [guestEmail, setGuestEmail]       = useState('')
+  const [guestEmailError, setGuestEmailError] = useState('')
+  const [guestSuccess, setGuestSuccess]   = useState<GuestSuccess | null>(null)
+  const [sessionNotice, setSessionNotice] = useState<string | null>(null)
+  const checkoutPath = '/checkout' + (searchParams.toString() ? `?${searchParams.toString()}` : '')
+
   // ─────────────────────────────────────────────────────────────────────────────
   // THE FIX:
   // Read sessionStorage synchronously into a ref during the very first render,
@@ -503,8 +533,9 @@ export default function CheckoutPage() {
   }, [])
   useEffect(() => {
     if (!d17Loading && !d17Account && paymentMethod === 'd17') setPaymentMethod('cod')
-    if (!methods[paymentMethod]) setPaymentMethod('cod')
-  }, [d17Loading, d17Account, paymentMethod, methods])
+    // A guest pays cash on delivery only (wallet and online payment need an account)
+    if (!methods[paymentMethod] || (isGuest && paymentMethod !== 'cod')) setPaymentMethod('cod')
+  }, [d17Loading, d17Account, paymentMethod, methods, isGuest])
   const showComingSoon = () => setComingSoonNotice(true)
 
   const [stripeLoading,      setStripeLoading]      = useState(false)
@@ -564,10 +595,11 @@ export default function CheckoutPage() {
     if (!cur.input.trim()) return
     setCouponStates(prev => ({ ...prev, [sellerId]: { ...cur, loading: true, error: null } }))
     try {
+      const guestPhone = isGuest ? tunisianPhone(form.phone) : null
       const res = await fetch(`${API_BASE}/coupons/validate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ code: cur.input.trim(), ...checkoutLines() }),
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...buyerHeaders() },
+        body: JSON.stringify({ code: cur.input.trim(), ...checkoutLines(), ...(guestPhone ? { phone: guestPhone } : {}) }),
       })
       const json = await res.json()
       if (json.success && json.seller_id === sellerId) {
@@ -592,22 +624,25 @@ export default function CheckoutPage() {
     () => Object.values(couponStates).filter(c => c.applied).map(c => c.applied as string).sort(),
     [couponStates],
   )
+  // Guest with a coupon: the delivery phone counts its "once per customer" limit
+  const guestCouponPhone = isGuest && appliedCodes.length > 0 ? tunisianPhone(form.phone) : null
   const quotePayload = useCallback((): QuotePayload | null => {
+    const phone = guestCouponPhone ? { phone: guestCouponPhone } : {}
     if (isBuyNow) {
       if (!bnProduct) return null
       const bnCoupon = bnProduct.seller ? couponStates[bnProduct.seller.id] : undefined
       return {
         product_id: bnProduct.id, variant_id: bnVariantId, quantity: bnQuantity,
-        ...(bnCoupon?.applied ? { coupon_code: bnCoupon.applied } : {}),
+        ...(bnCoupon?.applied ? { coupon_code: bnCoupon.applied, ...phone } : {}),
       }
     }
     if (items.length === 0) return null
     const sel = selectedIdsRef.current
     return {
       ...(sel && sel.size > 0 ? { item_ids: [...sel] } : {}),
-      ...(appliedCodes.length > 0 ? { coupon_codes: appliedCodes } : {}),
+      ...(appliedCodes.length > 0 ? { coupon_codes: appliedCodes, ...phone } : {}),
     }
-  }, [isBuyNow, bnProduct, bnVariantId, bnQuantity, couponStates, items.length, appliedCodes])
+  }, [isBuyNow, bnProduct, bnVariantId, bnQuantity, couponStates, items.length, appliedCodes, guestCouponPhone])
 
   const loadQuote = useCallback(async () => {
     const payload = quotePayload()
@@ -631,16 +666,20 @@ export default function CheckoutPage() {
   // Re-quote whenever the lines or the applied coupons change
   const quoteKey = JSON.stringify([quotePayload(), items.map(i => [i.id, i.quantity, i.line_total])])
   useEffect(() => {
-    if (!cartReady || !isAuthenticated()) return
+    if (!cartReady || (!authed && !guestEnabled)) return
     loadQuote()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cartReady, quoteKey])
+  }, [cartReady, quoteKey, authed, guestEnabled])
 
   const totalDiscount = quote?.discount_amount ?? 0
 
+  // Not signed in: guest checkout when it is on, else the login page as before
   useEffect(() => {
-    if (!isAuthenticated()) router.push('/auth/login?redirect=/checkout')
-  }, [router])
+    if (!authed && guestEnabled === false && !guestSuccess) {
+      router.push('/auth/login?redirect=' + encodeURIComponent(checkoutPath))
+    }
+  }, [router, authed, guestEnabled, guestSuccess, checkoutPath])
+
 
   useEffect(() => {
     if (!isAuthenticated()) return
@@ -652,7 +691,7 @@ export default function CheckoutPage() {
   }, [])
 
   useEffect(() => {
-    if (!isAuthenticated()) return
+    if (!isAuthenticated()) { setAddressesLoading(false); return } // guest: no address book
     setAddressesLoading(true)
     fetch(`${API_BASE}/addresses`, {
       headers: { Accept: 'application/json', Authorization: `Bearer ${getToken()}` },
@@ -730,7 +769,11 @@ export default function CheckoutPage() {
     setErrors(e)
     const ok = Object.keys(e).length === 0
     if (!ok) showAddressErrors()
-    return ok
+    // Guest e-mail is optional, but must be valid when given
+    const emailBad = isGuest && guestEmail.trim() !== '' && !EMAIL_RE.test(guestEmail.trim())
+    setGuestEmailError(emailBad ? t('guest.emailInvalid') : '')
+    if (ok && emailBad) requestAnimationFrame(() => deliveryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    return ok && !emailBad
   }
 
   // Address errors (ours or the server's): show the form on the faulty fields
@@ -772,9 +815,10 @@ export default function CheckoutPage() {
     if (!validate()) return
     if (summaryTotal === null) return   // no quote yet: nothing to confirm
     if (!methods[paymentMethod]) { showComingSoon(); return }
-    const address = shippingAddressPayload(form)
+    const address = { ...shippingAddressPayload(form), ...(isGuest && guestEmail.trim() ? { email: guestEmail.trim() } : {}) }
     setLoading(true)
     setApiError('')
+    setSessionNotice(null)
 
     try {
       let res: CheckoutResponse
@@ -819,6 +863,27 @@ export default function CheckoutPage() {
       // The order exists: the next checkout is a new attempt
       clearCheckoutAttempt()
 
+      // Guest order: confirmation with the tracking link + optional account
+      if (res.is_guest && res.tracking_token) {
+        rememberGuestOrder(res.tracking_token, res.order_number)
+        // Nothing left in the guest cart (buy-now keeps it): forget the token
+        try {
+          const left = await checkoutApi.cartCount()
+          if (left === 0) clearCartToken()
+        } catch { /* keep it */ }
+        setGuestSuccess({
+          order_number:   res.order_number,
+          total:          res.total,
+          tracking_token: res.tracking_token,
+          phone:          res.phone ?? form.phone,
+          email:          res.email ?? null,
+          recipient_name: form.recipient_name,
+          has_account:    !!res.has_account,
+        })
+        window.scrollTo({ top: 0 })
+        return
+      }
+
       // The server saved the delivery details to an incomplete profile: refresh the cached flag
       if (getUser()?.profile_completed === false) {
         api.get<{ user: AuthUser }>('/auth/user')
@@ -852,6 +917,12 @@ export default function CheckoutPage() {
         }
         return
       }
+      // The login expired while ordering: it was dropped; the buyer continues as a guest or logs in again
+      if (err.data?.code === 'session_expired') {
+        setSessionNotice(t('guest.sessionExpired'))
+        await refreshCart()
+        return
+      }
       setApiError(err.message || t('errors.placeFailed'))
       if (err.data?.code === 'payment_method_unavailable') {
         setPaymentMethod('cod')
@@ -870,6 +941,22 @@ export default function CheckoutPage() {
   }
 
   // ── Success screen ────────────────────────────────────────────────────────
+
+  if (guestSuccess) {
+    return <GuestOrderSuccess order={guestSuccess} fmt={fmt} />
+  }
+
+  // The login expired (API 401): the account's cart is back after logging in again
+  const expired = isGuest && cartReady && sessionExpired()
+
+  // Waiting to know whether a guest may order here (else: off to the login page)
+  if (!authed && guestEnabled !== true) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
+        <BrandLoader variant="section" />
+      </div>
+    )
+  }
 
   if (success) {
     const isPending = success.payment_method === 'd17'
@@ -948,9 +1035,19 @@ export default function CheckoutPage() {
 
   if (!isBuyNow && items.length === 0) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow', sans-serif" }}>
-        <div style={{ textAlign: 'center' }}>
+      <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow', sans-serif", padding: 16 }}>
+        <div style={{ textAlign: 'center', maxWidth: 360 }}>
           <ShoppingBag size={40} color="#e2e8f0" style={{ margin: '0 auto 16px' }} />
+          {expired && (
+            <div style={{ marginBottom: 16 }}>
+              <p style={{ fontSize: 14, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '10px 12px', margin: '0 0 12px', fontWeight: 600 }}>
+                {t('guest.sessionExpiredCart')}
+              </p>
+              <Link href={`/auth/login?redirect=${encodeURIComponent(checkoutPath)}`} style={{ display: 'inline-block', padding: '11px 22px', borderRadius: 12, background: '#0f172a', color: '#fff', fontWeight: 800, fontSize: 14, textDecoration: 'none' }}>
+                {t('guest.login')}
+              </Link>
+            </div>
+          )}
           <p style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>{t('cartEmpty')}</p>
           <Link href="/shop" style={{ color: '#dc2626', fontWeight: 700, fontSize: 14 }}>{t('backToShop')}</Link>
         </div>
@@ -1013,6 +1110,9 @@ export default function CheckoutPage() {
           {/* ── LEFT COLUMN ── */}
           <form onSubmit={handleSubmit} style={{ animation: 'fadeUp 0.4s ease both', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
+            {/* Not signed in: continue as guest (default) or log in */}
+            {isGuest && <GuestCheckoutChoice returnTo={checkoutPath} notice={sessionNotice ?? (expired ? t('guest.sessionExpired') : null)} />}
+
             {/* Delivery Information */}
             <div ref={deliveryRef} style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', overflow: 'hidden', scrollMarginTop: 90 }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1041,6 +1141,21 @@ export default function CheckoutPage() {
                       </div>
                     )}
                     <ShippingAddressFields value={form} errors={errors} onChange={set} />
+                    {isGuest && (
+                      <div>
+                        <label htmlFor="guest-email" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
+                          {t('guest.email')} <span style={{ fontWeight: 500, color: '#94a3b8' }}>({t('guest.optional')})</span>
+                        </label>
+                        <input id="guest-email" type="email" inputMode="email" autoComplete="email" dir="ltr"
+                          className={`co-input${guestEmailError ? ' err' : ''}`} value={guestEmail}
+                          onChange={e => { setGuestEmail(e.target.value); if (guestEmailError) setGuestEmailError('') }}
+                          placeholder={t('guest.emailPlaceholder')} maxLength={191} aria-invalid={!!guestEmailError}
+                          style={{ fontSize: 16 }} />
+                        <p style={{ fontSize: 11.5, color: guestEmailError ? '#dc2626' : '#94a3b8', margin: '5px 0 0', fontWeight: guestEmailError ? 600 : 400 }}>
+                          {guestEmailError || t('guest.emailHint')}
+                        </p>
+                      </div>
+                    )}
                   </>
                 )}
                 {hasSavedAddresses && selectedAddressId !== null && !savedNeedsCompletion && (
@@ -1064,12 +1179,15 @@ export default function CheckoutPage() {
               </div>
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <PaymentMethodCard method="cod" selected={paymentMethod === 'cod'} onSelect={() => setPaymentMethod('cod')} icon={Truck} label={t('pay.cod')} description={t('pay.codDesc')} badge={t('pay.codBadge')} badgeColor="#198f41" />
+                {isGuest && <p style={{ fontSize: 11.5, color: '#94a3b8', margin: 0 }}>{t('guest.codOnly')}</p>}
+                {!isGuest && <>
                 <PaymentMethodCard method="wallet" selected={paymentMethod === 'wallet'} onSelect={() => !walletInsufficient && setPaymentMethod('wallet')} disabled={walletLoading || walletInsufficient} disabledReason={walletLoading ? t('pay.walletLoading') : t('pay.walletInsufficient', { amount: fmt(walletBalance ?? 0) })} icon={Wallet} label={t('pay.wallet')} description={walletLoading ? t('pay.walletChecking') : t('pay.walletBalance', { amount: fmt(walletBalance ?? 0) })} badge={!walletLoading && !walletInsufficient ? t('pay.walletBadge') : undefined} badgeColor="#6366f1"
                   comingSoon={!methods.wallet} comingSoonLabel={t('pay.comingSoon')} comingSoonMessage={t('pay.comingSoonAlert')} />
                 <PaymentMethodCard method="d17" selected={paymentMethod === 'd17'} onSelect={() => d17Account && setPaymentMethod('d17')} disabled={d17Loading || !d17Account} disabledReason={d17Loading ? tc('loading') : t('pay.d17Unavailable')} icon={Smartphone} label="D17" description={t('pay.d17Desc')} badge={t('pay.d17Badge')} badgeColor="#0284c7"
                   comingSoon={!methods.d17} comingSoonLabel={t('pay.comingSoon')} comingSoonMessage={t('pay.comingSoonAlert')} />
                 <PaymentMethodCard method="card" selected={paymentMethod === 'card'} onSelect={() => setPaymentMethod('card')} icon={CreditCard} label={t('pay.card')} description={t('pay.cardDesc')} badge={t('pay.cardBadge')} badgeColor="#7c3aed"
                   comingSoon={!methods.card} comingSoonLabel={t('pay.comingSoon')} comingSoonMessage={t('pay.comingSoonAlert')} />
+                </>}
                 {comingSoonNotice && (
                   <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 12px', fontSize: 12, fontWeight: 600, color: '#92400e' }}>
                     <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />

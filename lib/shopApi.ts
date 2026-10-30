@@ -9,16 +9,22 @@
 import { fallbackError } from '@/lib/i18n/clientLocale'
 import type { PricedProduct } from '@/app/components/promotions/ProductPrice'
 import { API_BASE } from '@/lib/constants'
+import { clearLocalSession } from '@/lib/auth'
+import { CART_HEADER, getCartToken, guestHeaders, markSessionExpired } from '@/lib/guestCart'
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
   return localStorage.getItem('ct_auth_token')
 }
 
+/** Placing an order is never replayed automatically (the buyer confirms again). */
+const ORDER_PLACEMENT = /^\/checkout(\/buy-now)?$/
+
 async function request<T>(
   method: string,
   path: string,
-  body?: unknown
+  body?: unknown,
+  retried = false,
 ): Promise<T> {
   const token = getToken()
   const res = await fetch(`${API_BASE}${path}`, {
@@ -26,12 +32,27 @@ async function request<T>(
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // Signed in: exactly as before. Guest: the guest cart (created on the first write).
+      ...(token ? { Authorization: `Bearer ${token}` } : guestHeaders(method !== 'GET')),
     },
     body: body != null ? JSON.stringify(body) : undefined,
   })
 
-  const json = await res.json()
+  const json = await res.json().catch(() => ({}))
+
+  // Expired / revoked login: drop it and carry on as a guest (guest cart),
+  // instead of leaving the buyer stuck on an error.
+  if (res.status === 401 && token && !retried) {
+    markSessionExpired()
+    clearLocalSession()
+    if (!ORDER_PLACEMENT.test(path)) {
+      return request<T>(method, path, body, true)
+    }
+    throw Object.assign(new Error(json.message ?? fallbackError('request')), {
+      status: 401,
+      data: { ...json, code: 'session_expired' },
+    })
+  }
 
   if (!res.ok) {
     throw Object.assign(new Error(json.message ?? fallbackError('request')), {
@@ -147,6 +168,8 @@ export interface CheckoutPayload {
   payment_method?: 'cod' | 'card' | 'd17' | 'wallet'
   item_ids?: number[]   // ← ADD THIS LINE
   coupon_codes?: string[]
+  /** Guest checkout only: where to send the order confirmation (optional). */
+  email?: string
 }
 
 export interface BuyNowPayload {
@@ -165,6 +188,8 @@ export interface BuyNowPayload {
   notes?: string
   payment_method?: 'cod' | 'card' | 'd17' | 'wallet'
   coupon_code?: string
+  /** Guest checkout only: where to send the order confirmation (optional). */
+  email?: string
 }
 
 /** One seller = one parcel, with its own delivery fee and cash-on-delivery amount. */
@@ -204,6 +229,8 @@ export interface QuotePayload {
   variant_id?: number | null
   quantity?: number
   coupon_code?: string
+  /** Guest: the delivery phone, for coupons limited "once per customer". */
+  phone?: string
 }
 
 export interface CheckoutResponse {
@@ -216,6 +243,13 @@ export interface CheckoutResponse {
   delivery_fee?: number
   parcels?: QuoteParcel[]
   needs_payment?: boolean
+  // Guest checkout (no account)
+  is_guest?: boolean
+  tracking_token?: string
+  phone?: string
+  email?: string | null
+  /** An account already uses this e-mail / phone: suggest logging in. */
+  has_account?: boolean
 }
 
 // ─── Cart API ─────────────────────────────────────────────────────────────────
@@ -248,6 +282,19 @@ export const cartApi = {
 
   clear: () =>
     request<{ success: boolean; message: string }>('DELETE', '/cart'),
+
+  /** Right after login: this browser's guest cart becomes the account's cart. */
+  merge: async (): Promise<CartResponse | null> => {
+    const token = getToken()
+    const cartToken = getCartToken()
+    if (!token || !cartToken) return null
+    const res = await fetch(`${API_BASE}/cart/merge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${token}`, [CART_HEADER]: cartToken },
+    })
+    if (!res.ok) throw Object.assign(new Error('merge failed'), { status: res.status })
+    return res.json()
+  },
 }
 
 // ─── Favorites API ────────────────────────────────────────────────────────────
@@ -297,6 +344,10 @@ export const checkoutApi = {
    */
   buyNow: (payload: BuyNowPayload) =>
     request<CheckoutResponse>('POST', '/checkout/buy-now', payload),
+
+  /** Lines left in the cart (after a guest order: drop the token when 0). */
+  cartCount: async (): Promise<number> =>
+    (await request<CartResponse>('GET', '/cart')).data.count,
 }
 
 export const walletApi = {

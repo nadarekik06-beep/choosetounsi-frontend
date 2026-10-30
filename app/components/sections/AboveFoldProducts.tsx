@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
-import { isAuthenticated } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import ProductPrice, { ProductPromoOverlay, type PricedProduct } from '@/app/components/promotions/ProductPrice'
 import { useTranslations } from 'next-intl'
@@ -40,7 +39,7 @@ interface Product extends PricedProduct {
 }
 function CompactProductCard({ product }: { product: Product }) {
   const t = useTranslations('productCard')
-  const { addToCart, isFavorited, toggleFavorite } = useCart()
+  const { addToCart, isFavorited, toggleFavorite, mustLogIn } = useCart()
   const router = useRouter()
   const [imgErr, setImgErr] = useState(false)
   const [added, setAdded]   = useState(false)
@@ -63,7 +62,7 @@ function CompactProductCard({ product }: { product: Product }) {
 
   const handleCart = async (e: React.MouseEvent) => {
     e.preventDefault()
-    if (!isAuthenticated()) { router.push('/auth/login'); return }
+    if (mustLogIn()) { router.push('/auth/login'); return }
     if (outOfStock) return
     await addToCart(product.id, 1, null)
     setAdded(true)

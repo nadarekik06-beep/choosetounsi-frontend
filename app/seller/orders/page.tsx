@@ -46,6 +46,15 @@ const STATUS_COLORS: Record<string, string> = {
   partially_returned: '#d946ef',
 };
 
+/** Order placed without an account (guest checkout). */
+function GuestTag({ label }: { label: string }) {
+  return (
+    <span style={{ fontSize: 9.5, fontWeight: 800, padding: '1px 7px', borderRadius: 999, color: '#b45309', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+      {label}
+    </span>
+  )
+}
+
 function StatusBadge({ status, dark }: { status: string; dark: boolean }) {
   const label = useStatusLabel();
   const color = STATUS_COLORS[status] ?? '#94a3b8';
@@ -417,7 +426,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                 {[
                   { icon: Hash,     label: t('orderNumber'), value: detail.order.order_number },
                   { icon: Calendar, label: t('date'),        value: date(detail.order.created_at, 'medium') },
-                  { icon: User,     label: t('customer'),    value: detail.order.customer?.name ?? '—' },
+                  { icon: User,     label: t('customer'),    value: (detail.order.customer?.name ?? '—') + (detail.order.customer?.is_guest ? ` · ${t('guestBadge')}` : '') },
                   { icon: MapPin,   label: t('wilaya'),      value: (detail.order.wilaya ?? detail.order.customer?.state) ? wilaya((detail.order.wilaya ?? detail.order.customer?.state) as string) : '—' },
                 ].map(({ icon: Icon, label, value }) => (
                   <div key={label} style={{ background: bgSub, borderRadius: 12, padding: '12px 14px', border: `1px solid ${border}` }}>
@@ -823,7 +832,10 @@ export default function OrdersPage() {
                         </div>
                       </td>
                       <td style={{ padding: '13px 20px' }}>
-                        <p style={{ fontWeight: 700, color: textMain, margin: 0, fontSize: 12 }}>{order.user?.name ?? t('customerFallback', { id: order.user_id })}</p>
+                        <p style={{ fontWeight: 700, color: textMain, margin: 0, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          {order.user?.name ?? order.customer_name ?? t('customerFallback', { id: order.user_id ?? '—' })}
+                          {order.is_guest && <GuestTag label={t('guestBadge')} />}
+                        </p>
                       </td>
                       <td style={{ padding: '13px 20px', fontSize: 12, fontWeight: 500, color: textMuted }}>{order.wilaya ? wilaya(order.wilaya) : '—'}</td>
                       <td style={{ padding: '13px 20px' }}><StatusBadge status={order.display_status ?? order.status} dark={dark} /></td>

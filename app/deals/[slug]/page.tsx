@@ -10,7 +10,6 @@ import {
   AlertCircle, Tag,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
-import { isAuthenticated } from '@/lib/auth'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 
@@ -397,7 +396,7 @@ export default function PackDetailPage() {
   const slug   = params?.slug as string
 
   // ← FIX: destructure addPackToCart instead of addToCart
-  const { addPackToCart, cartLoading } = useCart()
+  const { addPackToCart, cartLoading, mustLogIn } = useCart()
 
   const [pack,          setPack]          = useState<PackDetail | null>(null)
   const [loading,       setLoading]       = useState(true)
@@ -457,7 +456,7 @@ export default function PackDetailPage() {
   // ── FIXED: Add pack as ONE cart entry at pack price ───────────────────────
   const handleAddToCart = useCallback(async () => {
     if (!pack) return
-    if (!isAuthenticated()) {
+    if (mustLogIn()) {
       router.push('/auth/login?redirect=/deals/' + slug)
       return
     }
@@ -477,12 +476,12 @@ export default function PackDetailPage() {
     } finally {
       setAddingToCart(false)
     }
-  }, [pack, allVariantsSelected, addPackToCart, buildPackSelections, router, slug, t])
+  }, [pack, allVariantsSelected, addPackToCart, buildPackSelections, router, slug, t, mustLogIn])
 
   // ── FIXED: Buy Now — add pack as ONE entry then go to checkout ────────────
   const handleBuyNow = useCallback(async () => {
     if (!pack) return
-    if (!isAuthenticated()) {
+    if (mustLogIn()) {
       router.push('/auth/login?redirect=/deals/' + slug)
       return
     }
@@ -501,7 +500,7 @@ export default function PackDetailPage() {
     } finally {
       setAddingToCart(false)
     }
-  }, [pack, allVariantsSelected, addPackToCart, buildPackSelections, router, slug, t])
+  }, [pack, allVariantsSelected, addPackToCart, buildPackSelections, router, slug, t, mustLogIn])
 
   // Gallery: pack image + product thumbnails
   const galleryImages = pack

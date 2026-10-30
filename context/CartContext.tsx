@@ -6,6 +6,7 @@ import {
 } from 'react'
 import { cartApi, favoritesApi, type CartItem, type FavoriteItem } from '@/lib/shopApi'
 import { AUTH_CHANGE_EVENT, isAuthenticated } from '@/lib/auth'
+import { clearCartToken, getCartToken, guestCheckoutEnabled } from '@/lib/guestCart'
 import { useLocale, useTranslations } from 'next-intl'
 
 // ─── Pack selection type ──────────────────────────────────────────────────────
@@ -38,6 +39,10 @@ interface CartContextValue {
   drawerOpen: boolean
   openDrawer: () => void
   closeDrawer: () => void
+  /** Guest checkout is on (php artisan guest-checkout): shopping without an account. */
+  guestCheckout: boolean
+  /** True when this visitor must log in before adding to the cart / ordering. */
+  mustLogIn: () => boolean
 }
 
 const CartContext = createContext<CartContextValue | null>(null)
@@ -52,6 +57,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [favLoading,    setFavLoading]    = useState(false)
   const [flash,         setFlash]         = useState<string | null>(null)
   const [drawerOpen,    setDrawerOpen]    = useState(false)
+  const [guestCheckout, setGuestCheckout] = useState(false)
+
+  useEffect(() => { guestCheckoutEnabled().then(setGuestCheckout) }, [])
+  const mustLogIn = useCallback(() => !isAuthenticated() && !guestCheckout, [guestCheckout])
 
   const t      = useTranslations('cart.flash')
   const locale = useLocale()
@@ -69,10 +78,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setFlash(null), 3500)
   }, [])
 
+  // Just signed in with a guest cart in this browser: it becomes the account's cart.
+  const mergingRef = useRef<Promise<void> | null>(null)
+  const mergeGuestCart = useCallback(async () => {
+    if (!isAuthenticated() || !getCartToken()) return
+    mergingRef.current ??= cartApi.merge()
+      .then(() => clearCartToken())
+      .catch(() => { /* keep the token: retried on the next page load */ })
+      .finally(() => { mergingRef.current = null })
+    await mergingRef.current
+  }, [])
+
   const refreshCart = useCallback(async () => {
-    if (!isAuthenticated()) return
+    // Guest: only a browser that already added something has a cart to load.
+    if (!isAuthenticated() && !getCartToken()) { setItems([]); setCount(0); setSubtotal(0); return }
     setCartLoading(true)
     try {
+      await mergeGuestCart()
       const res = await cartApi.get()
       setItems(res.data.items)
       setCount(res.data.count)
@@ -82,7 +104,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } finally {
       setCartLoading(false)
     }
-  }, [])
+  }, [mergeGuestCart])
 
   const refreshFavorites = useCallback(async () => {
     if (!isAuthenticated()) { setFavorites([]); return }
@@ -250,6 +272,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       favorites, isFavorited, toggleFavorite, favLoading,
       flash, clearFlash: () => setFlash(null), notify: showFlash,
       drawerOpen, openDrawer, closeDrawer,
+      guestCheckout, mustLogIn,
     }}>
       {children}
     </CartContext.Provider>

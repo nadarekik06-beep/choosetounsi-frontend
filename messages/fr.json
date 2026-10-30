@@ -748,7 +748,52 @@
     "codToPayParcels": "Vous payez {amount} en espèces, en {count} colis (un par boutique).",
     "quoteLoading": "Calcul en cours…",
     "quoteFailed": "Impossible de calculer votre total. Veuillez réessayer.",
-    "parcelSizeTitle": "Colis de taille {size} : les frais de livraison en dépendent"
+    "parcelSizeTitle": "Colis de taille {size} : les frais de livraison en dépendent",
+    "guest": {
+      "chooseTitle": "Comment voulez-vous commander ?",
+      "asGuest": "Continuer sans compte",
+      "asGuestHint": "Aucun compte nécessaire — juste vos infos de livraison",
+      "loginOrSignup": "Se connecter / S'inscrire",
+      "loginHint": "Suivez vos commandes et gardez vos adresses",
+      "login": "Se connecter",
+      "signup": "S'inscrire",
+      "google": "Continuer avec Google",
+      "cartKept": "Votre panier est conservé si vous vous connectez.",
+      "email": "E-mail",
+      "optional": "facultatif",
+      "emailPlaceholder": "vous@exemple.com",
+      "emailHint": "Uniquement pour vous envoyer la confirmation et le lien de suivi.",
+      "emailInvalid": "Cette adresse e-mail ne semble pas correcte.",
+      "codOnly": "Sans compte, le paiement se fait à la livraison.",
+      "sessionExpired": "Votre session a expiré. Vous pouvez commander sans compte ci-dessous, ou vous reconnecter.",
+      "willCall": "Le livreur vous appellera au <b>{phone}</b> pour confirmer votre commande.",
+      "codReminder": "Vous paierez {total} en espèces à la livraison.",
+      "trackTitle": "Suivre votre commande",
+      "trackHint": "Gardez ce lien : il indique où en est votre commande à tout moment.",
+      "trackButton": "Suivre ma commande",
+      "copyLink": "Copier le lien",
+      "copied": "Copié",
+      "emailSent": "Confirmation envoyée à",
+      "existing": {
+        "title": "Vous avez déjà un compte",
+        "body": "Cet e-mail ou ce numéro appartient à un compte. Connectez-vous pour y ajouter cette commande et la suivre.",
+        "login": "Se connecter"
+      },
+      "account": {
+        "title": "Créez votre compte en une étape",
+        "body": "Choisissez simplement un mot de passe : votre nom et vos coordonnées sont déjà remplis. Vos commandes apparaîtront dans votre compte.",
+        "emailPlaceholder": "Votre e-mail",
+        "passwordPlaceholder": "Choisissez un mot de passe (8 caractères min.)",
+        "create": "Créer mon compte",
+        "creating": "Création…",
+        "optional": "Facultatif — votre commande est passée dans tous les cas.",
+        "emailInvalid": "Saisissez une adresse e-mail valide.",
+        "passwordShort": "Le mot de passe doit contenir au moins 8 caractères.",
+        "failed": "Impossible de créer le compte. Réessayez."
+      },
+      "continueShopping": "Continuer mes achats",
+      "sessionExpiredCart": "Votre session a expiré. Reconnectez-vous pour retrouver le panier enregistré dans votre compte."
+    }
   },
   "auth": {
     "logoAlt": "ChooseTounsi",
@@ -3516,7 +3561,8 @@
         "sentToast": "Préparé. Envoyé à la livraison, réf. {nid} : écrivez-la sur le colis.",
         "failedToast": "Préparé. La demande de livraison a échoué : l’administrateur a été prévenu.",
         "refTitle": "Référence de livraison : à écrire sur le colis"
-      }
+      },
+      "guestBadge": "Invité"
     },
     "earnings": {
       "loadFailed": "Impossible de charger les revenus.",
@@ -6345,5 +6391,58 @@
     "ctaLine": "Notre histoire continue avec vous.",
     "ctaVendor": "Devenir vendeur",
     "ctaShop": "Découvrir les produits"
+  },
+  "orderTrack": {
+    "metaTitle": "Suivre ma commande",
+    "title": "Suivi de commande",
+    "placedOn": "Passée le {date}",
+    "notFoundTitle": "Commande introuvable",
+    "notFoundBody": "Ce lien n'est plus valide. Retrouvez votre commande avec son numéro et votre téléphone.",
+    "findByNumber": "Retrouver ma commande",
+    "shop": "Boutique",
+    "progress": "Avancement de la commande",
+    "steps": {
+      "placed": "Passée",
+      "confirmed": "Confirmée",
+      "packed": "Préparée",
+      "shipped": "En route",
+      "delivered": "Livrée"
+    },
+    "stopped": {
+      "cancelled": "Ce colis a été annulé.",
+      "refused": "Ce colis a été refusé à la livraison.",
+      "refunded": "Ce colis a été retourné et remboursé."
+    },
+    "courier": "Livreur",
+    "money": {
+      "subtotal": "Articles",
+      "discount": "Réduction",
+      "delivery": "Livraison",
+      "toPay": "À payer à la livraison",
+      "total": "Total"
+    },
+    "codNote": "Paiement à la livraison : vous payez à la réception du colis.",
+    "returnTitle": "Un problème avec votre commande ?",
+    "returnBody": "Demandez un retour ou un remboursement sur WhatsApp — le numéro de commande est déjà indiqué.",
+    "returnMessage": "Bonjour, je souhaite demander un retour / remboursement pour ma commande {number}.",
+    "claimTitle": "Ajouter cette commande à mon compte",
+    "claimBody": "Elle a été passée sans connexion. Si elle a été passée avec votre e-mail ou votre numéro, elle peut être ajoutée à votre compte.",
+    "claimButton": "Ajouter à mon compte",
+    "claimDone": "Ajoutée à votre compte.",
+    "claimFailed": "Impossible d'ajouter cette commande. Réessayez.",
+    "seeInOrders": "La voir dans mes commandes",
+    "continueShopping": "Continuer mes achats",
+    "lookup": {
+      "title": "Retrouver ma commande",
+      "body": "Commande passée sans compte ? Saisissez votre numéro de commande et le téléphone utilisé pour la commande.",
+      "lastOrder": "Votre dernière commande sur cet appareil :",
+      "number": "Numéro de commande",
+      "phone": "Numéro de téléphone",
+      "submit": "Retrouver ma commande",
+      "required": "Saisissez le numéro de commande et le téléphone.",
+      "failed": "Une erreur est survenue. Réessayez.",
+      "accountHint": "Vous avez un compte ?",
+      "myOrders": "Mes commandes"
+    }
   }
 }

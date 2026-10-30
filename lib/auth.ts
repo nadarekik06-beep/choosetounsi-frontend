@@ -31,6 +31,8 @@ export interface RegisterCredentials {
   role?: 'client' | 'seller';
   /** Marketing e-mails are opt-in (unchecked by default). */
   marketing_opt_in?: boolean;
+  /** Account created right after a guest order: that order is attached once the e-mail is verified. */
+  guest_tracking_token?: string;
 }
 
 export interface LoginResponse {
@@ -104,6 +106,7 @@ export function isClient(): boolean {
 export function saveSession(token: string, user: AuthUser): void {
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+  try { sessionStorage.removeItem('ct_session_expired'); } catch {} // signed in again (lib/guestCart)
   document.cookie = 'ct_token_exists=1; path=/; max-age=86400; SameSite=Lax';
   // Carry what they browsed as a guest into their personalized homepage.
   mergeGuestHistory(token);

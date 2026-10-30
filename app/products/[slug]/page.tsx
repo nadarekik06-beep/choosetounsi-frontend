@@ -9,7 +9,7 @@ import {
   CheckCircle, Zap,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
-import { isAuthenticated, getUser } from '@/lib/auth'
+import { getUser } from '@/lib/auth'
 import { trackView } from '@/lib/tracking'
 import type { ProductVariant, SelectableAxis } from '@/lib/shopApi'
 import ProductRecommendations from 'app/components/ProductRecommendations'
@@ -379,7 +379,7 @@ export default function ProductDetailPage() {
   const router = useRouter()
   const slug   = params?.slug as string
 
-  const { addToCart, isFavorited, toggleFavorite, cartLoading } = useCart()
+  const { addToCart, isFavorited, toggleFavorite, cartLoading, mustLogIn } = useCart()
 
   const [product,         setProduct]         = useState<Product | null>(null)
   const [loading,         setLoading]         = useState(true)
@@ -531,7 +531,7 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = async () => {
     if (!product || outOfStock) return
-    if (!isAuthenticated()) { router.push('/auth/login?redirect=' + window.location.pathname); return }
+    if (mustLogIn()) { router.push('/auth/login?redirect=' + window.location.pathname); return }
     if (hasVariants && !selectedVariant) { setSelectorError(true); return }
     setSelectorError(false)
     await addToCart(product.id, quantity, selectedVariant?.id ?? null)
@@ -541,7 +541,7 @@ export default function ProductDetailPage() {
 
   const handleBuyNow = async () => {
     if (!product || outOfStock || buyNowLoading || buyNowRef.current) return
-    if (!isAuthenticated()) { router.push('/auth/login?redirect=' + window.location.pathname); return }
+    if (mustLogIn()) { router.push('/auth/login?redirect=' + window.location.pathname); return }
     if (hasVariants && !selectedVariant) { setSelectorError(true); return }
     if (selectedVariant && selectedVariant.stock <= 0) { setSelectorError(true); return }
     buyNowRef.current = true; setBuyNowLoading(true); setSelectorError(false)

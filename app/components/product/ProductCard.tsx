@@ -98,7 +98,7 @@ export default function ProductCard({
   const pathname = usePathname()
   const fmt = useFormat()
   const openQuick = useQuickView()
-  const { addToCart, isFavorited, toggleFavorite, notify } = useCart()
+  const { addToCart, isFavorited, toggleFavorite, notify, mustLogIn } = useCart()
   const ref = useRef<HTMLElement>(null)
   const [broken, setBroken] = useState<string[]>([])
   const [swatch, setSwatch] = useState<number | null>(null)   // swatch id shown on the image
@@ -146,7 +146,7 @@ export default function ProductCard({
   const onAdd = async () => {
     if (adding || soldOut) return
     if (needsOptions) { onOpen(); router.push(href); return }
-    if (!isAuthenticated()) { router.push(`/auth/login?redirect=${encodeURIComponent(pathname || '/')}`); return }
+    if (mustLogIn()) { router.push(`/auth/login?redirect=${encodeURIComponent(pathname || '/')}`); return }
     setAdding(true)
     try {
       const v = variantId ?? (variants.length === 1 ? variants[0].id : null)

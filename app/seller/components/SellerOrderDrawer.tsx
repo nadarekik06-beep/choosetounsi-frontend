@@ -70,7 +70,7 @@ interface DrawerData {
   paid_out_at: string | null
   coupon_code: string | null
   items_count: number
-  customer: { name: string | null; wilaya: string | null }
+  customer: { name: string | null; wilaya: string | null; is_guest?: boolean }
   items: DrawerItem[]
   timeline: { key: 'placed' | 'delivered' | 'cash_collected' | 'paid_out'; at: string }[]
   earnings: {
@@ -290,7 +290,12 @@ export default function SellerOrderDrawer({ sellerOrderId, orderNumber, onClose 
                 <div>
                   <p style={label}>{t('customer')}</p>
                   <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: textMain, margin: 0 }}>
-                    <User size={13} color={textMuted} /> {data.customer.name ?? '—'}
+                    <User size={13} color={textMuted} /> {data.customer?.name ?? '—'}
+                    {data.customer?.is_guest && (
+                      <span style={{ fontSize: 10, fontWeight: 800, padding: '1px 7px', borderRadius: 999, color: '#b45309', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)' }}>
+                        {tOrders('guestBadge')}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <div>

@@ -185,12 +185,17 @@ export interface Customer {
   name: string;
   // email: INTENTIONALLY OMITTED
   state?: string | null;
+  /** Ordered without an account (guest checkout) */
+  is_guest?: boolean;
 }
 
 export interface Order {
   id: number;
-  user_id: number;
-  user?: Customer;
+  user_id: number | null;       // null: guest order (no account)
+  user?: Customer | null;
+  /** Guest checkout: badge + the name typed at checkout */
+  is_guest?: boolean;
+  customer_name?: string | null;
   order_number: string;
   total_amount: number;        // 0 when cancelled
   is_cancelled?: boolean;

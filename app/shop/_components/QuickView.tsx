@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation'
 import { Heart, ShoppingBag, X, Check } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCart } from '@/context/CartContext'
-import { isAuthenticated } from '@/lib/auth'
 import { API_BASE } from '@/lib/constants'
 import { currentLocale } from '@/lib/i18n/clientLocale'
 import ProductPrice, { type PricedProduct } from '@/app/components/promotions/ProductPrice'
@@ -68,7 +67,7 @@ function QuickViewModal({ seed, onClose }: { seed: QuickSeed; onClose: () => voi
   const tc = useTranslations('shopPage.card')
   const tp = useTranslations('productCard')
   const router = useRouter()
-  const { addToCart, isFavorited, toggleFavorite } = useCart()
+  const { addToCart, isFavorited, toggleFavorite, mustLogIn } = useCart()
   const [product, setProduct] = useState<QuickProduct | null>(null)
   const [failed, setFailed] = useState(false)
   const [active, setActive] = useState(0)
@@ -123,7 +122,7 @@ function QuickViewModal({ seed, onClose }: { seed: QuickSeed; onClose: () => voi
   const add = async () => {
     if (!product || adding || soldOut) return
     if (needsOptions) { router.push(`/products/${product.slug}`); return }
-    if (!isAuthenticated()) { router.push(`/auth/login?redirect=${encodeURIComponent('/shop')}`); return }
+    if (mustLogIn()) { router.push(`/auth/login?redirect=${encodeURIComponent('/shop')}`); return }
     setAdding(true)
     try {
       if (await addToCart(product.id, 1, variants.length === 1 ? variants[0].id : null)) {
