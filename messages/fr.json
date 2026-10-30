@@ -2909,7 +2909,8 @@
           "photos": "Photos",
           "variants": "Variantes",
           "pricing": "Prix & stock",
-          "review": "Vérifier"
+          "review": "Vérifier",
+          "pricingNoPrice": "Stock & livraison"
         },
         "stepOf": "Étape {current} sur {total}",
         "next": "Continuer",
@@ -2987,12 +2988,12 @@
         "sku": "Réf.",
         "active": "Actif"
       },
-      "step2": "Étape 2 — Stock et prix par combinaison ({count, plural, one {# variante} other {# variantes}})",
+      "step2": "Étape 2 — Stock par combinaison ({count, plural, one {# variante} other {# variantes}})",
       "help": {
         "title": "Comment ajouter les variantes ?",
         "step1": "Choisissez chaque couleur disponible (une couleur = un modèle).",
         "step2": "Sélectionnez toutes les tailles / pointures que vous avez en stock.",
-        "step3": "Indiquez le stock (et le prix si différent) pour chaque combinaison.",
+        "step3": "Indiquez le stock de chaque combinaison. Le prix de base s'applique à toutes.",
         "example": "Ex : Crocs en Noir et Blanc, pointures 38 à 41 → ajoutez Couleur 1 = Noir, Couleur 2 = Blanc, cochez 38, 39, 40, 41 → 8 variantes."
       },
       "addColor": "Ajouter une couleur",
@@ -3018,8 +3019,17 @@
         "emptyColor": "Choisissez une couleur pour chaque ligne « Couleur » (ou supprimez-la).",
         "multicolorOnce": "Vous ne pouvez ajouter qu'une seule couleur « Multicolore » par produit.",
         "noAxis": "Sélectionnez au moins une option pour : {axis}.",
-        "noStock": "Indiquez le stock d'au moins une variante."
-      }
+        "noStock": "Indiquez le stock d'au moins une variante.",
+        "price": "Le prix d'une variante doit être supérieur à 0 (ou décochez « prix différent »)."
+      },
+      "sameStock": "Même stock pour toutes les variantes",
+      "apply": "Appliquer",
+      "basePriceHelp": "Le prix de base s'applique à toutes les tailles et couleurs. Vous pouvez le modifier pour une variante si besoin.",
+      "customPrices": "Certaines variantes ont un prix différent",
+      "customPricesHint": "Changez le prix seulement pour les variantes concernées. Les autres gardent le prix de base.",
+      "basePriceFirst": "Saisissez d'abord le prix de base ci-dessus.",
+      "advanced": "Options avancées (référence, activer / désactiver)",
+      "priceInvalid": "Le prix doit être supérieur à 0."
     },
     "attributes": {
       "select": "Choisir : {name}",

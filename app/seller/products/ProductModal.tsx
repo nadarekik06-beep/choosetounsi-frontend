@@ -270,11 +270,12 @@ function isGenericText(text: string) {
   for (const g of GENERIC) t = t.split(unaccent(g)).join(' ')
   return t.replace(/[^\p{L}]+/gu, '').length < 8
 }
-/** Wizard step that holds the field of an error key. */
-function stepOfKey(k: string): WizardStep {
+/** Wizard step that holds the field of an error key (the base price sits in Variants when the product has some). */
+function stepOfKey(k: string, priceInVariants = false): WizardStep {
   if (k === 'category_id' || k === 'subcategory_id') return 'category'
   if (k === 'images' || k.startsWith('images')) return 'photos'
   if (k === 'variants' || k === 'multicolor_label' || k.startsWith('variants.')) return 'variants'
+  if (k === 'price' && priceInVariants) return 'variants'
   if (['price', 'stock', 'occasions', 'pack_quantity', 'pack_contents', 'parcel_size', 'low_stock_threshold', 'delivery_fee'].includes(k)) return 'pricing'
   return 'basic'
 }
@@ -525,6 +526,9 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
 
   // Color groups come from the variants: a new color adds a card, a removed one drops it
   const colorAxis = useMemo(() => variantAxes.find(a => a.type === 'color' || a.slug === 'color') ?? null, [variantAxes])
+  // Wizard with variants: the base price is asked at the top of the Variants step,
+  // before the stock per variant (every variant uses it unless the seller changes it)
+  const priceInVariants = wizard && variantAxes.length > 0
   const colorGroups = useMemo((): ColorGroupDef[] | null => {
     if (!colorAxis) return null
     const seen = new Map<string, ColorGroupDef>()
@@ -605,6 +609,7 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
 
   if (hasVariantRows) {
     if (Object.keys(validateVariantStocks(variantRows)).length > 0) e.variants ??= t('errors.variants')
+    if (variantRows.some(r => r.price_override !== '' && r.price_override != null && !(Number(r.price_override) > 0))) e.variants ??= tv('errors.price')
   } else if (!isEdit && (form.stock.trim() === '' || Number(form.stock) < 1) && /^\d*$/.test(form.stock.trim())) {
     // New product: at least 1 (the "Your stock is 0" dialog explains why)
     e.stock = tw('stockMin')
@@ -648,7 +653,7 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
   const sheetRef = useRef<HTMLDivElement>(null)
   const liveErrors = computeErrors()
   const hide = (s: WizardStep): React.CSSProperties | undefined => (wizard && step !== s ? { display: 'none' } : undefined)
-  const stepErrorCount = (s: WizardStep) => Object.keys(liveErrors).filter(k => stepOfKey(k) === s).length
+  const stepErrorCount = (s: WizardStep) => Object.keys(liveErrors).filter(k => stepOfKey(k, priceInVariants) === s).length
   const showStepMarker = (s: WizardStep) => (attempted || visited.includes(s)) && stepErrorCount(s) > 0
 
   const goTo = (i: number) => {
@@ -665,7 +670,7 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
       if (hasVariantRows && variantTotalStock <= 0) { setStockDialog(true); return }
     }
     if (step === 'pricing' && !hasVariantRows && (form.stock.trim() === '' || Number(form.stock) <= 0)) { setStockDialog(true); return }
-    const mine = Object.fromEntries(Object.entries(computeErrors()).filter(([k]) => stepOfKey(k) === step))
+    const mine = Object.fromEntries(Object.entries(computeErrors()).filter(([k]) => stepOfKey(k, priceInVariants) === step))
     if (Object.keys(mine).length) {
       setErrors(prev => ({ ...prev, ...mine }))
       scrollToFirstError()
@@ -776,6 +781,10 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
    * Price cuts on a live product must be discounts. Same rule as the backend:
    * below both today's price and the lowest price of the last 30 days.
    */
+  /** A variant price equal to the base price is no custom price: it follows the base price. */
+  const sameAsBase = (v: string | null | undefined) =>
+    v === '' || v == null || (form.price !== '' && Number(v) === Number(form.price))
+
   const findPriceDrops = (): PriceDrop[] => {
     if (!isLive || !pricing?.discount_rule) return []
     const below = (next: number, cur: number, ref: number) => next < cur - 0.0005 && next < ref - 0.0005
@@ -789,7 +798,7 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
     for (const row of variantRows) {
       if (!row.id) continue
       const orig    = serverRows.find(r => r.id === row.id)
-      const follows = row.price_override === '' || row.price_override == null
+      const follows = sameAsBase(row.price_override)
       const curEff  = orig && orig.price_override !== '' && orig.price_override != null ? Number(orig.price_override) : curBase
       const newEff  = follows ? newBase : Number(row.price_override)
       const ref     = Number(pricing.variant_reference_prices?.[row.id] ?? curEff)
@@ -816,7 +825,7 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
         .map(row => {
           const keep = keepCurrentPrices && row.id != null && droppedIds.has(row.id)
           const orig = keep ? serverRows.find(r => r.id === row.id) : undefined
-          const override = keep ? (orig?.price_override ?? '') : row.price_override
+          const override = keep ? (orig?.price_override ?? '') : sameAsBase(row.price_override) ? '' : row.price_override
           return {
             ...(row.id ? { id: row.id } : {}),
             option_ids:     row.option_ids.filter(id => id > 0),
@@ -890,7 +899,7 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
         if (wizard) {
           setAttempted(true)
           const first = Object.keys(mapped)[0]
-          if (first) goTo(steps.indexOf(stepOfKey(first)))
+          if (first) goTo(steps.indexOf(stepOfKey(first, priceInVariants)))
         }
         if (mapped.variants || mapped.multicolor_label || wizard) scrollToFirstError()
         const imageMsg = Object.entries(mapped).find(([k]) => k.startsWith('images'))?.[1]
@@ -923,7 +932,7 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
       setAttempted(true)
       if (wizard) {
         const first = Object.keys(computeErrors())[0]
-        if (first) goTo(steps.indexOf(stepOfKey(first)))
+        if (first) goTo(steps.indexOf(stepOfKey(first, priceInVariants)))
       }
       scrollToFirstError()
       return
@@ -960,6 +969,42 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
     router.push(`/seller/promotions?${params.toString()}`)
   }
 
+
+  // Base price: in "Prix & stock", or at the top of "Variantes" (wizard with variants)
+  const priceField = (
+    // The error is shown once, in the red box below (not also by Field)
+    <Field label={t('basePrice', { currency })} required
+      hint={isLive && pricing?.discount_rule && !errors.price ? t('priceLowerHint') : undefined}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <div style={{ position: 'relative' }}>
+          <input
+            type="number" min="0" step="0.001" inputMode="decimal" value={form.price}
+            onChange={e => {
+              set('price', e.target.value)
+              if (errors.price) setErrors(prev => ({ ...prev, price: '' }))
+            }}
+            placeholder="0.000"
+            className={inputCls(errors.price)}
+            style={{ paddingInlineEnd: 44, fontSize: 16, minHeight: 46 }}
+          />
+          <span style={{
+            position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)',
+            fontSize: 11, color: errors.price ? '#b91c1c' : '#5b6472', fontWeight: 600,
+          }}>{currency}</span>
+        </div>
+        {errors.price && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 7, marginTop: 6,
+            background: '#fef2f2', border: '1px solid #fecaca',
+            borderRadius: 8, padding: '8px 12px',
+          }}>
+            <AlertCircle size={13} color="#dc2626" style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 700 }}>{errors.price}</span>
+          </div>
+        )}
+      </div>
+    </Field>
+  )
 
   return (
     <>
@@ -1018,7 +1063,7 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
                       {done ? <Check size={12} /> : i + 1}
                       {bad && <span aria-hidden style={{ position: 'absolute', top: -2, insetInlineEnd: -2, width: 9, height: 9, borderRadius: '50%', background: '#dc2626', border: '2px solid #fff' }} />}
                     </span>
-                    <span style={{ fontSize: 12, fontWeight: current ? 800 : 600, color: bad ? '#b91c1c' : current ? '#111' : '#475569', whiteSpace: 'nowrap' }}>{tw(`steps.${s}`)}</span>
+                    <span style={{ fontSize: 12, fontWeight: current ? 800 : 600, color: bad ? '#b91c1c' : current ? '#111' : '#475569', whiteSpace: 'nowrap' }}>{tw(s === 'pricing' && priceInVariants ? 'steps.pricingNoPrice' : `steps.${s}`)}</span>
                   </button>
                 )
               })}
@@ -1092,39 +1137,9 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
             {/* ── Pricing & Inventory ── */}
             <section style={hide('pricing')}>
               <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>{t('sections.pricing')}</p>
-              <div id="pf-price" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-                <Field label={t('basePrice', { currency })} required error={errors.price}
-                  hint={isLive && pricing?.discount_rule ? t('priceLowerHint') : undefined}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                    <div style={{ position: 'relative' }}>
-                      <input
-                        type="number" min="0" step="0.001" value={form.price}
-                        onChange={e => {
-                          set('price', e.target.value)
-                          if (errors.price) setErrors(prev => ({ ...prev, price: '' }))
-                        }}
-                        placeholder="0.000"
-                        className={inputCls(errors.price)}
-                        style={{ paddingInlineEnd: 44 }}
-                      />
-                      <span style={{
-                        position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)',
-                        fontSize: 11, color: errors.price ? '#b91c1c' : '#5b6472', fontWeight: 600,
-                      }}>{currency}</span>
-                    </div>
-                    {errors.price && (
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 7, marginTop: 6,
-                        background: '#fef2f2', border: '1px solid #fecaca',
-                        borderRadius: 8, padding: '8px 12px',
-                      }}>
-                        <AlertCircle size={13} color="#dc2626" style={{ flexShrink: 0 }} />
-                        <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 700 }}>{errors.price}</span>
-                      </div>
-                    )}
-                  </div>
-                </Field>
-                <CommissionPreview price={form.price} />
+              <div id={priceInVariants ? undefined : 'pf-price'} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                {!priceInVariants && priceField}
+                {!priceInVariants && <CommissionPreview price={form.price} />}
                 {!hasVariantRows && (
                   <Field label={t('stock')} required error={errors.stock}>
                     <span id="pf-stock" />
@@ -1282,6 +1297,15 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
             )}
             {form.subcategory_id && (
               <section style={hide('variants')}>
+                {priceInVariants && (
+                  <div style={{ background: 'rgba(219,20,46,0.03)', border: '1.5px solid rgba(219,20,46,0.15)', borderRadius: 14, padding: '14px 16px', marginBottom: 18 }}>
+                    <div id="pf-price" className="ct-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      {priceField}
+                      <CommissionPreview price={form.price} />
+                    </div>
+                    <p style={{ fontSize: 12, color: '#475569', margin: '8px 0 0', lineHeight: 1.45 }}>{tv('basePriceHelp')}</p>
+                  </div>
+                )}
                 {wizard && variantAxes.length > 0 && <p style={{ fontSize: 12, color: '#5b6472', margin: '0 0 10px' }}>{tw('variantStockHint')}</p>}
                 <div style={{ paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5b6472', margin: 0 }}>{t('sections.variants')}</p>
@@ -1371,7 +1395,7 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
                 { key: 'short', label: tw('checklist.shortDescription'), ok: !liveErrors.short_description, step: 'basic' },
                 { key: 'photos', label: tw('checklist.photos'), ok: !Object.keys(liveErrors).some(k => k.startsWith('images')) && totalImages > 0, step: 'photos' },
                 { key: 'stock', label: tw('checklist.stock'), ok: finalStockValue >= 1 && !liveErrors.stock && !liveErrors.variants, step: hasVariantRows ? 'variants' : 'pricing' },
-                { key: 'price', label: tw('checklist.price'), ok: priceOk, step: 'pricing' },
+                { key: 'price', label: tw('checklist.price'), ok: priceOk, step: priceInVariants ? 'variants' : 'pricing' },
               ]
               return (
                 <section>

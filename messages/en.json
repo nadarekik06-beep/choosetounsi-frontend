@@ -2909,7 +2909,8 @@
           "photos": "Photos",
           "variants": "Variants",
           "pricing": "Price & stock",
-          "review": "Review"
+          "review": "Review",
+          "pricingNoPrice": "Stock & delivery"
         },
         "stepOf": "Step {current} of {total}",
         "next": "Continue",
@@ -2987,12 +2988,12 @@
         "sku": "SKU",
         "active": "Active"
       },
-      "step2": "Step 2 — Stock and price per combination ({count, plural, one {# variant} other {# variants}})",
+      "step2": "Step 2 — Stock per combination ({count, plural, one {# variant} other {# variants}})",
       "help": {
         "title": "How do I add variants?",
         "step1": "Choose each available color (one color = one model).",
         "step2": "Select every size you have in stock.",
-        "step3": "Enter the stock (and the price if different) for each combination.",
+        "step3": "Enter the stock for each combination. The base price applies to all of them.",
         "example": "E.g. Crocs in Black and White, sizes 38 to 41 → add Color 1 = Black, Color 2 = White, tick 38, 39, 40, 41 → 8 variants."
       },
       "addColor": "Add a color",
@@ -3018,8 +3019,17 @@
         "emptyColor": "Choose a color for each \"Color\" line (or remove it).",
         "multicolorOnce": "You can only add one \"Multicolor\" color per product.",
         "noAxis": "Select at least one option for: {axis}.",
-        "noStock": "Enter the stock of at least one variant."
-      }
+        "noStock": "Enter the stock of at least one variant.",
+        "price": "A variant price must be greater than 0 (or untick “different price”)."
+      },
+      "sameStock": "Same stock for all variants",
+      "apply": "Apply",
+      "basePriceHelp": "The base price applies to every size and color. You can change it for a variant if needed.",
+      "customPrices": "Some variants have a different price",
+      "customPricesHint": "Only change the price of the variants concerned. The others keep the base price.",
+      "basePriceFirst": "Enter the base price above first.",
+      "advanced": "Advanced options (reference, enable / disable)",
+      "priceInvalid": "The price must be greater than 0."
     },
     "attributes": {
       "select": "Select {name}",

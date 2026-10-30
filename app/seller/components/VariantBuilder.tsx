@@ -19,8 +19,8 @@
  * Unchanged: VariantRow, normalizeVariantRow, calculateTotalStock, validateVariantStocks.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Info, AlertCircle, Plus, Trash2, ChevronDown, HelpCircle } from 'lucide-react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { Info, AlertCircle, Plus, Trash2, ChevronDown } from 'lucide-react'
 import type { Attribute, AttributeOption } from '@/types/Attributes'
 import { useTranslations, useLocale } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -223,11 +223,67 @@ export default function VariantBuilder({
       .map(a => a.id)
   ))
 
-  const [rows,        setRows]        = useState<VariantRow[]>(() => existingVariants.map(normalizeVariantRow))
+  // ── Prices ──────────────────────────────────────────────────────────────────
+  // By default every variant uses the base price (price_override ''), and no price
+  // field is shown. "Certaines variantes ont un prix différent" shows a price per
+  // variant, prefilled with the base price. A variant is "custom" once the seller
+  // typed a price different from the base: base price changes then leave it alone.
+  // A price equal to the base price is saved as "no custom price" (null).
+  const isCustomPrice = (r: VariantRow, base: string) =>
+    r.price_override !== '' && r.price_override != null && Number(r.price_override) !== Number(base)
+  const [customPrices, setCustomPrices] = useState<boolean>(() =>
+    existingVariants.some(r => isCustomPrice(normalizeVariantRow(r), basePrice)))
+  const customKeys = useRef<Set<string>>(new Set(
+    existingVariants.map(normalizeVariantRow).filter(r => isCustomPrice(r, basePrice)).map(r => comboKey(r.option_ids))
+  ))
+  // Latest values for the row generator (its effect only runs on selection changes)
+  // (declared before the generator effect, so it is up to date when that one runs)
+  const priceRef = useRef({ customPrices, basePrice })
+  useEffect(() => { priceRef.current = { customPrices, basePrice } })
+
+  const [rows,        setRows]        = useState<VariantRow[]>(() => existingVariants.map(normalizeVariantRow).map(r =>
+    // Custom prices: the other variants show the base price in their field.
+    // None: every variant follows the base price (a price equal to it is cleared).
+    customPrices
+      ? (r.price_override === '' && basePrice ? { ...r, price_override: basePrice } : r)
+      : (r.price_override === '' ? r : { ...r, price_override: '' })))
   const [stockErrors, setStockErrors] = useState<Record<number, string>>({})
   const [helpOpen,    setHelpOpen]    = useState<boolean>(readHelpOpen)
   const [bulkStock,   setBulkStock]   = useState('')
-  const [bulkPrice,   setBulkPrice]   = useState('')
+  // Réf. / Actif per variant: hidden by default (open when a variant is already disabled)
+  const [advanced,    setAdvanced]    = useState<boolean>(() => existingVariants.some(r => r.is_active === false))
+
+  // Base price changed: variants that still have the default price follow it
+  useEffect(() => {
+    if (!customPrices) return
+    setRows(prev => {
+      let changed = false
+      const next = prev.map(r => {
+        if (customKeys.current.has(comboKey(r.option_ids)) || r.price_override === basePrice) return r
+        changed = true
+        return { ...r, price_override: basePrice }
+      })
+      return changed ? next : prev
+    })
+  }, [basePrice, customPrices])
+
+  const toggleCustomPrices = (on: boolean) => {
+    setCustomPrices(on)
+    customKeys.current = new Set()
+    // On: prefill with the base price. Off: every variant goes back to the base price.
+    setRows(prev => prev.map(r => ({ ...r, price_override: on ? basePrice : '' })))
+  }
+
+  const setRowPrice = (idx: number, value: string) => {
+    setRows(prev => {
+      const copy = [...prev]
+      const key  = comboKey(copy[idx].option_ids)
+      if (value.trim() === '' || Number(value) === Number(basePrice)) customKeys.current.delete(key)
+      else customKeys.current.add(key)
+      copy[idx] = { ...copy[idx], price_override: value }
+      return copy
+    })
+  }
 
   // Slots holding Multicolore after the first one: an error, they make no rows
   const duplicateMulticolor = useMemo(() => {
@@ -277,7 +333,10 @@ export default function VariantBuilder({
       const existingMap = new Map(prev.map(r => [comboKey(r.option_ids), r]))
       return combos.map(combo => {
         const existing = existingMap.get(comboKey(combo))
-        return existing ? { ...existing, option_ids: combo } : normalizeVariantRow({ option_ids: combo })
+        if (existing) return { ...existing, option_ids: combo }
+        // New variant: base price (shown in its field when prices are visible)
+        const { customPrices: shown, basePrice: base } = priceRef.current
+        return normalizeVariantRow({ option_ids: combo, price_override: shown ? base : '' })
       })
     })
 
@@ -337,15 +396,11 @@ export default function VariantBuilder({
     })
   }, [])
 
-  /** Bulk stock / price, on every row or on one color's rows. */
+  /** Same stock on every row (or on one color's rows, from the advanced options). */
   const applyBulk = (colorKey?: string) => {
-    const stock = bulkStock.trim() === '' ? null : Math.max(0, Math.floor(Number(bulkStock))) || 0
-    const price = bulkPrice.trim()
-    if (stock === null && price === '') return
-    setRows(prev => prev.map(r => {
-      if (colorKey !== undefined && colorKeyOf(r) !== colorKey) return r
-      return { ...r, ...(stock !== null ? { stock } : {}), ...(price !== '' ? { price_override: price } : {}) }
-    }))
+    if (bulkStock.trim() === '') return
+    const stock = Math.max(0, Math.floor(Number(bulkStock))) || 0
+    setRows(prev => prev.map(r => (colorKey !== undefined && colorKeyOf(r) !== colorKey) ? r : { ...r, stock }))
   }
 
   // ── Labels ────────────────────────────────────────────────────────────────
@@ -753,9 +808,14 @@ export default function VariantBuilder({
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════
-          STEP 2 — Stock / price table
+          STEP 2 — Stock per combination (price only when "prix différent")
           ══════════════════════════════════════════════════════════════════ */}
-      {rows.length > 0 && (
+      {rows.length > 0 && (() => {
+        const priceMissing = customPrices && !(Number(basePrice) > 0)
+        const cols = ['minmax(0, 1fr)', '110px', ...(customPrices ? ['130px'] : []), ...(advanced ? ['120px', '64px'] : [])].join(' ')
+        const bigInput = (hasError?: boolean): React.CSSProperties => ({ ...inputStyle(hasError), minHeight: 44, fontSize: 16, padding: '8px 12px' })
+        const heads = ['combination', 'stock', ...(customPrices ? ['price'] : []), ...(advanced ? ['sku', 'active'] : [])] as Array<'combination' | 'stock' | 'price' | 'sku' | 'active'>
+        return (
         <div>
           <div style={{
             display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8,
@@ -802,31 +862,45 @@ export default function VariantBuilder({
             </div>
           )}
 
-          {/* Apply to all */}
+          {/* Same stock for every variant */}
           <div className="vb-bulk" style={{
             display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 8,
             background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10,
             padding: '10px 12px', marginBottom: 10,
           }}>
-            <label style={{ width: 110 }}>
-              <span style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#5b6472', marginBottom: 3 }}>{t('applyStock')}</span>
+            <label style={{ flex: '1 1 180px', maxWidth: 260 }}>
+              <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 4 }}>{t('sameStock')}</span>
               <input type="number" min="0" step="1" inputMode="numeric" value={bulkStock}
-                onChange={e => setBulkStock(e.target.value)} placeholder="0" disabled={disabled} style={inputStyle()} />
+                onChange={e => setBulkStock(e.target.value.replace(/[^\d]/g, ''))}
+                // Enter applies here instead of moving the wizard forward
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyBulk() } }}
+                placeholder="0" disabled={disabled} style={bigInput()} />
             </label>
-            <label style={{ width: 130 }}>
-              <span style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#5b6472', marginBottom: 3 }}>{t('applyPrice', { currency })}</span>
-              <input type="number" min="0" step="0.001" inputMode="decimal" value={bulkPrice}
-                onChange={e => setBulkPrice(e.target.value)} placeholder={basePrice || t('basePlaceholder')}
-                title={t('priceHelp')} disabled={disabled} style={inputStyle()} />
-            </label>
-            <button type="button" disabled={disabled || (bulkStock.trim() === '' && bulkPrice.trim() === '')}
+            <button type="button" disabled={disabled || bulkStock.trim() === ''}
               onClick={() => applyBulk()}
-              style={{ ...smallBtn('#4338ca', 'rgba(99,102,241,0.08)', 'rgba(99,102,241,0.25)'), padding: '7px 12px', minHeight: 34 }}>
-              {t('applyAll')}
+              style={{ ...smallBtn('#4338ca', 'rgba(99,102,241,0.08)', 'rgba(99,102,241,0.25)'), fontSize: 13, padding: '8px 16px', minHeight: 44,
+                opacity: bulkStock.trim() === '' ? 0.5 : 1 }}>
+              {t('apply')}
             </button>
           </div>
 
-          {/* Phones: each combination becomes a small card (stock / price / SKU / active), no sideways scroll */}
+          {/* Optional: different prices for some variants */}
+          <div style={{
+            background: customPrices ? '#fffbeb' : '#f8fafc',
+            border: `1px solid ${customPrices ? '#fde68a' : '#e5e7eb'}`,
+            borderRadius: 10, padding: '6px 12px 10px', marginBottom: 10,
+          }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 44, cursor: disabled ? 'not-allowed' : 'pointer', userSelect: 'none' }}>
+              <input type="checkbox" checked={customPrices} disabled={disabled}
+                onChange={e => toggleCustomPrices(e.target.checked)}
+                style={{ width: 22, height: 22, flexShrink: 0, accentColor: '#dc2626', cursor: 'inherit' }} />
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>{t('customPrices')}</span>
+            </label>
+            <p style={{ ...hintStyle, margin: 0, paddingInlineStart: 32 }}>{customPrices ? t('customPricesHint') : t('basePriceHelp')}</p>
+            {priceMissing && errorLine(t('basePriceFirst'))}
+          </div>
+
+          {/* Phones: each combination becomes a small card, no sideways scroll */}
           <style>{`
             .vb-mlabel { display: none; }
             @media (max-width: 640px) {
@@ -842,33 +916,28 @@ export default function VariantBuilder({
               .vb-color { border-radius: 10px !important; margin-bottom: 8px; border-top: 1px solid #e5e7eb !important; }
               .vb-row > .vb-name { grid-column: 1 / -1; padding-top: 0 !important; }
               .vb-row > .vb-name > span:last-child { white-space: normal !important; }
-              .vb-mlabel { display: block; font-size: 11px; font-weight: 700; color: #5b6472; margin: 0 0 4px; }
+              .vb-mlabel { display: block; font-size: 12px; font-weight: 700; color: #5b6472; margin: 0 0 4px; }
               .vb-row > .vb-active { justify-content: flex-start !important; align-items: center; gap: 10px; padding-top: 0 !important; min-height: 44px; }
               .vb-row > .vb-active > .vb-mlabel { margin: 0; }
               .vb-row > .vb-active input { width: 24px !important; height: 24px !important; }
-              .vb-quick button, .vb-bulk button, .vb-color button { min-height: 40px !important; }
-              .vb-bulk label { flex: 1 1 120px; }
+              .vb-quick button, .vb-color button, .vb-adv { min-height: 44px !important; }
             }
           `}</style>
 
-          {/* Table header */}
+          {/* Table header (desktop) */}
           <div className="vb-head" style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 100px 120px 120px 80px',
+            display: 'grid', gridTemplateColumns: cols,
             gap: 8, padding: '6px 12px',
             background: '#f8fafc', borderRadius: '8px 8px 0 0',
             border: '1px solid #e5e7eb', borderBottom: 'none',
           }}>
-            {(['combination', 'stock', 'price', 'sku', 'active'] as const).map(h => (
-              <span key={h} title={h === 'price' ? t('priceHelp') : undefined} style={{
-                display: 'inline-flex', alignItems: 'center', gap: 3,
+            {heads.map(h => (
+              <span key={h} style={{
                 fontSize: 9, fontWeight: 800, textTransform: 'uppercase',
                 letterSpacing: '0.08em',
                 color: h === 'stock' ? '#dc2626' : '#5b6472',
-                cursor: h === 'price' ? 'help' : undefined,
               }}>
                 {t(`cols.${h}`, { currency })}
-                {h === 'price' && <HelpCircle size={10} aria-label={t('priceHelp')} />}
               </span>
             ))}
           </div>
@@ -876,11 +945,16 @@ export default function VariantBuilder({
           {rows.map((row, rowIdx) => {
             const colorOptIds = colorIdsOf(row)
             const otherOptIds = row.option_ids.filter(id => !isColorId(id))
-            const label       = colorAxis ? otherLabel(otherOptIds).join(' / ') || colorNameOf(colorOptIds) : otherLabel(otherOptIds).join(' / ')
+            // "Blanc – S": the color is repeated on each row (clearer on phones)
+            const others      = otherLabel(otherOptIds).join(' / ')
+            const label       = colorAxis && colorOptIds.length
+              ? (others ? `${colorNameOf(colorOptIds)} – ${others}` : colorNameOf(colorOptIds))
+              : others
             const isLast      = rowIdx === rows.length - 1
             const stockError  = mergedStockErrors[rowIdx]
             const key         = colorKeyOf(row)
             const newColor    = !!colorAxis && colorOptIds.length > 0 && (rowIdx === 0 || colorKeyOf(rows[rowIdx - 1]) !== key)
+            const priceBad    = customPrices && row.price_override !== '' && !(Number(row.price_override) > 0)
 
             return (
               <div key={row.option_ids.join('-')}>
@@ -893,22 +967,23 @@ export default function VariantBuilder({
                   }}>
                     {colorOptIds.map(id => <span key={id} style={{ display: 'inline-flex' }}>{dot(colorOpt(id), 12)}</span>)}
                     <span style={{ fontSize: 12, fontWeight: 800, color: '#111' }}>{colorNameOf(colorOptIds)}</span>
-                    <button type="button"
-                      disabled={disabled || (bulkStock.trim() === '' && bulkPrice.trim() === '')}
-                      onClick={() => applyBulk(key)}
-                      title={t('applyColorHint')}
-                      style={{ ...smallBtn('#4338ca', 'transparent', 'rgba(99,102,241,0.25)'), marginInlineStart: 'auto', padding: '2px 8px',
-                        opacity: (bulkStock.trim() === '' && bulkPrice.trim() === '') ? 0.5 : 1 }}>
-                      {t('applyColor')}
-                    </button>
+                    {advanced && (
+                      <button type="button"
+                        disabled={disabled || bulkStock.trim() === ''}
+                        onClick={() => applyBulk(key)}
+                        title={t('applyColorHint')}
+                        style={{ ...smallBtn('#4338ca', 'transparent', 'rgba(99,102,241,0.25)'), marginInlineStart: 'auto', padding: '2px 8px',
+                          opacity: bulkStock.trim() === '' ? 0.5 : 1 }}>
+                        {t('applyColor')}
+                      </button>
+                    )}
                   </div>
                 )}
 
                 <div
                   className="vb-row"
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 100px 120px 120px 80px',
+                    display: 'grid', gridTemplateColumns: cols,
                     gap: 8, padding: '8px 12px',
                     background: row.is_active ? '#fff' : '#fafafa',
                     border: '1px solid #e5e7eb',
@@ -920,10 +995,10 @@ export default function VariantBuilder({
                   {/* Label */}
                   <div className="vb-name" style={{
                     display: 'flex', alignItems: 'center', gap: 6,
-                    minWidth: 0, paddingTop: 6,
+                    minWidth: 0, paddingTop: 10,
                   }}>
                     <span style={{
-                      fontSize: 13, fontWeight: 600, color: '#374151',
+                      fontSize: 14, fontWeight: 700, color: row.is_active ? '#374151' : '#9ca3af',
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>
                       {label}
@@ -936,6 +1011,7 @@ export default function VariantBuilder({
                     <input
                       type="number" min="0" step="1" inputMode="numeric" required
                       data-variant-stock=""
+                      aria-label={`${t('cols.stock', { currency })} ${label}`}
                       value={row.stock ?? ''}
                       onChange={e => {
                         const raw    = e.target.value
@@ -947,79 +1023,104 @@ export default function VariantBuilder({
                       }}
                       disabled={disabled}
                       placeholder="0"
-                      style={inputStyle(!!stockError)}
+                      style={bigInput(!!stockError)}
                     />
                     {stockError && (
-                      <p style={{ fontSize: 10, color: '#b91c1c', margin: '3px 0 0', fontWeight: 600 }}>
+                      <p style={{ fontSize: 11, color: '#b91c1c', margin: '3px 0 0', fontWeight: 600 }}>
                         {t(stockError as 'stockRequired' | 'stockWhole')}
                       </p>
                     )}
                   </div>
 
-                  {/* Price override */}
-                  <div>
-                    <span className="vb-mlabel">{t('cols.price', { currency })}</span>
-                    <input
-                      type="number" min="0" step="0.001" inputMode="decimal"
-                      value={row.price_override ?? ''}
-                      onChange={e => updateRow(rowIdx, 'price_override', e.target.value)}
-                      placeholder={basePrice || t('basePlaceholder')}
-                      title={t('priceHelp')}
-                      disabled={disabled}
-                      style={inputStyle()}
-                    />
-                  </div>
+                  {/* Price: only when "prix différent" is ticked; prefilled with the base price */}
+                  {customPrices && (
+                    <div>
+                      <span className="vb-mlabel">{t('cols.price', { currency })}</span>
+                      <input
+                        type="number" min="0" step="0.001" inputMode="decimal"
+                        aria-label={`${t('cols.price', { currency })} ${label}`}
+                        value={row.price_override ?? ''}
+                        onChange={e => setRowPrice(rowIdx, e.target.value)}
+                        // Emptied: back to the base price
+                        onBlur={e => { if (e.target.value.trim() === '') setRowPrice(rowIdx, basePrice) }}
+                        placeholder={basePrice || '0.000'}
+                        disabled={disabled}
+                        style={bigInput(priceBad)}
+                      />
+                      {priceBad && (
+                        <p style={{ fontSize: 11, color: '#b91c1c', margin: '3px 0 0', fontWeight: 600 }}>{t('priceInvalid')}</p>
+                      )}
+                    </div>
+                  )}
 
-                  {/* SKU */}
-                  <div>
-                    <span className="vb-mlabel">{t('cols.sku', { currency })}</span>
-                    <input
-                      type="text"
-                      value={row.sku ?? ''}
-                      onChange={e => updateRow(rowIdx, 'sku', e.target.value)}
-                      placeholder={t('optional')}
-                      disabled={disabled}
-                      style={inputStyle()}
-                    />
-                  </div>
-
-                  {/* Active */}
-                  <label className="vb-active" style={{ display: 'flex', justifyContent: 'center', paddingTop: 6 }}>
-                    <span className="vb-mlabel">{t('cols.active', { currency })}</span>
-                    <input
-                      type="checkbox"
-                      checked={row.is_active}
-                      onChange={e => updateRow(rowIdx, 'is_active', e.target.checked)}
-                      disabled={disabled}
-                      style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#dc2626' }}
-                    />
-                  </label>
+                  {/* Advanced: SKU + active */}
+                  {advanced && (
+                    <div>
+                      <span className="vb-mlabel">{t('cols.sku', { currency })}</span>
+                      <input
+                        type="text"
+                        value={row.sku ?? ''}
+                        onChange={e => updateRow(rowIdx, 'sku', e.target.value)}
+                        placeholder={t('optional')}
+                        disabled={disabled}
+                        style={bigInput()}
+                      />
+                    </div>
+                  )}
+                  {advanced && (
+                    <label className="vb-active" style={{ display: 'flex', justifyContent: 'center', paddingTop: 10 }}>
+                      <span className="vb-mlabel">{t('cols.active', { currency })}</span>
+                      <input
+                        type="checkbox"
+                        checked={row.is_active}
+                        onChange={e => updateRow(rowIdx, 'is_active', e.target.checked)}
+                        disabled={disabled}
+                        style={{ width: 20, height: 20, cursor: 'pointer', accentColor: '#dc2626' }}
+                      />
+                    </label>
+                  )}
                 </div>
               </div>
             )
           })}
 
-          <p style={{ ...hintStyle, marginTop: 8 }}>{t('priceHelp')}</p>
+          {/* Advanced options: closed by default */}
+          <button
+            type="button"
+            className="vb-adv"
+            aria-expanded={advanced}
+            onClick={() => setAdvanced(a => !a)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, marginTop: 10,
+              background: 'none', border: 'none', padding: '6px 0', minHeight: 36,
+              color: '#475569', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            <ChevronDown size={14} style={{ transform: advanced ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
+            {t('advanced')}
+          </button>
 
-          {/* Quick actions */}
-          <div className="vb-quick" style={{
-            display: 'flex', gap: 10, marginTop: 10,
-            flexWrap: 'wrap', alignItems: 'center',
-          }}>
-            <span style={{ fontSize: 11, color: '#5b6472', fontWeight: 600 }}>{t('quickFill')}</span>
-            <button
-              type="button" disabled={disabled}
-              onClick={() => setRows(prev => prev.map(r => ({ ...r, is_active: true })))}
-              style={smallBtn('#047857', 'rgba(16,185,129,0.08)', 'rgba(16,185,129,0.2)')}
-            >{t('enableAll')}</button>
-            <button
-              type="button" disabled={disabled}
-              onClick={() => setRows(prev => prev.map(r => ({ ...r, is_active: false })))}
-              style={smallBtn('#b91c1c', 'rgba(239,68,68,0.08)', 'rgba(239,68,68,0.2)')}
-            >{t('disableAll')}</button>
-          </div>
+          {advanced && (
+            <div className="vb-quick" style={{
+              display: 'flex', gap: 10, marginTop: 4,
+              flexWrap: 'wrap', alignItems: 'center',
+            }}>
+              <span style={{ fontSize: 11, color: '#5b6472', fontWeight: 600 }}>{t('quickFill')}</span>
+              <button
+                type="button" disabled={disabled}
+                onClick={() => setRows(prev => prev.map(r => ({ ...r, is_active: true })))}
+                style={smallBtn('#047857', 'rgba(16,185,129,0.08)', 'rgba(16,185,129,0.2)')}
+              >{t('enableAll')}</button>
+              <button
+                type="button" disabled={disabled}
+                onClick={() => setRows(prev => prev.map(r => ({ ...r, is_active: false })))}
+                style={smallBtn('#b91c1c', 'rgba(239,68,68,0.08)', 'rgba(239,68,68,0.2)')}
+              >{t('disableAll')}</button>
+            </div>
+          )}
         </div>
-      )}
+        )
+      })()}
 
       {/* Empty hint (no color axis, nothing chosen yet) */}
       {rows.length === 0 && !colorAxis
