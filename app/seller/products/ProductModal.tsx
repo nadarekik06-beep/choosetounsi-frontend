@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
+import { Component, useCallback, useEffect, useRef, useState, useMemo, type ErrorInfo } from 'react'
 import { X, Upload, Trash2, Star, AlertCircle, ImageIcon, Radio, Check, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, Lightbulb, PackageX, RotateCcw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { productsApi, categoriesApi, storageUrl, shippingApi, isNetworkError } from '@/lib/sellerApi'
@@ -27,7 +27,10 @@ import { useFormat } from '@/lib/i18n/useFormat'
 import { OCCASIONS, normalizeOccasions, useOccasionCategories, type Occasion } from '@/lib/occasions'
 
 import BrandLoader from '@/components/brand/BrandLoader'
-import { productDraft } from '@/lib/productDraft'
+import { productDraft, isValidDraft } from '@/lib/productDraft'
+
+/** Photos above this total are not kept in the on-device draft (phone storage / memory). */
+const DRAFT_MAX_PHOTO_BYTES = 25 * 1024 * 1024
 import { getUser } from '@/lib/auth'
 interface FullProduct {
   id: number
@@ -323,8 +326,56 @@ interface ProductModalProps {
   onSaved: () => void
 }
 
-export default function ProductModal({ product, radar, onClose, onSaved }: ProductModalProps) {
-  const isEdit   = !!product
+// ─── Crash guard ──────────────────────────────────────────────────────────────
+// A bug in the form must never take the whole page down: show a message, and
+// "Restart" drops the on-device draft (it may be what breaks) and remounts the form.
+
+const CRASH_TEXT = {
+  fr: { title: 'Un problème est survenu', body: 'Le formulaire a rencontré une erreur. Vous pouvez le recommencer : votre brouillon sur cet appareil sera effacé.', restart: 'Recommencer', close: 'Fermer' },
+  en: { title: 'Something went wrong', body: 'The form hit an error. You can restart it: the draft saved on this device will be cleared.', restart: 'Restart', close: 'Close' },
+  ar: { title: 'حدث خطأ', body: 'واجه النموذج خطأ. يمكنك إعادة البدء: سيتم حذف المسودة المحفوظة على هذا الجهاز.', restart: 'إعادة البدء', close: 'إغلاق' },
+}
+
+function CrashFallback({ onRestart, onClose }: { onRestart: () => void; onClose: () => void }) {
+  // No i18n context here on purpose: the fallback must work even if that is what failed
+  const lang = (typeof document !== 'undefined' ? document.documentElement.lang : 'fr').slice(0, 2) as keyof typeof CRASH_TEXT
+  const tx = CRASH_TEXT[lang] ?? CRASH_TEXT.fr
+  return (
+    <WizardDialog icon={<AlertCircle size={22} />} title={tx.title} actions={<>
+      <button type="button" style={btnGhost} onClick={onClose}>{tx.close}</button>
+      <button type="button" style={btnPrimary} onClick={onRestart}><RotateCcw size={14} style={{ verticalAlign: '-2px', marginInlineEnd: 6 }} />{tx.restart}</button>
+    </>}>
+      {tx.body}
+    </WizardDialog>
+  )
+}
+
+class ProductFormBoundary extends Component<{ onClose: () => void; onReset: () => Promise<void>; children: React.ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() { return { failed: true } }
+  componentDidCatch(error: unknown, info: ErrorInfo) {
+    console.error('[ProductModal] crashed:', error, info.componentStack)
+  }
+  render() {
+    if (!this.state.failed) return this.props.children
+    return <CrashFallback onClose={this.props.onClose} onRestart={() => { this.props.onReset().finally(() => this.setState({ failed: false })) }} />
+  }
+}
+
+export default function ProductModal(props: ProductModalProps) {
+  const [attempt, setAttempt] = useState(0)
+  const reset = async () => {
+    if (!props.product) await productDraft.clear(`new-product:${getUser()?.id ?? 'me'}`)
+    setAttempt(a => a + 1)
+  }
+  return (
+    <ProductFormBoundary onClose={props.onClose} onReset={reset}>
+      <ProductForm key={attempt} {...props} />
+    </ProductFormBoundary>
+  )
+}
+
+function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) {  const isEdit   = !!product
   const p        = product as FullProduct | null
   // Live (approved) products are edited directly; changes are logged for the admin
   const isLive   = !!(p?.is_approved)
@@ -467,7 +518,10 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
     }
   }, [form.name])
 
-  useEffect(() => () => revokeImages(images), [])   // eslint-disable-line react-hooks/exhaustive-deps
+  // Free the photo previews on close (the ref holds the latest images, not the first ones)
+  const imagesRef = useRef(images)
+  useEffect(() => { imagesRef.current = images }, [images])
+  useEffect(() => () => revokeImages(imagesRef.current), [])
 
   // Color groups come from the variants: a new color adds a card, a removed one drops it
   const colorAxis = useMemo(() => variantAxes.find(a => a.type === 'color' || a.slug === 'color') ?? null, [variantAxes])
@@ -538,9 +592,9 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
   }
   if (form.pack_contents.length > 500) e.pack_contents = t('errors.packContents')
 
-  // Variants: a color in every slot, the size / pointure chosen, some stock (new products)
+  // Variants: a color in every slot, the size / pointure chosen, some stock (new products).
+  // No setState here: this runs during render (liveErrors), a state update would loop forever.
   if (variantAxes.length > 0) {
-    setShowVariantErrors(true)
     const issue = variantIssues[0]
     if (issue) {
       e.variants = issue.code === 'noAxis' ? tv('errors.noAxis', { axis: issue.axis }) : tv(`errors.${issue.code}`)
@@ -643,34 +697,67 @@ export default function ProductModal({ product, radar, onClose, onSaved }: Produ
   const [draftRestored, setDraftRestored] = useState(false)
   useEffect(() => {
     if (draftReady) return
-    const asItem = (x: { uid: string; file: File }): ImgItem => ({ uid: x.uid, kind: 'new', file: x.file, url: URL.createObjectURL(x.file) })
+    let cancelled = false
     productDraft.load(draftKey).then(d => {
-      if (!d || Date.now() - d.savedAt > 30 * 86400_000) return
-      setForm(f => ({ ...f, ...(d.form as Partial<typeof f>) }))
-      setAttrValues((d.attrValues ?? {}) as AttributeValues)
-      setVariantRows(((d.variantRows ?? []) as VariantRow[]).map(normalizeVariantRow))
-      setMulticolorLabel(d.multicolorLabel ?? '')
-      setImages({
-        gallery: (d.images?.gallery ?? []).map(asItem),
-        colors: Object.fromEntries(Object.entries(d.images?.colors ?? {}).map(([k, l]) => [k, l.map(asItem)])),
-      })
-      if ((d.form as { slug?: string })?.slug) slugTouched.current = true
-      setStepIdx(Math.min(d.step ?? 0, 4))
-      setDraftRestored(true)
-    }).finally(() => setDraftReady(true))
+      if (cancelled || !d) return
+      if (!isValidDraft(d)) { productDraft.clear(draftKey); return }   // corrupted / old format
+      if (Date.now() - d.savedAt > 30 * 86400_000) { productDraft.clear(draftKey); return }
+      const urls: string[] = []
+      try {
+        const asItem = (x: { uid: string; file: File }): ImgItem => {
+          const url = URL.createObjectURL(x.file)
+          urls.push(url)
+          return { uid: x.uid, kind: 'new', file: x.file, url }
+        }
+        const restored = {
+          rows: d.variantRows.map(r => normalizeVariantRow(r as VariantRow)),
+          images: {
+            gallery: d.images.gallery.map(asItem),
+            colors: Object.fromEntries(Object.entries(d.images.colors).map(([k, l]) => [k, l.map(asItem)])),
+          },
+        }
+        setForm(f => ({ ...f, ...(d.form as Partial<typeof f>) }))
+        setAttrValues(d.attrValues as AttributeValues)
+        setVariantRows(restored.rows)
+        setMulticolorLabel(d.multicolorLabel)
+        setImages(restored.images)
+        if (typeof d.form.slug === 'string' && d.form.slug) slugTouched.current = true
+        setStepIdx(Math.min(Math.max(0, d.step), 4))
+        setDraftRestored(true)
+      } catch (err) {
+        // Unreadable draft: start clean instead of crashing
+        console.warn('[ProductModal] draft discarded:', err)
+        urls.forEach(u => URL.revokeObjectURL(u))
+        productDraft.clear(draftKey)
+      }
+    }).finally(() => { if (!cancelled) setDraftReady(true) })
+    return () => { cancelled = true }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Autosave, debounced, and only when something the seller entered changed
+  const lastDraftSig = useRef('')
   useEffect(() => {
     if (isEdit || !draftReady) return
     const id = setTimeout(() => {
       const started = form.name.trim() || form.category_id || totalImages > 0
-      if (!started) { productDraft.clear(draftKey); return }
+      if (!started) {
+        if (lastDraftSig.current !== 'empty') { lastDraftSig.current = 'empty'; productDraft.clear(draftKey) }
+        return
+      }
       const keep = (l: ImgItem[]) => l.flatMap(i => (i.kind === 'new' ? [{ uid: i.uid, file: i.file }] : []))
-      productDraft.save(draftKey, {
-        savedAt: Date.now(), step: stepIdx, form, attrValues, variantRows, multicolorLabel,
-        images: { gallery: keep(images.gallery), colors: Object.fromEntries(Object.entries(images.colors).map(([k, l]) => [k, keep(l)])) },
-      })
-    }, 600)
+      let draftImages = { gallery: keep(images.gallery), colors: Object.fromEntries(Object.entries(images.colors).map(([k, l]) => [k, keep(l)])) }
+      const files = [...draftImages.gallery, ...Object.values(draftImages.colors).flat()]
+      // Too heavy for a phone's storage: keep the text, the seller re-adds the photos
+      if (files.reduce((n, x) => n + (x.file?.size ?? 0), 0) > DRAFT_MAX_PHOTO_BYTES) draftImages = { gallery: [], colors: {} }
+      let sig: string
+      try {
+        sig = JSON.stringify([stepIdx, form, attrValues, variantRows, multicolorLabel,
+          draftImages.gallery.map(x => x.uid), Object.entries(draftImages.colors).map(([k, l]) => [k, l.map(x => x.uid)])])
+      } catch { return }
+      if (sig === lastDraftSig.current) return
+      lastDraftSig.current = sig
+      productDraft.save(draftKey, { savedAt: Date.now(), step: stepIdx, form, attrValues, variantRows, multicolorLabel, images: draftImages })
+    }, 800)
     return () => clearTimeout(id)
   }, [form, attrValues, variantRows, multicolorLabel, images, stepIdx, draftReady]) // eslint-disable-line react-hooks/exhaustive-deps
 
