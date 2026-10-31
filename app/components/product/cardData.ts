@@ -38,7 +38,11 @@ export interface CardProduct extends PricedProduct {
   reviews_count?: number
   /** Active variants; undefined = unknown (the card then sends the shopper to the product page). */
   variants?: { id: number; stock: number }[]
-  seller?: { id?: number; name: string; business_name?: string | null; plan?: string | null; avatar?: string | null } | null
+  /** Public store block (backend StoreCards): store_name / store_logo first, name = store name or account name. */
+  seller?: {
+    id?: number; name: string; business_name?: string | null; plan?: string | null; avatar?: string | null
+    store_id?: number; store_name?: string | null; store_logo?: string | null
+  } | null
 }
 
 /** Max slides on a card (cover + colors); the backend already caps card_images at 6. */

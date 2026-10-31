@@ -93,8 +93,11 @@
 .sp-card--deal .sp-card__body { gap: 4px; padding: 9px 10px 10px; }
 .sp-card--deal .sp-card__badges { top: 8px; inset-inline-start: 8px; gap: 5px; }
 .sp-card--deal .sp-card__fav { width: 34px; height: 34px; }
-.sp-card__shoplink { position: relative; z-index: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; text-decoration: none; }
-.sp-card__shoplink:hover { color: var(--ct-red); text-decoration: underline; }
+.sp-card__shoplink { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; color: inherit; text-decoration: none; }
+/* plaintext: a Latin store name on the Arabic site is cut at its end, not its start */
+.sp-card__shopname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; unicode-bidi: plaintext; }
+.sp-card__shoplink:hover { color: var(--ct-red); }
+.sp-card__shoplink:hover .sp-card__shopname { text-decoration: underline; }
 .sp-card__save { font-size: 11px; font-weight: 800; color: var(--ct-green-dark); }
 .sp-card__cta {
   position: relative; z-index: 2; margin-top: 6px; width: 100%; min-height: 36px; padding: 0 10px;

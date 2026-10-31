@@ -82,7 +82,8 @@ function PackCard({ item, index }: { item: DealItem; index: number }) {
   const pack = item.pack!
   const [broken, setBroken] = useState<Record<string, boolean>>({})
   const href = `/deals/${pack.slug}`
-  const shop = pack.seller?.business_name || pack.seller?.name
+  const shop = pack.seller?.store_name || pack.seller?.business_name || pack.seller?.name
+  const shopLogo = resolveImageUrl(pack.seller?.store_logo ?? pack.seller?.avatar)
 
   const images: string[] = []
   for (const u of [pack.image_url, ...pack.items.map(i => i.product?.primary_image_url)]) {
@@ -112,10 +113,15 @@ function PackCard({ item, index }: { item: DealItem; index: number }) {
       <div className="sp-card__body">
         {shop && (
           <p className="sp-card__shop">
-            <ShopAvatar name={shop} src={resolveImageUrl(pack.seller?.avatar)} />
-            {pack.seller?.id
-              ? <Link href={`/sellers/${pack.seller.id}`} prefetch={false} className="sp-card__shoplink">{shop}</Link>
-              : <span>{shop}</span>}
+            {pack.seller?.id ? (
+              <Link href={`/sellers/${pack.seller.id}`} prefetch={false} className="sp-card__shoplink" title={shop}
+                onClick={e => e.stopPropagation()}>
+                <ShopAvatar name={shop} src={shopLogo} />
+                <span className="sp-card__shopname">{shop}</span>
+              </Link>
+            ) : (
+              <><ShopAvatar name={shop} src={shopLogo} /><span>{shop}</span></>
+            )}
           </p>
         )}
         <h3 className="sp-card__name">{pack.name}</h3>

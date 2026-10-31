@@ -125,7 +125,11 @@ export default function ProductCard({
   // Unknown variants (a payload without them): let the product page ask, never add a bare line
   const needsOptions = variantId == null && (product.variants === undefined || variants.length > 1)
   const fav = variantId != null ? isFavorited(product.id, variantId) : isFavorited(product.id)
-  const shop = showShop ? (product.seller?.business_name || product.seller?.name) : null
+  // Store identity: store name + logo; no logo → store initials; no store name → account name
+  const store = product.seller
+  const shop = showShop ? (store?.store_name || store?.business_name || store?.name || null) : null
+  const shopLogo = resolveImageUrl(store?.store_logo ?? store?.avatar)
+  const shopId = store?.store_id ?? store?.id
   const isDeal = layout === 'deal'
   const isRow = layout === 'row'
   const pricing = promoPricing(product)
@@ -213,10 +217,19 @@ export default function ProductCard({
       <div className="sp-card__body">
         {shop && (
           <p className="sp-card__shop">
-            <ShopAvatar name={shop} src={resolveImageUrl(product.seller?.avatar)} size={isDeal ? 22 : 20} />
-            {product.seller?.id
-              ? <Link href={`/sellers/${product.seller.id}`} prefetch={false} className="sp-card__shoplink">{shop}</Link>
-              : <span>{shop}</span>}
+            {shopId ? (
+              // Logo + name open the store; sits above the card's product link
+              <Link href={`/sellers/${shopId}`} prefetch={false} className="sp-card__shoplink" title={shop}
+                onClick={e => e.stopPropagation()}>
+                <ShopAvatar name={shop} src={shopLogo} size={isDeal ? 22 : 20} />
+                <span className="sp-card__shopname">{shop}</span>
+              </Link>
+            ) : (
+              <>
+                <ShopAvatar name={shop} src={shopLogo} size={isDeal ? 22 : 20} />
+                <span>{shop}</span>
+              </>
+            )}
           </p>
         )}
         {label && <p className="pc-label">{label}</p>}

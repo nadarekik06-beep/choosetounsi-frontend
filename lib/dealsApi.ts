@@ -37,7 +37,7 @@ export interface DealsPack {
   available_stock: number
   category_id: number | null
   created_at: string | null
-  seller: { id: number; name: string; business_name?: string | null; plan?: PepperTier | string; avatar?: string | null } | null
+  seller: { id: number; name: string; business_name?: string | null; plan?: PepperTier | string; avatar?: string | null; store_name?: string | null; store_logo?: string | null } | null
   items: { id: number; quantity: number; product: { name: string; primary_image_url: string | null } | null }[]
 }
 
