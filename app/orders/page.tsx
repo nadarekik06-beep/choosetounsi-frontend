@@ -78,6 +78,7 @@ interface OrderReturn {
   id: number
   reference: string | null
   status: string
+  resolution_type?: 'return_refund' | 'exchange' | null
   refund_amount: number
   refund_method: string | null
   refund_reference: string | null
@@ -541,7 +542,7 @@ function OrderReturns({ returns }: { returns: OrderReturn[] }) {
           }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 12.5, fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }} dir="ltr">{r.reference ?? `#${r.id}`}</span>
-              <ReturnStatusBadge status={r.status} />
+              <ReturnStatusBadge status={r.status} resolution={r.resolution_type} />
             </span>
             <span style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>
               {r.status === 'refunded'

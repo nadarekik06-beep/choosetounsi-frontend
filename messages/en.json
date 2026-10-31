@@ -1394,19 +1394,18 @@
       "submit": "Submission failed",
       "generic": "Something went wrong. Please try again."
     },
-    "noExchange": "Want a different item? Simply reorder.",
     "shippingSeller": "✓ Return shipping is paid by the shop for this reason.",
     "shippingClient": "Return shipping ({fee} DT) is deducted from your refund for this reason.",
     "track": "Track my return"
   },
   "complaints": {
     "metaTitle": "My returns",
-    "title": "My returns",
+    "title": "My returns & exchanges",
     "myOrders": "My orders",
     "count": "{count, plural, =0 {No returns} one {# return} other {# returns}}",
-    "new": "New return",
-    "file": "Request a return",
-    "newSubtitle": "Return a delivered order or some of its items",
+    "new": "New request",
+    "file": "Request a return or exchange",
+    "newSubtitle": "Return or exchange a delivered order or some of its items",
     "loading": "Loading your complaints…",
     "loadFailed": "Failed to load complaints. Please refresh the page.",
     "emptyTitle": "No returns yet",
@@ -1420,10 +1419,10 @@
     "sellerResponse": "Seller response",
     "rejectionReason": "Rejection reason",
     "filedOn": "Filed on {date}",
-    "policyTitle": "Return policy",
-    "policyBody": "Returns can be requested within <b>48 hours</b> of delivery, for the whole order or some items, with at least one photo. Paid cash on delivery: the courier pays you back in cash when he collects the item. Paid online: refunded to your card, wallet or D17 once the item is checked.",
-    "successTitle": "Return requested!",
-    "successBody": "The shop has <b>48 hours</b> to answer, then ChooseTounsi validates and organises the pick-up.",
+    "policyTitle": "Returns & exchanges",
+    "policyBody": "Within <b>48 hours</b> of delivery, for the whole order or some items, with at least one photo. <b>Return</b>: refunded (cash from the courier for cash on delivery). <b>Exchange</b>: another size or color of the same product, delivered by the courier who takes the old item back. Wrong or defective item: no fee for you.",
+    "successTitle": "Request sent!",
+    "successBody": "The shop has <b>48 hours</b> to answer, then ChooseTounsi validates and organises the courier.",
     "successNotice": "You will be notified (app + e-mail) at every step until the refund.",
     "viewOrders": "View my orders",
     "howItWorks": "How it works",
@@ -1438,12 +1437,12 @@
         "text": "The shop answers, ChooseTounsi validates"
       },
       "s3": {
-        "title": "Pick-up",
-        "text": "A courier collects the item at your address"
+        "title": "Courier",
+        "text": "Pick-up of the item, or delivery of the replacement"
       },
       "s4": {
-        "title": "Refund",
-        "text": "Cash from the courier (cash on delivery) or to your payment method"
+        "title": "Refund or exchange",
+        "text": "Refund, or the replacement in your hands"
       }
     },
     "types": {
@@ -1451,7 +1450,10 @@
       "wrong_size": "Wrong size",
       "wrong_color": "Wrong color",
       "damaged_product": "Damaged / defective product",
-      "other": "Other (specify below)"
+      "other": "Other (specify below)",
+      "changed_mind": "Changed my mind",
+      "doesnt_fit": "Size doesn’t fit",
+      "prefer_other_color": "Prefer another color"
     },
     "status": {
       "pending": {
@@ -1532,7 +1534,6 @@
       "photo": "At least one proof photo is required.",
       "submit": "Failed to submit. Please try again."
     },
-    "noExchange": "Want a different item? Simply place a new order.",
     "shippingSeller": "✓ Wrong or defective item: return shipping is paid by the shop.",
     "shippingClient": "Change of mind: return shipping ({fee} DT) is deducted from your refund."
   },
@@ -3843,7 +3844,11 @@
         "returned_to_seller": "RECEIVED",
         "refunded": "REFUNDED",
         "cancelled": "CANCELLED",
-        "closed": "CLOSED"
+        "closed": "CLOSED",
+        "exchange_in_transit": "Exchange in transit",
+        "exchanged": "Exchanged · old item due",
+        "exchange_failed": "Exchange failed",
+        "exchange_completed": "Exchange completed"
       },
       "refund": {
         "pending": "Awaiting Pickup",
@@ -3893,7 +3898,11 @@
         "refunded": "The client was refunded. The returned amount was removed from your sales (and from your next payout if already paid).",
         "rejected": "This return was rejected.",
         "cancelled": "This return was cancelled.",
-        "closed": "This request is closed."
+        "closed": "This request is closed.",
+        "exchange_in_transit": "Intigo picks the replacement up at your address and delivers it to the client.",
+        "exchanged": "The client got the replacement. The courier brings the old item back: confirm it when you receive it.",
+        "exchange_failed": "The client did not take the replacement; it comes back to you. ChooseTounsi decides the next step.",
+        "exchange_completed": "Exchange complete: you confirmed the old item is back."
       },
       "receive": {
         "open": "Confirm reception",
@@ -3906,14 +3915,33 @@
         "stockNote": "Resaleable items go back to stock on their exact variant. Damaged items are not restocked.",
         "notePlaceholder": "Remarks (optional)…",
         "toast": "✓ Reception confirmed",
-        "restocked": "↺ {count} back in stock"
+        "restocked": "↺ {count} back in stock",
+        "oldItemTitle": "Old item received",
+        "oldItemHint": "Check the old item brought back by the courier. Confirming closes the exchange.",
+        "oldItemOpen": "Confirm old item received"
       },
       "returnQty": "Returned: {count}",
       "returnQtyOf": "Returned {count} of {total}",
       "returnAmount": "Returned amount (price paid)",
       "shippingSeller": "Return shipping ({fee}) is charged to you: wrong or defective item.",
       "shippingClient": "Return shipping is paid by the client (change of mind).",
-      "confirmRejection": "Refuse the return"
+      "confirmRejection": "Refuse the return",
+      "kindReturn": "Return",
+      "kindExchange": "Exchange",
+      "statusExchange": {
+        "requested": "Exchange requested",
+        "admin_approved": "Exchange approved"
+      },
+      "explainExchange": {
+        "seller_accepted": "You accepted this exchange. ChooseTounsi validates it and books the Intigo exchange.",
+        "admin_approved": "Approved: prepare the replacement, Intigo picks it up at your address."
+      },
+      "replacement": "Replacement: {label}",
+      "exchangeAmount": "Items exchanged (price paid)",
+      "exchangeFeeSeller": "The exchange fee ({fee}) is charged to you: wrong or defective item.",
+      "exchangeFeeClient": "The client pays the exchange fee to the courier.",
+      "exchangeNoCommission": "Same sale, another variant: no new commission and no new payout.",
+      "oldItemOverdue": "Old item not confirmed after 7 days: please check and confirm it."
     },
     "reviews": {
       "title": "Reviews & Reputation",
@@ -6143,7 +6171,7 @@
     "orderReturns": "Returns on this order",
     "refundedWith": "Refunded {amount} · {method}",
     "returnQty": "Returned: {count} of {total}",
-    "legacyExchange": "This request was filed as an exchange under the previous policy. It is handled by our team; new requests are returns with a refund.",
+    "legacyExchange": "This request was filed as an exchange under the previous policy. It is handled by our team.",
     "shopReason": "Shop's reason",
     "rejectionReason": "Reason",
     "shopMessage": "Message from the shop",
@@ -6159,7 +6187,11 @@
       "refunded": "Refunded",
       "rejected": "Rejected",
       "cancelled": "Cancelled",
-      "closed": "Closed"
+      "closed": "Closed",
+      "exchange_in_transit": "Replacement on its way",
+      "exchanged": "Exchanged",
+      "exchange_failed": "Exchange not delivered",
+      "exchange_completed": "Exchange completed"
     },
     "hint": {
       "requested": "The shop has 48 hours to answer your request.",
@@ -6234,6 +6266,33 @@
       "picked_up": "The courier collected the item and paid you back in cash. The shop will inspect it.",
       "returned_to_seller": "The shop received the item. You were already paid back in cash by the courier.",
       "refunded": "Return complete — you were paid back in cash by the courier."
+    },
+    "trackingExchange": "Exchange tracking",
+    "statusExchange": {
+      "requested": "Exchange requested",
+      "admin_approved": "Exchange approved"
+    },
+    "hintExchange": {
+      "requested": "The shop has 48 hours to answer your exchange request.",
+      "seller_accepted": "The shop accepted. ChooseTounsi validates and then books the exchange.",
+      "admin_approved": "Approved! The courier will bring your replacement and take the old item back. You will pay {amount}.",
+      "exchange_in_transit": "Your replacement is on its way: keep the old item ready and {amount} for the courier.",
+      "exchanged": "You received your replacement. The old item is going back to the shop.",
+      "exchange_failed": "The replacement could not be delivered. Our team will contact you.",
+      "exchange_completed": "The shop got the old item back. Your exchange is complete."
+    },
+    "exchange": {
+      "title": "Exchange",
+      "toPay": "To pay the courier",
+      "tracking": "Intigo tracking",
+      "carrierStatus": "Courier status",
+      "exchangedAt": "Exchanged on",
+      "paidByShop": "The exchange is paid by the shop (wrong or defective item).",
+      "paidByYou": "Exchange fee ({fee}) paid to the courier with your replacement.",
+      "oldItem": "Hand the old item to the courier in its original packaging.",
+      "items": "Items to exchange",
+      "qtyFor": "{count} × → {label}",
+      "reference": "Exchange {ref}"
     }
   },
   "pickupAddress": {
@@ -6443,6 +6502,69 @@
       "failed": "Something went wrong. Please try again.",
       "accountHint": "You have an account?",
       "myOrders": "My orders"
+    }
+  },
+  "complaintRequest": {
+    "resolutionTitle": "What would you like?",
+    "return": "Return",
+    "returnHint": "Send the item back and get refunded",
+    "exchange": "Exchange",
+    "exchangeHint": "Get another size or color of the same product",
+    "itemsReturn": "What are you returning?",
+    "itemsExchange": "What are you exchanging?",
+    "replacementLabel": "Replace with",
+    "chooseVariant": "— Choose the size / color —",
+    "currentVariant": "{label} (same as yours)",
+    "stockLeft": "{count} in stock",
+    "sameProduct": "Replaced with the same product.",
+    "noOption": "No other size or color is in stock at the same price. Choose a return instead.",
+    "otherPrice": "Sizes or colors at a different price can’t be exchanged (no price difference payments for now).",
+    "reasonTitle": "Reason",
+    "groupShop": "Problem with the item",
+    "groupMine": "My choice",
+    "types": {
+      "wrong_product": "Wrong product received",
+      "wrong_size": "Wrong size sent",
+      "wrong_color": "Wrong color sent",
+      "damaged_product": "Damaged / defective",
+      "changed_mind": "Changed my mind",
+      "doesnt_fit": "Size doesn’t fit",
+      "prefer_other_color": "I prefer another color",
+      "other": "Other (specify)"
+    },
+    "specifyReason": "Specify your reason",
+    "otherPlaceholder": "e.g. The fabric is not what I expected",
+    "feeChooseReason": "Choose a reason to see the fee.",
+    "returnFeeShop": "No return fee: the shop is responsible and pays it.",
+    "returnFeeClient": "A return fee of {fee} TND will be deducted from your refund.",
+    "returnFeeTooHigh": "The return fee is higher than the value of the items: you would be refunded 0 TND.",
+    "refundEstimate": "Estimated refund: {amount} TND",
+    "exchangeFeeShop": "You will pay 0 TND: the shop is responsible and pays the exchange.",
+    "exchangeFeeClient": "You will pay {fee} TND to the courier when he delivers your replacement.",
+    "feeParcels": "One fee per shop parcel ({count} parcels).",
+    "feeOtherNote": "“Other” is treated as your choice; our team may review it.",
+    "describe": "Describe the issue",
+    "description": "Description",
+    "descriptionPlaceholder": "What happened? What did you receive vs. what you expected?",
+    "charsOk": "✓ Great detail",
+    "charsNeeded": "{count} more characters needed",
+    "proofPhoto": "Proof photos",
+    "proofHint": "1 to 5 photos",
+    "returnNote": "📦 A courier collects the item(s). Paid cash on delivery? He pays you back in cash after checking the item. Paid online? You are refunded once the item is checked.",
+    "exchangeNote": "🔁 The courier brings your replacement and takes the old item back in the same trip. Keep the old item ready in its original packaging.",
+    "submitReturn": "Request a return",
+    "submitExchange": "Request an exchange",
+    "submitting": "Sending your request…",
+    "cancel": "Cancel",
+    "disclaimer": "By submitting, you confirm this report is accurate. False complaints may result in account restrictions.",
+    "errors": {
+      "items": "Choose at least one item.",
+      "type": "Please choose a reason.",
+      "specify": "Please specify.",
+      "photo": "At least one proof photo is required.",
+      "replacement": "Choose the replacement size / color for “{item}”.",
+      "noOption": "“{item}” can’t be exchanged: choose a return instead.",
+      "submit": "Failed to submit. Please try again."
     }
   }
 }

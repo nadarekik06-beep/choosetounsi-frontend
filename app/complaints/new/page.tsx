@@ -62,7 +62,7 @@ export default function NewComplaintPage() {
         </div>
 
         {/* ── Page content ── */}
-        <div style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px',
+        <div style={{ maxWidth: 720, margin: '0 auto', padding: 'clamp(20px, 5vw, 40px) 16px 80px',
           animation: 'fadeUp 0.4s ease both' }}>
 
           {/* Page header */}
@@ -130,7 +130,7 @@ export default function NewComplaintPage() {
           ) : (
             /* ── Form card ── */
             <div style={{ background: '#fff', borderRadius: 20, border: '1.5px solid #e5e7eb',
-              padding: '32px', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
+              padding: 'clamp(12px, 4vw, 32px)', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
               <ComplaintForm
                 prefilledOrderId={preOrderId}
                 onSuccess={() => setSuccess(true)}

@@ -225,7 +225,14 @@ const STATUS_META: Record<string, StatusMeta> = {
   rejected:           { icon: <IconXCircle size={11} />,     label: 'rejected',           color: C.red,    bg: C.redDim,    border: 'rgba(219,20,46,0.3)' },
   cancelled:          { icon: <IconX size={11} />,           label: 'cancelled',          ...GREY },
   closed:             { icon: <IconCheckCircle size={11} />, label: 'closed',             ...GREY },
+  exchange_in_transit: { icon: <IconPackage size={11} />,    label: 'exchange_in_transit', ...INDIGO },
+  exchanged:          { icon: <IconInbox size={11} />,       label: 'exchanged',          ...TEAL },
+  exchange_failed:    { icon: <IconXCircle size={11} />,     label: 'exchange_failed',    color: C.red,    bg: C.redDim,    border: 'rgba(219,20,46,0.3)' },
+  exchange_completed: { icon: <IconCheckCircle size={11} />, label: 'exchange_completed', color: C.green,  bg: C.greenDim,  border: 'rgba(25,143,65,0.3)' },
 }
+
+/** An exchange filed under the new policy (legacy ones have no fee size). */
+const isNewExchange = (c: Complaint) => c.resolution_type === 'exchange' && !(c.is_legacy_exchange ?? !c.fee_size)
 
 // ─── Theme-aware color helpers ────────────────────────────────────────────────
 // FIX: all components now use these helpers instead of hardcoded dark values
@@ -299,9 +306,10 @@ const GLOBAL_CSS = `
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: Complaint['status'] }) {
+function StatusBadge({ status, exchange = false }: { status: Complaint['status']; exchange?: boolean }) {
   const { dark } = useTheme();
-  const t = useTranslations('seller.complaints.status')
+  const tAll = useTranslations('seller.complaints')
+  const t = (k: string) => (exchange && tAll.has(`statusExchange.${k}`) ? tAll(`statusExchange.${k}`) : tAll(`status.${k}`))
   const m = STATUS_META[status] ?? STATUS_META['requested']
   return (
     <span style={{
@@ -615,6 +623,7 @@ function ReceiveModal({ complaint, onClose, onDone, dark }: { complaint: Complai
   const t = useTranslations('seller.complaints')
   const T = useColors(dark)
   const items = complaint.complained_items ?? []
+  const oldItem = isNewExchange(complaint)   // exchange: the old item came back
   const [conditions, setConditions] = useState<Record<number, ItemCondition>>({})
   const [note,   setNote]   = useState('')
   const [saving, setSaving] = useState(false)
@@ -643,14 +652,14 @@ function ReceiveModal({ complaint, onClose, onDone, dark }: { complaint: Complai
   return (
     <>
       <div data-ct-modal="" onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', zIndex: 10000 }} />
-      <div role="dialog" aria-modal="true" aria-label={t('receive.title')} style={{
+      <div role="dialog" aria-modal="true" aria-label={oldItem ? t('receive.oldItemTitle') : t('receive.title')} style={{
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '92%', maxWidth: 520,
         maxHeight: '90vh', overflowY: 'auto', background: T.cardBg, border: `1px solid ${T.border}`, borderRadius: 20,
         padding: '26px 26px 22px', zIndex: 10001, animation: 'pop 0.22s ease',
         boxShadow: dark ? '0 40px 100px rgba(0,0,0,0.5)' : '0 24px 60px rgba(0,0,0,0.15)',
       }}>
-        <h3 style={{ fontSize: 17, fontWeight: 800, color: T.textMain, margin: '0 0 5px' }}>{t('receive.title')}</h3>
-        <p style={{ fontSize: 12.5, color: T.textMuted, lineHeight: 1.5, margin: '0 0 18px' }}>{t('receive.hint')}</p>
+        <h3 style={{ fontSize: 17, fontWeight: 800, color: T.textMain, margin: '0 0 5px' }}>{oldItem ? t('receive.oldItemTitle') : t('receive.title')}</h3>
+        <p style={{ fontSize: 12.5, color: T.textMuted, lineHeight: 1.5, margin: '0 0 18px' }}>{oldItem ? t('receive.oldItemHint') : t('receive.hint')}</p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
           {items.map(item => (
@@ -742,8 +751,12 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
 
   if (!complaint) return null
 
+  const exchange   = isNewExchange(complaint)
   const canAct     = complaint.status === 'requested'
-  const canReceive = complaint.status === 'picked_up' && complaint.resolution_type !== 'exchange'
+  // Return picked up, or an exchange's old item on its way back: the shop confirms reception
+  const canReceive = exchange ? complaint.status === 'exchanged' : complaint.status === 'picked_up' && complaint.resolution_type !== 'exchange'
+  const caseFee    = Number(exchange ? complaint.exchange_fee ?? 0 : complaint.return_shipping_fee ?? 0)
+  const explainKey = exchange && t.has(`explainExchange.${complaint.status}`) ? `explainExchange.${complaint.status}` : `explain.${complaint.status}`
   const photos     = complaint.image_urls?.length ? complaint.image_urls : (complaint.image_url ? [complaint.image_url] : [])
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
@@ -777,7 +790,10 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
               <span style={{ fontSize: 11, fontFamily: 'monospace', color: T.textMuted, fontWeight: 600 }} dir="ltr">
                 {complaint.reference ?? t('complaintNumber', { id: complaint.id })}
               </span>
-              <StatusBadge status={complaint.status} />
+              <StatusBadge status={complaint.status} exchange={exchange} />
+              <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 6, color: exchange ? ink('#6366f1', dark) : T.textMuted, border: `1px solid ${T.drawerBorder}` }}>
+                {exchange ? t('kindExchange') : t('kindReturn')}
+              </span>
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 800, color: T.textMain, margin: 0 }}>
               {typeLabel(complaint.complaint_type)}
@@ -844,8 +860,13 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
                 {complaint.complained_items.map(item => (
                   <div key={item.id}>
                     <PurchasedItemRow item={item}
-                      qtyLabel={`${t('returnQtyOf', { count: item.return_quantity ?? item.quantity, total: item.quantity })} · ${price(Number(item.return_amount ?? 0))}`}
+                      qtyLabel={`${exchange ? `${item.return_quantity ?? item.quantity} ×` : t('returnQtyOf', { count: item.return_quantity ?? item.quantity, total: item.quantity })} · ${price(Number(item.return_amount ?? 0))}`}
                       textColor={T.textMain} mutedColor={T.textMuted} border={T.drawerBorder} />
+                    {exchange && item.replacement_label && (
+                      <p style={{ margin: '6px 0 0', fontSize: 12, fontWeight: 800, color: ink('#6366f1', dark) }}>
+                        → {t('replacement', { label: item.replacement_label })}
+                      </p>
+                    )}
                     {item.condition && (
                       <span style={{ display: 'inline-block', marginTop: 6, fontSize: 10.5, fontWeight: 800, padding: '2px 8px', borderRadius: 6,
                         color: item.condition === 'resaleable' ? ink(C.green, dark) : ink(C.red, dark),
@@ -856,13 +877,19 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
                   </div>
                 ))}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, fontWeight: 700, color: T.textSub, borderTop: `1px dashed ${T.drawerBorder}`, paddingTop: 8 }}>
-                  <span>{t('returnAmount')}</span><span>{price(Number(complaint.items_amount ?? 0))}</span>
+                  <span>{exchange ? t('exchangeAmount') : t('returnAmount')}</span><span>{price(Number(complaint.items_amount ?? 0))}</span>
                 </div>
                 <p style={{ fontSize: 11.5, color: T.textMuted, margin: 0, lineHeight: 1.5 }}>
-                  {complaint.shipping_payer === 'seller'
-                    ? t('shippingSeller', { fee: price(Number(complaint.return_shipping_fee ?? 0)) })
-                    : t('shippingClient')}
+                  {exchange
+                    ? (complaint.shipping_payer === 'seller' ? t('exchangeFeeSeller', { fee: price(caseFee) }) : t('exchangeFeeClient'))
+                    : complaint.shipping_payer === 'seller'
+                      ? t('shippingSeller', { fee: price(caseFee) })
+                      : t('shippingClient')}
                 </p>
+                {exchange && <p style={{ fontSize: 11.5, color: T.textMuted, margin: 0, lineHeight: 1.5 }}>{t('exchangeNoCommission')}</p>}
+                {complaint.old_item_overdue && (
+                  <p style={{ fontSize: 12, color: ink(C.red, dark), fontWeight: 800, margin: 0 }}>⚠ {t('oldItemOverdue')}</p>
+                )}
               </div>
             </DrawerSection>
           )}
@@ -909,7 +936,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
           )}
 
           {/* Where the return stands, from the shop's side */}
-          {t.has(`explain.${complaint.status}`) && (
+          {t.has(explainKey) && (
             <div style={{
               display: 'flex', gap: 12, padding: '14px 16px', borderRadius: 12,
               background: (STATUS_META[complaint.status] ?? STATUS_META.requested).bg,
@@ -918,7 +945,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
               <IconShieldAlert size={18} color={ink((STATUS_META[complaint.status] ?? STATUS_META.requested).color, dark)} strokeWidth={2} />
               <div>
                 <p style={{ fontSize: 12.5, color: T.textSub, margin: 0, lineHeight: 1.6 }}>
-                  {t(`explain.${complaint.status}`)}
+                  {t(explainKey)}
                 </p>
                 {complaint.rejection_reason && ['seller_rejected', 'escalated', 'rejected'].includes(complaint.status) && (
                   <p style={{ fontSize: 12, color: T.textFaint, margin: '8px 0 0', lineHeight: 1.6 }}>
@@ -940,7 +967,7 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
               width: '100%', padding: '12px 0', background: C.green, color: '#fff', border: 'none', borderRadius: 10,
               fontSize: 13, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}>
-              <IconInbox size={16} /> {t('receive.open')}
+              <IconInbox size={16} /> {exchange ? t('receive.oldItemOpen') : t('receive.open')}
             </button>
           </div>
         )}
@@ -1105,9 +1132,9 @@ export default function SellerComplaintsPage() {
   const FILTERS: FilterTab[] = [
     { val: '',                              label: t('filters.all'),           icon: <IconListFilter size={13} /> },
     { val: 'requested',                                                  label: t('filters.requested'),  icon: <IconClock size={13} />      },
-    { val: 'seller_accepted,escalated,admin_approved,pickup_scheduled', label: t('filters.inProgress'), icon: <IconSearch size={13} />     },
-    { val: 'picked_up',                                                  label: t('filters.toReceive'),  icon: <IconInbox size={13} />      },
-    { val: 'returned_to_seller,refunded',                                label: t('filters.received'),   icon: <IconCheckCircle size={13} />},
+    { val: 'seller_accepted,escalated,admin_approved,pickup_scheduled,exchange_in_transit,exchange_failed', label: t('filters.inProgress'), icon: <IconSearch size={13} />     },
+    { val: 'picked_up,exchanged',                                        label: t('filters.toReceive'),  icon: <IconInbox size={13} />      },
+    { val: 'returned_to_seller,refunded,exchange_completed',             label: t('filters.received'),   icon: <IconCheckCircle size={13} />},
     { val: 'seller_rejected,rejected,cancelled,closed',                  label: t('filters.closed'),     icon: <IconXCircle size={13} />    },
   ]
 
@@ -1276,7 +1303,7 @@ export default function SellerComplaintsPage() {
   
                       {/* Badges */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <StatusBadge status={c.status} />
+                        <StatusBadge status={c.status} exchange={isNewExchange(c)} />
                         {canAct && (
                           <span style={{
                             display: 'inline-flex', alignItems: 'center', gap: 5,

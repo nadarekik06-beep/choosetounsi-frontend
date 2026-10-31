@@ -3,7 +3,7 @@
  */
 
 import { fallbackError } from '@/lib/i18n/clientLocale'
-import type { BuyerComplaint, Complaint, ComplaintFormPayload, EligibleOrder } from '@/types/complaint'
+import type { AfterSaleFees, BuyerComplaint, Complaint, ComplaintFormPayload, ComplaintType, EligibleOrder } from '@/types/complaint'
 import { API_BASE } from '@/lib/constants'
 
 
@@ -51,7 +51,12 @@ async function formRequest<T>(path: string, data: FormData): Promise<T> {
 
 export const complaintApi = {
   getEligibleOrders: () =>
-    jsonRequest<{ success: boolean; window_hours: number; window_days: number; return_shipping_fee: number; data: EligibleOrder[] }>(
+    jsonRequest<{
+      success: boolean; window_hours: number; window_days: number; return_shipping_fee: number; data: EligibleOrder[]
+      /** Per parcel size; one fee per shop parcel, at its largest size */
+      after_sale_fees?: AfterSaleFees
+      seller_fault_types?: ComplaintType[]
+    }>(
       'GET', '/client/complaints/eligible-orders'
     ),
 
@@ -65,20 +70,25 @@ export const complaintApi = {
   getOne: (id: number) =>
     jsonRequest<{ success: boolean; data: BuyerComplaint }>('GET', `/client/complaints/${id}`),
 
-  /** Multipart: proof photos + either return_all or items[i][order_item_id|quantity]. */
+  /**
+   * Multipart: proof photos + either return_all or items[i][order_item_id|quantity].
+   * Exchange: always items, each with its replacement_variant_id.
+   */
   submit: (payload: ComplaintFormPayload) => {
     const fd = new FormData()
     fd.append('order_id',       String(payload.order_id))
     fd.append('complaint_type', payload.complaint_type)
     fd.append('description',    payload.description)
     if (payload.other_reason) fd.append('other_reason', payload.other_reason)
+    if (payload.resolution_type) fd.append('resolution_type', payload.resolution_type)
     payload.images.forEach(f => fd.append('images[]', f))
-    if (payload.return_all) {
+    if (payload.return_all && payload.resolution_type !== 'exchange') {
       fd.append('return_all', '1')
     } else {
       (payload.items ?? []).forEach((l, i) => {
         fd.append(`items[${i}][order_item_id]`, String(l.order_item_id))
         fd.append(`items[${i}][quantity]`,      String(l.quantity))
+        if (l.replacement_variant_id) fd.append(`items[${i}][replacement_variant_id]`, String(l.replacement_variant_id))
       })
     }
     return formRequest<{ success: boolean; message: string; data: BuyerComplaint; returns: BuyerComplaint[] }>('/client/complaints', fd)

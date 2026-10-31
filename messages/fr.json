@@ -1394,19 +1394,18 @@
       "submit": "L'envoi a échoué",
       "generic": "Une erreur est survenue. Veuillez réessayer."
     },
-    "noExchange": "Un autre article ? Repassez simplement commande.",
     "shippingSeller": "✓ Pour ce motif, les frais de retour sont payés par la boutique.",
     "shippingClient": "Pour ce motif, les frais de retour ({fee} DT) sont déduits de votre remboursement.",
     "track": "Suivre mon retour"
   },
   "complaints": {
     "metaTitle": "Mes retours",
-    "title": "Mes retours",
+    "title": "Mes retours et échanges",
     "myOrders": "Mes commandes",
     "count": "{count, plural, =0 {Aucun retour} one {# retour} other {# retours}}",
-    "new": "Nouveau retour",
-    "file": "Demander un retour",
-    "newSubtitle": "Retourner une commande livrée ou certains de ses articles",
+    "new": "Nouvelle demande",
+    "file": "Demander un retour ou un échange",
+    "newSubtitle": "Retourner ou échanger une commande livrée ou certains articles",
     "loading": "Chargement de vos réclamations…",
     "loadFailed": "Impossible de charger vos réclamations. Veuillez actualiser la page.",
     "emptyTitle": "Aucun retour",
@@ -1420,10 +1419,10 @@
     "sellerResponse": "Réponse du vendeur",
     "rejectionReason": "Motif du refus",
     "filedOn": "Déposée le {date}",
-    "policyTitle": "Politique de retour",
-    "policyBody": "Un retour peut être demandé dans les <b>48 heures</b> suivant la livraison, pour toute la commande ou certains articles, avec au moins une photo. Payé à la livraison : le livreur vous rembourse en espèces lors de l'enlèvement. Payé en ligne : remboursement sur votre carte, portefeuille ou D17 après vérification.",
-    "successTitle": "Retour demandé !",
-    "successBody": "La boutique a <b>48 heures</b> pour répondre, puis ChooseTounsi valide et organise l'enlèvement.",
+    "policyTitle": "Retours et échanges",
+    "policyBody": "Dans les <b>48 heures</b> après la livraison, pour toute la commande ou certains articles, avec au moins une photo. <b>Retour</b> : remboursement (en espèces par le livreur si paiement à la livraison). <b>Échange</b> : une autre taille ou couleur du même produit, livrée par le livreur qui reprend l’ancien article. Article non conforme ou défectueux : aucun frais pour vous.",
+    "successTitle": "Demande envoyée !",
+    "successBody": "La boutique a <b>48 heures</b> pour répondre, puis ChooseTounsi valide et organise le passage du livreur.",
     "successNotice": "Vous serez prévenu(e) (appli + e-mail) à chaque étape jusqu'au remboursement.",
     "viewOrders": "Voir mes commandes",
     "howItWorks": "Comment ça marche",
@@ -1438,12 +1437,12 @@
         "text": "La boutique répond, ChooseTounsi valide"
       },
       "s3": {
-        "title": "Enlèvement",
-        "text": "Un livreur récupère l'article à votre adresse"
+        "title": "Livreur",
+        "text": "Enlèvement de l’article ou livraison du remplacement"
       },
       "s4": {
-        "title": "Remboursement",
-        "text": "En espèces par le livreur (paiement à la livraison) ou sur votre moyen de paiement"
+        "title": "Remboursement ou échange",
+        "text": "Remboursement, ou le nouvel article entre vos mains"
       }
     },
     "types": {
@@ -1451,7 +1450,10 @@
       "wrong_size": "Mauvaise taille",
       "wrong_color": "Mauvaise couleur",
       "damaged_product": "Produit endommagé / défectueux",
-      "other": "Autre (à préciser)"
+      "other": "Autre (à préciser)",
+      "changed_mind": "Changement d’avis",
+      "doesnt_fit": "La taille ne va pas",
+      "prefer_other_color": "Préfère une autre couleur"
     },
     "status": {
       "pending": {
@@ -1532,7 +1534,6 @@
       "photo": "Au moins une photo de preuve est obligatoire.",
       "submit": "L'envoi a échoué. Veuillez réessayer."
     },
-    "noExchange": "Vous voulez un autre article ? Repassez simplement commande.",
     "shippingSeller": "✓ Article non conforme ou défectueux : les frais de retour sont payés par la boutique.",
     "shippingClient": "Changement d'avis : les frais de retour ({fee} DT) sont déduits de votre remboursement."
   },
@@ -3843,7 +3844,11 @@
         "returned_to_seller": "REÇU",
         "refunded": "REMBOURSÉ",
         "cancelled": "ANNULÉ",
-        "closed": "CLÔTURÉ"
+        "closed": "CLÔTURÉ",
+        "exchange_in_transit": "Échange en cours",
+        "exchanged": "Échangé · ancien article attendu",
+        "exchange_failed": "Échange échoué",
+        "exchange_completed": "Échange terminé"
       },
       "refund": {
         "pending": "En attente d'enlèvement",
@@ -3893,7 +3898,11 @@
         "refunded": "Le client a été remboursé. Le montant retourné a été retiré de vos ventes (et de votre prochain versement si déjà payé).",
         "rejected": "Ce retour a été rejeté.",
         "cancelled": "Ce retour a été annulé.",
-        "closed": "Cette demande est clôturée."
+        "closed": "Cette demande est clôturée.",
+        "exchange_in_transit": "Intigo récupère le remplacement à votre adresse et le livre au client.",
+        "exchanged": "Le client a reçu le remplacement. Le livreur vous rapporte l’ancien article : confirmez sa réception.",
+        "exchange_failed": "Le client n’a pas pris le remplacement ; il vous revient. ChooseTounsi décide de la suite.",
+        "exchange_completed": "Échange terminé : vous avez confirmé le retour de l’ancien article."
       },
       "receive": {
         "open": "Confirmer la réception",
@@ -3906,14 +3915,33 @@
         "stockNote": "Les articles revendables reviennent en stock sur leur variante exacte. Les articles endommagés ne sont pas remis en stock.",
         "notePlaceholder": "Remarques (facultatif)…",
         "toast": "✓ Réception confirmée",
-        "restocked": "↺ {count} remis en stock"
+        "restocked": "↺ {count} remis en stock",
+        "oldItemTitle": "Ancien article reçu",
+        "oldItemHint": "Vérifiez l’ancien article rapporté par le livreur. La confirmation clôture l’échange.",
+        "oldItemOpen": "Confirmer la réception de l’ancien article"
       },
       "returnQty": "Retourné : {count}",
       "returnQtyOf": "Retourné {count} sur {total}",
       "returnAmount": "Montant retourné (prix payé)",
       "shippingSeller": "Les frais de retour ({fee}) vous sont facturés : article non conforme ou défectueux.",
       "shippingClient": "Les frais de retour sont payés par le client (changement d'avis).",
-      "confirmRejection": "Refuser le retour"
+      "confirmRejection": "Refuser le retour",
+      "kindReturn": "Retour",
+      "kindExchange": "Échange",
+      "statusExchange": {
+        "requested": "Échange demandé",
+        "admin_approved": "Échange approuvé"
+      },
+      "explainExchange": {
+        "seller_accepted": "Vous avez accepté cet échange. ChooseTounsi le valide et réserve l’échange Intigo.",
+        "admin_approved": "Approuvé : préparez le remplacement, Intigo vient le chercher à votre adresse."
+      },
+      "replacement": "Remplacement : {label}",
+      "exchangeAmount": "Articles échangés (prix payé)",
+      "exchangeFeeSeller": "Les frais d’échange ({fee}) sont à votre charge : article non conforme ou défectueux.",
+      "exchangeFeeClient": "Le client paie les frais d’échange au livreur.",
+      "exchangeNoCommission": "Même vente, autre variante : pas de nouvelle commission ni de nouveau versement.",
+      "oldItemOverdue": "Ancien article non confirmé après 7 jours : vérifiez et confirmez-le."
     },
     "reviews": {
       "title": "Avis et réputation",
@@ -6143,7 +6171,7 @@
     "orderReturns": "Retours sur cette commande",
     "refundedWith": "{amount} remboursés · {method}",
     "returnQty": "Retourné : {count} sur {total}",
-    "legacyExchange": "Cette demande a été déposée comme échange selon l'ancienne politique. Notre équipe s'en occupe ; les nouvelles demandes sont des retours avec remboursement.",
+    "legacyExchange": "Cette demande a été déposée comme échange selon l’ancienne politique. Notre équipe s’en occupe.",
     "shopReason": "Motif de la boutique",
     "rejectionReason": "Motif",
     "shopMessage": "Message de la boutique",
@@ -6159,7 +6187,11 @@
       "refunded": "Remboursé",
       "rejected": "Refusé",
       "cancelled": "Annulé",
-      "closed": "Clôturé"
+      "closed": "Clôturé",
+      "exchange_in_transit": "Nouvel article en route",
+      "exchanged": "Échangé",
+      "exchange_failed": "Échange non livré",
+      "exchange_completed": "Échange terminé"
     },
     "hint": {
       "requested": "La boutique a 48 heures pour répondre à votre demande.",
@@ -6234,6 +6266,33 @@
       "picked_up": "Le livreur a récupéré l'article et vous a remboursé en espèces. La boutique va le vérifier.",
       "returned_to_seller": "La boutique a reçu l'article. Le livreur vous a déjà remboursé en espèces.",
       "refunded": "Retour terminé — le livreur vous a remboursé en espèces."
+    },
+    "trackingExchange": "Suivi de l’échange",
+    "statusExchange": {
+      "requested": "Échange demandé",
+      "admin_approved": "Échange approuvé"
+    },
+    "hintExchange": {
+      "requested": "La boutique a 48 heures pour répondre à votre demande d’échange.",
+      "seller_accepted": "La boutique a accepté. ChooseTounsi valide puis réserve l’échange.",
+      "admin_approved": "Approuvé ! Le livreur vous apportera le nouvel article et reprendra l’ancien. Vous paierez {amount}.",
+      "exchange_in_transit": "Votre nouvel article est en route : préparez l’ancien article et {amount} pour le livreur.",
+      "exchanged": "Vous avez reçu votre nouvel article. L’ancien retourne à la boutique.",
+      "exchange_failed": "Le nouvel article n’a pas pu être livré. Notre équipe vous recontacte.",
+      "exchange_completed": "La boutique a récupéré l’ancien article. Votre échange est terminé."
+    },
+    "exchange": {
+      "title": "Échange",
+      "toPay": "À payer au livreur",
+      "tracking": "Suivi Intigo",
+      "carrierStatus": "Statut du livreur",
+      "exchangedAt": "Échangé le",
+      "paidByShop": "L’échange est payé par la boutique (article non conforme ou défectueux).",
+      "paidByYou": "Frais d’échange ({fee}) payés au livreur à la remise du nouvel article.",
+      "oldItem": "Remettez l’ancien article au livreur dans son emballage d’origine.",
+      "items": "Articles à échanger",
+      "qtyFor": "{count} × → {label}",
+      "reference": "Échange {ref}"
     }
   },
   "pickupAddress": {
@@ -6443,6 +6502,69 @@
       "failed": "Une erreur est survenue. Réessayez.",
       "accountHint": "Vous avez un compte ?",
       "myOrders": "Mes commandes"
+    }
+  },
+  "complaintRequest": {
+    "resolutionTitle": "Que souhaitez-vous ?",
+    "return": "Retour",
+    "returnHint": "Renvoyer l’article et être remboursé(e)",
+    "exchange": "Échange",
+    "exchangeHint": "Une autre taille ou couleur du même produit",
+    "itemsReturn": "Que retournez-vous ?",
+    "itemsExchange": "Qu’échangez-vous ?",
+    "replacementLabel": "Remplacer par",
+    "chooseVariant": "— Choisissez la taille / couleur —",
+    "currentVariant": "{label} (identique au vôtre)",
+    "stockLeft": "{count} en stock",
+    "sameProduct": "Remplacé par le même produit.",
+    "noOption": "Aucune autre taille ou couleur en stock au même prix. Choisissez plutôt un retour.",
+    "otherPrice": "Les tailles ou couleurs à un autre prix ne peuvent pas être échangées (pas de complément de prix pour l’instant).",
+    "reasonTitle": "Motif",
+    "groupShop": "Problème avec l’article",
+    "groupMine": "Mon choix",
+    "types": {
+      "wrong_product": "Mauvais produit reçu",
+      "wrong_size": "Mauvaise taille envoyée",
+      "wrong_color": "Mauvaise couleur envoyée",
+      "damaged_product": "Endommagé / défectueux",
+      "changed_mind": "J’ai changé d’avis",
+      "doesnt_fit": "La taille ne me va pas",
+      "prefer_other_color": "Je préfère une autre couleur",
+      "other": "Autre (précisez)"
+    },
+    "specifyReason": "Précisez votre motif",
+    "otherPlaceholder": "ex. Le tissu ne correspond pas à mes attentes",
+    "feeChooseReason": "Choisissez un motif pour voir les frais.",
+    "returnFeeShop": "Aucun frais de retour : la boutique est responsable et les paie.",
+    "returnFeeClient": "Des frais de retour de {fee} TND seront déduits de votre remboursement.",
+    "returnFeeTooHigh": "Les frais de retour dépassent la valeur des articles : vous seriez remboursé(e) de 0 TND.",
+    "refundEstimate": "Remboursement estimé : {amount} TND",
+    "exchangeFeeShop": "Vous paierez 0 TND : la boutique est responsable et paie l’échange.",
+    "exchangeFeeClient": "Vous paierez {fee} TND au livreur à la remise de votre nouvel article.",
+    "feeParcels": "Un frais par colis de boutique ({count} colis).",
+    "feeOtherNote": "« Autre » est considéré comme votre choix ; notre équipe peut le réexaminer.",
+    "describe": "Décrivez le problème",
+    "description": "Description",
+    "descriptionPlaceholder": "Que s’est-il passé ? Qu’avez-vous reçu par rapport à ce que vous attendiez ?",
+    "charsOk": "✓ Très bien détaillé",
+    "charsNeeded": "Encore {count} caractères",
+    "proofPhoto": "Photos justificatives",
+    "proofHint": "1 à 5 photos",
+    "returnNote": "📦 Un livreur récupère le ou les articles. Payé à la livraison ? Il vous rembourse en espèces après vérification. Payé en ligne ? Vous êtes remboursé(e) après vérification de l’article.",
+    "exchangeNote": "🔁 Le livreur vous apporte le nouvel article et reprend l’ancien dans le même passage. Gardez l’ancien article prêt dans son emballage d’origine.",
+    "submitReturn": "Demander un retour",
+    "submitExchange": "Demander un échange",
+    "submitting": "Envoi de votre demande…",
+    "cancel": "Annuler",
+    "disclaimer": "En envoyant, vous confirmez l’exactitude de ce signalement. Les fausses réclamations peuvent entraîner des restrictions du compte.",
+    "errors": {
+      "items": "Choisissez au moins un article.",
+      "type": "Veuillez choisir un motif.",
+      "specify": "Veuillez préciser.",
+      "photo": "Au moins une photo justificative est requise.",
+      "replacement": "Choisissez la taille / couleur de remplacement pour « {item} ».",
+      "noOption": "« {item} » ne peut pas être échangé : choisissez plutôt un retour.",
+      "submit": "Échec de l’envoi. Veuillez réessayer."
     }
   }
 }

@@ -36,6 +36,7 @@ function ComplaintCard({ complaint: initial, focused = false }: { complaint: Buy
   const [complaint, setComplaint] = useState(initial)
   const [expanded, setExpanded] = useState(focused)
   const cfg = statusConfig(complaint.status)
+  const exchange = complaint.resolution_type === 'exchange' && !(complaint.is_legacy_exchange ?? !complaint.fee_size)
   const cardRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (focused) cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -53,7 +54,7 @@ function ComplaintCard({ complaint: initial, focused = false }: { complaint: Buy
             justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
               <div>
-                <p style={label}>{complaint.reference ? tr('reference', { ref: complaint.reference }) : t('complaintN', { id: complaint.id })}</p>
+                <p style={label}>{complaint.reference ? tr(exchange ? 'exchange.reference' : 'reference', { ref: complaint.reference }) : t('complaintN', { id: complaint.id })}</p>
                 <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0 }}>
                   {t(`types.${complaint.complaint_type}`)}
                   {complaint.complaint_type === 'other' && complaint.other_reason ? ` — ${complaint.other_reason}` : ''}
@@ -65,7 +66,7 @@ function ComplaintCard({ complaint: initial, focused = false }: { complaint: Buy
                   #{complaint.order?.order_number ?? complaint.order_id}
                 </p>
               </div>
-              <ReturnStatusBadge status={complaint.status} />
+              <ReturnStatusBadge status={complaint.status} resolution={complaint.resolution_type} />
             </div>
             <button onClick={() => setExpanded(e => !e)}
               style={{ fontSize: 12, fontWeight: 700, color: '#64748b', background: '#f8fafc',
@@ -78,10 +79,12 @@ function ComplaintCard({ complaint: initial, focused = false }: { complaint: Buy
           {/* Returned items — as bought, with the quantity sent back */}
           {!!complaint.complained_items?.length && (
             <div style={{ padding: '0 20px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <p style={{ ...label, margin: 0 }}>{t('items')}</p>
+              <p style={{ ...label, margin: 0 }}>{exchange ? tr('exchange.items') : t('items')}</p>
               {complaint.complained_items.map(item => (
                 <PurchasedItemRow key={item.id} item={item}
-                  qtyLabel={tr('returnQty', { count: item.return_quantity ?? item.quantity, total: item.quantity })} />
+                  qtyLabel={exchange && item.replacement_label
+                    ? tr('exchange.qtyFor', { count: item.return_quantity ?? item.quantity, label: item.replacement_label })
+                    : tr('returnQty', { count: item.return_quantity ?? item.quantity, total: item.quantity })} />
               ))}
             </div>
           )}
@@ -89,7 +92,9 @@ function ComplaintCard({ complaint: initial, focused = false }: { complaint: Buy
           {/* Status description bar */}
           <div style={{ padding: '8px 20px 10px', background: cfg.bg, borderTop: `1px solid ${cfg.color}20` }}>
             <p style={{ fontSize: 12, color: cfg.color, fontWeight: 600, margin: 0 }}>
-              {complaint.cash_refund && tr.has(`hintCash.${complaint.status}`)
+              {exchange && tr.has(`hintExchange.${complaint.status}`)
+                ? tr(`hintExchange.${complaint.status}`, { amount: fmt.price(Number(complaint.client_fee ?? 0)) })
+                : complaint.cash_refund && tr.has(`hintCash.${complaint.status}`)
                 ? tr(`hintCash.${complaint.status}`, { amount: fmt.price(Number(complaint.refund_amount ?? 0)) })
                 : tr.has(`hint.${complaint.status}`) ? tr(`hint.${complaint.status}`) : ''}
             </p>

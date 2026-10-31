@@ -1,44 +1,28 @@
 'use client'
 
 /**
- * Return request drawer opened from an order (/orders). Return + refund only:
- * whole order or items × quantity, reason, description, proof photo(s).
+ * After-sale request drawer opened from an order (/orders): the drawer shell
+ * (header, "not delivered yet" and success screens) around the shared
+ * ComplaintRequestForm — the same form as /complaints/new (return or
+ * exchange, items, reason, fee shown before confirming, photos).
  */
 
 import { useEffect, useState, useCallback } from 'react'
-import {
-  X, AlertTriangle, ChevronDown, Send, CheckCircle, ShieldAlert,
-  Lock, Clock, PackageCheck,
-} from 'lucide-react'
+import { X, CheckCircle, ShieldAlert, Lock, Clock, PackageCheck } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import BrandLoader from '@/components/brand/BrandLoader'
 import Link from 'next/link'
-import type { ComplaintType, EligibleOrderItem } from '@/types/complaint'
-import { SELLER_FAULT_TYPES } from '@/types/complaint'
+import type { AfterSaleFees, ComplaintType, EligibleOrder } from '@/types/complaint'
 import { complaintApi } from '@/lib/complaintApi'
-import ReturnItemsPicker, { returnLines } from '@/app/components/returns/ReturnItemsPicker'
-import ProofPhotosInput from '@/app/components/returns/ProofPhotosInput'
+import ComplaintRequestForm from '@/app/components/returns/ComplaintRequestForm'
 
 const RED     = '#db142e'
 const GREEN   = '#198f41'
-
-// Labels: complaintModal.types.<value> (empty value = placeholder)
-const COMPLAINT_TYPES = [
-  { value: '',                icon: null },
-  { value: 'wrong_product',   icon: '📦' },
-  { value: 'wrong_size',      icon: '📏' },
-  { value: 'wrong_color',     icon: '🎨' },
-  { value: 'damaged_product', icon: '💔' },
-  { value: 'other',           icon: '📝' },
-]
 
 const ELIGIBLE_STATUSES = ['delivered', 'out_for_delivery', 'completed']
 
 // Labels: complaintModal.status.<status>
 const STATUS_KEYS = ['pending', 'processing', 'out_for_delivery', 'completed', 'delivered', 'cancelled']
-
-// Each order line as bought + how many units can still go back
-type OrderItemInfo = EligibleOrderItem
 
 interface Props {
   orderId:       number
@@ -51,32 +35,19 @@ interface Props {
 export default function ComplaintModal({
   orderId, orderNumber, orderStatuses, isOpen, onClose,
 }: Props) {
-  const t = useTranslations('complaintModal')
+  const t  = useTranslations('complaintModal')
+  const tf = useTranslations('complaintForm')
   const rtl = useLocale() === 'ar'
   const statusLabel = (s: string) => (STATUS_KEYS.includes(s) ? t(`status.${s}`) : s)
-  const typeLabel   = (v: string) => t(`types.${v || 'placeholder'}`)
-  // ── All original state ────────────────────────────────────────────────────
-  const [type,           setType]           = useState('')
-  const [description,    setDescription]    = useState('')
-  const [photos,         setPhotos]         = useState<File[]>([])
-  const [loading,        setLoading]        = useState(false)
-  const [success,        setSuccess]        = useState(false)
-  const [error,          setError]          = useState<string | null>(null)
-  const [mounted,        setMounted]        = useState(false)
-  const [orderItems,     setOrderItems]     = useState<OrderItemInfo[]>([])
-  const [returnAll,      setReturnAll]      = useState(true)
-  const [quantities,     setQuantities]     = useState<Record<number, number>>({})
-  const [createdId,      setCreatedId]      = useState<number | null>(null)
-  const [returnFee,      setReturnFee]      = useState(0)
-  const [loadingItems,   setLoadingItems]   = useState(false)
 
-  const [hoursLeft,      setHoursLeft]      = useState<number | null>(null)
-
-  const MIN_CHARS = 20
-  const MAX_CHARS = 2000
-  const charCount = description.length
-  const charOk    = charCount >= MIN_CHARS
-  const progress  = Math.min(100, (charCount / MAX_CHARS) * 100)
+  const [success,       setSuccess]       = useState(false)
+  const [mounted,       setMounted]       = useState(false)
+  const [createdId,     setCreatedId]     = useState<number | null>(null)
+  const [loadingItems,  setLoadingItems]  = useState(false)
+  const [eligibleOrder, setEligibleOrder] = useState<EligibleOrder | null>(null)
+  const [fees,          setFees]          = useState<AfterSaleFees | null>(null)
+  const [sellerFault,   setSellerFault]   = useState<ComplaintType[] | undefined>(undefined)
+  const hoursLeft = eligibleOrder?.hours_left ?? null
 
   const isEligible      = orderStatuses.some(s => ELIGIBLE_STATUSES.includes(s))
   const allStatuses     = [...new Set(orderStatuses)]
@@ -89,11 +60,9 @@ export default function ComplaintModal({
     setLoadingItems(true)
     try {
       const json = await complaintApi.getEligibleOrders()
-      setReturnFee(Number(json.return_shipping_fee ?? 0))
-      const thisOrder = (json.data ?? []).find(o => o.id === orderId)
-      if (!thisOrder) return
-      setOrderItems(thisOrder.items ?? [])
-      setHoursLeft(thisOrder.hours_left ?? null)
+      setFees(json.after_sale_fees ?? null)
+      setSellerFault(json.seller_fault_types)
+      setEligibleOrder((json.data ?? []).find(o => o.id === orderId) ?? null)
     } catch {
       // Non-critical
     } finally {
@@ -117,10 +86,7 @@ export default function ComplaintModal({
   useEffect(() => {
     if (!isOpen) {
       const t = setTimeout(() => {
-        setType(''); setDescription(''); setPhotos([])
-        setSuccess(false); setError(null); setCreatedId(null)
-        setOrderItems([]); setReturnAll(true); setQuantities({})
-        setHoursLeft(null)
+        setSuccess(false); setCreatedId(null); setEligibleOrder(null)
       }, 350)
       return () => clearTimeout(t)
     }
@@ -134,57 +100,6 @@ export default function ComplaintModal({
   }, [isOpen, onClose])
 
   if (!isOpen && !mounted) return null
-
-  const lines = returnLines(orderItems, returnAll, quantities)
-
-  async function handleSubmit() {
-    if (lines.length === 0) { setError(t('errors.items')); return }
-    if (!type)              { setError(t('errors.type')); return }
-    if (!charOk)            { setError(t('errors.minChars', { count: MIN_CHARS })); return }
-    if (photos.length === 0) { setError(t('errors.photo')); return }
-    setError(null); setLoading(true)
-    try {
-      const res = await complaintApi.submit({
-        order_id:       orderId,
-        complaint_type: type as ComplaintType,
-        description,
-        images:         photos,
-        return_all:     returnAll,
-        items:          lines,
-      })
-      setCreatedId(res.data?.id ?? null)
-      setSuccess(true)
-    } catch (err) {
-      setError((err instanceof Error && err.message) || t('errors.generic'))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const selectedType = COMPLAINT_TYPES.find(ct => ct.value === type)
-  const charColor    = charCount === 0 ? '#94a3b8' : charOk ? GREEN : '#f59e0b'
-
-  const formProgress = Math.min(100,
-    (lines.length > 0 ? 25 : 0) +
-    (type ? 25 : 0) +
-    (charOk ? 25 : Math.min(25, (charCount / MIN_CHARS) * 25)) +
-    (photos.length > 0 ? 25 : 0)
-  )
-
-  // ── Styles — all original ─────────────────────────────────────────────────
-  const labelStyle: React.CSSProperties = {
-    display: 'block', fontSize: 11, fontWeight: 800, color: '#374151',
-    textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8,
-    fontFamily: "'Barlow', sans-serif",
-  }
-
-  const inputBaseStyle: React.CSSProperties = {
-    width: '100%', boxSizing: 'border-box' as const,
-    background: '#f8fafc', border: '1.5px solid #e5e7eb',
-    borderRadius: 10, fontFamily: "'Barlow', sans-serif",
-    fontSize: 14, fontWeight: 600, color: '#0f172a',
-    outline: 'none', transition: 'border-color 0.15s',
-  }
 
   return (
     <>
@@ -305,18 +220,6 @@ export default function ComplaintModal({
             zIndex: 10000,
           }}
         >
-          {/* Progress strip */}
-          {isEligible && !success && (
-            <div style={{ height: 3, background: '#f1f5f9', flexShrink: 0 }}>
-              <div style={{
-                height: '100%',
-                width: `${formProgress}%`,
-                background: `linear-gradient(90deg, ${RED}, #f59e0b)`,
-                transition: 'width 0.3s ease',
-              }} />
-            </div>
-          )}
-
           {/* Header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -488,7 +391,7 @@ export default function ComplaintModal({
               </button>
             </div>
 
-          /* ══ FORM ══ */
+          /* ══ FORM (shared with /complaints/new) ══ */
           ) : (
             <>
               {/* Partial eligibility notice */}
@@ -507,180 +410,21 @@ export default function ComplaintModal({
                 </div>
               )}
 
-              {/* Scrollable body */}
-              <div
-                className="cd-body-scroll"
-                style={{
-                  flex: '1 1 0',
-                  minHeight: 0,
-                  overflowY: 'auto',
-                  overflowX: 'hidden',
-                  padding: '22px 20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 20,
-                }}
-              >
-                {/* Error */}
-                {error && (
-                  <div style={{
-                    background: '#fef2f2', border: '1.5px solid rgba(219,20,46,0.18)',
-                    borderRadius: 9, padding: '10px 13px',
-                    fontSize: 13, fontWeight: 600, color: RED,
-                    display: 'flex', alignItems: 'flex-start', gap: 8,
-                  }}>
-                    <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                {/* ── Item Picker (original) ── */}
-                {loadingItems && (
+              {/* Scrollable body: the shared form (its submit button sticks to the bottom) */}
+              <div className="cd-body-scroll" style={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: '22px 20px' }}>
+                {loadingItems ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8', fontSize: 12 }}>
                     <BrandLoader variant="inline" size={14} style={{ color: RED }} />
                     {t('loadingItems')}
                   </div>
-                )}
-
-                {!loadingItems && orderItems.length > 0 && (
-                  <div>
-                    <label style={labelStyle}>
-                      {t('whichItems')} <span style={{ color: RED }}>*</span>
-                    </label>
-                    <ReturnItemsPicker
-                      items={orderItems}
-                      returnAll={returnAll}
-                      onReturnAll={v => { setReturnAll(v); if (!v) setQuantities({}); setError(null) }}
-                      quantities={quantities}
-                      onChange={q => { setQuantities(q); setError(null) }}
-                    />
-                    <p style={{ fontSize: 11, color: '#64748b', margin: '8px 0 0', padding: '8px 12px', background: 'rgba(219,20,46,0.04)', borderRadius: 8, border: '1px solid rgba(219,20,46,0.12)', lineHeight: 1.5 }}>
-                      {t('refundNote')} <strong>{t('noExchange')}</strong>
-                    </p>
-                  </div>
-                )}
-
-                {/* ── Complaint Type (original) ── */}
-                <div>
-                  <label style={labelStyle}>
-                    {t('type')} <span style={{ color: RED }}>*</span>
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <select
-                      className="cd-select-el"
-                      value={type}
-                      onChange={e => { setType(e.target.value); setError(null) }}
-                      aria-label={t('type')}
-                    >
-                      {COMPLAINT_TYPES.map(ct => (
-                        <option key={ct.value} value={ct.value}>
-                          {ct.icon ? `${ct.icon}  ${typeLabel(ct.value)}` : typeLabel(ct.value)}
-                        </option>
-                      ))}
-                    </select>
-                    <span style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94a3b8' }}>
-                      <ChevronDown size={14} />
-                    </span>
-                  </div>
-                  {selectedType?.value && (
-                    <p style={{ fontSize: 11, color: '#64748b', margin: '6px 0 0', lineHeight: 1.5 }}>
-                      {SELLER_FAULT_TYPES.includes(selectedType.value as ComplaintType)
-                        ? t('shippingSeller')
-                        : t('shippingClient', { fee: returnFee.toFixed(3) })}
-                    </p>
-                  )}
-                  {selectedType?.value && (
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 5,
-                      fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 999,
-                      background: 'rgba(219,20,46,0.07)', color: RED,
-                      border: '1px solid rgba(219,20,46,0.18)', marginTop: 6,
-                    }}>
-                      {selectedType.icon} {typeLabel(selectedType.value)}
-                    </span>
-                  )}
-                </div>
-
-                {/* ── Description (original) ── */}
-                <div>
-                  <label style={labelStyle}>
-                    {t('description')} <span style={{ color: RED }}>*</span>
-                  </label>
-                  <textarea
-                    className="cd-textarea-el"
-                    value={description}
-                    onChange={e => setDescription(e.target.value.slice(0, MAX_CHARS))}
-                    placeholder={t('descriptionPlaceholder')}
-                    aria-label={t('description')}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: charColor }}>
-                      {charCount < MIN_CHARS ? t('charsNeeded', { count: MIN_CHARS - charCount }) : t('charsOk')}
-                    </span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>
-                      {charCount} / {MAX_CHARS}
-                    </span>
-                  </div>
-                  <div style={{ height: 2.5, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden', marginTop: 7 }}>
-                    <div style={{
-                      height: '100%', borderRadius: 99, width: `${progress}%`,
-                      background: charOk
-                        ? `linear-gradient(90deg, ${GREEN}, #22c55e)`
-                        : 'linear-gradient(90deg, #f59e0b, #fbbf24)',
-                      transition: 'width 0.2s ease, background 0.3s ease',
-                    }} />
-                  </div>
-                </div>
-
-                {/* ── Proof photos ── */}
-                <div>
-                  <label style={labelStyle}>
-                    {t('proof')}{' '}
-                    <span style={{ color: RED, fontWeight: 700, textTransform: 'none', letterSpacing: 0, fontSize: 10 }}>
-                      — {t('required')}
-                    </span>
-                  </label>
-                  <ProofPhotosInput files={photos} onChange={f => { setPhotos(f); setError(null) }} onError={setError} />
-                </div>
-
-                {/* ── Info note (original + hours) ── */}
-                <div style={{
-                  background: 'linear-gradient(135deg, rgba(219,20,46,0.03), rgba(219,20,46,0.01))',
-                  border: '1px solid rgba(219,20,46,0.1)',
-                  borderRadius: 10, padding: '11px 14px',
-                  display: 'flex', gap: 9, alignItems: 'flex-start',
-                }}>
-                  <AlertTriangle size={13} color={RED} style={{ flexShrink: 0, marginTop: 2 }} />
-                  <p style={{ fontSize: 12, color: '#64748b', margin: 0, fontWeight: 500, lineHeight: 1.6 }}>
-                    {t.rich('info', { b: c => <strong style={{ color: '#374151' }}>{c}</strong> })}
-                    {hoursLeft !== null && (
-                      <> {t.rich('infoHours', { hours: hoursLeft, b: c => <strong style={{ color: RED }}>{c}</strong> })}</>
-                    )}
-                    {' '}{t('infoTip')}
+                ) : !eligibleOrder ? (
+                  <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.65, margin: 0 }}>
+                    {tf.rich('noEligibleBody', { b: c => <strong style={{ color: '#374151' }}>{c}</strong> })}
                   </p>
-                </div>
-              </div>
-
-              {/* Footer — original */}
-              <div style={{
-                flexShrink: 0,
-                padding: '14px 20px 20px',
-                borderTop: '1px solid #f1f5f9',
-                background: '#fff',
-              }}>
-                <button
-                  className="cd-submit-btn"
-                  onClick={handleSubmit}
-                  disabled={loading || !type || !charOk || photos.length === 0 || lines.length === 0}
-                >
-                  {loading
-                    ? <><BrandLoader variant="inline" size={15} /> {t('submitting')}</>
-                    : <><Send size={14} /> {t('submit')}</>
-                  }
-                </button>
-                <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', margin: '9px 0 0', fontWeight: 500 }}>
-                  {t('disclaimer')}
-                </p>
+                ) : (
+                  <ComplaintRequestForm order={eligibleOrder} fees={fees} sellerFaultTypes={sellerFault} layout="drawer"
+                    onSubmitted={c => { setCreatedId(c?.id ?? null); setSuccess(true) }} />
+                )}
               </div>
             </>
           )}

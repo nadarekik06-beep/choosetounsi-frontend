@@ -1,10 +1,12 @@
 /**
- * Returns ("réclamations"). The only resolution is return + refund — a client
- * who wants another item simply reorders. Legacy exchange records stay readable.
+ * After-sale requests ("réclamations"): a RETURN (refund) or an EXCHANGE
+ * (another variant of the same product, delivered by the courier who takes the
+ * old item back). Legacy exchange records (is_legacy_exchange) stay readable.
  *
- *   requested → seller_accepted | seller_rejected (→ escalated)
- *             → admin_approved → pickup_scheduled → picked_up
- *             → returned_to_seller (received & inspected) → refunded
+ *   requested → seller_accepted | seller_rejected (→ escalated) → admin_approved
+ *   return:   → pickup_scheduled → picked_up → returned_to_seller → refunded
+ *   exchange: → exchange_in_transit → exchanged → exchange_completed
+ *             (exchange_failed: refused at the door, ChooseTounsi decides)
  *   terminal: rejected | cancelled | closed
  */
 
@@ -21,15 +23,21 @@ export type ComplaintStatus =
   | 'rejected'
   | 'cancelled'
   | 'closed'
+  | 'exchange_in_transit'
+  | 'exchanged'
+  | 'exchange_failed'
+  | 'exchange_completed'
 
 export type ComplaintType =
   | 'wrong_product'
   | 'wrong_size'
   | 'wrong_color'
   | 'damaged_product'
+  | 'changed_mind'
+  | 'doesnt_fit'
+  | 'prefer_other_color'
   | 'other'
 
-/** Legacy only: 'exchange' can't be requested any more. */
 export type ResolutionType = 'return_refund' | 'exchange'
 
 /** cash = paid back by the courier at pick-up (cash on delivery orders) */
@@ -42,10 +50,13 @@ export const COMPLAINT_TYPE_LABELS: Record<ComplaintType, string> = {
   wrong_size:      'Wrong size',
   wrong_color:     'Wrong color',
   damaged_product: 'Damaged / defective product',
+  changed_mind:    'Changed my mind',
+  doesnt_fit:      'Size doesn\x27t fit',
+  prefer_other_color: 'Prefer another color',
   other:           'Other (specify below)',
 }
 
-/** Reasons where the seller is at fault → the seller pays the return shipping. */
+/** Reasons where the seller is at fault → the seller pays the after-sale parcel (client pays 0). */
 export const SELLER_FAULT_TYPES: ComplaintType[] = ['wrong_product', 'wrong_size', 'wrong_color', 'damaged_product']
 
 /** Colors per status (labels come from the `returns.status` translations). */
@@ -62,6 +73,10 @@ export const STATUS_CONFIG: Record<ComplaintStatus, { color: string; bg: string;
   rejected:           { color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   icon: '❌' },
   cancelled:          { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', icon: '⊘' },
   closed:             { color: '#64748b', bg: 'rgba(100,116,139,0.1)', icon: '✔' },
+  exchange_in_transit: { color: '#6366f1', bg: 'rgba(99,102,241,0.1)', icon: '🚚' },
+  exchanged:          { color: '#14b8a6', bg: 'rgba(20,184,166,0.1)', icon: '🔁' },
+  exchange_failed:    { color: '#ef4444', bg: 'rgba(239,68,68,0.1)', icon: '⚠️' },
+  exchange_completed: { color: '#10b981', bg: 'rgba(16,185,129,0.1)', icon: '✅' },
 }
 
 export const statusConfig = (s: string) =>
@@ -84,6 +99,7 @@ export interface PurchasedVariantAttribute {
 export interface PurchasedItem {
   id:                 number            // order_item_id — what a return selects
   order_id?:          number
+  seller_order_id?:   number | null   // the shop parcel (one after-sale fee per parcel)
   product_id?:        number | null
   variant_id?:        number | null
   product_name:       string
@@ -97,10 +113,29 @@ export interface PurchasedItem {
   image_url:          string | null
 }
 
+export interface ExchangeOption {
+  id:      number
+  label:   string
+  stock:   number
+  current: boolean   // the variant they have (a defect: the same one again)
+}
+
 export interface EligibleOrderItem extends PurchasedItem {
   returnable_quantity: number   // units still returnable (minus live returns)
   paid_unit_price:     number   // after coupon / flash price — what a unit refunds
+  parcel_size?:        ParcelSize
+  /** In-stock variants of the same product at the same price */
+  exchange_options?:   ExchangeOption[]
+  /** No variants: the same product again (when in stock) */
+  exchange_same_product?: boolean
+  /** Some in-stock variants were left out because their price differs */
+  exchange_other_price?: boolean
 }
+
+export type ParcelSize = 'S' | 'L' | 'XL'
+
+/** After-sale fees per parcel size: one fee per shop parcel, at its largest size. */
+export type AfterSaleFees = Record<ParcelSize, { return: number; exchange: number }>
 
 export interface EligibleOrder {
   id:             number
@@ -120,6 +155,8 @@ export interface ComplaintOrderItem extends PurchasedItem {
   return_amount?:      number
   condition?:          ItemCondition | null
   restocked_quantity?: number
+  replacement_variant_id?: number | null
+  replacement_label?:  string | null
 }
 
 export interface ComplaintOrder {
@@ -203,6 +240,18 @@ export interface Complaint {
   public_events?:      ReturnEvent[]
   refund_status?:      'pending' | 'assigned' | 'picked_up' | 'completed' | null
   refund_task_id?:     number | null
+  // Exchange
+  is_legacy_exchange?: boolean
+  exchange_fee?:       number | string
+  client_fee?:         number | string   // cash to hand the courier (exchange) — 0 when the shop is at fault
+  fee_size?:           ParcelSize | null
+  exchange_tracking?:  string | null
+  exchange_carrier_status?: string | null
+  exchange_shipped_at?: string | null
+  exchanged_at?:       string | null
+  exchange_failed_at?: string | null
+  old_item_received_at?: string | null
+  old_item_overdue?:   boolean
 }
 
 /**
@@ -219,11 +268,14 @@ export type BuyerComplaint = Omit<Complaint,
 export interface ReturnLineInput {
   order_item_id: number
   quantity:      number
+  /** Exchange: the variant wanted instead (none for products without variants) */
+  replacement_variant_id?: number | null
 }
 
 export interface ComplaintFormPayload {
   order_id:       number
   complaint_type: ComplaintType
+  resolution_type?: ResolutionType
   other_reason?:  string
   description:    string
   images:         File[]

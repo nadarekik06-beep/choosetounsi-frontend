@@ -17,7 +17,7 @@ const TEXT_SEC  = '#64748b'
  * The estimate uses the price actually paid (coupon / flash sale included).
  */
 export default function ReturnItemsPicker({
-  items, returnAll, onReturnAll, quantities, onChange, error,
+  items, returnAll, onReturnAll, quantities, onChange, error, showEstimate = true,
 }: {
   items:       EligibleOrderItem[]
   returnAll:   boolean
@@ -25,6 +25,8 @@ export default function ReturnItemsPicker({
   quantities:  Record<number, number>
   onChange:    (q: Record<number, number>) => void
   error?:      string
+  /** The refund estimate (hidden for an exchange: nothing is refunded) */
+  showEstimate?: boolean
 }) {
   const t = useTranslations('returns.form')
   const { price } = useFormat()
@@ -112,7 +114,7 @@ export default function ReturnItemsPicker({
 
       {error && <span style={{ fontSize: 11, color: RED, fontWeight: 700, marginTop: 8, display: 'block' }}>⚠ {error}</span>}
 
-      {estimate > 0 && (
+      {showEstimate && estimate > 0 && (
         <div style={{
           marginTop: 12, padding: '10px 14px', borderRadius: 10, background: 'rgba(16,185,129,0.06)',
           border: '1px solid rgba(16,185,129,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',

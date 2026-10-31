@@ -10,25 +10,32 @@ import { useFormat } from '@/lib/i18n/useFormat'
 const RED   = '#db142e'
 const GREEN = '#10b981'
 
-/** Status pill — label from returns.status, colors from STATUS_CONFIG. */
-export function ReturnStatusBadge({ status }: { status: string }) {
-  const t = useTranslations('returns.status')
+/**
+ * Status pill — label from returns.status (returns.statusExchange for the
+ * shared steps of an exchange: "Exchange requested"…), colors from STATUS_CONFIG.
+ */
+export function ReturnStatusBadge({ status, resolution }: { status: string; resolution?: string | null }) {
+  const t = useTranslations('returns')
   const cfg = statusConfig(status)
+  const label = resolution === 'exchange' && t.has(`statusExchange.${status}`) ? t(`statusExchange.${status}`)
+    : t.has(`status.${status}`) ? t(`status.${status}`) : status
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 800, padding: '3px 10px',
       borderRadius: 999, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}30`,
       textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap',
     }}>
-      {cfg.icon} {t.has(status) ? t(status) : status}
+      {cfg.icon} {label}
     </span>
   )
 }
 
 /**
- * "Return / Refund tracking": the canonical steps with their dates, the refund
- * (amount, method, reference once refunded) and the client's actions —
- * escalate a shop refusal, or withdraw a request not answered yet.
+ * "Return / Refund tracking" (or exchange tracking): the canonical steps with
+ * their dates, the refund (amount, method, reference) or the exchange (the
+ * replacement, the cash to hand the courier, the Intigo tracking), and the
+ * client's actions — escalate a shop refusal, or withdraw a request not
+ * answered yet.
  */
 export default function ReturnTracking({ complaint, onChanged }: { complaint: BuyerComplaint; onChanged?: (c: BuyerComplaint) => void }) {
   const t   = useTranslations('returns')
@@ -43,9 +50,16 @@ export default function ReturnTracking({ complaint, onChanged }: { complaint: Bu
   const items   = Number(complaint.items_amount ?? 0)
   const fee     = Number(complaint.return_shipping_fee ?? 0)
   const clientPaysShipping = complaint.shipping_payer === 'client' && fee > 0
-  const isLegacyExchange   = complaint.resolution_type === 'exchange'
+  const isLegacyExchange   = complaint.is_legacy_exchange ?? (complaint.resolution_type === 'exchange' && !complaint.fee_size)
+  const isExchange         = complaint.resolution_type === 'exchange' && !isLegacyExchange
+  const toPay              = Number(complaint.client_fee ?? 0)
   const cash               = !!complaint.cash_refund
-  const hint = (s: string) => (cash && t.has(`hintCash.${s}`) ? t(`hintCash.${s}`, { amount: fmt.price(refund) }) : t(`hint.${s}`))
+  const hint = (s: string) => {
+    if (isExchange && t.has(`hintExchange.${s}`)) return t(`hintExchange.${s}`, { amount: fmt.price(toPay) })
+    return cash && t.has(`hintCash.${s}`) ? t(`hintCash.${s}`, { amount: fmt.price(refund) }) : t(`hint.${s}`)
+  }
+  const stepLabel = (s: string) => (isExchange && t.has(`statusExchange.${s}`) ? t(`statusExchange.${s}`) : t(`status.${s}`))
+  const replacements = (complaint.complained_items ?? []).filter(i => i.replacement_label)
 
   const run = async (kind: 'escalate' | 'cancel') => {
     setBusy(kind); setError(null)
@@ -74,11 +88,11 @@ export default function ReturnTracking({ complaint, onChanged }: { complaint: Bu
       {/* Timeline */}
       {steps.length > 0 && (
         <div>
-          <p style={sectionTitle}>{t('tracking')}</p>
+          <p style={sectionTitle}>{isExchange ? t('trackingExchange') : t('tracking')}</p>
           <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {steps.map((s, i) => {
               const color = s.done ? GREEN : s.current ? statusConfig(s.status).color : '#cbd5e1'
-              const label = s.status === 'seller_decision' ? t('steps.seller_decision') : t(`status.${s.status}`)
+              const label = s.status === 'seller_decision' ? t('steps.seller_decision') : stepLabel(s.status)
               return (
                 <li key={`${s.key}-${i}`} style={{ display: 'flex', gap: 12, position: 'relative', paddingBottom: i < steps.length - 1 ? 14 : 0 }}>
                   {i < steps.length - 1 && (
@@ -121,8 +135,26 @@ export default function ReturnTracking({ complaint, onChanged }: { complaint: Bu
         </div>
       )}
 
+      {/* Exchange: the replacement, what to pay the courier, tracking */}
+      {isExchange && (
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: '12px 14px', background: complaint.status === 'exchange_completed' ? 'rgba(16,185,129,0.05)' : '#fafafa' }}>
+          <p style={sectionTitle}>{t('exchange.title')}</p>
+          {replacements.map(i => (
+            <Row key={i.id} label={`${i.product_name}${i.variant_label ? ` · ${i.variant_label}` : ''}`} value={`→ ${i.replacement_label}`} />
+          ))}
+          <Row label={t('exchange.toPay')} value={fmt.price(toPay)} strong />
+          {complaint.exchange_tracking && <Row label={t('exchange.tracking')} value={complaint.exchange_tracking} mono />}
+          {complaint.exchange_carrier_status && <Row label={t('exchange.carrierStatus')} value={complaint.exchange_carrier_status} />}
+          {complaint.exchanged_at && <Row label={t('exchange.exchangedAt')} value={fmt.date(complaint.exchanged_at, 'long')} />}
+          <p style={{ margin: '8px 0 0', fontSize: 11.5, color: '#64748b', lineHeight: 1.55 }}>
+            {complaint.shipping_payer === 'seller' ? t('exchange.paidByShop') : t('exchange.paidByYou', { fee: fmt.price(toPay) })}
+            {' '}{t('exchange.oldItem')}
+          </p>
+        </div>
+      )}
+
       {/* Refund */}
-      {!isLegacyExchange && (
+      {!isLegacyExchange && !isExchange && (
         <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: '12px 14px', background: complaint.status === 'refunded' ? 'rgba(16,185,129,0.05)' : '#fafafa' }}>
           <p style={sectionTitle}>{t('refund.title')}</p>
           <Row label={t('refund.items')} value={fmt.price(items)} />
