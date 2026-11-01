@@ -202,6 +202,10 @@ function MegaMenu({categories,visible,onClose}:{categories:ApiCategory[];visible
             </div>
           ):(
             <>
+              <Link href={`/category/${activeSlug}`} onClick={onClose} style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:13,fontWeight:700,color:"#db142e",textDecoration:"none",marginBottom:18}}>
+                {t("seeAllIn",{name:activeCat?.name ?? ""})}
+                <svg className="rtl-flip" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </Link>
               <div className="mm-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:"24px 20px"}}>
                 {subs.map(g=>(
                   <div key={g.group}>

@@ -18,14 +18,17 @@ import type { CardSwatch } from '@/app/components/product/cardData'
 
 import Navbar from '@/app/components/layout/Navbar'
 import { fillGrid, useGridExtras } from '@/lib/gridFill'
-import ProductFilterSidebar, { type F, DEFAULT_FILTERS, appendFilterParams, hasActiveFilters } from '@/app/components/filters/ProductFilterSidebar'
+import ProductFilterSidebar, { type F, type Sort, DEFAULT_FILTERS, appendFilterParams, hasActiveFilters } from '@/app/components/filters/ProductFilterSidebar'
 import { useTranslations } from 'next-intl'
 import { canScrollNext, canScrollPrev, scrollCarousel } from '@/lib/i18n/rtlScroll'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
 import { RouteLoading } from '@/components/brand/NavigationLoader'
 import { API_BASE } from '@/lib/constants'
 import { parseGender, type Gender } from '@/lib/gender'
-import GenderSubcategoryBar from '@/app/components/category/GenderSubcategoryBar'
+import SubcategoryIconBar from '@/app/components/category/SubcategoryIconBar'
+
+const SORTS: Sort[] = ['created_at', 'views', 'price_asc', 'price_desc', 'rating']
+const parseSort = (v: string | null): Sort => (SORTS.includes(v as Sort) ? (v as Sort) : DEFAULT_FILTERS.sort)
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -188,7 +191,20 @@ function Inner() {
   const [page, setPage]  = useState(1)
   const [view, setView]  = useState<View>('grid')
   const [mOpen,setMOpen] = useState(false)
-  const [f, setF] = useState<F>(DEFAULT_FILTERS)
+  // ?sort= lives in the URL so subcategory links, refresh, back / forward and shared links keep it
+  const urlSort = parseSort(sp.get('sort'))
+  const [f, setFState] = useState<F>(() => ({ ...DEFAULT_FILTERS, sort: urlSort }))
+  const setF = useCallback((next: F) => {
+    setFState(next)
+    if (next.sort !== parseSort(sp.get('sort'))) {
+      const qp = new URLSearchParams(sp.toString())
+      if (next.sort === DEFAULT_FILTERS.sort) qp.delete('sort'); else qp.set('sort', next.sort)
+      const qs = qp.toString()
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    }
+  }, [sp, router, pathname])
+  // URL changed from outside (back / forward, a link): follow it
+  useEffect(() => { setFState(cur => (cur.sort === urlSort ? cur : { ...cur, sort: urlSort })) }, [urlSort])
 
   useEffect(() => {
     const measure = () => {
@@ -376,7 +392,8 @@ function Inner() {
 
       <div className="shpage">
         <CatBar cats={allC} active={slug} view={view} setView={setView} mOpen={mOpen} setMOpen={setMOpen} fCount={fCount} shown={displayed.length} total={prods?.total??0}/>
-        {gender&&<GenderSubcategoryBar categorySlug={slug} gender={gender} activeSub={subSlug}/>}
+        {/* Every category, every entry point; the backend ignores ?gender outside gendered categories */}
+        <SubcategoryIconBar categorySlug={slug} gender={urlGender} activeSub={subSlug}/>
 
         <div className="shlayout">
           <ProductFilterSidebar f={f} setF={setF} total={prods?.total??0} catSlug={slug} subSlug={subSlug} gender={genderProp}

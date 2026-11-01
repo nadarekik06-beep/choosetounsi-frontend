@@ -279,7 +279,10 @@
     "women": "نساء",
     "men": "رجال",
     "genderSwitch": "اختر: نساء أو رجال",
-    "viewAllGender": "عرض الكل: {name} {gender}"
+    "viewAllGender": "عرض الكل: {name} {gender}",
+    "seeAllIn": "عرض كل منتجات {name}",
+    "seeAllWomen": "عرض كل منتجات النساء",
+    "seeAllMen": "عرض كل منتجات الرجال"
   },
   "footer": {
     "about": "من نحن",
@@ -524,7 +527,8 @@
     "metaDescription": "اكتشف تشكيلة {name} من بائعين تونسيين. توصيل إلى كامل أنحاء تونس.",
     "genderBar": "الفئات الفرعية",
     "genderBarPrev": "الفئات الفرعية السابقة",
-    "genderBarNext": "الفئات الفرعية التالية"
+    "genderBarNext": "الفئات الفرعية التالية",
+    "subBarClear": "إزالة فلتر {name}"
   },
   "product": {
     "selectOptions": "يرجى اختيار: {options}.",

@@ -26,25 +26,45 @@ export default function MegaMenuBody({ cat, catName, onClose }: {
   const itemHref = (categorySlug: string, sub: string) =>
     g ? genderHref(categorySlug, g, sub) : `/category/${categorySlug}?sub=${encodeURIComponent(sub)}`
   const itemLabel = (slug: string, fallback: string) => (t.has(`items.${slug}`) ? t(`items.${slug}`) : fallback)
+  // Column title: when every subcategory of the column belongs to another real category, open that
+  // category; otherwise this category (with the active gender)
+  const colHref = (col: GenderMenuGroup) => {
+    const own = new Set(col.items.map(it => it.category_slug))
+    const only = own.size === 1 ? [...own][0] : ''
+    return only && only !== cat.slug ? `/category/${only}` : allHref
+  }
+  const seeAll = g ? t(g === 'women' ? 'seeAllWomen' : 'seeAllMen') : t('seeAllIn', { name: catName })
 
   return (
     <>
-      {g && (
-        <>
-          <style>{`.mgs{display:inline-flex;gap:4px;padding:4px;background:#f3f4f6;border-radius:999px;margin-bottom:20px}
+      <style>{`.mm-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;margin-bottom:20px}
+.mgs{display:inline-flex;gap:4px;padding:4px;background:#f3f4f6;border-radius:999px}
 .mgs-b{border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;color:#6b7280;padding:7px 22px;border-radius:999px;transition:all .15s}
 .mgs-b:hover{color:#dc2626}
-.mgs-b.on{background:#fff;color:#dc2626;box-shadow:0 1px 4px rgba(0,0,0,.08)}`}</style>
-          <div className="mgs" role="tablist" aria-label={t('genderSwitch')}>
-            {GENDERS.map(x => (
-              <button key={x} type="button" role="tab" aria-selected={gender === x}
-                className={`mgs-b${gender === x ? ' on' : ''}`}
-                onMouseEnter={() => setGender(x)} onFocus={() => setGender(x)} onClick={() => setGender(x)}>
-                {t(x)}
-              </button>
-            ))}
-          </div>
-        </>
+.mgs-b.on{background:#fff;color:#dc2626;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.mm-all{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#db142e;text-decoration:none;transition:gap .15s}
+.mm-all:hover{gap:9px;text-decoration:underline;text-underline-offset:3px}`}</style>
+      {(g || cols.length > 0) && (
+        <div className="mm-top">
+          {g && (
+            <div className="mgs" role="tablist" aria-label={t('genderSwitch')}>
+              {GENDERS.map(x => (
+                <button key={x} type="button" role="tab" aria-selected={gender === x}
+                  className={`mgs-b${gender === x ? ' on' : ''}`}
+                  onMouseEnter={() => setGender(x)} onFocus={() => setGender(x)} onClick={() => setGender(x)}>
+                  {t(x)}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* "See all products" of this category (with the active Femme / Homme tab) */}
+          {cols.length > 0 && (
+            <Link href={allHref} onClick={onClose} className="mm-all">
+              {seeAll}
+              <svg className="rtl-flip" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+            </Link>
+          )}
+        </div>
       )}
 
       {cols.length === 0 ? (
@@ -57,7 +77,7 @@ export default function MegaMenuBody({ cat, catName, onClose }: {
           <div className="mm-grid" role={g ? 'tabpanel' : undefined} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(170px,1fr))', gap: '24px 20px' }}>
             {cols.map(col => (
               <div key={col.key}>
-                <Link href={allHref} onClick={onClose} style={{ display: 'block', fontSize: 11, fontWeight: 800, color: '#dc2626', textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10, paddingBottom: 6, borderBottom: '1.5px solid #fee2e2' }}>{localName(col, locale)}</Link>
+                <Link href={colHref(col)} onClick={onClose} style={{ display: 'block', fontSize: 11, fontWeight: 800, color: '#dc2626', textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10, paddingBottom: 6, borderBottom: '1.5px solid #fee2e2' }}>{localName(col, locale)}</Link>
                 <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
                   {col.items.map(it => (
                     <li key={it.id}><Link href={itemHref(it.category_slug, it.slug)} onClick={onClose} className="msub" style={{ fontSize: 13, color: '#4b5563', textDecoration: 'none', fontWeight: 400, display: 'block', lineHeight: 1.5, transition: 'color 0.12s' }}>{itemLabel(it.slug, localName(it, locale))}</Link></li>

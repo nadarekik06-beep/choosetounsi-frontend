@@ -1,5 +1,5 @@
 // Gender browsing for gendered categories (Mode & Vêtements → Femme / Homme).
-// Data comes from the backend: GET /categories/mega-menu and /categories/{slug}/gender-bar.
+// Data comes from the backend: GET /categories/mega-menu and /categories/{slug}/subcategory-bar.
 
 import { useEffect, useState } from 'react'
 import { API_BASE } from '@/lib/constants'
@@ -37,8 +37,9 @@ export interface GenderMenuCategory extends Localized {
   /** Other categories: one set of columns */
   groups?: GenderMenuGroup[]
 }
-export interface GenderBarItem extends Localized {
-  id: number; slug: string; category_slug: string
+/** One icon of the subcategory bar shown on every category page. */
+export interface SubcategoryBarItem extends Localized {
+  id: number; slug: string
   count: number; image: string | null; image_source: 'admin' | 'product' | null
 }
 
@@ -65,22 +66,37 @@ export function useMegaMenu(): GenderMenuCategory[] | null {
   return data
 }
 
-/** Subcategory bar of a gendered category × gender (empty subcategories already left out). */
-export function useGenderBar(categorySlug: string, gender: Gender | ''): { items: GenderBarItem[]; loading: boolean } {
-  const [state, setState] = useState<{ key: string; items: GenderBarItem[] }>({ key: '', items: [] })
-  const key = gender && categorySlug ? `${categorySlug}:${gender}` : ''
+// Bars already loaded this session: back / forward and revisits show at once
+const barCache = new Map<string, SubcategoryBarItem[]>()
+
+/**
+ * Subcategory bar of any category, fetched from the slug in the URL (GET /categories/{slug}/subcategory-bar).
+ * ?gender only counts on gendered categories (the backend ignores it elsewhere); empty subcategories are left out.
+ */
+export function useSubcategoryBar(categorySlug: string, gender: Gender | ''): { items: SubcategoryBarItem[]; loading: boolean } {
+  const key = categorySlug ? `${categorySlug}:${gender}` : ''
+  const [state, setState] = useState<{ key: string; items: SubcategoryBarItem[] }>(() =>
+    ({ key: barCache.has(key) ? key : '', items: barCache.get(key) ?? [] }))
 
   useEffect(() => {
     if (!key) return
+    const hit = barCache.get(key)
+    if (hit) { setState({ key, items: hit }); return }
     let alive = true
-    fetch(`${API_BASE}/categories/${encodeURIComponent(categorySlug)}/gender-bar?gender=${gender}`, { headers: { Accept: 'application/json' } })
+    const qs = gender ? `?gender=${gender}` : ''
+    fetch(`${API_BASE}/categories/${encodeURIComponent(categorySlug)}/subcategory-bar${qs}`, { headers: { Accept: 'application/json' } })
       .then(r => (r.ok ? r.json() : Promise.reject()))
-      .then(j => { if (alive) setState({ key, items: Array.isArray(j.data) ? j.data : [] }) })
+      .then(j => {
+        const items: SubcategoryBarItem[] = Array.isArray(j.data) ? j.data : []
+        barCache.set(key, items)
+        if (alive) setState({ key, items })
+      })
       .catch(() => { if (alive) setState({ key, items: [] }) })
     return () => { alive = false }
   }, [key, categorySlug, gender])
 
-  return { items: state.key === key ? state.items : [], loading: !!key && state.key !== key }
+  const ready = state.key === key
+  return { items: ready ? state.items : [], loading: !!key && !ready }
 }
 
 /** Category page link with gender (and optional subcategory) preselected. */

@@ -279,7 +279,10 @@
     "women": "Women",
     "men": "Men",
     "genderSwitch": "Choose: Women or Men",
-    "viewAllGender": "View all: {name} {gender}"
+    "viewAllGender": "View all: {name} {gender}",
+    "seeAllIn": "See all products in {name}",
+    "seeAllWomen": "See all Women's products",
+    "seeAllMen": "See all Men's products"
   },
   "footer": {
     "about": "About us",
@@ -524,7 +527,8 @@
     "metaDescription": "Discover our {name} selection from Tunisian sellers. Delivery across Tunisia.",
     "genderBar": "Subcategories",
     "genderBarPrev": "Previous subcategories",
-    "genderBarNext": "Next subcategories"
+    "genderBarNext": "Next subcategories",
+    "subBarClear": "Remove the {name} filter"
   },
   "product": {
     "selectOptions": "Please select {options} before proceeding.",
