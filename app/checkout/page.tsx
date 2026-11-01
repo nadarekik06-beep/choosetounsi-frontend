@@ -92,7 +92,7 @@ interface BuyNowProduct {
   is_free_delivery?: boolean
   images?: { image_path: string; url?: string; color_option_id?: number | null }[]
   variants?: { id: number; price: string | number; final_price?: string | number; effective_price?: string | number; sku: string | null; image_urls: string[] }[]
-  seller?: { id: number; name: string } | null
+  seller?: { id: number; name: string; business_name?: string | null } | null
 }
 
 // ─── Coupon box (per seller for cart checkout, single for buy-now) ────────────
@@ -565,7 +565,7 @@ export default function CheckoutPage() {
 
   const sellerGroups = useMemo(() => {
     if (isBuyNow) {
-      return bnProduct?.seller ? [{ sellerId: bnProduct.seller.id, sellerName: bnProduct.seller.name }] : []
+      return bnProduct?.seller ? [{ sellerId: bnProduct.seller.id, sellerName: bnProduct.seller.business_name?.trim() || bnProduct.seller.name }] : []
     }
     const map = new Map<number, { sellerId: number; sellerName: string }>()
     for (const item of items) {
