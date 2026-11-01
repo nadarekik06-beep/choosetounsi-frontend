@@ -11,6 +11,9 @@ export interface AuthUser {
   is_active: boolean;
   avatar: string | null;
   active_plan: 'free' | 'red' | 'black';
+  /** Latest seller application (from /auth/user; absent right after login). */
+  seller_application_id?: number | null;
+  seller_application_status?: 'pending' | 'approved' | 'rejected' | null;
   onboarding_completed: boolean;
   /** Shoppers only: name, phone and a delivery address are set. Absent on old sessions. */
   profile_completed?: boolean;

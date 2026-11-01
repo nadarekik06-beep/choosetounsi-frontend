@@ -6570,5 +6570,11 @@
       "noOption": "“{item}” can’t be exchanged: choose a return instead.",
       "submit": "Failed to submit. Please try again."
     }
+  },
+  "sellerActivated": {
+    "title": "Your seller account is active 🎉",
+    "body": "Your application was approved. You can add your products now, no need to sign in again.",
+    "cta": "Go to my seller dashboard",
+    "close": "Close"
   }
 }

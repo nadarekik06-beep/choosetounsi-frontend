@@ -6570,5 +6570,11 @@
       "noOption": "« {item} » ne peut pas être échangé : choisissez plutôt un retour.",
       "submit": "Échec de l’envoi. Veuillez réessayer."
     }
+  },
+  "sellerActivated": {
+    "title": "Votre compte vendeur est actif 🎉",
+    "body": "Votre demande a été approuvée. Vous pouvez ajouter vos produits dès maintenant, sans vous reconnecter.",
+    "cta": "Accéder à mon espace vendeur",
+    "close": "Fermer"
   }
 }

@@ -5,7 +5,7 @@ import {
   X, Upload, CheckCircle, AlertCircle,
   User, Check, Clock, RefreshCw, Eye, UserPlus, Paperclip,
 } from 'lucide-react'
-import { api, getUser } from '@/lib/auth'
+import { api, getUser, refreshUser } from '@/lib/auth'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { validateTunisianPhone } from '@/lib/shippingAddress'
@@ -650,6 +650,8 @@ export default function ApplicationForm({
       }
 
       clearApplicationDraft()
+      // Cached user learns the application is pending: the approval is then picked up without a re-login
+      refreshUser()
       onSuccess(wasUpdate)
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string; errors?: Record<string, unknown> } } }
