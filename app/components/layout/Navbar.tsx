@@ -29,6 +29,7 @@ import { LanguageLink, LanguageInlineSelect } from "@/components/i18n/LanguageSw
 import { API_BASE } from '@/lib/constants'
 import { useMegaMenu } from '@/lib/gender'
 import MegaMenuBody from './MegaMenuBody'
+import MobileCategoryStrip from './MobileCategoryStrip'
 
 interface ApiCategory {
   id: number; name: string; name_ar: string; slug: string;
@@ -706,6 +707,7 @@ export default function Navbar() {
   const [scrolled,   setScrolled]   = useState(false);
   const [megaOpen,   setMegaOpen]   = useState(false);
   const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [catsLoaded, setCatsLoaded] = useState(false);
 
   // Search state
   const [searchQuery,    setSearchQuery]    = useState("");
@@ -732,7 +734,8 @@ export default function Navbar() {
 
   useEffect(()=>{
     fetch(`${API_BASE}/categories`,{headers:{Accept:"application/json"}})
-      .then(r=>r.json()).then(j=>setCategories(j.data??[])).catch(()=>{});
+      .then(r=>r.json()).then(j=>setCategories(j.data??[])).catch(()=>{})
+      .finally(()=>setCatsLoaded(true));
   },[]);
   useEffect(()=>{
     const h=()=>setScrolled(window.scrollY>4);
@@ -1226,6 +1229,12 @@ export default function Navbar() {
           </div>
         )}
       </header>
+
+      {/* Phone-only category shortcuts. Outside the sticky header on purpose: it scrolls away. */}
+      <MobileCategoryStrip
+        categories={catsLoaded ? categories : null}
+        onOpenAll={()=>{ setMenuOpen(false); setDropOpen(false); setSearchFocused(false); setMegaOpen(true); }}
+      />
     </>
   );
 }

@@ -135,7 +135,12 @@
     "hotBadge": "🔥 رائج",
     "suggestionCategory": "قسم",
     "suggestionSeller": "بائع",
-    "brandHome": "ChooseTounsi — الرئيسية"
+    "brandHome": "ChooseTounsi — الرئيسية",
+    "categoryStrip": {
+      "label": "تصفح الأقسام",
+      "all": "الكل",
+      "allAria": "عرض كل الأقسام"
+    }
   },
   "mega": {
     "close": "إغلاق الأقسام",

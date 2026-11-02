@@ -135,7 +135,12 @@
     "hotBadge": "🔥 Top",
     "suggestionCategory": "Catégorie",
     "suggestionSeller": "Vendeur",
-    "brandHome": "ChooseTounsi — Accueil"
+    "brandHome": "ChooseTounsi — Accueil",
+    "categoryStrip": {
+      "label": "Parcourir les catégories",
+      "all": "Tout voir",
+      "allAria": "Voir toutes les catégories"
+    }
   },
   "mega": {
     "close": "Fermer les catégories",
