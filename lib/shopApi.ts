@@ -166,8 +166,10 @@ export interface CheckoutPayload {
   postal_code?: string
   notes?: string
   payment_method?: 'cod' | 'card' | 'd17' | 'wallet'
-  item_ids?: number[]   // ← ADD THIS LINE
+  item_ids?: number[]
   coupon_codes?: string[]
+  /** One per confirmation (UUID): a repeated key returns the same order instead of a new one. */
+  idempotency_key?: string
   /** Guest checkout only: where to send the order confirmation (optional). */
   email?: string
 }
@@ -188,6 +190,8 @@ export interface BuyNowPayload {
   notes?: string
   payment_method?: 'cod' | 'card' | 'd17' | 'wallet'
   coupon_code?: string
+  /** One per confirmation (UUID): a repeated key returns the same order instead of a new one. */
+  idempotency_key?: string
   /** Guest checkout only: where to send the order confirmation (optional). */
   email?: string
 }
@@ -205,6 +209,19 @@ export interface QuoteParcel {
   delivery_fee: number
   total: number
   cod_amount: number
+  /** The parcel's lines, priced by the server (cart_id is null for buy-now) */
+  lines?: QuoteLine[]
+}
+
+export interface QuoteLine {
+  cart_id: number | null
+  kind: 'product' | 'pack'
+  name: string
+  quantity: number
+  unit_price: number
+  total: number
+  /** This line's share of the seller's coupon */
+  discount: number
 }
 
 export type PaymentMethodSwitches = Record<'cod' | 'card' | 'd17' | 'wallet', boolean>

@@ -28,6 +28,7 @@ import { api, getUser, isAuthenticated, updateSessionUser, subscribeAuth, type A
 import { guestCheckoutEnabled, guestHeaders, clearCartToken, rememberGuestOrder, isSignedInSnapshot, notSignedInOnServer, sessionExpired } from '@/lib/guestCart'
 import GuestCheckoutChoice from '@/components/checkout/GuestCheckoutChoice'
 import GuestOrderSuccess, { type GuestSuccess } from '@/components/checkout/GuestOrderSuccess'
+import OrderConfirmModal, { newIdempotencyKey, type ConfirmStage, type ConfirmLineExtra } from '@/components/checkout/OrderConfirmModal'
 import { profileApi } from '@/lib/profileApi'
 import { fetchPaymentInfo, COD_ONLY, type PaymentInfo } from '@/lib/platformApi'
 import type { UserAddress } from '@/app/account/addresses/page'
@@ -52,6 +53,9 @@ function usePrice() {
 
 // ─── Shared sessionStorage key ────────────────────────────────────────────────
 const SELECTED_ITEMS_KEY = 'ct_selected_items'
+
+/** Time the buyer has to cancel after "Confirmer la commande", before anything is sent */
+const ORDER_COUNTDOWN_MS = 10_000
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -337,7 +341,7 @@ function AddressSelector({
         {addresses.map(addr => {
           const isSel = selectedId === addr.id
           return (
-            <button key={addr.id} onClick={() => onSelect(addr)} style={{
+            <button key={addr.id} type="button" onClick={() => onSelect(addr)} style={{
               display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
               border: `2px solid ${isSel ? '#db142e' : '#e5e7eb'}`, background: isSel ? 'rgba(219,20,46,0.04)' : '#fff',
               textAlign: 'start', fontFamily: 'inherit', transition: 'all 0.15s ease',
@@ -368,7 +372,7 @@ function AddressSelector({
             </button>
           )
         })}
-        <button onClick={onUseNew} style={{
+        <button type="button" onClick={onUseNew} style={{
           display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 12, cursor: 'pointer',
           border: `2px dashed ${selectedId === null ? '#db142e' : '#e5e7eb'}`,
           background: selectedId === null ? 'rgba(219,20,46,0.03)' : '#fff',
@@ -808,14 +812,118 @@ export default function CheckoutPage() {
   const parcels         = quote?.parcels ?? []
   const walletInsufficient = walletBalance !== null && summaryTotal !== null && walletBalance < summaryTotal
 
-  // ── Submit ────────────────────────────────────────────────────────────────
+  // ── Place order: check → confirm → 10 s to undo → the one order request ───
+  //
+  // Selecting an address, a payment method, a coupon… only changes state.
+  // "Passer la commande" checks the checkout and opens the confirmation;
+  // "Confirmer la commande" starts the countdown; the order API is called
+  // from submitOrder() only, when the countdown reaches 0.
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const [confirm, setConfirm] = useState<{ stage: ConfirmStage; key: string; quote: CheckoutQuote } | null>(null)
+  const [checking, setChecking] = useState(false)           // re-checking the cart before the modal
+  const [cancelNotice, setCancelNotice] = useState(false)   // "nothing was sent" after Annuler
+  const [remainingMs, setRemainingMs] = useState(ORDER_COUNTDOWN_MS)
+  const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const checkoutLocked = confirm !== null && confirm.stage !== 'review'
+
+  const stopCountdown = useCallback(() => {
+    if (countdownTimer.current) clearInterval(countdownTimer.current)
+    countdownTimer.current = null
+  }, [])
+  // Leaving the page (link, back button) clears the timer: nothing is sent
+  useEffect(() => stopCountdown, [stopCountdown])
+
+  const openConfirm = async () => {
+    if (confirm || checking || loading) return
+    setCancelNotice(false)
     if (!validate()) return
-    if (summaryTotal === null) return   // no quote yet: nothing to confirm
     if (!methods[paymentMethod]) { showComingSoon(); return }
+    setApiError('')
+    setSessionNotice(null)
+    setChecking(true)
+    // Stock, coupons, promotions and delivery fees checked again by the server
+    const fresh = await loadQuote()
+    setChecking(false)
+    if (!fresh) { setApiError(t('confirm.recheckFailed')); return }
+    if (paymentMethod === 'wallet' && walletBalance !== null && walletBalance < fresh.total) {
+      setApiError(t('pay.walletInsufficient', { amount: fmt(walletBalance) }))
+      return
+    }
+    setRemainingMs(ORDER_COUNTDOWN_MS)
+    setConfirm({ stage: 'review', key: newIdempotencyKey(), quote: fresh })
+  }
+
+  const closeConfirm = () => { stopCountdown(); setConfirm(null) }
+
+  const cancelCountdown = () => {
+    stopCountdown()
+    setConfirm(null)
+    setCancelNotice(true)
+  }
+
+  // Latest submitOrder for the timer (the form is locked while it runs)
+  const submitOrderRef = useRef<(key: string, expectedTotal: number) => void>(() => {})
+
+  const startCountdown = () => {
+    if (!confirm || confirm.stage !== 'review' || countdownTimer.current) return   // never two timers
+    const { key, quote: shown } = confirm
+    const deadline = Date.now() + ORDER_COUNTDOWN_MS
+    setRemainingMs(ORDER_COUNTDOWN_MS)
+    setConfirm({ ...confirm, stage: 'countdown' })
+    countdownTimer.current = setInterval(() => {
+      const left = deadline - Date.now()
+      if (left > 0) { setRemainingMs(left); return }
+      stopCountdown()
+      setRemainingMs(0)
+      submitOrderRef.current(key, shown.total)
+    }, 100)
+  }
+
+  // Countdown / sending: warn before leaving, the order is not placed yet
+  useEffect(() => {
+    if (!checkoutLocked) return
+    const onBeforeUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = '' }
+    const onLinkClick = (e: MouseEvent) => {
+      const link = (e.target as Element | null)?.closest?.('a[href]')
+      if (link && !window.confirm(t('confirm.leaveWarning'))) { e.preventDefault(); e.stopPropagation() }
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    document.addEventListener('click', onLinkClick, true)
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload)
+      document.removeEventListener('click', onLinkClick, true)
+    }
+  }, [checkoutLocked, t])
+
+  // Cart line → picture, variant and crossed-out price for the confirmation
+  const confirmLineExtra = (cartId: number | null): ConfirmLineExtra => {
+    if (cartId === null) {
+      return {
+        image: bnImage,
+        variant: bnVariant ? (bnVariant.sku ? t('sku', { sku: bnVariant.sku }) : t('variantN', { id: bnVariant.id })) : null,
+        originalUnitPrice: null,
+        promoType: null,
+      }
+    }
+    const item = allCartItems.find(i => i.id === cartId)
+    if (!item) return { image: null, variant: null, originalUnitPrice: null, promoType: null }
+    return {
+      image: resolveImg(item.image_url),
+      variant: item.variant_label ?? null,
+      originalUnitPrice: item.original_price ?? null,
+      promoType: item.promo_type ?? (item.promotion?.is_flash_sale ? 'flash_sale' : item.original_price ? 'promotion' : null),
+    }
+  }
+
+  // Enter in a field never submits anything
+  const blockEnterSubmit = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') e.preventDefault()
+  }
+
+  /** The only place that creates an order: called when the countdown reaches 0. */
+  const submitOrder = async (idempotencyKey: string, expectedTotal: number) => {
     const address = { ...shippingAddressPayload(form), ...(isGuest && guestEmail.trim() ? { email: guestEmail.trim() } : {}) }
+    setConfirm(c => (c ? { ...c, stage: 'placing' } : c))
     setLoading(true)
     setApiError('')
     setSessionNotice(null)
@@ -827,9 +935,10 @@ export default function CheckoutPage() {
         if (!bnProduct) throw new Error(t('errors.productMissing'))
         const bnCoupon = bnProduct.seller ? couponState(bnProduct.seller.id) : null
         const payload: BuyNowPayload = {
-          expected_total: summaryTotal,
-          product_id:     bnProduct.id,
-          quantity:       bnQuantity,
+          expected_total:  expectedTotal,
+          idempotency_key: idempotencyKey,
+          product_id:      bnProduct.id,
+          quantity:        bnQuantity,
           ...address,
           payment_method: paymentMethod,
           ...(bnCoupon?.applied ? { coupon_code: bnCoupon.applied } : {}),
@@ -842,7 +951,8 @@ export default function CheckoutPage() {
         const appliedCodes = Object.values(couponStates).filter(c => c.applied).map(c => c.applied as string)
 
         res = await checkoutApi.place({
-          expected_total: summaryTotal,
+          expected_total:  expectedTotal,
+          idempotency_key: idempotencyKey,
           ...address,
           payment_method: paymentMethod,
           ...(selectedItemIds ? { item_ids: selectedItemIds } : {}),
@@ -850,6 +960,7 @@ export default function CheckoutPage() {
         })
         await refreshCart()
       }
+      setConfirm(null)
 
       if (savedNeedsCompletion && selectedAddressId !== null) {
         const saved = savedAddresses.find(a => a.id === selectedAddressId)
@@ -905,6 +1016,8 @@ export default function CheckoutPage() {
         payment_method: paymentMethod,
       })
     } catch (caught) {
+      // Shown on the checkout; the buyer decides to try again (no automatic retry)
+      setConfirm(null)
       const err = caught as Error & { status?: number; data?: { code?: string; errors?: Record<string, string[]> } }
       // Validation (422 with field errors): mark the fields, in the reader's language
       const fieldErrors = err.status === 422 ? shippingAddressErrorsFromServer(err.data?.errors) : {}
@@ -939,6 +1052,7 @@ export default function CheckoutPage() {
       setLoading(false)
     }
   }
+  useEffect(() => { submitOrderRef.current = submitOrder })
 
   // ── Success screen ────────────────────────────────────────────────────────
 
@@ -1108,7 +1222,9 @@ export default function CheckoutPage() {
         <div className="co-grid" style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px 60px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: 28, alignItems: 'start' }}>
 
           {/* ── LEFT COLUMN ── */}
-          <form onSubmit={handleSubmit} style={{ animation: 'fadeUp 0.4s ease both', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Never submits: the order goes through "Passer la commande" → confirmation → countdown */}
+          <form onSubmit={e => e.preventDefault()} onKeyDown={blockEnterSubmit} noValidate style={{ animation: 'fadeUp 0.4s ease both', minWidth: 0 }}>
+          <fieldset disabled={checkoutLocked} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* Not signed in: continue as guest (default) or log in */}
             {isGuest && <GuestCheckoutChoice returnTo={checkoutPath} notice={sessionNotice ?? (expired ? t('guest.sessionExpired') : null)} />}
@@ -1206,6 +1322,7 @@ export default function CheckoutPage() {
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748b', fontWeight: 600, textDecoration: 'none' }}>
               <ArrowLeft size={13} /> {isBuyNow ? t('backToProduct') : t('continueShopping')}
             </Link>
+          </fieldset>
           </form>
 
           {/* ── RIGHT: Order Summary ── */}
@@ -1353,25 +1470,31 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 <button
-                  onClick={handleSubmit}
-                  disabled={loading || stripeLoading || quoteLoading || summaryTotal === null || (paymentMethod === 'wallet' && walletInsufficient)}
+                  type="button"
+                  onClick={openConfirm}
+                  disabled={loading || stripeLoading || checking || confirm !== null || quoteLoading || summaryTotal === null || (paymentMethod === 'wallet' && walletInsufficient)}
                   style={{
                     width: '100%', padding: '14px 0',
-                    background: (loading || stripeLoading) ? '#e5e7eb' : 'linear-gradient(135deg,#dc2626,#b91c1c)',
-                    color: (loading || stripeLoading) ? '#9ca3af' : '#fff',
+                    background: (loading || stripeLoading || checking) ? '#e5e7eb' : 'linear-gradient(135deg,#dc2626,#b91c1c)',
+                    color: (loading || stripeLoading || checking) ? '#9ca3af' : '#fff',
                     fontWeight: 800, fontSize: 15, border: 'none', borderRadius: 12,
-                    cursor: (loading || stripeLoading) ? 'not-allowed' : 'pointer',
+                    cursor: (loading || stripeLoading || checking) ? 'not-allowed' : 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    boxShadow: (loading || stripeLoading) ? 'none' : '0 8px 24px rgba(220,38,38,0.3)',
+                    boxShadow: (loading || stripeLoading || checking) ? 'none' : '0 8px 24px rgba(220,38,38,0.3)',
                     fontFamily: 'inherit', transition: 'all 0.2s',
                   }}
                 >
-                  {loading || stripeLoading
-                    ? <><BrandLoader variant="inline" size={18} />{stripeLoading ? t('redirectingStripe') : t('placing')}</>
+                  {loading || stripeLoading || checking
+                    ? <><BrandLoader variant="inline" size={18} />{stripeLoading ? t('redirectingStripe') : checking ? t('confirm.checking') : t('placing')}</>
                     : paymentMethod === 'card' ? <><CreditCard size={18} /> {t('payWithCard')}</>
                     : isBuyNow ? <><Zap size={18} /> {t('placeOrderNow')}</>
                     : <><CheckCircle size={18} /> {t('placeOrder')}</>}
                 </button>
+                {cancelNotice && (
+                  <p role="status" style={{ fontSize: 12, fontWeight: 700, color: '#198f41', textAlign: 'center', margin: '10px 0 0' }}>
+                    {t('confirm.cancelled')}
+                  </p>
+                )}
                 <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 10 }}>
                   {{ cod: t('reassure.cod'), card: t('reassure.card'), d17: t('reassure.d17'), wallet: t('reassure.wallet') }[paymentMethod]}
                 </p>
@@ -1380,6 +1503,27 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {confirm && (
+        <OrderConfirmModal
+          stage={confirm.stage}
+          quote={confirm.quote}
+          lineExtra={confirmLineExtra}
+          address={{
+            name:   form.recipient_name,
+            phones: form.phone + (form.phone_secondary ? ` / ${form.phone_secondary}` : ''),
+            full:   formatShippingAddress(form, wilayaLabel),
+            notes:  form.notes ?? '',
+          }}
+          paymentLabel={{ cod: t('pay.cod'), card: t('pay.card'), d17: 'D17', wallet: t('pay.wallet') }[paymentMethod]}
+          remainingMs={remainingMs}
+          totalMs={ORDER_COUNTDOWN_MS}
+          fmt={fmt}
+          onEdit={closeConfirm}
+          onConfirm={startCountdown}
+          onCancelCountdown={cancelCountdown}
+        />
+      )}
     </>
   )
 }
