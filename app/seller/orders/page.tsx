@@ -823,6 +823,11 @@ export default function OrdersPage() {
                                 {t('itemCount', { count: order.items_count })}
                               </span>
                             )}
+                            {order.prepared_at && order.status === 'confirmed' && order.delivery?.state !== 'sent' && (
+                              <span style={{ display: 'inline-block', marginTop: 4, marginRight: 4, fontSize: 10, fontWeight: 800, color: ink('#198f41', dark), background: 'rgba(25,143,65,0.1)', border: '1px solid rgba(25,143,65,0.25)', padding: '1px 6px', borderRadius: 5 }}>
+                                {t('preparedBadge')}
+                              </span>
+                            )}
                             {order.delivery?.state === 'sent' && order.delivery.nid && (
                               <span title={t('delivery.refTitle')} style={{ display: 'inline-block', marginTop: 4, fontFamily: 'monospace', fontSize: 10, fontWeight: 800, color: ink('#198f41', dark), background: 'rgba(25,143,65,0.1)', border: '1px solid rgba(25,143,65,0.25)', padding: '1px 6px', borderRadius: 5 }}>
                                 🚚 {order.delivery.nid}

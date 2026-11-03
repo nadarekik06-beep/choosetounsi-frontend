@@ -208,6 +208,8 @@ export interface Order {
   created_at: string;
   items_count?: number;   // this seller's line items only
   /** Delivery request at the courier (Intigo) */
+  /** Seller clicked "prepared" (status stays confirmed until the courier picks it up) */
+  prepared_at?: string | null;
   delivery?: ParcelDelivery;
 }
 

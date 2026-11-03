@@ -3596,6 +3596,7 @@
       "returnedBody": "The refused parcel is back with you and its stock is on sale again.",
       "preparedDone": "Order marked as prepared. Thank you!",
       "preparedAt": "Prepared on {date} — waiting for the courier",
+      "preparedBadge": "✓ Prepared",
       "delivery": {
         "sent": "Sent to delivery",
         "ref": "Reference",

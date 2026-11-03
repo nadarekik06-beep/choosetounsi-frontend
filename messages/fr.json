@@ -3596,6 +3596,7 @@
       "returnedBody": "Le colis refusé vous est revenu et son stock est de nouveau en vente.",
       "preparedDone": "Commande marquée comme préparée. Merci !",
       "preparedAt": "Préparée le {date} — en attente du livreur",
+      "preparedBadge": "✓ Préparée",
       "delivery": {
         "sent": "Envoyé à la livraison",
         "ref": "Référence",
