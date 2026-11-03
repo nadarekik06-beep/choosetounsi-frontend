@@ -17,16 +17,15 @@ import { useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
-  MapPin, Phone, FileText, ChevronRight, Package,
+  Phone, ChevronRight, Package,
   CheckCircle, ShoppingBag, ArrowLeft, Zap,
   Plus, Star, Home, Briefcase, CreditCard, Wallet,
-  Smartphone, Truck, AlertCircle, Ticket, X,
+  Smartphone, Truck, AlertCircle, Ticket, X, Minus,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { checkoutApi, walletApi, paymentApi, type BuyNowPayload, type CheckoutQuote, type CheckoutResponse, type QuotePayload } from '@/lib/shopApi'
 import { api, getUser, isAuthenticated, updateSessionUser, subscribeAuth, type AuthUser } from '@/lib/auth'
 import { guestCheckoutEnabled, guestHeaders, clearCartToken, rememberGuestOrder, isSignedInSnapshot, notSignedInOnServer, sessionExpired } from '@/lib/guestCart'
-import GuestCheckoutChoice from '@/components/checkout/GuestCheckoutChoice'
 import GuestOrderSuccess, { type GuestSuccess } from '@/components/checkout/GuestOrderSuccess'
 import OrderConfirmModal, { newIdempotencyKey, type ConfirmStage, type ConfirmLineExtra } from '@/components/checkout/OrderConfirmModal'
 import { profileApi } from '@/lib/profileApi'
@@ -39,7 +38,7 @@ import ShippingAddressFields from '@/components/address/ShippingAddressFields'
 import { useRegions } from '@/lib/regions'
 import {
   emptyShippingAddress, shippingAddressFrom, validateShippingAddress, isCompleteShippingAddress,
-  shippingAddressPayload, shippingAddressErrorsFromServer, formatShippingAddress, type ShippingAddressForm,
+  shippingAddressPayload, checkoutShippingAddress, shippingAddressErrorsFromServer, formatShippingAddress, type ShippingAddressForm,
 } from '@/lib/shippingAddress'
 
 import BrandLoader from '@/components/brand/BrandLoader'
@@ -94,8 +93,13 @@ interface BuyNowProduct {
   final_price?: string | number          // after promotion: what buy-now charges
   primary_image_url: string | null
   is_free_delivery?: boolean
+  stock?: number
   images?: { image_path: string; url?: string; color_option_id?: number | null }[]
-  variants?: { id: number; price: string | number; final_price?: string | number; effective_price?: string | number; sku: string | null; image_urls: string[] }[]
+  variants?: {
+    id: number; price: string | number; final_price?: string | number; effective_price?: string | number
+    sku: string | null; image_urls: string[]; stock?: number; label?: string | null
+    option_map?: Record<string, { id: number; value: string } | null>
+  }[]
   seller?: { id: number; name: string; business_name?: string | null } | null
 }
 
@@ -414,6 +418,7 @@ export default function CheckoutPage() {
   const t            = useTranslations('checkout')
   const tc           = useTranslations('common')
   const tsa          = useTranslations('shippingAddress')
+  const tp           = useTranslations('product')
   const fmt          = usePrice()
   const wilayaLabel  = useWilayaLabel()
   const router       = useRouter()
@@ -422,7 +427,7 @@ export default function CheckoutPage() {
   const isBuyNow    = searchParams.get('buy_now') === '1'
   const bnSlug      = isBuyNow ? (searchParams.get('product_slug') ?? null) : null
   const bnVariantId = isBuyNow ? (searchParams.get('variant_id') ? Number(searchParams.get('variant_id')) : null) : null
-  const bnQuantity  = isBuyNow ? Math.max(1, Number(searchParams.get('quantity') ?? '1')) : 1
+  const bnQuantity  = isBuyNow ? Math.max(1, Number(searchParams.get('quantity') ?? '1') || 1) : 1
 
   const { items: allCartItems, refreshCart, cartLoading } = useCart()
 
@@ -563,6 +568,7 @@ export default function CheckoutPage() {
   const [success,  setSuccess]  = useState<{ order_number: string; total: number; payment_method: PaymentMethod } | null>(null)
   const [apiError, setApiError] = useState('')
   const deliveryRef = useRef<HTMLDivElement>(null)
+  const formRef     = useRef<HTMLFormElement>(null)
 
   // ── Coupons — keyed by seller_id, one code per seller ──────────────────────
   const [couponStates, setCouponStates] = useState<Record<number, CouponState>>({})
@@ -709,7 +715,7 @@ export default function CheckoutPage() {
           const f = shippingAddressFrom(def)
           setSelectedAddressId(def.id)
           setForm(f)
-          setSavedNeedsCompletion(!isCompleteShippingAddress(f))
+          setSavedNeedsCompletion(!isCompleteShippingAddress(checkoutShippingAddress(f)))
         } else {
           setSelectedAddressId(null)
           // No saved address yet (profile skipped): start from the profile's name and phone
@@ -743,20 +749,22 @@ export default function CheckoutPage() {
   // Once the lists are known, re-check the selected saved address against them
   useEffect(() => {
     if (!regions.ready || selectedAddressId === null) return
-    setSavedNeedsCompletion(!isCompleteShippingAddress(form, regions.available))
+    setSavedNeedsCompletion(!isCompleteShippingAddress(checkoutShippingAddress(form), regions.available))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regions.ready, regions.available, selectedAddressId])
 
   const set = (field: keyof ShippingAddressForm, value: string) => {
     setForm(f => ({ ...f, [field]: value }))
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }))
+    // The "fix the address" note goes once the buyer edits the address
+    setApiError(e => (e === t('errors.fixAddress') ? '' : e))
   }
 
   const handleSelectAddress = (addr: UserAddress) => {
     const f = shippingAddressFrom(addr)
     setSelectedAddressId(addr.id)
     setForm(f)
-    setSavedNeedsCompletion(!isCompleteShippingAddress(f))
+    setSavedNeedsCompletion(!isCompleteShippingAddress(checkoutShippingAddress(f)))
     setErrors({})
   }
 
@@ -769,15 +777,29 @@ export default function CheckoutPage() {
 
   // Same rules as the server (App\Support\ShippingAddress); errors are message keys
   const validate = (): boolean => {
-    const e = validateShippingAddress(form) as Record<string, string>
+    // The second phone / postal code are not shown here: never an error on them
+    const e = validateShippingAddress(checkoutShippingAddress(form)) as Record<string, string>
     setErrors(e)
     const ok = Object.keys(e).length === 0
     if (!ok) showAddressErrors()
     // Guest e-mail is optional, but must be valid when given
     const emailBad = isGuest && guestEmail.trim() !== '' && !EMAIL_RE.test(guestEmail.trim())
     setGuestEmailError(emailBad ? t('guest.emailInvalid') : '')
-    if (ok && emailBad) requestAnimationFrame(() => deliveryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    if (ok && emailBad) scrollToFirstError()
     return ok && !emailBad
+  }
+
+  // After the errors render: bring the first faulty field into view and focus it
+  const scrollToFirstError = () => {
+    setTimeout(() => {
+      const el = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el.focus({ preventScroll: true })
+      } else {
+        deliveryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 80)
   }
 
   // Address errors (ours or the server's): show the form on the faulty fields
@@ -785,10 +807,33 @@ export default function CheckoutPage() {
   const showAddressErrors = () => {
     if (selectedAddressId !== null) setSavedNeedsCompletion(true)
     setApiError(t('errors.fixAddress'))
-    requestAnimationFrame(() => deliveryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    scrollToFirstError()
   }
 
   const bnVariant        = bnProduct?.variants?.find(v => v.id === bnVariantId) ?? null
+  // "Noir · L" from the variant's options; the old reference label only when they are missing
+  const bnVariantText = (() => {
+    if (!bnVariant) return null
+    // Color first, then size etc.
+    const values = Object.entries(bnVariant.option_map ?? {})
+      .sort(([a], [b]) => Number(b === 'color') - Number(a === 'color'))
+      .map(([, o]) => o?.value?.trim()).filter(Boolean)
+    if (values.length > 0) return values.join(' · ')
+    if (bnVariant.label?.trim()) return bnVariant.label.trim()
+    return bnVariant.sku ? t('sku', { sku: bnVariant.sku }) : t('variantN', { id: bnVariant.id })
+  })()
+  // Buy-now quantity lives in the URL (login keeps it); the server re-checks stock
+  const bnMaxQty = (() => {
+    const s = bnVariant ? bnVariant.stock : bnProduct?.stock
+    return typeof s === 'number' && s > 0 ? s : null
+  })()
+  const setBnQuantity = (q: number) => {
+    const next = Math.max(1, bnMaxQty ? Math.min(bnMaxQty, q) : q)
+    if (next === bnQuantity) return
+    const qp = new URLSearchParams(searchParams.toString())
+    qp.set('quantity', String(next))
+    router.replace(`/checkout?${qp.toString()}`, { scroll: false })
+  }
   // Unit price after promotion, from the server (same number buy-now charges)
   const bnEffectivePrice = bnVariant
     ? Number(bnVariant.final_price ?? bnVariant.effective_price ?? bnVariant.price)
@@ -900,7 +945,7 @@ export default function CheckoutPage() {
     if (cartId === null) {
       return {
         image: bnImage,
-        variant: bnVariant ? (bnVariant.sku ? t('sku', { sku: bnVariant.sku }) : t('variantN', { id: bnVariant.id })) : null,
+        variant: bnVariantText,
         originalUnitPrice: null,
         promoType: null,
       }
@@ -922,7 +967,8 @@ export default function CheckoutPage() {
 
   /** The only place that creates an order: called when the countdown reaches 0. */
   const submitOrder = async (idempotencyKey: string, expectedTotal: number) => {
-    const address = { ...shippingAddressPayload(form), ...(isGuest && guestEmail.trim() ? { email: guestEmail.trim() } : {}) }
+    // Same payload fields as before; the hidden second phone / postal code are sent only when valid
+    const address = { ...shippingAddressPayload(checkoutShippingAddress(form)), ...(isGuest && guestEmail.trim() ? { email: guestEmail.trim() } : {}) }
     setConfirm(c => (c ? { ...c, stage: 'placing' } : c))
     setLoading(true)
     setApiError('')
@@ -1172,6 +1218,19 @@ export default function CheckoutPage() {
   const hasSavedAddresses = !addressesLoading && savedAddresses.length > 0
   const showManualForm    = !hasSavedAddresses || selectedAddressId === null || savedNeedsCompletion
   const summaryCount      = isBuyNow ? bnQuantity : count
+  const shownPhones       = (() => { const f = checkoutShippingAddress(form); return f.phone + (f.phone_secondary ? ` / ${f.phone_secondary}` : '') })()
+  const busy              = loading || stripeLoading || checking
+  const orderDisabled     = busy || confirm !== null || quoteLoading || summaryTotal === null || (paymentMethod === 'wallet' && walletInsufficient)
+  const accountNotice     = isGuest ? (sessionNotice ?? (expired ? t('guest.sessionExpired') : null)) : null
+
+  // Section card with a numbered title: 1 summary · 2 delivery · 3 payment
+  const sectionTitle = (n: number, label: string, extra?: React.ReactNode) => (
+    <div style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span aria-hidden="true" style={{ width: 24, height: 24, borderRadius: '50%', background: '#db142e', color: '#fff', fontSize: 12, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{n}</span>
+      <h2 style={{ fontSize: 15.5, fontWeight: 800, color: '#0f172a', margin: 0, flex: 1, minWidth: 0 }}>{label}{extra}</h2>
+    </div>
+  )
+  const card: React.CSSProperties = { background: '#fff', borderRadius: 16, border: '1px solid #eef2f6', overflow: 'hidden', scrollMarginTop: 90 }
 
   return (
     <>
@@ -1182,67 +1241,194 @@ export default function CheckoutPage() {
         .co-input{width:100%;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;color:#0f172a;outline:none;background:#fff;transition:border-color 0.15s}
         .co-input:focus{border-color:#dc2626}
         .co-input.err{border-color:#ef4444;background:#fef2f2}
-        @media(max-width:800px){.co-grid{grid-template-columns:1fr!important}}
+        .co-form input:focus,.co-form select:focus,.co-form textarea:focus{border-color:#db142e!important;box-shadow:0 0 0 3px rgba(219,20,46,0.1)}
+        .co-qty{width:36px;height:36px;border:none;background:#f8fafc;color:#0f172a;display:flex;align-items:center;justify-content:center;cursor:pointer}
+        .co-qty:disabled{color:#cbd5e1;cursor:not-allowed}
+        .co-qty:focus-visible,.co-pay:focus-visible,.co-submit:focus-visible{outline:2px solid #0f172a;outline-offset:2px}
+        .co-sticky{position:fixed;inset-inline:0;bottom:0;z-index:900;background:#fff;border-top:1px solid #e5e7eb;box-shadow:0 -8px 24px rgba(15,23,42,0.08);padding:10px 16px calc(8px + env(safe-area-inset-bottom))}
+        .co-submit:not(:disabled):hover{filter:brightness(0.94)}
+        @media(max-width:400px){.co-submit-icon{display:none}}
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Barlow', sans-serif" }}>
+      <div style={{ minHeight: '100vh', background: '#f6f7f9', fontFamily: "'Barlow', sans-serif" }}>
 
         {/* Breadcrumb */}
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
-          <nav aria-label={t('breadcrumb')} style={{ maxWidth: 1100, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
+          <nav aria-label={t('breadcrumb')} style={{ maxWidth: 680, margin: '0 auto', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
             <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>{tc('home')}</Link>
-            <ChevronRight size={11} />
+            <ChevronRight size={11} className="rtl-flip" />
             <Link href="/shop" style={{ color: '#94a3b8', textDecoration: 'none' }}>{t('shop')}</Link>
-            <ChevronRight size={11} />
+            <ChevronRight size={11} className="rtl-flip" />
             <span style={{ color: '#374151', fontWeight: 600 }}>{isBuyNow ? t('quickCheckout') : t('title')}</span>
           </nav>
         </div>
 
-        {isBuyNow && (
-          <div style={{ maxWidth: 1100, margin: '12px auto 0', padding: '0 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: '1.5px solid rgba(220,38,38,0.25)', borderRadius: 10, padding: '8px 14px' }}>
-              <Zap size={14} color="#dc2626" />
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#dc2626' }}>{t('quickCheckoutBanner')}</p>
-            </div>
-          </div>
-        )}
+        <div style={{ maxWidth: 680, margin: '0 auto', padding: '16px 16px 24px', animation: 'fadeUp 0.35s ease both' }}>
+          <h1 style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            {isBuyNow && <Zap size={20} color="#db142e" />}
+            {isBuyNow ? t('quickCheckout') : t('title')}
+          </h1>
 
-        {/* Partial-selection notice */}
-        {hasPartialSelection && (
-          <div style={{ maxWidth: 1100, margin: '12px auto 0', padding: '0 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(220,38,38,0.05)', border: '1.5px solid rgba(220,38,38,0.2)', borderRadius: 10, padding: '9px 14px' }}>
+          {/* Guest by default; one discreet line to log in (back here with the same product / variant / quantity) */}
+          {isGuest && (
+            <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
+              {t('guest.haveAccount')}{' '}
+              <Link href={`/auth/login?redirect=${encodeURIComponent(checkoutPath)}`} style={{ color: '#db142e', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 2 }}>
+                {t('guest.login')}
+              </Link>
+            </p>
+          )}
+
+          {accountNotice && (
+            <div role="status" style={{ marginTop: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 12px', fontSize: 12.5, fontWeight: 600, color: '#92400e' }}>
+              {accountNotice}
+            </div>
+          )}
+
+          {/* Partial-selection notice */}
+          {hasPartialSelection && (
+            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(220,38,38,0.05)', border: '1.5px solid rgba(220,38,38,0.2)', borderRadius: 10, padding: '9px 14px' }}>
               <CheckCircle size={14} color="#dc2626" />
               <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#b91c1c' }}>
                 {t('partialSelection', { count: items.length, total: allCartItems.length })}
               </p>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="co-grid" style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px 60px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: 28, alignItems: 'start' }}>
+          {/* Never submits: the order goes through "Commander" → confirmation → countdown */}
+          <form ref={formRef} className="co-form" onSubmit={e => e.preventDefault()} onKeyDown={blockEnterSubmit} noValidate style={{ marginTop: 16, minWidth: 0 }}>
+          <fieldset disabled={checkoutLocked} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* ── LEFT COLUMN ── */}
-          {/* Never submits: the order goes through "Passer la commande" → confirmation → countdown */}
-          <form onSubmit={e => e.preventDefault()} onKeyDown={blockEnterSubmit} noValidate style={{ animation: 'fadeUp 0.4s ease both', minWidth: 0 }}>
-          <fieldset disabled={checkoutLocked} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-            {/* Not signed in: continue as guest (default) or log in */}
-            {isGuest && <GuestCheckoutChoice returnTo={checkoutPath} notice={sessionNotice ?? (expired ? t('guest.sessionExpired') : null)} />}
-
-            {/* Delivery Information */}
-            <div ref={deliveryRef} style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', overflow: 'hidden', scrollMarginTop: 90 }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <MapPin size={16} color="#dc2626" />
-                <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>{t('deliveryInfo')}</h2>
+            {/* ── 1. Order summary ── */}
+            <section style={card} aria-labelledby="co-summary">
+              <div id="co-summary">
+                {sectionTitle(1, isBuyNow ? t('orderSummary') : t('summary'),
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', marginInlineStart: 6 }}>({tc('items', { count: summaryCount })})</span>)}
               </div>
-              <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {apiError && (
-                  <div role="alert" style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 14px', fontSize: 13, color: '#dc2626', fontWeight: 600 }}>
-                    {apiError}
+
+              <div style={{ padding: '4px 16px' }}>
+                {isBuyNow && bnProduct && (
+                  <div style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
+                    <div style={{ width: 72, height: 72, flexShrink: 0, borderRadius: 10, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
+                      {bnImage ? <img src={bnImage} alt={bnProduct.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={18} color="#e2e8f0" /></div>}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p dir="auto" style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{bnProduct.name}</p>
+                      {bnVariantText && <p dir="auto" style={{ fontSize: 13, color: '#334155', fontWeight: 700, margin: '3px 0 0' }}>{bnVariantText}</p>}
+                      <p style={{ fontSize: 12, color: '#64748b', margin: '3px 0 0' }}>{t('unitPrice', { price: fmt(bnEffectivePrice) })}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
+                        <div role="group" aria-label={tc('quantity')} style={{ display: 'inline-flex', alignItems: 'center', border: '1.5px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+                          <button type="button" className="co-qty" onClick={() => setBnQuantity(bnQuantity - 1)} disabled={bnQuantity <= 1} aria-label={tp('decrease')}>
+                            <Minus size={14} />
+                          </button>
+                          <span aria-live="polite" style={{ minWidth: 36, textAlign: 'center', fontWeight: 800, fontSize: 15, color: '#0f172a', lineHeight: '36px', borderInline: '1px solid #e5e7eb' }}>{bnQuantity}</span>
+                          <button type="button" className="co-qty" onClick={() => setBnQuantity(bnQuantity + 1)} disabled={bnMaxQty !== null && bnQuantity >= bnMaxQty} aria-label={tp('increase')}>
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                        <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{fmt(bnLineTotal)}</span>
+                      </div>
+                    </div>
                   </div>
                 )}
+
+                {/* Only the selected/filtered items */}
+                {!isBuyNow && items.map(item => {
+                  const img = resolveImg(item.image_url)
+                  const variantEntries = item.variant_options ? Object.values(item.variant_options) : []
+                  return (
+                    <div key={`${item.id}-${item.variant_id ?? 'base'}`} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
+                      <div style={{ width: 56, height: 56, flexShrink: 0, borderRadius: 8, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
+                        {img ? <img src={img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={16} color="#e2e8f0" /></div>}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p dir="auto" style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
+                        {item.variant_label && (
+                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
+                            {variantEntries.map((opt, i) =>
+                              opt.color_hex
+                                ? <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#334155' }}><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: opt.color_hex, border: '1px solid rgba(0,0,0,0.1)' }} />{opt.value}</span>
+                                : <span key={i} style={{ fontSize: 11, fontWeight: 700, color: '#334155', background: '#f1f5f9', padding: '1px 6px', borderRadius: 4 }}>{opt.value}</span>
+                            )}
+                          </div>
+                        )}
+                        <p style={{ fontSize: 12, color: '#64748b', margin: '3px 0 0' }}>{item.quantity} × {fmt(item.price)}</p>
+                      </div>
+                      <span style={{ fontSize: 13.5, fontWeight: 800, color: '#0f172a', flexShrink: 0 }}>{fmt(item.line_total)}</span>
+                    </div>
+                  )
+                })}
+
+                {sellerGroups.map(g => {
+                  const st = couponState(g.sellerId)
+                  // Buy-now: the amount follows the quantity (the server's quote)
+                  const shown = isBuyNow && st.applied && quote ? { ...st, discount: quote.discount_amount } : st
+                  return (
+                    <CouponBox
+                      key={g.sellerId}
+                      sellerId={g.sellerId}
+                      sellerLabel={g.sellerName}
+                      state={shown}
+                      onChange={v => setCouponInput(g.sellerId, v)}
+                      onApply={() => applyCoupon(g.sellerId)}
+                      onClear={() => clearCoupon(g.sellerId)}
+                    />
+                  )
+                })}
+              </div>
+
+              <div style={{ padding: '12px 16px 14px', borderTop: '1px solid #f1f5f9', background: '#fcfcfd' }}>
+                {quoteError && (
+                  <p role="alert" style={{ fontSize: 12, color: '#dc2626', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <AlertCircle size={13} /> {quoteError}
+                  </p>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>{tc('subtotal')}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{summarySubtotal !== null ? fmt(summarySubtotal) : '…'}</span>
+                </div>
+                {totalDiscount > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>{tc('discount')}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>-{fmt(totalDiscount)}</span>
+                  </div>
+                )}
+                {/* Delivery: one line per shop (each shop = one parcel) */}
+                <div style={{ marginBottom: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Truck size={13} /> {t('delivery')}
+                    </span>
+                    {(quoteLoading || !quote) && <span style={{ fontSize: 12, color: '#94a3b8' }}>{t('quoteLoading')}</span>}
+                    {quote && !quoteLoading && parcels.length === 1 && (
+                      <DeliveryAmount free={parcels[0].is_free_delivery} amount={parcels[0].delivery_fee} freeLabel={tc('free')} fmt={fmt} />
+                    )}
+                  </div>
+                  {quote && parcels.length > 1 && (
+                    <div style={{ marginTop: 6, paddingInlineStart: 19, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {parcels.map(p => (
+                        <div key={p.seller_id ?? 'platform'} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                          <span dir="auto" style={{ fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{p.seller_name}</span>
+                          <DeliveryAmount free={p.is_free_delivery} amount={p.delivery_fee} freeLabel={tc('free')} fmt={fmt} small />
+                        </div>
+                      ))}
+                      <p style={{ fontSize: 10.5, color: '#94a3b8', margin: '2px 0 0', lineHeight: 1.4 }}>{t('deliveryPerShop')}</p>
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', paddingTop: 8, borderTop: '1px dashed #e5e7eb' }}>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{tc('total')}</span>
+                  <span style={{ fontSize: 19, fontWeight: 900, color: '#db142e' }}>{summaryTotal !== null ? fmt(summaryTotal) : '…'}</span>
+                </div>
+              </div>
+            </section>
+
+            {/* ── 2. Delivery information ── */}
+            <section ref={deliveryRef} style={card} aria-labelledby="co-delivery">
+              <div id="co-delivery">{sectionTitle(2, t('deliveryInfo'))}</div>
+              <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {addressesLoading && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0', color: '#94a3b8', fontSize: 13 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', color: '#94a3b8', fontSize: 13 }}>
                     <BrandLoader variant="inline" size={14} /> {t('loadingAddresses')}
                   </div>
                 )}
@@ -1256,18 +1442,18 @@ export default function CheckoutPage() {
                         <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} /> {regions.available && !form.intigo_district_id ? tsa('reselectRegion') : tsa('completeSaved')}
                       </div>
                     )}
-                    <ShippingAddressFields value={form} errors={errors} onChange={set} />
+                    <ShippingAddressFields value={form} errors={errors} onChange={set} compact />
                     {isGuest && (
                       <div>
-                        <label htmlFor="guest-email" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
-                          {t('guest.email')} <span style={{ fontWeight: 500, color: '#94a3b8' }}>({t('guest.optional')})</span>
+                        <label htmlFor="guest-email" style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 5 }}>
+                          {t('guest.email')} <span style={{ fontWeight: 500, fontSize: 12, color: '#94a3b8' }}>({t('guest.optional')})</span>
                         </label>
-                        <input id="guest-email" type="email" inputMode="email" autoComplete="email" dir="ltr"
+                        <input id="guest-email" name="email" type="email" inputMode="email" autoComplete="email" dir="ltr"
                           className={`co-input${guestEmailError ? ' err' : ''}`} value={guestEmail}
                           onChange={e => { setGuestEmail(e.target.value); if (guestEmailError) setGuestEmailError('') }}
-                          placeholder={t('guest.emailPlaceholder')} maxLength={191} aria-invalid={!!guestEmailError}
+                          maxLength={191} aria-invalid={!!guestEmailError} aria-describedby="guest-email-hint"
                           style={{ fontSize: 16 }} />
-                        <p style={{ fontSize: 11.5, color: guestEmailError ? '#dc2626' : '#94a3b8', margin: '5px 0 0', fontWeight: guestEmailError ? 600 : 400 }}>
+                        <p id="guest-email-hint" role={guestEmailError ? 'alert' : undefined} style={{ fontSize: 11.5, color: guestEmailError ? '#dc2626' : '#94a3b8', margin: '4px 0 0', fontWeight: guestEmailError ? 600 : 400 }}>
                           {guestEmailError || t('guest.emailHint')}
                         </p>
                       </div>
@@ -1281,21 +1467,37 @@ export default function CheckoutPage() {
                     </p>
                     <p dir="auto" style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 2px' }}>{form.recipient_name}</p>
                     <p dir="auto" style={{ fontSize: 12, color: '#64748b', margin: '0 0 2px' }}>{formatShippingAddress(form, wilayaLabel)}</p>
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}><Phone size={10} /> <span dir="ltr">{form.phone}{form.phone_secondary ? ` / ${form.phone_secondary}` : ''}</span></p>
+                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}><Phone size={10} /> <span dir="ltr">{shownPhones}</span></p>
+                    {form.notes && <p dir="auto" style={{ fontSize: 11.5, color: '#64748b', margin: '4px 0 0' }}>{tsa('comment')} : {form.notes}</p>}
                   </div>
                 )}
               </div>
-            </div>
+            </section>
 
-            {/* Payment Method */}
-            <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <CreditCard size={16} color="#dc2626" />
-                <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>{t('paymentMethod')}</h2>
-              </div>
-              <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <PaymentMethodCard method="cod" selected={paymentMethod === 'cod'} onSelect={() => setPaymentMethod('cod')} icon={Truck} label={t('pay.cod')} description={t('pay.codDesc')} badge={t('pay.codBadge')} badgeColor="#198f41" />
-                {isGuest && <p style={{ fontSize: 11.5, color: '#94a3b8', margin: 0 }}>{t('guest.codOnly')}</p>}
+            {/* ── 3. Payment (cash on delivery is the default and, for guests, the only method) ── */}
+            <section style={card} aria-labelledby="co-payment">
+              <div id="co-payment">{sectionTitle(3, t('paymentMethod'))}</div>
+              <div role="radiogroup" aria-labelledby="co-payment" style={{ padding: '12px 16px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <button type="button" role="radio" aria-checked={paymentMethod === 'cod'} className="co-pay" onClick={() => setPaymentMethod('cod')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '11px 12px', borderRadius: 12,
+                    border: `1.5px solid ${paymentMethod === 'cod' ? '#db142e' : '#e5e7eb'}`,
+                    background: paymentMethod === 'cod' ? 'rgba(219,20,46,0.03)' : '#fff',
+                    cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
+                  }}>
+                  <span aria-hidden="true" style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, border: `2px solid ${paymentMethod === 'cod' ? '#db142e' : '#d1d5db'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {paymentMethod === 'cod' && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#db142e' }} />}
+                  </span>
+                  <Truck size={18} color="#198f41" style={{ flexShrink: 0 }} />
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'block', fontSize: 14, fontWeight: 800, color: '#0f172a' }}>{t('pay.cod')}</span>
+                    <span style={{ display: 'block', fontSize: 12, color: '#64748b', marginTop: 1 }}>
+                      {summaryTotal === null ? t('pay.codDesc')
+                        : parcels.length > 1 ? t('codToPayParcels', { amount: fmt(summaryTotal), count: parcels.length })
+                        : t('codToPay', { amount: fmt(summaryTotal) })}
+                    </span>
+                  </span>
+                </button>
                 {!isGuest && <>
                 <PaymentMethodCard method="wallet" selected={paymentMethod === 'wallet'} onSelect={() => !walletInsufficient && setPaymentMethod('wallet')} disabled={walletLoading || walletInsufficient} disabledReason={walletLoading ? t('pay.walletLoading') : t('pay.walletInsufficient', { amount: fmt(walletBalance ?? 0) })} icon={Wallet} label={t('pay.wallet')} description={walletLoading ? t('pay.walletChecking') : t('pay.walletBalance', { amount: fmt(walletBalance ?? 0) })} badge={!walletLoading && !walletInsufficient ? t('pay.walletBadge') : undefined} badgeColor="#6366f1"
                   comingSoon={!methods.wallet} comingSoonLabel={t('pay.comingSoon')} comingSoonMessage={t('pay.comingSoonAlert')} />
@@ -1316,191 +1518,61 @@ export default function CheckoutPage() {
                 {paymentMethod === 'd17' && d17Account && summaryTotal !== null && <D17Instructions total={summaryTotal} accountNumber={d17Account} />}
                 {paymentMethod === 'card' && <StripeNotice />}
               </div>
-            </div>
+            </section>
 
             <Link href={isBuyNow ? `/products/${bnSlug ?? ''}` : '/shop'}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748b', fontWeight: 600, textDecoration: 'none' }}>
-              <ArrowLeft size={13} /> {isBuyNow ? t('backToProduct') : t('continueShopping')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748b', fontWeight: 600, textDecoration: 'none', alignSelf: 'flex-start' }}>
+              <ArrowLeft size={13} className="rtl-flip" /> {isBuyNow ? t('backToProduct') : t('continueShopping')}
             </Link>
           </fieldset>
           </form>
+        </div>
+      </div>
 
-          {/* ── RIGHT: Order Summary ── */}
-          <div style={{ animation: 'fadeUp 0.4s ease 0.1s both' }}>
-            <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', overflow: 'hidden', position: 'sticky', top: 24 }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
-                {isBuyNow ? <Zap size={16} color="#dc2626" /> : <ShoppingBag size={16} color="#dc2626" />}
-                <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                  {isBuyNow ? t('quickSummary') : t('summary')}
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', marginInlineStart: 6 }}>
-                    ({tc('items', { count: summaryCount })})
-                  </span>
-                </h2>
-              </div>
-
-              <div style={{ padding: '12px 20px', maxHeight: 320, overflowY: 'auto' }}>
-                {isBuyNow && bnProduct && (
-                  <div style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
-                    <div style={{ width: 48, height: 48, flexShrink: 0, borderRadius: 8, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
-                      {bnImage ? <img src={bnImage} alt={bnProduct.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={16} color="#e2e8f0" /></div>}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bnProduct.name}</p>
-                      {bnVariant && <p style={{ fontSize: 11, color: '#6366f1', fontWeight: 700, margin: '2px 0 0' }}>{bnVariant.sku ? t('sku', { sku: bnVariant.sku }) : t('variantN', { id: bnVariant.id })}</p>}
-                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>{bnQuantity} × {fmt(bnEffectivePrice)}</p>
-                    </div>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', flexShrink: 0 }}>{fmt(bnLineTotal)}</span>
-                  </div>
-                )}
-
-                {/* Only the selected/filtered items */}
-                {!isBuyNow && items.map(item => {
-                  const img = resolveImg(item.image_url)
-                  const variantEntries = item.variant_options ? Object.values(item.variant_options) : []
-                  return (
-                    <div key={`${item.id}-${item.variant_id ?? 'base'}`} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
-                      <div style={{ width: 48, height: 48, flexShrink: 0, borderRadius: 8, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
-                        {img ? <img src={img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={16} color="#e2e8f0" /></div>}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
-                        {item.variant_label && (
-                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
-                            {variantEntries.map((opt, i) =>
-                              opt.color_hex
-                                ? <span key={i} style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: opt.color_hex, border: '1px solid rgba(0,0,0,0.1)' }} />
-                                : <span key={i} style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '1px 6px', borderRadius: 4 }}>{opt.value}</span>
-                            )}
-                          </div>
-                        )}
-                        <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>{item.quantity} × {fmt(item.price)}</p>
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', flexShrink: 0 }}>{fmt(item.line_total)}</span>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {sellerGroups.length > 0 && (
-                <div style={{ padding: '0 20px' }}>
-                  {sellerGroups.map(g => (
-                    <CouponBox
-                      key={g.sellerId}
-                      sellerId={g.sellerId}
-                      sellerLabel={g.sellerName}
-                      state={couponState(g.sellerId)}
-                      onChange={v => setCouponInput(g.sellerId, v)}
-                      onApply={() => applyCoupon(g.sellerId)}
-                      onClear={() => clearCoupon(g.sellerId)}
-                    />
-                  ))}
-                </div>
-              )}
-
-              <div style={{ padding: '14px 20px', borderTop: '1px solid #f1f5f9' }}>
-                {quoteError && (
-                  <p role="alert" style={{ fontSize: 12, color: '#dc2626', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <AlertCircle size={13} /> {quoteError}
-                  </p>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>{tc('subtotal')}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{summarySubtotal !== null ? fmt(summarySubtotal) : '…'}</span>
-                </div>
-                {totalDiscount > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>{tc('discount')}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>-{fmt(totalDiscount)}</span>
-                  </div>
-                )}
-                {/* Delivery: one line per shop (each shop = one parcel) */}
-                <div style={{ marginBottom: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Truck size={13} /> {t('delivery')}
-                    </span>
-                    {(quoteLoading || !quote) && <span style={{ fontSize: 12, color: '#94a3b8' }}>{t('quoteLoading')}</span>}
-                    {quote && parcels.length === 1 && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        <DeliveryAmount free={parcels[0].is_free_delivery} amount={parcels[0].delivery_fee} freeLabel={tc('free')} fmt={fmt} />
-                      </span>
-                    )}
-                  </div>
-                  {quote && parcels.length > 1 && (
-                    <div style={{ marginTop: 6, paddingInlineStart: 19, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      {parcels.map(p => (
-                        <div key={p.seller_id ?? 'platform'} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                          <span dir="auto" style={{ fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{p.seller_name}</span>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                            <DeliveryAmount free={p.is_free_delivery} amount={p.delivery_fee} freeLabel={tc('free')} fmt={fmt} small />
-                          </span>
-                        </div>
-                      ))}
-                      <p style={{ fontSize: 10.5, color: '#94a3b8', margin: '2px 0 0', lineHeight: 1.4 }}>{t('deliveryPerShop')}</p>
-                    </div>
-                  )}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14, padding: '8px 10px', background: '#f8fafc', borderRadius: 8 }}>
-                  <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{t('payment')}</span>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: '#374151' }}>
-                    {{ cod: `🚚 ${t('pay.cod')}`, card: `💳 ${t('pay.card')}`, d17: '📱 D17', wallet: `💰 ${t('pay.wallet')}` }[paymentMethod]}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, borderTop: '2px solid #f1f5f9', marginBottom: paymentMethod === 'cod' ? 8 : 16 }}>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{tc('total')}</span>
-                  <span style={{ fontSize: 20, fontWeight: 900, color: '#dc2626' }}>{summaryTotal !== null ? fmt(summaryTotal) : '…'}</span>
-                </div>
-                {paymentMethod === 'cod' && summaryTotal !== null && (
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 16, padding: '9px 12px', background: 'rgba(25,143,65,0.07)', border: '1px solid rgba(25,143,65,0.25)', borderRadius: 10 }}>
-                    <Truck size={15} color="#198f41" style={{ flexShrink: 0, marginTop: 1 }} />
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: 12.5, fontWeight: 800, color: '#14532d', margin: 0 }}>{t('payCashOnDelivery')}</p>
-                      <p style={{ fontSize: 11.5, color: '#166534', margin: '2px 0 0', lineHeight: 1.4 }}>
-                        {parcels.length > 1
-                          ? t('codToPayParcels', { amount: fmt(summaryTotal), count: parcels.length })
-                          : t('codToPay', { amount: fmt(summaryTotal) })}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {apiError && (
-                  <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 12, padding: '9px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, fontSize: 12.5, fontWeight: 600, color: '#dc2626' }}>
-                    <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
-                    <span>{apiError}</span>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={openConfirm}
-                  disabled={loading || stripeLoading || checking || confirm !== null || quoteLoading || summaryTotal === null || (paymentMethod === 'wallet' && walletInsufficient)}
-                  style={{
-                    width: '100%', padding: '14px 0',
-                    background: (loading || stripeLoading || checking) ? '#e5e7eb' : 'linear-gradient(135deg,#dc2626,#b91c1c)',
-                    color: (loading || stripeLoading || checking) ? '#9ca3af' : '#fff',
-                    fontWeight: 800, fontSize: 15, border: 'none', borderRadius: 12,
-                    cursor: (loading || stripeLoading || checking) ? 'not-allowed' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    boxShadow: (loading || stripeLoading || checking) ? 'none' : '0 8px 24px rgba(220,38,38,0.3)',
-                    fontFamily: 'inherit', transition: 'all 0.2s',
-                  }}
-                >
-                  {loading || stripeLoading || checking
-                    ? <><BrandLoader variant="inline" size={18} />{stripeLoading ? t('redirectingStripe') : checking ? t('confirm.checking') : t('placing')}</>
-                    : paymentMethod === 'card' ? <><CreditCard size={18} /> {t('payWithCard')}</>
-                    : isBuyNow ? <><Zap size={18} /> {t('placeOrderNow')}</>
-                    : <><CheckCircle size={18} /> {t('placeOrder')}</>}
-                </button>
-                {cancelNotice && (
-                  <p role="status" style={{ fontSize: 12, fontWeight: 700, color: '#198f41', textAlign: 'center', margin: '10px 0 0' }}>
-                    {t('confirm.cancelled')}
-                  </p>
-                )}
-                <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 10 }}>
-                  {{ cod: t('reassure.cod'), card: t('reassure.card'), d17: t('reassure.d17'), wallet: t('reassure.wallet') }[paymentMethod]}
-                </p>
-              </div>
+      {/* Always-visible order bar: live total + the one main button (the page has room for it at the bottom) */}
+      <div className="co-sticky">
+        <div style={{ maxWidth: 680, margin: '0 auto' }}>
+          {apiError && (
+            <p role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: 6, margin: '0 0 8px', fontSize: 12.5, fontWeight: 700, color: '#dc2626' }}>
+              <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} /> <span>{apiError}</span>
+            </p>
+          )}
+          {cancelNotice && !apiError && (
+            <p role="status" style={{ margin: '0 0 8px', fontSize: 12.5, fontWeight: 700, color: '#198f41' }}>{t('confirm.cancelled')}</p>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ minWidth: 0, flexShrink: 0, lineHeight: 1.15 }}>
+              <span style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#64748b' }}>{tc('total')}</span>
+              <span aria-live="polite" style={{ display: 'block', fontSize: 19, fontWeight: 900, color: '#0f172a', whiteSpace: 'nowrap' }}>
+                {summaryTotal !== null && !quoteLoading ? fmt(summaryTotal) : '…'}
+              </span>
             </div>
+            <button
+              type="button"
+              className="co-submit"
+              onClick={openConfirm}
+              disabled={orderDisabled}
+              aria-busy={busy}
+              style={{
+                flex: 1, minWidth: 0, minHeight: 52, padding: '0 14px',
+                background: busy ? '#e5e7eb' : orderDisabled ? '#f1a5af' : '#db142e',
+                color: busy ? '#6b7280' : '#fff',
+                fontWeight: 800, fontSize: 16, border: 'none', borderRadius: 12,
+                cursor: orderDisabled ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: orderDisabled ? 'none' : '0 6px 18px rgba(219,20,46,0.3)',
+                fontFamily: 'inherit', transition: 'background 0.2s',
+              }}
+            >
+              {busy
+                ? <><BrandLoader variant="inline" size={18} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stripeLoading ? t('redirectingStripe') : checking ? t('confirm.checking') : t('placing')}</span></>
+                : paymentMethod === 'card' ? <><CreditCard size={18} /> {t('payWithCard')}</>
+                : <><CheckCircle size={18} className="co-submit-icon" /><span style={{ whiteSpace: 'nowrap' }}>{t('placeOrderNow')}</span></>}
+            </button>
           </div>
+          <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', margin: '6px 0 0' }}>
+            {{ cod: t('reassure.cod'), card: t('reassure.card'), d17: t('reassure.d17'), wallet: t('reassure.wallet') }[paymentMethod]}
+          </p>
         </div>
       </div>
 
@@ -1511,8 +1583,8 @@ export default function CheckoutPage() {
           lineExtra={confirmLineExtra}
           address={{
             name:   form.recipient_name,
-            phones: form.phone + (form.phone_secondary ? ` / ${form.phone_secondary}` : ''),
-            full:   formatShippingAddress(form, wilayaLabel),
+            phones: shownPhones,
+            full:   formatShippingAddress(checkoutShippingAddress(form), wilayaLabel),
             notes:  form.notes ?? '',
           }}
           paymentLabel={{ cod: t('pay.cod'), card: t('pay.card'), d17: 'D17', wallet: t('pay.wallet') }[paymentMethod]}

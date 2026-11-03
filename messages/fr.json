@@ -588,7 +588,11 @@
     "platformSeller": "CHOOSE'Tounsi Officiel",
     "metaFallbackTitle": "Produit",
     "metaDescription": "Achetez {name} sur ChooseTounsi — livraison partout en Tunisie.",
-    "packContents": "Dans ce pack"
+    "packContents": "Dans ce pack",
+    "colorHint": "Choisissez une couleur",
+    "optionHint": "Choisissez une option",
+    "unavailable": "indisponible",
+    "axisLabel": "{axis} :"
   },
   "recommendations": {
     "flash": "FLASH",
@@ -801,7 +805,8 @@
         "failed": "Impossible de créer le compte. Réessayez."
       },
       "continueShopping": "Continuer mes achats",
-      "sessionExpiredCart": "Votre session a expiré. Reconnectez-vous pour retrouver le panier enregistré dans votre compte."
+      "sessionExpiredCart": "Votre session a expiré. Reconnectez-vous pour retrouver le panier enregistré dans votre compte.",
+      "haveAccount": "Vous avez un compte ?"
     },
     "confirm": {
       "title": "Confirmer votre commande ?",
@@ -832,7 +837,9 @@
       "cancelled": "Commande annulée : rien n'a été envoyé.",
       "recheckFailed": "Impossible de vérifier votre panier. Corrigez les points indiqués puis réessayez.",
       "leaveWarning": "Votre commande n'est pas encore passée. Quitter cette page l'annulera. Continuer ?"
-    }
+    },
+    "orderSummary": "Récapitulatif de commande",
+    "unitPrice": "Prix unitaire : {price}"
   },
   "auth": {
     "logoAlt": "ChooseTounsi",
@@ -5920,7 +5927,8 @@
     "selectWilayaFirst": "Choisissez d’abord le gouvernorat",
     "selectDelegation": "Choisissez votre délégation",
     "loadingDelegations": "Chargement des délégations…",
-    "reselectRegion": "Veuillez resélectionner votre gouvernorat et votre délégation dans la liste : notre transporteur a besoin des noms exacts. Nous mettrons à jour cette adresse pour la prochaine fois."
+    "reselectRegion": "Veuillez resélectionner votre gouvernorat et votre délégation dans la liste : notre transporteur a besoin des noms exacts. Nous mettrons à jour cette adresse pour la prochaine fois.",
+    "comment": "Commentaire"
   },
   "sellerPickup": {
     "title": "Adresse d’enlèvement",

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Heart, ShoppingCart, ChevronRight, Star, Shield, Truck,
   RotateCcw, Share2, Minus, Plus, ZoomIn, ChevronLeft,
-  CheckCircle, Zap,
+  CheckCircle, Zap, Check,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { getUser } from '@/lib/auth'
@@ -140,158 +140,123 @@ function AttributeRow({ attr }: { attr: AttributeData }) {
 // ─── VariantSelector ──────────────────────────────────────────────────────────
 
 function VariantSelector({
-  axes, selectedOptions, onSelect, isOptionAvailable, selectorError,
+  axes, selectedOptions, onSelect, isOptionAvailable, missingAxes, shakeKey,
 }: {
   axes: Product['selectable_axes']
   selectedOptions: Record<string, string>
   onSelect: (axisSlug: string, value: string) => void
   isOptionAvailable: (axisSlug: string, value: string) => boolean
-  selectorError: boolean
+  /** Axes the buyer must still pick (after tapping Buy / Add to cart) */
+  missingAxes: string[]
+  /** Changes on every failed tap so the shake replays */
+  shakeKey: number
 }) {
   const t = useTranslations('product')
-  const { locale } = useFormat()
   if (axes.length === 0) return null
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 20 }}>
-      {axes.map(axis => (
-        <div key={axis.slug}>
-          <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 8 }}>
-            {axis.name}
-            {selectedOptions[axis.slug] !== undefined && (
-              <span style={{ color: '#374151', marginInlineStart: 6, textTransform: 'none', fontWeight: 600 }}>
-                {axis.type === 'color'
-                  ? `— ${(axis.options as ColorOption[]).find(o => (o.group_key ?? String(o.id)) === selectedOptions[axis.slug])?.value ?? ''}`
-                  : `— ${axis.options.find(o => String(o.id) === selectedOptions[axis.slug])?.value ?? ''}`
-                }
-              </span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginBottom: 20 }}>
+      {axes.map(axis => {
+        const isColor  = axis.type === 'color'
+        const selKey   = selectedOptions[axis.slug]
+        const selName  = selKey === undefined ? null
+          : isColor
+            ? (axis.options as ColorOption[]).find(o => (o.group_key ?? String(o.id)) === selKey)?.value ?? null
+            : axis.options.find(o => String(o.id) === selKey)?.value ?? null
+        const missing  = missingAxes.includes(axis.slug)
+        return (
+          <div
+            key={axis.slug}
+            data-axis={axis.slug}
+            className={missing ? 'pd-axis pd-axis--missing' : 'pd-axis'}
+            // key on the wrapper's animation: a new shakeKey replays the shake
+            style={missing ? { animation: `pdShake${shakeKey % 2} 0.45s ease` } : undefined}
+          >
+            <p style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748b', margin: '0 0 10px', display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+              <span>{t('axisLabel', { axis: axis.name })}</span>
+              {selName ? (
+                <span style={{ color: '#0f172a', textTransform: 'none', letterSpacing: 0, fontSize: 14, fontWeight: 800 }}>{selName}</span>
+              ) : (
+                <span style={{ color: missing ? '#db142e' : '#94a3b8', textTransform: 'none', letterSpacing: 0, fontSize: 13, fontWeight: 600 }}>
+                  {isColor ? t('colorHint') : t('optionHint')}
+                </span>
+              )}
+            </p>
+
+            {isColor ? (
+              <div role="radiogroup" aria-label={axis.name} style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                {(axis.options as ColorOption[]).map(opt => {
+                  const selectionKey = opt.group_key ?? String(opt.id)
+                  const chosen       = selKey === selectionKey
+                  const available    = isOptionAvailable(axis.slug, selectionKey)
+                  const swatches     = opt.swatches ?? [{ id: opt.id, value: opt.value, color_hex: opt.color_hex }]
+                  return (
+                    <button
+                      key={`${axis.slug}-${selectionKey}`}
+                      type="button"
+                      role="radio"
+                      aria-checked={chosen}
+                      aria-label={available ? opt.value : `${opt.value} — ${t('unavailable')}`}
+                      title={opt.value}
+                      disabled={!available}
+                      onClick={() => onSelect(axis.slug, selectionKey)}
+                      className={`pd-swatch${chosen ? ' is-on' : ''}`}
+                    >
+                      <span className="pd-swatch__fill">
+                        {opt.primary_image ? (
+                          <img src={opt.primary_image} alt="" />
+                        ) : swatches.length > 1 ? (
+                          swatches.slice(0, 2).map(s => <span key={s.id} style={{ flex: 1, background: s.color_hex ?? '#e5e7eb' }} />)
+                        ) : (
+                          <span style={{ flex: 1, background: opt.color_hex ?? '#e5e7eb' }} />
+                        )}
+                      </span>
+                      {!available && (
+                        <svg viewBox="0 0 60 60" preserveAspectRatio="none" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+                          <line x1="6" y1="54" x2="54" y2="6" stroke="#94a3b8" strokeWidth="2" />
+                        </svg>
+                      )}
+                      {chosen && (
+                        <span className="pd-swatch__check" aria-hidden="true">
+                          <Check size={12} strokeWidth={3.5} />
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <div role="radiogroup" aria-label={axis.name} style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {axis.options.map(opt => {
+                  const selectionKey = String(opt.id)
+                  const chosen       = selKey === selectionKey
+                  const available    = isOptionAvailable(axis.slug, selectionKey)
+                  return (
+                    <button
+                      key={`${axis.slug}-${opt.id}`}
+                      type="button"
+                      role="radio"
+                      aria-checked={chosen}
+                      aria-label={available ? opt.value : `${opt.value} — ${t('unavailable')}`}
+                      disabled={!available}
+                      onClick={() => onSelect(axis.slug, selectionKey)}
+                      className={`pd-size${chosen ? ' is-on' : ''}`}
+                    >
+                      {opt.value}
+                    </button>
+                  )
+                })}
+              </div>
             )}
-          </p>
 
-          {axis.type === 'color' ? (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {(axis.options as ColorOption[]).map(opt => {
-                const selectionKey = opt.group_key ?? String(opt.id)
-                const chosen       = selectedOptions[axis.slug] === selectionKey
-                const available    = isOptionAvailable(axis.slug, selectionKey)
-                const hasImage     = !!opt.primary_image
-                const swatches     = opt.swatches ?? [{ id: opt.id, value: opt.value, color_hex: opt.color_hex }]
-                const isGroup      = swatches.length > 1
-
-                return (
-                  <button
-                    key={`${axis.slug}-${selectionKey}`}
-                    type="button"
-                    onClick={() => available && onSelect(axis.slug, selectionKey)}
-                    title={opt.value}
-                    style={{
-                      position:       'relative',
-                      display:        'flex',
-                      alignItems:     'center',
-                      justifyContent: 'center',
-                      width:          34,
-                      height:         34,
-                      padding:        0,
-                      gap:            0,
-                      borderRadius:   '50%',
-                      cursor:         available ? 'pointer' : 'not-allowed',
-                      background:     '#f8fafc',
-                      border:         chosen ? '3px solid #dc2626' : '2px solid #e5e7eb',
-                      outline:        chosen ? '2px solid #fff' : 'none',
-                      outlineOffset:  '-4px',
-                      opacity:        available ? 1 : 0.35,
-                      transition:     'all 0.15s',
-                      flexShrink:     0,
-                      overflow:       'hidden',
-                    }}
-                  >
-                    {hasImage ? (
-                      <img
-                        src={opt.primary_image!}
-                        alt={opt.value}
-                        style={{
-                          position:      'absolute',
-                          inset:         chosen ? 3 : 2,
-                          borderRadius:  '50%',
-                          width:         chosen ? 'calc(100% - 6px)' : 'calc(100% - 4px)',
-                          height:        chosen ? 'calc(100% - 6px)' : 'calc(100% - 4px)',
-                          objectFit:     'cover',
-                          pointerEvents: 'none',
-                        }}
-                      />
-                    ) : isGroup ? (
-                      <div style={{
-                        position:     'absolute',
-                        inset:        0,
-                        display:      'flex',
-                        overflow:     'hidden',
-                        borderRadius: '50%',
-                      }}>
-                        {swatches.slice(0, 2).map(s => (
-                          <span key={s.id} title={s.value} style={{
-                            display:    'block',
-                            width:      '50%',
-                            height:     '100%',
-                            flexShrink: 0,
-                            background: s.color_hex ?? '#e5e7eb',
-                          }} />
-                        ))}
-                      </div>
-                    ) : (
-                      <span style={{
-                        position:     'absolute',
-                        inset:        0,
-                        borderRadius: '50%',
-                        background:   opt.color_hex ?? '#e5e7eb',
-                      }} />
-                    )}
-
-                    {!available && (
-                      <svg viewBox="0 0 34 34" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-                        <line x1="5" y1="29" x2="29" y2="5" stroke="#fff" strokeWidth="2" opacity="0.8" />
-                      </svg>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {axis.options.map(opt => {
-                const selectionKey = String(opt.id)
-                const chosen       = selectedOptions[axis.slug] === selectionKey
-                const available    = isOptionAvailable(axis.slug, selectionKey)
-                return (
-                  <button
-                    key={`${axis.slug}-${opt.id}`}
-                    type="button"
-                    onClick={() => available && onSelect(axis.slug, selectionKey)}
-                    style={{
-                      padding: '6px 14px', borderRadius: 8,
-                      cursor: available ? 'pointer' : 'not-allowed',
-                      border: chosen ? '2px solid #dc2626' : '1.5px solid #e5e7eb',
-                      background: chosen ? 'rgba(220,38,38,0.06)' : '#f8fafc',
-                      color: chosen ? '#dc2626' : available ? '#374151' : '#d1d5db',
-                      fontSize: 13, fontWeight: chosen ? 700 : 500,
-                      opacity: available ? 1 : 0.5,
-                      textDecoration: available ? 'none' : 'line-through',
-                      transition: 'all 0.15s', fontFamily: 'inherit',
-                    }}
-                  >
-                    {opt.value}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      ))}
-
-      {selectorError && (
-        <p style={{ fontSize: 12, color: '#dc2626', fontWeight: 700, background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 8, padding: '8px 12px', margin: 0 }}>
-          {t('selectOptions', { options: new Intl.ListFormat(locale, { type: 'conjunction' }).format(axes.filter(a => selectedOptions[a.slug] === undefined).map(a => a.name)) })}
-        </p>
-      )}
+            {missing && (
+              <p role="alert" style={{ fontSize: 12.5, color: '#db142e', fontWeight: 700, margin: '8px 0 0' }}>
+                {t('selectOptions', { options: axis.name })}
+              </p>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -390,7 +355,9 @@ export default function ProductDetailPage() {
   const [addedToCart,     setAddedToCart]     = useState(false)
   const [tab,             setTab]             = useState<'description' | 'details' | 'attributes'>('description')
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
-  const [selectorError,   setSelectorError]   = useState(false)
+  // Axes still to pick after a Buy / Add to cart tap (highlighted + scrolled to)
+  const [missingAxes,     setMissingAxes]     = useState<string[]>([])
+  const [shakeKey,        setShakeKey]        = useState(0)
   const [buyNowLoading,   setBuyNowLoading]   = useState(false)
   const [activePromotion, setActivePromotion] = useState<ActivePromotion | null>(null)
   const [sellerImgErr,    setSellerImgErr]    = useState(false)
@@ -459,6 +426,7 @@ export default function ProductDetailPage() {
   const isOptionAvailable = useCallback((axisSlug: string, selectionValue: string): boolean => {
     const axis = axes.find(a => a.slug === axisSlug)
     return variants.some(v => {
+      if (v.stock <= 0) return false   // out of stock: greyed, not clickable
       if (axis?.type === 'color') {
         if (v.color_group_key !== selectionValue) return false
       } else {
@@ -529,11 +497,24 @@ export default function ProductDetailPage() {
   const lowStock   = effectiveStock > 0 && effectiveStock <= 10
   const favorited  = product ? isFavorited(product.id, selectedVariant?.id ?? null) : false
 
+  /** A required option is missing: scroll to the first one and shake it. Returns true when blocked. */
+  const flagMissingOptions = (): boolean => {
+    if (!hasVariants || selectedVariant) return false
+    const missing = axes.filter(a => selectedOptions[a.slug] === undefined).map(a => a.slug)
+    // Every axis picked but no variant matches: flag them all
+    const flagged = missing.length > 0 ? missing : axes.map(a => a.slug)
+    setMissingAxes(flagged)
+    setShakeKey(k => k + 1)
+    const el = document.querySelector<HTMLElement>(`[data-axis="${CSS.escape(flagged[0])}"]`)
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    return true
+  }
+
   const handleAddToCart = async () => {
     if (!product || outOfStock) return
     if (mustLogIn()) { router.push('/auth/login?redirect=' + window.location.pathname); return }
-    if (hasVariants && !selectedVariant) { setSelectorError(true); return }
-    setSelectorError(false)
+    if (flagMissingOptions()) return
+    setMissingAxes([])
     await addToCart(product.id, quantity, selectedVariant?.id ?? null)
     setAddedToCart(true)
     setTimeout(() => setAddedToCart(false), 2500)
@@ -542,9 +523,9 @@ export default function ProductDetailPage() {
   const handleBuyNow = async () => {
     if (!product || outOfStock || buyNowLoading || buyNowRef.current) return
     if (mustLogIn()) { router.push('/auth/login?redirect=' + window.location.pathname); return }
-    if (hasVariants && !selectedVariant) { setSelectorError(true); return }
-    if (selectedVariant && selectedVariant.stock <= 0) { setSelectorError(true); return }
-    buyNowRef.current = true; setBuyNowLoading(true); setSelectorError(false)
+    if (flagMissingOptions()) return
+    if (selectedVariant && selectedVariant.stock <= 0) return
+    buyNowRef.current = true; setBuyNowLoading(true); setMissingAxes([])
     try {
       const qp = new URLSearchParams({ buy_now: '1', product_slug: product.slug, quantity: String(quantity) })
       if (selectedVariant?.id) qp.set('variant_id', String(selectedVariant.id))
@@ -584,8 +565,33 @@ export default function ProductDetailPage() {
         .qty-btn:hover{background:#dc2626!important;color:#fff!important;border-color:#dc2626!important}
         .trust-item{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:1px solid #f1f5f9}
         .trust-item:last-child{border-bottom:none}
-        .buy-now-btn:hover:not(:disabled){background:rgba(220,38,38,0.05)!important;border-color:#b91c1c!important;color:#b91c1c!important}
+        .buy-now-btn:hover:not(:disabled){filter:brightness(0.94)}
+        .add-cart-btn:hover:not(:disabled){background:rgba(219,20,46,0.05)!important}
         @media(max-width:900px){.pd-grid{grid-template-columns:1fr!important}}
+        /* Color swatches: big tiles, the variant photo fills them */
+        .pd-swatch{position:relative;width:60px;height:60px;padding:0;border-radius:14px;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;transition:border-color .15s,box-shadow .15s;flex-shrink:0}
+        .pd-swatch__fill{position:absolute;inset:4px;border-radius:10px;overflow:hidden;display:flex;background:#f8fafc;pointer-events:none}
+        .pd-swatch__fill img{width:100%;height:100%;object-fit:cover}
+        .pd-swatch:hover:not(:disabled){border-color:#94a3b8}
+        .pd-swatch.is-on{border-color:#db142e;box-shadow:0 0 0 1.5px #db142e}
+        .pd-swatch:disabled{cursor:not-allowed;opacity:.4}
+        .pd-swatch__check{position:absolute;top:-7px;inset-inline-end:-7px;width:20px;height:20px;border-radius:50%;background:#db142e;color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+        .pd-size{min-height:44px;min-width:52px;padding:0 16px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;color:#0f172a;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:border-color .15s,box-shadow .15s}
+        .pd-size:hover:not(:disabled){border-color:#94a3b8}
+        .pd-size.is-on{border-color:#db142e;box-shadow:0 0 0 1.5px #db142e;background:rgba(219,20,46,.06);color:#db142e;font-weight:800}
+        .pd-size:disabled{background:#f1f5f9;color:#b6bfcc;border-color:#f1f5f9;text-decoration:line-through;cursor:not-allowed}
+        .pd-swatch:focus-visible,.pd-size:focus-visible{outline:2px solid #0f172a;outline-offset:3px}
+        .pd-axis{scroll-margin:120px}
+        .pd-axis--missing{outline:2px solid #db142e;outline-offset:6px;border-radius:12px}
+        @keyframes pdShake0{0%,100%{transform:none}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+        @keyframes pdShake1{0%,100%{transform:none}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+        @media(prefers-reduced-motion:reduce){.pd-axis--missing{animation:none!important}}
+        /* Phones: price + Buy now + cart in a bar stuck to the bottom */
+        .pd-sticky{display:none}
+        @media(max-width:768px){
+          .pd-actions{display:none!important}
+          .pd-sticky{display:flex;position:fixed;inset-inline:0;bottom:0;z-index:900;background:#fff;border-top:1px solid #e5e7eb;box-shadow:0 -6px 20px rgba(15,23,42,.08);padding:10px 16px calc(10px + env(safe-area-inset-bottom));gap:10px;align-items:center}
+        }
       `}</style>
 
       <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Barlow', sans-serif" }}>
@@ -747,11 +753,12 @@ export default function ProductDetailPage() {
                 axes={axes}
                 selectedOptions={selectedOptions}
                 onSelect={(axisSlug, value) => {
-                  setSelectorError(false)
+                  setMissingAxes(m => m.filter(s => s !== axisSlug))
                   setSelectedOptions(prev => ({ ...prev, [axisSlug]: value }))
                 }}
                 isOptionAvailable={isOptionAvailable}
-                selectorError={selectorError}
+                missingAxes={missingAxes}
+                shakeKey={shakeKey}
               />
             )}
 
@@ -773,7 +780,7 @@ export default function ProductDetailPage() {
               </p>
             </div>
 
-            <div style={{ display: 'flex', gap: 10, marginBottom: 24, alignItems: 'center' }}>
+            <div className="pd-actions" style={{ display: 'flex', gap: 10, marginBottom: 24, alignItems: 'center' }}>
               {isOwnProduct ? (
                 <div style={{ flex: 1, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'rgba(99,102,241,0.06)', border: '2px dashed rgba(99,102,241,0.35)', borderRadius: 12, color: '#6366f1', fontWeight: 800, fontSize: 13 }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
@@ -781,13 +788,14 @@ export default function ProductDetailPage() {
                 </div>
               ) : (
                 <>
+                  {/* Buy now is the main action: filled brand red */}
                   <button className="buy-now-btn" onClick={handleBuyNow} disabled={outOfStock || buyNowLoading}
-                    style={{ flex: 1, height: 52, background: '#fff', color: outOfStock ? '#9ca3af' : '#dc2626', border: `2px solid ${outOfStock ? '#e5e7eb' : '#dc2626'}`, borderRadius: 12, cursor: outOfStock || buyNowLoading ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.2s', fontFamily: 'inherit', opacity: outOfStock ? 0.6 : 1 }}>
-                    {buyNowLoading ? <BrandLoader variant="inline" size={18} style={{ color: '#dc2626' }} /> : <><Zap size={16} />{outOfStock ? tc('outOfStock') : tc('buyNow')}</>}
+                    style={{ flex: 1.3, height: 52, background: outOfStock ? '#e5e7eb' : '#db142e', color: outOfStock ? '#9ca3af' : '#fff', border: 'none', borderRadius: 12, cursor: outOfStock || buyNowLoading ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: outOfStock ? 'none' : '0 8px 24px rgba(219,20,46,0.3)', transition: 'all 0.2s', fontFamily: 'inherit' }}>
+                    {buyNowLoading ? <BrandLoader variant="inline" size={18} /> : <><Zap size={17} />{outOfStock ? tc('outOfStock') : tc('buyNow')}</>}
                   </button>
-                  <button onClick={handleAddToCart} disabled={outOfStock || cartLoading}
-                    style={{ flex: 1, height: 52, background: outOfStock ? '#e5e7eb' : addedToCart ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#dc2626,#b91c1c)', color: outOfStock ? '#9ca3af' : '#fff', border: 'none', borderRadius: 12, cursor: outOfStock ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: outOfStock ? 'none' : addedToCart ? '0 8px 24px rgba(16,185,129,0.3)' : '0 8px 24px rgba(220,38,38,0.3)', transition: 'all 0.2s', fontFamily: 'inherit' }}>
-                    {cartLoading ? <BrandLoader variant="inline" size={18} /> : addedToCart ? <><CheckCircle size={18} />{tc('added')}</> : <><ShoppingCart size={18} />{outOfStock ? tc('outOfStock') : tc('addToCart')}</>}
+                  <button className="add-cart-btn" onClick={handleAddToCart} disabled={outOfStock || cartLoading}
+                    style={{ flex: 1, height: 52, background: addedToCart ? 'rgba(16,185,129,0.08)' : '#fff', color: outOfStock ? '#9ca3af' : addedToCart ? '#059669' : '#db142e', border: `2px solid ${outOfStock ? '#e5e7eb' : addedToCart ? '#10b981' : '#db142e'}`, borderRadius: 12, cursor: outOfStock ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.2s', fontFamily: 'inherit', opacity: outOfStock ? 0.6 : 1 }}>
+                    {cartLoading ? <BrandLoader variant="inline" size={18} style={{ color: '#db142e' }} /> : addedToCart ? <><CheckCircle size={18} />{tc('added')}</> : <><ShoppingCart size={18} />{outOfStock ? tc('outOfStock') : tc('addToCart')}</>}
                   </button>
                   <button onClick={handleToggleFavorite} aria-label={favorited ? t('removeFavorite') : t('addFavorite')} aria-pressed={favorited}
                     style={{ width: 52, height: 52, flexShrink: 0, borderRadius: '50%', border: `2px solid ${favorited ? '#dc2626' : '#e5e7eb'}`, background: favorited ? 'rgba(220,38,38,0.06)' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
@@ -866,6 +874,26 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+      {/* Phones: always-visible price + Buy now + cart (CSS hides it from 769px) */}
+      {!isOwnProduct && (
+        <div className="pd-sticky">
+          <div style={{ minWidth: 0, flexShrink: 1, display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+            {originalPrice > Number(effectivePrice) && (
+              <span style={{ fontSize: 11, color: '#94a3b8', textDecoration: 'line-through', whiteSpace: 'nowrap' }}>{format.price(originalPrice)}</span>
+            )}
+            <span style={{ fontSize: 17, fontWeight: 900, color: '#0f172a', whiteSpace: 'nowrap' }}>{format.price(Number(effectivePrice))}</span>
+          </div>
+          <button type="button" onClick={handleAddToCart} disabled={outOfStock || cartLoading}
+            aria-label={addedToCart ? tc('added') : tc('addToCart')} title={tc('addToCart')}
+            style={{ width: 50, height: 50, flexShrink: 0, borderRadius: 12, border: `2px solid ${addedToCart ? '#10b981' : outOfStock ? '#e5e7eb' : '#db142e'}`, background: '#fff', color: addedToCart ? '#059669' : outOfStock ? '#9ca3af' : '#db142e', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: outOfStock ? 'not-allowed' : 'pointer' }}>
+            {cartLoading ? <BrandLoader variant="inline" size={18} /> : addedToCart ? <CheckCircle size={20} /> : <ShoppingCart size={20} />}
+          </button>
+          <button type="button" onClick={handleBuyNow} disabled={outOfStock || buyNowLoading}
+            style={{ flex: 1, minWidth: 0, height: 50, borderRadius: 12, border: 'none', background: outOfStock ? '#e5e7eb' : '#db142e', color: outOfStock ? '#9ca3af' : '#fff', fontWeight: 800, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontFamily: 'inherit', cursor: outOfStock ? 'not-allowed' : 'pointer', boxShadow: outOfStock ? 'none' : '0 6px 18px rgba(219,20,46,0.3)', whiteSpace: 'nowrap' }}>
+            {buyNowLoading ? <BrandLoader variant="inline" size={18} /> : <><Zap size={16} />{outOfStock ? tc('outOfStock') : tc('buyNow')}</>}
+          </button>
+        </div>
+      )}
       <ProductReviewsSection slug={slug} />
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 16px' }}>
         <AdStrip placement="product_similar" title="similarTitle" query={{ contextProductId: product.id }} />

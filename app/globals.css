@@ -53,6 +53,16 @@ pre, table {
 /* The AI assistant button never covers an open modal / sheet (its own panel included) */
 body:has([data-ct-modal]) .ct-fab { display: none !important; }
 
+/* Sticky bottom bars (product page on phones, checkout everywhere): the page
+   gets room at the bottom so the bar never hides content, and the assistant
+   button moves above the product bar / is hidden on checkout. */
+body:has(.co-sticky) { padding-bottom: calc(118px + env(safe-area-inset-bottom)); }
+body:has(.co-sticky) .ct-fab { display: none !important; }
+@media (max-width: 768px) {
+  body:has(.pd-sticky) { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  body:has(.pd-sticky) .ct-fab { bottom: calc(84px + env(safe-area-inset-bottom)) !important; }
+}
+
 /* Wizard stepper (product modal): scrolls sideways only, with no visible scrollbar */
 .ct-stepper { scrollbar-width: none; -ms-overflow-style: none; }
 .ct-stepper::-webkit-scrollbar { display: none; }

@@ -588,7 +588,11 @@
     "platformSeller": "CHOOSE'Tounsi Official",
     "metaFallbackTitle": "Product",
     "metaDescription": "Buy {name} on ChooseTounsi — delivered across Tunisia.",
-    "packContents": "In this pack"
+    "packContents": "In this pack",
+    "colorHint": "Choose a color",
+    "optionHint": "Choose an option",
+    "unavailable": "unavailable",
+    "axisLabel": "{axis}:"
   },
   "recommendations": {
     "flash": "FLASH",
@@ -801,7 +805,8 @@
         "failed": "Could not create the account. Please try again."
       },
       "continueShopping": "Continue shopping",
-      "sessionExpiredCart": "Your session has expired. Log in again to find the cart saved in your account."
+      "sessionExpiredCart": "Your session has expired. Log in again to find the cart saved in your account.",
+      "haveAccount": "Have an account?"
     },
     "confirm": {
       "title": "Confirm your order?",
@@ -832,7 +837,9 @@
       "cancelled": "Order cancelled: nothing was sent.",
       "recheckFailed": "We could not check your cart. Fix the points shown and try again.",
       "leaveWarning": "Your order is not placed yet. Leaving this page will cancel it. Continue?"
-    }
+    },
+    "orderSummary": "Order summary",
+    "unitPrice": "Unit price: {price}"
   },
   "auth": {
     "logoAlt": "ChooseTounsi",
@@ -5920,7 +5927,8 @@
     "selectWilayaFirst": "Choose the governorate first",
     "selectDelegation": "Select your delegation",
     "loadingDelegations": "Loading delegations…",
-    "reselectRegion": "Please select your governorate and delegation again from the list: our delivery partner needs the exact names. We’ll update this saved address for next time."
+    "reselectRegion": "Please select your governorate and delegation again from the list: our delivery partner needs the exact names. We’ll update this saved address for next time.",
+    "comment": "Comment"
   },
   "sellerPickup": {
     "title": "Pickup address",

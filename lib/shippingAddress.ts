@@ -114,6 +114,22 @@ export function shippingAddressErrorsFromServer(errors: Record<string, unknown> 
 export const isCompleteShippingAddress = (f: ShippingAddressForm, regions: boolean = regionsRequired()) =>
   Object.keys(validateShippingAddress(f, regions)).length === 0
 
+/**
+ * Checkout shows neither the second phone nor the postal code (both optional
+ * on the server). A saved address may still carry them: valid ones are kept
+ * (the courier gets phone2), invalid ones are dropped so a hidden field can
+ * never block the order.
+ */
+export function checkoutShippingAddress(f: ShippingAddressForm): ShippingAddressForm {
+  const second = f.phone_secondary.trim() ? validateTunisianPhone(f.phone_secondary) : null
+  const secondOk = !!second && second.valid && second.clean !== validateTunisianPhone(f.phone).clean
+  return {
+    ...f,
+    phone_secondary: secondOk ? f.phone_secondary : '',
+    postal_code:     /^\d{4}$/.test(f.postal_code.trim()) ? f.postal_code : '',
+  }
+}
+
 /** Payload for /checkout, /checkout/buy-now and /addresses. */
 export function shippingAddressPayload(f: ShippingAddressForm) {
   return {
