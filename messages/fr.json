@@ -3615,7 +3615,7 @@
         "print": "Imprimer le bordereau",
         "reprint": "Réimprimer le bordereau",
         "printing": "Préparation…",
-        "notYet": "Disponible après avoir marqué la commande comme préparée",
+        "notYet": "Votre bordereau apparaîtra ici dès que Choose'Tounsi l'aura ajouté",
         "printed": "Imprimé ✓ {date}",
         "printedTitle": "Imprimé {count, plural, one {# fois} other {# fois}}",
         "printSelected": "Imprimer les bordereaux sélectionnés ({count})",
@@ -3624,7 +3624,9 @@
         "popupBlocked": "Votre navigateur a bloqué le nouvel onglet : le bordereau a été téléchargé à la place.",
         "failed": "Le bordereau n'a pas pu être chargé. Veuillez réessayer.",
         "bulkSkipped": "{count, plural, one {# commande ignorée (pas encore de bordereau).} other {# commandes ignorées (pas encore de bordereau).}}",
-        "hint": "Imprimez-le et collez-le sur le colis avant le passage du livreur."
+        "hint": "Imprimez-le et collez-le sur le colis avant le passage du livreur.",
+        "new": "Nouveau",
+        "updated": "Mis à jour"
       }
     },
     "earnings": {

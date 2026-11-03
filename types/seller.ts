@@ -225,8 +225,14 @@ export interface ParcelDelivery {
 }
 
 export interface ParcelBordereau {
+  /** Intigo API source flag (manual uploads ignore it) */
   enabled?: boolean;
+  /** A PDF is there to print (uploaded by Choose'Tounsi, or Intigo's) */
   available: boolean;
+  source?: 'manual' | 'intigo' | null;
+  uploaded_at?: string | null;
+  /** Choose'Tounsi replaced an earlier file */
+  is_update?: boolean;
   first_printed_at: string | null;
   last_printed_at: string | null;
   print_count: number;

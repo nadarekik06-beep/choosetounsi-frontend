@@ -930,7 +930,7 @@ export default function OrdersPage() {
                                 🚚 {order.delivery.nid}
                               </span>
                             )}
-                            {order.delivery?.bordereau?.first_printed_at && (
+                            {order.delivery?.bordereau?.available && (
                               <span style={{ display: 'block' }}><PrintedBadge delivery={order.delivery} dark={dark} /></span>
                             )}
                           </div>

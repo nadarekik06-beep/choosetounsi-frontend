@@ -3,9 +3,9 @@
 /**
  * Intigo bordereau printing for the seller orders page.
  *
- *   BordereauButton  "Print bordereau" (or a disabled button until the order is
- *                    prepared); hidden while the feature is off (bordereau.enabled=false)
- *   PrintedBadge     "Printed ✓ {date}" after the first print
+ *   BordereauButton  "Print bordereau" once the PDF is there (uploaded by Choose'Tounsi,
+ *                    or Intigo's), a disabled button while it may still come
+ *   PrintedBadge     "New" / "Updated" until opened, then "Printed ✓ {date}"
  *   openPdf()        fetches the PDF with the seller's token and opens it in a new tab
  */
 
@@ -24,12 +24,18 @@ export function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : ''
 }
 
-/** What to show for this order: nothing, a disabled button, or the print button. */
+/** Orders a bordereau may still come for (not cancelled, delivered or returned). */
+const WAITING_STATUSES = ['confirmed', 'handed_to_courier', 'out_for_delivery']
+
+/**
+ * What to show for this order: the print button once a PDF is there (uploaded by
+ * Choose'Tounsi, or Intigo's), a disabled button while it may still come, else nothing.
+ */
 export function bordereauView(delivery: ParcelDelivery | undefined | null, status: string): BordereauView {
   const b = delivery?.bordereau
-  if (!b || b.enabled === false) return 'hidden'
+  if (!b) return 'hidden'
   if (b.available) return 'ready'
-  return status === 'confirmed' ? 'waiting' : 'hidden'
+  return WAITING_STATUSES.includes(status) ? 'waiting' : 'hidden'
 }
 
 /**
@@ -59,11 +65,19 @@ export async function openPdf(load: () => Promise<Blob>, filename: string): Prom
   }
 }
 
+/** "New" / "Updated" until the seller opens the PDF, then "Printed ✓ {date}". */
 export function PrintedBadge({ delivery, dark }: { delivery?: ParcelDelivery | null; dark: boolean }) {
   const t = useTranslations('seller.orders.bordereau')
   const { date } = useFormat()
   const b = delivery?.bordereau
-  if (!b || b.enabled === false || !b.first_printed_at) return null
+  if (!b || !b.available) return null
+  if (!b.first_printed_at) {
+    return (
+      <span style={{ display: 'inline-block', marginTop: 4, fontSize: 10, fontWeight: 900, color: '#fff', background: b.is_update ? '#d97706' : '#db142e', padding: '1px 7px', borderRadius: 5, whiteSpace: 'nowrap' }}>
+        {b.is_update ? t('updated') : t('new')}
+      </span>
+    )
+  }
   return (
     <span
       title={t('printedTitle', { count: b.print_count })}

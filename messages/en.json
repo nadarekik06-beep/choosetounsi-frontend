@@ -3615,7 +3615,7 @@
         "print": "Print bordereau",
         "reprint": "Reprint bordereau",
         "printing": "Preparing…",
-        "notYet": "Available after you mark the order as prepared",
+        "notYet": "Your bordereau will appear here once Choose'Tounsi adds it",
         "printed": "Printed ✓ {date}",
         "printedTitle": "Printed {count, plural, one {# time} other {# times}}",
         "printSelected": "Print selected bordereaux ({count})",
@@ -3624,7 +3624,9 @@
         "popupBlocked": "Your browser blocked the new tab: the bordereau was downloaded instead.",
         "failed": "The bordereau could not be loaded. Please try again.",
         "bulkSkipped": "{count, plural, one {# order was skipped (no bordereau yet).} other {# orders were skipped (no bordereau yet).}}",
-        "hint": "Print it and stick it on the parcel before the courier comes."
+        "hint": "Print it and stick it on the parcel before the courier comes.",
+        "new": "New",
+        "updated": "Updated"
       }
     },
     "earnings": {
