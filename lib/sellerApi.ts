@@ -348,6 +348,46 @@ export const ordersApi = {
     jsonRequest<{ success: boolean; message?: string; data: { id: number; prepared_at: string | null; delivery?: import('@/types/seller').ParcelDelivery } }>('POST', `/seller/orders/${id}/prepared`),
 }
 
+// ─── Intigo bordereau (PDF) ───────────────────────────────────────────────────
+// Fetched with the seller's token (never a bare link): the PDF comes back as a Blob.
+
+async function pdfRequest(method: string, path: string, body?: unknown): Promise<{ blob: Blob; headers: Headers }> {
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: {
+        Accept: 'application/pdf, application/json',
+        ...(body != null ? { 'Content-Type': 'application/json' } : {}),
+        ...authHeaders(),
+      },
+      body: body != null ? JSON.stringify(body) : undefined,
+    })
+  } catch {
+    throw apiError('Network error', 0)
+  }
+  if (!res.ok || !(res.headers.get('Content-Type') ?? '').includes('application/pdf')) {
+    const json = await res.json().catch(() => ({}))
+    throw apiError(json?.message ?? `Request failed (HTTP ${res.status})`, res.status, json)
+  }
+  return { blob: await res.blob(), headers: res.headers }
+}
+
+const idList = (v: string | null) => (v ? v.split(',').map(Number).filter(Boolean) : [])
+
+export const bordereauApi = {
+  /** GET /api/seller/orders/{id}/bordereau */
+  one: (sellerOrderId: number) =>
+    pdfRequest('GET', `/seller/orders/${sellerOrderId}/bordereau`).then(r => r.blob),
+  /** POST /api/seller/bordereaux/bulk: one merged PDF + which orders were printed / skipped */
+  bulk: (sellerOrderIds: number[]) =>
+    pdfRequest('POST', '/seller/bordereaux/bulk', { ids: sellerOrderIds }).then(r => ({
+      blob: r.blob,
+      printed: idList(r.headers.get('X-Bordereaux-Printed')),
+      skipped: idList(r.headers.get('X-Bordereaux-Skipped')),
+    })),
+}
+
 // ─── Seller Products API ──────────────────────────────────────────────────────
 
 export const productsApi = {

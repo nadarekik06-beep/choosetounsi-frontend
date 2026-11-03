@@ -3610,7 +3610,22 @@
         "failedToast": "Prepared. The delivery request failed: the admin has been notified.",
         "refTitle": "Delivery reference: write it on the parcel"
       },
-      "guestBadge": "Guest"
+      "guestBadge": "Guest",
+      "bordereau": {
+        "print": "Print bordereau",
+        "reprint": "Reprint bordereau",
+        "printing": "Preparing…",
+        "notYet": "Available after you mark the order as prepared",
+        "printed": "Printed ✓ {date}",
+        "printedTitle": "Printed {count, plural, one {# time} other {# times}}",
+        "printSelected": "Print selected bordereaux ({count})",
+        "selectRow": "Select for bordereau printing",
+        "selectAll": "Select all printable orders",
+        "popupBlocked": "Your browser blocked the new tab: the bordereau was downloaded instead.",
+        "failed": "The bordereau could not be loaded. Please try again.",
+        "bulkSkipped": "{count, plural, one {# order was skipped (no bordereau yet).} other {# orders were skipped (no bordereau yet).}}",
+        "hint": "Print it and stick it on the parcel before the courier comes."
+      }
     },
     "earnings": {
       "loadFailed": "Failed to load earnings data.",

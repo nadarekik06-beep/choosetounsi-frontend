@@ -3610,7 +3610,22 @@
         "failedToast": "Préparé. La demande de livraison a échoué : l’administrateur a été prévenu.",
         "refTitle": "Référence de livraison : à écrire sur le colis"
       },
-      "guestBadge": "Invité"
+      "guestBadge": "Invité",
+      "bordereau": {
+        "print": "Imprimer le bordereau",
+        "reprint": "Réimprimer le bordereau",
+        "printing": "Préparation…",
+        "notYet": "Disponible après avoir marqué la commande comme préparée",
+        "printed": "Imprimé ✓ {date}",
+        "printedTitle": "Imprimé {count, plural, one {# fois} other {# fois}}",
+        "printSelected": "Imprimer les bordereaux sélectionnés ({count})",
+        "selectRow": "Sélectionner pour l'impression du bordereau",
+        "selectAll": "Sélectionner toutes les commandes imprimables",
+        "popupBlocked": "Votre navigateur a bloqué le nouvel onglet : le bordereau a été téléchargé à la place.",
+        "failed": "Le bordereau n'a pas pu être chargé. Veuillez réessayer.",
+        "bulkSkipped": "{count, plural, one {# commande ignorée (pas encore de bordereau).} other {# commandes ignorées (pas encore de bordereau).}}",
+        "hint": "Imprimez-le et collez-le sur le colis avant le passage du livreur."
+      }
     },
     "earnings": {
       "loadFailed": "Impossible de charger les revenus.",

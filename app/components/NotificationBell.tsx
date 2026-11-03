@@ -12,7 +12,7 @@ import {
   PackagePlus, PackageCheck, PackageX,
   CheckCircle, XCircle, Store, Package, AlertTriangle,
   Megaphone, PauseCircle, Flag, Gauge, Wallet, CalendarDays, TrendingDown, TrendingUp, Ticket, Target,
-  ShoppingBag, Truck, CreditCard, MessageCircle, Star, Tag, ShieldCheck, AlertCircle,
+  ShoppingBag, Truck, CreditCard, MessageCircle, Star, Tag, ShieldCheck, AlertCircle, Printer,
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/Usenotifications';
 import type { AppNotification } from '@/lib/notificationApi';
@@ -67,6 +67,7 @@ export function NotifIcon({ icon }: { icon: string }) {
     'shopping-bag':    <ShoppingBag    className={cls} />,
     'package':         <Package        className={cls} />,
     'truck':           <Truck          className={cls} />,
+    'printer':         <Printer        className={cls} />,   // seller: bordereau ready
     'credit-card':     <CreditCard     className={cls} />,
     'message-circle':  <MessageCircle  className={cls} />,
     'alert-circle':    <AlertCircle    className={cls} />,

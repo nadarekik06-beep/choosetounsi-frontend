@@ -220,6 +220,16 @@ export interface ParcelDelivery {
   status_code: number | null;
   status_label: string | null;
   parcel_size: 'S' | 'L' | 'XL';
+  /** Intigo bordereau: enabled = feature on for sellers; available = printable now. */
+  bordereau?: ParcelBordereau;
+}
+
+export interface ParcelBordereau {
+  enabled?: boolean;
+  available: boolean;
+  first_printed_at: string | null;
+  last_printed_at: string | null;
+  print_count: number;
 }
 
 /**

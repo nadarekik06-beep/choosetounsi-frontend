@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ordersApi } from '@/lib/sellerApi';
+import { ordersApi, bordereauApi } from '@/lib/sellerApi';
+import { BordereauButton, PrintedBadge, bordereauView, openPdf, errorMessage } from '../components/BordereauPrint';
 import {
   Search, Eye, ChevronLeft, ChevronRight, X, ShoppingBag, AlertCircle, User, MapPin, Package,
-  Hash, Calendar, Tag, Wallet,
+  Hash, Calendar, Tag, Wallet, Printer,
 } from 'lucide-react';
 import { useTheme } from '../SellerShell';
 import SellerOrderDrawer from '../components/SellerOrderDrawer';
@@ -315,6 +316,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
   orderId: number; onClose: () => void; onUpdated: () => void; dark: boolean;
 }) {
   const t = useTranslations('seller.orders');
+  const tB = useTranslations('seller.orders.bordereau');
   const { dt } = useDt();
   const { date } = useFormat();
   const wilaya = useWilayaLabel();
@@ -568,6 +570,23 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                   {/* Delivery request (Intigo): the reference to write on the package */}
                   {detail.order.delivery?.state && <DeliveryRequest delivery={detail.order.delivery} dark={dark} />}
 
+                  {/* Intigo bordereau: print it and stick it on the parcel (hidden while the feature is off) */}
+                  <BordereauButton
+                    sellerOrderId={orderId}
+                    orderNumber={detail.order.order_number}
+                    delivery={detail.order.delivery}
+                    status={detail.order.status}
+                    dark={dark}
+                    load={bordereauApi.one}
+                    onPrinted={how => {
+                      setError('');
+                      setSuccessMsg(how === 'downloaded' ? tB('popupBlocked') : '');
+                      ordersApi.getOne(orderId).then(res => setDetail(res.data)).catch(() => {});
+                      onUpdated();
+                    }}
+                    onError={msg => { setSuccessMsg(''); setError(msg); }}
+                  />
+
                   {can('handed_to_courier') && (
                   <button
                     onClick={() => handleTransition('handed_to_courier')}
@@ -722,6 +741,46 @@ export default function OrdersPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // ── Intigo bordereaux: one per row, or several selected → one merged PDF ──
+  const tB = useTranslations('seller.orders.bordereau');
+  const [picked,   setPicked]   = useState<number[]>([]);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [toast,    setToast]    = useState<{ msg: string; ok: boolean } | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const showToast = useCallback((msg: string, ok: boolean) => {
+    clearTimeout(toastTimer.current);
+    setToast({ msg, ok });
+    toastTimer.current = setTimeout(() => setToast(null), 5000);
+  }, []);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  const printable   = (data?.data ?? []).filter(o => bordereauView(o.delivery, o.status) === 'ready');
+  const showPicker  = (data?.data ?? []).some(o => bordereauView(o.delivery, o.status) !== 'hidden');
+  const pickedHere  = picked.filter(id => printable.some(o => o.id === id));
+  // Only rows printable on the current page count (pickedHere), so a page change needs no reset
+  const togglePick  = (id: number) => setPicked(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
+
+  const printSelected = async () => {
+    if (!pickedHere.length || bulkBusy) return;
+    setBulkBusy(true);
+    let skipped = 0;
+    try {
+      const how = await openPdf(async () => {
+        const r = await bordereauApi.bulk(pickedHere);
+        skipped = r.skipped.length;
+        return r.blob;
+      }, 'bordereaux.pdf');
+      if (how === 'downloaded') showToast(tB('popupBlocked'), true);
+      else if (skipped) showToast(tB('bulkSkipped', { count: skipped }), true);
+      setPicked([]);
+      fetchData();
+    } catch (e: unknown) {
+      showToast(errorMessage(e) || tB('failed'), false);
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   const cardBg    = dark ? '#161b27' : '#ffffff';
   const border    = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const textMain  = dark ? '#ffffff' : '#0f172a';
@@ -780,6 +839,17 @@ export default function OrdersPage() {
           ))}
         </select>
         {data && <span style={{ fontSize: 11, fontWeight: 700, color: textMuted, marginInlineStart: 'auto' }}>{t('count', { count: data.total })}</span>}
+        {pickedHere.length > 0 && (
+          <button
+            type="button"
+            onClick={printSelected}
+            disabled={bulkBusy}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 10, border: 'none', fontFamily: 'inherit', fontSize: 12, fontWeight: 800, color: '#fff', background: bulkBusy ? 'rgba(37,99,235,0.5)' : 'linear-gradient(135deg,#2563eb,#1d4ed8)', cursor: bulkBusy ? 'not-allowed' : 'pointer' }}
+          >
+            {bulkBusy ? <BrandLoader variant="inline" size={14} /> : <Printer size={14} />}
+            {tB('printSelected', { count: pickedHere.length })}
+          </button>
+        )}
       </div>
 
       {/* Table */}
@@ -793,6 +863,19 @@ export default function OrdersPage() {
               <table data-ct-show="0,1,3,6" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: theadBg }}>
+                    {showPicker && (
+                      <th style={{ padding: '10px 0 10px 16px', width: 28 }}>
+                        <input
+                          type="checkbox"
+                          aria-label={tB('selectAll')}
+                          title={tB('selectAll')}
+                          disabled={printable.length === 0}
+                          checked={printable.length > 0 && pickedHere.length === printable.length}
+                          onChange={e => setPicked(e.target.checked ? printable.map(o => o.id) : [])}
+                          style={{ cursor: printable.length ? 'pointer' : 'not-allowed' }}
+                        />
+                      </th>
+                    )}
                     {(['order', 'customer', 'wilaya', 'status', 'payment', 'method', 'amount', 'date', ''] as const).map((h, i) => (
                       <th key={h + i} style={{ padding: '10px 20px', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: textMuted, textAlign: h === 'amount' ? 'end' : h === '' ? 'center' : 'start' }}>{h ? t(`cols.${h}`) : ''}</th>
                     ))}
@@ -809,6 +892,20 @@ export default function OrdersPage() {
                         background: order.status === 'confirmed' ? (dark ? 'rgba(59,130,246,0.05)' : 'rgba(59,130,246,0.03)') : undefined,
                       }}
                     >
+                      {showPicker && (
+                        <td style={{ padding: '13px 0 13px 16px', width: 28 }}>
+                          {bordereauView(order.delivery, order.status) === 'ready' && (
+                            <input
+                              type="checkbox"
+                              aria-label={tB('selectRow')}
+                              title={tB('selectRow')}
+                              checked={picked.includes(order.id)}
+                              onChange={() => togglePick(order.id)}
+                              style={{ cursor: 'pointer' }}
+                            />
+                          )}
+                        </td>
+                      )}
                       <td style={{ padding: '13px 20px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -833,6 +930,9 @@ export default function OrdersPage() {
                                 🚚 {order.delivery.nid}
                               </span>
                             )}
+                            {order.delivery?.bordereau?.first_printed_at && (
+                              <span style={{ display: 'block' }}><PrintedBadge delivery={order.delivery} dark={dark} /></span>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -855,6 +955,17 @@ export default function OrdersPage() {
                               {t('prepareNow')}
                             </span>
                           )}
+                          <BordereauButton
+                            compact
+                            sellerOrderId={order.id}
+                            orderNumber={order.order_number}
+                            delivery={order.delivery}
+                            status={order.status}
+                            dark={dark}
+                            load={bordereauApi.one}
+                            onPrinted={how => { if (how === 'downloaded') showToast(tB('popupBlocked'), true); fetchData(); }}
+                            onError={msg => showToast(msg, false)}
+                          />
                           <button onClick={() => setSelectedId(order.id)} aria-label={t('view')} title={t('view')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: textMuted }} className="eye-btn">
                             <Eye size={14} />
                           </button>
@@ -895,6 +1006,17 @@ export default function OrdersPage() {
           </div>
         )}
       </div>
+
+      {toast && (
+        <div role={toast.ok ? 'status' : 'alert'} aria-live="polite" style={{
+          position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', zIndex: 10000,
+          maxWidth: 'calc(100vw - 32px)', padding: '12px 20px', borderRadius: 14, fontSize: 13, fontWeight: 700,
+          background: dark ? '#1e2535' : '#111827', color: '#fff', boxShadow: '0 8px 32px rgba(0,0,0,0.28)',
+          borderInlineStart: `4px solid ${toast.ok ? '#10b981' : '#f87171'}`,
+        }}>
+          {toast.msg}
+        </div>
+      )}
 
       {selectedId !== null && (
         <OrderDetailModal orderId={selectedId} onClose={closeDetail} onUpdated={fetchData} dark={dark} />
