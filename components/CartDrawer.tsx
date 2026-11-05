@@ -22,7 +22,7 @@ import type { CartItem as BaseCartItem } from '@/lib/shopApi'
 import AdStrip from '@/components/ads/AdStrip'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
-import ProductPrice from '@/app/components/promotions/ProductPrice'
+import ProductPrice, { ProductPromoBadges } from '@/app/components/promotions/ProductPrice'
 
 import BrandLoader from '@/components/brand/BrandLoader'
 import { STORAGE_URL } from '@/lib/constants'
@@ -103,6 +103,9 @@ function CartRow({
               <Package size={20} color="#e2e8f0" />
             </div>
         }
+        {!item.is_pack && (
+          <ProductPromoBadges product={item} size="sm" style={{ top: 3, insetInlineStart: 3 }} />
+        )}
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -167,6 +170,12 @@ function CartRow({
           </p>
         )}
 
+        {item.promo_ended && (
+          <p role="status" style={{ fontSize: 11, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '5px 8px', margin: '6px 0 0', fontWeight: 600, lineHeight: 1.35 }}>
+            {t('promoEnded', { price: fmt(item.promo_ended_price ?? 0) })}
+          </p>
+        )}
+
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
           <ProductPrice product={item} size="md" />
           <div style={{
@@ -202,6 +211,11 @@ function CartRow({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
           <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
             {item.quantity} × {fmt(item.price)} = <strong style={{ color: '#374151' }}>{fmt(item.line_total)}</strong>
+            {(item.line_savings ?? 0) > 0.0005 && (
+              <span style={{ display: 'block', color: '#db142e', fontWeight: 700, marginTop: 2 }}>
+                {t('youSave', { amount: fmt(item.line_savings!) })}
+              </span>
+            )}
           </span>
           <button
             onClick={() => removeItem(item.id)}
@@ -395,6 +409,7 @@ export default function CartDrawer() {
 
   const selectedItems    = items.filter(i => selectedIds.has(i.id))
   const selectedSubtotal = selectedItems.reduce((sum, i) => sum + i.line_total, 0)
+  const selectedSavings  = (selectedIds.size > 0 ? selectedItems : items).reduce((sum, i) => sum + (i.line_savings ?? 0), 0)
   const selectedCount    = selectedItems.reduce((sum, i) => sum + i.quantity, 0)
 
   const handleCheckout = useCallback(() => {
@@ -558,6 +573,12 @@ export default function CartDrawer() {
                 {fmt(selectedIds.size > 0 ? selectedSubtotal : subtotal)}
               </span>
             </div>
+            {selectedSavings > 0.0005 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: 12, color: '#db142e', fontWeight: 700 }}>{t('totalSavings')}</span>
+                <span style={{ fontSize: 13, color: '#db142e', fontWeight: 800 }}>−{fmt(selectedSavings)}</span>
+              </div>
+            )}
             {/* Dynamic shipping hint in cart drawer footer */}
                 {(() => {
                   const allFree = items.length > 0 && items.every(i => !i.is_pack && (i as any).is_free_delivery)

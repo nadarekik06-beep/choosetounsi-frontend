@@ -469,7 +469,10 @@
     "shippingAtCheckout": "Shipping calculated at checkout",
     "onlySelectedCheckout": "{count, plural, one {Only the selected item will be checked out.} other {Only the # selected items will be checked out.}}",
     "selectToCheckout": "Select items to checkout",
-    "checkout": "Proceed to checkout"
+    "checkout": "Proceed to checkout",
+    "youSave": "You save {amount}",
+    "totalSavings": "Total savings",
+    "promoEnded": "This promotion has ended: the normal price now applies (it was {price})."
   },
   "discover": {
     "metaTitle": "Shop"
@@ -839,7 +842,16 @@
       "leaveWarning": "Your order is not placed yet. Leaving this page will cancel it. Continue?"
     },
     "orderSummary": "Order summary",
-    "unitPrice": "Unit price: {price}"
+    "unitPrice": "Unit price: {price}",
+    "promo": {
+      "original": "Original:",
+      "discount": "Discount:",
+      "final": "Final:",
+      "includedSavings": "Promotions (included in subtotal)",
+      "totalSavings": "You save {amount} on this order",
+      "endedLine": "Promotion ended: normal price applies (was {price}).",
+      "endedNotice": "The promotion has ended for: {items}. The normal price now applies."
+    }
   },
   "auth": {
     "logoAlt": "ChooseTounsi",
@@ -4130,7 +4142,9 @@
         "expired": "Expired"
       },
       "targeted": "Private · {count} buyers",
-      "endsOn": "Ends {date}"
+      "endsOn": "Ends {date}",
+      "byChooseTounsi": "Promotion by Choose'Tounsi",
+      "adminReadOnly": "Created by Choose'Tounsi. Your earnings are calculated on the discounted price, as with your own promotions. Contact us to change it."
     },
     "promotionForm": {
       "commissionHeader": "{plan} Pepper · Commission after discount",

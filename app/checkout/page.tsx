@@ -28,6 +28,8 @@ import { api, getUser, isAuthenticated, updateSessionUser, subscribeAuth, type A
 import { guestCheckoutEnabled, guestHeaders, clearCartToken, rememberGuestOrder, isSignedInSnapshot, notSignedInOnServer, sessionExpired } from '@/lib/guestCart'
 import GuestOrderSuccess, { type GuestSuccess } from '@/components/checkout/GuestOrderSuccess'
 import OrderConfirmModal, { newIdempotencyKey, type ConfirmStage, type ConfirmLineExtra } from '@/components/checkout/OrderConfirmModal'
+import { DiscountBadge } from '@/app/components/promotions/ProductPrice'
+import type { QuoteLine } from '@/lib/shopApi'
 import { profileApi } from '@/lib/profileApi'
 import { fetchPaymentInfo, COD_ONLY, type PaymentInfo } from '@/lib/platformApi'
 import type { UserAddress } from '@/app/account/addresses/page'
@@ -855,6 +857,12 @@ export default function CheckoutPage() {
   const summarySubtotal = quote?.subtotal ?? null
   const summaryTotal    = quote?.total ?? null
   const parcels         = quote?.parcels ?? []
+  // Server-priced line per cart row (buy-now: cart_id null) for the original / discount / final breakdown
+  const quoteLineFor = (cartId: number | null): QuoteLine | undefined =>
+    parcels.flatMap(p => p.lines ?? []).find(l => l.kind === 'product' && l.cart_id === cartId)
+  const promoSavings  = quote?.promo_savings ?? 0
+  const totalSavings  = quote?.total_savings ?? 0
+  const promoEnded    = quote?.promo_ended ?? []
   const walletInsufficient = walletBalance !== null && summaryTotal !== null && walletBalance < summaryTotal
 
   // ── Place order: check → confirm → 10 s to undo → the one order request ───
@@ -1309,13 +1317,15 @@ export default function CheckoutPage() {
               <div style={{ padding: '4px 16px' }}>
                 {isBuyNow && bnProduct && (
                   <div style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
-                    <div style={{ width: 72, height: 72, flexShrink: 0, borderRadius: 10, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
+                    <div style={{ width: 72, height: 72, flexShrink: 0, borderRadius: 10, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9', position: 'relative' }}>
                       {bnImage ? <img src={bnImage} alt={bnProduct.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={18} color="#e2e8f0" /></div>}
+                      <LineBadge line={quoteLineFor(null)} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p dir="auto" style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{bnProduct.name}</p>
                       {bnVariantText && <p dir="auto" style={{ fontSize: 13, color: '#334155', fontWeight: 700, margin: '3px 0 0' }}>{bnVariantText}</p>}
-                      <p style={{ fontSize: 12, color: '#64748b', margin: '3px 0 0' }}>{t('unitPrice', { price: fmt(bnEffectivePrice) })}</p>
+                      <p style={{ fontSize: 12, color: '#64748b', margin: '3px 0 0' }}>{t('unitPrice', { price: fmt(quoteLineFor(null)?.unit_price ?? bnEffectivePrice) })}</p>
+                      <PromoBreakdown line={quoteLineFor(null)} fmt={fmt} t={t} />
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
                         <div role="group" aria-label={tc('quantity')} style={{ display: 'inline-flex', alignItems: 'center', border: '1.5px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
                           <button type="button" className="co-qty" onClick={() => setBnQuantity(bnQuantity - 1)} disabled={bnQuantity <= 1} aria-label={tp('decrease')}>
@@ -1338,8 +1348,9 @@ export default function CheckoutPage() {
                   const variantEntries = item.variant_options ? Object.values(item.variant_options) : []
                   return (
                     <div key={`${item.id}-${item.variant_id ?? 'base'}`} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
-                      <div style={{ width: 56, height: 56, flexShrink: 0, borderRadius: 8, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
+                      <div style={{ width: 56, height: 56, flexShrink: 0, borderRadius: 8, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9', position: 'relative' }}>
                         {img ? <img src={img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={16} color="#e2e8f0" /></div>}
+                        <LineBadge line={quoteLineFor(item.id)} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p dir="auto" style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
@@ -1352,9 +1363,10 @@ export default function CheckoutPage() {
                             )}
                           </div>
                         )}
-                        <p style={{ fontSize: 12, color: '#64748b', margin: '3px 0 0' }}>{item.quantity} × {fmt(item.price)}</p>
+                        <p style={{ fontSize: 12, color: '#64748b', margin: '3px 0 0' }}>{item.quantity} × {fmt(quoteLineFor(item.id)?.unit_price ?? item.price)}</p>
+                        <PromoBreakdown line={quoteLineFor(item.id)} fmt={fmt} t={t} />
                       </div>
-                      <span style={{ fontSize: 13.5, fontWeight: 800, color: '#0f172a', flexShrink: 0 }}>{fmt(item.line_total)}</span>
+                      <span style={{ fontSize: 13.5, fontWeight: 800, color: '#0f172a', flexShrink: 0 }}>{fmt(quoteLineFor(item.id)?.total ?? item.line_total)}</span>
                     </div>
                   )
                 })}
@@ -1383,10 +1395,21 @@ export default function CheckoutPage() {
                     <AlertCircle size={13} /> {quoteError}
                   </p>
                 )}
+                {promoEnded.length > 0 && (
+                  <p role="alert" style={{ fontSize: 12, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 10px', margin: '0 0 10px', display: 'flex', alignItems: 'flex-start', gap: 6, lineHeight: 1.4 }}>
+                    <AlertCircle size={13} style={{ flexShrink: 0, marginTop: 2 }} /> {t('promo.endedNotice', { items: promoEnded.join(', ') })}
+                  </p>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>{tc('subtotal')}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{summarySubtotal !== null ? fmt(summarySubtotal) : '…'}</span>
                 </div>
+                {promoSavings > 0.0005 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, color: '#db142e', fontWeight: 600 }}>{t('promo.includedSavings')}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#db142e' }}>−{fmt(promoSavings)}</span>
+                  </div>
+                )}
                 {totalDiscount > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                     <span style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>{tc('discount')}</span>
@@ -1420,6 +1443,11 @@ export default function CheckoutPage() {
                   <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{tc('total')}</span>
                   <span style={{ fontSize: 19, fontWeight: 900, color: '#db142e' }}>{summaryTotal !== null ? fmt(summaryTotal) : '…'}</span>
                 </div>
+                {totalSavings > 0.0005 && (
+                  <p style={{ margin: '8px 0 0', padding: '7px 10px', borderRadius: 8, background: 'rgba(219,20,46,0.07)', color: '#db142e', fontSize: 13, fontWeight: 800, textAlign: 'center' }}>
+                    {t('promo.totalSavings', { amount: fmt(totalSavings) })}
+                  </p>
+                )}
               </div>
             </section>
 
@@ -1597,5 +1625,38 @@ export default function CheckoutPage() {
         />
       )}
     </>
+  )
+}
+
+// ── Promotion breakdown per line (server numbers from the quote) ──────────────
+
+/** "-50%" on the item thumbnail. */
+function LineBadge({ line }: { line?: QuoteLine }) {
+  if (!line || !(line.promo_discount && line.promo_discount > 0.0005)) return null
+  return <DiscountBadge percent={line.discount_percent ?? 0} size="sm" style={{ position: 'absolute', top: 2, insetInlineStart: 2 }} />
+}
+
+/** Original price crossed out, discount, final price; or the "promotion ended" notice. */
+function PromoBreakdown({ line, fmt, t }: {
+  line?: QuoteLine
+  fmt: (n: number) => string
+  t: (key: string, values?: Record<string, string | number>) => string
+}) {
+  if (!line) return null
+  if (line.promo_ended) {
+    return (
+      <p role="status" style={{ fontSize: 11, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '3px 7px', margin: '4px 0 0', fontWeight: 600 }}>
+        {t('promo.endedLine', { price: fmt(line.promo_ended_price ?? 0) })}
+      </p>
+    )
+  }
+  if (!(line.promo_discount && line.promo_discount > 0.0005) || line.original_unit_price === undefined) return null
+  return (
+    <p style={{ fontSize: 11.5, margin: '3px 0 0', display: 'flex', flexWrap: 'wrap', gap: '2px 8px', alignItems: 'baseline' }}>
+      <span style={{ color: '#9ca3af' }}>{t('promo.original')} <s>{fmt(line.original_unit_price)}</s></span>
+      {/* Per unit, like the original and final prices next to it */}
+      <span style={{ color: '#db142e', fontWeight: 700 }}>{t('promo.discount')} −{fmt(Math.round((line.promo_discount / Math.max(1, line.quantity)) * 1000) / 1000)}</span>
+      <span style={{ color: '#db142e', fontWeight: 800 }}>{t('promo.final')} {fmt(line.unit_price)}</span>
+    </p>
   )
 }

@@ -263,7 +263,7 @@ function VariantSelector({
 
 // ─── Gallery ─────────────────────────────────────────────────────────────────
 
-function Gallery({ images, productName }: { images: string[]; productName: string }) {
+function Gallery({ images, productName, badge }: { images: string[]; productName: string; badge?: React.ReactNode }) {
   const t = useTranslations('product')
   const [active, setActive]   = useState(0)
   const [zoom, setZoom]       = useState(false)
@@ -294,6 +294,7 @@ function Gallery({ images, productName }: { images: string[]; productName: strin
             onMouseMove={e => { const r = e.currentTarget.getBoundingClientRect(); setZoomPos({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 }) }}
             onMouseLeave={() => setZoom(false)}
           >
+            {badge}
             {cur
               ? <img src={cur} alt={productName} style={{ width: '100%', height: '100%', objectFit: 'cover', transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`, transform: zoom ? 'scale(2.2)' : 'scale(1)', transition: zoom ? 'none' : 'transform 0.3s ease' }} />
               : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -489,6 +490,11 @@ export default function ProductDetailPage() {
     final_price:    effectivePrice,
     original_price: originalPrice,
     promo_type:     activePromotion ? (activePromotion.is_flash_sale ? 'flash_sale' : 'promotion') : null,
+    // Server's -X% for this exact line (same number as cards, cart and checkout)
+    discount_percent: activePromotion
+      ? ((selectedVariant as { discount_percent?: number | null } | null)?.discount_percent
+          ?? (product as { discount_percent?: number | null } | null)?.discount_percent ?? null)
+      : null,
     is_pack:        product?.is_pack ?? false,
     pack_quantity:  product?.pack_quantity ?? null,
   }
@@ -612,7 +618,8 @@ export default function ProductDetailPage() {
         </div>
 
         <div className="pd-grid" style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 24px 48px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
-          <Gallery images={galleryImages} productName={product.name} />
+          <Gallery images={galleryImages} productName={product.name}
+            badge={<ProductPromoBadges product={linePrice} size="lg" style={{ top: 12, insetInlineStart: 12 }} />} />
 
           <div style={{ animation: 'fadeUp 0.4s ease 0.1s both' }}>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
@@ -681,8 +688,8 @@ export default function ProductDetailPage() {
                 marginBottom: 14, padding: '10px 14px',
                 background: activePromotion.is_flash_sale
                   ? 'linear-gradient(135deg,rgba(220,38,38,0.08),rgba(220,38,38,0.03))'
-                  : 'rgba(5,150,105,0.07)',
-                border: `1px solid ${activePromotion.is_flash_sale ? 'rgba(220,38,38,0.2)' : 'rgba(5,150,105,0.2)'}`,
+                  : 'rgba(219,20,46,0.06)',
+                border: `1px solid ${activePromotion.is_flash_sale ? 'rgba(220,38,38,0.2)' : 'rgba(219,20,46,0.18)'}`,
                 borderRadius: 10,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

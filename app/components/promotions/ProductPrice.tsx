@@ -8,6 +8,7 @@
  * ends_at, promotion. Never computes a discount itself: the server's numbers are
  * the ones the cart and checkout charge.
  *
+ *   <DiscountBadge percent={50} />         the big red "-50%" (brand #db142e, white, always LTR)
  *   <ProductPromoOverlay product={p} />   inside the image box (position: relative):
  *                                          -X% + FLASH/PROMO badges top-left,
  *                                          flash countdown along the bottom edge
@@ -136,10 +137,31 @@ const BADGE: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 3, color: '#fff', lineHeight: 1.4,
 }
 
+/**
+ * The "-X%" of every promoted product: brand red, white bold, readable on any
+ * photo (white ring + shadow) and on mobile. Always left-to-right, so Arabic
+ * pages show "-50%" and not "%50-". `percent` comes from the server
+ * (discount_percent), so every screen shows the same number.
+ */
+export function DiscountBadge({ percent, size = 'md', style }: {
+  percent: number
+  size?: 'sm' | 'md' | 'lg'
+  style?: React.CSSProperties
+}) {
+  if (!(percent > 0)) return null
+  return (
+    <span className={`ct-off-badge ct-off-badge--${size}`} style={style} dir="ltr">
+      -{percent}%
+    </span>
+  )
+}
+
 /** -X% and FLASH / PROMO badges: top-left of the image, or `inline` in a caller's badge column. */
-export function ProductPromoBadges({ product, inline = false, style }: {
+export function ProductPromoBadges({ product, inline = false, size = 'md', style }: {
   product: PricedProduct
   inline?: boolean
+  /** md: product cards · lg: product page image · sm: cart / checkout thumbnails */
+  size?: 'sm' | 'md' | 'lg'
   style?: React.CSSProperties
 }) {
   const t = useTranslations('deals')
@@ -148,18 +170,14 @@ export function ProductPromoBadges({ product, inline = false, style }: {
 
   const badges = (
     <>
-      {percent > 0 && (
-        <span style={{ ...BADGE, fontSize: 9, padding: '3px 7px', background: isFlash ? '#db142e' : '#059669' }}>
-          -{percent}%
-        </span>
-      )}
+      <DiscountBadge percent={percent} size={size} />
       {isFlash ? (
         <span style={{ ...BADGE, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}>
           <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#fbbf24', flexShrink: 0 }} />
           ⚡ {t('live')}
         </span>
-      ) : (
-        <span style={{ ...BADGE, background: 'rgba(5,150,105,0.85)', backdropFilter: 'blur(4px)' }}>
+      ) : size !== 'sm' && (
+        <span style={{ ...BADGE, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
           🏷️ {t('discountBadge')}
         </span>
       )}
@@ -181,15 +199,16 @@ export function ProductPromoBadges({ product, inline = false, style }: {
  * Badges + flash countdown, for a `position: relative; overflow: hidden` image box.
  * badges={false}: countdown only (the card shows <ProductPromoBadges inline /> itself).
  */
-export function ProductPromoOverlay({ product, badges = true, badgeStyle }: {
+export function ProductPromoOverlay({ product, badges = true, size = 'md', badgeStyle }: {
   product: PricedProduct
   badges?: boolean
+  size?: 'sm' | 'md' | 'lg'
   badgeStyle?: React.CSSProperties
 }) {
   const { isFlash, endsAt } = promoPricing(product)
   return (
     <>
-      {badges && <ProductPromoBadges product={product} style={badgeStyle} />}
+      {badges && <ProductPromoBadges product={product} size={size} style={badgeStyle} />}
       {isFlash && <FlashCountdownBadge promotion={{ is_flash_sale: true, ends_at: endsAt }} />}
     </>
   )

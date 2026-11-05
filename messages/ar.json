@@ -469,7 +469,10 @@
     "shippingAtCheckout": "تُحتسب رسوم التوصيل عند إتمام الطلب",
     "onlySelectedCheckout": "{count, plural, one {سيتم طلب المنتج المحدد فقط.} two {سيتم طلب المنتجين المحددين فقط.} other {سيتم طلب المنتجات المحددة فقط (#).}}",
     "selectToCheckout": "حدّد منتجات لإتمام الطلب",
-    "checkout": "إتمام الطلب"
+    "checkout": "إتمام الطلب",
+    "youSave": "توفّر {amount}",
+    "totalSavings": "إجمالي التوفير",
+    "promoEnded": "انتهى هذا العرض: يُطبَّق السعر العادي الآن (كان {price})."
   },
   "discover": {
     "metaTitle": "المتجر"
@@ -839,7 +842,16 @@
       "leaveWarning": "طلبك لم يُرسل بعد. مغادرة هذه الصفحة ستلغيه. هل تريد المتابعة؟"
     },
     "orderSummary": "ملخص الطلب",
-    "unitPrice": "سعر الوحدة: {price}"
+    "unitPrice": "سعر الوحدة: {price}",
+    "promo": {
+      "original": "السعر الأصلي:",
+      "discount": "التخفيض:",
+      "final": "السعر النهائي:",
+      "includedSavings": "العروض (مخصومة من المجموع الفرعي)",
+      "totalSavings": "توفّر {amount} في هذا الطلب",
+      "endedLine": "انتهى العرض: يُطبَّق السعر العادي (كان {price}).",
+      "endedNotice": "انتهى العرض على: {items}. يُطبَّق السعر العادي الآن."
+    }
   },
   "auth": {
     "logoAlt": "ChooseTounsi",
@@ -4130,7 +4142,9 @@
         "expired": "منتهٍ"
       },
       "targeted": "خاصة · {count} مشترين",
-      "endsOn": "تنتهي {date}"
+      "endsOn": "تنتهي {date}",
+      "byChooseTounsi": "عرض من Choose'Tounsi",
+      "adminReadOnly": "أنشأته Choose'Tounsi. تُحسب أرباحك على السعر بعد التخفيض، كما في عروضك الخاصة. اتصل بنا لتعديله."
     },
     "promotionForm": {
       "commissionHeader": "{plan} Pepper · العمولة بعد التخفيض",

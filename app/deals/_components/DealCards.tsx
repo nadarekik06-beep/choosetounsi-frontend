@@ -9,7 +9,7 @@ import { useFormat } from '@/lib/i18n/useFormat'
 import { isLocalImage } from '@/lib/imageHost'
 import { resolveImageUrl } from '@/lib/dealsApi'
 import type { ShopProduct } from '@/lib/shopPageApi'
-import { promoPricing } from '@/app/components/promotions/ProductPrice'
+import { DiscountBadge, promoPricing } from '@/app/components/promotions/ProductPrice'
 import ProductCard from '@/app/components/product/ProductCard'
 import { ShopAvatar, TimeLeft } from '@/app/shop/_components/primitives'
 import type { DealItem } from './model'
@@ -29,13 +29,14 @@ export function OfferBadge({ item }: { item: DealItem }) {
 
   return (
     <>
+      {primary === 'flash' && item.percent > 0 && <DiscountBadge percent={item.percent} />}
       {primary === 'flash' && item.endsAt && (
         <span className="dl-badge dl-badge--flash">
-          <Zap size={13} strokeWidth={2.5} aria-hidden="true" /> {item.percent > 0 && <b>-{item.percent}%</b>}
+          <Zap size={13} strokeWidth={2.5} aria-hidden="true" />
           <span className="dl-badge__time"><TimeLeft endsAt={item.product!.deal!.ends_at} /></span>
         </span>
       )}
-      {primary === 'promo' && <span className="dl-badge dl-badge--promo">-{item.percent}%</span>}
+      {primary === 'promo' && <DiscountBadge percent={item.percent} />}
       {primary === 'pack' && (
         <span className="dl-badge dl-badge--pack"><Package size={13} strokeWidth={2.5} aria-hidden="true" /> {t('itemsCount', { count: item.pack!.items_count })}</span>
       )}
@@ -158,11 +159,14 @@ export function ProductOfferBadge({ product }: { product: ShopProduct }) {
   if (!p.hasDiscount) return null
   if (p.isFlash && p.endsAt) {
     return (
-      <span className="dl-badge dl-badge--flash">
-        <Zap size={13} strokeWidth={2.5} aria-hidden="true" /> <b>-{p.percent}%</b>
-        <span className="dl-badge__time"><TimeLeft endsAt={p.endsAt} /></span>
-      </span>
+      <>
+        <DiscountBadge percent={p.percent} />
+        <span className="dl-badge dl-badge--flash">
+          <Zap size={13} strokeWidth={2.5} aria-hidden="true" />
+          <span className="dl-badge__time"><TimeLeft endsAt={p.endsAt} /></span>
+        </span>
+      </>
     )
   }
-  return <span className="dl-badge dl-badge--promo">-{p.percent}%</span>
+  return <DiscountBadge percent={p.percent} />
 }

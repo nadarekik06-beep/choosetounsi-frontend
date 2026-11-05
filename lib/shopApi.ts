@@ -106,7 +106,12 @@ export interface CartItem {
   original_price?: number       // crossed-out reference price when discounted
   discount_percent?: number
   promo_type?: 'flash_sale' | 'promotion' | null
-  promotion?: { is_flash_sale?: boolean; ends_at?: string | null } | null
+  promotion?: { is_flash_sale?: boolean; ends_at?: string | null; source?: 'seller' | 'admin' } | null
+  /** (original − final) × quantity: what the promotion saves on this line */
+  line_savings?: number
+  /** Added during a promotion that has ended: normal price now (promo_ended_price = the old promo price) */
+  promo_ended?: boolean
+  promo_ended_price?: number | null
   quantity: number
   line_total: number
   stock: number
@@ -131,6 +136,10 @@ export interface CartResponse {
     items: CartItem[]
     count: number
     subtotal: number
+    /** Σ line_savings */
+    savings?: number
+    /** Names of the items whose promotion ended while in the cart */
+    promo_ended?: string[]
   }
 }
 
@@ -222,6 +231,18 @@ export interface QuoteLine {
   total: number
   /** This line's share of the seller's coupon */
   discount: number
+  // Promotion breakdown (product lines; same numbers as the order lines)
+  product_id?: number | null
+  variant_id?: number | null
+  original_unit_price?: number
+  /** (original − final unit price) × quantity */
+  promo_discount?: number
+  discount_percent?: number
+  promo_type?: 'flash_sale' | 'promotion' | null
+  promotion_source?: 'seller' | 'admin' | null
+  /** Added during a promotion that has ended: normal price applies now */
+  promo_ended?: boolean
+  promo_ended_price?: number | null
 }
 
 export type PaymentMethodSwitches = Record<'cod' | 'card' | 'd17' | 'wallet', boolean>
@@ -233,6 +254,12 @@ export interface CheckoutQuote {
   discount_amount: number
   delivery_fee: number
   total: number
+  /** Σ promotion savings (already deducted from subtotal; display only) */
+  promo_savings?: number
+  /** promo_savings + coupon discounts */
+  total_savings?: number
+  /** Names of items whose promotion ended while in the cart */
+  promo_ended?: string[]
   parcel_count: number
   pack_price_changed: boolean
   payment_methods: PaymentMethodSwitches

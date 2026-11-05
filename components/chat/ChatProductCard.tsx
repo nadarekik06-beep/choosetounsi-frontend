@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useFlashTimeLeft } from '@/app/components/promotions/FlashCountdownBadge'
+import { DiscountBadge } from '@/app/components/promotions/ProductPrice'
 import { formatPrice as formatLocalePrice } from '@/lib/i18n/format'
 
 const RED   = '#db142e'
@@ -27,6 +28,8 @@ export interface ChatProduct {
   name: string
   price: number
   old_price: number | null
+  /** Server's "-X%" (same number as every product card); 0 when not promoted */
+  discount_percent?: number
   price_from: boolean
   image: string | null
   seller: string | null
@@ -99,6 +102,10 @@ export default function ChatProductCard({ product, lang }: { product: ChatProduc
           />
         ) : (
           <Placeholder />
+        )}
+        {product.old_price !== null && (product.discount_percent ?? 0) > 0 && (
+          <DiscountBadge percent={product.discount_percent!} size="sm"
+            style={{ position: 'absolute', top: 2, insetInlineStart: 2, fontSize: 9.5, padding: '2px 4px' }} />
         )}
       </div>
 

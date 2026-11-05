@@ -56,7 +56,9 @@ export default function PromotionsPage() {
   const [couponStats,  setCouponStats]  = useState<CouponStats | null>(null)
   const [couponLoading, setCouponLoading] = useState(true)
   // holds the navigation loader until the first load is done
-  const firstLoad = usePageLoading(loading || couponLoading)
+  // Coupons only load on their tab: on the Promotions tab couponLoading never
+  // turns false, so it must not hold the page loader there.
+  const firstLoad = usePageLoading(section === 'coupons' ? (loading || couponLoading) : loading)
   const [couponError,  setCouponError]  = useState(false)
   const [couponDeleting, setCouponDeleting] = useState<number | null>(null)
   const [couponModal,  setCouponModal]  = useState<{ open: boolean; coupon: Coupon | null }>({
@@ -605,6 +607,15 @@ function PromotionCard({
 
         {/* Row 2: name + discount */}
         <div>
+          {promo.is_admin_promotion && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 6,
+              fontSize: 10.5, fontWeight: 800, padding: '3px 9px', borderRadius: 999,
+              background: '#db142e', color: '#fff',
+            }}>
+              <Tag size={10} /> {t('byChooseTounsi')}
+            </span>
+          )}
           <h3 style={{ fontSize: 15, fontWeight: 900, color: textMain, margin: '0 0 4px' }}>
             {promo.name}
           </h3>
@@ -667,7 +678,12 @@ function PromotionCard({
         </div>
       </div>
 
-      {/* ── Actions ── */}
+      {/* ── Actions (none on Choose'Tounsi promotions: read-only here) ── */}
+      {promo.read_only ? (
+        <p style={{ padding: '10px 14px', borderTop: `1px solid ${border}`, margin: 0, fontSize: 11, color: textMuted, lineHeight: 1.4 }}>
+          {t('adminReadOnly')}
+        </p>
+      ) : (
       <div style={{ padding: '10px 14px', borderTop: `1px solid ${border}`, display: 'flex', gap: 8 }}>
         <button
           onClick={onEdit}
@@ -698,6 +714,7 @@ function PromotionCard({
           <BusyLabel busy={deleting} size={13}><Trash2 size={12} /> {t('delete')}</BusyLabel>
         </button>
       </div>
+      )}
     </div>
   )
 }

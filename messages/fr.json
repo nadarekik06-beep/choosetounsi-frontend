@@ -469,7 +469,10 @@
     "shippingAtCheckout": "Frais de livraison calculés à la commande",
     "onlySelectedCheckout": "{count, plural, one {Seul l'article sélectionné sera commandé.} other {Seuls les # articles sélectionnés seront commandés.}}",
     "selectToCheckout": "Sélectionnez des articles à commander",
-    "checkout": "Passer la commande"
+    "checkout": "Passer la commande",
+    "youSave": "Vous économisez {amount}",
+    "totalSavings": "Économies totales",
+    "promoEnded": "Cette promotion est terminée : le prix normal s’applique désormais (il était à {price})."
   },
   "discover": {
     "metaTitle": "Shop"
@@ -839,7 +842,16 @@
       "leaveWarning": "Votre commande n'est pas encore passée. Quitter cette page l'annulera. Continuer ?"
     },
     "orderSummary": "Récapitulatif de commande",
-    "unitPrice": "Prix unitaire : {price}"
+    "unitPrice": "Prix unitaire : {price}",
+    "promo": {
+      "original": "Prix initial :",
+      "discount": "Remise :",
+      "final": "Prix final :",
+      "includedSavings": "Promotions (déjà déduites du sous-total)",
+      "totalSavings": "Vous économisez {amount} sur cette commande",
+      "endedLine": "Promotion terminée : prix normal appliqué (était {price}).",
+      "endedNotice": "La promotion est terminée pour : {items}. Le prix normal s’applique désormais."
+    }
   },
   "auth": {
     "logoAlt": "ChooseTounsi",
@@ -4130,7 +4142,9 @@
         "expired": "Expirée"
       },
       "targeted": "Privé · {count} acheteurs",
-      "endsOn": "Fin le {date}"
+      "endsOn": "Fin le {date}",
+      "byChooseTounsi": "Promotion par Choose'Tounsi",
+      "adminReadOnly": "Créée par Choose'Tounsi. Vos gains sont calculés sur le prix réduit, comme pour vos propres promotions. Contactez-nous pour la modifier."
     },
     "promotionForm": {
       "commissionHeader": "{plan} Pepper · Commission après remise",

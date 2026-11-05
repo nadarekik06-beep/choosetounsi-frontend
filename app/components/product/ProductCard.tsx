@@ -46,17 +46,16 @@ const SIZES = '(min-width: 1280px) 16vw, (min-width: 1024px) 20vw, (min-width: 6
 const ROW_SIZES = '140px'
 const MAX_SWATCHES = 5
 
-/** Current price (bold; red only when discounted), struck-through old price, small -X% tag. */
+/** Current price (bold; red only when discounted), struck-through old price (the -X% is on the image). */
 function CardPrice({ product }: { product: CardProduct }) {
   const fmt = useFormat()
-  const { final, original, hasDiscount, percent } = promoPricing(product)
+  const { final, original, hasDiscount } = promoPricing(product)
   // Packs keep the shared component: it adds the pack badge and the per-unit price
   if (product.is_pack) return <ProductPrice product={product} size="md" pack />
   return (
     <div className="sp-price">
       <span className={`sp-price__now${hasDiscount ? ' is-sale' : ''}`}>{fmt.price(final)}</span>
       {hasDiscount && <s className="sp-price__was">{fmt.price(original)}</s>}
-      {hasDiscount && percent > 0 && <span className="sp-price__pct ltr-iso">-{percent}%</span>}
     </div>
   )
 }
@@ -183,8 +182,12 @@ export default function ProductCard({
         onOpen={onOpen} onBroken={u => setBroken(b => (b.includes(u) ? b : [...b, u]))} noImageLabel={t('noImage')}>
 
         <div className="sp-card__badges">
-          {/* default layout: the -X% sits next to the price instead */}
-          {isDeal ? (badge ?? <ProductPromoBadges product={product} inline />) : badge}
+          {/* Big red -X% top corner of every promoted product; page badges (TOP 3, NEW…) under it.
+              /deals passes its own badge, which carries the same -X%. */}
+          {isDeal ? (badge ?? <ProductPromoBadges product={product} inline />) : <>
+            <ProductPromoBadges product={product} inline />
+            {badge}
+          </>}
         </div>
         {!isDeal && <ProductPromoOverlay product={product} badges={false} />}
         {overlay}

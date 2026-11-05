@@ -53,6 +53,10 @@ export interface Promotion {
   products: PromotionProduct[]
   products_count: number
   created_at: string
+  /** Created by Choose'Tounsi from the admin panel: shown labelled, read-only for the seller */
+  created_by?: 'seller' | 'admin'
+  is_admin_promotion?: boolean
+  read_only?: boolean
 }
 
 export interface PromotionPayload {
