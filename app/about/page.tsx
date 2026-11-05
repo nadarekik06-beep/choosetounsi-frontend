@@ -1,16 +1,24 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getLocale, getTranslations } from 'next-intl/server'
-import { Fraunces, Caveat, Amiri, Aref_Ruqaa } from 'next/font/google'
+// Self-hosted (app/fonts, built from google/fonts by subsetting to the same
+// character sets next/font/google used): builds never need the internet.
+import localFont from 'next/font/local'
 import Navbar from '@/app/components/layout/Navbar'
 import AboutHero from './_components/AboutHero'
 import './_components/about.css'
 
 // Display fonts used only on this page. The Arabic pair is attached (and downloaded) only for `ar`.
-const fraunces = Fraunces({ subsets: ['latin'], weight: ['500', '600'], style: ['normal', 'italic'], variable: '--ab-serif', display: 'swap' })
-const caveat = Caveat({ subsets: ['latin'], weight: ['500', '600'], variable: '--ab-hand', display: 'swap' })
-const amiri = Amiri({ subsets: ['arabic'], weight: ['700'], variable: '--ab-serif-ar', display: 'swap', preload: false })
-const ruqaa = Aref_Ruqaa({ subsets: ['arabic'], weight: ['700'], variable: '--ab-hand-ar', display: 'swap', preload: false })
+const fraunces = localFont({
+  src: [
+    { path: '../fonts/fraunces-latin.woff2', weight: '500 600', style: 'normal' },
+    { path: '../fonts/fraunces-italic-latin.woff2', weight: '500 600', style: 'italic' },
+  ],
+  variable: '--ab-serif', display: 'swap',
+})
+const caveat = localFont({ src: '../fonts/caveat-latin.woff2', weight: '500 600', variable: '--ab-hand', display: 'swap' })
+const amiri = localFont({ src: '../fonts/amiri-700-arabic.woff2', weight: '700', variable: '--ab-serif-ar', display: 'swap', preload: false })
+const ruqaa = localFont({ src: '../fonts/aref-ruqaa-700-arabic.woff2', weight: '700', variable: '--ab-hand-ar', display: 'swap', preload: false })
 
 const OG_LOCALE: Record<string, string> = { fr: 'fr_TN', ar: 'ar_TN', en: 'en_US' }
 const OG_IMAGE = { url: '/images/about/about-1-together.jpg', width: 1200, height: 1600 }

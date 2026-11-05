@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Fragment } from "react";
-import { Syne, Cairo } from "next/font/google";
+// Self-hosted (app/fonts, built from google/fonts by subsetting to the same
+// character sets next/font/google used): builds never need the internet.
+import localFont from "next/font/local";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { withoutSellerMessages } from "@/lib/i18n/messageScopes";
@@ -22,16 +24,16 @@ import SellerActivationWatcher from '@/components/auth/SellerActivationWatcher';
 import MobileTables from '@/components/mobile/MobileTables';
 import { SELLER_THEME_BOOT } from '@/app/seller/themeBoot';
 
-const syne = Syne({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+const syne = localFont({
+  src: "./fonts/syne-latin.woff2",   // variable 400–800, latin
+  weight: "400 800",
   variable: "--font-syne",
 });
 
 // Arabic typeface — only attached (and therefore only downloaded) for `ar`.
-const cairo = Cairo({
-  subsets: ["arabic", "latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+const cairo = localFont({
+  src: "./fonts/cairo-arabic-latin.woff2",   // variable 400–900, arabic + latin
+  weight: "400 900",
   variable: "--font-cairo",
   preload: false,
   display: "swap",
