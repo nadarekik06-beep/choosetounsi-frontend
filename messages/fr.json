@@ -850,7 +850,8 @@
       "includedSavings": "Promotions (déjà déduites du sous-total)",
       "totalSavings": "Vous économisez {amount} sur cette commande",
       "endedLine": "Promotion terminée : prix normal appliqué (était {price}).",
-      "endedNotice": "La promotion est terminée pour : {items}. Le prix normal s’applique désormais."
+      "endedNotice": "La promotion est terminée pour : {items}. Le prix normal s’applique désormais.",
+      "couponApplied": "Code promo appliqué : −{amount}"
     }
   },
   "auth": {
@@ -3574,7 +3575,9 @@
         "netAfterFees": "Net après commissions",
         "shipping": "Livraison (à votre charge)",
         "shippingNote": "Livraison gratuite offerte",
-        "netAfterFeesShipping": "Net après commission et livraison"
+        "netAfterFeesShipping": "Net après commission et livraison",
+        "platformFunded": "Remise Choose'Tounsi",
+        "platformFundedNote": "Payée par la plateforme, commission sur le prix d'origine"
       },
       "steps": {
         "stock": "Vérifiez que tous les articles sont en stock",
@@ -3639,7 +3642,8 @@
         "hint": "Imprimez-le et collez-le sur le colis avant le passage du livreur.",
         "new": "Nouveau",
         "updated": "Mis à jour"
-      }
+      },
+      "platformFundedLine": "Remise payée par Choose'Tounsi : +{amount}"
     },
     "earnings": {
       "loadFailed": "Impossible de charger les revenus.",
@@ -3696,7 +3700,9 @@
         "shipping": "Livraison (à votre charge)",
         "shippingNote": "Commandes en livraison gratuite",
         "receive": "Vous recevez",
-        "receiveNote": "Vos gains nets"
+        "receiveNote": "Vos gains nets",
+        "platformFunded": "Remise Choose'Tounsi",
+        "platformFundedNote": "Promotions payées par la plateforme"
       },
       "filters": {
         "all": "Tous"
@@ -4203,7 +4209,9 @@
       },
       "prefill": "Pré-rempli depuis votre changement de prix : les clients paieront {price} au lieu de {was}.",
       "referencePrice": "Prix barré : {price} (le plus bas des 30 derniers jours)",
-      "fromRadar": "Pré-rempli par Radar de croissance — ajustez ce que vous voulez avant d'enregistrer."
+      "fromRadar": "Pré-rempli par Radar de croissance — ajustez ce que vous voulez avant d'enregistrer.",
+      "perCustomer": "Maximum par client",
+      "perCustomerHint": "Nombre d'articles qu'un même client (compte ou téléphone) peut acheter au prix flash."
     },
     "couponForm": {
       "editTitle": "Modifier le coupon",

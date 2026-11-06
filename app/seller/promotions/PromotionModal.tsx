@@ -51,13 +51,47 @@ export interface PromotionPrefill {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
+/** ISO → datetime-local value, as Tunis wall-clock time whatever the device timezone (AUDIT L-3). */
 function toLocalDateTimeInput(iso?: string | null): string {
   if (!iso) return ''
-  return new Date(iso).toISOString().slice(0, 16)
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Tunis', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date(iso))
+  const get = (type: string) => parts.find(x => x.type === type)?.value ?? '00'
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`
 }
 
+/** datetime-local value (Tunis time) → ISO with Tunis's offset (UTC+1, no DST). */
 function toISOFromInput(local: string): string {
-  return new Date(local).toISOString()
+  return `${local.length === 16 ? `${local}:00` : local}+01:00`
+}
+
+/**
+ * What buyers would really pay, per product, from the server (POST
+ * /seller/promotions/preview): the exact pricing checkout charges
+ * (30-day reference price, millime rounding). AUDIT M-6.
+ */
+export interface ServerPrice { original: number; final: number; valid: boolean }
+
+async function fetchServerPrices(ids: number[], discountType: 'percentage' | 'fixed', discountValue: number): Promise<Record<number, ServerPrice>> {
+  if (!ids.length || !(discountValue > 0)) return {}
+  const token = getToken()
+  try {
+    const res = await fetch(`${API_BASE}/seller/promotions/preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ product_ids: ids.slice(0, 100), discount_type: discountType, discount_value: discountValue }),
+    })
+    const json = await res.json()
+    const out: Record<number, ServerPrice> = {}
+    for (const row of (json?.data ?? []) as Array<{ product_id: number; original_price: number; final_price: number; valid: boolean }>) {
+      out[row.product_id] = { original: row.original_price, final: row.final_price, valid: row.valid }
+    }
+    return out
+  } catch {
+    return {}
+  }
 }
 
 /** Compute the effective (discounted) price for a product */
@@ -119,11 +153,13 @@ function PromotionCommissionPreview({
   selectedIds,
   discountType,
   discountValue,
+  serverPrices,
 }: {
   products:      SellerProduct[]
   selectedIds:   number[]
   discountType:  'percentage' | 'fixed'
   discountValue: string
+  serverPrices:  Record<number, ServerPrice>
 }) {
   const t  = useTranslations('seller.promotionForm')
   const dt = useDt()
@@ -136,7 +172,10 @@ function PromotionCommissionPreview({
   const selected    = products.filter(p => selectedIds.includes(p.id))
 
   // Build the key that drives re-fetch: selected IDs + discount
-  const fetchKey = `${selectedIds.sort().join(',')}::${discountType}::${discountNum}`
+  const fetchKey = `${selectedIds.sort().join(',')}::${discountType}::${discountNum}::${JSON.stringify(serverPrices)}`
+  // Server price (what buyers pay) when known; the local estimate only while it loads
+  const finalOf    = (p: SellerProduct) => serverPrices[p.id]?.final ?? computeEffectivePrice(Math.min(p.price, p.reference_price ?? p.price), discountType, discountNum)
+  const originalOf = (p: SellerProduct) => serverPrices[p.id]?.original ?? Math.min(p.price, p.reference_price ?? p.price)
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
@@ -157,12 +196,13 @@ function PromotionCommissionPreview({
 
       // Fetch commission for each selected product's effective price in parallel
       const fetches = selected.map(async p => {
-        const effectivePrice = computeEffectivePrice(p.price, discountType, discountNum)
-        if (effectivePrice <= 0) return { id: p.id, data: null }
+        const effectivePrice = finalOf(p)
+        if (effectivePrice <= 0 || serverPrices[p.id]?.valid === false) return { id: p.id, data: null }
         try {
+          // Commission bracket from the original price, rate on the final price (AUDIT M-7)
           const res  = await fetch(`${API_BASE}/seller/commission/calculate`, {
             method: 'POST', headers,
-            body: JSON.stringify({ price: effectivePrice, quantity: 1 }),
+            body: JSON.stringify({ price: effectivePrice, quantity: 1, tier_price: originalOf(p) }),
           })
           const json = await res.json()
           return { id: p.id, data: json.success ? json.data as CommissionLineData : null }
@@ -191,9 +231,8 @@ function PromotionCommissionPreview({
   const planLabel  = PLAN_LABELS[planUsed] ?? planUsed
 
   // Aggregate totals across all selected products
-  const totalOriginal = selected.reduce((s, p) => s + p.price, 0)
-  const totalEffective = selected.reduce((s, p) =>
-    s + computeEffectivePrice(p.price, discountType, discountNum), 0)
+  const totalOriginal = selected.reduce((s, p) => s + originalOf(p), 0)
+  const totalEffective = selected.reduce((s, p) => s + finalOf(p), 0)
   const totalCommission = Object.values(results).reduce((s, r) => s + r.commission_amount, 0)
   const totalSeller     = Object.values(results).reduce((s, r) => s + r.seller_amount, 0)
 
@@ -227,7 +266,7 @@ function PromotionCommissionPreview({
 
       {/* Per-product breakdown */}
       {selected.map(p => {
-        const effective  = computeEffectivePrice(p.price, discountType, discountNum)
+        const effective  = finalOf(p)
         const result     = results[p.id]
 
         return (
@@ -249,7 +288,7 @@ function PromotionCommissionPreview({
             {/* Original → effective */}
             <div style={{ textAlign: 'end', paddingInlineEnd: 14 }}>
               <p style={{ fontSize: 10, color: '#5b6472', textDecoration: 'line-through', margin: '0 0 1px', fontWeight: 500 }}>
-                {dt(p.price)}
+                {dt(originalOf(p))}
               </p>
               <p style={{ fontSize: 12, fontWeight: 900, color: '#dc2626', margin: 0 }}>
                 {dt(effective)}
@@ -358,12 +397,15 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
   const [startsAt,      setStartsAt]      = useState(promotion ? toLocalDateTimeInput(promotion.starts_at) : prefill ? (prefill.startsAt ?? inDays(0)) : '')
   const [endsAt,        setEndsAt]        = useState(promotion ? toLocalDateTimeInput(promotion.ends_at) : prefill ? (prefill.endsAt ?? inDays(14)) : '')
   const [flashStock,    setFlashStock]    = useState(promotion?.flash_stock?.toString() ?? '')
+  // Units one customer may buy at the flash price (AUDIT L-4), default 2
+  const [perCustomer,   setPerCustomer]   = useState((promotion as { per_customer_limit?: number | null } | null)?.per_customer_limit?.toString() ?? '2')
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>(
     promotion?.products?.map(p => p.id) ?? (prefill ? (prefill.productIds ?? [prefill.productId]) : [])
   )
 
   // Product picker
   const [products,     setProducts]    = useState<SellerProduct[]>([])
+  const [serverPrices, setServerPrices] = useState<Record<number, ServerPrice>>({})
   const [prodLoading,  setProdLoading] = useState(false)
   const [search,       setSearch]      = useState('')
 
@@ -397,6 +439,17 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
   }, [])
 
   useEffect(() => { loadProducts() }, [loadProducts])
+
+  // Final prices from the server for the listed products (AUDIT M-6), debounced
+  const productIdsKey = products.map(p => p.id).join(',')
+  useEffect(() => {
+    const value = parseFloat(discountValue) || 0
+    if (!productIdsKey || value <= 0) { setServerPrices({}); return }
+    const timer = setTimeout(() => {
+      fetchServerPrices(productIdsKey.split(',').map(Number), discountType, value).then(setServerPrices)
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [productIdsKey, discountType, discountValue])
 
   // Name the prefilled discount after its product
   const prefillProduct = prefill ? products.find(p => p.id === prefill.productId) : undefined
@@ -473,6 +526,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
       ...(type === 'flash_sale' && flashStock
         ? { flash_stock: parseInt(flashStock) }
         : {}),
+      ...(type === 'flash_sale' ? { per_customer_limit: Math.max(1, parseInt(perCustomer) || 2) } : {}),
     }
 
     try {
@@ -736,6 +790,23 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
                 </Field>
               )}
 
+              {/* Flash sale: max units per customer at the flash price */}
+              {type === 'flash_sale' && (
+                <Field label={t('perCustomer')}>
+                  <input
+                    type="number" min="1" max="100" step="1"
+                    value={perCustomer}
+                    onChange={e => setPerCustomer(e.target.value)}
+                    style={inputBase}
+                    onFocus={e => (e.target.style.borderColor = '#dc2626')}
+                    onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
+                  />
+                  <p style={{ fontSize: 10, color: '#5b6472', margin: '4px 0 0' }}>
+                    {t('perCustomerHint')}
+                  </p>
+                </Field>
+              )}
+
               {/*
                * ── COMMISSION PREVIEW ─────────────────────────────────────
                * Shows commission breakdown for each selected product
@@ -749,6 +820,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
                * the same CommissionService endpoint used everywhere.
                */}
               <PromotionCommissionPreview
+                serverPrices={serverPrices}
                 products={products}
                 selectedIds={selectedProductIds}
                 discountType={discountType}
@@ -812,7 +884,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
                   // Discounts start from the lowest price of the last 30 days
                   const basis          = Math.min(p.price, p.reference_price)
                   const effectivePrice = discNum > 0
-                    ? computeEffectivePrice(basis, discountType, discNum)
+                    ? (serverPrices[p.id]?.final ?? computeEffectivePrice(basis, discountType, discNum))
                     : null
 
                   return (

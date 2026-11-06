@@ -850,7 +850,8 @@
       "includedSavings": "Promotions (included in subtotal)",
       "totalSavings": "You save {amount} on this order",
       "endedLine": "Promotion ended: normal price applies (was {price}).",
-      "endedNotice": "The promotion has ended for: {items}. The normal price now applies."
+      "endedNotice": "The promotion has ended for: {items}. The normal price now applies.",
+      "couponApplied": "Coupon applied: −{amount}"
     }
   },
   "auth": {
@@ -3574,7 +3575,9 @@
         "netAfterFees": "Net after fees",
         "shipping": "Shipping (paid by you)",
         "shippingNote": "Free shipping you offered",
-        "netAfterFeesShipping": "Net after fees & shipping"
+        "netAfterFeesShipping": "Net after fees & shipping",
+        "platformFunded": "Choose'Tounsi discount",
+        "platformFundedNote": "Paid by the platform, fee on the original price"
       },
       "steps": {
         "stock": "Verify all items are in stock",
@@ -3639,7 +3642,8 @@
         "hint": "Print it and stick it on the parcel before the courier comes.",
         "new": "New",
         "updated": "Updated"
-      }
+      },
+      "platformFundedLine": "Discount paid by Choose'Tounsi: +{amount}"
     },
     "earnings": {
       "loadFailed": "Failed to load earnings data.",
@@ -3696,7 +3700,9 @@
         "shipping": "Shipping (paid by you)",
         "shippingNote": "Free-shipping orders",
         "receive": "You Receive",
-        "receiveNote": "Your net earnings"
+        "receiveNote": "Your net earnings",
+        "platformFunded": "Choose'Tounsi discount",
+        "platformFundedNote": "Promotions paid by the platform"
       },
       "filters": {
         "all": "All"
@@ -4203,7 +4209,9 @@
       },
       "prefill": "Pre-filled from your price change: customers will pay {price} instead of {was}.",
       "referencePrice": "Crossed-out price: {price} (lowest of the last 30 days)",
-      "fromRadar": "Pre-filled by Growth Radar — adjust anything before saving."
+      "fromRadar": "Pre-filled by Growth Radar — adjust anything before saving.",
+      "perCustomer": "Max per customer",
+      "perCustomerHint": "Units one customer (account or phone) can buy at the flash price."
     },
     "couponForm": {
       "editTitle": "Edit Coupon",

@@ -295,6 +295,10 @@ export default function EarningsPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
                       {[
                         { label: t('splitCols.gross'),    value: fmt(kpis.gross_revenue   ?? 0), color: ink('#94a3b8', dark), note: t('splitCols.grossNote'),    bg: undefined },
+                        // Choose'Tounsi-funded promotions: discount paid back to the seller (AUDIT M-8)
+                        ...(Number(kpis.total_platform_funded ?? 0) > 0 ? [
+                          { label: t('splitCols.platformFunded'), value: '+' + fmt(kpis.total_platform_funded ?? 0), color: ink('#8b5cf6', dark), note: t('splitCols.platformFundedNote'), bg: 'rgba(139,92,246,0.03)' },
+                        ] : []),
                         { label: t('splitCols.fee'),      value: fmt(kpis.total_commission ?? 0), color: '#db142e', note: t('splitCols.feeNote'),      bg: 'rgba(219,20,46,0.03)' },
                         // Free-shipping orders: agency cost paid by the seller (already out of total_net)
                         { label: t('splitCols.shipping'), value: fmt(kpis.total_shipping  ?? 0), color: ink('#f59e0b', dark), note: t('splitCols.shippingNote'), bg: 'rgba(245,158,11,0.03)' },

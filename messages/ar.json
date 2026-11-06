@@ -850,7 +850,8 @@
       "includedSavings": "العروض (مخصومة من المجموع الفرعي)",
       "totalSavings": "توفّر {amount} في هذا الطلب",
       "endedLine": "انتهى العرض: يُطبَّق السعر العادي (كان {price}).",
-      "endedNotice": "انتهى العرض على: {items}. يُطبَّق السعر العادي الآن."
+      "endedNotice": "انتهى العرض على: {items}. يُطبَّق السعر العادي الآن.",
+      "couponApplied": "تم تطبيق القسيمة: −{amount}"
     }
   },
   "auth": {
@@ -3574,7 +3575,9 @@
         "netAfterFees": "الصافي بعد العمولات",
         "shipping": "التوصيل (على حسابك)",
         "shippingNote": "توصيل مجاني قدّمته",
-        "netAfterFeesShipping": "الصافي بعد العمولة والتوصيل"
+        "netAfterFeesShipping": "الصافي بعد العمولة والتوصيل",
+        "platformFunded": "تخفيض Choose'Tounsi",
+        "platformFundedNote": "تدفعه المنصة، العمولة على السعر الأصلي"
       },
       "steps": {
         "stock": "تأكّد من توفر كل المنتجات",
@@ -3639,7 +3642,8 @@
         "hint": "اطبعه وألصقه على الطرد قبل وصول عون التوصيل.",
         "new": "جديد",
         "updated": "محدّث"
-      }
+      },
+      "platformFundedLine": "تخفيض تدفعه Choose'Tounsi: +{amount}"
     },
     "earnings": {
       "loadFailed": "تعذّر تحميل بيانات الأرباح.",
@@ -3696,7 +3700,9 @@
         "shipping": "التوصيل (على حسابك)",
         "shippingNote": "طلبات بتوصيل مجاني",
         "receive": "تحصل على",
-        "receiveNote": "أرباحك الصافية"
+        "receiveNote": "أرباحك الصافية",
+        "platformFunded": "تخفيض Choose'Tounsi",
+        "platformFundedNote": "تخفيضات تدفعها المنصة"
       },
       "filters": {
         "all": "الكل"
@@ -4203,7 +4209,9 @@
       },
       "prefill": "مُعبّأ من تغيير السعر: سيدفع العملاء {price} بدل {was}.",
       "referencePrice": "السعر المشطوب: {price} (الأدنى خلال آخر 30 يومًا)",
-      "fromRadar": "معبّأ مسبقًا من رادار النمو — عدّل ما تريد قبل الحفظ."
+      "fromRadar": "معبّأ مسبقًا من رادار النمو — عدّل ما تريد قبل الحفظ.",
+      "perCustomer": "الحد الأقصى لكل حريف",
+      "perCustomerHint": "عدد القطع التي يمكن لنفس الحريف (حساب أو هاتف) شراؤها بسعر التخفيض السريع."
     },
     "couponForm": {
       "editTitle": "تعديل القسيمة",

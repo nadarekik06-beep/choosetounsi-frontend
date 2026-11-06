@@ -67,6 +67,7 @@ export interface PromotionPayload {
   starts_at: string
   ends_at: string
   flash_stock?: number | null
+  per_customer_limit?: number | null
   product_ids: number[]
   /** Growth Radar card this answers (create only) */
   growth_card_id?: number

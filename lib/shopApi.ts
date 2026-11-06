@@ -243,6 +243,8 @@ export interface QuoteLine {
   /** Added during a promotion that has ended: normal price applies now */
   promo_ended?: boolean
   promo_ended_price?: number | null
+  /** The seller's coupon applied to this line (promoted lines are skipped, never stacked) */
+  coupon_applied?: boolean
 }
 
 export type PaymentMethodSwitches = Record<'cod' | 'card' | 'd17' | 'wallet', boolean>

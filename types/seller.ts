@@ -255,6 +255,11 @@ export interface VariantAttribute {
  */
 export interface OrderItem {
   id: number;
+  /** Discount that priced the line (frozen at checkout); null on older orders */
+  discount_type?: 'promotion' | 'flash_sale' | 'pack' | 'coupon' | 'none' | null;
+  applied_discount_amount?: number;
+  funded_by?: 'seller' | 'platform' | null;
+  platform_funded_amount?: number;
   product_id: number;
   product_name: string;
   unit_price: number;
@@ -292,6 +297,7 @@ export interface OrderCommissionSummary {
   total_seller_net: number | null;         // null for legacy orders
   shipping_paid_by_seller?: number;        // free-shipping orders: agency cost the seller pays
   net_after_shipping?: number | null;      // total_seller_net − shipping_paid_by_seller
+  total_platform_funded?: number;          // Choose'Tounsi-funded promotion discounts added to the payout
 }
 
 export interface OrderDetail {

@@ -158,6 +158,11 @@ function CommissionItemBadge({ item }: { item: OrderItem; dark: boolean }) {
           {t('couponLine', { discount: dt(item.discount_amount), net: dt(item.net_total) })}
         </span>
       )}
+      {item.funded_by === 'platform' && Number(item.platform_funded_amount ?? 0) > 0 && (
+        <span style={{ fontSize: 10, color: '#8b5cf6', fontWeight: 700 }}>
+          {t('platformFundedLine', { amount: dt(item.platform_funded_amount) })}
+        </span>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <span style={{ fontSize: 9, fontWeight: 800, color: '#10b981', textTransform: 'uppercase' }}>{t('youReceive')}</span>
         <span style={{ fontSize: 11, fontWeight: 900, color: '#10b981' }}>
@@ -178,11 +183,16 @@ function CommissionSummaryCard({ commission, dark, border, bgSub }: {
   const discount = Number(commission.total_discount ?? 0);
   const net      = Number(commission.total_net ?? commission.total_gross);
   const shipping = Number(commission.shipping_paid_by_seller ?? 0);
+  const funded   = Number(commission.total_platform_funded ?? 0);
   // Coupon is seller-funded; the platform fee is charged on the price after it.
+  // Choose'Tounsi-funded promotion: the discount is paid back, the fee is on the original price.
   const columns = [
     { label: t('summary.gross'),    value: bare(commission.total_gross),             color: dark ? '#93c5fd' : '#1e40af', bg: dark ? 'rgba(59,130,246,0.08)' : '#eff6ff', bd: dark ? 'rgba(59,130,246,0.15)' : '#bfdbfe', note: discount > 0 ? t('summary.beforeCoupon') : t('summary.customerPaid') },
     ...(discount > 0 ? [
       { label: t('summary.coupon'), value: '−' + bare(discount),                    color: ink('#f59e0b', dark), bg: 'rgba(245,158,11,0.06)', bd: 'rgba(245,158,11,0.18)', note: t('summary.customerPaidAmount', { amount: dt(net) }) },
+    ] : []),
+    ...(funded > 0 ? [
+      { label: t('summary.platformFunded'), value: '+' + bare(funded),               color: ink('#8b5cf6', dark), bg: 'rgba(139,92,246,0.06)', bd: 'rgba(139,92,246,0.18)', note: t('summary.platformFundedNote') },
     ] : []),
     { label: t('summary.fee'),      value: bare(commission.total_commission_amount), color: ink('#ef4444', dark), bg: 'rgba(239,68,68,0.06)', bd: 'rgba(239,68,68,0.18)', note: discount > 0 ? t('summary.on', { amount: dt(net) }) : t('summary.commission') },
     // Free shipping offered by the seller: the agency cost comes off their earnings.

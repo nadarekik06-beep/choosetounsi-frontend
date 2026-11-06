@@ -1095,7 +1095,8 @@ export default function CheckoutPage() {
         setPaymentMethod('cod')
         showComingSoon()
       }
-      if (err.data?.code === 'price_changed' || err.data?.code === 'flash_sold_out') {
+      // The total changed (price, flash sold out, coupon's last use taken): re-quote so the buyer sees it
+      if (err.data?.code === 'price_changed' || err.data?.code === 'flash_sold_out' || err.data?.code === 'coupon_unavailable') {
         await (isBuyNow ? loadBuyNowProduct() : refreshCart())
         for (const [sid, c] of Object.entries(couponStates)) {
           if (c.applied) await applyCoupon(Number(sid))
@@ -1642,6 +1643,13 @@ function PromoBreakdown({ line, fmt, t }: {
   t: (key: string, values?: Record<string, string | number>) => string
 }) {
   if (!line) return null
+  // Which items the coupon applied to (items already on promotion are skipped)
+  const couponNote = line.coupon_applied && line.discount > 0.0005 ? (
+    <p style={{ fontSize: 11.5, margin: '3px 0 0', color: '#047857', fontWeight: 700 }}>
+      {t('promo.couponApplied', { amount: fmt(line.discount) })}
+    </p>
+  ) : null
+  if (couponNote) return couponNote
   if (line.promo_ended) {
     return (
       <p role="status" style={{ fontSize: 11, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '3px 7px', margin: '4px 0 0', fontWeight: 600 }}>

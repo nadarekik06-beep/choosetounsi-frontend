@@ -125,7 +125,8 @@ export default function CouponModal({ coupon, prefill, onClose, onSaved }: Coupo
       is_active: isActive,
       product_ids: selectedProductIds,
       // end of that day in the seller's timezone, sent as UTC
-      ...(!isEdit && expiresAt ? { expires_at: new Date(`${expiresAt}T23:59:59`).toISOString() } : {}),
+      // End of that day in Tunis time, whatever the device timezone (AUDIT L-3)
+      ...(!isEdit && expiresAt ? { expires_at: `${expiresAt}T23:59:59+01:00` } : {}),
       ...(!isEdit && prefill?.growthCardId ? { growth_card_id: prefill.growthCardId } : {}),
     }
 
