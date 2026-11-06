@@ -224,7 +224,7 @@ function PackCard({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={pack.image_url} alt={pack.name}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }}
           />
         ) : (
           <Package2 size={40} style={{ color: textMuted, opacity: 0.25 }} />

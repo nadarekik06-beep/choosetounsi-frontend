@@ -112,7 +112,7 @@ function Thumb({ src, alt, dark }: { src: string | null; alt: string; dark: bool
     }}>
       {src && !broken
         // eslint-disable-next-line @next/next/no-img-element
-        ? <img src={src} alt={alt} onError={() => setBroken(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ? <img src={src} alt={alt} onError={() => setBroken(true)} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }} />
         : <Package size={16} color="#94a3b8" />}
     </div>
   )

@@ -1422,7 +1422,7 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
                       <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#5b6472', margin: '0 0 8px' }}>{tw('previewLabel')}</p>
                       <div style={{ border: '1px solid #e5e7eb', borderRadius: 16, overflow: 'hidden', background: '#fff', boxShadow: '0 4px 16px rgba(15,23,42,0.06)', maxWidth: 240 }}>
                         <div style={{ aspectRatio: '1 / 1', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {cover ? <img src={cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ImageIcon size={32} color="#94a3b8" />}
+                          {cover ? <img src={cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }} /> : <ImageIcon size={32} color="#94a3b8" />}
                         </div>
                         <div style={{ padding: '10px 12px 12px' }}>
                           {catName && <p style={{ fontSize: 10, color: '#64748b', margin: '0 0 2px', fontWeight: 600 }}>{[catName, subName].filter(Boolean).join(' › ')}</p>}

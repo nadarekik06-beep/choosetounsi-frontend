@@ -149,7 +149,7 @@ function PackCard({ pack }: { pack: Pack }) {
     <div style={{ flex: '0 0 auto', width: 180 }}>
       <div style={{ aspectRatio: '3/4', borderRadius: 16, overflow: 'hidden', background: '#f4f5f7', position: 'relative' }}>
         {img
-          ? <img src={img} alt={pack.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ? <img src={img} alt={pack.name} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }} />
           : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, opacity: 0.4 }}>🎁</div>
         }
         <span style={{

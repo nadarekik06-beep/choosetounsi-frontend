@@ -13,10 +13,9 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import Image from 'next/image'
+import ProductImage from './ProductImage'
 import Link from 'next/link'
 import { Package } from 'lucide-react'
-import { isLocalImage } from '@/lib/imageHost'
 
 export default function CardGallery({ images, alt, href, sizes, eager = false, priority = false, selected = null, onOpen, onBroken, noImageLabel, children }: {
   images: string[]
@@ -95,7 +94,7 @@ export default function CardGallery({ images, alt, href, sizes, eager = false, p
           {images.map((src, i) => (
             <span key={src} className="pc-slide">
               {(i === 0 || mounted) && (
-                <Image className="sp-card__img" src={src} unoptimized={isLocalImage(src)} alt={i === 0 ? alt : ''} fill sizes={sizes}
+                <ProductImage className="sp-card__img" src={src} alt={i === 0 ? alt : ''} fill sizes={sizes}
                   loading={i === 0 && !eager ? 'lazy' : 'eager'} priority={i === 0 && priority} draggable={false}
                   onError={() => onBroken?.(src)} />
               )}

@@ -390,7 +390,7 @@ export default function PackModal({ pack, onClose, onSaved }: PackModalProps) {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={imagePreview} alt=""
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }}
                     />
                   ) : (
                     <div style={{ textAlign: 'center' }}>
@@ -889,7 +889,7 @@ function Thumb({ src }: { src: string | null }) {
     }}>
       {src
         // eslint-disable-next-line @next/next/no-img-element
-        ? <img src={src} alt="" className="w-full h-full object-cover" />
+        ? <img src={src} alt="" className="w-full h-full object-contain bg-[#f5f5f5]" />
         : <Package2 size={18} color="#94a3b8" />}
     </div>
   )

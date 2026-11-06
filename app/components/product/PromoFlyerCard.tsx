@@ -8,12 +8,11 @@
  */
 
 import { useMemo, useState, type CSSProperties } from 'react'
-import Image from 'next/image'
+import ProductImage from '@/app/components/product/ProductImage'
 import Link from 'next/link'
 import { ArrowRight, Tag, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
-import { isLocalImage } from '@/lib/imageHost'
 import { resolveImageUrl } from '@/lib/dealsApi'
 import { trackClick } from '@/lib/tracking'
 import type { PromoFlyer } from '@/lib/gridFill'
@@ -71,7 +70,7 @@ export default function PromoFlyerCard({ flyer, index = 0, section }: { flyer: P
         <div className="pc-flyer__pics" aria-hidden="true">
           {images.map(src => (
             <span key={src} className="pc-flyer__pic">
-              <Image src={src} alt="" fill sizes="(min-width: 1024px) 14vw, 40vw" loading="lazy" unoptimized={isLocalImage(src)} />
+              <ProductImage src={src} alt="" fill sizes="(min-width: 1024px) 14vw, 40vw" loading="lazy" />
             </span>
           ))}
         </div>

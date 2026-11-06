@@ -280,8 +280,8 @@ function Gallery({ images, productName, badge }: { images: string[]; productName
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: 72 }}>
             {images.map((img, i) => (
               <button key={i} onClick={() => setActive(i)} className="thumb" aria-label={t('imageN', { n: i + 1 })} aria-current={active === i}
-                style={{ width: 72, height: 72, borderRadius: 8, overflow: 'hidden', border: `2px solid ${active === i ? '#dc2626' : '#e5e7eb'}`, background: '#f8fafc', cursor: 'pointer', padding: 0, transition: 'border-color 0.15s', flexShrink: 0 }}>
-                {img ? <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', background: '#f1f5f9' }} />}
+                style={{ width: 72, height: 72, borderRadius: 8, overflow: 'hidden', border: `2px solid ${active === i ? '#dc2626' : '#e5e7eb'}`, background: '#f5f5f5', cursor: 'pointer', padding: 0, transition: 'border-color 0.15s', flexShrink: 0 }}>
+                {img ? <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <div style={{ width: '100%', height: '100%', background: '#f1f5f9' }} />}
               </button>
             ))}
           </div>
@@ -289,14 +289,14 @@ function Gallery({ images, productName, badge }: { images: string[]; productName
 
         <div style={{ flex: 1, position: 'relative' }}>
           <div
-            style={{ width: '100%', aspectRatio: '3/4', borderRadius: 16, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9', cursor: zoom ? 'zoom-out' : 'zoom-in', position: 'relative' }}
+            style={{ width: '100%', aspectRatio: '3/4', borderRadius: 16, overflow: 'hidden', background: '#f5f5f5', border: '1px solid #f1f5f9', cursor: zoom ? 'zoom-out' : 'zoom-in', position: 'relative' }}
             onClick={() => setZoom(z => !z)}
             onMouseMove={e => { const r = e.currentTarget.getBoundingClientRect(); setZoomPos({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 }) }}
             onMouseLeave={() => setZoom(false)}
           >
             {badge}
             {cur
-              ? <img src={cur} alt={productName} style={{ width: '100%', height: '100%', objectFit: 'cover', transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`, transform: zoom ? 'scale(2.2)' : 'scale(1)', transition: zoom ? 'none' : 'transform 0.3s ease' }} />
+              ? <img src={cur} alt={productName} style={{ width: '100%', height: '100%', objectFit: 'contain', transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`, transform: zoom ? 'scale(2.2)' : 'scale(1)', transition: zoom ? 'none' : 'transform 0.3s ease' }} />
               : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <svg width="48" height="48" fill="none" stroke="#e2e8f0" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
                 </div>
@@ -575,8 +575,8 @@ export default function ProductDetailPage() {
         @media(max-width:900px){.pd-grid{grid-template-columns:1fr!important}}
         /* Color swatches: big tiles, the variant photo fills them */
         .pd-swatch{position:relative;width:60px;height:60px;padding:0;border-radius:14px;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;transition:border-color .15s,box-shadow .15s;flex-shrink:0}
-        .pd-swatch__fill{position:absolute;inset:4px;border-radius:10px;overflow:hidden;display:flex;background:#f8fafc;pointer-events:none}
-        .pd-swatch__fill img{width:100%;height:100%;object-fit:cover}
+        .pd-swatch__fill{position:absolute;inset:4px;border-radius:10px;overflow:hidden;display:flex;background:#f5f5f5;pointer-events:none}
+        .pd-swatch__fill img{width:100%;height:100%;object-fit:contain}
         .pd-swatch:hover:not(:disabled){border-color:#94a3b8}
         .pd-swatch.is-on{border-color:#db142e;box-shadow:0 0 0 1.5px #db142e}
         .pd-swatch:disabled{cursor:not-allowed;opacity:.4}

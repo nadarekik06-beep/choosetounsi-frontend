@@ -11,7 +11,7 @@ export function PurchasedItemThumb({ item, size = 44, border = '#e5e7eb' }: { it
   return item.image_url ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img src={item.image_url} alt={item.product_name}
-      style={{ width: size, height: size, borderRadius: 8, objectFit: 'cover', flexShrink: 0, border: `1px solid ${border}` }} />
+      style={{ width: size, height: size, borderRadius: 8, objectFit: 'contain', background: '#f5f5f5', flexShrink: 0, border: `1px solid ${border}` }} />
   ) : (
     <div aria-hidden style={{
       width: size, height: size, borderRadius: 8, flexShrink: 0,

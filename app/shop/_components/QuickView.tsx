@@ -1,8 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import Image from 'next/image'
-import { isLocalImage } from '@/lib/imageHost'
+import ProductImage from '@/app/components/product/ProductImage'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Heart, ShoppingBag, X, Check } from 'lucide-react'
@@ -142,7 +141,7 @@ function QuickViewModal({ seed, onClose }: { seed: QuickSeed; onClose: () => voi
         <div className="sp-qv__gallery">
           <div className="sp-qv__main">
             {images[active] ? (
-              <Image src={images[active]} unoptimized={isLocalImage(images[active])} alt={seed.name} fill sizes="(min-width: 760px) 440px, 100vw" priority />
+              <ProductImage src={images[active]} alt={seed.name} fill sizes="(min-width: 760px) 440px, 100vw" priority />
             ) : <div className="sp-card__ph" />}
           </div>
           {images.length > 1 && (
@@ -150,7 +149,7 @@ function QuickViewModal({ seed, onClose }: { seed: QuickSeed; onClose: () => voi
               {images.slice(0, 8).map((src, i) => (
                 <button key={src} type="button" className="sp-qv__thumb" aria-current={i === active}
                   aria-label={t('image', { index: i + 1, total: images.length })} onClick={() => setActive(i)}>
-                  <Image src={src} unoptimized={isLocalImage(src)} alt="" fill sizes="56px" />
+                  <ProductImage src={src} alt="" fill sizes="56px" />
                 </button>
               ))}
             </div>

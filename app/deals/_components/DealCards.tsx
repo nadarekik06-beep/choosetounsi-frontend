@@ -1,12 +1,11 @@
 'use client'
 
 import { useState, type CSSProperties } from 'react'
-import Image from 'next/image'
+import ProductImage from '@/app/components/product/ProductImage'
 import Link from 'next/link'
 import { ArrowRight, ImageOff, Package, Ticket, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
-import { isLocalImage } from '@/lib/imageHost'
 import { resolveImageUrl } from '@/lib/dealsApi'
 import type { ShopProduct } from '@/lib/shopPageApi'
 import { DiscountBadge, promoPricing } from '@/app/components/promotions/ProductPrice'
@@ -99,10 +98,10 @@ function PackCard({ item, index }: { item: DealItem; index: number }) {
       <div className="sp-card__media">
         {main ? (
           <>
-            <Image className="sp-card__img sp-card__img--main" src={main} unoptimized={isLocalImage(main)} alt={pack.name} fill sizes={SIZES}
+            <ProductImage className="sp-card__img sp-card__img--main" src={main} alt={pack.name} fill sizes={SIZES}
               loading={index < 4 ? 'eager' : 'lazy'} onError={() => setBroken(b => ({ ...b, [main]: true }))} />
             {alt && (
-              <Image className="sp-card__img sp-card__img--alt" src={alt} unoptimized={isLocalImage(alt)} alt="" fill sizes={SIZES} loading="lazy"
+              <ProductImage className="sp-card__img sp-card__img--alt" src={alt} alt="" fill sizes={SIZES} loading="lazy"
                 onError={() => setBroken(b => ({ ...b, [alt]: true }))} />
             )}
           </>

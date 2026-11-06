@@ -195,7 +195,7 @@ function ImageGallery({ images }: { images: ProductImage[] }) {
               <img
                 src={getImageUrl(img)}
                 alt={t('thumb', { n: i + 1 })}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain bg-[#f5f5f5]"
               />
               {img.is_primary && (
                 <div className="absolute inset-0 bg-rose-500/10" />

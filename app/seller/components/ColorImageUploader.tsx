@@ -173,7 +173,7 @@ export default function ColorImageUploader({
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
                     {slot.existingUrls.map((url, i) => (
                       <div key={i} style={{ position: 'relative', width: 64, height: 64, borderRadius: 8, overflow: 'hidden', border: '1px solid #e5e7eb', flexShrink: 0 }}>
-                        <img src={url} alt={opt.value} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={url} alt={opt.value} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }} />
                         <div style={{ position: 'absolute', top: 2, insetInlineEnd: 2, background: 'rgba(0,0,0,0.5)', borderRadius: 4, padding: 1, fontSize: 8, color: '#fff', fontWeight: 700 }}>
                           saved
                         </div>
@@ -187,7 +187,7 @@ export default function ColorImageUploader({
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
                     {slot.previews.map((preview, fi) => (
                       <div key={fi} style={{ position: 'relative', width: 64, height: 64, borderRadius: 8, overflow: 'hidden', border: '1px solid #e5e7eb', flexShrink: 0 }}>
-                        <img src={preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }} />
                         <button
                           type="button"
                           disabled={disabled}

@@ -287,7 +287,7 @@ function ImageSet({ title, hint, swatches, items, onChange, max, warning, error,
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={it.url} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
+            <img src={it.url} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5', pointerEvents: 'none' }} />
 
             <div style={{ position: 'absolute', top: 6, insetInlineStart: 6, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
               {i === 0 && <Tag bg="#db142e">{t('primary')}</Tag>}

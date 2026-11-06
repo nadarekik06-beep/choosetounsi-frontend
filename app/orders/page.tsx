@@ -392,7 +392,7 @@ function ItemRow({ item, groupStatus, reviewed, onRate }: {
         opacity: isReturned ? 0.6 : 1,
       }}>
         {img
-          ? <img src={img} alt={item.product_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ? <img src={img} alt={item.product_name} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }} />
           : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Package size={18} color="#e2e8f0" />
             </div>

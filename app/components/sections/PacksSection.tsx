@@ -73,7 +73,7 @@ function PackCard({ pack }: { pack: Pack }) {
             src={pack.image_url}
             alt={pack.name}
             onError={() => setImgErr(true)}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5', display: 'block' }}
           />
         ) : thumbs.length >= 2 ? (
           /* 2x2 product thumbnail grid */
@@ -90,7 +90,7 @@ function PackCard({ pack }: { pack: Pack }) {
                   <img
                     src={thumbs[i].product!.primary_image_url!}
                     alt=""
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5', display: 'block' }}
                   />
                 )}
               </div>

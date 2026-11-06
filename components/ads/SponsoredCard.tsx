@@ -63,7 +63,7 @@ export default function SponsoredCard({ ad, index = 0, layout = 'grid', onNaviga
     }}>
       {image ? (
         <img src={image} alt={ad.name} loading={index < 2 ? 'eager' : 'lazy'} onError={() => setImgErr(true)}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5', display: 'block' }} />
       ) : null}
       {layout === 'grid' && (
         <div style={{ position: 'absolute', top: 7, insetInlineStart: 7, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>

@@ -158,7 +158,7 @@ function TopProductCard({ product, rank, dark }: { product: TopProduct; rank: nu
       <div style={{ width: '100%', aspectRatio: '16/9', borderRadius: 10, overflow: 'hidden', background: subBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         {imgSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={imgSrc} alt={product.name} onError={() => setImgErr(true)} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <img src={imgSrc} alt={product.name} onError={() => setImgErr(true)} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5', display: 'block' }} />
         ) : (
           <Package size={28} style={{ color: textMuted, opacity: 0.4 }} />
         )}

@@ -175,7 +175,7 @@ export default function OrderConfirmModal({
                       <div key={`${l.cart_id ?? 'bn'}-${i}`} style={{ display: 'flex', gap: 10, padding: '9px 0', borderBottom: i < lines.length - 1 ? '1px solid #f8fafc' : 'none' }}>
                         <div style={{ width: 46, height: 46, flexShrink: 0, borderRadius: 8, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
                           {x.image
-                            ? <img src={x.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ? <img src={x.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }} />
                             : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={16} color="#cbd5e1" /></div>}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>

@@ -97,7 +97,7 @@ export default function ChatProductCard({ product, lang }: { product: ChatProduc
             src={product.image}
             alt={product.name}
             loading="lazy"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }}
             onError={e => { e.currentTarget.style.display = 'none' }}
           />
         ) : (

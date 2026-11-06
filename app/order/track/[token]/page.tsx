@@ -153,7 +153,7 @@ export default function TrackOrderPage() {
               {p.items.map((it, i) => (
                 <div key={i} style={{ display: 'flex', gap: 10, padding: '8px 0', borderTop: '1px solid #f8fafc' }}>
                   <div style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 8, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
-                    {it.image ? <img src={it.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Package size={16} color="#cbd5e1" style={{ margin: 13 }} />}
+                    {it.image ? <img src={it.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }} /> : <Package size={16} color="#cbd5e1" style={{ margin: 13 }} />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p dir="auto" style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</p>

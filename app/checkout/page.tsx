@@ -1317,7 +1317,7 @@ export default function CheckoutPage() {
                 {isBuyNow && bnProduct && (
                   <div style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
                     <div style={{ width: 72, height: 72, flexShrink: 0, borderRadius: 10, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9', position: 'relative' }}>
-                      {bnImage ? <img src={bnImage} alt={bnProduct.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={18} color="#e2e8f0" /></div>}
+                      {bnImage ? <img src={bnImage} alt={bnProduct.name} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={18} color="#e2e8f0" /></div>}
                       <LineBadge line={quoteLineFor(null)} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -1348,7 +1348,7 @@ export default function CheckoutPage() {
                   return (
                     <div key={`${item.id}-${item.variant_id ?? 'base'}`} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
                       <div style={{ width: 56, height: 56, flexShrink: 0, borderRadius: 8, overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9', position: 'relative' }}>
-                        {img ? <img src={img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={16} color="#e2e8f0" /></div>}
+                        {img ? <img src={img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={16} color="#e2e8f0" /></div>}
                         <LineBadge line={quoteLineFor(item.id)} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>

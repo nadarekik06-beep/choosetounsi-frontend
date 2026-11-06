@@ -159,7 +159,7 @@ export default function AboveFoldProducts() {
         @media(max-width:640px){.cpc-card{width:120px}}
         .cpc-img-wrap{position:relative;width:100%;aspect-ratio:3/4;background:#f7f7f7;border-radius:10px;overflow:hidden;border:1.5px solid #efefef;transition:transform .22s ease,box-shadow .22s ease}
         .cpc-card:hover .cpc-img-wrap{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.10)}
-        .cpc-img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
+        .cpc-img{width:100%;height:100%;object-fit:contain;background:#f5f5f5;display:block;transition:transform .35s ease}
         .cpc-card:hover .cpc-img{transform:scale(1.05)}
         .cpc-img-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.4rem}
         .cpc-discount{position:absolute;top:6px;inset-inline-start:6px;background:#dc2626;color:#fff;font-size:8px;font-weight:800;padding:2px 5px;border-radius:999px;letter-spacing:.05em;text-transform:uppercase}

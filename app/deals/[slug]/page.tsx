@@ -96,7 +96,7 @@ function Gallery({ images, name }: { images: string[]; name: string }) {
                 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }} />
               </button>
             ))}
           </div>
@@ -124,7 +124,7 @@ function Gallery({ images, name }: { images: string[]; name: string }) {
               <img
                 src={cur} alt={name}
                 style={{
-                  width: '100%', height: '100%', objectFit: 'cover',
+                  width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5',
                   transformOrigin: `${pos.x}% ${pos.y}%`,
                   transform: zoom ? 'scale(2.2)' : 'scale(1)',
                   transition: zoom ? 'none' : 'transform 0.3s ease',
@@ -250,7 +250,7 @@ function PackItemRow({
             <img
               src={resolveImg(product.primary_image_url) ?? ''}
               alt={product.name}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }}
             />
           ) : (
             <Package2 size={20} color="#d1d5db" />
@@ -822,7 +822,7 @@ export default function PackDetailPage() {
                             <img
                               src={resolveImg(item.product.primary_image_url) ?? ''}
                               alt={item.product.name}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }}
                             />
                           )}
                         </div>

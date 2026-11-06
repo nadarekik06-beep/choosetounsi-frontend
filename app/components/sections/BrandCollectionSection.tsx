@@ -268,7 +268,8 @@ export default function BrandCollectionSection() {
         .bpc-img {
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          object-fit: contain;
+          background: #f5f5f5;
           display: block;
           transition: transform .4s ease;
         }

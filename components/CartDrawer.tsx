@@ -98,7 +98,7 @@ function CartRow({
         position: 'relative',
       }}>
         {imgSrc
-          ? <img src={imgSrc} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ? <img src={imgSrc} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }} />
           : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Package size={20} color="#e2e8f0" />
             </div>
@@ -282,7 +282,7 @@ function PackCartRow({
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         {imgSrc
-          ? <img src={imgSrc} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ? <img src={imgSrc} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f5f5f5' }} />
           : <Package2 size={24} color="rgba(219,20,46,0.4)" />
         }
         {/* Bundle badge on thumbnail */}

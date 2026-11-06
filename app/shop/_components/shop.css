@@ -490,10 +490,10 @@
 .sp-qv__close:focus-visible, .sp-qv button:focus-visible, .sp-qv a:focus-visible { outline: 3px solid var(--ct-red); outline-offset: 2px; }
 .sp-qv__gallery { position: relative; background: #f3f3f1; }
 .sp-qv__main { position: relative; aspect-ratio: 1; }
-.sp-qv__main img { object-fit: cover; }
+.sp-qv__main img { object-fit: contain; background: #f5f5f5; }
 .sp-qv__thumbs { display: flex; gap: 6px; padding: 10px; overflow-x: auto; scrollbar-width: none; }
 .sp-qv__thumb { position: relative; flex: 0 0 56px; height: 56px; border-radius: 12px; overflow: hidden; border: 0; padding: 0; cursor: pointer; box-shadow: inset 0 0 0 2px transparent; opacity: .65; transition: opacity .2s, box-shadow .2s; }
-.sp-qv__thumb img { object-fit: cover; }
+.sp-qv__thumb img { object-fit: contain; background: #f5f5f5; }
 .sp-qv__thumb[aria-current="true"] { opacity: 1; box-shadow: 0 0 0 2px var(--ct-red); }
 .sp-qv__info { display: flex; flex-direction: column; gap: 12px; padding: 26px 24px 24px; }
 .sp-qv__cat { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--ct-red); }
