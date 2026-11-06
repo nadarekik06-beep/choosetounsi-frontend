@@ -42,12 +42,11 @@ export default function NewComplaintPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
         @keyframes fadeUp { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:none } }
         @keyframes spin   { to { transform:rotate(360deg) } }
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "var(--ct-dm-sans), sans-serif" }}>
 
         {/* ── Top breadcrumb ── */}
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>

@@ -115,7 +115,7 @@ export default function FeedSection({ section }: { section: FeedSectionData }) {
                 <Icon size={17} strokeWidth={2.4} />
               </span>
               <div style={{ minWidth: 0 }}>
-                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#111', margin: '0 0 2px', fontFamily: "'Outfit', sans-serif", display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', lineHeight: 1.2 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#111', margin: '0 0 2px', fontFamily: "var(--ct-outfit), sans-serif", display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', lineHeight: 1.2 }}>
                   {title}
                   {section.type === 'sponsored' && (
                     <span style={{ fontSize: 9, fontWeight: 800, color: '#b45309', background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 999, padding: '2px 8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -123,7 +123,7 @@ export default function FeedSection({ section }: { section: FeedSectionData }) {
                     </span>
                   )}
                 </h2>
-                <p className="feed-subtitle" style={{ fontSize: 12, color: '#9ca3af', margin: 0, fontFamily: "'Outfit', sans-serif" }}>{subtitle}</p>
+                <p className="feed-subtitle" style={{ fontSize: 12, color: '#9ca3af', margin: 0, fontFamily: "var(--ct-outfit), sans-serif" }}>{subtitle}</p>
               </div>
             </div>
 

@@ -31,8 +31,6 @@ import { usePageLoading } from '@/components/brand/NavigationLoader'
 import './_components/landing.css'
 import './_components/seller.css'
 
-const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@400;500;600;700;800&display=swap');`
-
 /** Neutral hero-shaped placeholder while role + subscription load: no flash of the wrong variant. */
 function PageSkeleton({ label }: { label: string }) {
   return (
@@ -135,7 +133,6 @@ export default function BecomeVendorPage() {
   if (!vendor) {
     return (
       <>
-        <style>{FONTS}</style>
         <Navbar />
         <PageSkeleton label={tc('loading')} />
       </>
@@ -145,7 +142,6 @@ export default function BecomeVendorPage() {
   if (success) {
     return (
       <>
-        <style>{FONTS}</style>
         <Navbar />
         <main className="vl vl-done">
           <TunisianPattern color="#198f41" className="vl-pattern" />
@@ -170,7 +166,6 @@ export default function BecomeVendorPage() {
   if (vendor.variant === 'seller') {
     return (
       <>
-        <style>{FONTS}</style>
         <Navbar />
         <main className="vl">
           <SellerView state={vendor} plans={livePlans} />
@@ -199,7 +194,6 @@ export default function BecomeVendorPage() {
 
   return (
     <>
-      <style>{FONTS}</style>
       <Navbar />
 
       {authTab && (

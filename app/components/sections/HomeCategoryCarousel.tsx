@@ -135,15 +135,14 @@ export default function HomeCategoryCarousel() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&display=swap');
         @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
         @keyframes arrowPulse{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
         @keyframes arrowPulseL{0%,100%{transform:translateX(0)}50%{transform:translateX(-3px)}}
         .cat-section{background:#f0f0f0;padding:40px 0 50px}
         .cat-inner{max-width:1280px;margin:0 auto;padding:0 24px}
         .cat-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-        .cat-title{font-family:'Barlow',sans-serif;font-size:clamp(1.2rem,2.5vw,1.65rem);font-weight:800;color:#111;letter-spacing:-.02em;margin:0}
-        .cat-view-all{font-family:'Barlow',sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#555;text-decoration:none;transition:color .18s ease}
+        .cat-title{font-family:var(--ct-barlow),sans-serif;font-size:clamp(1.2rem,2.5vw,1.65rem);font-weight:800;color:#111;letter-spacing:-.02em;margin:0}
+        .cat-view-all{font-family:var(--ct-barlow),sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#555;text-decoration:none;transition:color .18s ease}
         .cat-view-all:hover{color:#dc2626}
         .cc-wrap{position:relative;display:flex;align-items:center}
         .cc-arrow{flex-shrink:0;width:42px;height:42px;border-radius:50%;background:#fff;border:1.5px solid #e2e2e2;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#333;transition:background .18s ease,border-color .18s ease,box-shadow .18s ease,opacity .25s ease,transform .18s ease;box-shadow:0 2px 8px rgba(0,0,0,0.07);z-index:2}
@@ -161,7 +160,7 @@ export default function HomeCategoryCarousel() {
         .ccat:hover .ccat__shine{opacity:1}
         .ccat__img-wrap::after{content:'';position:absolute;bottom:0;inset-inline:0;height:3px;background:linear-gradient(90deg,#dc2626,#ff6b6b);transform:scaleX(0);transform-origin:var(--origin-start,left);transition:transform .28s ease;border-radius:0 0 16px 16px}
         .ccat:hover .ccat__img-wrap::after{transform:scaleX(1)}
-        .ccat__name{font-family:'Barlow',sans-serif;font-size:.8rem;font-weight:700;color:#222;text-align:center;line-height:1.3;margin:0;max-width:138px;word-break:break-word;transition:color .18s ease}
+        .ccat__name{font-family:var(--ct-barlow),sans-serif;font-size:.8rem;font-weight:700;color:#222;text-align:center;line-height:1.3;margin:0;max-width:138px;word-break:break-word;transition:color .18s ease}
         .ccat:hover .ccat__name{color:#dc2626}
         .ccat-skeleton{flex:0 0 auto;width:148px;display:flex;flex-direction:column;align-items:center;gap:11px}
         .ccat-skeleton__img{width:148px;height:148px;border-radius:18px;background:linear-gradient(90deg,#e4e4e4 25%,#efefef 50%,#e4e4e4 75%);background-size:600px 100%;animation:shimmer 1.3s infinite linear}

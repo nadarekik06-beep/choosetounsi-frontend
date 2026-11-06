@@ -49,7 +49,7 @@ export default function FindOrderPage() {
   const label: React.CSSProperties = { display: 'block', fontSize: 12.5, fontWeight: 700, color: '#374151', marginBottom: 6 }
 
   return (
-    <div style={{ minHeight: '80vh', background: '#f9fafb', padding: '28px 16px 48px', fontFamily: "'Barlow', sans-serif" }}>
+    <div style={{ minHeight: '80vh', background: '#f9fafb', padding: '28px 16px 48px', fontFamily: "var(--ct-barlow), sans-serif" }}>
       <div style={{ maxWidth: 440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(220,38,38,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>

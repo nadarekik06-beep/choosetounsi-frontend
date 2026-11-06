@@ -104,7 +104,6 @@ export default function ComplaintModal({
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap');
         @keyframes cd-spin { to { transform: rotate(360deg) } }
         @keyframes cd-success-pop {
           0%   { transform: scale(0.7); opacity: 0 }
@@ -119,7 +118,7 @@ export default function ComplaintModal({
           width: 100%; box-sizing: border-box; appearance: none;
           background: #f8fafc; border: 1.5px solid #e5e7eb; border-radius: 10px;
           padding-block: 11px; padding-inline: 13px 38px; font-size: 14px; font-weight: 600;
-          font-family: 'Barlow', sans-serif; color: #0f172a;
+          font-family: var(--ct-barlow), sans-serif; color: #0f172a;
           cursor: pointer; outline: none;
           transition: border-color 0.15s, box-shadow 0.15s;
         }
@@ -128,7 +127,7 @@ export default function ComplaintModal({
           width: 100%; box-sizing: border-box; background: #f8fafc;
           border: 1.5px solid #e5e7eb; border-radius: 10px;
           padding: 12px 13px; font-size: 13.5px; font-weight: 500;
-          font-family: 'Barlow', sans-serif; color: #0f172a;
+          font-family: var(--ct-barlow), sans-serif; color: #0f172a;
           resize: none; height: 108px; line-height: 1.65; outline: none;
           transition: border-color 0.15s, box-shadow 0.15s;
         }
@@ -137,7 +136,7 @@ export default function ComplaintModal({
         .cd-submit-btn {
           width: 100%; display: flex; align-items: center; justify-content: center;
           gap: 8px; padding: 13px 20px; border-radius: 11px; border: none;
-          font-size: 14px; font-weight: 800; font-family: 'Barlow', sans-serif;
+          font-size: 14px; font-weight: 800; font-family: var(--ct-barlow), sans-serif;
           color: #fff; background: linear-gradient(135deg, ${RED} 0%, #b91c1c 100%);
           cursor: pointer; box-shadow: 0 4px 18px rgba(219,20,46,0.32);
           transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
@@ -163,7 +162,7 @@ export default function ComplaintModal({
           display: flex; align-items: center; gap: 10px;
           padding: 10px 12px; border-radius: 10px; cursor: pointer;
           border: 1.5px solid #e5e7eb; background: #f8fafc;
-          transition: all 0.15s ease; font-family: 'Barlow', sans-serif;
+          transition: all 0.15s ease; font-family: var(--ct-barlow), sans-serif;
         }
         .cd-item-row:hover { border-color: ${RED}; background: rgba(219,20,46,0.03); }
         .cd-item-row.selected { border-color: ${RED}; background: rgba(219,20,46,0.06); box-shadow: 0 0 0 1px ${RED}; }
@@ -171,7 +170,7 @@ export default function ComplaintModal({
           flex: 1; display: flex; flex-direction: column; gap: 8px;
           padding: 14px 12px; border-radius: 12px; cursor: pointer;
           border: 2px solid #e5e7eb; background: #f8fafc;
-          text-align: start; font-family: 'Barlow', sans-serif;
+          text-align: start; font-family: var(--ct-barlow), sans-serif;
           transition: all 0.18s ease;
         }
         [dir=rtl] .cd-drawer { box-shadow: 12px 0 60px rgba(0,0,0,0.18) !important; }
@@ -187,7 +186,7 @@ export default function ComplaintModal({
           position: 'fixed',
           inset: 0,
           zIndex: 9999,
-          fontFamily: "'Barlow', sans-serif",
+          fontFamily: "var(--ct-barlow), sans-serif",
           pointerEvents: isOpen ? 'all' : 'none',
         }}
       >
@@ -310,7 +309,7 @@ export default function ComplaintModal({
                   width: '100%', padding: 13, borderRadius: 11, border: 'none',
                   background: `linear-gradient(135deg, ${GREEN}, #15803d)`,
                   color: '#fff', fontSize: 14, fontWeight: 800,
-                  fontFamily: "'Barlow', sans-serif", cursor: 'pointer',
+                  fontFamily: "var(--ct-barlow), sans-serif", cursor: 'pointer',
                   boxShadow: '0 4px 16px rgba(25,143,65,0.28)',
                 }}>{t('done')}</button>
               </div>
@@ -385,7 +384,7 @@ export default function ComplaintModal({
                 borderRadius: 10, border: '1.5px solid #e5e7eb',
                 background: '#f8fafc', color: '#374151',
                 fontSize: 13, fontWeight: 700,
-                fontFamily: "'Barlow', sans-serif", cursor: 'pointer',
+                fontFamily: "var(--ct-barlow), sans-serif", cursor: 'pointer',
               }}>
                 {t('gotIt')}
               </button>

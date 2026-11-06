@@ -73,7 +73,6 @@ export default function FavoritesPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap');
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
         .fav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(200px,45%),1fr));gap:18px}
@@ -83,7 +82,7 @@ export default function FavoritesPage() {
         .fav-variant__opt{font-size:10px;font-weight:700;color:#4f46e5;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);padding:1px 7px;border-radius:4px}
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Barlow', sans-serif" }}>
+      <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "var(--ct-barlow), sans-serif" }}>
 
         {/* Breadcrumb */}
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>

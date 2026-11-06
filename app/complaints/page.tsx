@@ -171,12 +171,11 @@ export default function MyComplaintsPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800;900&display=swap');
         @keyframes fadeUp { from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none} }
         @keyframes spin   { to{transform:rotate(360deg)} }
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "var(--ct-dm-sans-complaints), sans-serif" }}>
 
         {/* Breadcrumb */}
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>

@@ -161,7 +161,6 @@ export default function BrandPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@400;500;600;700&display=swap');
         @keyframes heroFadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
         .hero-text-1{animation:heroFadeIn 0.6s ease 0.1s both}
         .hero-text-2{animation:heroFadeIn 0.6s ease 0.2s both}
@@ -192,27 +191,27 @@ export default function BrandPage() {
           <div className="flex-1 z-10 px-6 lg:px-12 py-10 lg:py-16 flex flex-col justify-center">
             <p
               className={`text-zinc-500 text-sm font-semibold tracking-widest uppercase mb-2 ${mounted ? 'hero-text-1' : 'opacity-0'}`}
-              style={{ fontFamily: "'Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--ct-barlow),sans-serif" }}
             >
               {slide.tag}
             </p>
             <p
               className={`text-zinc-900 text-3xl lg:text-4xl font-bold leading-tight mb-1 ${mounted ? 'hero-text-2' : 'opacity-0'}`}
-              style={{ fontFamily: "'Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--ct-barlow),sans-serif" }}
             >
               {slide.title}
             </p>
             <div className="relative">
               <h1
                 className="select-none pointer-events-none absolute -top-6 -start-2 font-black text-zinc-900 leading-none whitespace-nowrap"
-                style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(4rem,10vw,9rem)', opacity: 0.07 }}
+                style={{ fontFamily: "var(--ct-barlow-c),sans-serif", fontSize: 'clamp(4rem,10vw,9rem)', opacity: 0.07 }}
                 aria-hidden="true"
               >
                 {slide.headline}
               </h1>
               <h2
                 className={`relative z-10 text-zinc-900 font-black leading-none tracking-tight ${mounted ? 'hero-text-3' : 'opacity-0'}`}
-                style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(3rem,7vw,5.5rem)' }}
+                style={{ fontFamily: "var(--ct-barlow-c),sans-serif", fontSize: 'clamp(3rem,7vw,5.5rem)' }}
               >
                 {slide.headline}
               </h2>
@@ -221,7 +220,7 @@ export default function BrandPage() {
               <Link
                 href="/shop"
                 className="btn-shop inline-flex items-center gap-2 bg-red-600 text-white font-bold text-xs px-6 py-3 rounded-full tracking-widest uppercase shadow-md shadow-red-200"
-                style={{ fontFamily: "'Barlow',sans-serif" }}
+                style={{ fontFamily: "var(--ct-barlow),sans-serif" }}
               >
                 {t('shopCollection')}
                 <svg className="rtl-flip" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -229,7 +228,7 @@ export default function BrandPage() {
               <button
                 onClick={handleBecomeVendor}
                 className="btn-vendor inline-flex items-center gap-2 border-2 border-zinc-800 hover:bg-zinc-800 hover:text-white text-zinc-800 font-bold text-xs px-6 py-3 rounded-full tracking-widest uppercase"
-                style={{ fontFamily: "'Barlow',sans-serif" }}
+                style={{ fontFamily: "var(--ct-barlow),sans-serif" }}
               >
                 <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -321,20 +320,20 @@ export default function BrandPage() {
               <p style={{
                 fontSize: 11, fontWeight: 700, color: '#dc2626',
                 textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4,
-                fontFamily: "'Barlow',sans-serif",
+                fontFamily: "var(--ct-barlow),sans-serif",
               }}>
                 {t('eyebrow')}
               </p>
               <h2 style={{
                 fontSize: 'clamp(1.5rem,3vw,2.25rem)', fontWeight: 900,
                 color: '#0f172a', margin: 0, letterSpacing: '-0.02em',
-                fontFamily: "'Barlow Condensed',sans-serif",
+                fontFamily: "var(--ct-barlow-c),sans-serif",
               }}>
                 {t('collection')}
                 {total > 0 && (
                   <span style={{
                     fontSize: 14, fontWeight: 600, color: '#94a3b8',
-                    marginInlineStart: 12, letterSpacing: 0, fontFamily: "'Barlow',sans-serif",
+                    marginInlineStart: 12, letterSpacing: 0, fontFamily: "var(--ct-barlow),sans-serif",
                   }}>
                     {tc('products', { count: total })}
                   </span>
@@ -353,7 +352,7 @@ export default function BrandPage() {
                   border: `1.5px solid ${filterFeatured ? '#dc2626' : '#e5e7eb'}`,
                   background: filterFeatured ? 'rgba(220,38,38,0.07)' : '#fff',
                   color: filterFeatured ? '#dc2626' : '#64748b',
-                  cursor: 'pointer', fontFamily: "'Barlow',sans-serif",
+                  cursor: 'pointer', fontFamily: "var(--ct-barlow),sans-serif",
                   display: 'flex', alignItems: 'center', gap: 5,
                   transition: 'all 0.15s',
                 }}
@@ -369,7 +368,7 @@ export default function BrandPage() {
                   fontSize: 12, fontWeight: 600, color: '#374151',
                   padding: '6px 12px', borderRadius: 10,
                   border: '1.5px solid #e5e7eb', background: '#fff',
-                  cursor: 'pointer', fontFamily: "'Barlow',sans-serif",
+                  cursor: 'pointer', fontFamily: "var(--ct-barlow),sans-serif",
                   outline: 'none',
                 }}
               >
@@ -402,7 +401,7 @@ export default function BrandPage() {
                     background: 'rgba(220,38,38,0.08)',
                     border: '1px solid rgba(220,38,38,0.2)',
                     padding: '8px 20px', borderRadius: 999, cursor: 'pointer',
-                    fontFamily: "'Barlow',sans-serif",
+                    fontFamily: "var(--ct-barlow),sans-serif",
                   }}
                 >
                   {tc('retry')}
@@ -448,7 +447,7 @@ export default function BrandPage() {
                     background: p === page ? '#dc2626' : '#fff',
                     color: p === page ? '#fff' : '#374151',
                     fontSize: 13, fontWeight: 800, cursor: 'pointer',
-                    transition: 'all 0.15s', fontFamily: "'Barlow',sans-serif",
+                    transition: 'all 0.15s', fontFamily: "var(--ct-barlow),sans-serif",
                   }}
                 >
                   {p}
@@ -461,7 +460,7 @@ export default function BrandPage() {
           {/* CTA */}
           <div style={{ textAlign: 'center', marginTop: 48 }}>
             <p style={{
-              fontFamily: "'Barlow',sans-serif", fontSize: 13, color: '#888',
+              fontFamily: "var(--ct-barlow),sans-serif", fontSize: 13, color: '#888',
               fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8,
             }}>
               {t('alsoBrowse')}
@@ -471,7 +470,7 @@ export default function BrandPage() {
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 background: '#dc2626', color: '#fff',
-                fontFamily: "'Barlow',sans-serif", fontWeight: 800,
+                fontFamily: "var(--ct-barlow),sans-serif", fontWeight: 800,
                 fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase',
                 padding: '13px 32px', borderRadius: 999, textDecoration: 'none',
                 boxShadow: '0 6px 20px rgba(220,38,38,0.3)',

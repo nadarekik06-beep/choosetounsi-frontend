@@ -1,5 +1,4 @@
 /* Customer profile + profile completion — shared styles (prefix pf-). */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap');
 
 .pf-root {
   --pf-red: #db142e;
@@ -19,10 +18,10 @@
   --pf-card: #fff;
   min-height: 100vh;
   background: var(--pf-bg);
-  font-family: 'DM Sans', var(--font-syne), system-ui, sans-serif;
+  font-family: var(--ct-dm-sans), var(--font-syne), system-ui, sans-serif;
   color: var(--pf-text);
 }
-[dir=rtl] .pf-root { font-family: var(--font-cairo), 'DM Sans', system-ui, sans-serif; }
+[dir=rtl] .pf-root { font-family: var(--font-cairo), var(--ct-dm-sans), system-ui, sans-serif; }
 .pf-root *, .pf-root *::before, .pf-root *::after { box-sizing: border-box; }
 .pf-root :focus-visible { outline: 2.5px solid var(--pf-red); outline-offset: 2px; border-radius: 8px; }
 
@@ -62,7 +61,7 @@
 .pf-hero-row { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
 .pf-hero-text { flex: 1; min-width: 0; }
 .pf-hero-text h1 {
-  font-family: 'DM Serif Display', serif; font-weight: 400;
+  font-family: var(--ct-dm-serif), serif; font-weight: 400;
   font-size: clamp(1.55rem, 4.4vw, 2.35rem); margin: 0 0 4px; line-height: 1.12;
   overflow-wrap: anywhere;
 }

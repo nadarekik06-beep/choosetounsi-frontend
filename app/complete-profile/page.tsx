@@ -111,7 +111,7 @@ function CompleteProfile() {
             <span style={{ fontWeight: 900, fontSize: '1.05rem', letterSpacing: '-0.01em' }}>Choose<span style={{ color: '#4ade80' }}>Tounsi</span></span>
             <button type="button" className="pf-btn glass sm" onClick={doLogout}><LogOut size={14} />{t('logout')}</button>
           </div>
-          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, fontSize: 'clamp(1.6rem,5vw,2.2rem)', margin: '0 0 8px', lineHeight: 1.15 }}>
+          <h1 style={{ fontFamily: "var(--ct-dm-serif), serif", fontWeight: 400, fontSize: 'clamp(1.6rem,5vw,2.2rem)', margin: '0 0 8px', lineHeight: 1.15 }}>
             {profile ? t('title', { name: profile.first_name ?? profile.suggested_first_name ?? '' }) : t('titleNoName')}
           </h1>
           <p style={{ margin: 0, color: 'rgba(255,255,255,0.65)', fontSize: '0.9rem', lineHeight: 1.5 }}>{t('subtitle')}</p>

@@ -1058,17 +1058,17 @@ export default function ApplicationForm({
                 <span style={{ fontSize:'0.75rem', color:'#9ca3af' }}>{t('stepOf', { n: step, total: 3 })}</span>
                 <div style={{ display:'flex', gap:10 }}>
                   {step > 1 && (
-                    <button type="button" onClick={prev} style={{ padding:'10px 20px', borderRadius:12, border:'1.5px solid #e5e7eb', fontSize:'0.82rem', fontWeight:700, color:'#555', background:'white', cursor:'pointer', fontFamily:'Barlow,sans-serif' }}>
+                    <button type="button" onClick={prev} style={{ padding:'10px 20px', borderRadius:12, border:'1.5px solid #e5e7eb', fontSize:'0.82rem', fontWeight:700, color:'#555', background:'white', cursor:'pointer', fontFamily:'var(--ct-barlow),sans-serif' }}>
                       {t('back')}
                     </button>
                   )}
                   {step < 3 ? (
-                    <button type="button" onClick={next} style={{ padding:'10px 24px', borderRadius:12, background:'#db142e', color:'white', fontSize:'0.82rem', fontWeight:800, border:'none', cursor:'pointer', boxShadow:'0 4px 14px rgba(219,20,46,0.3)', fontFamily:'Barlow,sans-serif' }}>
+                    <button type="button" onClick={next} style={{ padding:'10px 24px', borderRadius:12, background:'#db142e', color:'white', fontSize:'0.82rem', fontWeight:800, border:'none', cursor:'pointer', boxShadow:'0 4px 14px rgba(219,20,46,0.3)', fontFamily:'var(--ct-barlow),sans-serif' }}>
                       {t('continue')}
                     </button>
                   ) : (
                     <button type="button" onClick={handleSubmit} disabled={loading}
-                      style={{ padding:'10px 24px', borderRadius:12, background:loading ? '#d1d5db' : existingId ? '#0f172a' : '#198f41', color:'white', fontSize:'0.82rem', fontWeight:800, border:'none', cursor:loading ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', gap:6, fontFamily:'Barlow,sans-serif', transition:'all 0.2s' }}>
+                      style={{ padding:'10px 24px', borderRadius:12, background:loading ? '#d1d5db' : existingId ? '#0f172a' : '#198f41', color:'white', fontSize:'0.82rem', fontWeight:800, border:'none', cursor:loading ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', gap:6, fontFamily:'var(--ct-barlow),sans-serif', transition:'all 0.2s' }}>
                       {loading
                         ? <><BrandLoader variant="inline" size={14} />{t('submitting')}</>
                         : existingId

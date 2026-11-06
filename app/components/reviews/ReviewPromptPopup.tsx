@@ -175,7 +175,7 @@ export default function ReviewPromptPopup() {
           position: 'fixed', bottom: 24, insetInlineEnd: 24, zIndex: 9000,
           animation: 'popupSlideIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both',
           maxWidth: 340, width: '100%',
-          fontFamily: "'Barlow', 'Inter', sans-serif",
+          fontFamily: "var(--ct-barlow), 'Inter', sans-serif",
         }}>
           <div style={{
             background: '#fff', borderRadius: 20,

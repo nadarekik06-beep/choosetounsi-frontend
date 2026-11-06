@@ -14,7 +14,7 @@
   --dir: 1;
   position: relative;
   background: #f7f7f5; color: var(--ink);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--ct-barlow), sans-serif;
   overflow-x: clip;
 }
 [dir="rtl"] .vl { --dir: -1; }
@@ -56,7 +56,7 @@
 }
 .vl-title {
   margin-top: 14px;
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 900;
+  font-family: var(--ct-barlow-c), sans-serif; font-weight: 900;
   font-size: clamp(2.2rem, 4.8vw, 3.6rem); line-height: 1; letter-spacing: -.02em; color: var(--ink);
   text-wrap: balance;
 }
@@ -82,7 +82,7 @@
   position: relative; overflow: hidden; isolation: isolate;
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
   min-height: 52px; padding: 0 28px; border: 0; border-radius: 999px; cursor: pointer;
-  font-family: 'Barlow', sans-serif; font-size: .82rem; font-weight: 800;
+  font-family: var(--ct-barlow), sans-serif; font-size: .82rem; font-weight: 800;
   letter-spacing: .09em; text-transform: uppercase; text-decoration: none; white-space: nowrap;
   transition: transform .25s var(--ease), box-shadow .25s ease;
   -webkit-tap-highlight-color: transparent;
@@ -173,7 +173,7 @@
   animation: vlDrift 11s ease-in-out infinite; animation-delay: -4s;
 }
 .vl-revenue__label { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #8a8f98; }
-.vl-revenue__value { margin-top: 2px; font-family: 'Barlow Condensed', sans-serif; font-size: 1.7rem; font-weight: 900; line-height: 1.05; color: var(--green-dark); font-variant-numeric: tabular-nums; }
+.vl-revenue__value { margin-top: 2px; font-family: var(--ct-barlow-c), sans-serif; font-size: 1.7rem; font-weight: 900; line-height: 1.05; color: var(--green-dark); font-variant-numeric: tabular-nums; }
 .vl-revenue__bars { display: flex; align-items: flex-end; gap: 4px; height: 26px; margin-top: 6px; }
 .vl-revenue__bars i { flex: 1; height: 100%; border-radius: 3px; background: linear-gradient(180deg, #4fd37f, var(--green)); transform-origin: bottom; transition: transform .7s var(--spring); }
 .vl-revenue__bars i:last-child { background: linear-gradient(180deg, #ff5a6e, var(--red)); }
@@ -203,7 +203,7 @@
 .vl-stat { display: flex; align-items: center; gap: 14px; padding: 20px 18px; background: #fff; min-height: 92px; }
 @media (min-width: 768px) { .vl-stat { padding: 26px 28px; } }
 .vl-stat__icon { width: 42px; height: 42px; border-radius: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-.vl-stat__num { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(1.9rem, 3.6vw, 2.6rem); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.vl-stat__num { font-family: var(--ct-barlow-c), sans-serif; font-size: clamp(1.9rem, 3.6vw, 2.6rem); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
 .vl-stat__num em { font-style: normal; color: var(--red); font-size: .62em; margin-inline-start: 1px; }
 .vl-stat__label { margin-top: 5px; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #6b7280; }
 .vl-stat--skeleton { position: relative; overflow: hidden; }
@@ -253,7 +253,7 @@
     radial-gradient(60% 50% at 100% 100%, rgba(219,20,46,.06) 0%, transparent 70%),
     #fff;
 }
-.vl-card--feature .vl-card__title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.9rem; font-weight: 900; letter-spacing: -.01em; }
+.vl-card--feature .vl-card__title { font-family: var(--ct-barlow-c), sans-serif; font-size: 1.9rem; font-weight: 900; letter-spacing: -.01em; }
 .vl-card__art { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; min-height: 190px; }
 .vl-card__bag { width: min(230px, 70%); height: auto; aspect-ratio: 1; transition: transform .5s var(--ease); }
 .vl-card--feature:hover .vl-card__bag { transform: scale(1.04); }
@@ -307,12 +307,12 @@
 .vl-step__num {
   position: absolute; top: -4px; inset-inline-end: -4px; width: 26px; height: 26px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  background: var(--ink); color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: .9rem; font-weight: 900;
+  background: var(--ink); color: #fff; font-family: var(--ct-barlow-c), sans-serif; font-size: .9rem; font-weight: 900;
   box-shadow: 0 0 0 3px #fff;
 }
 .vl-step__text { padding-top: 10px; }
 @media (min-width: 768px) { .vl-step__text { padding-top: 6px; } }
-.vl-step__title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.7rem; font-weight: 900; line-height: 1.05; }
+.vl-step__title { font-family: var(--ct-barlow-c), sans-serif; font-size: 1.7rem; font-weight: 900; line-height: 1.05; }
 .vl-step__desc { margin-top: 6px; font-size: .95rem; font-weight: 500; color: var(--muted); line-height: 1.5; }
 
 /* ── Plans ──────────────────────────────────────────────────────────────── */
@@ -416,7 +416,7 @@
 .vl-plan--dark .vl-plan__target { color: rgba(255,255,255,.55); }
 
 .vl-plan__price { display: flex; align-items: baseline; gap: 6px; margin-top: 22px; }
-.vl-plan__amount { font-family: 'Barlow Condensed', sans-serif; font-size: 3.3rem; font-weight: 900; line-height: .95; letter-spacing: -.02em; }
+.vl-plan__amount { font-family: var(--ct-barlow-c), sans-serif; font-size: 3.3rem; font-weight: 900; line-height: .95; letter-spacing: -.02em; }
 .vl-plan__per { font-size: .85rem; font-weight: 600; color: #6b7280; }
 .vl-plan--dark .vl-plan__per { color: rgba(255,255,255,.55); }
 
@@ -456,7 +456,7 @@
   margin-top: auto; position: relative; overflow: hidden;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 52px;
   border: 0; border-radius: 16px; cursor: pointer;
-  font-family: 'Barlow', sans-serif; font-size: .82rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
+  font-family: var(--ct-barlow), sans-serif; font-size: .82rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
   background: var(--accent); color: #fff;
   box-shadow: 0 12px 26px -12px color-mix(in srgb, var(--accent) 80%, transparent);
   transition: transform .25s var(--ease), box-shadow .25s ease;
@@ -516,7 +516,7 @@
   width: 56px; height: 56px; flex-shrink: 0; border-radius: 18px; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, var(--red-tint), var(--green-tint));
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 1.3rem; color: var(--red);
+  font-family: var(--ct-barlow-c), sans-serif; font-weight: 900; font-size: 1.3rem; color: var(--red);
   box-shadow: 0 0 0 3px #fff, 0 0 0 4px var(--line);
 }
 .vl-seller__avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -561,7 +561,7 @@
 .vl-faq__q {
   display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%;
   padding: 20px 22px; border: 0; background: none; cursor: pointer; text-align: start;
-  font-family: 'Barlow', sans-serif; font-size: 1rem; font-weight: 800; color: var(--ink);
+  font-family: var(--ct-barlow), sans-serif; font-size: 1rem; font-weight: 800; color: var(--ink);
   border-radius: 20px;
 }
 .vl-faq__q:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
@@ -582,7 +582,7 @@
 .vl-faq__points li { display: flex; gap: 10px; }
 .vl-faq__points li::before { content: ''; flex-shrink: 0; width: 6px; height: 6px; margin-top: 9px; border-radius: 50%; background: var(--red); }
 .vl-faq__group { margin: 44px 0 16px; }
-.vl-faq__group-title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.6rem; font-weight: 900; }
+.vl-faq__group-title { font-family: var(--ct-barlow-c), sans-serif; font-size: 1.6rem; font-weight: 900; }
 .vl-faq__group-lead { margin-top: 6px; font-size: .9rem; color: var(--muted); line-height: 1.5; }
 
 /* ── Final CTA ──────────────────────────────────────────────────────────── */
@@ -617,7 +617,7 @@
   pointer-events: none;
 }
 .vl-sticky.is-shown { transform: none; opacity: 1; pointer-events: auto; }
-.vl-sticky__btn { width: 100%; min-height: 56px; padding: 0 18px; font-family: 'Barlow', sans-serif; box-shadow: 0 16px 34px -12px rgba(219,20,46,.75); }
+.vl-sticky__btn { width: 100%; min-height: 56px; padding: 0 18px; font-family: var(--ct-barlow), sans-serif; box-shadow: 0 16px 34px -12px rgba(219,20,46,.75); }
 @media (min-width: 768px) { .vl-sticky { display: none; } }
 
 /* ── Loading + success ──────────────────────────────────────────────────── */

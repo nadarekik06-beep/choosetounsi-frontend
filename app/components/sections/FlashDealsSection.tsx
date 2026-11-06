@@ -101,13 +101,13 @@ export default function FlashDealsSection() {
         .fds-inner   { max-width:1280px; margin:0 auto; padding:0 24px; }
         .fds-header  { display:flex; align-items:center; justify-content:space-between; padding:24px 0 14px; flex-wrap:wrap; gap:12px; }
         .fds-title-wrap { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-        .fds-title   { font-family:'Barlow',sans-serif; font-size:1.1rem; font-weight:800; color:#111; letter-spacing:-.02em; margin:0; display:flex; align-items:center; gap:8px; }
+        .fds-title   { font-family:var(--ct-barlow),sans-serif; font-size:1.1rem; font-weight:800; color:#111; letter-spacing:-.02em; margin:0; display:flex; align-items:center; gap:8px; }
         .fds-bolt    { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:7px; background:#db142e; color:#fff; flex-shrink:0; }
         .fds-cd      { display:flex; align-items:center; gap:4px; background:#fef2f2; border:1px solid #fecaca; padding:4px 10px; border-radius:999px; }
         .fds-cd-dot  { width:5px; height:5px; border-radius:50%; background:#db142e; animation:fdsPulse 1.2s ease-in-out infinite; }
-        .fds-cd-text { font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:900; color:#db142e; letter-spacing:.02em; }
-        .fds-cd-label{ font-family:'Barlow',sans-serif; font-size:9px; font-weight:700; color:#ef4444; letter-spacing:.06em; text-transform:uppercase; }
-        .fds-view-all{ font-family:'Barlow',sans-serif; font-size:.72rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#888; text-decoration:none; transition:color .18s; }
+        .fds-cd-text { font-family:var(--ct-barlow-c),sans-serif; font-size:13px; font-weight:900; color:#db142e; letter-spacing:.02em; }
+        .fds-cd-label{ font-family:var(--ct-barlow),sans-serif; font-size:9px; font-weight:700; color:#ef4444; letter-spacing:.06em; text-transform:uppercase; }
+        .fds-view-all{ font-family:var(--ct-barlow),sans-serif; font-size:.72rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#888; text-decoration:none; transition:color .18s; }
         .fds-view-all:hover { color:#db142e; }
         .fds-row     { display:flex; gap:12px; overflow-x:auto; padding:4px 2px 10px; scrollbar-width:none; -ms-overflow-style:none; }
         .fds-row::-webkit-scrollbar { display:none; }

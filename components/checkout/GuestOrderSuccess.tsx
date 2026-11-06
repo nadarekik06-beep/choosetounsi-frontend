@@ -69,7 +69,7 @@ export default function GuestOrderSuccess({ order, fmt }: { order: GuestSuccess;
   const input: React.CSSProperties = { width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 10, padding: '11px 12px', fontSize: 15, fontFamily: 'inherit', color: '#0f172a', outline: 'none', background: '#fff', boxSizing: 'border-box' }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', justifyContent: 'center', padding: '28px 16px 48px', fontFamily: "'Barlow', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', justifyContent: 'center', padding: '28px 16px 48px', fontFamily: "var(--ct-barlow), sans-serif" }}>
       <div style={{ maxWidth: 520, width: '100%', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>

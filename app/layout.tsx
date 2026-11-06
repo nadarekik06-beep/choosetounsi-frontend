@@ -3,6 +3,7 @@ import { Fragment } from "react";
 // Self-hosted (app/fonts, built from google/fonts by subsetting to the same
 // character sets next/font/google used): builds never need the internet.
 import localFont from "next/font/local";
+import { storefrontFontVars } from "./fonts/storefront";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { withoutSellerMessages } from "@/lib/i18n/messageScopes";
@@ -78,7 +79,7 @@ export default async function RootLayout({
 }) {
   const locale = (await getLocale()) as Locale;
   const messages = withoutSellerMessages(await getMessages());
-  const fontClass = locale === "ar" ? `${syne.variable} ${cairo.variable}` : syne.variable;
+  const fontClass = `${locale === "ar" ? `${syne.variable} ${cairo.variable}` : syne.variable} ${storefrontFontVars}`;
 
   return (
     // suppressHydrationWarning: browser extensions (toolbars, Grammarly, translators…) add

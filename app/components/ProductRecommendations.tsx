@@ -240,7 +240,7 @@ export default function ProductRecommendations({ slug, sellerId }: Props) {
         @media(max-width:640px)  { .rec-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
       `}</style>
 
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px 64px', fontFamily: "'Barlow', sans-serif" }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px 64px', fontFamily: "var(--ct-barlow), sans-serif" }}>
         <div style={{ height: 1, background: '#f1f5f9', margin: '48px 0' }} />
 
         <RecommendationSection

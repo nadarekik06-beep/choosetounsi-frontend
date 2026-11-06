@@ -82,7 +82,7 @@ export default function TrackOrderPage() {
 
   if (missing || !order) {
     return (
-      <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, fontFamily: "'Barlow', sans-serif" }}>
+      <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, fontFamily: "var(--ct-barlow), sans-serif" }}>
         <div style={{ textAlign: 'center', maxWidth: 360 }}>
           <Package size={40} color="#cbd5e1" style={{ margin: '0 auto 12px' }} />
           <p style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>{t('notFoundTitle')}</p>
@@ -97,7 +97,7 @@ export default function TrackOrderPage() {
   const card: React.CSSProperties = { background: '#fff', border: '1px solid #f1f5f9', borderRadius: 16, padding: 16 }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f9fafb', padding: '20px 16px 48px', fontFamily: "'Barlow', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#f9fafb', padding: '20px 16px 48px', fontFamily: "var(--ct-barlow), sans-serif" }}>
       <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
           <p style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', margin: 0, textTransform: 'uppercase', letterSpacing: 0.4 }}>{t('title')}</p>

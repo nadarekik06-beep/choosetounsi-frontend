@@ -368,31 +368,31 @@ export default function ProductFilterSidebar({
            adds any other sticky bar the page shows under it (e.g. the category bar). */
         .pfs-desk{display:block;position:sticky;top:calc(var(--nav-h,0px) + var(--pfs-offset,0px) + 12px);align-self:flex-start;max-height:calc(100vh - var(--nav-h,0px) - var(--pfs-offset,0px) - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#e5e7eb transparent;border-radius:12px}
 
-        .pfs{background:#fff;border-radius:12px;border:1px solid #eee;overflow:clip;font-family:'Outfit',sans-serif}
+        .pfs{background:#fff;border-radius:12px;border:1px solid #eee;overflow:clip;font-family:var(--ct-outfit),sans-serif}
         .pfs-hd{display:flex;align-items:center;justify-content:space-between;padding:13px 16px 9px;border-bottom:1px solid #f5f5f5;position:sticky;top:0;background:#fff;z-index:2}
         .pfs-title{font-size:13px;font-weight:800;color:#111;margin-bottom:2px}
         .pfs-count{font-size:10px;color:#bbb;font-weight:500}
-        .pfs-clear{background:rgba(219,20,46,.08);border:none;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;color:#db142e;cursor:pointer;font-family:'Outfit',sans-serif;transition:background .12s}
+        .pfs-clear{background:rgba(219,20,46,.08);border:none;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;color:#db142e;cursor:pointer;font-family:var(--ct-outfit),sans-serif;transition:background .12s}
         .pfs-clear:hover{background:rgba(219,20,46,.15)}
         .pfs-blk{padding:8px 15px 3px}
         .pfs-search{display:flex;align-items:center;gap:7px;background:#f8f8f8;border:1.5px solid #eee;border-radius:8px;padding:6px 10px;transition:border-color .13s}
         .pfs-search:focus-within{border-color:#db142e}
-        .pfs-search input{flex:1;border:none;background:transparent;font-size:12px;font-family:'Outfit',sans-serif;color:#111;outline:none}
+        .pfs-search input{flex:1;border:none;background:transparent;font-size:12px;font-family:var(--ct-outfit),sans-serif;color:#111;outline:none}
         .pfs-search input::placeholder{color:#ccc}
         .pfs-acc{border-bottom:1px solid #f5f5f5}
-        .pfs-head{width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:#444;transition:color .12s}
+        .pfs-head{width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:none;border:none;cursor:pointer;font-family:var(--ct-outfit),sans-serif;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:#444;transition:color .12s}
         .pfs-head:hover{color:#db142e}
         .pfs-body{padding:3px 15px 10px}
-        .pfs-sort{display:flex;align-items:center;gap:7px;width:100%;padding:7px 7px;border-radius:6px;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:500;color:#555;text-align:start;transition:all .11s}
+        .pfs-sort{display:flex;align-items:center;gap:7px;width:100%;padding:7px 7px;border-radius:6px;background:none;border:none;cursor:pointer;font-family:var(--ct-outfit),sans-serif;font-size:12.5px;font-weight:500;color:#555;text-align:start;transition:all .11s}
         .pfs-sort:hover{background:#f8f8f8;color:#db142e}
         .pfs-sort.on{background:rgba(219,20,46,.05);color:#db142e;font-weight:700}
         .pfs-dot{width:5px;height:5px;border-radius:50%;border:1.5px solid currentColor;flex-shrink:0;transition:background .11s}
         .pfs-sort.on .pfs-dot{background:#db142e}
         .pfs-pr-row{display:flex;align-items:center;gap:5px;margin-bottom:8px}
-        .pfs-pin{flex:1;min-width:0;padding:6px 8px;border:1.5px solid #e5e7eb;border-radius:7px;font-size:12px;font-family:'Outfit',sans-serif;color:#111;background:#f8f8f8;outline:none;-moz-appearance:textfield;transition:border-color .12s}
+        .pfs-pin{flex:1;min-width:0;padding:6px 8px;border:1.5px solid #e5e7eb;border-radius:7px;font-size:12px;font-family:var(--ct-outfit),sans-serif;color:#111;background:#f8f8f8;outline:none;-moz-appearance:textfield;transition:border-color .12s}
         .pfs-pin::-webkit-outer-spin-button,.pfs-pin::-webkit-inner-spin-button{-webkit-appearance:none}
         .pfs-pin:focus{border-color:#db142e;background:#fff}.pfs-pin::placeholder{color:#ccc}
-        .pfs-pr{display:flex;align-items:center;gap:7px;width:100%;padding:7px 7px;border-radius:6px;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;color:#555;text-align:start;transition:all .11s}
+        .pfs-pr{display:flex;align-items:center;gap:7px;width:100%;padding:7px 7px;border-radius:6px;background:none;border:none;cursor:pointer;font-family:var(--ct-outfit),sans-serif;font-size:12px;font-weight:500;color:#555;text-align:start;transition:all .11s}
         .pfs-pr::before{content:'';display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid #d1d5db;flex-shrink:0;background:#fff;transition:all .11s}
         .pfs-pr:hover{background:#f8f8f8;color:#db142e}.pfs-pr:hover::before{border-color:#db142e}
         .pfs-pr.on{color:#db142e;font-weight:700}.pfs-pr.on::before{background:#db142e;border-color:#db142e;box-shadow:inset 0 0 0 3px #fff}
@@ -414,9 +414,9 @@ export default function ProductFilterSidebar({
         .pfs-cb{width:13px;height:13px;border-radius:4px;border:1.5px solid #d1d5db;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .11s}
         .pfs-cb.on{background:#db142e;border-color:#db142e}
         .pfs-pills{display:flex;flex-wrap:wrap;gap:5px;padding:2px 0}
-        .pfs-pill{padding:4px 10px;border-radius:999px;border:1.5px solid #e5e7eb;background:#fff;font-size:11px;font-weight:600;color:#555;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .11s}
+        .pfs-pill{padding:4px 10px;border-radius:999px;border:1.5px solid #e5e7eb;background:#fff;font-size:11px;font-weight:600;color:#555;cursor:pointer;font-family:var(--ct-outfit),sans-serif;transition:all .11s}
         .pfs-pill:hover{border-color:#db142e;color:#db142e}.pfs-pill.on{background:#db142e;border-color:#db142e;color:#fff}
-        .pfs-apply{display:none;width:calc(100% - 30px);margin:11px 15px 15px;padding:10px;background:#db142e;color:#fff;font-weight:800;font-size:12.5px;border:none;border-radius:9px;cursor:pointer;font-family:'Outfit',sans-serif;align-items:center;justify-content:center}
+        .pfs-apply{display:none;width:calc(100% - 30px);margin:11px 15px 15px;padding:10px;background:#db142e;color:#fff;font-weight:800;font-size:12.5px;border:none;border-radius:9px;cursor:pointer;font-family:var(--ct-outfit),sans-serif;align-items:center;justify-content:center}
         .pfs-bd{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:200;animation:pfsFadeIn .17s ease;backdrop-filter:blur(2px)}
         .pfs-drawer{position:fixed;inset-inline-start:0;top:0;bottom:0;z-index:201;width:282px;max-width:90vw;overflow-y:auto;background:#fff;box-shadow:4px 0 24px rgba(0,0,0,.12);animation:pfsSlideIn .22s ease}
         [dir=rtl] .pfs-drawer{box-shadow:-4px 0 24px rgba(0,0,0,.12);animation-name:pfsSlideInRtl}

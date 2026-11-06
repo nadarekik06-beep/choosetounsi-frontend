@@ -197,7 +197,7 @@ export default function ReviewSubmitModal({
         style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 10000,
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-          fontFamily: "'Barlow', 'Inter', sans-serif",
+          fontFamily: "var(--ct-barlow), 'Inter', sans-serif",
         }}
       >
         <div

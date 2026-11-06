@@ -185,7 +185,6 @@ export default function OnboardingPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap');
         @keyframes spin  { to { transform: rotate(360deg) } }
         @keyframes fadeUp{ from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
         .ob-card:hover { border-color: #dc2626 !important; background: rgba(220,38,38,0.03) !important; transform: translateY(-2px); }
@@ -194,7 +193,7 @@ export default function OnboardingPage() {
         .ob-gender.selected { border-color: #dc2626 !important; background: linear-gradient(135deg, rgba(220,38,38,0.08), rgba(220,38,38,0.03)) !important; }
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #fdf9f9 0%, #f9fafb 100%)', fontFamily: "'Barlow', sans-serif", display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #fdf9f9 0%, #f9fafb 100%)', fontFamily: "var(--ct-barlow), sans-serif", display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
 
         {/* Skip — visible on every step; marks onboarding done so it never comes back */}
         <div style={{ width: '100%', maxWidth: 520, display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>

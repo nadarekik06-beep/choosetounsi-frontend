@@ -148,12 +148,11 @@ export default function InvoicePage() {
     <>
       {/* ── Global styles: screen + print ── */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800&display=swap');
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-          font-family: 'Barlow', sans-serif;
+          font-family: var(--ct-barlow), sans-serif;
           background: #f0f2f5;
           color: #1a1a2e;
           -webkit-print-color-adjust: exact;
@@ -235,7 +234,7 @@ export default function InvoicePage() {
               style={{ height: 32, width: 'auto' }}
             />
             <span style={{
-              fontFamily: "'Barlow Condensed', sans-serif",
+              fontFamily: "var(--ct-barlow-c), sans-serif",
               fontSize: 18, fontWeight: 800, color: '#db142e',
               letterSpacing: '-0.01em',
             }}>
@@ -283,7 +282,7 @@ export default function InvoicePage() {
               />
               <div>
                 <p style={{
-                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontFamily: "var(--ct-barlow-c), sans-serif",
                   fontSize: 26, fontWeight: 800, color: '#fff',
                   letterSpacing: '-0.02em', lineHeight: 1,
                 }}>
@@ -298,7 +297,7 @@ export default function InvoicePage() {
             {/* Invoice title */}
             <div style={{ textAlign: 'end' }}>
               <p style={{
-                fontFamily: "'Barlow Condensed', sans-serif",
+                fontFamily: "var(--ct-barlow-c), sans-serif",
                 fontSize: 32, fontWeight: 900, color: '#fff',
                 letterSpacing: '0.05em', lineHeight: 1,
                 textTransform: 'uppercase',
@@ -613,7 +612,7 @@ const styles = {
     flexDirection: 'column' as const,
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: "'Barlow', sans-serif",
+    fontFamily: "var(--ct-barlow), sans-serif",
     gap: 16,
     background: '#f0f2f5',
   },
@@ -629,7 +628,7 @@ function btnStyle(bg: string): React.CSSProperties {
     padding: '9px 20px',
     background: bg,
     color: '#fff',
-    fontFamily: "'Barlow', sans-serif",
+    fontFamily: "var(--ct-barlow), sans-serif",
     fontWeight: 700,
     fontSize: 13,
     border: 'none',

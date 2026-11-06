@@ -107,9 +107,8 @@ export default function FullReceiptPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Barlow', sans-serif; background: #f0f2f5; color: #1a1a2e; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { font-family: var(--ct-barlow), sans-serif; background: #f0f2f5; color: #1a1a2e; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .outer { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 32px 16px 48px; gap: 16px; }
         .bar   { width: 210mm; display: flex; align-items: center; justify-content: space-between; }
         .sheet { width: 210mm; min-height: 297mm; background: #fff; box-shadow: 0 4px 32px rgba(0,0,0,0.12); border-radius: 4px; overflow: hidden; animation: fadeIn 0.3s ease both; }
@@ -138,7 +137,7 @@ export default function FullReceiptPage() {
         <div className="bar">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <img src={`${origin}/images/logo-chili.png`} alt="ChooseTounsi" style={{ height: 32 }} />
-            <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 18, fontWeight: 800, color: '#db142e' }}>
+            <span style={{ fontFamily: "var(--ct-barlow-c),sans-serif", fontSize: 18, fontWeight: 800, color: '#db142e' }}>
               {t('barTitle')}
             </span>
           </div>
@@ -154,12 +153,12 @@ export default function FullReceiptPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <img src={`${origin}/images/logo-chili.png`} alt="ChooseTounsi" style={{ height: 56 }} />
               <div>
-                <p style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>ChooseTounsi</p>
+                <p style={{ fontFamily: "var(--ct-barlow-c),sans-serif", fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>ChooseTounsi</p>
                 <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 500, marginTop: 3 }}>{t('tagline')}</p>
               </div>
             </div>
             <div style={{ textAlign: 'end' }}>
-              <p style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 24, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>
+              <p style={{ fontFamily: "var(--ct-barlow-c),sans-serif", fontSize: 24, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>
                 {t('title')}
               </p>
               <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: 700, marginTop: 4 }}>
@@ -343,8 +342,8 @@ export default function FullReceiptPage() {
   )
 }
 
-const wrap: React.CSSProperties = { minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow',sans-serif", gap: 16, background: '#f0f2f5' }
-const btn = (bg: string): React.CSSProperties => ({ padding: '9px 20px', background: bg, color: '#fff', fontFamily: "'Barlow',sans-serif", fontWeight: 700, fontSize: 13, border: 'none', borderRadius: 8, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 })
+const wrap: React.CSSProperties = { minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "var(--ct-barlow),sans-serif", gap: 16, background: '#f0f2f5' }
+const btn = (bg: string): React.CSSProperties => ({ padding: '9px 20px', background: bg, color: '#fff', fontFamily: "var(--ct-barlow),sans-serif", fontWeight: 700, fontSize: 13, border: 'none', borderRadius: 8, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 })
 const card: React.CSSProperties = { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 16px' }
 const lbl:  React.CSSProperties = { fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#5b6472', marginBottom: 6 }
 const name: React.CSSProperties = { fontSize: 15, fontWeight: 800, color: '#1e293b', marginBottom: 4 }

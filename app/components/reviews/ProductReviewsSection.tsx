@@ -302,7 +302,7 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
         }
       `}</style>
 
-      <section className="rev-section" style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px', fontFamily: "'Barlow', sans-serif" }}>
+      <section className="rev-section" style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px', fontFamily: "var(--ct-barlow), sans-serif" }}>
         <h2 style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', margin: '0 0 28px', letterSpacing: '-0.02em' }}>
           {t('title', { count: fmt.number(summary.total) })}
         </h2>

@@ -459,7 +459,7 @@ export default function CartDrawer() {
         transform: drawerOpen ? 'translateX(0)' : hidden,
         visibility: drawerOpen ? 'visible' : 'hidden',
         transition: `transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear ${drawerOpen ? '0s' : '0.3s'}`,
-        fontFamily: "'Barlow', sans-serif",
+        fontFamily: "var(--ct-barlow), sans-serif",
       }} role="dialog" aria-modal="true" aria-label={t('title')} aria-hidden={!drawerOpen}>
 
         {/* Header */}

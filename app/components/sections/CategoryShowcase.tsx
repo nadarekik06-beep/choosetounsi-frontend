@@ -118,14 +118,13 @@ export default function CategoryShowcase() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@400;500;600;700&display=swap');
 
         /* ── Section wrapper ── */
         .category-showcase {
           width: 100%;
           background: #f0f0f0;
           padding: 40px 0 48px;
-          font-family: 'Barlow', sans-serif;
+          font-family: var(--ct-barlow), sans-serif;
         }
 
         .category-showcase__inner {
@@ -143,7 +142,7 @@ export default function CategoryShowcase() {
         }
 
         .category-showcase__title {
-          font-family: 'Barlow', sans-serif;
+          font-family: var(--ct-barlow), sans-serif;
           font-size: clamp(1.4rem, 3vw, 1.75rem);
           font-weight: 800;
           color: #111;

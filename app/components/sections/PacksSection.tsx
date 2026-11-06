@@ -250,7 +250,7 @@ export default function PacksSection() {
                 fontSize: 'clamp(1.2rem,2.5vw,1.65rem)',
                 fontWeight: 800, color: '#111',
                 letterSpacing: '-0.02em', margin: 0,
-                fontFamily: "'Barlow', sans-serif",
+                fontFamily: "var(--ct-barlow), sans-serif",
               }}>
                 {t('sectionTitle')}
               </h2>

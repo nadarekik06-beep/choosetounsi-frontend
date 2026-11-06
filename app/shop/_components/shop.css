@@ -8,8 +8,8 @@
  */
 
 .sp {
-  --display: var(--font-barlow-c), 'Barlow Condensed', sans-serif;
-  --body: var(--font-barlow), 'Barlow', system-ui, sans-serif;
+  --display: var(--font-barlow-c), var(--ct-barlow-c), sans-serif;
+  --body: var(--font-barlow), var(--ct-barlow), system-ui, sans-serif;
   --dir: 1;
   position: relative;
   background: var(--ct-paper); color: var(--ct-ink);
@@ -481,7 +481,7 @@
 .sp-qv {
   position: relative; width: 100%; max-width: 880px; max-height: calc(100vh - 32px); overflow: auto;
   display: grid; grid-template-columns: 1fr; border-radius: 26px; background: #fff; color: var(--ct-ink);
-  font-family: var(--font-barlow), 'Barlow', system-ui, sans-serif;
+  font-family: var(--font-barlow), var(--ct-barlow), system-ui, sans-serif;
   box-shadow: 0 40px 100px -30px rgba(0,0,0,.6);
   animation: spPopIn .35s var(--ct-ease) both;
 }
@@ -497,7 +497,7 @@
 .sp-qv__thumb[aria-current="true"] { opacity: 1; box-shadow: 0 0 0 2px var(--ct-red); }
 .sp-qv__info { display: flex; flex-direction: column; gap: 12px; padding: 26px 24px 24px; }
 .sp-qv__cat { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--ct-red); }
-.sp-qv__name { font-family: var(--font-barlow-c), 'Barlow Condensed', sans-serif; font-size: 2rem; font-weight: 900; line-height: 1.02; }
+.sp-qv__name { font-family: var(--font-barlow-c), var(--ct-barlow-c), sans-serif; font-size: 2rem; font-weight: 900; line-height: 1.02; }
 .sp-qv__seller { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; font-weight: 600; color: var(--ct-muted); }
 .sp-qv__seller a { color: var(--ct-ink); font-weight: 800; text-decoration: none; }
 .sp-qv__seller a:hover { color: var(--ct-red); }

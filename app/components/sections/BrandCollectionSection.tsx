@@ -77,8 +77,6 @@ export default function BrandCollectionSection() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@400;500;600;700;800&display=swap');
-
         @keyframes bpcShimmer {
           0%  { background-position: -600px 0 }
           100%{ background-position:  600px 0 }
@@ -163,7 +161,7 @@ export default function BrandCollectionSection() {
           border-radius: 2px;
         }
         .bpc-eyebrow-text {
-          font-family: 'Barlow', sans-serif;
+          font-family: var(--ct-barlow), sans-serif;
           font-size: 10px;
           font-weight: 800;
           letter-spacing: .14em;
@@ -171,7 +169,7 @@ export default function BrandCollectionSection() {
           color: #db142e;
         }
         .bpc-title {
-          font-family: 'Barlow Condensed', sans-serif;
+          font-family: var(--ct-barlow-c), sans-serif;
           font-size: clamp(1.8rem, 4vw, 2.8rem);
           font-weight: 900;
           color: #fff;
@@ -186,7 +184,7 @@ export default function BrandCollectionSection() {
           background-clip: text;
         }
         .bpc-subtitle {
-          font-family: 'Barlow', sans-serif;
+          font-family: var(--ct-barlow), sans-serif;
           font-size: .82rem;
           color: rgba(255,255,255,0.4);
           font-weight: 500;
@@ -199,7 +197,7 @@ export default function BrandCollectionSection() {
           display: inline-flex;
           align-items: center;
           gap: 7px;
-          font-family: 'Barlow', sans-serif;
+          font-family: var(--ct-barlow), sans-serif;
           font-size: .75rem;
           font-weight: 800;
           letter-spacing: .08em;
@@ -293,7 +291,7 @@ export default function BrandCollectionSection() {
           gap: 4px;
           background: linear-gradient(135deg, #db142e, #991b1b);
           color: #fff;
-          font-family: 'Barlow', sans-serif;
+          font-family: var(--ct-barlow), sans-serif;
           font-size: 9px;
           font-weight: 800;
           letter-spacing: .06em;
@@ -311,7 +309,7 @@ export default function BrandCollectionSection() {
           inset-inline-end: 10px;
           background: #fff;
           color: #db142e;
-          font-family: 'Barlow', sans-serif;
+          font-family: var(--ct-barlow), sans-serif;
           font-size: 9px;
           font-weight: 900;
           padding: 3px 8px;
@@ -328,7 +326,7 @@ export default function BrandCollectionSection() {
         .bpc-sold-overlay span {
           background: rgba(255,255,255,0.1);
           color: #fff;
-          font-family: 'Barlow', sans-serif;
+          font-family: var(--ct-barlow), sans-serif;
           font-size: 9px; font-weight: 900;
           padding: 4px 12px; border-radius: 999px;
           text-transform: uppercase; letter-spacing: .1em;
@@ -384,7 +382,7 @@ export default function BrandCollectionSection() {
           flex: 1;
         }
         .bpc-cat {
-          font-family: 'Barlow', sans-serif;
+          font-family: var(--ct-barlow), sans-serif;
           font-size: 8px;
           font-weight: 700;
           text-transform: uppercase;
@@ -392,7 +390,7 @@ export default function BrandCollectionSection() {
           color: rgba(255,255,255,0.3);
         }
         .bpc-name {
-          font-family: 'Barlow', sans-serif;
+          font-family: var(--ct-barlow), sans-serif;
           font-size: 12px;
           font-weight: 700;
           color: rgba(255,255,255,0.88);
@@ -412,7 +410,7 @@ export default function BrandCollectionSection() {
           margin-top: 4px;
         }
         .bpc-price {
-          font-family: 'Barlow Condensed', sans-serif;
+          font-family: var(--ct-barlow-c), sans-serif;
           font-size: 15px;
           font-weight: 900;
           color: #db142e;
@@ -423,7 +421,7 @@ export default function BrandCollectionSection() {
           font-weight: 700;
         }
         .bpc-original {
-          font-family: 'Barlow', sans-serif;
+          font-family: var(--ct-barlow), sans-serif;
           font-size: 11px;
           color: rgba(255,255,255,0.25);
           text-decoration: line-through;
@@ -473,7 +471,7 @@ export default function BrandCollectionSection() {
           pointer-events: none;
         }
         .bpc-cta-text {
-          font-family: 'Barlow', sans-serif;
+          font-family: var(--ct-barlow), sans-serif;
           font-size: .85rem;
           font-weight: 600;
           color: rgba(255,255,255,0.55);
@@ -488,7 +486,7 @@ export default function BrandCollectionSection() {
           gap: 8px;
           background: linear-gradient(135deg, #db142e, #991b1b);
           color: #fff;
-          font-family: 'Barlow', sans-serif;
+          font-family: var(--ct-barlow), sans-serif;
           font-size: .75rem;
           font-weight: 800;
           letter-spacing: .08em;

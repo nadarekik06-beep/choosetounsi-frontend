@@ -62,8 +62,6 @@ export default function DualCTASection() {
       className={`dcta${seen ? ' is-seen' : ''}${inView ? ' is-live' : ''}`}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800;900&family=Barlow:wght@400;500;600;700;800&display=swap');
-
         .dcta {
           --red: #db142e; --red-dark: #b01025;
           --green: #198f41; --green-dark: #137234;
@@ -149,7 +147,7 @@ export default function DualCTASection() {
           padding: 7px 12px; border-radius: 999px;
           background: rgba(255,255,255,.92);
           box-shadow: 0 8px 24px -8px rgba(17,17,17,.22), inset 0 0 0 1px rgba(17,17,17,.06);
-          font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 700; color: var(--ink);
+          font-family: var(--ct-barlow), sans-serif; font-size: 12px; font-weight: 700; color: var(--ink);
           white-space: nowrap;
           animation: dctaDrift 9s ease-in-out infinite;
         }
@@ -185,7 +183,7 @@ export default function DualCTASection() {
           padding: 9px 14px 9px 10px; border-radius: 14px;
           background: #fff;
           box-shadow: 0 14px 32px -12px rgba(17,17,17,.3), inset 0 0 0 1px rgba(17,17,17,.06);
-          font-family: 'Barlow', sans-serif; text-align: start;
+          font-family: var(--ct-barlow), sans-serif; text-align: start;
           animation: dctaToast 4s cubic-bezier(.2,.8,.2,1) infinite both;
         }
         [dir="rtl"] .dcta-toast { padding: 9px 10px 9px 14px; }
@@ -201,14 +199,14 @@ export default function DualCTASection() {
         .dcta-body { position: relative; display: flex; flex-direction: column; gap: 16px; flex: 1; }
         .dcta-kicker {
           display: inline-flex; align-items: flex-start; gap: 8px; margin: 0; line-height: 1.5;
-          font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 800;
+          font-family: var(--ct-barlow), sans-serif; font-size: 11px; font-weight: 800;
           letter-spacing: .14em; text-transform: uppercase;
         }
         .dcta-panel--shop .dcta-kicker { color: var(--red); }
         .dcta-panel--sell .dcta-kicker { color: var(--green-dark); }
         .dcta-kicker__dot { flex-shrink: 0; margin-top: 5px; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 18%, transparent); }
         .dcta-title {
-          margin: 0; font-family: 'Barlow Condensed', sans-serif;
+          margin: 0; font-family: var(--ct-barlow-c), sans-serif;
           font-size: clamp(2.2rem, 3.6vw, 3.3rem); font-weight: 900;
           line-height: 1; letter-spacing: -.02em; color: var(--ink);
         }
@@ -225,7 +223,7 @@ export default function DualCTASection() {
         .is-in .dcta-title em::after { transform: scaleX(1); }
         .dcta-sub {
           margin: 0; max-width: 440px;
-          font-family: 'Barlow', sans-serif; font-size: .92rem; font-weight: 500; line-height: 1.65; color: var(--muted);
+          font-family: var(--ct-barlow), sans-serif; font-size: .92rem; font-weight: 500; line-height: 1.65; color: var(--muted);
         }
 
         /* stats */
@@ -235,13 +233,13 @@ export default function DualCTASection() {
           background: #fff; box-shadow: inset 0 0 0 1px rgba(17,17,17,.07);
         }
         .dcta-stat__num {
-          font-family: 'Barlow Condensed', sans-serif; font-size: 1.9rem; font-weight: 900;
+          font-family: var(--ct-barlow-c), sans-serif; font-size: 1.9rem; font-weight: 900;
           line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums;
           display: flex; align-items: center; height: 30px;
         }
         .dcta-stat__num em { font-style: normal; color: var(--red); }
         .dcta-stat__label {
-          margin-top: 4px; font-family: 'Barlow', sans-serif; font-size: 10.5px; font-weight: 700;
+          margin-top: 4px; font-family: var(--ct-barlow), sans-serif; font-size: 10.5px; font-weight: 700;
           letter-spacing: .07em; text-transform: uppercase; color: #8a8f98;
         }
         .dcta-flag { display: block; border-radius: 3px; box-shadow: 0 0 0 1px rgba(17,17,17,.08); }
@@ -250,7 +248,7 @@ export default function DualCTASection() {
         .dcta-perks { display: flex; flex-direction: column; gap: 10px; margin: 2px 0 6px; padding: 0; list-style: none; }
         .dcta-perk {
           display: flex; align-items: center; gap: 10px;
-          font-family: 'Barlow', sans-serif; font-size: .9rem; font-weight: 600; color: #2f3b33;
+          font-family: var(--ct-barlow), sans-serif; font-size: .9rem; font-weight: 600; color: #2f3b33;
           opacity: 0; transform: translateX(calc(var(--dir) * -14px));
           transition: opacity .5s ease, transform .6s cubic-bezier(.2,.8,.2,1);
           transition-delay: calc(.35s + var(--i) * .15s);
@@ -274,7 +272,7 @@ export default function DualCTASection() {
         .dcta-btn {
           position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
           min-height: 50px; padding: 0 30px; border: 0; border-radius: 999px; cursor: pointer;
-          font-family: 'Barlow', sans-serif; font-size: .8rem; font-weight: 800;
+          font-family: var(--ct-barlow), sans-serif; font-size: .8rem; font-weight: 800;
           letter-spacing: .1em; text-transform: uppercase; color: #fff; text-decoration: none;
           transition: transform .25s ease;
         }
@@ -301,7 +299,7 @@ export default function DualCTASection() {
         .dcta-btn__emoji { font-size: 1rem; line-height: 1; }
         .dcta-trust {
           display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px;
-          font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600; color: #6b7280;
+          font-family: var(--ct-barlow), sans-serif; font-size: 11px; font-weight: 600; color: #6b7280;
         }
         .dcta-trust__dot { width: 3px; height: 3px; border-radius: 50%; background: #9ca3af; }
 
@@ -319,7 +317,7 @@ export default function DualCTASection() {
           display: flex; align-items: center; justify-content: center;
           background: #fff; color: var(--ink);
           box-shadow: 0 10px 24px -8px rgba(17,17,17,.25), inset 0 0 0 1px rgba(17,17,17,.08);
-          font-family: 'Barlow Condensed', sans-serif; font-size: .95rem; font-weight: 900;
+          font-family: var(--ct-barlow-c), sans-serif; font-size: .95rem; font-weight: 900;
           text-transform: uppercase; letter-spacing: .04em;
         }
 

@@ -450,7 +450,7 @@ export default function SellerStorefrontPage() {
 
   if (sellerError || !seller) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, fontFamily: "'Barlow', sans-serif" }}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, fontFamily: "var(--ct-barlow), sans-serif" }}>
         <Store size={40} color="#cbd5e1" />
         <p style={{ fontSize: 15, fontWeight: 700, color: '#64748b' }}>{t('unavailable')}</p>
         <Link href="/" style={{ fontSize: 13, fontWeight: 700, color: RED, textDecoration: 'none' }}>{tc('backHome')}</Link>
@@ -461,7 +461,7 @@ export default function SellerStorefrontPage() {
   const cover = resolveImg(seller.cover_photo)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fff', fontFamily: "'Barlow', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#fff', fontFamily: "var(--ct-barlow), sans-serif" }}>
       <style>{`
         /* ProductFilterSidebar's .pfs-desk is the sticky grid child (see there). Below 920px it
            hides itself and the "Filtres" button opens the drawer instead. */

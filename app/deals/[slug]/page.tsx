@@ -540,7 +540,6 @@ export default function PackDetailPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap');
         @keyframes spin   { to { transform: rotate(360deg) } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:none } }
         .pd-thumb:hover { border-color: #db142e !important; }
@@ -549,7 +548,7 @@ export default function PackDetailPage() {
         @media(max-width:900px) { .pd-grid { grid-template-columns: 1fr !important; } }
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Barlow', sans-serif" }}>
+      <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "var(--ct-barlow), sans-serif" }}>
 
         {/* Breadcrumb */}
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>

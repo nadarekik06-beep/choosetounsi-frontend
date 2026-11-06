@@ -563,7 +563,6 @@ export default function ProductDetailPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap');
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
         .thumb:hover{border-color:#dc2626!important}
@@ -600,7 +599,7 @@ export default function ProductDetailPage() {
         }
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Barlow', sans-serif" }}>
+      <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "var(--ct-barlow), sans-serif" }}>
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
           <nav aria-label={t('breadcrumb')} style={{ maxWidth: 1280, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8', flexWrap: 'wrap' }}>
             <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>{tc('home')}</Link>

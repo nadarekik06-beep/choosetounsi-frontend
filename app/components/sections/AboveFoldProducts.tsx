@@ -150,8 +150,8 @@ export default function AboveFoldProducts() {
         .cpc-section{background:#fff;padding:28px 0 32px}
         .cpc-inner{max-width:1280px;margin:0 auto;padding:0 24px}
         .cpc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-        .cpc-title{font-family:'Barlow',sans-serif;font-size:1.1rem;font-weight:800;color:#111;letter-spacing:-.02em;margin:0}
-        .cpc-view-all{font-family:'Barlow',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#888;text-decoration:none;transition:color .18s}
+        .cpc-title{font-family:var(--ct-barlow),sans-serif;font-size:1.1rem;font-weight:800;color:#111;letter-spacing:-.02em;margin:0}
+        .cpc-view-all{font-family:var(--ct-barlow),sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#888;text-decoration:none;transition:color .18s}
         .cpc-view-all:hover{color:#dc2626}
         .cpc-row{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:none;-ms-overflow-style:none}
         .cpc-row::-webkit-scrollbar{display:none}
@@ -171,7 +171,7 @@ export default function AboveFoldProducts() {
         .cpc-btn:hover{background:#dc2626;color:#fff}
         .cpc-btn--added{background:#10b981!important;color:#fff!important}
         .cpc-info{padding:7px 2px 0}
-        .cpc-name{font-family:'Barlow',sans-serif;font-size:11.5px;font-weight:700;color:#111;margin:0 0 4px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+        .cpc-name{font-family:var(--ct-barlow),sans-serif;font-size:11.5px;font-weight:700;color:#111;margin:0 0 4px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
         .cpc-skel{flex:0 0 auto;width:140px}
         .cpc-skel-img{aspect-ratio:3/4;border-radius:10px;background:linear-gradient(90deg,#efefef 25%,#f8f8f8 50%,#efefef 75%);background-size:600px 100%;animation:cpcShimmer 1.3s infinite linear}
         .cpc-skel-line{height:10px;border-radius:4px;margin-top:8px;background:linear-gradient(90deg,#efefef 25%,#f8f8f8 50%,#efefef 75%);background-size:600px 100%;animation:cpcShimmer 1.3s infinite linear}

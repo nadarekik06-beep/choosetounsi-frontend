@@ -1129,7 +1129,7 @@ export default function CheckoutPage() {
   if (success) {
     const isPending = success.payment_method === 'd17'
     return (
-      <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Barlow', sans-serif" }}>
+      <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "var(--ct-barlow), sans-serif" }}>
         <div style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
           <div style={{ width: 72, height: 72, borderRadius: '50%', background: isPending ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
             {isPending ? <Smartphone size={36} color="#f59e0b" /> : <CheckCircle size={36} color="#10b981" />}
@@ -1182,7 +1182,7 @@ export default function CheckoutPage() {
   }
   if (isBuyNow && (bnError || !bnProduct)) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', fontFamily: "'Barlow', sans-serif" }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', fontFamily: "var(--ct-barlow), sans-serif" }}>
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>{t('productLoadFailed')}</p>
           <Link href="/shop" style={{ color: '#dc2626', fontWeight: 700, fontSize: 14 }}>{t('backToShop')}</Link>
@@ -1203,7 +1203,7 @@ export default function CheckoutPage() {
 
   if (!isBuyNow && items.length === 0) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow', sans-serif", padding: 16 }}>
+      <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "var(--ct-barlow), sans-serif", padding: 16 }}>
         <div style={{ textAlign: 'center', maxWidth: 360 }}>
           <ShoppingBag size={40} color="#e2e8f0" style={{ margin: '0 auto 16px' }} />
           {expired && (
@@ -1243,7 +1243,6 @@ export default function CheckoutPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap');
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
         @keyframes spin{to{transform:rotate(360deg)}}
         .co-input{width:100%;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;color:#0f172a;outline:none;background:#fff;transition:border-color 0.15s}
@@ -1258,7 +1257,7 @@ export default function CheckoutPage() {
         @media(max-width:400px){.co-submit-icon{display:none}}
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: '#f6f7f9', fontFamily: "'Barlow', sans-serif" }}>
+      <div style={{ minHeight: '100vh', background: '#f6f7f9', fontFamily: "var(--ct-barlow), sans-serif" }}>
 
         {/* Breadcrumb */}
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>

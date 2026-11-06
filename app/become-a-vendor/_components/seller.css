@@ -56,7 +56,7 @@
   width: 52px; height: 52px; flex-shrink: 0; border-radius: 16px; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, var(--red-tint), var(--green-tint));
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 1.2rem; color: var(--red);
+  font-family: var(--ct-barlow-c), sans-serif; font-weight: 900; font-size: 1.2rem; color: var(--red);
 }
 .vl-shopcard__avatar img { width: 100%; height: 100%; object-fit: cover; }
 .vl-shopcard__body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -263,7 +263,7 @@
 .vl-planinfo__top { display: flex; align-items: center; gap: 12px; }
 .vl-planinfo__top .vl-plan__icon { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
 .vl-planinfo__name { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.vl-planinfo__name b { font-family: 'Barlow Condensed', sans-serif; font-size: 1.8rem; font-weight: 900; line-height: 1; }
+.vl-planinfo__name b { font-family: var(--ct-barlow-c), sans-serif; font-size: 1.8rem; font-weight: 900; line-height: 1; }
 .vl-planinfo__name span { margin-top: 3px; font-size: .85rem; font-weight: 700; color: #6b7280; }
 .is-dark .vl-planinfo__name span { color: rgba(255,255,255,.6); }
 .vl-status { padding: 5px 11px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
@@ -293,15 +293,15 @@
   box-shadow: 0 30px 60px -36px rgba(0,0,0,.6);
 }
 .vl-further__eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
-.vl-further__title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.9rem; font-weight: 900; line-height: 1.05; }
+.vl-further__title { font-family: var(--ct-barlow-c), sans-serif; font-size: 1.9rem; font-weight: 900; line-height: 1.05; }
 .vl-further__chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .vl-further__chips li { padding: 5px 10px; border-radius: 999px; background: rgba(255,255,255,.08); font-size: .78rem; font-weight: 700; color: rgba(255,255,255,.85); }
-.vl-further__price { margin-top: auto; font-family: 'Barlow Condensed', sans-serif; font-size: 2rem; font-weight: 900; }
-.vl-further__price span { font-family: 'Barlow', sans-serif; font-size: .85rem; font-weight: 600; color: rgba(255,255,255,.6); }
+.vl-further__price { margin-top: auto; font-family: var(--ct-barlow-c), sans-serif; font-size: 2rem; font-weight: 900; }
+.vl-further__price span { font-family: var(--ct-barlow), sans-serif; font-size: .85rem; font-weight: 600; color: rgba(255,255,255,.6); }
 .vl-further__cta {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 20px;
   border: 1.5px solid rgba(255,255,255,.25); border-radius: 999px; background: transparent; color: #fff; cursor: pointer;
-  font-family: 'Barlow', sans-serif; font-size: .8rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
+  font-family: var(--ct-barlow), sans-serif; font-size: .8rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
   transition: transform .25s var(--ease), background .25s ease, border-color .25s ease;
 }
 .vl-further__cta:hover { transform: translateY(-2px); background: rgba(255,255,255,.08); border-color: var(--accent); }
@@ -362,7 +362,7 @@
 .vl-next { display: grid; grid-template-columns: 1fr; gap: 16px; max-width: 1000px; margin: 0 auto; }
 @media (min-width: 768px) { .vl-next { grid-template-columns: repeat(3, 1fr); gap: 20px; } }
 .vl-next__card { justify-content: flex-start; }
-.vl-next__num { position: absolute; top: 14px; inset-inline-end: 20px; font-family: 'Barlow Condensed', sans-serif; font-size: 3rem; font-weight: 900; line-height: 1; color: rgba(17,17,17,.07); }
+.vl-next__num { position: absolute; top: 14px; inset-inline-end: 20px; font-family: var(--ct-barlow-c), sans-serif; font-size: 3rem; font-weight: 900; line-height: 1; color: rgba(17,17,17,.07); }
 
 /* loops pause off-screen; everything settles under reduced motion */
 .vl-stage:not(.is-live) .vl-chip--review svg { animation-play-state: paused; }

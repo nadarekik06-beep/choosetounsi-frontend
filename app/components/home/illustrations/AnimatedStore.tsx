@@ -93,8 +93,8 @@ export default function AnimatedStore({ signLabel, openLabel, className = '' }: 
         @keyframes astGlint { 0%,55% { transform: translateX(-90px); opacity: 0 } 60% { opacity: .9 } 80%,100% { transform: translateX(130px); opacity: 0 } }
         @keyframes astLeaf { 0%,100% { transform: rotate(-4deg) } 50% { transform: rotate(4deg) } }
         @keyframes astTwinkle { 0%,100% { opacity: .15; transform: scale(.5) } 50% { opacity: 1; transform: scale(1) } }
-        .ast-sign-text { font-family: 'Barlow Condensed', var(--font-cairo, system-ui), sans-serif; font-weight: 900; }
-        .ast-open-text { font-family: 'Barlow', var(--font-cairo, system-ui), sans-serif; font-weight: 800; }
+        .ast-sign-text { font-family: var(--ct-barlow-c), var(--font-cairo, system-ui), sans-serif; font-weight: 900; }
+        .ast-open-text { font-family: var(--ct-barlow), var(--font-cairo, system-ui), sans-serif; font-weight: 800; }
       `}</style>
 
       <defs>

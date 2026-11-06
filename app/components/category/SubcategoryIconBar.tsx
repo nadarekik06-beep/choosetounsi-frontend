@@ -63,7 +63,7 @@ export default function SubcategoryIconBar({ categorySlug, gender, activeSub }: 
         .gsb-w{max-width:1520px;margin:0 auto;padding:0 6px;display:flex;align-items:center;position:relative}
         .gsb-list{display:flex;gap:6px;flex:1;overflow-x:auto;scrollbar-width:none;padding:12px 4px 10px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
         .gsb-list::-webkit-scrollbar{display:none}
-        .gsb-it{flex-shrink:0;width:84px;display:flex;flex-direction:column;align-items:center;gap:7px;text-decoration:none;color:#374151;scroll-snap-align:start;font-family:'Outfit',sans-serif}
+        .gsb-it{flex-shrink:0;width:84px;display:flex;flex-direction:column;align-items:center;gap:7px;text-decoration:none;color:#374151;scroll-snap-align:start;font-family:var(--ct-outfit),sans-serif}
         .gsb-img{width:68px;height:68px;border-radius:50%;background:#f6f6f7;border:2px solid #f0f0f0;overflow:hidden;display:flex;align-items:center;justify-content:center;transition:border-color .15s,transform .15s,box-shadow .15s}
         .gsb-img img{width:100%;height:100%;object-fit:cover;display:block}
         .gsb-it:hover .gsb-img{border-color:#fecaca;transform:translateY(-2px)}

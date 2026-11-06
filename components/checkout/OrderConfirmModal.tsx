@@ -116,7 +116,7 @@ export default function OrderConfirmModal({
   return (
     <div className="ocm-overlay" onClick={dismiss} data-ct-modal="">
       <style>{`
-        .ocm-overlay{position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,0.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Barlow',sans-serif;animation:ocmFade .18s ease both}
+        .ocm-overlay{position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,0.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:24px;font-family:var(--ct-barlow),sans-serif;animation:ocmFade .18s ease both}
         .ocm-sheet{width:100%;max-width:580px;max-height:min(92vh,860px);background:#fff;border-radius:20px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.35);animation:ocmIn .22s ease both}
         .ocm-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px;overscroll-behavior:contain}
         .ocm-body>*{flex-shrink:0}

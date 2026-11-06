@@ -132,7 +132,7 @@ export default function NotificationsPage() {
         }
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Barlow', sans-serif" }}>
+      <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "var(--ct-barlow), sans-serif" }}>
         <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
           <nav aria-label={t('breadcrumb')} style={{ maxWidth: 860, margin: '0 auto', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
             <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>{tc('home')}</Link>
