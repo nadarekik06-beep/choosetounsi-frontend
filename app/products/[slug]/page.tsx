@@ -74,7 +74,7 @@ interface Product {
   attribute_data?: Record<string, AttributeData>
   has_variants: boolean
   effective_price?: number
-  /** Crossed-out price when discounted: lowest price of the last 30 days */
+  /** Crossed-out price when discounted: the current price (product or variant) */
   original_price?: number
   discount_amount?: number
   promotion?: ActivePromotion | null
@@ -473,7 +473,7 @@ export default function ProductDetailPage() {
       : (product?.stock ?? 0)
 
   // Same prices as cart/checkout: the promotion applies to the selected variant too,
-  // and the crossed-out price is the lowest price of the last 30 days.
+  // and the crossed-out price is the current price (product or variant).
   const effectivePrice = selectedVariant
     ? (activePromotion && selectedVariant.effective_price != null ? selectedVariant.effective_price : selectedVariant.price)
     : (activePromotion && product?.effective_price != null)

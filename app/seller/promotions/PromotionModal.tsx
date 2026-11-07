@@ -22,9 +22,8 @@ function useDt() {
 interface SellerProduct {
   id: number
   name: string
+  /** Current price, fetched fresh each time the form opens — what a discount is computed from. */
   price: number
-  /** Lowest price of the last 30 days — what a discount is computed from and shows crossed out. */
-  reference_price: number
   primary_image_url: string | null
 }
 
@@ -70,7 +69,7 @@ function toISOFromInput(local: string): string {
 /**
  * What buyers would really pay, per product, from the server (POST
  * /seller/promotions/preview): the exact pricing checkout charges
- * (30-day reference price, millime rounding). AUDIT M-6.
+ * (current price read from the database, millime rounding). AUDIT M-6.
  */
 export interface ServerPrice { original: number; final: number; valid: boolean }
 
@@ -80,6 +79,7 @@ async function fetchServerPrices(ids: number[], discountType: 'percentage' | 'fi
   try {
     const res = await fetch(`${API_BASE}/seller/promotions/preview`, {
       method: 'POST',
+      cache: 'no-store',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({ product_ids: ids.slice(0, 100), discount_type: discountType, discount_value: discountValue }),
     })
@@ -174,8 +174,8 @@ function PromotionCommissionPreview({
   // Build the key that drives re-fetch: selected IDs + discount
   const fetchKey = `${selectedIds.sort().join(',')}::${discountType}::${discountNum}::${JSON.stringify(serverPrices)}`
   // Server price (what buyers pay) when known; the local estimate only while it loads
-  const finalOf    = (p: SellerProduct) => serverPrices[p.id]?.final ?? computeEffectivePrice(Math.min(p.price, p.reference_price ?? p.price), discountType, discountNum)
-  const originalOf = (p: SellerProduct) => serverPrices[p.id]?.original ?? Math.min(p.price, p.reference_price ?? p.price)
+  const finalOf    = (p: SellerProduct) => serverPrices[p.id]?.final ?? computeEffectivePrice(p.price, discountType, discountNum)
+  const originalOf = (p: SellerProduct) => serverPrices[p.id]?.original ?? p.price
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
@@ -415,41 +415,66 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
   const [apiError, setApiError] = useState('')
 
   // ── Load seller products ────────────────────────────────────────────────────
+  // Always fresh from the API (no HTTP cache): a price changed a moment ago in the
+  // product form must be the one this discount is computed from.
+  const searchRef = useRef('')
   const loadProducts = useCallback(async (q = '') => {
+    searchRef.current = q
     setProdLoading(true)
     try {
       const token   = localStorage.getItem('ct_auth_token')
       const res     = await fetch(
-        `${API_BASE}/seller/products?is_approved=true&is_active=true&per_page=100${q ? `&search=${q}` : ''}`,
-        { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
+        `${API_BASE}/seller/products?is_approved=true&is_active=true&per_page=100${q ? `&search=${encodeURIComponent(q)}` : ''}`,
+        { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }, cache: 'no-store' }
       )
       const json = await res.json()
+      if (searchRef.current !== q) return   // a newer search already answered
       setProducts((json.data?.data ?? []).map((p: any) => ({
         id:                p.id,
         name:              p.name,
         price:             parseFloat(p.price),
-        reference_price:   p.reference_price != null ? parseFloat(p.reference_price) : parseFloat(p.price),
         primary_image_url: p.primary_image_url,
       })))
     } catch {
-      setProducts([])
+      if (searchRef.current === q) setProducts([])
     } finally {
-      setProdLoading(false)
+      if (searchRef.current === q) setProdLoading(false)
     }
   }, [])
 
   useEffect(() => { loadProducts() }, [loadProducts])
 
-  // Final prices from the server for the listed products (AUDIT M-6), debounced
+  // Back on this tab (the price may have been edited elsewhere): reload prices
+  const [refreshTick, setRefreshTick] = useState(0)
+  useEffect(() => {
+    const onFocus = () => {
+      if (document.visibilityState !== 'visible') return
+      loadProducts(searchRef.current)
+      setRefreshTick(n => n + 1)
+    }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+    }
+  }, [loadProducts])
+
+  // Final prices from the server for the listed products (AUDIT M-6), debounced;
+  // only the latest request may set them (an older, slower answer is dropped)
   const productIdsKey = products.map(p => p.id).join(',')
+  const previewSeq    = useRef(0)
   useEffect(() => {
     const value = parseFloat(discountValue) || 0
+    const seq   = ++previewSeq.current
     if (!productIdsKey || value <= 0) { setServerPrices({}); return }
     const timer = setTimeout(() => {
-      fetchServerPrices(productIdsKey.split(',').map(Number), discountType, value).then(setServerPrices)
+      fetchServerPrices(productIdsKey.split(',').map(Number), discountType, value).then(prices => {
+        if (seq === previewSeq.current) setServerPrices(prices)
+      })
     }, 350)
     return () => clearTimeout(timer)
-  }, [productIdsKey, discountType, discountValue])
+  }, [productIdsKey, discountType, discountValue, refreshTick])
 
   // Name the prefilled discount after its product
   const prefillProduct = prefill ? products.find(p => p.id === prefill.productId) : undefined
@@ -626,7 +651,7 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
           )}
           {prefill && prefillProduct && prefill.target != null && (
             <div style={{ background: 'rgba(25,143,65,0.07)', border: '1px solid rgba(25,143,65,0.3)', borderRadius: 12, padding: '10px 14px', fontSize: 12, color: '#166534' }}>
-              {t('prefill', { price: dt(prefill.target), was: dt(Math.min(prefillProduct.price, prefillProduct.reference_price)) })}
+              {t('prefill', { price: dt(prefill.target), was: dt(serverPrices[prefillProduct.id]?.original ?? prefillProduct.price) })}
             </div>
           )}
 
@@ -881,8 +906,8 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
                 ) : products.map(p => {
                   const checked       = selectedProductIds.includes(p.id)
                   const discNum       = parseFloat(discountValue) || 0
-                  // Discounts start from the lowest price of the last 30 days
-                  const basis          = Math.min(p.price, p.reference_price)
+                  // Discounts start from the current price (the server's, when known)
+                  const basis          = serverPrices[p.id]?.original ?? p.price
                   const effectivePrice = discNum > 0
                     ? (serverPrices[p.id]?.final ?? computeEffectivePrice(basis, discountType, discNum))
                     : null

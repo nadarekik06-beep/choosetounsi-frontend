@@ -15,17 +15,20 @@ import BrandLoader from '@/components/brand/BrandLoader'
 export interface PriceDrop {
   id?: number              // variant id; absent for the base price
   label?: string
-  current_price: number
+  current_price: number    // today's price = crossed-out price and what the discount is computed from
   requested_price: number
-  reference_price: number  // lowest price of the last 30 days = crossed-out price
+  reference_price: number  // lowest price of the last 30 days (only decides whether a discount is needed)
 }
 
-/** Discount that makes customers pay the requested price(s). */
+/**
+ * Discount that makes customers pay the requested price(s). Promotions are
+ * computed from the CURRENT price (server rule), so the cut is current − requested.
+ */
 export function discountFor(drops: PriceDrop[]): { type: 'fixed' | 'percentage'; value: number } {
   const base = drops.find(d => d.id === undefined)
-  if (base) return { type: 'fixed', value: round3(base.reference_price - base.requested_price) }
+  if (base) return { type: 'fixed', value: round3(base.current_price - base.requested_price) }
   // Variant-only drops: one product-wide percentage (the largest requested cut)
-  const pct = Math.max(...drops.map(d => ((d.reference_price - d.requested_price) / d.reference_price) * 100))
+  const pct = Math.max(...drops.map(d => ((d.current_price - d.requested_price) / d.current_price) * 100))
   return { type: 'percentage', value: Math.min(70, Math.max(1, Math.round(pct))) }
 }
 
@@ -33,13 +36,14 @@ const round3 = (n: number) => Math.round(n * 1000) / 1000
 
 interface Props {
   drops: PriceDrop[]
-  windowDays: number
+  /** Kept for callers; the crossed-out price is now always the current price */
+  windowDays?: number
   busy: boolean
   onCreateDiscount: () => void
   onCancel: () => void
 }
 
-export default function PriceDecreaseDialog({ drops, windowDays, busy, onCreateDiscount, onCancel }: Props) {
+export default function PriceDecreaseDialog({ drops, busy, onCreateDiscount, onCancel }: Props) {
   const t = useTranslations('seller.productForm.priceDialog')
   const { price } = useFormat()
   const fmt = (n: number) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
@@ -65,20 +69,15 @@ export default function PriceDecreaseDialog({ drops, windowDays, busy, onCreateD
 
         <div style={{ padding: '14px 20px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {drops.map((d, i) => {
-            const pct = Math.round(((d.reference_price - d.requested_price) / d.reference_price) * 100)
+            const pct = Math.round(((d.current_price - d.requested_price) / d.current_price) * 100)
             return (
               <div key={d.id ?? `base-${i}`} style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '10px 12px', background: '#f8fafc' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', margin: '0 0 6px' }}>{d.label ?? t('basePrice')}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 13, color: '#5b6472', textDecoration: 'line-through' }}>{fmt(d.reference_price)}</span>
+                  <span style={{ fontSize: 13, color: '#5b6472', textDecoration: 'line-through' }}>{fmt(d.current_price)}</span>
                   <span style={{ fontSize: 16, fontWeight: 900, color: '#db142e' }}>{fmt(d.requested_price)}</span>
                   <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', background: '#db142e', borderRadius: 6, padding: '2px 6px' }}>-{pct}%</span>
                 </div>
-                {d.reference_price < d.current_price && (
-                  <p style={{ fontSize: 11, color: '#b45309', margin: '6px 0 0' }}>
-                    {t('referenceNote', { days: windowDays, price: fmt(d.reference_price) })}
-                  </p>
-                )}
               </div>
             )
           })}
