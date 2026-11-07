@@ -827,11 +827,12 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
               borderRadius: 12, padding: '14px 16px',
             }}>
               <DrawerSection icon={<IconUser size={13} />} label={t('customer')} dark={dark}>
-                <p style={{ fontSize: 14, fontWeight: 700, color: T.textMain, margin: '2px 0 1px' }}>
-                  {complaint.user?.name ?? '—'}
+                <p style={{ fontSize: 14, fontWeight: 700, color: T.textMain, margin: '2px 0 1px', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  {complaint.user?.name ?? complaint.buyer?.name ?? '—'}
+                  {complaint.buyer?.is_guest && <GuestTag label={t('guestBadge')} />}
                 </p>
-                <p style={{ fontSize: 11.5, color: T.textMuted, margin: 0 }}>
-                  {complaint.user?.email ?? '—'}
+                <p style={{ fontSize: 11.5, color: T.textMuted, margin: 0 }} dir="ltr">
+                  {complaint.buyer?.is_guest ? (complaint.buyer.phone ?? '—') : (complaint.user?.email ?? '—')}
                 </p>
               </DrawerSection>
             </div>
@@ -1071,6 +1072,15 @@ function OpenComplaintFromQuery({ onOpen }: { onOpen: (id: number) => void }) {
   return null
 }
 
+/** Return asked without an account (guest checkout). */
+function GuestTag({ label }: { label: string }) {
+  return (
+    <span style={{ fontSize: 9.5, fontWeight: 800, padding: '1px 7px', borderRadius: 999, color: '#b45309', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+      {label}
+    </span>
+  )
+}
+
 export default function SellerComplaintsPage() {
   const { dark } = useTheme()
   const t = useTranslations('seller.complaints')
@@ -1295,8 +1305,9 @@ export default function SellerComplaintsPage() {
                         </div>
                         <div>
                           <p style={{ fontSize: 11, color: T.textMuted, margin: '0 0 1px', fontWeight: 600 }}>{t('customer')}</p>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: T.textSub, margin: 0 }}>
-                            {c.user?.name ?? '—'}
+                          <p style={{ fontSize: 13, fontWeight: 600, color: T.textSub, margin: 0, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            {c.user?.name ?? c.buyer?.name ?? '—'}
+                            {c.buyer?.is_guest && <GuestTag label={t('guestBadge')} />}
                           </p>
                         </div>
                       </div>

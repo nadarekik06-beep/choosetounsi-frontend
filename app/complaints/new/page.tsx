@@ -35,7 +35,8 @@ export default function NewComplaintPage() {
 
   useEffect(() => {
     if (!isAuthenticated()) {
-      router.replace('/auth/login?redirect=/complaints/new')
+      // No account: returns are asked from the order itself (number + phone), never a login wall
+      router.replace('/track-order')
     }
   }, [router])
 

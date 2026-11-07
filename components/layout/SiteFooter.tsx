@@ -40,6 +40,7 @@ export default function SiteFooter() {
         <nav className="sf-col" aria-label={t('help')}>
           <p className="sf-h">{t('help')}</p>
           <Link href="/orders">{t('myOrders')}</Link>
+          <Link href="/track-order">{t('trackOrder')}</Link>
           <Link href="/complaints">{t('complaints')}</Link>
           <button type="button" onClick={openSupport}>{t('contact')}</button>
         </nav>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { complaintApi } from '@/lib/complaintApi'
+import { complaintApi, type BuyerComplaintClient } from '@/lib/complaintApi'
 import type { BuyerComplaint, TimelineStep } from '@/types/complaint'
 import { statusConfig } from '@/types/complaint'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -37,7 +37,7 @@ export function ReturnStatusBadge({ status, resolution }: { status: string; reso
  * client's actions — escalate a shop refusal, or withdraw a request not
  * answered yet.
  */
-export default function ReturnTracking({ complaint, onChanged }: { complaint: BuyerComplaint; onChanged?: (c: BuyerComplaint) => void }) {
+export default function ReturnTracking({ complaint, onChanged, api = complaintApi }: { complaint: BuyerComplaint; onChanged?: (c: BuyerComplaint) => void; api?: BuyerComplaintClient }) {
   const t   = useTranslations('returns')
   const fmt = useFormat()
   const [busy, setBusy]       = useState<null | 'escalate' | 'cancel'>(null)
@@ -65,9 +65,9 @@ export default function ReturnTracking({ complaint, onChanged }: { complaint: Bu
     setBusy(kind); setError(null)
     try {
       const res = kind === 'escalate'
-        ? await complaintApi.escalate(complaint.id, note.trim() || undefined)
-        : await complaintApi.cancel(complaint.id)
-      const fresh = await complaintApi.getOne(complaint.id).then(r => r.data).catch(() => res.data)
+        ? await api.escalate(complaint.id, note.trim() || undefined)
+        : await api.cancel(complaint.id)
+      const fresh = await api.getOne(complaint.id).then(r => r.data).catch(() => res.data)
       onChanged?.(fresh)
       setAskNote(false)
     } catch (e) {

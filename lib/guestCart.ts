@@ -96,18 +96,50 @@ export function guestCheckoutEnabled(): Promise<boolean> {
   return enabledPromise
 }
 
-// ── Tracking links of guest orders placed in this browser ────────────────────
+// ── Guest orders placed / opened on this device ──────────────────────────────
+// Each entry holds the order's device token (the key to its tracking page and
+// returns — the server only keeps its hash). "My orders" shows them without
+// typing anything. Never required: everything also works with number + phone.
 
-const LAST_ORDER_KEY = 'ct_last_guest_order'
+const LAST_ORDER_KEY   = 'ct_last_guest_order'   // older builds: the last order only
+const DEVICE_ORDERS_KEY = 'ct_guest_orders'
+const MAX_DEVICE_ORDERS = 30
 
-/** Remembered so "Create your account" can attach it, and for a quick "track my order" link. */
+export interface DeviceGuestOrder { token: string; number: string; at: number }
+
+/** Guest orders saved on this device, newest first. */
+export function deviceGuestOrders(): DeviceGuestOrder[] {
+  try {
+    const raw  = storage()?.getItem(DEVICE_ORDERS_KEY)
+    const list = raw ? (JSON.parse(raw) as DeviceGuestOrder[]) : []
+    const last = storage()?.getItem(LAST_ORDER_KEY)
+    if (last) {
+      const l = JSON.parse(last) as DeviceGuestOrder
+      if (l?.token && !list.some(o => o.token === l.token || o.number === l.number)) list.push({ ...l, at: l.at ?? 0 })
+    }
+    return list.filter(o => o && typeof o.token === 'string' && typeof o.number === 'string').sort((a, b) => b.at - a.at)
+  } catch { return [] }
+}
+
+/** Save (or refresh) a guest order on this device. One entry per order number. */
 export function rememberGuestOrder(trackingToken: string, orderNumber: string): void {
-  try { storage()?.setItem(LAST_ORDER_KEY, JSON.stringify({ token: trackingToken, number: orderNumber, at: Date.now() })) } catch { /* ignore */ }
+  try {
+    const list = deviceGuestOrders().filter(o => o.number !== orderNumber && o.token !== trackingToken)
+    list.unshift({ token: trackingToken, number: orderNumber, at: Date.now() })
+    storage()?.setItem(DEVICE_ORDERS_KEY, JSON.stringify(list.slice(0, MAX_DEVICE_ORDERS)))
+    storage()?.setItem(LAST_ORDER_KEY, JSON.stringify({ token: trackingToken, number: orderNumber, at: Date.now() }))
+  } catch { /* ignore */ }
+}
+
+/** Forget an order on this device (its link stopped working). */
+export function forgetGuestOrder(trackingToken: string): void {
+  try {
+    storage()?.setItem(DEVICE_ORDERS_KEY, JSON.stringify(deviceGuestOrders().filter(o => o.token !== trackingToken)))
+    const last = storage()?.getItem(LAST_ORDER_KEY)
+    if (last && (JSON.parse(last) as DeviceGuestOrder)?.token === trackingToken) storage()?.removeItem(LAST_ORDER_KEY)
+  } catch { /* ignore */ }
 }
 
 export function lastGuestOrder(): { token: string; number: string } | null {
-  try {
-    const raw = storage()?.getItem(LAST_ORDER_KEY)
-    return raw ? JSON.parse(raw) : null
-  } catch { return null }
+  return deviceGuestOrders()[0] ?? null
 }

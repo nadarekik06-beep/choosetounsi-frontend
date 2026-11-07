@@ -310,7 +310,8 @@
     "legal": "Informations",
     "contactPage": "Contact",
     "privacy": "Confidentialité",
-    "terms": "Conditions d’utilisation"
+    "terms": "Conditions d’utilisation",
+    "trackOrder": "Suivre ma commande"
   },
   "home": {
     "quickActions": {
@@ -4034,7 +4035,8 @@
       "exchangeFeeSeller": "Les frais d’échange ({fee}) sont à votre charge : article non conforme ou défectueux.",
       "exchangeFeeClient": "Le client paie les frais d’échange au livreur.",
       "exchangeNoCommission": "Même vente, autre variante : pas de nouvelle commission ni de nouveau versement.",
-      "oldItemOverdue": "Ancien article non confirmé après 7 jours : vérifiez et confirmez-le."
+      "oldItemOverdue": "Ancien article non confirmé après 7 jours : vérifiez et confirmez-le.",
+      "guestBadge": "Invité"
     },
     "reviews": {
       "title": "Avis et réputation",
@@ -6600,6 +6602,48 @@
       "failed": "Une erreur est survenue. Réessayez.",
       "accountHint": "Vous avez un compte ?",
       "myOrders": "Mes commandes"
+    },
+    "hub": {
+      "title": "Suivre ma commande",
+      "subtitle": "Pas besoin de compte : votre numéro de téléphone suffit.",
+      "deviceTitle": "Vos commandes sur ce téléphone",
+      "items": "{count, plural, one {# article} other {# articles}}",
+      "open": "Voir",
+      "forget": "Retirer de ce téléphone",
+      "lookupTitle": "Retrouver une commande",
+      "lookupBody": "Saisissez le numéro de commande (sur votre confirmation) et le numéro de téléphone utilisé pour la commande.",
+      "modeOne": "Une commande",
+      "modeAll": "Toutes mes commandes",
+      "allBody": "Pour voir toutes les commandes passées avec votre numéro, saisissez le numéro de l’une d’elles : cela prouve que le téléphone est le vôtre.",
+      "submitAll": "Afficher toutes mes commandes",
+      "foundAll": "{count, plural, one {# commande trouvée et enregistrée sur ce téléphone.} other {# commandes trouvées et enregistrées sur ce téléphone.}}",
+      "orderHint": "ex. ORD-AB12CD34",
+      "accountTitle": "Tout retrouver au même endroit",
+      "accountBody": "Facultatif : créez un compte pour retrouver vos commandes et retours sur tous vos appareils. Vous pouvez continuer à commander avec votre seul téléphone.",
+      "accountCta": "Créer un compte",
+      "haveAccount": "Vous avez déjà un compte ?",
+      "login": "Se connecter",
+      "loadingOrders": "Chargement de vos commandes…",
+      "linkTitle": "{count, plural, one {# commande passée sans compte sur ce téléphone} other {# commandes passées sans compte sur ce téléphone}}",
+      "linkBody": "Elles ont été passées avec votre numéro de téléphone. Ajoutez-les à votre compte pour les retrouver ici, avec leurs retours.",
+      "linkButton": "Ajouter à mon compte",
+      "linkDone": "{count, plural, one {# commande ajoutée à votre compte.} other {# commandes ajoutées à votre compte.}}",
+      "linkLater": "Plus tard"
+    },
+    "view": {
+      "address": "Adresse de livraison",
+      "trackingRef": "N° de suivi Intigo",
+      "courierHistory": "Historique de livraison",
+      "returnsTitle": "Retours et échanges",
+      "requestReturn": "Demander un retour ou un échange",
+      "requestReturnBody": "Les mêmes options qu’avec un compte : retour ou échange, photo justificative, frais affichés avant de confirmer.",
+      "windowLeft": "{days, plural, one {Encore # jour pour faire la demande} other {Encore # jours pour faire la demande}}",
+      "notReturnable": "Le délai de retour de cette commande est passé, ou tout est déjà dans une demande.",
+      "submitted": "Demande envoyée. La boutique répond d’abord, puis notre équipe. Suivez-la ici.",
+      "help": "Besoin d’aide ? Écrivez-nous sur WhatsApp",
+      "allOrders": "Toutes mes commandes sur ce téléphone",
+      "loadingReturns": "Chargement…",
+      "close": "Fermer"
     }
   },
   "complaintRequest": {

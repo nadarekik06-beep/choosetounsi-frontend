@@ -1,23 +1,30 @@
 'use client'
 
 // Public tracking of a guest order (no account): /order/track/{token}
-// Shows the order and each shop's parcel status — nothing more personal than
-// a first name, the city and a masked phone.
+// Shows the order, each shop's parcel and its courier history, and the
+// returns / exchanges (same form as accounts) — nothing more personal than a
+// first name, a masked address and a masked phone. Opening it saves the order
+// on this phone ("My orders" lists it without typing anything).
 
 import Link from 'next/link'
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { Package, Truck, CheckCircle, XCircle, Clock, MessageCircle, MapPin, Phone, UserPlus } from 'lucide-react'
+import { Package, Truck, CheckCircle, XCircle, Clock, MapPin, Phone, UserPlus, Smartphone } from 'lucide-react'
 import BrandLoader from '@/components/brand/BrandLoader'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { API_BASE } from '@/lib/constants'
 import { getToken, subscribeAuth } from '@/lib/auth'
-import { isSignedInSnapshot, notSignedInOnServer } from '@/lib/guestCart'
+import { isSignedInSnapshot, notSignedInOnServer, rememberGuestOrder } from '@/lib/guestCart'
+import GuestReturns from '@/components/guest/GuestReturns'
 import { currentLocale } from '@/lib/i18n/clientLocale'
 
 interface TrackItem { name: string; variant: string | null; quantity: number; total: number; image: string | null }
-interface TrackParcel { id: number; shop: string | null; status: string; step: string; delivery_status: string | null; items: TrackItem[] }
+interface TrackEvent { code: number; label: string; at: string | null }
+interface TrackParcel {
+  id: number; shop: string | null; status: string; step: string; delivery_status: string | null; items: TrackItem[]
+  tracking_ref?: string | null; timeline?: TrackEvent[]
+}
 export interface TrackedOrder {
   order_number: string
   placed_at: string | null
@@ -31,9 +38,11 @@ export interface TrackedOrder {
   recipient: string | null
   phone_masked: string | null
   city: string | null
+  address_masked?: string | null
   parcels: TrackParcel[]
   claimed: boolean
   can_request_return: boolean
+  returns_count?: number
   whatsapp: string | null
 }
 
@@ -58,7 +67,7 @@ export default function TrackOrderPage() {
     setLoading(true)
     fetch(`${API_BASE}/orders/track/${encodeURIComponent(token)}`, { headers: { Accept: 'application/json', 'Accept-Language': currentLocale() } })
       .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then(json => { setOrder(json.data); setMissing(false) })
+      .then(json => { setOrder(json.data); setMissing(false); rememberGuestOrder(token, json.data.order_number) })
       .catch(() => setMissing(true))
       .finally(() => setLoading(false))
   }, [token])
@@ -87,13 +96,12 @@ export default function TrackOrderPage() {
           <Package size={40} color="#cbd5e1" style={{ margin: '0 auto 12px' }} />
           <p style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>{t('notFoundTitle')}</p>
           <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 16px' }}>{t('notFoundBody')}</p>
-          <Link href="/order/track" style={{ color: '#dc2626', fontWeight: 800, fontSize: 14 }}>{t('findByNumber')}</Link>
+          <Link href="/track-order" style={{ color: '#dc2626', fontWeight: 800, fontSize: 14 }}>{t('findByNumber')}</Link>
         </div>
       </div>
     )
   }
 
-  const waText = encodeURIComponent(t('returnMessage', { number: order.order_number }))
   const card: React.CSSProperties = { background: '#fff', border: '1px solid #f1f5f9', borderRadius: 16, padding: 16 }
 
   return (
@@ -109,6 +117,11 @@ export default function TrackOrderPage() {
           {order.recipient && <span style={{ fontWeight: 700, color: '#0f172a' }}>{order.recipient}</span>}
           {order.city && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={13} /> {order.city}</span>}
           {order.phone_masked && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Phone size={13} /> <bdi dir="ltr">{order.phone_masked}</bdi></span>}
+          {order.address_masked && (
+            <span style={{ flexBasis: '100%', display: 'inline-flex', alignItems: 'flex-start', gap: 4 }}>
+              <span style={{ fontWeight: 700, color: '#64748b' }}>{t('view.address')}:</span> <span dir="auto">{order.address_masked}</span>
+            </span>
+          )}
         </div>
 
         {order.parcels.map(p => {
@@ -145,9 +158,28 @@ export default function TrackOrderPage() {
                 </p>
               )}
               {p.delivery_status && !stopped && (
-                <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#475569', margin: '0 0 10px' }}>
+                <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#475569', margin: '0 0 6px' }}>
                   <Truck size={14} /> {t('courier')}: <span dir="auto" style={{ fontWeight: 700 }}>{p.delivery_status}</span>
                 </p>
+              )}
+              {p.tracking_ref && (
+                <p style={{ fontSize: 12, color: '#475569', margin: '0 0 6px' }}>
+                  {t('view.trackingRef')}: <bdi dir="ltr" style={{ fontWeight: 800, color: '#0f172a' }}>{p.tracking_ref}</bdi>
+                </p>
+              )}
+              {(p.timeline?.length ?? 0) > 0 && (
+                <details style={{ margin: '0 0 10px' }}>
+                  <summary style={{ fontSize: 12, fontWeight: 700, color: '#1d4ed8', cursor: 'pointer' }}>{t('view.courierHistory')}</summary>
+                  <ol style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {p.timeline!.map((e, i) => (
+                      <li key={`${e.code}-${i}`} style={{ display: 'flex', gap: 8, fontSize: 12, color: '#334155' }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', marginTop: 5, flexShrink: 0, background: i === p.timeline!.length - 1 ? '#dc2626' : '#cbd5e1' }} />
+                        <span style={{ flex: 1, minWidth: 0 }} dir="auto">{e.label}</span>
+                        {e.at && <span style={{ color: '#94a3b8', flexShrink: 0 }}>{date(e.at, { dateStyle: 'short', timeStyle: 'short' })}</span>}
+                      </li>
+                    ))}
+                  </ol>
+                </details>
               )}
 
               {p.items.map((it, i) => (
@@ -180,17 +212,14 @@ export default function TrackOrderPage() {
           )}
         </div>
 
-        {/* Returns (guest, v1): WhatsApp with the order number, once something was delivered */}
-        {order.can_request_return && order.whatsapp && (
-          <a href={`https://wa.me/${order.whatsapp}?text=${waText}`} target="_blank" rel="noopener noreferrer"
-            style={{ ...card, display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', border: '1px solid rgba(37,211,102,0.35)', background: 'rgba(37,211,102,0.06)' }}>
-            <MessageCircle size={22} color="#128C7E" style={{ flexShrink: 0 }} />
-            <span style={{ minWidth: 0 }}>
-              <span style={{ display: 'block', fontSize: 14, fontWeight: 800, color: '#0f172a' }}>{t('returnTitle')}</span>
-              <span style={{ display: 'block', fontSize: 12, color: '#475569', marginTop: 2 }}>{t('returnBody')}</span>
-            </span>
-          </a>
-        )}
+        {/* Returns & exchanges: same form and tracking as accounts (guest API) */}
+        <GuestReturns
+          token={token}
+          orderNumber={order.order_number}
+          canRequest={order.can_request_return && !order.is_cancelled}
+          returnsCount={order.returns_count ?? 0}
+          whatsapp={order.whatsapp}
+        />
 
         {/* Signed in with the account this order was placed for: add it on request */}
         {signedIn && !order.claimed && (
@@ -212,6 +241,9 @@ export default function TrackOrderPage() {
           <Link href="/orders" style={{ textAlign: 'center', fontSize: 13.5, color: '#dc2626', fontWeight: 800 }}>{t('seeInOrders')}</Link>
         )}
 
+        <Link href="/track-order" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13.5, color: '#0f172a', fontWeight: 800, textDecoration: 'none', padding: 8 }}>
+          <Smartphone size={15} /> {t('view.allOrders')}
+        </Link>
         <Link href="/shop" style={{ textAlign: 'center', fontSize: 13.5, color: '#64748b', fontWeight: 700, textDecoration: 'none', padding: 8 }}>{t('continueShopping')}</Link>
       </div>
     </div>

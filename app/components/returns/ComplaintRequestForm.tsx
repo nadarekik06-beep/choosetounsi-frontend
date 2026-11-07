@@ -15,7 +15,7 @@
 
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { complaintApi } from '@/lib/complaintApi'
+import { complaintApi, type BuyerComplaintClient } from '@/lib/complaintApi'
 import type {
   AfterSaleFees, BuyerComplaint, ComplaintType, EligibleOrder, EligibleOrderItem, ParcelSize, ResolutionType,
 } from '@/types/complaint'
@@ -54,10 +54,12 @@ export interface ComplaintRequestFormProps {
   layout?:           'page' | 'drawer'
   onSubmitted:       (created: BuyerComplaint) => void
   onCancel?:         () => void
+  /** Whose returns: the signed-in account (default) or a guest's order (guestComplaintApi) */
+  api?:              BuyerComplaintClient
 }
 
 export default function ComplaintRequestForm({
-  order, fees, sellerFaultTypes = SELLER_FAULT_TYPES, layout = 'page', onSubmitted, onCancel,
+  order, fees, sellerFaultTypes = SELLER_FAULT_TYPES, layout = 'page', onSubmitted, onCancel, api = complaintApi,
 }: ComplaintRequestFormProps) {
   const t = useTranslations('complaintRequest')
   const drawer = layout === 'drawer'
@@ -129,7 +131,7 @@ export default function ComplaintRequestForm({
     }
     setSubmitting(true)
     try {
-      const res = await complaintApi.submit({
+      const res = await api.submit({
         order_id:        order.id,
         complaint_type:  type as ComplaintType,
         resolution_type: resolution,

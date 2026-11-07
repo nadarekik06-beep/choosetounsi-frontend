@@ -195,6 +195,14 @@ export interface ReturnEvent {
   reference?: string | null
 }
 
+/** Who asked (staff views): the account, or a guest's name + phone from the order. */
+export interface ComplaintBuyer {
+  is_guest: boolean
+  name:     string | null
+  phone:    string | null
+  email:    string | null
+}
+
 export interface Complaint {
   id:                  number
   reference:           string | null
@@ -234,6 +242,8 @@ export interface Complaint {
   updated_at:          string
   order?:              ComplaintOrder
   user?:               ComplaintUser
+  /** Staff views: the account, or a guest's name + phone ("Guest" badge) */
+  buyer?:              ComplaintBuyer
   seller?:             ComplaintUser
   complained_items?:   ComplaintOrderItem[]
   timeline?:           TimelineStep[]

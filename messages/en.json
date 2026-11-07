@@ -310,7 +310,8 @@
     "legal": "Information",
     "contactPage": "Contact",
     "privacy": "Privacy",
-    "terms": "Terms of use"
+    "terms": "Terms of use",
+    "trackOrder": "Track my order"
   },
   "home": {
     "quickActions": {
@@ -4034,7 +4035,8 @@
       "exchangeFeeSeller": "The exchange fee ({fee}) is charged to you: wrong or defective item.",
       "exchangeFeeClient": "The client pays the exchange fee to the courier.",
       "exchangeNoCommission": "Same sale, another variant: no new commission and no new payout.",
-      "oldItemOverdue": "Old item not confirmed after 7 days: please check and confirm it."
+      "oldItemOverdue": "Old item not confirmed after 7 days: please check and confirm it.",
+      "guestBadge": "Guest"
     },
     "reviews": {
       "title": "Reviews & Reputation",
@@ -6600,6 +6602,48 @@
       "failed": "Something went wrong. Please try again.",
       "accountHint": "You have an account?",
       "myOrders": "My orders"
+    },
+    "hub": {
+      "title": "Track my order",
+      "subtitle": "No account needed: your phone number is enough.",
+      "deviceTitle": "Your orders on this phone",
+      "items": "{count, plural, one {# item} other {# items}}",
+      "open": "View",
+      "forget": "Remove from this phone",
+      "lookupTitle": "Find an order",
+      "lookupBody": "Enter the order number (on your confirmation) and the phone number used for the order.",
+      "modeOne": "One order",
+      "modeAll": "All my orders",
+      "allBody": "To see every order placed with your phone number, enter the number of one of them: it proves the phone is yours.",
+      "submitAll": "Show all my orders",
+      "foundAll": "{count, plural, one {# order found and saved on this phone.} other {# orders found and saved on this phone.}}",
+      "orderHint": "e.g. ORD-AB12CD34",
+      "accountTitle": "Keep everything in one place",
+      "accountBody": "Optional: create an account to find your orders and returns on any device. You can keep ordering with just your phone.",
+      "accountCta": "Create an account",
+      "haveAccount": "Already have an account?",
+      "login": "Log in",
+      "loadingOrders": "Loading your orders…",
+      "linkTitle": "{count, plural, one {# order placed without an account on this phone} other {# orders placed without an account on this phone}}",
+      "linkBody": "They were placed with your phone number. Add them to your account to see them here, with their returns.",
+      "linkButton": "Add to my account",
+      "linkDone": "{count, plural, one {# order added to your account.} other {# orders added to your account.}}",
+      "linkLater": "Not now"
+    },
+    "view": {
+      "address": "Delivery address",
+      "trackingRef": "Intigo tracking no.",
+      "courierHistory": "Delivery history",
+      "returnsTitle": "Returns & exchanges",
+      "requestReturn": "Request a return or exchange",
+      "requestReturnBody": "Same options as with an account: return or exchange, photo proof, fees shown before you confirm.",
+      "windowLeft": "{days, plural, one {# day left to ask} other {# days left to ask}}",
+      "notReturnable": "The return period for this order has ended, or everything is already in a request.",
+      "submitted": "Request sent. The shop answers first, then our team. Follow it here.",
+      "help": "Need help? Write to us on WhatsApp",
+      "allOrders": "All my orders on this phone",
+      "loadingReturns": "Loading…",
+      "close": "Close"
     }
   },
   "complaintRequest": {

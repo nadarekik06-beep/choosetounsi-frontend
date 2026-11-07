@@ -2,7 +2,7 @@
  * Returns API — client, seller (owner) and the storefront's legacy admin calls.
  */
 
-import { fallbackError } from '@/lib/i18n/clientLocale'
+import { currentLocale, fallbackError } from '@/lib/i18n/clientLocale'
 import type { AfterSaleFees, BuyerComplaint, Complaint, ComplaintFormPayload, ComplaintType, EligibleOrder } from '@/types/complaint'
 import { API_BASE } from '@/lib/constants'
 
@@ -17,10 +17,12 @@ function authHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-async function jsonRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
+type Headers = () => Record<string, string>
+
+async function jsonRequest<T>(method: string, path: string, body?: unknown, headers: Headers = authHeaders): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method,
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...authHeaders() },
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...headers() },
     body: body != null ? JSON.stringify(body) : undefined,
   })
   const json = await res.json()
@@ -32,10 +34,10 @@ async function jsonRequest<T>(method: string, path: string, body?: unknown): Pro
   return json
 }
 
-async function formRequest<T>(path: string, data: FormData): Promise<T> {
+async function formRequest<T>(path: string, data: FormData, headers: Headers = authHeaders): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
-    headers: { Accept: 'application/json', ...authHeaders() },
+    headers: { Accept: 'application/json', ...headers() },
     body: data,
   })
   const json = await res.json()
@@ -49,58 +51,75 @@ async function formRequest<T>(path: string, data: FormData): Promise<T> {
 
 // ─── Client API ───────────────────────────────────────────────────────────────
 
-export const complaintApi = {
-  getEligibleOrders: () =>
-    jsonRequest<{
-      success: boolean; window_hours: number; window_days: number; return_shipping_fee: number; data: EligibleOrder[]
-      /** Per parcel size; one fee per shop parcel, at its largest size */
-      after_sale_fees?: AfterSaleFees
-      seller_fault_types?: ComplaintType[]
-    }>(
-      'GET', '/client/complaints/eligible-orders'
-    ),
+/**
+ * The buyer's returns API. `base` + `headers` say whose: the signed-in account
+ * (/client, bearer token) or a guest's one order (/guest, X-Order-Token) — same
+ * endpoints, same payloads, so the form and the tracking are shared.
+ */
+function buyerComplaintClient(base: '/client' | '/guest', headers: Headers) {
+  return {
+    getEligibleOrders: () =>
+      jsonRequest<{
+        success: boolean; window_hours: number; window_days: number; return_shipping_fee: number; data: EligibleOrder[]
+        /** Per parcel size; one fee per shop parcel, at its largest size */
+        after_sale_fees?: AfterSaleFees
+        seller_fault_types?: ComplaintType[]
+      }>(
+        'GET', `${base}/complaints/eligible-orders`, undefined, headers
+      ),
 
-  getAll: (params: Record<string, any> = {}) => {
-    const qs = new URLSearchParams(
-      Object.entries(params).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)])
-    ).toString()
-    return jsonRequest<{ success: boolean; data: any }>('GET', `/client/complaints${qs ? `?${qs}` : ''}`)
-  },
+    getAll: (params: Record<string, any> = {}) => {
+      const qs = new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)])
+      ).toString()
+      return jsonRequest<{ success: boolean; data: any }>('GET', `${base}/complaints${qs ? `?${qs}` : ''}`, undefined, headers)
+    },
 
-  getOne: (id: number) =>
-    jsonRequest<{ success: boolean; data: BuyerComplaint }>('GET', `/client/complaints/${id}`),
+    getOne: (id: number) =>
+      jsonRequest<{ success: boolean; data: BuyerComplaint }>('GET', `${base}/complaints/${id}`, undefined, headers),
 
-  /**
-   * Multipart: proof photos + either return_all or items[i][order_item_id|quantity].
-   * Exchange: always items, each with its replacement_variant_id.
-   */
-  submit: (payload: ComplaintFormPayload) => {
-    const fd = new FormData()
-    fd.append('order_id',       String(payload.order_id))
-    fd.append('complaint_type', payload.complaint_type)
-    fd.append('description',    payload.description)
-    if (payload.other_reason) fd.append('other_reason', payload.other_reason)
-    if (payload.resolution_type) fd.append('resolution_type', payload.resolution_type)
-    payload.images.forEach(f => fd.append('images[]', f))
-    if (payload.return_all && payload.resolution_type !== 'exchange') {
-      fd.append('return_all', '1')
-    } else {
-      (payload.items ?? []).forEach((l, i) => {
-        fd.append(`items[${i}][order_item_id]`, String(l.order_item_id))
-        fd.append(`items[${i}][quantity]`,      String(l.quantity))
-        if (l.replacement_variant_id) fd.append(`items[${i}][replacement_variant_id]`, String(l.replacement_variant_id))
-      })
-    }
-    return formRequest<{ success: boolean; message: string; data: BuyerComplaint; returns: BuyerComplaint[] }>('/client/complaints', fd)
-  },
+    /**
+     * Multipart: proof photos + either return_all or items[i][order_item_id|quantity].
+     * Exchange: always items, each with its replacement_variant_id.
+     */
+    submit: (payload: ComplaintFormPayload) => {
+      const fd = new FormData()
+      fd.append('order_id',       String(payload.order_id))
+      fd.append('complaint_type', payload.complaint_type)
+      fd.append('description',    payload.description)
+      if (payload.other_reason) fd.append('other_reason', payload.other_reason)
+      if (payload.resolution_type) fd.append('resolution_type', payload.resolution_type)
+      payload.images.forEach(f => fd.append('images[]', f))
+      if (payload.return_all && payload.resolution_type !== 'exchange') {
+        fd.append('return_all', '1')
+      } else {
+        (payload.items ?? []).forEach((l, i) => {
+          fd.append(`items[${i}][order_item_id]`, String(l.order_item_id))
+          fd.append(`items[${i}][quantity]`,      String(l.quantity))
+          if (l.replacement_variant_id) fd.append(`items[${i}][replacement_variant_id]`, String(l.replacement_variant_id))
+        })
+      }
+      return formRequest<{ success: boolean; message: string; data: BuyerComplaint; returns: BuyerComplaint[] }>(`${base}/complaints`, fd, headers)
+    },
 
-  /** Contest the shop's refusal: ChooseTounsi decides. */
-  escalate: (id: number, note?: string) =>
-    jsonRequest<{ success: boolean; message: string; data: BuyerComplaint }>('PATCH', `/client/complaints/${id}/escalate`, { note }),
+    /** Contest the shop's refusal: ChooseTounsi decides. */
+    escalate: (id: number, note?: string) =>
+      jsonRequest<{ success: boolean; message: string; data: BuyerComplaint }>('PATCH', `${base}/complaints/${id}/escalate`, { note }, headers),
 
-  /** Withdraw a request the shop hasn't answered yet. */
-  cancel: (id: number) =>
-    jsonRequest<{ success: boolean; message: string; data: BuyerComplaint }>('PATCH', `/client/complaints/${id}/cancel`),
+    /** Withdraw a request the shop hasn't answered yet. */
+    cancel: (id: number) =>
+      jsonRequest<{ success: boolean; message: string; data: BuyerComplaint }>('PATCH', `${base}/complaints/${id}/cancel`, undefined, headers),
+  }
+}
+
+export type BuyerComplaintClient = ReturnType<typeof buyerComplaintClient>
+
+/** Signed-in buyer. */
+export const complaintApi = buyerComplaintClient('/client', authHeaders)
+
+/** Guest (no account): the returns of the one order this device token opens. */
+export function guestComplaintApi(orderToken: string): BuyerComplaintClient {
+  return buyerComplaintClient('/guest', () => ({ 'X-Order-Token': orderToken, 'Accept-Language': currentLocale() }))
 }
 
 // ─── Seller API ───────────────────────────────────────────────────────────────

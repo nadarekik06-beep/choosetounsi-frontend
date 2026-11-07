@@ -24,14 +24,14 @@
  * All existing UI (tracker, order cards, complaint button) is preserved.
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import {
   ShoppingBag, ChevronRight, ChevronDown, ChevronUp,
   Package, Clock, CheckCircle, XCircle,
   Truck, RotateCcw, Store, Star, MapPin,
 } from 'lucide-react'
-import { isAuthenticated } from '@/lib/auth'
+import { isAuthenticated, subscribeAuth } from '@/lib/auth'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ComplaintModal from '@/app/components/ComplaintModal'
 import { ReturnStatusBadge } from '@/app/components/returns/ReturnTracking'
@@ -43,6 +43,8 @@ import { useWilayaLabel } from '@/lib/i18n/wilayas'
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
 import { API_BASE, STORAGE_URL } from '@/lib/constants'
+import GuestOrdersHub from '@/components/guest/GuestOrdersHub'
+import GuestOrdersLinkOffer from '@/components/guest/GuestOrdersLinkOffer'
 
 const RED          = '#db142e'
 const GREEN        = '#198f41'
@@ -731,7 +733,7 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed, focused = false }: 
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function OrdersPage() {
+function AccountOrdersPage() {
   const t       = useTranslations('orders')
   const tc      = useTranslations('common')
   const router  = useRouter()
@@ -979,6 +981,28 @@ export default function OrdersPage() {
           onSuccess={handleReviewSuccess}
         />
       )}
+    </>
+  )
+}
+
+/**
+ * /orders — signed in: the account's orders (unchanged), plus an offer to add
+ * guest orders saved on this phone. Not signed in: never a login wall — the
+ * orders saved on this phone, the number + phone lookup and an optional account.
+ */
+export default function OrdersPage() {
+  // Server render: 'pending' (no token there); the browser then picks account / guest
+  const mode = useSyncExternalStore(subscribeAuth, () => (isAuthenticated() ? 'account' : 'guest'), () => 'pending' as const)
+
+  if (mode === 'pending') {
+    return <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><BrandLoader variant="section" /></div>
+  }
+  if (mode === 'guest') return <GuestOrdersHub />
+  return (
+    <>
+      {/* Added orders appear in the list below once it reloads (after the confirmation is read) */}
+      <GuestOrdersLinkOffer onLinked={() => { setTimeout(() => window.location.reload(), 1800) }} />
+      <AccountOrdersPage />
     </>
   )
 }
