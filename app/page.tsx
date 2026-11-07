@@ -6,6 +6,7 @@
 import Navbar from "./components/layout/Navbar";
 import HomeFeed from "@/app/components/home/HomeFeed";
 import HomeCategoryCarousel from "@/app/components/sections/HomeCategoryCarousel";
+import MobileQuickActions from "@/app/components/home/MobileQuickActions";
 import DualCTASection from "@/app/components/home/DualCTASection";
 import FlashDealsSection from "@/app/components/sections/FlashDealsSection";
 import BrandCollectionSection from "./components/sections/BrandCollectionSection";
@@ -38,6 +39,8 @@ export default function HomePage() {
     <main>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }} />
       <Navbar />
+      {/* Phones only: Shop + Deals shortcuts under the category strip */}
+      <MobileQuickActions />
       <HomeFeed />
       <HomeCategoryCarousel />
       <FlashDealsSection />

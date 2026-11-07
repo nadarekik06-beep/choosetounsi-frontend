@@ -313,6 +313,17 @@
     "terms": "Terms of use"
   },
   "home": {
+    "quickActions": {
+      "label": "Quick links",
+      "shop": "Shop",
+      "shopSub": "Explore all products",
+      "shopAria": "Shop: explore all products",
+      "deals": "Deals",
+      "dealsSub": "Limited offers",
+      "dealsUpTo": "Up to -{pct}% today",
+      "dealsAria": "Deals: see current promotions",
+      "hot": "HOT"
+    },
     "trendingNow": "🔥 Trending Now",
     "popularChoice": "Popular Choice",
     "viewAll": "View all",

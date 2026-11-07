@@ -313,6 +313,17 @@
     "terms": "Conditions d’utilisation"
   },
   "home": {
+    "quickActions": {
+      "label": "Accès rapides",
+      "shop": "Shop",
+      "shopSub": "Tous les produits",
+      "shopAria": "Boutique : voir tous les produits",
+      "deals": "Bons plans",
+      "dealsSub": "Offres limitées",
+      "dealsUpTo": "Jusqu'à -{pct}% aujourd'hui",
+      "dealsAria": "Bons plans : voir les promotions",
+      "hot": "HOT"
+    },
     "trendingNow": "🔥 Tendances du moment",
     "popularChoice": "Choix populaire",
     "viewAll": "Voir tout",
