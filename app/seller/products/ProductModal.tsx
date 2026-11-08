@@ -402,8 +402,6 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
 
   const makeForm = () => ({
     name:              (p?.name              ?? radar?.name ?? '') as string,
-    slug:              (p?.slug              ?? '') as string,
-    sku:               (p?.sku               ?? '') as string,
     description:       (p?.description       ?? '') as string,
     short_description: (p?.short_description ?? '') as string,
     price:             radar?.price?.toString() ?? p?.price?.toString() ?? '',
@@ -537,14 +535,6 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
       .catch(() => { setVariantAxes([]); setInfoAxes([]) })
       .finally(() => setAxesLoading(false))
   }, [form.subcategory_id])
-
-  const slugTouched = useRef(!!(p?.slug))
-  useEffect(() => {
-    if (!slugTouched.current && form.name) {
-      set('slug', form.name.toLowerCase().trim()
-        .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-'))
-    }
-  }, [form.name])
 
   // Free the photo previews on close (the ref holds the latest images, not the first ones)
   const imagesRef = useRef(images)
@@ -761,12 +751,13 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
             colors: Object.fromEntries(Object.entries(d.images.colors).map(([k, l]) => [k, l.map(asItem)])),
           },
         }
-        setForm(f => ({ ...f, ...(d.form as Partial<typeof f>) }))
+        // Older drafts still hold slug / sku (fields removed): the server makes both, so they are dropped
+        const draftForm = Object.fromEntries(Object.entries(d.form).filter(([k]) => k !== 'slug' && k !== 'sku'))
+        setForm(f => ({ ...f, ...(draftForm as Partial<typeof f>) }))
         setAttrValues(d.attrValues as AttributeValues)
         setVariantRows(restored.rows)
         setMulticolorLabel(d.multicolorLabel)
         setImages(restored.images)
-        if (typeof d.form.slug === 'string' && d.form.slug) slugTouched.current = true
         setStepIdx(Math.min(Math.max(0, d.step), 4))
         setDraftRestored(true)
       } catch (err) {
@@ -809,7 +800,6 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
   const startOver = () => {
     productDraft.clear(draftKey)
     revokeImages(images)
-    slugTouched.current = false
     setForm(makeForm())
     setAttrValues({}); setVariantRows([]); setMulticolorLabel('')
     setImages({ gallery: [], colors: {} })
@@ -880,8 +870,6 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
 
       const payload: Record<string, any> = {
         name:              form.name.trim(),
-        slug:              form.slug.trim()              || undefined,
-        sku:               form.sku.trim()               || undefined,
         description:       form.description.trim()       || undefined,
         short_description: form.short_description.trim() || undefined,
         is_active:         form.is_active,
@@ -1141,14 +1129,6 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
                 <Field label={t('name')} required error={errors.name}>
                   <input value={form.name} onChange={e => set('name', e.target.value)} placeholder={t('namePlaceholder')} className={inputCls(errors.name)} />
                 </Field>
-                <div className="ct-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <Field label={t('slug')} hint={t('slugHint')}>
-                    <input value={form.slug} onChange={e => { slugTouched.current = true; set('slug', e.target.value) }} placeholder="my-product-name" dir="ltr" className={inputCls()} />
-                  </Field>
-                  <Field label={t('sku')} hint={t('skuHint')}>
-                    <input value={form.sku} onChange={e => set('sku', e.target.value)} placeholder={t('skuPlaceholder')} className={inputCls()} />
-                  </Field>
-                </div>
                 <Field label={t('shortDescription')} required={!isEdit} error={errors.short_description}
                   hint={`${tw('shortAvoid')} · ${form.short_description.trim().length}/${SHORT_MIN}+`}>
                   <input value={form.short_description} onChange={e => set('short_description', e.target.value)} maxLength={500}
