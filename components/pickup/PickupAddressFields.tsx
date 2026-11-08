@@ -40,9 +40,11 @@ interface Props {
   dark?: boolean
   disabled?: boolean
   idPrefix?: string
+  /** 'guide': soft amber hints with 💡 instead of red errors (seller application form). */
+  tone?: 'error' | 'guide'
 }
 
-export default function PickupAddressFields({ value, onChange, errors = {}, dark, disabled, idPrefix = 'pk' }: Props) {
+export default function PickupAddressFields({ value, onChange, errors = {}, dark, disabled, idPrefix = 'pk', tone = 'error' }: Props) {
   const t = useTranslations('pickupAddress')
   // Centre of the zone it was fetched for (stale once another zone is picked)
   const [fetched,  setFetched]  = useState<{ zoneId: number; center: ZoneCenter | null } | null>(null)
@@ -116,7 +118,7 @@ export default function PickupAddressFields({ value, onChange, errors = {}, dark
   const input = (err?: string): React.CSSProperties => ({
     width: '100%', padding: '11px 14px', borderRadius: 12, fontSize: 14, fontFamily: 'inherit', outline: 'none',
     background: dark ? '#0D1117' : '#fff', color: text,
-    border: `1.5px solid ${err ? '#ef4444' : dark ? 'rgba(255,255,255,0.14)' : '#e5e7eb'}`,
+    border: `1.5px solid ${err ? (tone === 'guide' ? '#f59e0b' : '#ef4444') : dark ? 'rgba(255,255,255,0.14)' : '#e5e7eb'}`,
   })
   const label: React.CSSProperties = { display: 'block', fontSize: 13, fontWeight: 700, color: dark ? 'rgba(255,255,255,0.85)' : '#374151', marginBottom: 6 }
   const err = (k: keyof PickupErrors) => {
@@ -124,6 +126,13 @@ export default function PickupAddressFields({ value, onChange, errors = {}, dark
     if (!e) return null
     // Client-side keys are translated; backend messages arrive as sentences
     const msg = /^[a-zA-Z]+$/.test(e) ? t(`errors.${e}`) : e
+    if (tone === 'guide') {
+      return (
+        <p role="status" style={{ display: 'flex', gap: 6, fontSize: 12, lineHeight: 1.45, color: dark ? '#fbbf24' : '#92400e', background: dark ? 'rgba(245,158,11,0.12)' : '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '6px 10px', margin: '6px 0 0' }}>
+          <span aria-hidden>💡</span><span>{msg}</span>
+        </p>
+      )
+    }
     return <p role="alert" style={{ fontSize: 12, color: '#ef4444', margin: '5px 0 0', fontWeight: 600 }}>{msg}</p>
   }
   const id = (k: string) => `${idPrefix}-${k}`
@@ -151,7 +160,7 @@ export default function PickupAddressFields({ value, onChange, errors = {}, dark
       </div>
 
       {/* 3. Map */}
-      <div>
+      <div id={id('map')}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
           <span style={{ ...label, marginBottom: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
             <MapPinned size={15} color="#db142e" aria-hidden /> {t('map')} *

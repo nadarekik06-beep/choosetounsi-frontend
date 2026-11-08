@@ -3,17 +3,22 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   X, Upload, CheckCircle, AlertCircle,
-  User, Check, Clock, RefreshCw, Eye, UserPlus, Paperclip,
+  User, Check, Clock, RefreshCw, Eye, UserPlus, Paperclip, MessageCircle,
 } from 'lucide-react'
 import { api, getUser, refreshUser } from '@/lib/auth'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
-import { validateTunisianPhone } from '@/lib/shippingAddress'
 import PickupAddressFields from '@/components/pickup/PickupAddressFields'
 import {
   emptyPickupAddress, pickupErrorsFromApi, pickupFromApi, pickupPayload, validatePickupAddress,
   type PickupAddressValue, type PickupErrors,
 } from '@/lib/pickupAddress'
+import {
+  checkBusinessName, checkCategories, checkDescription, checkFullName, checkLink, checkPhone,
+  formatPhone, normalizePhone, LIMITS, type Issue,
+} from '@/lib/sellerApplication/normalize'
+import { prepareImage, type PreparedImage } from '@/lib/sellerApplication/prepareImage'
+import { WHATSAPP_URL } from '@/lib/contactInfo'
 
 import BrandLoader from '@/components/brand/BrandLoader'
 import { saveApplicationDraft, readApplicationDraft, clearApplicationDraft } from './applicationDraft'
@@ -110,38 +115,73 @@ export interface ExistingApplication {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function inputCls(err?: string) {
+/** `hint`: the field needs a look (soft amber, never red). */
+function inputCls(hint?: string | null) {
   return (
     'w-full px-4 py-3 rounded-xl border text-sm text-gray-800 placeholder:text-gray-400 ' +
     'outline-none transition-all duration-200 bg-white/90 backdrop-blur-sm ' +
-    (err
-      ? 'border-red-400 focus:ring-2 focus:ring-red-200'
+    (hint
+      ? 'border-amber-400 focus:ring-2 focus:ring-amber-100'
       : 'border-gray-200 focus:border-red-400 focus:ring-2 focus:ring-red-100')
   )
 }
 
-function Field({ label, id, error, children, optional }: {
-  label: string; id: string; error?: string; children: React.ReactNode; optional?: boolean
+/** The line under a field: a 💡 hint (what to fix and why) or a green confirmation. */
+function GuideLine({ hint, success }: { hint?: string | null; success?: string | null }) {
+  if (hint) {
+    return (
+      <p role="status" aria-live="polite" className="ct-guide-hint">
+        <span aria-hidden="true">💡</span><span>{hint}</span>
+      </p>
+    )
+  }
+  if (success) return <p className="ct-guide-ok">{success}</p>
+  return null
+}
+
+function Field({ label, id, hint, ok, success, children, optional }: {
+  label: string; id: string; hint?: string | null; ok?: boolean; success?: string | null
+  children: React.ReactNode; optional?: boolean
 }) {
   const tc = useTranslations('common')
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-semibold text-gray-700">
-        {label}
-        {optional && (
-          <span style={{ fontSize: '0.72rem', fontWeight: 400, color: '#9ca3af', marginInlineStart: 6 }}>
-            ({tc('optional')})
-          </span>
-        )}
+      <label htmlFor={id} className="text-sm font-semibold text-gray-700" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span>
+          {label}
+          {optional && (
+            <span style={{ fontSize: '0.72rem', fontWeight: 400, color: '#9ca3af', marginInlineStart: 6 }}>
+              ({tc('optional')})
+            </span>
+          )}
+        </span>
+        {ok && !hint && <span className="ct-guide-check" aria-hidden="true"><Check size={10} strokeWidth={3} /></span>}
       </label>
       {children}
-      {error && (
-        <p className="text-xs text-red-500 flex items-center gap-1">
-          <AlertCircle size={11} />{error}
-        </p>
-      )}
+      <GuideLine hint={hint} success={success} />
     </div>
   )
+}
+
+/** Under a photo picker: "preparing…", "made lighter ✓", or what's missing. */
+function PhotoGuide({ busy, note, hint }: {
+  busy: boolean
+  note?: { kind: 'reduced' | 'converted' } | { kind: 'unreadable' } | { kind: 'kept'; count: number }
+  hint: string | null
+}) {
+  const tgd = useTranslations('vendor.guide')
+  if (busy) {
+    return (
+      <p className="ct-guide-ok" style={{ color: '#6b7280', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <BrandLoader variant="inline" size={12} />{tgd('photoWorking')}
+      </p>
+    )
+  }
+  if (hint) return <GuideLine hint={hint} />
+  if (!note) return null
+  if (note.kind === 'unreadable') return <GuideLine hint={tgd('photoUnreadable')} />
+  if (note.kind === 'kept') return <GuideLine hint={tgd('samplesKept', { count: note.count })} />
+  return <GuideLine success={tgd(note.kind === 'converted' ? 'photoConverted' : 'photoReduced')} />
 }
 
 // ── Status Banner ─────────────────────────────────────────────────────────────
@@ -226,12 +266,58 @@ const FORM_KEYS = [
   'website_url', 'pricing_range', 'business_description',
 ] as const
 
+type SubmitProblem =
+  | { kind: 'fields' }                       // 422: the seller was taken to the field
+  | { kind: 'message'; message: string }     // a sentence from the server (already translated)
+  | { kind: 'tooLarge' }                     // 413
+  | { kind: 'network' }                      // no answer / timeout
+  | { kind: 'server' }                       // 5xx
+  | { kind: 'photosBusy' }                   // clicked Send while photos were being prepared
+
+type PhotoNote =
+  | { kind: 'reduced' | 'converted' }
+  | { kind: 'unreadable' }
+  | { kind: 'kept'; count: number }
+
+/** The fields each step checks, in screen order (the first one to fix is scrolled to). */
+const STEP_FIELDS: Record<1 | 2 | 3, string[]> = {
+  1: ['full_name', 'phone_number', 'business_name', 'business_category', 'pricing_range'],
+  2: ['pk:adresse_complete', 'pk:zone', 'pk:pin', 'pk:contact_name', 'pk:phone', 'pk:code_postal', 'pk:indications'],
+  3: ['profile_picture', 'sample_images', 'business_description', 'facebook_url', 'instagram_url', 'website_url'],
+}
+const STEP_OF = (key: string): 1 | 2 | 3 =>
+  STEP_FIELDS[1].includes(key) ? 1 : STEP_FIELDS[2].includes(key) ? 2 : 3
+
+/** Field key → element to scroll to. */
+const GUIDE_DOM: Record<string, string> = {
+  'pk:adresse_complete': 'apply-pk-adresse', 'pk:zone': 'apply-pk-zone', 'pk:pin': 'apply-pk-map',
+  'pk:contact_name': 'apply-pk-contact', 'pk:phone': 'apply-pk-phone', 'pk:code_postal': 'apply-pk-postal',
+  'pk:indications': 'apply-pk-notes',
+}
+
+/** Laravel field names → ours ("sample_images.2" → "sample_images"). */
+function fieldOfServerKey(key: string): string {
+  const base = key.replace(/\.\d+$/, '').replace(/\.\*$/, '')
+  if (base === 'business_categories' || base === 'business_subcategories') return 'business_category'
+  if (base === 'sample_captions') return 'sample_images'
+  return base
+}
+
+/** The saved draft, if it belongs to this visitor and to this application (null = a new one). */
+function usableDraft(appId: number | null) {
+  const d = readApplicationDraft()
+  if (!d) return null
+  const me = getUser()?.id ?? null
+  if (d.userId != null && d.userId !== me) return null   // someone else's, on a shared device
+  if ((d.appId ?? null) !== appId) return null
+  return d
+}
+
 export default function ApplicationForm({
   onSuccess, onApplication, scrollToForm, guest = false, resolvingAuth = false, onRequireAuth,
 }: ApplicationFormProps) {
   const t   = useTranslations('vendor')
   const tc  = useTranslations('common')
-  const tsp = useTranslations('sellerPickup')
   const tpa = useTranslations('pickupAddress')
   const tg  = useTranslations('vendor.guest')
 
@@ -241,10 +327,22 @@ export default function ApplicationForm({
   const [isEditing,    setIsEditing]    = useState(false)
   const [existingId,   setExistingId]   = useState<number | null>(null)
 
+  const tgd = useTranslations('vendor.guide')
+
   const [step,        setStep]        = useState<1 | 2 | 3>(1)
   const [loading,     setLoading]     = useState(false)
-  const [error,       setError]       = useState<string | null>(null)
+  // What went wrong on submit, said calmly (see handleSubmit)
+  const [problem,     setProblem]     = useState<SubmitProblem | null>(null)
+  // Messages sent back by the server, per field (shown as hints, cleared on change)
   const [errors,      setErrors]      = useState<Record<string, string>>({})
+  // Fields the seller has left once (blur) or that a "Suivant" click checked
+  const [touched,     setTouched]     = useState<Record<string, boolean>>({})
+  // Field to scroll to and highlight after the next render (a new object each time:
+  // asking twice for the same field scrolls again)
+  const [guideTarget, setGuideTarget] = useState<{ key: string } | null>(null)
+  // Photo notes: "made lighter ✓", "iPhone photo converted ✓", "couldn't open it"
+  const [photoNotes,  setPhotoNotes]  = useState<{ profile_picture?: PhotoNote; sample_images?: PhotoNote }>({})
+  const [photosBusy,  setPhotosBusy]  = useState(0)
   const [form, setForm] = useState<FormState>(() => {
     const user = typeof window !== 'undefined' ? getUser() : null
     return {
@@ -362,6 +460,7 @@ export default function ApplicationForm({
   const pendingSubcats = useRef<string[] | null>(null)
 
   // ── Load existing application ─────────────────────────────────────────
+  const existingIdRef = useRef<number | null>(null)
   const loadExistingApplication = useCallback(async (): Promise<'none' | 'exists' | 'failed'> => {
     setAppLoading(true)
     setLoadFailed(false)
@@ -388,6 +487,7 @@ export default function ApplicationForm({
 
       setExistingApp(app)
       setExistingId(app.id)
+      existingIdRef.current = app.id
 
       setForm({
         full_name:            app.full_name            ?? '',
@@ -442,10 +542,17 @@ export default function ApplicationForm({
 
   const saveDraft = () => saveApplicationDraft({
     step, form: { ...form }, pickup, categories: selectedCategories, subcategories: selectedSubcats,
+    userId: getUser()?.id ?? null, appId: existingId,
   })
 
-  const restoreDraft = useCallback((): boolean => {
-    const d = readApplicationDraft()
+  // Autosave starts once the saved draft (if any) has been read back, or the
+  // empty first render would overwrite it.
+  const draftReady = useRef(false)
+  // A draft of edits to the existing application, applied when "Edit" is clicked
+  const editDraftFor = useRef<number | null>(null)
+
+  const restoreDraft = useCallback((appId: number | null = null): boolean => {
+    const d = usableDraft(appId)
     if (!d) return false
     setForm(prev => {
       const next = { ...prev }
@@ -465,7 +572,7 @@ export default function ApplicationForm({
   // Signed-in users: load their application (as before). Guests: no API call.
   // Signed in from the modal after clicking Submit: same check, then send.
   useEffect(() => {
-    if (guest) { restoreDraft(); return }
+    if (guest) { restoreDraft(); draftReady.current = true; return }
     let alive = true
     if (awaitingAuth.current) setResuming(true)
     loadExistingApplication().then(async result => {
@@ -475,14 +582,32 @@ export default function ApplicationForm({
         if (result === 'none') await submitRef.current()
         else if (result === 'exists') clearApplicationDraft()  // pending / rejected: existing banner, nothing sent
         setResuming(false)
+        draftReady.current = true
         return
       }
       if (result === 'none') { if (!startedAsGuest.current) restoreDraft() }
-      else if (result === 'exists') clearApplicationDraft()
+      else if (result === 'exists') {
+        // Edits to this application, saved before a reload: applied when "Edit" is clicked
+        const id = existingIdRef.current
+        if (id != null && usableDraft(id)) editDraftFor.current = id
+        else clearApplicationDraft()
+      }
+      if (result !== 'failed') draftReady.current = true
     })
     return () => { alive = false }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guest])
+
+  // Autosave: every change, shortly after the seller stops typing (this device only)
+  const formVisible = (!existingApp || isEditing) && !loadFailed
+  useEffect(() => {
+    if (!draftReady.current || !formVisible || resuming) return
+    const timer = setTimeout(() => saveApplicationDraft({
+      step, form: { ...form }, pickup, categories: selectedCategories, subcategories: selectedSubcats,
+      userId: getUser()?.id ?? null, appId: existingId,
+    }), 400)
+    return () => clearTimeout(timer)
+  }, [step, form, pickup, selectedCategories, selectedSubcats, existingId, formVisible, resuming])
 
   // Pending subcategories (see pendingSubcats): applied once every selected category's list has loaded.
   useEffect(() => {
@@ -498,30 +623,82 @@ export default function ApplicationForm({
   }, [selectedCategories, subcategoriesMap, apiCategories])
   useEffect(() => { onApplication(existingApp) }, [existingApp, onApplication])
 
+  const clearServerError = (key: string) =>
+    setErrors(prev => { if (!(key in prev)) return prev; const n = { ...prev }; delete n[key]; return n })
+
   const handleChange = (key: keyof FormState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setForm(prev => ({ ...prev, [key]: e.target.value }))
-      setErrors(prev => { const n = { ...prev }; delete n[key]; return n })
+      clearServerError(key)
+      setProblem(null)
     }
 
-  const handleProfilePic = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setProfilePic(file)
-    setProfilePicPreview(URL.createObjectURL(file))
-    setProfilePicExisting(null)
-    setErrors(prev => { const n = { ...prev }; delete n.profile_picture; return n })
+  /** Leaving a field: check it gently (hint or ✓) and tidy what was typed. */
+  const handleBlur = (key: keyof FormState) => () => {
+    setTouched(prev => (prev[key] ? prev : { ...prev, [key]: true }))
+    setForm(prev => {
+      const v = prev[key]
+      // "+216 22-123-456" → "22123456"; spaces around any text trimmed
+      const tidy = key === 'phone_number' && !checkPhone(v) ? normalizePhone(v) : v.trim()
+      return tidy === v ? prev : { ...prev, [key]: tidy }
+    })
   }
 
-  const handleSamples = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const incoming = Array.from(e.target.files ?? [])
-    if (samples.length + incoming.length > 5) { setError(t('errors.maxSamples')); return }
-    const newItems: SampleItem[] = incoming.map(file => ({
-      file, preview: URL.createObjectURL(file), caption: '', isExisting: false,
-    }))
-    setSamples(prev => [...prev, ...newItems])
-    setError(null)
-    setErrors(prev => { const n = { ...prev }; delete n.sample_images; return n })
+  // ── Photos: HEIC converted, heavy ones made lighter, before they are kept ──
+  const noteFor = (r: PreparedImage): PhotoNote | undefined =>
+    r.converted ? { kind: 'converted' } : r.reduced ? { kind: 'reduced' } : undefined
+
+  const handleProfilePic = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''   // picking the same photo again still triggers a change
+    if (!file) return
+    clearServerError('profile_picture')
+    setProblem(null)
+    setPhotosBusy(n => n + 1)
+    try {
+      const r = await prepareImage(file)
+      setProfilePic(r.file)
+      setProfilePicPreview(URL.createObjectURL(r.file))
+      setProfilePicExisting(null)
+      setPhotoNotes(p => ({ ...p, profile_picture: noteFor(r) }))
+    } catch (err) {
+      console.error('[seller application] profile picture could not be read', err)
+      setPhotoNotes(p => ({ ...p, profile_picture: { kind: 'unreadable' } }))
+    } finally {
+      setPhotosBusy(n => n - 1)
+    }
+  }
+
+  const handleSamples = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    if (!picked.length) return
+    clearServerError('sample_images')
+    setProblem(null)
+    // More than 5: keep the first ones instead of refusing them all
+    const room = Math.max(0, LIMITS.samples - samples.length)
+    const incoming = picked.slice(0, room)
+    setPhotosBusy(n => n + 1)
+    try {
+      const results = await Promise.all(incoming.map(f => prepareImage(f).catch(err => {
+        console.error('[seller application] product photo could not be read', err)
+        return null
+      })))
+      const ready = results.filter((r): r is PreparedImage => r !== null)
+      setSamples(prev => [
+        ...prev,
+        ...ready.map(r => ({ file: r.file, preview: URL.createObjectURL(r.file), caption: '', isExisting: false })),
+      ].slice(0, LIMITS.samples))
+      const note: PhotoNote | undefined =
+        ready.length < results.length ? { kind: 'unreadable' }
+        : picked.length > room ? { kind: 'kept', count: room }
+        : ready.some(r => r.converted) ? { kind: 'converted' }
+        : ready.some(r => r.reduced) ? { kind: 'reduced' }
+        : undefined
+      setPhotoNotes(p => ({ ...p, sample_images: note }))
+    } finally {
+      setPhotosBusy(n => n - 1)
+    }
   }
 
   const removeSample   = (idx: number) => setSamples(prev => prev.filter((_, i) => i !== idx))
@@ -536,10 +713,11 @@ export default function ApplicationForm({
         setSelectedSubcats(ps => ps.filter(s => !catSubs.includes(s)))
         return prev.filter(c => c !== catName)
       }
-      if (prev.length >= 5) return prev
+      if (prev.length >= LIMITS.categories) return prev
       return [...prev, catName]
     })
-    setErrors(prev => { const n = { ...prev }; delete n.business_category; return n })
+    setTouched(prev => ({ ...prev, business_category: true }))
+    clearServerError('business_category')
   }
 
   const toggleSubcat = (subcatName: string) => {
@@ -548,38 +726,100 @@ export default function ApplicationForm({
     )
   }
 
-  // ── Validation ────────────────────────────────────────────────────────
+  // ── Guidance: same rules as the backend (lib/sellerApplication/normalize) ──
 
-  const validateStep = (s: number): boolean => {
-    const errs: Record<string, string> = {}
-    if (s === 1) {
-      if (!form.full_name.trim())     errs.full_name     = t('errors.fullName')
-      if (!form.phone_number.trim())  errs.phone_number  = t('errors.phone')
-      else if (!validateTunisianPhone(form.phone_number).valid) errs.phone_number = tsp('errors.phone')
-      if (!form.business_name.trim()) errs.business_name = t('errors.businessName')
-      if (selectedCategories.length === 0) errs.business_category = t('errors.category')
+  const LINK_KIND = { facebook_url: 'facebook', instagram_url: 'instagram', website_url: 'website' } as const
+  const linkCheck = (k: keyof typeof LINK_KIND) => checkLink(LINK_KIND[k], form[k])
+
+  /** What a field still needs (null = fine), shown or not yet. */
+  const issueOf = (key: string): Issue | null => {
+    switch (key) {
+      case 'full_name':            return checkFullName(form.full_name)
+      case 'phone_number':         return checkPhone(form.phone_number)
+      case 'business_name':        return checkBusinessName(form.business_name)
+      case 'business_category':    return checkCategories(selectedCategories)
+      case 'profile_picture':      return profilePic || profilePicExisting ? null : { code: 'pictureRequired', blocking: true }
+      case 'sample_images':        return samples.length ? null : { code: 'samplesRequired', blocking: true }
+      case 'business_description': return checkDescription(form.business_description)
+      case 'facebook_url':
+      case 'instagram_url':
+      case 'website_url':          return linkCheck(key).issue
+      default:                     return null
     }
-    if (s === 2) {
-      const pe = validatePickupAddress(pickup)
-      setPickupErrors(pe)
-      if (Object.keys(pe).length) errs.pickup = 'invalid'
-    }
-    if (s === 3) {
-      if (!profilePic && !profilePicExisting) errs.profile_picture = t('errors.picture')
-      if (samples.length === 0)               errs.sample_images   = t('errors.samples')
-    }
-    setErrors(errs)
-    return Object.keys(errs).length === 0
   }
 
+  /** The hint under a field: the server's words first, then ours once the field was left. */
+  const hintOf = (key: string): string | null => {
+    if (errors[key]) return errors[key]
+    if (!touched[key]) return null
+    const i = issueOf(key)
+    return i ? tgd(i.code, i.values) : null
+  }
+
+  /** Green check: left once, filled in, nothing left to say. */
+  const okOf = (key: string, filled: boolean) => !!touched[key] && filled && !errors[key] && !issueOf(key)
+
+  /** "On utilisera : https://instagram.com/… ✓" under a valid link. */
+  const linkSuccess = (k: keyof typeof LINK_KIND) => {
+    if (!touched[k] || errors[k]) return null
+    const { issue, value } = linkCheck(k)
+    return !issue && value ? tgd('willUse', { value }) : null
+  }
+
+  const PICKUP_ORDER: (keyof PickupErrors)[] = ['adresse_complete', 'zone', 'pin', 'contact_name', 'phone', 'code_postal', 'indications']
+
+  /** Fields that stop a step, in screen order. */
+  const blockingFields = (s: 1 | 2 | 3): string[] => {
+    if (s === 2) {
+      const pe = { ...pickupErrors, ...validatePickupAddress(pickup) }
+      return PICKUP_ORDER.filter(k => pe[k]).map(k => `pk:${k}`)
+    }
+    return STEP_FIELDS[s].filter(k => errors[k] || issueOf(k)?.blocking)
+  }
+
+  /**
+   * Checks a step. Something missing: never a silent refusal — the seller is taken to
+   * the first field to fix, which is highlighted softly with its hint.
+   */
+  const checkStep = (s: 1 | 2 | 3): boolean => {
+    setTouched(prev => {
+      const n = { ...prev }
+      STEP_FIELDS[s].forEach(k => { n[k] = true })
+      return n
+    })
+    if (s === 2) setPickupErrors(prev => ({ ...prev, ...validatePickupAddress(pickup) }))
+    const blocking = blockingFields(s)
+    if (blocking.length) { setGuideTarget({ key: blocking[0] }); return false }
+    return true
+  }
+
+  // Scroll to the field to fix (after the step it lives on has rendered) and highlight it
+  useEffect(() => {
+    if (!guideTarget) return
+    const target = guideTarget.key
+    // A timer, not requestAnimationFrame: it also runs while the tab is in the background
+    const timer = setTimeout(() => {
+      setGuideTarget(null)
+      const el = document.getElementById(GUIDE_DOM[target] ?? target)
+      if (!el) return
+      el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' })
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) el.focus({ preventScroll: true })
+      el.classList.remove('ct-flash')
+      void el.offsetWidth   // restart the animation
+      el.classList.add('ct-flash')
+      setTimeout(() => el.classList.remove('ct-flash'), 2400)
+    }, 30)
+    return () => clearTimeout(timer)
+  }, [guideTarget, step])
+
   const next = () => {
-    if (!validateStep(step)) return
+    if (!checkStep(step)) return
     // The contact for the courier defaults to the applicant
     if (step === 1) {
       setPickup(p => ({
         ...p,
-        contact_name: p.contact_name || form.full_name,
-        phone:        p.phone || form.phone_number,
+        contact_name: p.contact_name || form.full_name.trim(),
+        phone:        p.phone || normalizePhone(form.phone_number),
       }))
     }
     setStep(s => (s < 3 ? (s + 1) as 1|2|3 : s))
@@ -587,6 +827,7 @@ export default function ApplicationForm({
 
   const changePickup = (v: PickupAddressValue) => {
     setPickup(v)
+    setProblem(null)
     setPickupErrors(prev => {
       const now = validatePickupAddress(v)
       const next: PickupErrors = {}
@@ -599,7 +840,11 @@ export default function ApplicationForm({
   // ── Submit ────────────────────────────────────────────────────────────
 
   const handleSubmit = async () => {
-    if (!validateStep(step)) return
+    if (photosBusy > 0) { setProblem({ kind: 'photosBusy' }); return }
+    // Every step again: a restored draft can open on step 3
+    for (const s of [1, 2, 3] as const) {
+      if (!checkStep(s)) { setStep(s); return }
+    }
     // Guest: keep the draft, ask for an account; the application is sent once signed in.
     if (guest) {
       saveDraft()
@@ -607,16 +852,23 @@ export default function ApplicationForm({
       onRequireAuth?.('register')
       return
     }
-    setLoading(true); setError(null)
+    setLoading(true); setProblem(null)
     // Read before the request: a new submission sets existingId on success.
     const wasUpdate = !!existingId
     try {
       const fd = new FormData()
-      const scalarFields: (keyof FormState)[] = [
-        'full_name', 'phone_number', 'business_name',
-        'facebook_url', 'instagram_url', 'website_url', 'pricing_range', 'business_description',
-      ]
-      scalarFields.forEach(k => { if (form[k]) fd.append(k, form[k] as string) })
+      // Sent as the backend will store them (it normalizes the same way again)
+      const values: Record<string, string> = {
+        full_name:            form.full_name.trim(),
+        phone_number:         normalizePhone(form.phone_number),
+        business_name:        form.business_name.trim(),
+        facebook_url:         linkCheck('facebook_url').value,
+        instagram_url:        linkCheck('instagram_url').value,
+        website_url:          linkCheck('website_url').value,
+        pricing_range:        form.pricing_range,
+        business_description: form.business_description.trim(),
+      }
+      Object.entries(values).forEach(([k, v]) => { if (v) fd.append(k, v) })
       Object.entries(pickupPayload(pickup)).forEach(([k, v]) => { if (v !== null && v !== '') fd.append(k, String(v)) })
       fd.append('business_category', selectedCategories[0] ?? '')
       selectedCategories.forEach((cat, i) => fd.append(`business_categories[${i}]`, cat))
@@ -626,43 +878,75 @@ export default function ApplicationForm({
       samples.filter(s => !s.isExisting && s.file).forEach(s => fd.append('sample_images[]', s.file!))
       samples.forEach((s, i) => { if (s.caption.trim()) fd.append(`sample_captions[${i}]`, s.caption.trim()) })
 
-      // ─── FIX: axios returns the full response object.
-      // response.data is { success, data, message }.
-      // So the application object is at response.data.data
+      // Photos on a slow mobile connection: more time than the default 15 s
+      const config = { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120_000 }
       let response: { data?: { data?: ExistingApplication | null } }
       if (existingId) {
         // PHP only parses multipart bodies on POST: same PUT route via Laravel's _method override.
         fd.append('_method', 'PUT')
-        response = await api.post(`/seller-applications/${existingId}`, fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
+        response = await api.post(`/seller-applications/${existingId}`, fd, config)
       } else {
-        response = await api.post('/seller-applications', fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
+        response = await api.post('/seller-applications', fd, config)
       }
 
-      // Correctly read the nested application object
+      // response.data is { success, data, message }: the application is at response.data.data
       const savedApp = response?.data?.data
       if (savedApp && typeof savedApp.id === 'number') {
         setExistingApp(savedApp)
         setExistingId(savedApp.id)
       }
 
+      draftReady.current = false   // nothing left to save
       clearApplicationDraft()
       // Cached user learns the application is pending: the approval is then picked up without a re-login
       refreshUser()
       onSuccess(wasUpdate)
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string; errors?: Record<string, unknown> } } }
-      setError(e?.response?.data?.message ?? tc('genericError'))
-      const be = e?.response?.data?.errors ?? {}
-      const mapped: Record<string, string> = {}
-      Object.entries(be).forEach(([k, v]) => { mapped[k] = Array.isArray(v) ? (v[0] as string) : String(v) })
-      if (Object.keys(mapped).length) setErrors(mapped)
-      // Address errors: show them on step 2, next to the field
-      const pe = pickupErrorsFromApi(be as Record<string, string[]>)
-      if (Object.keys(pe).length) { setPickupErrors(pe); setStep(2) }
+      const e = err as { response?: { status?: number; data?: { message?: string; errors?: Record<string, string[] | string> } } }
+      const status = e?.response?.status
+      const body = e?.response?.data
+      const fieldErrors = body?.errors && typeof body.errors === 'object' ? body.errors : null
+
+      if (!e?.response) {
+        // No answer: connection dropped or timed out. The draft is kept.
+        console.error('[seller application] no response from the server', err)
+        setProblem({ kind: 'network' })
+      } else if (status === 413) {
+        setProblem({ kind: 'tooLarge' })
+      } else if (status === 422 && fieldErrors && Object.keys(fieldErrors).length) {
+        // Each message goes under its field; the seller is taken to the first one
+        const be: Record<string, string[]> = {}
+        Object.entries(fieldErrors).forEach(([k, v]) => { be[k] = Array.isArray(v) ? v.map(String) : [String(v)] })
+        const pe = pickupErrorsFromApi(be)
+        const PICKUP_SERVER_KEYS = ['adresse_complete', 'intigo_zone_id', 'latitude', 'longitude', 'contact_name', 'phone', 'code_postal', 'indications']
+        const mapped: Record<string, string> = {}
+        Object.entries(be).forEach(([k, v]) => {
+          if (PICKUP_SERVER_KEYS.includes(k)) return
+          const f = fieldOfServerKey(k)
+          if (!mapped[f]) mapped[f] = v[0]
+        })
+        setErrors(mapped)
+        setPickupErrors(pe)
+        const order = [...STEP_FIELDS[1], ...STEP_FIELDS[2], ...STEP_FIELDS[3]]
+        const first = order.find(k => (k.startsWith('pk:') ? pe[k.slice(3) as keyof PickupErrors] : mapped[k]))
+        if (first) {
+          setStep(STEP_OF(first))
+          setGuideTarget({ key: first })
+          setProblem({ kind: 'fields' })
+        } else {
+          // A field the form doesn't show: say it in the banner
+          setProblem({ kind: 'message', message: Object.values(mapped)[0] ?? tgd('fieldsToFix') })
+        }
+      } else if (status && status >= 500) {
+        console.error('[seller application] server error', status, body, err)
+        setProblem({ kind: 'server' })
+      } else if (body?.message) {
+        // Already translated by the server (pending application, too many attempts…)
+        setProblem({ kind: 'message', message: body.message })
+      } else {
+        console.error('[seller application] unexpected response', status, body, err)
+        setProblem({ kind: 'server' })
+      }
     } finally {
       setLoading(false)
     }
@@ -679,7 +963,7 @@ export default function ApplicationForm({
   // ─── FIX: showForm only when existingApp is genuinely null (no real application)
   // OR when user explicitly clicked Edit.
   // existingApp being null means: loaded and confirmed no application exists.
-  const showForm = (!existingApp || isEditing) && !loadFailed
+  const showForm = formVisible
   const needsReattach = restored && (!(profilePic || profilePicExisting) || samples.length === 0)
 
   return (
@@ -716,7 +1000,10 @@ export default function ApplicationForm({
               app={existingApp}
               onEdit={() => {
                 setIsEditing(true)
-                setTimeout(scrollToForm, 100)
+                // Edits saved before a reload come back (restoreDraft scrolls to the form)
+                const restoredEdits = editDraftFor.current != null && restoreDraft(editDraftFor.current)
+                editDraftFor.current = null
+                if (!restoredEdits) setTimeout(scrollToForm, 100)
               }}
             />
           )}
@@ -779,10 +1066,10 @@ export default function ApplicationForm({
                 {/* ══ STEP 1 ══ */}
                 {step === 1 && (
                   <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <Field label={t('fields.fullName')} id="full_name" error={errors.full_name}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Field label={t('fields.fullName')} id="full_name" hint={hintOf('full_name')} ok={okOf('full_name', !!form.full_name.trim())}>
                         <div style={{ position:'relative' }}>
-                          <input id="full_name" type="text" placeholder={t('fields.fullNamePlaceholder')} value={form.full_name} onChange={handleChange('full_name')} className={inputCls(errors.full_name) + (namePrefilled ? ' pe-12' : '')} />
+                          <input id="full_name" type="text" autoComplete="name" maxLength={LIMITS.name} placeholder={t('fields.fullNamePlaceholder')} value={form.full_name} onChange={handleChange('full_name')} onBlur={handleBlur('full_name')} aria-invalid={!!hintOf('full_name')} className={inputCls(hintOf('full_name')) + (namePrefilled ? ' pe-12' : '')} />
                           {namePrefilled && (
                             <div style={{ position:'absolute', insetInlineEnd:10, top:'50%', transform:'translateY(-50%)' }}>
                               <div style={{ display:'flex', alignItems:'center', gap:3, background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:99, padding:'2px 7px' }}>
@@ -793,17 +1080,18 @@ export default function ApplicationForm({
                           )}
                         </div>
                       </Field>
-                      <Field label={t('fields.phone')} id="phone_number" error={errors.phone_number}>
-                        <input id="phone_number" type="tel" dir="ltr" placeholder="+216 XX XXX XXX" value={form.phone_number} onChange={handleChange('phone_number')} className={inputCls(errors.phone_number)} />
+                      <Field label={t('fields.phone')} id="phone_number" hint={hintOf('phone_number')} ok={okOf('phone_number', !!form.phone_number.trim())}
+                        success={okOf('phone_number', !!form.phone_number.trim()) ? tgd('willUse', { value: formatPhone(normalizePhone(form.phone_number)) }) : null}>
+                        <input id="phone_number" type="tel" dir="ltr" inputMode="tel" autoComplete="tel-national" placeholder="22 123 456" value={form.phone_number} onChange={handleChange('phone_number')} onBlur={handleBlur('phone_number')} aria-invalid={!!hintOf('phone_number')} className={inputCls(hintOf('phone_number'))} />
                       </Field>
                     </div>
 
-                    <Field label={t('fields.businessName')} id="business_name" error={errors.business_name}>
-                      <input id="business_name" type="text" placeholder={t('fields.businessNamePlaceholder')} value={form.business_name} onChange={handleChange('business_name')} className={inputCls(errors.business_name)} />
+                    <Field label={t('fields.businessName')} id="business_name" hint={hintOf('business_name')} ok={okOf('business_name', !!form.business_name.trim())}>
+                      <input id="business_name" type="text" autoComplete="organization" maxLength={LIMITS.name} placeholder={t('fields.businessNamePlaceholder')} value={form.business_name} onChange={handleChange('business_name')} onBlur={handleBlur('business_name')} aria-invalid={!!hintOf('business_name')} className={inputCls(hintOf('business_name'))} />
                     </Field>
 
                     {/* Categories + Subcategories */}
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-1.5" id="business_category" style={{ borderRadius:12 }}>
                       <label className="text-sm font-semibold text-gray-700">
                         {t('fields.categories')}
                         <span style={{ fontSize:'0.72rem', fontWeight:400, color:'#9ca3af', marginInlineStart:6 }}>{t('fields.categoriesHint')}</span>
@@ -840,9 +1128,7 @@ export default function ApplicationForm({
                           ))}
                         </div>
                       )}
-                      {errors.business_category && (
-                        <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={11} />{errors.business_category}</p>
-                      )}
+                      <GuideLine hint={hintOf('business_category')} />
 
                       {selectedCategories.length > 0 && (
                         <div style={{ marginTop:12, background:'#f8f8f6', borderRadius:12, padding:'14px', border:'1px solid #e5e7eb' }}>
@@ -929,7 +1215,7 @@ export default function ApplicationForm({
                     </div>
                     {/* Pickup address: Intigo's "Nouvelle adresse" fields (zone + map pin required) */}
                     <p style={{ fontSize:'0.78rem', color:'#6b7280', margin:0 }}>{tpa('subtitle')}</p>
-                    <PickupAddressFields value={pickup} onChange={changePickup} errors={pickupErrors} disabled={loading} idPrefix="apply-pk" />
+                    <PickupAddressFields value={pickup} onChange={changePickup} errors={pickupErrors} disabled={loading} idPrefix="apply-pk" tone="guide" />
                   </>
                 )}
 
@@ -937,17 +1223,18 @@ export default function ApplicationForm({
                 {step === 3 && (
                   <>
                     {/* Profile picture */}
-                    <div>
+                    <div id="profile_picture" style={{ borderRadius:12 }}>
                       <label style={{ fontSize:'0.85rem', fontWeight:700, color:'#374151', display:'block', marginBottom:8 }}>
                         {t('fields.picture')} <span style={{ color:'#db142e' }}>*</span>
                         <span style={{ color:'#9ca3af', fontWeight:400, fontSize:'0.78rem', marginInlineStart:4 }}>({tc('required')})</span>
                       </label>
                       <div style={{ display:'flex', alignItems:'center', gap:16 }}>
-                        <div onClick={() => profileRef.current?.click()} role="button" aria-label={t('uploadPhoto')}
-                          style={{ width:72, height:72, borderRadius:16, border:errors.profile_picture ? '2px dashed #f87171' : '2px dashed #e5e7eb', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', overflow:'hidden', background:errors.profile_picture ? '#fef2f2' : '#fafafa' }}>
+                        <div onClick={() => profileRef.current?.click()} role="button" tabIndex={0} aria-label={t('uploadPhoto')}
+                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); profileRef.current?.click() } }}
+                          style={{ width:72, height:72, borderRadius:16, border:hintOf('profile_picture') ? '2px dashed #f59e0b' : '2px dashed #e5e7eb', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', overflow:'hidden', background:hintOf('profile_picture') ? '#fffbeb' : '#fafafa', flexShrink:0 }}>
                           {profilePicPreview
                             ? <img src={profilePicPreview} alt={t('fields.picture')} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                            : <Upload size={20} color={errors.profile_picture ? '#f87171' : '#d1d5db'} />}
+                            : <Upload size={20} color={hintOf('profile_picture') ? '#f59e0b' : '#d1d5db'} />}
                         </div>
                         <div>
                           <button type="button" onClick={() => profileRef.current?.click()} style={{ color:'#db142e', fontWeight:700, fontSize:'0.85rem', background:'none', border:'none', cursor:'pointer' }}>
@@ -959,14 +1246,14 @@ export default function ApplicationForm({
                           )}
                         </div>
                       </div>
-                      {errors.profile_picture && (
-                        <p className="text-xs text-red-500 flex items-center gap-1 mt-2"><AlertCircle size={11} />{errors.profile_picture}</p>
-                      )}
-                      <input ref={profileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleProfilePic} />
+                      <div style={{ marginTop:8 }}>
+                        <PhotoGuide busy={photosBusy > 0 && !profilePic && !profilePicExisting} note={photoNotes.profile_picture} hint={hintOf('profile_picture')} />
+                      </div>
+                      <input ref={profileRef} type="file" accept="image/*,.heic,.heif" style={{ display:'none' }} onChange={handleProfilePic} />
                     </div>
 
                     {/* Product samples */}
-                    <div>
+                    <div id="sample_images" style={{ borderRadius:12 }}>
                       <label style={{ fontSize:'0.85rem', fontWeight:700, color:'#374151', display:'block', marginBottom:4 }}>
                         {t('fields.samples')} <span style={{ color:'#db142e' }}>*</span>
                         <span style={{ color:'#9ca3af', fontWeight:400, fontSize:'0.78rem', marginInlineStart:4 }}>{t('fields.samplesHint')}</span>
@@ -983,7 +1270,7 @@ export default function ApplicationForm({
                               </div>
                               <div style={{ flex:1, minWidth:0 }}>
                                 {s.isExisting && <p style={{ fontSize:'0.65rem', color:'#198f41', fontWeight:700, margin:'0 0 3px' }}>{t('existing')}</p>}
-                                <input type="text" placeholder={t('captionFor', { n: i + 1 })} aria-label={t('captionFor', { n: i + 1 })} value={s.caption} onChange={e => updateCaption(i, e.target.value)} maxLength={200}
+                                <input type="text" placeholder={t('captionFor', { n: i + 1 })} aria-label={t('captionFor', { n: i + 1 })} value={s.caption} onChange={e => updateCaption(i, e.target.value)} maxLength={LIMITS.caption}
                                   style={{ flex:1, fontSize:'0.78rem', padding:'8px 12px', borderRadius:8, border:'1px solid #e5e7eb', outline:'none', background:'white', color:'#374151', width:'100%' }} />
                               </div>
                               <button type="button" onClick={() => removeSample(i)} aria-label={t('removeImage')}
@@ -995,30 +1282,33 @@ export default function ApplicationForm({
                         </div>
                       )}
                       {samples.length < 5 && (
-                        <div onClick={() => samplesRef.current?.click()} role="button"
-                          style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', border:errors.sample_images ? '2px dashed #f87171' : '2px dashed #e5e7eb', borderRadius:12, cursor:'pointer', background:errors.sample_images ? '#fef2f2' : '#fafafa' }}>
-                          <Upload size={16} color={errors.sample_images ? '#f87171' : '#d1d5db'} />
-                          <span style={{ fontSize:'0.78rem', color:errors.sample_images ? '#f87171' : '#9ca3af' }}>
+                        <div onClick={() => samplesRef.current?.click()} role="button" tabIndex={0}
+                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); samplesRef.current?.click() } }}
+                          style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', border:hintOf('sample_images') ? '2px dashed #f59e0b' : '2px dashed #e5e7eb', borderRadius:12, cursor:'pointer', background:hintOf('sample_images') ? '#fffbeb' : '#fafafa' }}>
+                          <Upload size={16} color={hintOf('sample_images') ? '#f59e0b' : '#d1d5db'} />
+                          <span style={{ fontSize:'0.78rem', color:hintOf('sample_images') ? '#92400e' : '#9ca3af' }}>
                             {samples.length === 0 ? t('uploadSamples') : t('addMore', { count: 5 - samples.length })}
                           </span>
                         </div>
                       )}
-                      {errors.sample_images && (
-                        <p className="text-xs text-red-500 flex items-center gap-1 mt-2"><AlertCircle size={11} />{errors.sample_images}</p>
-                      )}
+                      <div style={{ marginTop:8 }}>
+                        <PhotoGuide busy={photosBusy > 0} note={photoNotes.sample_images} hint={hintOf('sample_images')} />
+                      </div>
                       {samples.length >= 2 && (
                         <p style={{ fontSize:'0.72rem', color:'#198f41', marginTop:6, fontWeight:600 }}>{t('samplesBonus')}</p>
                       )}
-                      <input ref={samplesRef} type="file" accept="image/*" multiple style={{ display:'none' }} onChange={handleSamples} />
+                      <input ref={samplesRef} type="file" accept="image/*,.heic,.heif" multiple style={{ display:'none' }} onChange={handleSamples} />
                     </div>
 
                     {/* Description — optional, moved to step 3 */}
-                    <Field label={t('fields.description')} id="business_description" optional>
+                    <Field label={t('fields.description')} id="business_description" optional
+                      hint={hintOf('business_description')} ok={okOf('business_description', !!form.business_description.trim())}>
                       <textarea id="business_description" rows={4}
                         placeholder={t('fields.descriptionPlaceholder')}
                         value={form.business_description}
                         onChange={handleChange('business_description')}
-                        className={inputCls() + ' resize-none'}
+                        onBlur={handleBlur('business_description')}
+                        className={inputCls(errors.business_description || issueOf('business_description')?.blocking ? hintOf('business_description') : null) + ' resize-none'}
                       />
                       <span style={{ fontSize:'0.72rem', color:form.business_description.length >= 50 ? '#198f41' : '#bbb', textAlign:'end' }}>
                         {form.business_description.length} / 2000{form.business_description.length >= 50 && ' ✓'}
@@ -1031,24 +1321,35 @@ export default function ApplicationForm({
                         {t('fields.social')} <span style={{ color:'#9ca3af', fontWeight:400 }}>({tc('optional')})</span>
                       </p>
                       <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                        <Field label={t('fields.facebook')} id="facebook_url">
-                          <input id="facebook_url" type="url" dir="ltr" placeholder="https://facebook.com/yourbusiness" value={form.facebook_url} onChange={handleChange('facebook_url')} className={inputCls()} />
-                        </Field>
-                        <Field label={t('fields.instagram')} id="instagram_url">
-                          <input id="instagram_url" type="url" dir="ltr" placeholder="https://instagram.com/yourbusiness" value={form.instagram_url} onChange={handleChange('instagram_url')} className={inputCls()} />
-                        </Field>
-                        <Field label={t('fields.website')} id="website_url">
-                          <input id="website_url" type="url" dir="ltr" placeholder="https://yourbusiness.tn" value={form.website_url} onChange={handleChange('website_url')} className={inputCls()} />
-                        </Field>
+                        {([
+                          ['facebook_url',  t('fields.facebook'),  tgd('placeholderFacebook')],
+                          ['instagram_url', t('fields.instagram'), tgd('placeholderInstagram')],
+                          ['website_url',   t('fields.website'),   tgd('placeholderWebsite')],
+                        ] as const).map(([k, label, placeholder]) => (
+                          <Field key={k} label={label} id={k} hint={hintOf(k)} ok={okOf(k, !!form[k].trim())} success={linkSuccess(k)}>
+                            {/* type="text": "@boutique" or "boutique.tn" must not be refused by the browser */}
+                            <input id={k} type="text" inputMode="url" dir="ltr" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+                              maxLength={LIMITS.link} placeholder={placeholder} value={form[k]}
+                              onChange={handleChange(k)} onBlur={handleBlur(k)} aria-invalid={!!hintOf(k)} className={inputCls(hintOf(k))} />
+                          </Field>
+                        ))}
                       </div>
                     </div>
                   </>
                 )}
 
-                {error && (
-                  <div style={{ display:'flex', alignItems:'center', gap:8, background:'#fef2f2', border:'1px solid #fecaca', borderRadius:12, padding:'12px 16px' }}>
-                    <AlertCircle size={15} color="#dc2626" style={{ flexShrink:0 }} />
-                    <p style={{ fontSize:'0.78rem', color:'#dc2626', margin:0 }}>{error}</p>
+                {problem && (
+                  <div role="status" aria-live="polite" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:10, background:'#fffbeb', border:'1px solid #fde68a', borderRadius:12, padding:'12px 16px' }}>
+                    <span aria-hidden="true" style={{ flexShrink:0 }}>💡</span>
+                    <p style={{ flex:'1 1 220px', fontSize:'0.8rem', color:'#92400e', margin:0, lineHeight:1.5 }}>
+                      {problem.kind === 'message' ? problem.message : tgd(`submit.${problem.kind}`)}
+                    </p>
+                    {problem.kind === 'server' && (
+                      <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer"
+                        style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:999, background:'#198f41', color:'#fff', fontSize:'0.78rem', fontWeight:800, textDecoration:'none', flexShrink:0 }}>
+                        <MessageCircle size={14} aria-hidden="true" />{tgd('submit.whatsapp')}
+                      </a>
+                    )}
                   </div>
                 )}
               </div>

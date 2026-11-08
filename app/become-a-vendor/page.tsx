@@ -84,8 +84,9 @@ export default function BecomeVendorPage() {
     load.then(s => {
       if (!alive) return
       if (!signedIn) setGuest(true)
-      // Back from Google as a seller / applicant: the guest draft no longer applies.
-      else if (s.variant !== 'client') clearApplicationDraft()
+      // Back from Google as a seller: the draft no longer applies (the form drops
+      // drafts that don't match an existing application itself).
+      else if (s.variant === 'seller') clearApplicationDraft()
       setVendor(s)
     })
     return () => { alive = false }
@@ -97,7 +98,7 @@ export default function BecomeVendorPage() {
     setAuthTab(null)
     setResolving(true)
     loadVendorState().then(s => {
-      if (s.variant !== 'client') clearApplicationDraft()
+      if (s.variant === 'seller') clearApplicationDraft()
       setVendor(s)
       setGuest(false)
       setResolving(false)

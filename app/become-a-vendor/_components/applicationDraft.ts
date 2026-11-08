@@ -1,12 +1,13 @@
 import type { PickupAddressValue } from '@/lib/pickupAddress'
 
 /**
- * Guest application draft, kept in sessionStorage (this tab only) while the
- * visitor signs in. Files can't be stored: they stay in memory for the in-page
- * modal, and must be re-attached after a full-page redirect (Google).
+ * Application draft, saved in localStorage on every change so a reload, a closed
+ * tab or the sign-in round trip (Google) never loses the seller's answers.
+ * Files can't be stored: the applicant re-attaches them (the form says so).
+ * Cleared after a successful submission.
  */
 const DRAFT_KEY = 'ct_vendor_apply_draft'
-const MAX_AGE_MS = 24 * 60 * 60 * 1000
+const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
 export interface ApplicationDraft {
   savedAt: number
@@ -15,15 +16,20 @@ export interface ApplicationDraft {
   pickup: PickupAddressValue
   categories: string[]
   subcategories: string[]
+  /** Who filled it (null = guest, kept when they sign in). */
+  userId?: number | null
+  /** The application being edited (null = a new application). */
+  appId?: number | null
 }
 
 export function saveApplicationDraft(draft: Omit<ApplicationDraft, 'savedAt'>): void {
-  try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draft, savedAt: Date.now() })) } catch {}
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draft, savedAt: Date.now() })) } catch {}
 }
 
 export function readApplicationDraft(): ApplicationDraft | null {
   try {
-    const raw = sessionStorage.getItem(DRAFT_KEY)
+    // sessionStorage: drafts saved before the switch to localStorage
+    const raw = localStorage.getItem(DRAFT_KEY) ?? sessionStorage.getItem(DRAFT_KEY)
     if (!raw) return null
     const d = JSON.parse(raw) as ApplicationDraft
     if (!d || typeof d.savedAt !== 'number' || Date.now() - d.savedAt > MAX_AGE_MS || !d.form || !d.pickup) {
@@ -35,5 +41,6 @@ export function readApplicationDraft(): ApplicationDraft | null {
 }
 
 export function clearApplicationDraft(): void {
+  try { localStorage.removeItem(DRAFT_KEY) } catch {}
   try { sessionStorage.removeItem(DRAFT_KEY) } catch {}
 }
