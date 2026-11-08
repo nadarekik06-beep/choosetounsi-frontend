@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Fragment } from "react";
 // Self-hosted (app/fonts, built from google/fonts by subsetting to the same
 // character sets next/font/google used): builds never need the internet.
 import localFont from "next/font/local";
@@ -12,6 +11,7 @@ import { dirOf, type Locale } from "@/i18n/config";
 import { SITE_ORIGIN } from "@/lib/constants";
 import { CartProvider } from '@/context/CartContext';
 import { LanguageProvider } from '@/components/i18n/LanguageSwitcher';
+import LocaleRemount from '@/components/i18n/LocaleRemount';
 import FlashToast from '@/components/FlashToast';
 import CartDrawer from '@/components/CartDrawer';
 import SupportChatWidget from '@/components/SupportChatWidget';
@@ -94,11 +94,12 @@ export default async function RootLayout({
               <NavigationLoaderProvider>
                 {/* Keyed by locale: switching language remounts the page so it
                     refetches API content in the new language (cart/session live
-                    in providers above and are kept). */}
-                <Fragment key={locale}>
+                    in providers above and are kept). An open seller product form
+                    holds the remount off so nothing typed is lost. */}
+                <LocaleRemount locale={locale}>
                   {children}
                   <SiteFooter />
-                </Fragment>
+                </LocaleRemount>
                 {/* role / seller status: re-read from the API, no logout needed */}
                 <AuthSync />
                 <SellerActivationWatcher />

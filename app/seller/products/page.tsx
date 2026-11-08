@@ -30,7 +30,7 @@ import { blackPepperApi } from '@/lib/blackPepperApi';
 import { insightFromUrl } from '../black/visitor-insights/_components/links';
 import RestockModal, { type RestockProduct } from '../components/RestockModal';
 import { useTheme } from '../SellerShell';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import ProductAlertPanel, {
   AlertIndicator,
@@ -52,6 +52,7 @@ export default function ProductsPage() {
   const router = useRouter();
   const { dark } = useTheme();
   const t = useTranslations('seller.products');
+  const locale = useLocale();
   const { price } = useFormat();
 
   const [data,       setData]       = useState<PaginatedResponse<Product> | null>(null);
@@ -109,6 +110,14 @@ export default function ProductsPage() {
   }, [page, search, isActive, isApproved, showToast, t]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
+
+  // Language switched: reload the list so category names follow (an open form keeps its state)
+  const loadedLocale = useRef(locale);
+  useEffect(() => {
+    if (loadedLocale.current === locale) return;
+    loadedLocale.current = locale;
+    fetchProducts();
+  }, [locale, fetchProducts]);
 
   // Opened from a Growth Radar card: prefill + the card to mark as applied on save
   // (cardId 0 = a plain deep link with a focus, e.g. from Qualité des fiches)

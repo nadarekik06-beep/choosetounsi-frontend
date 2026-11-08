@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { productsApi, storageUrl } from '@/lib/sellerApi';
 import type { Product, ProductImage, StockState } from '@/types/seller';
@@ -12,7 +12,7 @@ import {
 import ProductModal from '../ProductModal';
 import StockByVariant from './StockByVariant';
 import { useTheme } from '../../SellerShell';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
@@ -235,6 +235,7 @@ export default function ProductDetailPage() {
   const params  = useParams();
   const router  = useRouter();
   const t       = useTranslations('seller.productDetail');
+  const locale  = useLocale();
   const { dark }  = useTheme();
   const { price, number, date } = useFormat();
   const formatDateTime = (value: string) => date(value, 'datetime');
@@ -248,8 +249,9 @@ export default function ProductDetailPage() {
   const [error,     setError]     = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const fetchProduct = useCallback(async () => {
-    setLoading(true);
+  // quiet: refresh in place (language switch), no full-page loader
+  const fetchProduct = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true);
     setError(null);
     try {
       const res  = await productsApi.getOne(id);
@@ -293,6 +295,15 @@ export default function ProductDetailPage() {
   }, [id]);
 
   useEffect(() => { fetchProduct(); }, [fetchProduct]);
+
+  // Category names come translated from the API: reload them when the language changes.
+  // Not while the edit form is open (it keeps its own state); closing it reloads anyway.
+  const loadedLocale = useRef(locale);
+  useEffect(() => {
+    if (loadedLocale.current === locale || modalOpen) return;
+    loadedLocale.current = locale;
+    fetchProduct(true);
+  }, [locale, modalOpen, fetchProduct]);
 
   const handleSaved = useCallback(() => {
     setModalOpen(false);

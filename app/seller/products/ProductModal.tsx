@@ -22,7 +22,8 @@ import type { AttributeValues, Attribute } from '@/types/Attributes'
 import PriceDecreaseDialog, { type PriceDrop, discountFor } from '../components/PriceDecreaseDialog'
 import AiDescriptionPanel from '../components/AiDescriptionPanel';
 import CommissionPreview from '@/app/seller/components/CommissionPreview'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { holdLocaleRemount } from '@/lib/i18n/localeRemount'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { OCCASIONS, normalizeOccasions, useOccasionCategories, type Occasion } from '@/lib/occasions'
 
@@ -473,27 +474,53 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
   const categorySlug       = categories.find(c => c.id === Number(form.category_id))?.slug
   const occasionsApply     = !!categorySlug && !!occasionCategories?.includes(categorySlug)
 
-  // API down → message + retry in the category field; the rest of the form stays usable
-  const loadCategories = useCallback(() => {
-    setCatLoading(true)
+  // Category / subcategory names come from the API in the interface language (Accept-Language)
+  const locale = useLocale()
+  // Language switch while the form is open: keep the page mounted (root layout) so nothing is lost
+  useEffect(() => holdLocaleRemount(), [])
+  const catRequest = useRef(0)
+
+  // API down → message + retry in the category field; the rest of the form stays usable.
+  // quiet: names only (language switch), no loader, the list stays usable meanwhile.
+  const loadCategories = useCallback((quiet = false) => {
+    const req = ++catRequest.current
+    if (!quiet) setCatLoading(true)
     setCatError(false)
     categoriesApi.getAll()
-      .then(res => setCategories(res.data ?? []))
-      .catch(err => { console.warn('[ProductModal] categories not loaded:', err?.message); setCatError(true) })
-      .finally(() => setCatLoading(false))
+      .then(res => { if (req === catRequest.current) setCategories(res.data ?? []) })
+      .catch(err => {
+        console.warn('[ProductModal] categories not loaded:', err?.message)
+        if (req === catRequest.current && !quiet) setCatError(true)
+      })
+      .finally(() => { if (req === catRequest.current) setCatLoading(false) })
   }, [])
 
   useEffect(() => { loadCategories() }, [loadCategories])
 
+  // Language switched with the form open: reload the names only. Ids, the chosen category /
+  // subcategory and everything the seller filled in stay as they are.
+  const loadedLocale = useRef(locale)
   useEffect(() => {
-    if (!form.category_id) { setSubcategories([]); set('subcategory_id', ''); setVariantAxes([]); setInfoAxes([]); return }
+    if (loadedLocale.current === locale) return
+    loadedLocale.current = locale
+    loadCategories(true)
+  }, [locale, loadCategories])
+
+  const subsFor = useRef<number | null>(null)
+  useEffect(() => {
+    if (!form.category_id) { subsFor.current = null; setSubcategories([]); set('subcategory_id', ''); setVariantAxes([]); setInfoAxes([]); return }
     const cat = categories.find(c => c.id === Number(form.category_id))
     if (!cat?.slug) return
-    setSubLoading(true)
+    // Same category again (names reloaded after a language switch): no loader, keep the chips
+    const sameCategory = subsFor.current === cat.id
+    subsFor.current = cat.id
+    let cancelled = false
+    if (!sameCategory) setSubLoading(true)
     categoriesApi.getSubcategories(cat.slug)
-      .then(res => setSubcategories(res.data ?? []))
-      .catch(() => setSubcategories([]))
-      .finally(() => setSubLoading(false))
+      .then(res => { if (!cancelled) setSubcategories(res.data ?? []) })
+      .catch(() => { if (!cancelled && !sameCategory) setSubcategories([]) })
+      .finally(() => { if (!cancelled) setSubLoading(false) })
+    return () => { cancelled = true }
   }, [form.category_id, categories])
 
   useEffect(() => {
@@ -1280,7 +1307,7 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
                   {catError && (
                     <p role="alert" style={{ fontSize: 11, color: '#b91c1c', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                       <AlertCircle size={12} style={{ flexShrink: 0 }} />{t('categoriesFailed')}
-                      <button type="button" onClick={loadCategories} style={{ background: 'none', border: 'none', padding: 0, color: '#b91c1c', fontWeight: 800, textDecoration: 'underline', cursor: 'pointer', fontSize: 11, fontFamily: 'inherit' }}>
+                      <button type="button" onClick={() => loadCategories()} style={{ background: 'none', border: 'none', padding: 0, color: '#b91c1c', fontWeight: 800, textDecoration: 'underline', cursor: 'pointer', fontSize: 11, fontFamily: 'inherit' }}>
                         {t('retry')}
                       </button>
                     </p>
