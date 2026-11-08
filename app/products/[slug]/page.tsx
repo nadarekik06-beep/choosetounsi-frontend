@@ -1,13 +1,15 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Heart, ShoppingCart, ChevronRight, Star, Shield, Truck,
-  RotateCcw, Share2, Minus, Plus, ZoomIn, ChevronLeft,
+  RotateCcw, Share2, Minus, Plus,
   CheckCircle, Zap, Check,
 } from 'lucide-react'
+import ProductGallery, { type GalleryFocusRequest } from '@/app/components/product/gallery/ProductGallery'
+import { buildGallerySlides, type GalleryColor } from '@/app/components/product/gallery/gallerySlides'
 import { useCart } from '@/context/CartContext'
 import { getUser } from '@/lib/auth'
 import { trackView } from '@/lib/tracking'
@@ -140,7 +142,7 @@ function AttributeRow({ attr }: { attr: AttributeData }) {
 // ─── VariantSelector ──────────────────────────────────────────────────────────
 
 function VariantSelector({
-  axes, selectedOptions, onSelect, isOptionAvailable, missingAxes, shakeKey,
+  axes, selectedOptions, onSelect, isOptionAvailable, missingAxes, shakeKey, previewColorKey,
 }: {
   axes: Product['selectable_axes']
   selectedOptions: Record<string, string>
@@ -150,6 +152,8 @@ function VariantSelector({
   missingAxes: string[]
   /** Changes on every failed tap so the shake replays */
   shakeKey: number
+  /** Color of the gallery photo on screen: display only (soft outline + reminder line) */
+  previewColorKey?: string | null
 }) {
   const t = useTranslations('product')
   if (axes.length === 0) return null
@@ -190,6 +194,8 @@ function VariantSelector({
                   const chosen       = selKey === selectionKey
                   const available    = isOptionAvailable(axis.slug, selectionKey)
                   const swatches     = opt.swatches ?? [{ id: opt.id, value: opt.value, color_hex: opt.color_hex }]
+                  // Shown in the gallery but not chosen: soft dashed outline, no check, not red
+                  const previewed    = !chosen && previewColorKey === selectionKey
                   return (
                     <button
                       key={`${axis.slug}-${selectionKey}`}
@@ -200,7 +206,7 @@ function VariantSelector({
                       title={opt.value}
                       disabled={!available}
                       onClick={() => onSelect(axis.slug, selectionKey)}
-                      className={`pd-swatch${chosen ? ' is-on' : ''}`}
+                      className={`pd-swatch${chosen ? ' is-on' : ''}${previewed ? ' is-preview' : ''}`}
                     >
                       <span className="pd-swatch__fill">
                         {opt.primary_image ? (
@@ -249,6 +255,15 @@ function VariantSelector({
               </div>
             )}
 
+            {/* The gallery shows another color than the one chosen: say what is being bought.
+                (Nothing chosen yet: the "Choose a color" hint above already says it.) */}
+            {isColor && selName && previewColorKey && previewColorKey !== selKey
+              && (axis.options as ColorOption[]).some(o => (o.group_key ?? String(o.id)) === previewColorKey) && (
+              <p className="pd-preview-note" data-testid="preview-note">
+                {t('galleryChosenColor', { color: selName })}
+              </p>
+            )}
+
             {missing && (
               <p role="alert" style={{ fontSize: 12.5, color: '#db142e', fontWeight: 700, margin: '8px 0 0' }}>
                 {t('selectOptions', { options: axis.name })}
@@ -257,80 +272,6 @@ function VariantSelector({
           </div>
         )
       })}
-    </div>
-  )
-}
-
-// ─── Gallery ─────────────────────────────────────────────────────────────────
-
-function Gallery({ images, productName, badge }: { images: string[]; productName: string; badge?: React.ReactNode }) {
-  const t = useTranslations('product')
-  const [active, setActive]   = useState(0)
-  const [zoom, setZoom]       = useState(false)
-  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 })
-
-  useEffect(() => { setActive(0) }, [images])
-
-  const cur = images[active] ?? null
-
-  return (
-    <div style={{ animation: 'fadeUp 0.4s ease both' }}>
-      <div style={{ display: 'flex', gap: 12 }}>
-        {images.length > 1 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: 72 }}>
-            {images.map((img, i) => (
-              <button key={i} onClick={() => setActive(i)} className="thumb" aria-label={t('imageN', { n: i + 1 })} aria-current={active === i}
-                style={{ width: 72, height: 72, borderRadius: 8, overflow: 'hidden', border: `2px solid ${active === i ? '#dc2626' : '#e5e7eb'}`, background: '#f5f5f5', cursor: 'pointer', padding: 0, transition: 'border-color 0.15s', flexShrink: 0 }}>
-                {img ? <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <div style={{ width: '100%', height: '100%', background: '#f1f5f9' }} />}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div style={{ flex: 1, position: 'relative' }}>
-          <div
-            style={{ width: '100%', aspectRatio: '3/4', borderRadius: 16, overflow: 'hidden', background: '#f5f5f5', border: '1px solid #f1f5f9', cursor: zoom ? 'zoom-out' : 'zoom-in', position: 'relative' }}
-            onClick={() => setZoom(z => !z)}
-            onMouseMove={e => { const r = e.currentTarget.getBoundingClientRect(); setZoomPos({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 }) }}
-            onMouseLeave={() => setZoom(false)}
-          >
-            {badge}
-            {cur
-              ? <img src={cur} alt={productName} style={{ width: '100%', height: '100%', objectFit: 'contain', transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`, transform: zoom ? 'scale(2.2)' : 'scale(1)', transition: zoom ? 'none' : 'transform 0.3s ease' }} />
-              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="48" height="48" fill="none" stroke="#e2e8f0" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
-                </div>
-            }
-            {!zoom && cur && (
-              <div style={{ position: 'absolute', bottom: 12, insetInlineEnd: 12, background: 'rgba(0,0,0,0.45)', color: '#fff', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
-                <ZoomIn size={13} /> {t('hoverZoom')}
-              </div>
-            )}
-          </div>
-
-          {images.length > 1 && (
-            <>
-              <button onClick={() => setActive(i => (i - 1 + images.length) % images.length)} aria-label={t('prevImage')}
-                style={{ position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)', width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: '1px solid #e5e7eb', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                <ChevronLeft size={16} color="#374151" />
-              </button>
-              <button onClick={() => setActive(i => (i + 1) % images.length)} aria-label={t('nextImage')}
-                style={{ position: 'absolute', insetInlineEnd: 10, top: '50%', transform: 'translateY(-50%)', width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: '1px solid #e5e7eb', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                <ChevronRight size={16} color="#374151" />
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {images.length > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 12 }}>
-          {images.map((_, i) => (
-            <button key={i} onClick={() => setActive(i)} aria-label={t('imageN', { n: i + 1 })}
-              style={{ width: i === active ? 20 : 7, height: 7, borderRadius: 999, background: i === active ? '#dc2626' : '#e5e7eb', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.25s ease' }} />
-          ))}
-        </div>
-      )}
     </div>
   )
 }
@@ -364,10 +305,24 @@ export default function ProductDetailPage() {
   const [sellerImgErr,    setSellerImgErr]    = useState(false)
   const buyNowRef = useRef(false)
 
+  // ── Gallery state: kept apart from the selection on purpose ──────────────────
+  // The selected variant (selectedOptions) changes ONLY in VariantSelector's onSelect,
+  // i.e. when the buyer taps a swatch or a size. The gallery never receives
+  // setSelectedOptions; it gets a one-way "show this color" request (galleryFocus) and
+  // reports back only which color is ON SCREEN (previewColorKey), for display hints.
+  // Never derive the selection from the gallery: a buyer who chose Noir and swipes onto
+  // a white photo still buys Noir (cart, checkout and order use selectedVariant.id).
+  const [galleryLeadColor, setGalleryLeadColor] = useState<string | undefined>(undefined)
+  const [galleryFocus,     setGalleryFocus]     = useState<GalleryFocusRequest | null>(null)
+  const [previewColorKey,  setPreviewColorKey]  = useState<string | null>(null)
+
   useEffect(() => {
     if (!slug) return
     setLoading(true)
     setSelectedOptions({})
+    setGalleryLeadColor(undefined)
+    setGalleryFocus(null)
+    setPreviewColorKey(null)
     setActivePromotion(null)
     fetch(`${API_BASE}/products/${slug}`, { headers: { Accept: 'application/json' } })
       .then(r => r.ok ? r.json() : Promise.reject())
@@ -397,6 +352,9 @@ export default function ProductDetailPage() {
             }
           }
           if (Object.keys(auto).length > 0) setSelectedOptions(auto)
+          // The color selected on arrival leads the gallery order
+          const colorSlug = prod.selectable_axes.find(a => a.type === 'color')?.slug
+          setGalleryLeadColor(colorSlug ? auto[colorSlug] : undefined)
         }
       })
       .catch(() => setError(true))
@@ -444,25 +402,27 @@ export default function ProductDetailPage() {
     })
   }, [variants, selectedOptions, axes])
 
-  // Images follow the selected color only: every size of a color shares its photos
-  const galleryImages = (() => {
-    if (selectedColorKey) {
-      const colorVariant = variants.find(v =>
-        v.color_group_key === selectedColorKey && v.image_urls.length > 0
-      )
-      if (colorVariant) return colorVariant.image_urls
-    }
-    if (product) {
-      const productImgs = product.images
-        .filter(i => !i.color_option_id && !i.variant_id)
-        .map(i => resolveImg(i.url ?? i.image_path))
-        .filter(Boolean) as string[]
-      if (productImgs.length > 0) return productImgs
-      const primary = resolveImg(product.primary_image_url)
-      if (primary) return [primary]
-    }
-    return []
-  })()
+  // One gallery with every photo: each color's set (swatch order, sizes share a color's
+  // photos) + the general photos. Built once per product, so tapping a swatch scrolls to
+  // that color instead of reshuffling the photos under the buyer's finger.
+  const gallerySlides = useMemo(() => {
+    if (!product) return []
+    const colorAx = product.has_variants ? product.selectable_axes?.find(a => a.type === 'color') : undefined
+    const colors: GalleryColor[] = colorAx
+      ? (colorAx.options as ColorOption[]).map(o => {
+          const key = o.group_key ?? String(o.id)
+          return { key, label: o.value, images: product.color_images?.[key] ?? product.color_images?.[String(o.id)] ?? [] }
+        })
+      : []
+    const general = product.images
+      .filter(i => !i.color_option_id && !i.variant_id)
+      .map(i => resolveImg(i.url ?? i.image_path))
+      .filter(Boolean) as string[]
+    const slides = buildGallerySlides(colors, general, galleryLeadColor)
+    if (slides.length > 0) return slides
+    const primary = resolveImg(product.primary_image_url)
+    return primary ? [{ src: primary, colorKey: null, colorLabel: null }] : []
+  }, [product, galleryLeadColor])
 
   const currentUser    = getUser()
   const isOwnProduct   = !!(currentUser && product && currentUser.id === product.seller?.id)
@@ -580,6 +540,9 @@ export default function ProductDetailPage() {
         .pd-swatch:hover:not(:disabled){border-color:#94a3b8}
         .pd-swatch.is-on{border-color:#db142e;box-shadow:0 0 0 1.5px #db142e}
         .pd-swatch:disabled{cursor:not-allowed;opacity:.4}
+        /* On screen in the gallery but NOT chosen: grey dashed outline (chosen = red + check) */
+        .pd-swatch.is-preview{border-color:#64748b;border-style:dashed}
+        .pd-preview-note{font-size:12.5px;color:#64748b;font-weight:600;margin:8px 0 0;line-height:1.45}
         .pd-swatch__check{position:absolute;top:-7px;inset-inline-end:-7px;width:20px;height:20px;border-radius:50%;background:#db142e;color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
         .pd-size{min-height:44px;min-width:52px;padding:0 16px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;color:#0f172a;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:border-color .15s,box-shadow .15s}
         .pd-size:hover:not(:disabled){border-color:#94a3b8}
@@ -617,7 +580,11 @@ export default function ProductDetailPage() {
         </div>
 
         <div className="pd-grid" style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 24px 48px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
-          <Gallery images={galleryImages} productName={product.name}
+          {/* One-way: selection → gallery (selectedColorKey, galleryFocus). No setter goes in. */}
+          <ProductGallery key={product.id} slides={gallerySlides} productName={product.name}
+            selectedColorKey={selectedColorKey}
+            focusRequest={galleryFocus}
+            onPreviewChange={setPreviewColorKey}
             badge={<ProductPromoBadges product={linePrice} size="lg" style={{ top: 12, insetInlineStart: 12 }} />} />
 
           <div style={{ animation: 'fadeUp 0.4s ease 0.1s both' }}>
@@ -758,13 +725,19 @@ export default function ProductDetailPage() {
               <VariantSelector
                 axes={axes}
                 selectedOptions={selectedOptions}
+                // The ONLY place the selection changes: an explicit tap on a swatch / size
                 onSelect={(axisSlug, value) => {
                   setMissingAxes(m => m.filter(s => s !== axisSlug))
                   setSelectedOptions(prev => ({ ...prev, [axisSlug]: value }))
+                  // variant → gallery: show the tapped color's first photo
+                  if (axisSlug === colorAxis?.slug) {
+                    setGalleryFocus(f => ({ colorKey: value, nonce: (f?.nonce ?? 0) + 1 }))
+                  }
                 }}
                 isOptionAvailable={isOptionAvailable}
                 missingAxes={missingAxes}
                 shakeKey={shakeKey}
+                previewColorKey={previewColorKey}
               />
             )}
 

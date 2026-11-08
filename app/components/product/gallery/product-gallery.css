@@ -1,0 +1,74 @@
+/* Product page gallery (ProductGallery.tsx) */
+.pg{animation:fadeUp .4s ease both}
+.pg-row{display:flex;gap:12px}
+
+/* Thumbnail strip: as tall as the main photo, scrolls on its own (desktop / tablet) */
+.pg-thumbs{position:relative;width:72px;flex-shrink:0}
+.pg-thumbs__inner{position:absolute;inset:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;scrollbar-width:none}
+.pg-thumbs__inner::-webkit-scrollbar{display:none}
+.pg-thumb{flex-shrink:0;width:72px;height:72px;border-radius:8px;overflow:hidden;border:2px solid #e5e7eb;background:#f5f5f5;cursor:pointer;padding:0;transition:border-color .15s}
+.pg-thumb:hover,.pg-thumb.is-on{border-color:#dc2626}
+.pg-thumb:focus-visible{outline:2px solid #0f172a;outline-offset:2px}
+.pg-thumb img{width:100%;height:100%;object-fit:contain;display:block}
+
+.pg-main{flex:1;min-width:0;position:relative}
+/* Fixed 3:4 box: no layout shift while photos load */
+.pg-frame{position:relative;width:100%;aspect-ratio:3/4;border-radius:16px;overflow:hidden;background:#f5f5f5;border:1px solid #f1f5f9}
+
+/* The track: native scroll-snap. The browser locks the gesture direction, so a vertical
+   swipe scrolls the page and a horizontal one changes the photo. */
+.pg-track{position:absolute;inset:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:none;scrollbar-width:none;touch-action:pan-x pan-y pinch-zoom;outline:none}
+.pg-track::-webkit-scrollbar{display:none}
+.pg-track:not(.is-many){overflow:hidden}
+.pg-track:focus-visible{box-shadow:inset 0 0 0 2px #0f172a;border-radius:16px}
+.pg-track.is-dragging{scroll-snap-type:none;cursor:grabbing;user-select:none}
+.pg-track.is-dragging .pg-slide{cursor:grabbing}
+.pg-track.is-zoomed{overflow:hidden}
+
+.pg-slide{flex:0 0 100%;width:100%;height:100%;position:relative;overflow:hidden;scroll-snap-align:center;scroll-snap-stop:always;cursor:zoom-in}
+.pg-track.is-zoomed .pg-slide{cursor:zoom-out}
+.pg-slide img{width:100%;height:100%;object-fit:contain;display:block;user-select:none;-webkit-user-drag:none;transition:transform .3s ease}
+.pg-slide--empty{display:flex;align-items:center;justify-content:center;cursor:default}
+@media (hover:none){.pg-slide{cursor:default}}
+
+/* Overlays */
+.pg-over{position:absolute;inset:0;pointer-events:none;z-index:2}
+.pg-over > *{pointer-events:auto}
+.pg-preview{position:absolute;top:12px;inset-inline-end:12px;z-index:3;pointer-events:none;background:rgba(255,255,255,.92);color:#334155;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;box-shadow:0 1px 4px rgba(15,23,42,.12);max-width:calc(100% - 24px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pg-counter{position:absolute;bottom:12px;inset-inline-start:12px;z-index:3;pointer-events:none;background:rgba(15,23,42,.55);color:#fff;font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:999px;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+.pg-zoomhint{position:absolute;bottom:12px;inset-inline-end:12px;z-index:3;pointer-events:none;background:rgba(0,0,0,.45);color:#fff;border-radius:8px;padding:5px 8px;display:none;align-items:center;gap:4px;font-size:11px;font-weight:600}
+@media (hover:hover) and (pointer:fine){.pg-zoomhint{display:flex}}
+
+.pg-hint{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);z-index:4;pointer-events:none;background:rgba(15,23,42,.8);color:#fff;font-size:13px;font-weight:700;padding:8px 14px;border-radius:999px;max-width:calc(100% - 24px);width:max-content;text-align:center;box-shadow:0 4px 14px rgba(15,23,42,.25);animation:pgHintIn .35s ease both}
+.pg-hint.is-out{animation:pgHintOut .35s ease forwards}
+@keyframes pgHintIn{from{opacity:0;transform:translate(-50%,6px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes pgHintOut{from{opacity:1}to{opacity:0}}
+
+/* Arrows: mouse / trackpad only, shown on hover or focus. Touch-only screens swipe: an
+   arrow there is a dead zone where a swipe goes to the page (and can trigger "back"). */
+.pg-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:36px;height:36px;padding:0;border-radius:50%;background:rgba(255,255,255,.92);border:1px solid #e5e7eb;color:#374151;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.1);transition:opacity .2s}
+.pg-arrow--prev{inset-inline-start:10px}
+.pg-arrow--next{inset-inline-end:10px}
+[dir=rtl] .pg-arrow svg{transform:scaleX(-1)}
+.pg-arrow:focus-visible{outline:2px solid #0f172a;outline-offset:2px}
+@media (hover:hover) and (pointer:fine){
+  .pg-arrow{opacity:0}
+  .pg-main:hover .pg-arrow,.pg-main:focus-within .pg-arrow{opacity:1}
+}
+@media (hover:none) and (pointer:coarse){.pg-arrow{display:none}}
+
+.pg-dots{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-top:12px}
+.pg-dot{position:relative;width:7px;height:7px;border-radius:999px;background:#e5e7eb;border:none;cursor:pointer;padding:0;transition:all .25s ease}
+.pg-dot::after{content:'';position:absolute;inset:-9px -3px}
+.pg-dot.is-on{width:20px;background:#dc2626}
+.pg-dot:focus-visible{outline:2px solid #0f172a;outline-offset:3px}
+
+/* Phones: full-width photo; dots + counter + swipe replace the strip */
+@media (max-width:768px){.pg-thumbs{display:none}}
+
+@media (prefers-reduced-motion:reduce){
+  .pg{animation:none}
+  .pg-slide img,.pg-dot,.pg-arrow{transition:none}
+  .pg-hint{animation:none!important}
+  .pg-hint.is-out{display:none}
+}

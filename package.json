@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "check:mobile": "node scripts/check-mobile-overflow.mjs"
+    "check:mobile": "node scripts/check-mobile-overflow.mjs",
+    "test:gallery": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/test-product-gallery.mjs",
+    "check:gallery": "node scripts/check-product-gallery.mjs"
   },
   "dependencies": {
     "@maplibre/maplibre-gl-leaflet": "0.1.4",
