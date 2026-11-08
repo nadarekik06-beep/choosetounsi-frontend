@@ -623,15 +623,9 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                 </div>
               )}
 
-              {/* Other moves this seller may make right now (from allowed_next) */}
-              {(can('confirmed') || can('cancelled')) && (
+              {/* Other moves this seller may make right now (from allowed_next). Confirming is admin-only. */}
+              {can('cancelled') && (
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  {can('confirmed') && (
-                    <button onClick={() => handleTransition('confirmed')} disabled={updatingStatus}
-                      style={{ flex: 1, minWidth: 160, padding: '11px 16px', borderRadius: 12, border: '1px solid rgba(59,130,246,0.35)', background: dark ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)', color: ink('#3b82f6', dark), fontWeight: 800, fontSize: 13, cursor: updatingStatus ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
-                      {t('actions.confirmed')}
-                    </button>
-                  )}
                   {can('cancelled') && (
                     <button onClick={() => handleTransition('cancelled')} disabled={updatingStatus}
                       style={{ flex: 1, minWidth: 160, padding: '11px 16px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.35)', background: dark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.05)', color: ink('#ef4444', dark), fontWeight: 800, fontSize: 13, cursor: updatingStatus ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
@@ -960,6 +954,11 @@ export default function OrdersPage() {
                       <td style={{ padding: '13px 20px', fontSize: 11, color: textMuted, fontWeight: 500 }}>{date(order.created_at, 'short')}</td>
                       <td style={{ padding: '13px 20px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                          {order.status === 'pending' && (
+                            <span title={t('waitingBody')} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 999, background: dark ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.08)', color: ink('#f59e0b', dark), border: '1px solid rgba(245,158,11,0.3)', whiteSpace: 'nowrap' }}>
+                              ⏳ {t('awaitingAdmin')}
+                            </span>
+                          )}
                           {order.status === 'confirmed' && (
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 999, background: dark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.08)', color: ink('#3b82f6', dark), border: '1px solid rgba(59,130,246,0.3)', whiteSpace: 'nowrap', animation: 'confirmedPulse 2s ease-in-out infinite' }}>
                               {t('prepareNow')}

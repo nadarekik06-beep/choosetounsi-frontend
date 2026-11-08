@@ -168,7 +168,8 @@ export type OrderStatus =
   | 'refunded';            // whole sub-order returned ("Returned (Refunded)")
 
 /** Statuses a seller may set (backend ParcelStatus::SELLER_TARGETS). The API sends allowed_next per parcel. */
-export type SellerNextStatus = 'confirmed' | 'handed_to_courier' | 'cancelled';
+/** Moves a seller may make: confirming an order is admin-only (backend ParcelStatus). */
+export type SellerNextStatus = 'handed_to_courier' | 'cancelled';
 /** status, or 'partially_returned' when part of the sub-order came back */
 export type OrderDisplayStatus = OrderStatus | 'partially_returned';
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
@@ -304,7 +305,7 @@ export interface OrderDetail {
   order: Order & {
     customer: Customer; allowed_next?: SellerNextStatus[];
     /** Marked prepared (packed, waiting for the courier): CHOOSE'Tounsi's WhatsApp reminders stop */
-    prepared_at?: string | null; can_mark_prepared?: boolean;
+    prepared_at?: string | null; can_mark_prepared?: boolean; awaiting_admin_confirmation?: boolean;
   };
   items: OrderItem[];
   seller_subtotal: number;

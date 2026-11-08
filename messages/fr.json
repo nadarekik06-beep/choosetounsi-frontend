@@ -3594,8 +3594,8 @@
       "yourSubtotal": "Votre sous-total",
       "shippingRow": "Livraison (à votre charge)",
       "shippingRowNote": "Gratuite pour le client — déduite de vos gains",
-      "waitingTitle": "En attente de confirmation par l'administrateur",
-      "waitingBody": "L'administrateur appellera le client pour confirmer. Vous serez averti dès que ce sera prêt.",
+      "waitingTitle": "En attente de confirmation par l'admin",
+      "waitingBody": "CHOOSE'Tounsi appelle le client pour confirmer la commande. Ne la préparez pas encore : vous serez notifié dès sa confirmation.",
       "readyTitle": "Prête à préparer",
       "readyBody": "Cette commande a été confirmée par l'admin. Préparez les articles, cliquez sur « Marquer comme préparée », puis indiquez que le colis a été remis au livreur lors du ramassage.",
       "updating": "Mise à jour…",
@@ -3707,7 +3707,8 @@
         "new": "Nouveau",
         "updated": "Mis à jour"
       },
-      "platformFundedLine": "Remise payée par Choose'Tounsi : +{amount}"
+      "platformFundedLine": "Remise payée par Choose'Tounsi : +{amount}",
+      "awaitingAdmin": "En attente de confirmation admin"
     },
     "earnings": {
       "loadFailed": "Impossible de charger les revenus.",
@@ -4455,8 +4456,8 @@
         "basket": "Panier moyen",
         "basketTip": "Montant moyen d’une commande confirmée (ce mois-ci, ou vos derniers mois s’il y a moins de 3 commandes).",
         "orders": "{count, plural, =0 {Aucune commande confirmée} one {# commande confirmée} other {# commandes confirmées}}",
-        "awaiting": "À confirmer",
-        "awaitingTip": "Commandes en attente de votre confirmation. Elles ne comptent pas encore dans vos ventes ni dans votre objectif.",
+        "awaiting": "En attente de confirmation",
+        "awaitingTip": "Commandes en attente de confirmation par CHOOSE'Tounsi (le client est appelé). Elles ne comptent pas encore dans vos ventes ni votre objectif.",
         "awaitingCount": "{count, plural, one {# commande} other {# commandes}} · la plus ancienne : {days} j",
         "awaitingNone": "Rien en attente",
         "projectionTip": "Estimation des ventes à la fin du mois : votre rythme actuel, combiné à vos mois habituels tant que le mois est jeune ou que les commandes sont rares."

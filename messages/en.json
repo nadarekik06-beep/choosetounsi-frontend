@@ -3594,8 +3594,8 @@
       "yourSubtotal": "Your Subtotal",
       "shippingRow": "Shipping (paid by you)",
       "shippingRowNote": "Free for the customer — deducted from your earnings",
-      "waitingTitle": "Waiting for Admin Confirmation",
-      "waitingBody": "The admin will call the client to confirm. You'll be notified when ready.",
+      "waitingTitle": "Awaiting admin confirmation",
+      "waitingBody": "CHOOSE'Tounsi calls the client to confirm the order. Don't prepare it yet: you'll be notified as soon as it's confirmed.",
       "readyTitle": "Ready to Prepare",
       "readyBody": "This order has been confirmed by admin. Pack the items, click \"Mark as prepared\", then mark the parcel as handed to the courier when it is picked up.",
       "updating": "Updating…",
@@ -3707,7 +3707,8 @@
         "new": "New",
         "updated": "Updated"
       },
-      "platformFundedLine": "Discount paid by Choose'Tounsi: +{amount}"
+      "platformFundedLine": "Discount paid by Choose'Tounsi: +{amount}",
+      "awaitingAdmin": "Awaiting admin confirmation"
     },
     "earnings": {
       "loadFailed": "Failed to load earnings data.",
@@ -4455,8 +4456,8 @@
         "basket": "Average basket",
         "basketTip": "Average amount of a confirmed order (this month, or your recent months if fewer than 3 orders).",
         "orders": "{count, plural, =0 {No confirmed order} one {# confirmed order} other {# confirmed orders}}",
-        "awaiting": "To confirm",
-        "awaitingTip": "Orders waiting for your confirmation. They don’t count in your sales or your goal yet.",
+        "awaiting": "Awaiting confirmation",
+        "awaitingTip": "Orders waiting for CHOOSE'Tounsi's confirmation (the client is called). They don’t count in your sales or your goal yet.",
         "awaitingCount": "{count, plural, one {# order} other {# orders}} · oldest: {days} d",
         "awaitingNone": "Nothing waiting",
         "projectionTip": "Estimated sales at the end of the month: your current pace, blended with your usual months while the month is young or orders are few."
