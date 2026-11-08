@@ -572,7 +572,8 @@
     "shop": "Shop",
     "addFavorite": "Add to favorites",
     "removeFavorite": "Remove from favorites",
-    "ratingViews": "{rating} ({views, plural, one {# view} other {# views}})",
+    "ratingReviews": "{rating} ({count, plural, one {# review} other {# reviews}})",
+    "noReviews": "No reviews",
     "soldBy": "Sold by",
     "official": "Official",
     "verified": "Verified",
@@ -651,6 +652,8 @@
     "filterHelpful": "👍 Most helpful",
     "starsChip": "★ {count, plural, one {# star} other {# stars}} ✕",
     "noMatch": "No reviews match your filters",
+    "emptyTitle": "No reviews yet",
+    "emptyHint": "Be the first to leave a review",
     "loadMore": "Load more reviews",
     "reportTitle": "Report review",
     "reportReasons": {

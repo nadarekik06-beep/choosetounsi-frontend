@@ -413,7 +413,14 @@ export default function ProductReviewsSection({ slug }: { slug: string }) {
         {reviews.length === 0 && !loading ? (
           <div style={{ textAlign: 'center', padding: '48px 0', color: '#94a3b8' }}>
             <Star size={32} style={{ opacity: 0.3, margin: '0 auto 12px', display: 'block' }} />
-            <p style={{ fontWeight: 700, fontSize: 14 }}>{t('noMatch')}</p>
+            {filter || ratingFilter !== null || tagFilter !== null ? (
+              <p style={{ fontWeight: 700, fontSize: 14 }}>{t('noMatch')}</p>
+            ) : (
+              <>
+                <p style={{ fontWeight: 700, fontSize: 14, margin: '0 0 4px' }}>{t('emptyTitle')}</p>
+                <p style={{ fontSize: 13, margin: 0 }}>{t('emptyHint')}</p>
+              </>
+            )}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

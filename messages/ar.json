@@ -572,7 +572,8 @@
     "shop": "المتجر",
     "addFavorite": "أضف إلى المفضلة",
     "removeFavorite": "أزل من المفضلة",
-    "ratingViews": "{rating} ({views, plural, one {مشاهدة واحدة} two {مشاهدتان} few {# مشاهدات} many {# مشاهدة} other {# مشاهدة}})",
+    "ratingReviews": "{rating} ({count, plural, one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييمًا} other {# تقييم}})",
+    "noReviews": "لا توجد تقييمات",
     "soldBy": "يبيعه",
     "official": "رسمي",
     "verified": "موثّق",
@@ -651,6 +652,8 @@
     "filterHelpful": "👍 الأكثر إفادة",
     "starsChip": "★ {count, plural, one {نجمة واحدة} two {نجمتان} few {# نجوم} many {# نجمة} other {# نجمة}} ✕",
     "noMatch": "لا توجد تقييمات تطابق الفلاتر",
+    "emptyTitle": "لا توجد تقييمات بعد",
+    "emptyHint": "كن أول من يقيّم هذا المنتج",
     "loadMore": "عرض المزيد من التقييمات",
     "reportTitle": "الإبلاغ عن تقييم",
     "reportReasons": {

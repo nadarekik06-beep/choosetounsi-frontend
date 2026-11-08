@@ -68,6 +68,7 @@ interface Product {
   id: number; name: string; slug: string; description: string | null
   short_description: string | null; price: string | number; stock: number
   sku: string | null; views: number; is_approved: boolean; is_active: boolean
+  avg_rating?: number | null; reviews_count?: number | null
   featured: boolean; primary_image_url: string | null; images: ProductImage[]
   category: { id: number; name: string; slug: string } | null
   subcategory: { id: number; name: string; slug: string } | null
@@ -612,8 +613,14 @@ export default function ProductDetailPage() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 14 }}>
-              {[1,2,3,4,5].map(i => <Star key={i} size={13} fill={i <= 4 ? '#f59e0b' : 'none'} stroke="#f59e0b" strokeWidth={1.5} />)}
-              <span style={{ fontSize: 12, color: '#64748b', marginInlineStart: 4 }}>{t('ratingViews', { rating: format.number(4, { minimumFractionDigits: 1 }), views: product.views })}</span>
+              {(product.reviews_count ?? 0) > 0 && product.avg_rating != null ? (
+                <>
+                  {[1,2,3,4,5].map(i => <Star key={i} size={13} fill={i <= Math.round(product.avg_rating ?? 0) ? '#f59e0b' : 'none'} stroke="#f59e0b" strokeWidth={1.5} />)}
+                  <span style={{ fontSize: 12, color: '#64748b', marginInlineStart: 4 }}>{t('ratingReviews', { rating: format.number(product.avg_rating, { minimumFractionDigits: 1, maximumFractionDigits: 1 }), count: product.reviews_count ?? 0 })}</span>
+                </>
+              ) : (
+                <span style={{ fontSize: 12, color: '#64748b' }}>{t('noReviews')}</span>
+              )}
             </div>
 
             {product.is_platform_product ? (
