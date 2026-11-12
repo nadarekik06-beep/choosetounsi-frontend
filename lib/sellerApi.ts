@@ -636,4 +636,19 @@ export interface StockAlertSettings extends StockAlertSettingsInput {
 /** Body of PUT /api/seller/pickup-address (lib/pickupAddress.ts pickupPayload()). */
 export type PickupAddressInput = Record<string, string | number | null>
 
+/**
+ * Receipt (proof of payment) of one of the seller's own settlements. The file is private:
+ * it is fetched with the auth token and shown from a temporary blob URL.
+ */
+export async function fetchSettlementProofBlob(batchId: number): Promise<Blob> {
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE}/seller/earnings/settlement/${batchId}/proof`, { headers: { ...authHeaders() } })
+  } catch {
+    throw apiError('Network error', 0)
+  }
+  if (!res.ok) throw apiError(`Request failed (HTTP ${res.status})`, res.status)
+  return res.blob()
+}
+
 export default api

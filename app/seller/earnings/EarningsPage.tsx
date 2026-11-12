@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { DollarSign, TrendingDown, TrendingUp, Clock, CheckCircle, Package, Eye } from 'lucide-react'
-import api from '@/lib/sellerApi'
+import api, { fetchSettlementProofBlob } from '@/lib/sellerApi'
 import { useTheme } from '../SellerShell'
 import SellerOrderDrawer from '../components/SellerOrderDrawer'
 import { useTranslations } from 'next-intl'
@@ -58,6 +58,25 @@ export default function EarningsPage() {
   const [error,        setError]        = useState<string | null>(null)
   const [payoutFilter, setPayoutFilter] = useState('')
   const [detailRow,    setDetailRow]    = useState<{ id: number; order_number: string | null } | null>(null)
+  const [proofBusy,    setProofBusy]    = useState<number | null>(null)
+
+  // Opens the (private) receipt image / PDF in a new tab from a temporary blob URL
+  const openProof = async (batchId: number) => {
+    const w = window.open('', '_blank')          // opened now so the popup is not blocked
+    setProofBusy(batchId)
+    try {
+      const blob = await fetchSettlementProofBlob(batchId)
+      const url  = URL.createObjectURL(blob)
+      if (w) w.location.href = url
+      else window.location.href = url
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch {
+      w?.close()
+      alert(t('proofError'))
+    } finally {
+      setProofBusy(null)
+    }
+  }
   const tOrders = useTranslations('seller.orders')
   const tDrawer = useTranslations('seller.orderDrawer')
 
@@ -488,6 +507,7 @@ export default function EarningsPage() {
                           <th style={th(true)}>{t('cols.payout')}</th>
                           <th style={th(true)}>{t('cols.status')}</th>
                           <th style={th(true)}>{t('cols.paidOn')}</th>
+                          <th style={th(true)}>{t('paymentCol')}</th>
                           <th style={th(true)}>{t('cols.receipt')}</th>
                         </tr>
                       </thead>
@@ -501,6 +521,32 @@ export default function EarningsPage() {
                             <td style={{ ...td(true) }}><PayoutBadge status={row.status ?? 'draft'} /></td>
                             <td style={{ ...td(true), color: textMuted, fontSize: 11 }}>
                               {row.paid_at ? date(row.paid_at, 'short') : '—'}
+                            </td>
+                            <td style={{ ...td(true), color: textMuted, fontSize: 11 }}>
+                              {row.status === 'paid' && (row.payment_method || row.payment_reference || row.has_proof) ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                                  {row.payment_method && (
+                                    <span style={{ fontWeight: 700, color: textMain }}>
+                                      {t.has(`paymentMethods.${row.payment_method}`) ? t(`paymentMethods.${row.payment_method}`) : row.payment_method}
+                                    </span>
+                                  )}
+                                  {row.payment_reference && <span style={{ fontFamily: 'monospace' }}>{t('paymentRef', { ref: row.payment_reference })}</span>}
+                                  {row.payment_date && <span>{date(row.payment_date, 'short')}</span>}
+                                  {row.has_proof && (
+                                    <button
+                                      onClick={() => openProof(row.id)}
+                                      disabled={proofBusy === row.id}
+                                      style={{
+                                        padding: '4px 10px', borderRadius: 7, border: '1px solid #10b98140',
+                                        background: '#10b98118', color: ink('#10b981', dark), fontSize: 10, fontWeight: 800,
+                                        cursor: proofBusy === row.id ? 'wait' : 'pointer', opacity: proofBusy === row.id ? 0.6 : 1,
+                                      }}
+                                    >
+                                      📎 {t('viewProof')}
+                                    </button>
+                                  )}
+                                </div>
+                              ) : '—'}
                             </td>
                             <td style={{ ...td(true) }}>
                               {row.status === 'paid' && (
@@ -520,7 +566,7 @@ export default function EarningsPage() {
                         ))}
                         {(history?.data ?? []).length === 0 && (
                           <tr>
-                            <td colSpan={7} style={{ padding: '40px 20px', textAlign: 'center', color: textMuted }}>
+                            <td colSpan={8} style={{ padding: '40px 20px', textAlign: 'center', color: textMuted }}>
                               {t('noSettlements')}
                             </td>
                           </tr>

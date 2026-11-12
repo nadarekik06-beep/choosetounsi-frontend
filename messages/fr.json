@@ -3732,6 +3732,15 @@
       "history": "Historique des versements",
       "receipt": "🖨 Reçu",
       "noSettlements": "Aucun versement pour l'instant",
+      "paymentCol": "Paiement",
+      "viewProof": "Voir le reçu",
+      "proofError": "Impossible d'ouvrir le reçu. Réessayez.",
+      "paymentRef": "Réf. {ref}",
+      "paymentMethods": {
+        "bank_transfer": "Virement bancaire",
+        "d17": "D17",
+        "cash": "Espèces"
+      },
       "payout": {
         "pending": "En attente",
         "ready": "Prêt",

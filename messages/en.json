@@ -3732,6 +3732,15 @@
       "history": "Settlement History",
       "receipt": "🖨 Receipt",
       "noSettlements": "No settlements yet",
+      "paymentCol": "Payment",
+      "viewProof": "View receipt",
+      "proofError": "Could not open the receipt. Please try again.",
+      "paymentRef": "Ref. {ref}",
+      "paymentMethods": {
+        "bank_transfer": "Bank transfer",
+        "d17": "D17",
+        "cash": "Cash"
+      },
       "payout": {
         "pending": "Pending",
         "ready": "Ready",

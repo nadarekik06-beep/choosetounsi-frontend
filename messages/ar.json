@@ -3732,6 +3732,15 @@
       "history": "سجل التسويات",
       "receipt": "🖨 وصل",
       "noSettlements": "لا توجد تسويات بعد",
+      "paymentCol": "الدفع",
+      "viewProof": "عرض الإيصال",
+      "proofError": "تعذر فتح الإيصال. حاول مرة أخرى.",
+      "paymentRef": "المرجع {ref}",
+      "paymentMethods": {
+        "bank_transfer": "تحويل بنكي",
+        "d17": "D17",
+        "cash": "نقداً"
+      },
       "payout": {
         "pending": "قيد الانتظار",
         "ready": "جاهز",
