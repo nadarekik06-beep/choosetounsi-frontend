@@ -16,6 +16,7 @@ import { useFormat } from '@/lib/i18n/useFormat'
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
 import { API_BASE, STORAGE_URL } from '@/lib/constants'
+import FreeDeliveryBadge from '@/app/components/product/FreeDeliveryBadge'
 
 function resolveImg(path: string | null | undefined): string | null {
   if (!path) return null
@@ -56,9 +57,9 @@ interface PackDetail {
   description: string | null; short_description: string | null
   image_url: string | null
   pack_price: number; original_price: number; savings: number
+  discount_percent?: number
   is_active: boolean
   /** Every product in the pack ships free (absent on older API responses). */
-  is_free_delivery?: boolean
   seller: { id: number; name: string } | null
   items: PackItemData[]
   items_count: number
@@ -510,8 +511,8 @@ export default function PackDetailPage() {
       ].filter(Boolean)
     : []
 
-  const savingsPct = pack && pack.original_price > 0
-    ? Math.round((pack.savings / pack.original_price) * 100) : 0
+  // Server figure (prices as the client sees them, delivery included)
+  const savingsPct = pack?.discount_percent ?? 0
 
   const totalItemsCount = pack?.items.reduce((s, i) => s + i.quantity, 0) ?? 0
 
@@ -662,6 +663,7 @@ export default function PackDetailPage() {
                   {t('saveWithPct', { amount: fmt(pack.savings), pct: savingsPct })}
                 </div>
               )}
+              <div style={{ marginTop: 8 }}><FreeDeliveryBadge size="md" /></div>
             </div>
 
             {/* Pack items — variant selectors */}
@@ -758,9 +760,7 @@ export default function PackDetailPage() {
             {/* Trust badges */}
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden', marginBottom: 20 }}>
               {[
-                pack.is_free_delivery
-                  ? { icon: <Truck size={17} color="#10b981" />,   title: tp('freeDelivery'),  desc: tp('trustFreeDeliveryPackDesc') }
-                  : { icon: <Truck size={17} color="#10b981" />,   title: tp('trustDelivery'), desc: tp('trustDeliveryDesc') },
+                { icon: <Truck size={17} color="#198f41" />,       title: tp('freeDelivery'),  desc: tp('trustFreeDeliveryDesc') },
                 { icon: <RotateCcw size={17} color="#3b82f6" />,   title: tp('trustReturns'),  desc: tp('trustReturnsDesc') },
                 { icon: <Shield size={17} color="#f59e0b" />,      title: tp('trustPayment'),  desc: tp('trustPaymentDesc') },
                 { icon: <CheckCircle size={17} color="#db142e" />, title: t('verifiedBundle'), desc: tp('trustSellerDesc') },

@@ -103,6 +103,7 @@
   "nav": {
     "announcement": "🇹🇳 Des vendeurs 100 % tunisiens, partout en Tunisie",
     "announcementTail": " — ChooseTounsi",
+    "announcementFreeDelivery": "🚚 Livraison gratuite partout en Tunisie",
     "helpSupport": "Aide & support",
     "myOrders": "Mes commandes",
     "myComplaints": "Mes réclamations",
@@ -380,7 +381,17 @@
     "hot": "Tendance",
     "bestSellerRank": "N°{rank} des ventes"
   },
+  "multiItem": {
+    "total": "Total",
+    "lucky": "🎉 Bonne nouvelle ! Vous économisez {amount} en commandant plusieurs articles chez {shop}.",
+    "upsell": "Ajoutez un autre article de {shop} et économisez au moins {amount}",
+    "discountLine": "Remise multi-articles",
+    "deliveryLabel": "Livraison",
+    "deliveryFree": "Gratuite",
+    "thisShop": "cette boutique"
+  },
   "productCard": {
+    "freeDelivery": "Livraison gratuite",
     "sponsored": "Sponsorisé",
     "hot": "🔥 Top",
     "trending": "⚡ Tendance",
@@ -589,7 +600,7 @@
     "inStock": "{count} en stock",
     "ownProduct": "C'est votre produit",
     "trustDelivery": "Livraison",
-    "trustFreeDeliveryDesc": "Ce produit est livré gratuitement — aucun frais de livraison à la commande !",
+    "trustFreeDeliveryDesc": "Partout en Tunisie, sans frais à la commande : la livraison est incluse dans le prix.",
     "trustDeliveryDesc": "Livraison partout en Tunisie",
     "trustFreeDeliveryPackDesc": "Ce pack est livré gratuitement — aucun frais de livraison à la commande !",
     "trustReturns": "Retours faciles",
@@ -3057,7 +3068,8 @@
       "lowStockThresholdShop": "Boutique : {n}",
       "lowStockThresholdDefault": "Seuil de la boutique",
       "lowStockThresholdHint": "Vide = seuil défini dans les paramètres de la boutique.",
-      "freeDeliveryCostHint": "Si vous l'activez, la livraison gratuite vous coûte {cost} par expédition de commande.",
+      "deliveryIncludedInfo": "Le prix affiché au client inclut la livraison, gérée par ChooseTounsi. Vous recevez votre prix moins la commission.",
+      "parcelSizeConfirm": "Merci de confirmer la taille du colis de ce produit (actuellement : {size}). Elle détermine la livraison incluse dans le prix affiché au client.",
       "parcelSize": "Taille du colis",
       "parcelSizeSelect": "Choisissez la taille de l’article emballé",
       "parcelSizeHint": "S : tient dans une boîte à chaussures (vêtements, bijoux, cosmétiques). L : un grand carton (chaussures, petit électroménager, sacs). XL : volumineux ou lourd (meubles, gros électroménager, tapis). Le prix de la livraison en dépend.",
@@ -3785,7 +3797,8 @@
         "status": "Statut",
         "paidOn": "Payé le",
         "receipt": "Reçu"
-      }
+      },
+      "deliveryIncludedInfo": "Le prix affiché au client inclut la livraison, gérée par ChooseTounsi. Vous recevez votre prix moins la commission."
     },
     "receipt": {
       "generating": "Génération du rapport de gains…",
@@ -4272,7 +4285,8 @@
       "referencePrice": "Prix barré : {price} (le plus bas des 30 derniers jours)",
       "fromRadar": "Pré-rempli par Radar de croissance — ajustez ce que vous voulez avant d'enregistrer.",
       "perCustomer": "Maximum par client",
-      "perCustomerHint": "Nombre d'articles qu'un même client (compte ou téléphone) peut acheter au prix flash."
+      "perCustomerHint": "Nombre d'articles qu'un même client (compte ou téléphone) peut acheter au prix flash.",
+      "clientWillSee": "Le client verra −{percent} % ({price}, livraison incluse)"
     },
     "couponForm": {
       "editTitle": "Modifier le coupon",
@@ -5110,7 +5124,7 @@
       "shipping": "Livraison",
       "shippingYou": "Livraison payée par vous (livraison gratuite)",
       "shippingYouNote": "Vous avez offert la livraison : votre part du coût de la société de livraison est déduite de vos gains.",
-      "shippingCustomer": "Payée par le client — cela n'affecte pas vos gains.",
+      "shippingCustomer": "Incluse dans le prix affiché au client et gérée par ChooseTounsi — cela n'affecte pas vos gains.",
       "shippingPlatform": "Payée par ChooseTounsi — cela n'affecte pas vos gains.",
       "shippingNone": "Aucun frais de livraison ne vous a été facturé.",
       "adjustment": "Ajustement",
@@ -6193,6 +6207,7 @@
       "label": "Acheter en confiance",
       "delivery": "Livraison partout en Tunisie",
       "deliveryFee": "Livraison standard {fee}",
+      "deliveryFree": "Gratuite partout en Tunisie, incluse dans le prix",
       "freeCount": "{count, plural, one {# produit livré gratuitement} other {# produits livrés gratuitement}}",
       "cod": "Paiement à la livraison",
       "codBody": "Payez à la réception de votre commande.",
@@ -6231,7 +6246,8 @@
     "endsInDays": "{count, plural, one {Se termine demain} other {Se termine dans # jours}}",
     "ctaProduct": "J’en profite",
     "ctaSeller": "Voir la boutique",
-    "ctaDeals": "Voir les bons plans"
+    "ctaDeals": "Voir les bons plans",
+    "upToPercent": "Jusqu'à -{value} %"
   },
   "imageSearch": {
     "title": "Recherche par photo",

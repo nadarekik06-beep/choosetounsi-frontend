@@ -888,7 +888,11 @@ export default function Navbar() {
         {/* ── ROW 1: Announcement bar ── */}
         <div className="nb-ann" style={{background:"#09090b",color:"#fff",fontSize:11,padding:"7px 0",letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:500}}>
           <div className="nb-ann-in" style={{maxWidth:1400,margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <span className="nb-ann-text">{t("announcement")}<span className="nb-hide-sm">{t("announcementTail")}</span></span>
+            {/* Free delivery everywhere, alternating with the "100 % Tunisian sellers" line (one line, also on mobile) */}
+            <span className="nb-ann-text nb-ann-rot">
+              <span className="nb-ann-msg nb-ann-msg-a">{t("announcementFreeDelivery")}</span>
+              <span className="nb-ann-msg nb-ann-msg-b">{t("announcement")}<span className="nb-hide-sm">{t("announcementTail")}</span></span>
+            </span>
             <button className="nb-ann-help" onClick={handleSupport} style={{display:"flex",alignItems:"center",gap:5,background:"transparent",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.8)",fontSize:11,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",fontFamily:"inherit",padding:0,transition:"color 0.15s"}}
               onMouseEnter={e=>(e.currentTarget.style.color="#fff")}
               onMouseLeave={e=>(e.currentTarget.style.color="rgba(255,255,255,0.8)")}>
@@ -1140,6 +1144,12 @@ export default function Navbar() {
 
           <style>{`
             @keyframes spin { to { transform: rotate(360deg); } }
+            .nb-ann-rot{position:relative;display:block;flex:1;min-width:0;height:1.5em;line-height:1.5em;margin-inline-end:12px}
+            .nb-ann-msg{position:absolute;inset:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;animation:nbAnnRot 10s infinite}
+            .nb-ann-msg-a{font-weight:800;animation-delay:0s}
+            .nb-ann-msg-b{animation-delay:5s}
+            @keyframes nbAnnRot{0%{opacity:0;transform:translateY(5px)}5%,45%{opacity:1;transform:none}50%,100%{opacity:0;transform:translateY(-5px)}}
+            @media(prefers-reduced-motion:reduce){.nb-ann-msg{animation:none}.nb-ann-msg-a{opacity:1}}
             @media(max-width:960px){
               .nb-burger,.nb-cart-m{display:flex!important;order:2}
               .nb-util,.nb-links,.nb-drawer-search{display:none!important}

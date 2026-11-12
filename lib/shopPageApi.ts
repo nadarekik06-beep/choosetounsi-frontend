@@ -15,8 +15,8 @@ export interface ShopStats {
   categories: number
   average_rating: number | null
   reviews: number
-  delivery_fee: number
-  free_delivery_products: number
+  /** Delivery is free on the whole platform (included in the displayed prices). */
+  free_delivery?: boolean
   complaint_window_hours: number
 }
 

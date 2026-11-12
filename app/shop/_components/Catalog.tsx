@@ -49,7 +49,6 @@ function readUrl(): State {
       inStock: p.get('stock') === '1',
       isPack: p.get('pack') === '1',
       onSale: p.get('sale') === '1',
-      freeDelivery: p.get('freeship') === '1',
       minRating: rating >= 1 && rating <= 5 ? rating : 0,
       plans: (p.get('tier') ?? '').split(',').filter(x => ['free', 'red', 'black'].includes(x)),
       occasions: (p.get('occ') ?? '').split(',').filter(Boolean),
@@ -71,7 +70,6 @@ function writeUrl({ sort, f }: State) {
   if (f.inStock) p.set('stock', '1')
   if (f.isPack) p.set('pack', '1')
   if (f.onSale) p.set('sale', '1')
-  if (f.freeDelivery) p.set('freeship', '1')
   if (f.minRating) p.set('rating', String(f.minRating))
   if (f.plans?.length) p.set('tier', f.plans.join(','))
   if (f.occasions.length) p.set('occ', f.occasions.join(','))
@@ -91,7 +89,7 @@ function toQuery({ sort, f }: State): URLSearchParams {
 }
 
 const activeCount = (f: F) =>
-  [f.cat, f.pMin || f.pMax, f.inStock, f.isPack, f.onSale, f.freeDelivery, f.minRating, f.plans?.length, f.occasions.length,
+  [f.cat, f.pMin || f.pMax, f.inStock, f.isPack, f.onSale, f.minRating, f.plans?.length, f.occasions.length,
     Object.values(f.attrs).some(v => v.length), f.q.trim()].filter(Boolean).length
 
 type Row = GridCell<ShopProduct>

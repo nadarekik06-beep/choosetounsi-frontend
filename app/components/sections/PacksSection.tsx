@@ -6,6 +6,7 @@ import { Package2, TrendingDown, Tag, ArrowRight } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { API_BASE } from '@/lib/constants'
+import FreeDeliveryBadge from '@/app/components/product/FreeDeliveryBadge'
 
 
 interface PackItem {
@@ -23,6 +24,8 @@ interface Pack {
   pack_price: number
   original_price: number
   savings: number
+  /** Real "-X %" between the two displayed prices (server) */
+  discount_percent?: number
   items_count: number
   items: PackItem[]
   seller: { name: string } | null
@@ -33,9 +36,8 @@ function PackCard({ pack }: { pack: Pack }) {
   const format = useFormat()
   const fmt = (n: number) => format.price(n, { minimumFractionDigits: 3 })
   const [imgErr, setImgErr] = useState(false)
-  const savingsPct = pack.original_price > 0
-    ? Math.round((pack.savings / pack.original_price) * 100)
-    : 0
+  // Server figure (prices as the client sees them, delivery included)
+  const savingsPct = pack.discount_percent ?? 0
 
   // Collect up to 4 product thumbnails from items
   const thumbs = pack.items
@@ -190,6 +192,7 @@ function PackCard({ pack }: { pack: Pack }) {
               {t('youSave', { amount: fmt(pack.savings) })}
             </p>
           )}
+          <FreeDeliveryBadge style={{ marginTop: 4 }} />
         </div>
       </div>
     </Link>

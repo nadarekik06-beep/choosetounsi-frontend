@@ -17,7 +17,7 @@ const TEXT_SEC  = '#64748b'
  * The estimate uses the price actually paid (coupon / flash sale included).
  */
 export default function ReturnItemsPicker({
-  items, returnAll, onReturnAll, quantities, onChange, error, showEstimate = true,
+  items, returnAll, onReturnAll, quantities, onChange, error, showEstimate = true, serverEstimate,
 }: {
   items:       EligibleOrderItem[]
   returnAll:   boolean
@@ -27,12 +27,17 @@ export default function ReturnItemsPicker({
   error?:      string
   /** The refund estimate (hidden for an exchange: nothing is refunded) */
   showEstimate?: boolean
+  /** The server's figure for the chosen units (before any return fee); null while it loads */
+  serverEstimate?: number | null
 }) {
   const t = useTranslations('returns.form')
   const { price } = useFormat()
 
   const units = (i: EligibleOrderItem) => (returnAll ? i.returnable_quantity : quantities[i.id] ?? 0)
-  const estimate = items.reduce((s, i) => s + units(i) * (i.paid_unit_price ?? i.unit_price), 0)
+  // The server's figure when given; the sum of paid unit prices only as a fallback (older API)
+  const estimate = serverEstimate !== undefined
+    ? (serverEstimate ?? 0)
+    : items.reduce((s, i) => s + units(i) * (i.paid_unit_price ?? i.unit_price), 0)
 
   const set = (id: number, qty: number) => {
     const next = { ...quantities }

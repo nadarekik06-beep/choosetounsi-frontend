@@ -71,7 +71,11 @@ function toISOFromInput(local: string): string {
  * /seller/promotions/preview): the exact pricing checkout charges
  * (current price read from the database, millime rounding). AUDIT M-6.
  */
-export interface ServerPrice { original: number; final: number; valid: boolean }
+export interface ServerPrice {
+  original: number; final: number; valid: boolean
+  /** What the client will see: delivery is included in the displayed price and never discounted */
+  clientFinal?: number; clientPercent?: number
+}
 
 async function fetchServerPrices(ids: number[], discountType: 'percentage' | 'fixed', discountValue: number): Promise<Record<number, ServerPrice>> {
   if (!ids.length || !(discountValue > 0)) return {}
@@ -85,8 +89,11 @@ async function fetchServerPrices(ids: number[], discountType: 'percentage' | 'fi
     })
     const json = await res.json()
     const out: Record<number, ServerPrice> = {}
-    for (const row of (json?.data ?? []) as Array<{ product_id: number; original_price: number; final_price: number; valid: boolean }>) {
-      out[row.product_id] = { original: row.original_price, final: row.final_price, valid: row.valid }
+    for (const row of (json?.data ?? []) as Array<{ product_id: number; original_price: number; final_price: number; valid: boolean; client_final_price?: number; client_percent?: number }>) {
+      out[row.product_id] = {
+        original: row.original_price, final: row.final_price, valid: row.valid,
+        clientFinal: row.client_final_price, clientPercent: row.client_percent,
+      }
     }
     return out
   } catch {
@@ -957,6 +964,12 @@ export default function PromotionModal({ promotion, prefill, onClose, onSaved }:
                             </span>
                           )}
                         </p>
+                        {/* Server figure: the badge the client will really see */}
+                        {effectivePrice !== null && serverPrices[p.id]?.valid && serverPrices[p.id]?.clientPercent != null && (
+                          <p style={{ fontSize: 10.5, fontWeight: 700, color: '#198f41', margin: '2px 0 0' }}>
+                            {t('clientWillSee', { percent: serverPrices[p.id]!.clientPercent!, price: dt(serverPrices[p.id]!.clientFinal ?? 0) })}
+                          </p>
+                        )}
                         {basis < p.price && (
                           <p style={{ fontSize: 10, color: '#b45309', margin: '2px 0 0' }}>
                             {t('referencePrice', { price: dt(basis) })}

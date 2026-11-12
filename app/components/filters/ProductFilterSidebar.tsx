@@ -34,7 +34,7 @@ export interface F {
   occasions: string[]
   sort: Sort; attrs: Record<string, number[]>
   // Catalogue-wide grids (/shop): category, rating, seller tier, offers
-  cat?: string; minRating?: number; plans?: string[]; onSale?: boolean; freeDelivery?: boolean
+  cat?: string; minRating?: number; plans?: string[]; onSale?: boolean
 }
 
 /** Query params for the filters shared by every product grid (GET /api/products). */
@@ -49,20 +49,19 @@ export function appendFilterParams(qp: URLSearchParams, f: F): void {
   if (f.minRating) qp.set('min_rating', String(f.minRating))
   if (f.plans?.length) qp.set('seller_plan', f.plans.join(','))
   if (f.onSale) qp.set('on_sale', '1')
-  if (f.freeDelivery) qp.set('free_delivery', '1')
 }
 
 /** True when the shopper narrowed the grid (sort and search box excluded). */
 export const hasActiveFilters = (f: F) =>
   !!(f.inStock || f.isPack || f.pMin || f.pMax || f.occasions.length || Object.values(f.attrs).some(v => v.length)
-    || f.cat || f.minRating || f.plans?.length || f.onSale || f.freeDelivery)
+    || f.cat || f.minRating || f.plans?.length || f.onSale)
 
 export interface AOpt { id: number; value: string; color_hex?: string | null }
 export interface Attr { id: number; slug: string; name: string; type: string; options: AOpt[] }
 
 export const DEFAULT_FILTERS: F = {
   q: '', pMin: '', pMax: '', inStock: false, isPack: false, occasions: [], sort: 'created_at', attrs: {},
-  cat: '', minRating: 0, plans: [], onSale: false, freeDelivery: false,
+  cat: '', minRating: 0, plans: [], onSale: false,
 }
 
 export const RATING_STEPS = [4, 3]
@@ -257,10 +256,6 @@ export default function ProductFilterSidebar({
             <div className="pfs-trow">
               <span id="pfs-onsale">{t('onSale')}</span>
               <button type="button" role="switch" aria-checked={!!f.onSale} aria-labelledby="pfs-onsale" className={`pfs-tgl${f.onSale ? ' on' : ''}`} onClick={() => upd({ onSale: !f.onSale })}><span className="pfs-tgl-k" /></button>
-            </div>
-            <div className="pfs-trow">
-              <span id="pfs-freedel">{t('freeDelivery')}</span>
-              <button type="button" role="switch" aria-checked={!!f.freeDelivery} aria-labelledby="pfs-freedel" className={`pfs-tgl${f.freeDelivery ? ' on' : ''}`} onClick={() => upd({ freeDelivery: !f.freeDelivery })}><span className="pfs-tgl-k" /></button>
             </div>
           </div>}
         </div>

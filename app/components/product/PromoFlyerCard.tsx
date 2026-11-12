@@ -33,8 +33,10 @@ export default function PromoFlyerCard({ flyer, index = 0, section }: { flyer: P
   const hours = Math.ceil(left / 3_600_000)
   const endsIn = left <= 0 ? null : hours < 24 ? t('endsInHours', { count: hours }) : t('endsInDays', { count: Math.ceil(hours / 24) })
 
+  // The server sends the real discount on the prices the client sees: "-X %" for one
+  // product, "Jusqu'à -X %" (the best of its products) for a promotion with several
   const off = flyer.discount_type === 'percentage'
-    ? t('offPercent', { value: Math.round(flyer.discount_value) })
+    ? t(flyer.products_count > 1 ? 'upToPercent' : 'offPercent', { value: Math.round(flyer.discount_value) })
     : t('offAmount', { amount: fmt.price(flyer.discount_value) })
 
   const single = flyer.products_count === 1

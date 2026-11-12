@@ -3,7 +3,7 @@
 import { Component, useCallback, useEffect, useRef, useState, useMemo, type ErrorInfo } from 'react'
 import { X, Upload, Trash2, Star, AlertCircle, ImageIcon, Radio, Check, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, Lightbulb, PackageX, RotateCcw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { productsApi, categoriesApi, storageUrl, shippingApi, isNetworkError } from '@/lib/sellerApi'
+import { productsApi, categoriesApi, storageUrl, isNetworkError } from '@/lib/sellerApi'
 import type { Category, Subcategory, ProductPayload } from '@/lib/sellerApi'
 import DynamicAttributeSection from '../components/attributes/DynamicAttributeSection'
 import VariantBuilder, {
@@ -133,80 +133,20 @@ function OccasionPicker({ selected, onChange }: { selected: Occasion[]; onChange
   )
 }
 
-// ─── FreeDeliveryToggle — defined HERE, OUTSIDE ProductModal ──────────────────
-// FIX: was incorrectly placed as a const inside the JSX return of ProductModal.
+// ─── Delivery is included in the price the client sees ────────────────────────
+// Sellers no longer offer (or pay for) free delivery: ChooseTounsi handles it.
 
-function FreeDeliveryToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+function DeliveryIncludedNote() {
   const t = useTranslations('seller.productForm')
-  const { price } = useFormat()
-  // Free delivery isn't free: the seller pays the admin's contribution per
-  // shipment. Both amounts are admin settings, read live (never hardcoded).
-  const [shipping, setShipping] = useState<{ cost: number; fee: number } | null>(null)
-  useEffect(() => {
-    shippingApi.cost()
-      .then(r => setShipping({ cost: Number(r.data.free_delivery_contribution), fee: Number(r.data.customer_delivery_fee) }))
-      .catch(() => {})
-  }, [])
-  const cost = shipping ? price(shipping.cost) : '…'
-  const fee  = shipping ? price(shipping.fee) : '…'
   return (
-    <div style={{ marginTop: 14 }}>
-      <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none', width: 'fit-content' }}>
-        <div
-          onClick={() => onChange(!value)}
-          style={{
-            width: 40, height: 22, borderRadius: 999, flexShrink: 0,
-            background: value ? '#10b981' : '#e5e7eb',
-            position: 'relative', transition: 'background 0.2s ease', cursor: 'pointer',
-          }}
-        >
-          <div style={{
-            position: 'absolute', top: 3,
-            insetInlineStart: value ? 'calc(100% - 19px)' : '3px',
-            width: 16, height: 16, borderRadius: '50%', background: '#fff',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.15)', transition: 'inset-inline-start 0.2s ease',
-          }} />
-        </div>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>{t('freeDelivery')}</span>
-            {value && (
-              <span style={{
-                fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
-                background: 'rgba(16,185,129,0.12)', color: '#047857',
-                border: '1px solid rgba(16,185,129,0.25)',
-              }}>
-                {t('freeDeliveryOn')}
-              </span>
-            )}
-          </div>
-          <p style={{ fontSize: 11, color: '#5b6472', margin: '2px 0 0' }}>
-            {value ? t('freeDeliveryYes') : t('freeDeliveryNo', { fee })}
-          </p>
-          {!value && (
-            <p style={{ fontSize: 11, color: '#b45309', fontWeight: 600, margin: '2px 0 0' }}>
-              {t('freeDeliveryCostHint', { cost })}
-            </p>
-          )}
-        </div>
-      </label>
-      {value && (
-        <div style={{
-          marginTop: 10, marginInlineStart: 50,
-          background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.3)',
-          borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'flex-start', gap: 8,
-        }}>
-          <span style={{ fontSize: 16, flexShrink: 0 }}>💸</span>
-          <div>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#b45309', margin: '0 0 3px' }}>
-              {t('freeDeliverySellerPays', { cost })}
-            </p>
-            <p style={{ fontSize: 11, color: '#6b7280', margin: 0 }}>
-              {t('freeDeliveryExplain', { fee })}
-            </p>
-          </div>
-        </div>
-      )}
+    <div style={{
+      marginTop: 14, background: 'rgba(25,143,65,0.06)', border: '1px solid rgba(25,143,65,0.25)',
+      borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'flex-start', gap: 8,
+    }}>
+      <span style={{ fontSize: 16, flexShrink: 0 }} aria-hidden="true">🚚</span>
+      <p style={{ fontSize: 12, fontWeight: 600, color: '#166534', margin: 0, lineHeight: 1.5 }}>
+        {t('deliveryIncludedInfo')}
+      </p>
     </div>
   )
 }
@@ -400,6 +340,9 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
   }, [radar?.focus])
   const [discountBusy, setDiscountBusy] = useState(false)
 
+  // Older products silently got size S: the seller confirms the real size on the first edit
+  const sizeUnconfirmed = isEdit && !!p && 'parcel_size_confirmed_at' in (p as object) && !(p as any).parcel_size_confirmed_at
+
   const makeForm = () => ({
     name:              (p?.name              ?? radar?.name ?? '') as string,
     description:       (p?.description       ?? '') as string,
@@ -416,12 +359,10 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
     pack_quantity:     (p as any)?.pack_quantity != null ? String((p as any).pack_quantity) : '',
     pack_contents:     ((p as any)?.pack_contents ?? '') as string,
     occasions:         normalizeOccasions((p as any)?.occasions),
-    // Parcel size for the courier (S / L / XL): required, sets the delivery price
-    parcel_size:       ((p as any)?.parcel_size ?? '') as '' | 'S' | 'L' | 'XL',
-    // FIX: initialise free_delivery from existing product data
-    free_delivery:     (p as any)?.delivery_fee !== undefined &&
-                       (p as any)?.delivery_fee !== null &&
-                       Number((p as any)?.delivery_fee) === 0,
+    // Parcel size for the courier (S / L / XL): required. It sets the delivery fee included in the
+    // displayed price. A product whose size was never confirmed (older products silently got S)
+    // starts empty, so the seller picks it again before saving.
+    parcel_size:       (sizeUnconfirmed ? '' : ((p as any)?.parcel_size ?? '')) as '' | 'S' | 'L' | 'XL',
   })
   const [form, setForm] = useState(makeForm)
 
@@ -878,8 +819,6 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
         pack_contents:     form.is_pack ? form.pack_contents.trim() : '',
         // Other categories are stored as all_season by the backend
         occasions:         occasionsApply ? form.occasions : undefined,
-        // FIX: map free_delivery boolean to delivery_fee value for the backend
-        delivery_fee:      form.free_delivery ? '0' : '',
         parcel_size:       form.parcel_size,
         ...buildImageManifest(images, groupKeys),
         attributes:        serializeAttributes(attrValues),
@@ -1245,6 +1184,14 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
 
               {/* Parcel size: the courier's package size, and the delivery price of the parcel */}
               <div id="pf-parcel-size" style={{ marginTop: 14 }}>
+                {sizeUnconfirmed && (
+                  <p role="status" style={{
+                    fontSize: 12, fontWeight: 700, color: '#b45309', background: 'rgba(245,158,11,0.08)',
+                    border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, padding: '8px 12px', margin: '0 0 10px',
+                  }}>
+                    {t('parcelSizeConfirm', { size: String((p as any)?.parcel_size ?? 'S') })}
+                  </p>
+                )}
                 <Field label={t('parcelSize')} required error={errors.parcel_size} hint={t('parcelSizeHint')}>
                   <select value={form.parcel_size} onChange={e => set('parcel_size', e.target.value as '' | 'S' | 'L' | 'XL')}
                     aria-required="true" className={inputCls(errors.parcel_size)}>
@@ -1254,11 +1201,7 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
                 </Field>
               </div>
 
-              {/* ── FIX: FreeDeliveryToggle is now a proper component called here ── */}
-              <FreeDeliveryToggle
-                value={form.free_delivery}
-                onChange={(v) => set('free_delivery', v)}
-              />
+              <DeliveryIncludedNote />
             </section>
 
             {/* ── Category ── */}

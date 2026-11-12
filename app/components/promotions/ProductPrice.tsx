@@ -4,7 +4,8 @@
  * ProductPrice — the one price + promotion display for every product card.
  *
  * Reads the pricing block every product endpoint returns (backend
- * PromotionService): final_price, original_price, discount_percent, promo_type,
+ * PricingService: prices as the client sees them, delivery included, shown as
+ * free): final_price, original_price, discount_percent, promo_type,
  * ends_at, promotion. Never computes a discount itself: the server's numbers are
  * the ones the cart and checkout charge.
  *
@@ -59,7 +60,9 @@ export function promoPricing(p: PricedProduct): PromoPricing {
   const type     = p.promo_type ?? (p.promotion ? (p.promotion.is_flash_sale ? 'flash_sale' : 'promotion') : null)
   const hasDiscount = !!type && final < original - 0.0005
   const percent = hasDiscount
-    ? (p.discount_percent ?? Math.round(((original - final) / original) * 100))
+    // The server's figure (computed from the displayed prices, rounded down); the
+    // fallback only covers a payload without it and rounds the same way
+    ? (p.discount_percent ?? Math.floor(((original - final) / original) * 100))
     : 0
 
   return {

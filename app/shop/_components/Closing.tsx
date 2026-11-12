@@ -32,12 +32,7 @@ export function TrustStrip({ stats }: { stats: ShopStats | null }) {
   const items = [
     {
       key: 'delivery', Icon: Truck, tone: 'red', title: t('delivery'),
-      body: stats ? (
-        <>
-          {t('deliveryFee', { fee: price(stats.delivery_fee, { minimumFractionDigits: 0, maximumFractionDigits: 3 }) })}
-          {stats.free_delivery_products > 0 && <> · {t('freeCount', { count: stats.free_delivery_products })}</>}
-        </>
-      ) : null,
+      body: t('deliveryFree'),
     },
     { key: 'cod', Icon: Banknote, tone: 'green', title: t('cod'), body: t('codBody') },
     { key: 'secure', Icon: ShieldCheck, tone: 'ink', title: t('secure'), body: t('secureBody') },

@@ -18,6 +18,7 @@ import ProductRecommendations from 'app/components/ProductRecommendations'
 import AdStrip from '@/components/ads/AdStrip'
 import CountdownTimer from '@/app/components/promotions/CountdownTimer'
 import ProductPrice, { ProductPromoBadges, type PricedProduct } from '@/app/components/promotions/ProductPrice'
+import FreeDeliveryBadge from '@/app/components/product/FreeDeliveryBadge'
 import ProductReviewsSection from '@/app/components/reviews/ProductReviewsSection';
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -696,25 +697,7 @@ export default function ProductDetailPage() {
                   <span style={{ fontWeight: 700 }}>{t('packContents')}:</span> {product.pack_contents}
                 </p>
               )}
-              {(product as any).is_free_delivery && (
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  marginTop: 6,
-                  background: 'rgba(16,185,129,0.08)',
-                  border: '1px solid rgba(16,185,129,0.25)',
-                  borderRadius: 8, padding: '5px 12px',
-                }}>
-                  <svg width="14" height="14" fill="none" stroke="#059669" strokeWidth="2" viewBox="0 0 24 24">
-                    <rect x="1" y="3" width="15" height="13" rx="1"/>
-                    <path d="M16 8h4l3 5v3h-7V8z"/>
-                    <circle cx="5.5" cy="18.5" r="2.5"/>
-                    <circle cx="18.5" cy="18.5" r="2.5"/>
-                  </svg>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: '#059669' }}>
-                    {t('freeDelivery')}
-                  </span>
-                </div>
-              )}
+              <div style={{ marginTop: 8 }}><FreeDeliveryBadge size="md" /></div>
               {product.sku && (
                 <p style={{ fontSize: 11, color: '#94a3b8', margin: '6px 0 0', fontFamily: 'monospace' }}>
                   {t('sku', { sku: selectedVariant?.sku ?? product.sku })}
@@ -795,10 +778,8 @@ export default function ProductDetailPage() {
               {[
                 {
                   icon: <Truck size={18} color="#10b981" />,
-                  title: product.is_free_delivery ? t('freeDelivery') : t('trustDelivery'),
-                  desc: product.is_free_delivery
-                    ? t('trustFreeDeliveryDesc')
-                    : t('trustDeliveryDesc'),
+                  title: t('freeDelivery'),
+                  desc: t('trustFreeDeliveryDesc'),
                 },
                 { icon: <RotateCcw size={18} color="#3b82f6" />,   title: t('trustReturns'),  desc: t('trustReturnsDesc') },
                 { icon: <Shield size={18} color="#f59e0b" />,      title: t('trustPayment'),  desc: t('trustPaymentDesc') },

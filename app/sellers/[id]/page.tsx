@@ -248,7 +248,7 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
 
 // ─── Filter chips (All Products tab) ───────────────────────────────────────────
 
-interface ChipFilters { topRated: boolean; freeShipping: boolean; couponDeals: boolean }
+interface ChipFilters { topRated: boolean; couponDeals: boolean }
 
 function FilterChipsRow({ chips, setChips, hasCoupons }: {
   chips: ChipFilters; setChips: (c: ChipFilters) => void; hasCoupons: boolean
@@ -256,7 +256,6 @@ function FilterChipsRow({ chips, setChips, hasCoupons }: {
   const t = useTranslations('storefront')
   const items: { key: keyof ChipFilters; label: string; Icon: React.ElementType; show: boolean }[] = [
     { key: 'topRated',     label: t('chips.topRated'),     Icon: Star,  show: true },
-    { key: 'freeShipping', label: t('chips.freeShipping'), Icon: Truck, show: true },
     { key: 'couponDeals',  label: t('chips.couponDeals'),  Icon: Tag,   show: hasCoupons },
   ]
   return (
@@ -304,7 +303,7 @@ export default function SellerStorefrontPage() {
 
   // ── All Products tab state ──
   const [f, setF] = useState<F>(DEFAULT_FILTERS)
-  const [chips, setChips] = useState<ChipFilters>({ topRated: false, freeShipping: false, couponDeals: false })
+  const [chips, setChips] = useState<ChipFilters>({ topRated: false, couponDeals: false })
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [mOpen, setMOpen] = useState(false)
   const [products, setProducts] = useState<GridProduct[]>([])
@@ -392,7 +391,6 @@ export default function SellerStorefrontPage() {
     if (debouncedSearch) qp.set('search', debouncedSearch)
     appendFilterParams(qp, f)
     if (chips.topRated) qp.set('min_rating', '4')
-    if (chips.freeShipping) qp.set('free_delivery', '1')
     if (chips.couponDeals) qp.set('has_coupon', '1')
 
     fetch(`${API_BASE}/products?${qp}`, { headers: { Accept: 'application/json' } })

@@ -18,7 +18,8 @@ import {
   Tag,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
-import type { CartItem as BaseCartItem } from '@/lib/shopApi'
+import { cartApi, type CartItem as BaseCartItem, type CartSummary } from '@/lib/shopApi'
+import { ShopSavings, FreeDeliveryValue } from '@/app/components/cart/ShopSavings'
 import AdStrip from '@/components/ads/AdStrip'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -29,7 +30,6 @@ import { STORAGE_URL } from '@/lib/constants'
 // ─── Extend CartItem with sponsored + pack fields ─────────────────────────────
 type CartItem = BaseCartItem & {
   is_pack?: boolean
-  is_free_delivery?: boolean   
   pack_id?: number | null
   pack_slug?: string | null
   pack_selections?: { pack_item_id: number; variant_id: number | null }[]
@@ -127,19 +127,6 @@ function CartRow({
                 {item.variant_label && (
                   <p style={{ fontSize: 11, color: '#64748b', margin: '3px 0 0', fontWeight: 500 }}>
                     {item.variant_label}
-                  </p>
-                )}
-                {item.is_free_delivery && (
-                  <p style={{
-                    fontSize: 10, fontWeight: 800,
-                    color: '#059669',
-                    background: 'rgba(16,185,129,0.1)',
-                    border: '1px solid rgba(16,185,129,0.25)',
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                    padding: '2px 8px', borderRadius: 999,
-                    margin: '4px 0 0',
-                  }}>
-                    {t('freeDelivery')}
                   </p>
                 )}
 
@@ -374,7 +361,8 @@ export default function CartDrawer() {
   const fmt    = usePrice()
   // Drawer lives on the inline-end edge: right in LTR, left in RTL.
   const hidden = format.isRtl ? 'translateX(-100%)' : 'translateX(100%)'
-  const { items, count, subtotal, drawerOpen, closeDrawer, clearCart, cartLoading } = useCart()
+  const tm     = useTranslations('multiItem')
+  const { items, count, subtotal, summary: cartSummary, drawerOpen, closeDrawer, clearCart, cartLoading } = useCart()
   const overlayRef = useRef<HTMLDivElement>(null)
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set())
@@ -406,6 +394,31 @@ export default function CartDrawer() {
       return next
     })
   }, [])
+
+  // Totals and per-shop discount always come from the server: the whole cart's
+  // summary rides with the cart, a partial selection asks for its own.
+  const partial = selectedIds.size > 0 && selectedIds.size < items.length
+  const selectionKey = partial ? [...selectedIds].sort((a, b) => a - b).join(',') : ''
+  const cartKey = items.map(i => `${i.id}:${i.quantity}`).join(',')
+  const [selectionSummary, setSelectionSummary] = useState<{ key: string; data: CartSummary } | null>(null)
+  useEffect(() => {
+    if (!selectionKey) return
+    let stale = false
+    const key = `${selectionKey}|${cartKey}`
+    cartApi.summary(selectionKey.split(',').map(Number))
+      .then(res => { if (!stale) setSelectionSummary({ key, data: res.data }) })
+      .catch(() => { if (!stale) setSelectionSummary(null) })
+    return () => { stale = true }
+  }, [selectionKey, cartKey])
+  const summary: CartSummary | null = partial
+    ? (selectionSummary?.key === `${selectionKey}|${cartKey}` ? selectionSummary.data : null)
+    : cartSummary
+  // The shop's message goes under its last row in the list
+  const shopNoteAfter = new Map<number, CartSummary['shops'][number]>()
+  for (const shop of summary?.shops ?? []) {
+    const last = [...items].reverse().find(i => shop.item_ids.includes(i.id))
+    if (last && !shopNoteAfter.has(last.id)) shopNoteAfter.set(last.id, shop)
+  }
 
   const selectedItems    = items.filter(i => selectedIds.has(i.id))
   const selectedSubtotal = selectedItems.reduce((sum, i) => sum + i.line_total, 0)
@@ -517,25 +530,26 @@ export default function CartDrawer() {
             </div>
           ) : (
             <>
-              {items.map(item =>
-                // Route to the correct row component based on is_pack flag
-                (item as CartItem).is_pack
-                  ? (
-                    <PackCartRow
-                      key={`pack-${item.id}`}
-                      item={item as CartItem}
-                      isSelected={selectedIds.has(item.id)}
-                      onToggle={toggleItem}
-                    />
-                  ) : (
-                    <CartRow
-                      key={`${item.id}-${item.variant_id ?? 'base'}`}
-                      item={item as CartItem}
-                      isSelected={selectedIds.has(item.id)}
-                      onToggle={toggleItem}
-                    />
-                  )
-              )}
+              {items.map(item => (
+                <div key={(item as CartItem).is_pack ? `pack-${item.id}` : `${item.id}-${item.variant_id ?? 'base'}`}>
+                  {/* Route to the correct row component based on is_pack flag */}
+                  {(item as CartItem).is_pack
+                    ? (
+                      <PackCartRow
+                        item={item as CartItem}
+                        isSelected={selectedIds.has(item.id)}
+                        onToggle={toggleItem}
+                      />
+                    ) : (
+                      <CartRow
+                        item={item as CartItem}
+                        isSelected={selectedIds.has(item.id)}
+                        onToggle={toggleItem}
+                      />
+                    )}
+                  {shopNoteAfter.has(item.id) && <ShopSavings shop={shopNoteAfter.get(item.id)!} style={{ margin: '8px 0 10px' }} />}
+                </div>
+              ))}
 
               {/* Paid cross-sell, complementary to what's in the cart */}
               <AdStrip
@@ -569,42 +583,32 @@ export default function CartDrawer() {
                   : t('subtotal', { count })
                 }
               </span>
-              <span style={{ fontSize: 18, fontWeight: 900, color: '#dc2626' }}>
+              <span style={{ fontSize: summary && summary.multi_item_discount > 0.0005 ? 14 : 18, fontWeight: 900, color: summary && summary.multi_item_discount > 0.0005 ? '#0f172a' : '#dc2626' }}>
                 {fmt(selectedIds.size > 0 ? selectedSubtotal : subtotal)}
               </span>
             </div>
+            {summary && summary.multi_item_discount > 0.0005 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <span style={{ fontSize: 12, color: '#198f41', fontWeight: 700 }}>{tm('discountLine')}</span>
+                <span style={{ fontSize: 13, color: '#198f41', fontWeight: 800 }}>−{fmt(summary.multi_item_discount)}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{tm('deliveryLabel')}</span>
+              <FreeDeliveryValue small />
+            </div>
+            {summary && summary.multi_item_discount > 0.0005 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6, paddingTop: 6, borderTop: '1px dashed #e5e7eb' }}>
+                <span style={{ fontSize: 13, color: '#0f172a', fontWeight: 800 }}>{tm('total')}</span>
+                <span style={{ fontSize: 18, fontWeight: 900, color: '#dc2626' }}>{fmt(summary.total)}</span>
+              </div>
+            )}
             {selectedSavings > 0.0005 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 12, color: '#db142e', fontWeight: 700 }}>{t('totalSavings')}</span>
                 <span style={{ fontSize: 13, color: '#db142e', fontWeight: 800 }}>−{fmt(selectedSavings)}</span>
               </div>
             )}
-            {/* Dynamic shipping hint in cart drawer footer */}
-                {(() => {
-                  const allFree = items.length > 0 && items.every(i => !i.is_pack && (i as any).is_free_delivery)
-                  if (allFree) {
-                    return (
-                      <p style={{
-                        fontSize: 11, fontWeight: 800,
-                        color: '#059669',
-                        background: 'rgba(16,185,129,0.08)',
-                        border: '1px solid rgba(16,185,129,0.2)',
-                        borderRadius: 8, padding: '6px 10px',
-                        margin: '0 0 10px',
-                        display: 'flex', alignItems: 'center', gap: 5,
-                      }}>
-                        {t('allFreeDelivery')}
-                      </p>
-                    )
-                  }
-                  return (
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 10px', fontWeight: 500 }}>
-                      {t('shippingAtCheckout')}
-                    </p>
-                  )
-                })()}
- 
-
             {selectedIds.size > 0 && selectedIds.size < items.length && (
               <div style={{ marginBottom: 12, padding: '8px 12px', background: 'rgba(220,38,38,0.05)', border: '1px solid rgba(220,38,38,0.15)', borderRadius: 8, fontSize: 11, color: '#b91c1c', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <CheckSquare size={12} />

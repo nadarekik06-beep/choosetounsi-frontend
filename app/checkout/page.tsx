@@ -42,6 +42,7 @@ import {
   emptyShippingAddress, shippingAddressFrom, validateShippingAddress, isCompleteShippingAddress,
   shippingAddressPayload, checkoutShippingAddress, shippingAddressErrorsFromServer, formatShippingAddress, type ShippingAddressForm,
 } from '@/lib/shippingAddress'
+import { ShopSavings, FreeDeliveryValue } from '@/app/components/cart/ShopSavings'
 
 import BrandLoader from '@/components/brand/BrandLoader'
 import { usePageLoading } from '@/components/brand/NavigationLoader'
@@ -397,29 +398,13 @@ function AddressSelector({
   )
 }
 
-// ─── Delivery amount of one parcel ────────────────────────────────────────────
-
-function DeliveryAmount({ free, amount, freeLabel, fmt, small }: {
-  free: boolean; amount: number; freeLabel: string; fmt: (n: number) => string; small?: boolean
-}) {
-  return free ? (
-    <span style={{
-      fontSize: small ? 11 : 12, fontWeight: 800, color: '#059669', background: 'rgba(16,185,129,0.1)',
-      padding: '1px 8px', borderRadius: 999, border: '1px solid rgba(16,185,129,0.25)', whiteSpace: 'nowrap', flexShrink: 0,
-    }}>
-      {freeLabel}
-    </span>
-  ) : (
-    <span style={{ fontSize: small ? 12 : 13, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', flexShrink: 0 }}>{fmt(amount)}</span>
-  )
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CheckoutPage() {
   const t            = useTranslations('checkout')
   const tc           = useTranslations('common')
   const tsa          = useTranslations('shippingAddress')
+  const tm           = useTranslations('multiItem')
   const tp           = useTranslations('product')
   const fmt          = usePrice()
   const wilayaLabel  = useWilayaLabel()
@@ -861,6 +846,7 @@ export default function CheckoutPage() {
   const quoteLineFor = (cartId: number | null): QuoteLine | undefined =>
     parcels.flatMap(p => p.lines ?? []).find(l => l.kind === 'product' && l.cart_id === cartId)
   const promoSavings  = quote?.promo_savings ?? 0
+  const multiItemDiscount = quote?.multi_item_discount ?? 0
   const totalSavings  = quote?.total_savings ?? 0
   const promoEnded    = quote?.promo_ended ?? []
   const walletInsufficient = walletBalance !== null && summaryTotal !== null && walletBalance < summaryTotal
@@ -1389,6 +1375,13 @@ export default function CheckoutPage() {
                 })}
               </div>
 
+              {/* Per shop: what several items from the same shop save, or the hint to add one */}
+              {quote && parcels.some(p => Number(p.multi_item_discount ?? 0) > 0.0005 || Number(p.upsell_min_saving ?? 0) > 0.0005) && (
+                <div style={{ padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {parcels.map(p => <ShopSavings key={p.seller_id ?? 'platform'} shop={p} />)}
+                </div>
+              )}
+
               <div style={{ padding: '12px 16px 14px', borderTop: '1px solid #f1f5f9', background: '#fcfcfd' }}>
                 {quoteError && (
                   <p role="alert" style={{ fontSize: 12, color: '#dc2626', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1416,28 +1409,18 @@ export default function CheckoutPage() {
                     <span style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>-{fmt(totalDiscount)}</span>
                   </div>
                 )}
-                {/* Delivery: one line per shop (each shop = one parcel) */}
-                <div style={{ marginBottom: 6 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Truck size={13} /> {t('delivery')}
-                    </span>
-                    {(quoteLoading || !quote) && <span style={{ fontSize: 12, color: '#94a3b8' }}>{t('quoteLoading')}</span>}
-                    {quote && !quoteLoading && parcels.length === 1 && (
-                      <DeliveryAmount free={parcels[0].is_free_delivery} amount={parcels[0].delivery_fee} freeLabel={tc('free')} fmt={fmt} />
-                    )}
+                {multiItemDiscount > 0.0005 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, color: '#198f41', fontWeight: 600 }}>{tm('discountLine')}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#198f41' }}>−{fmt(multiItemDiscount)}</span>
                   </div>
-                  {quote && parcels.length > 1 && (
-                    <div style={{ marginTop: 6, paddingInlineStart: 19, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      {parcels.map(p => (
-                        <div key={p.seller_id ?? 'platform'} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                          <span dir="auto" style={{ fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{p.seller_name}</span>
-                          <DeliveryAmount free={p.is_free_delivery} amount={p.delivery_fee} freeLabel={tc('free')} fmt={fmt} small />
-                        </div>
-                      ))}
-                      <p style={{ fontSize: 10.5, color: '#94a3b8', margin: '2px 0 0', lineHeight: 1.4 }}>{t('deliveryPerShop')}</p>
-                    </div>
-                  )}
+                )}
+                {/* Delivery is free everywhere: it is included in the displayed prices */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Truck size={13} /> {t('delivery')}
+                  </span>
+                  <FreeDeliveryValue />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', paddingTop: 8, borderTop: '1px dashed #e5e7eb' }}>
                   <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{tc('total')}</span>

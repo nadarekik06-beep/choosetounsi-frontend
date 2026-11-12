@@ -103,6 +103,7 @@
   "nav": {
     "announcement": "🇹🇳 بائعون تونسيون 100٪، في كامل تراب الجمهورية",
     "announcementTail": " — ChooseTounsi",
+    "announcementFreeDelivery": "🚚 توصيل مجاني لكل تونس",
     "helpSupport": "المساعدة والدعم",
     "myOrders": "طلباتي",
     "myComplaints": "شكاواي",
@@ -380,7 +381,17 @@
     "hot": "رائج",
     "bestSellerRank": "الأكثر مبيعًا #{rank}"
   },
+  "multiItem": {
+    "total": "المجموع",
+    "lucky": "🎉 مبروك! وفّرت {amount} لأنك اشتريت أكثر من منتج من {shop}.",
+    "upsell": "أضف منتجًا آخر من {shop} ووفّر على الأقل {amount}",
+    "discountLine": "تخفيض متعدد المنتجات",
+    "deliveryLabel": "التوصيل",
+    "deliveryFree": "مجانية",
+    "thisShop": "هذا المتجر"
+  },
   "productCard": {
+    "freeDelivery": "توصيل مجاني",
     "sponsored": "مُموَّل",
     "hot": "🔥 رائج",
     "trending": "⚡ رائج",
@@ -589,7 +600,7 @@
     "inStock": "{count} متوفرة في المخزون",
     "ownProduct": "هذا منتجك",
     "trustDelivery": "التوصيل",
-    "trustFreeDeliveryDesc": "هذا المنتج يُوصَّل مجاناً — بدون رسوم توصيل عند الطلب!",
+    "trustFreeDeliveryDesc": "لكل تونس، بدون أي مصاريف عند الطلب: التوصيل مشمول في السعر.",
     "trustDeliveryDesc": "توصيل إلى كامل تراب الجمهورية",
     "trustFreeDeliveryPackDesc": "هذه الباقة تُوصَّل مجاناً — بدون رسوم توصيل عند الطلب!",
     "trustReturns": "إرجاع سهل",
@@ -3057,7 +3068,8 @@
       "lowStockThresholdShop": "المتجر: {n}",
       "lowStockThresholdDefault": "حد المتجر",
       "lowStockThresholdHint": "فارغ = الحد المحدد في إعدادات المتجر.",
-      "freeDeliveryCostHint": "إذا فعّلته، يكلّفك التوصيل المجاني {cost} عن كل شحنة طلب.",
+      "deliveryIncludedInfo": "السعر المعروض للحريف يشمل التوصيل، وتتكفّل به ChooseTounsi. تتحصّل على سعرك ناقص العمولة.",
+      "parcelSizeConfirm": "يرجى تأكيد حجم طرد هذا المنتج (حاليًا: {size}). يحدّد التوصيل المضمَّن في السعر المعروض للحريف.",
       "parcelSize": "حجم الطرد",
       "parcelSizeSelect": "اختر حجم المنتج بعد التغليف",
       "parcelSizeHint": "S: يتسع في علبة أحذية (ملابس، مجوهرات، مستحضرات تجميل). L: كرتونة كبيرة (أحذية، أجهزة منزلية صغيرة، حقائب). XL: ضخم أو ثقيل (أثاث، أجهزة كبيرة، زرابي). سعر التوصيل يتبع الحجم.",
@@ -3785,7 +3797,8 @@
         "status": "الحالة",
         "paidOn": "تاريخ الدفع",
         "receipt": "الوصل"
-      }
+      },
+      "deliveryIncludedInfo": "السعر المعروض للحريف يشمل التوصيل، وتتكفّل به ChooseTounsi. تتحصّل على سعرك ناقص العمولة."
     },
     "receipt": {
       "generating": "جارٍ إعداد تقرير الأرباح…",
@@ -4272,7 +4285,8 @@
       "referencePrice": "السعر المشطوب: {price} (الأدنى خلال آخر 30 يومًا)",
       "fromRadar": "معبّأ مسبقًا من رادار النمو — عدّل ما تريد قبل الحفظ.",
       "perCustomer": "الحد الأقصى لكل حريف",
-      "perCustomerHint": "عدد القطع التي يمكن لنفس الحريف (حساب أو هاتف) شراؤها بسعر التخفيض السريع."
+      "perCustomerHint": "عدد القطع التي يمكن لنفس الحريف (حساب أو هاتف) شراؤها بسعر التخفيض السريع.",
+      "clientWillSee": "سيرى الحريف ‎−{percent}% ({price}، التوصيل مشمول)"
     },
     "couponForm": {
       "editTitle": "تعديل القسيمة",
@@ -5110,7 +5124,7 @@
       "shipping": "الشحن",
       "shippingYou": "التوصيل على حسابك (شحن مجاني)",
       "shippingYouNote": "لقد عرضت شحنًا مجانيًا، لذلك تُخصم حصتك من تكلفة شركة التوصيل من أرباحك.",
-      "shippingCustomer": "دفعه العميل — لا يؤثر ذلك على أرباحك.",
+      "shippingCustomer": "مشمول في السعر المعروض للحريف وتتكفّل به ChooseTounsi — لا يؤثر ذلك على أرباحك.",
       "shippingPlatform": "دفعته ChooseTounsi — لا يؤثر ذلك على أرباحك.",
       "shippingNone": "لم تُحتسب عليك أي تكلفة توصيل.",
       "adjustment": "تعديل",
@@ -6193,6 +6207,7 @@
       "label": "تسوّق بثقة",
       "delivery": "توصيل لكل تونس",
       "deliveryFee": "التوصيل العادي {fee}",
+      "deliveryFree": "مجاني لكل تونس، مشمول في السعر",
       "freeCount": "{count, plural, zero {لا منتجات بتوصيل مجاني} one {منتج واحد بتوصيل مجاني} two {منتجان بتوصيل مجاني} few {# منتجات بتوصيل مجاني} many {# منتجاً بتوصيل مجاني} other {# منتج بتوصيل مجاني}}",
       "cod": "الدفع عند الاستلام",
       "codBody": "ادفع عند وصول طلبك.",
@@ -6231,7 +6246,8 @@
     "endsInDays": "{count, plural, one {ينتهي غدًا} two {ينتهي خلال يومين} few {ينتهي خلال # أيام} other {ينتهي خلال # يومًا}}",
     "ctaProduct": "تسوّق الآن",
     "ctaSeller": "زيارة المتجر",
-    "ctaDeals": "اكتشف العروض"
+    "ctaDeals": "اكتشف العروض",
+    "upToPercent": "حتى ‎-{value}%"
   },
   "imageSearch": {
     "title": "البحث بالصورة",

@@ -103,6 +103,9 @@ interface SellerGroup {
   subtotal: number
   coupon_code?: string | null
   discount_amount?: number
+  /** What the buyer pays for this shop's parcel (displayed prices − coupon − multi-item discount) */
+  total?: number
+  multi_item_discount?: number
   items: OrderItem[]
   tracking?: DeliveryTracking
   /** Where this shop's parcel is at the courier (orders.delivery.stages.*) */
@@ -123,7 +126,10 @@ interface Order {
   total_amount: number         // subtotal − discount + shipping (what the customer pays); 0 when cancelled
   amount_due?: number
   is_cancelled?: boolean       // nothing to pay: original_amounts are history only
-  original_amounts?: { subtotal: number; discount_amount: number; shipping_fee: number; total: number }
+  original_amounts?: { subtotal: number; discount_amount: number; shipping_fee: number; total: number; multi_item_discount?: number }
+  /** Saved by ordering several items from the same shop (orders with delivery included in the prices) */
+  multi_item_discount?: number
+  free_delivery?: boolean
   wilaya: string | null
   address: string | null
   phone: string | null
@@ -512,7 +518,7 @@ function SellerGroupSection({ group, showSeparator, reviewedMap, onRate, order }
                 −{fmt(Number(group.discount_amount))}{group.coupon_code ? ` (${group.coupon_code})` : ''}
               </span>
             )}
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textDecoration: group.status === 'cancelled' ? 'line-through' : undefined }}>{fmt(Number(group.subtotal) - Number(group.discount_amount ?? 0))}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textDecoration: group.status === 'cancelled' ? 'line-through' : undefined }}>{fmt(group.total != null ? Number(group.total) : Number(group.subtotal) - Number(group.discount_amount ?? 0))}</span>
           </div>
         </div>
       )}
@@ -570,6 +576,7 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed, focused = false }: 
 }) {
   const t  = useTranslations('orders')
   const tc = useTranslations('common')
+  const tm = useTranslations('multiItem')
   const format = useOrderFormat()
   const { fmt } = format
   const [expanded,      setExpanded]      = useState(focused)
@@ -688,8 +695,13 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed, focused = false }: 
                       <span>{t('coupon', { codes: '' })}</span><span>−{fmt(order.original_amounts.discount_amount)}</span>
                     </div>
                   )}
+                  {Number(order.original_amounts.multi_item_discount ?? 0) > 0 && (
+                    <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#94a3b8', fontWeight: 600, textDecoration: 'line-through' }}>
+                      <span>{tm('discountLine')}</span><span>−{fmt(Number(order.original_amounts.multi_item_discount))}</span>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#94a3b8', fontWeight: 600, textDecoration: 'line-through' }}>
-                    <span>{t('shipping')}</span><span>{order.original_amounts.shipping_fee > 0 ? fmt(order.original_amounts.shipping_fee) : tc('free')}</span>
+                    <span>{t('shipping')}</span><span>{order.original_amounts.shipping_fee > 0 ? fmt(order.original_amounts.shipping_fee) : tm('deliveryFree')}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#94a3b8', fontWeight: 600, textDecoration: 'line-through' }}>
                     <span>{t('orderTotal')}</span><span>{fmt(order.original_amounts.total)}</span>
@@ -707,8 +719,17 @@ function OrderCard({ order, reviewedMap, onRate, onReviewed, focused = false }: 
                       <span>−{fmt(Number(order.discount_amount))}</span>
                     </div>
                   )}
+                  {Number(order.multi_item_discount ?? 0) > 0 && (
+                    <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#198f41', fontWeight: 700 }}>
+                      <span>{tm('discountLine')}</span><span>−{fmt(Number(order.multi_item_discount))}</span>
+                    </div>
+                  )}
+                  {/* Orders placed before delivery was included keep their real delivery amount */}
                   <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#64748b', fontWeight: 600 }}>
-                    <span>{t('shipping')}</span><span>{Number(order.shipping_fee ?? 0) > 0 ? fmt(Number(order.shipping_fee)) : tc('free')}</span>
+                    <span>{t('shipping')}</span>
+                    {Number(order.shipping_fee ?? 0) > 0
+                      ? <span>{fmt(Number(order.shipping_fee))}</span>
+                      : <span style={{ color: '#198f41', fontWeight: 800 }}>{tm('deliveryFree')}</span>}
                   </div>
                 </>
               )}

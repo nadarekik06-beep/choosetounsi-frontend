@@ -13,7 +13,7 @@
  *   5. Description + proof photos, submit
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { complaintApi, type BuyerComplaintClient } from '@/lib/complaintApi'
 import type {
@@ -104,9 +104,29 @@ export default function ComplaintRequestForm({
     return { total: round3(total), parcels: parcels.size, items: round3(items) }
   }, [fees, chosen, lines, exchange, order.items])
 
+  // The refund is the server's figure (delivery is included in the prices, so it is not a
+  // sum of unit prices). The local estimate above only shows if the preview cannot be reached.
+  const previewKey = !exchange && lines.length > 0
+    ? JSON.stringify([order.id, type || 'damaged_product', returnAll, lines.map(l => [l.order_item_id, l.quantity])])
+    : ''
+  const [preview, setPreview] = useState<{ key: string; items_amount: number; client_fee: number; refund_amount: number } | null>(null)
+  useEffect(() => {
+    if (!previewKey) return
+    let stale = false
+    const timer = setTimeout(() => {
+      api.preview({ order_id: order.id, complaint_type: type || 'damaged_product', return_all: returnAll, items: lines })
+        .then(res => { if (!stale) setPreview({ key: previewKey, ...res.data }) })
+        .catch(() => { if (!stale) setPreview(null) })
+    }, 250)
+    return () => { stale = true; clearTimeout(timer) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewKey])
+  const served = preview && preview.key === previewKey ? preview : null
+
   const shopPays  = !!type && sellerFaultTypes.includes(type)
-  const clientFee = fee && type && !shopPays ? fee.total : 0
-  const refund    = fee ? Math.max(0, round3(fee.items - clientFee)) : 0
+  const clientFee = fee && type && !shopPays ? (served && type ? served.client_fee : fee.total) : 0
+  const itemsPaid = served ? served.items_amount : (fee?.items ?? 0)
+  const refund    = served && type ? served.refund_amount : fee ? Math.max(0, round3(fee.items - clientFee)) : 0
 
   const clear = (k: string) => setErrors(p => { const n = { ...p }; delete n[k]; return n })
 
@@ -220,6 +240,7 @@ export default function ComplaintRequestForm({
           quantities={quantities}
           onChange={q => { setQuantities(q); clear('items') }}
           showEstimate={!exchange}
+          serverEstimate={previewKey ? (served ? served.items_amount : null) : undefined}
         />
         {exchange && chosen.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -292,7 +313,7 @@ export default function ComplaintRequestForm({
             <>
               <b>{shopPays ? t('returnFeeShop') : t('returnFeeClient', { fee: tnd(clientFee) })}</b>
               <div style={{ marginTop: 4, color: TEXT_SEC }}>{t('refundEstimate', { amount: tnd(refund) })}</div>
-              {!shopPays && clientFee > fee.items && <div style={{ marginTop: 4, color: RED, fontWeight: 700 }}>{t('returnFeeTooHigh')}</div>}
+              {!shopPays && clientFee > itemsPaid && <div style={{ marginTop: 4, color: RED, fontWeight: 700 }}>{t('returnFeeTooHigh')}</div>}
             </>
           )}
           {type && fee && fee.parcels > 1 && <div style={{ marginTop: 4, fontSize: 11.5, color: TEXT_SEC }}>{t('feeParcels', { count: fee.parcels })}</div>}

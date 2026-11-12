@@ -38,6 +38,7 @@ import { ShopAvatar, Stars } from '@/app/shop/_components/primitives'
 import { useQuickView } from '@/app/shop/_components/QuickView'
 import CardGallery from './CardGallery'
 import { cardImages, cardSwatches, type CardProduct } from './cardData'
+import FreeDeliveryBadge from './FreeDeliveryBadge'
 import './product-card.css'
 
 export type { CardProduct } from './cardData'
@@ -263,6 +264,7 @@ export default function ProductCard({
         <div className="sp-card__price">
           {isDeal ? <ProductPrice product={product} size="md" pack /> : <CardPrice product={product} />}
         </div>
+        <FreeDeliveryBadge style={{ marginTop: 3 }} />
         {isDeal && savings > 0.0005 && <p className="sp-card__save">{tc('save', { amount: fmt.price(savings) })}</p>}
         {!soldOut && product.stock <= 5 && <p className="sp-card__low">{t('onlyLeft', { count: product.stock })}</p>}
         {footer}

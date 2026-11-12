@@ -4,7 +4,7 @@ import {
   createContext, useContext, useEffect, useState,
   useCallback, useRef, ReactNode
 } from 'react'
-import { cartApi, favoritesApi, type CartItem, type FavoriteItem } from '@/lib/shopApi'
+import { cartApi, favoritesApi, type CartItem, type CartSummary, type FavoriteItem } from '@/lib/shopApi'
 import { AUTH_CHANGE_EVENT, isAuthenticated } from '@/lib/auth'
 import { clearCartToken, getCartToken, guestCheckoutEnabled } from '@/lib/guestCart'
 import { useLocale, useTranslations } from 'next-intl'
@@ -19,6 +19,8 @@ interface CartContextValue {
   items: CartItem[]
   count: number
   subtotal: number
+  /** Per-shop multi-item discount and totals of the whole cart (server figures) */
+  summary: CartSummary | null
   cartLoading: boolean
   loadingItemId: number | null
   addToCart: (productId: number, qty?: number, variantId?: number | null) => Promise<boolean>   // true once in the cart
@@ -51,6 +53,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items,         setItems]         = useState<CartItem[]>([])
   const [count,         setCount]         = useState(0)
   const [subtotal,      setSubtotal]      = useState(0)
+  const [summary,       setSummary]       = useState<CartSummary | null>(null)
   const [cartLoading,   setCartLoading]   = useState(false)
   const [loadingItemId, setLoadingItemId] = useState<number | null>(null)
   const [favorites,     setFavorites]     = useState<FavoriteItem[]>([])
@@ -91,7 +94,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const refreshCart = useCallback(async () => {
     // Guest: only a browser that already added something has a cart to load.
-    if (!isAuthenticated() && !getCartToken()) { setItems([]); setCount(0); setSubtotal(0); return }
+    if (!isAuthenticated() && !getCartToken()) { setItems([]); setCount(0); setSubtotal(0); setSummary(null); return }
     setCartLoading(true)
     try {
       await mergeGuestCart()
@@ -99,6 +102,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setItems(res.data.items)
       setCount(res.data.count)
       setSubtotal(res.data.subtotal)
+      setSummary(res.data.summary ?? null)
     } catch {
       // silent
     } finally {
@@ -125,7 +129,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // regains focus, so a change made elsewhere never leaves the hearts stale.
   useEffect(() => {
     const onAuth = () => {
-      if (!isAuthenticated()) { setItems([]); setCount(0); setSubtotal(0) }
+      if (!isAuthenticated()) { setItems([]); setCount(0); setSubtotal(0); setSummary(null) }
       refreshCart()
       refreshFavorites()
     }
@@ -224,6 +228,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       await cartApi.clear()
       setItems([])
+      setSummary(null)
       setCount(0)
       setSubtotal(0)
     } catch {}
@@ -266,7 +271,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider value={{
-      items, count, subtotal, cartLoading, loadingItemId,
+      items, count, subtotal, summary, cartLoading, loadingItemId,
       addToCart, addPackToCart,
       updateItem, removeItem, clearCart, refreshCart,
       favorites, isFavorited, toggleFavorite, favLoading,

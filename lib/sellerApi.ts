@@ -142,7 +142,7 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
   // ── Scalar fields ──────────────────────────────────────────────────────────
   const scalars: string[] = [
     'name', 'slug', 'sku', 'description', 'short_description',
-    'price', 'stock', 'category_id', 'subcategory_id', 'delivery_fee',
+    'price', 'stock', 'category_id', 'subcategory_id',
     // Intigo parcel size: required on create, kept as is on update when omitted
     'parcel_size',
   ]
@@ -276,7 +276,6 @@ export interface ProductPayload {
   pack_quantity?: number | string
   pack_contents?: string
   occasions?: string[]
-  delivery_fee?: string      
   parcel_size?: '' | 'S' | 'L' | 'XL'
   images?: File[]
   delete_image_ids?: number[]
@@ -317,14 +316,6 @@ export const dashboardApi = {
   stats: () =>     jsonRequest<any>('GET', '/seller/products/stats'),
 }
 
-// ─── Shipping cost (agency) ───────────────────────────────────────────────────
-// What the seller pays per order when they offer free shipping.
-
-export const shippingApi = {
-  cost: () =>
-    // free_delivery_contribution: what free delivery costs the seller per shipment (admin setting)
-    jsonRequest<{ data: { free_delivery_contribution: number; shipping_cost: number; customer_delivery_fee: number } }>('GET', '/seller/shipping-cost'),
-}
 
 // ─── Seller Orders API ────────────────────────────────────────────────────────
 

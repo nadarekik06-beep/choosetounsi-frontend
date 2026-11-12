@@ -19,6 +19,7 @@ import { useTranslations } from 'next-intl'
 import { X, Package, Truck, MapPin, Phone, CreditCard, CheckCircle, Zap, Ticket } from 'lucide-react'
 import type { CheckoutQuote } from '@/lib/shopApi'
 import BrandLoader from '@/components/brand/BrandLoader'
+import { ShopSavings, FreeDeliveryValue } from '@/app/components/cart/ShopSavings'
 
 export type ConfirmStage = 'review' | 'countdown' | 'placing'
 
@@ -69,6 +70,7 @@ export default function OrderConfirmModal({
 }) {
   const t  = useTranslations('checkout.confirm')
   const tc = useTranslations('common')
+  const tm = useTranslations('multiItem')
   const confirmRef = useRef<HTMLButtonElement>(null)
   const cancelRef  = useRef<HTMLButtonElement>(null)
 
@@ -204,11 +206,13 @@ export default function OrderConfirmModal({
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Ticket size={12} /> {t('coupon', { code: p.coupon_code })}</span>,
                     `-${fmt(p.coupon_discount)}`, '#059669',
                   )}
+                  {Number(p.multi_item_discount ?? 0) > 0.0005 && row(tm('discountLine'), `-${fmt(Number(p.multi_item_discount))}`, '#198f41')}
                   {row(
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Truck size={12} /> {t('delivery')}</span>,
-                    p.is_free_delivery ? <span style={{ color: '#059669' }}>{tc('free')}</span> : fmt(p.delivery_fee),
+                    <FreeDeliveryValue small />,
                   )}
                   {row(<strong style={{ color: '#0f172a' }}>{t('parcelTotal')}</strong>, <span style={{ color: '#0f172a' }}>{fmt(p.total)}</span>)}
+                  <ShopSavings shop={p} style={{ marginTop: 4 }} />
                 </div>
               </section>
             )
@@ -234,7 +238,8 @@ export default function OrderConfirmModal({
         <div className="ocm-foot" style={{ borderTop: '1px solid #f1f5f9', padding: '12px 20px calc(14px + env(safe-area-inset-bottom))', background: '#fff', display: 'flex', flexDirection: 'column', gap: 6 }}>
           {row(t('subtotal'), fmt(quote.subtotal))}
           {quote.discount_amount > 0 && row(t('couponDiscounts'), `-${fmt(quote.discount_amount)}`, '#059669')}
-          {row(t('deliveryFees'), quote.delivery_fee > 0 ? fmt(quote.delivery_fee) : <span style={{ color: '#059669' }}>{tc('free')}</span>)}
+          {Number(quote.multi_item_discount ?? 0) > 0.0005 && row(tm('discountLine'), `-${fmt(Number(quote.multi_item_discount))}`, '#198f41')}
+          {row(tm('deliveryLabel'), <FreeDeliveryValue small />)}
           {promoSavings > 0 && (
             <p style={{ fontSize: 11.5, fontWeight: 700, color: '#198f41', margin: 0 }}>{t('promoSavings', { amount: fmt(promoSavings) })}</p>
           )}

@@ -102,6 +102,15 @@ function buyerComplaintClient(base: '/client' | '/guest', headers: Headers) {
       return formRequest<{ success: boolean; message: string; data: BuyerComplaint; returns: BuyerComplaint[] }>(`${base}/complaints`, fd, headers)
     },
 
+    /**
+     * What returning these units would refund, computed by the server (delivery
+     * is included in the prices, so a refund is not a sum of unit prices).
+     */
+    preview: (payload: { order_id: number; complaint_type: string; return_all?: boolean; items?: { order_item_id: number; quantity: number }[] }) =>
+      jsonRequest<{ success: boolean; data: { items_amount: number; client_fee: number; refund_amount: number; shipping_payer: 'client' | 'seller' } }>(
+        'POST', `${base}/complaints/preview`, payload.return_all ? { ...payload, items: undefined, return_all: 1 } : payload, headers
+      ),
+
     /** Contest the shop's refusal: ChooseTounsi decides. */
     escalate: (id: number, note?: string) =>
       jsonRequest<{ success: boolean; message: string; data: BuyerComplaint }>('PATCH', `${base}/complaints/${id}/escalate`, { note }, headers),

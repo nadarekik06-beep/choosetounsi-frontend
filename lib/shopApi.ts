@@ -125,9 +125,27 @@ export interface CartItem {
   pack_id?: number | null
   pack_slug?: string | null
   pack_selections?: { pack_item_id: number; variant_id: number | null }[]
-  // Free delivery offered by the seller. The fee itself is per seller parcel,
-  // priced by the server: checkoutApi.quote()
-  is_free_delivery?: boolean
+}
+
+/** One shop's part of the cart (one shop = one parcel), computed by the server. */
+export interface CartShopSummary {
+  seller_id: number | null
+  seller_name: string
+  /** Cart rows of this shop (a pack row may appear under several shops) */
+  item_ids: number[]
+  units: number
+  /** Saved by ordering several items from this shop */
+  multi_item_discount: number
+  /** Exactly one item from this shop: the least a second one would save (else null) */
+  upsell_min_saving: number | null
+}
+
+/** Cart totals for a set of rows (all of them, or the selected ones): server figures only. */
+export interface CartSummary {
+  shops: CartShopSummary[]
+  subtotal: number
+  multi_item_discount: number
+  total: number
 }
 
 export interface CartResponse {
@@ -140,6 +158,8 @@ export interface CartResponse {
     savings?: number
     /** Names of the items whose promotion ended while in the cart */
     promo_ended?: string[]
+    /** Per-shop multi-item discount and totals for the whole cart */
+    summary?: CartSummary
   }
 }
 
@@ -205,7 +225,10 @@ export interface BuyNowPayload {
   email?: string
 }
 
-/** One seller = one parcel, with its own delivery fee and cash-on-delivery amount. */
+/**
+ * One seller = one parcel with its own cash-on-delivery amount. Delivery is free
+ * (included in the displayed prices): delivery_fee is 0 and is_free_delivery true.
+ */
 export interface QuoteParcel {
   seller_id: number | null
   seller_name: string
@@ -216,6 +239,10 @@ export interface QuoteParcel {
   /** S | L | XL: the largest item of the parcel; the delivery fee is the one for that size */
   parcel_size?: 'S' | 'L' | 'XL'
   delivery_fee: number
+  /** Saved by ordering several items from this shop (already deducted from total) */
+  multi_item_discount?: number
+  /** Exactly one item from this shop: the least a second one would save (else null) */
+  upsell_min_saving?: number | null
   total: number
   cod_amount: number
   /** The parcel's lines, priced by the server (cart_id is null for buy-now) */
@@ -255,6 +282,8 @@ export interface CheckoutQuote {
   subtotal: number
   discount_amount: number
   delivery_fee: number
+  /** Sum of the parcels' multi-item discounts (deducted from total) */
+  multi_item_discount?: number
   total: number
   /** Σ promotion savings (already deducted from subtotal; display only) */
   promo_savings?: number
@@ -287,6 +316,7 @@ export interface CheckoutResponse {
   total: number
   discount_amount?: number
   delivery_fee?: number
+  multi_item_discount?: number
   parcels?: QuoteParcel[]
   needs_payment?: boolean
   // Guest checkout (no account)
@@ -328,6 +358,9 @@ export const cartApi = {
 
   clear: () =>
     request<{ success: boolean; message: string }>('DELETE', '/cart'),
+  /** Per-shop multi-item discount and totals for the selected rows only. */
+  summary: (itemIds: number[]) =>
+    request<{ success: boolean; data: CartSummary }>('POST', '/cart/summary', { item_ids: itemIds }),
 
   /** Right after login: this browser's guest cart becomes the account's cart. */
   merge: async (): Promise<CartResponse | null> => {

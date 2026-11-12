@@ -18,6 +18,7 @@ import { getToken, subscribeAuth } from '@/lib/auth'
 import { isSignedInSnapshot, notSignedInOnServer, rememberGuestOrder } from '@/lib/guestCart'
 import GuestReturns from '@/components/guest/GuestReturns'
 import { currentLocale } from '@/lib/i18n/clientLocale'
+import { FreeDeliveryValue } from '@/app/components/cart/ShopSavings'
 
 interface TrackItem { name: string; variant: string | null; quantity: number; total: number; image: string | null }
 interface TrackEvent { code: number; label: string; at: string | null }
@@ -33,6 +34,9 @@ export interface TrackedOrder {
   subtotal: number
   discount: number
   shipping_fee: number
+  /** Saved by ordering several items from the same shop (0 on older orders) */
+  multi_item_discount?: number
+  free_delivery?: boolean
   total: number
   is_cancelled: boolean
   recipient: string | null
@@ -53,6 +57,7 @@ const STOPPED = ['cancelled', 'refused', 'refunded']
 export default function TrackOrderPage() {
   const { token } = useParams<{ token: string }>()
   const t  = useTranslations('orderTrack')
+  const tm = useTranslations('multiItem')
   const ts = useTranslations('orderStatus')
   const { price, date } = useFormat()
   const fmt = (n: number) => price(n, { maximumFractionDigits: 3 })
@@ -199,11 +204,23 @@ export default function TrackOrderPage() {
         })}
 
         <div style={card}>
-          {[['subtotal', order.subtotal], ['discount', -order.discount], ['delivery', order.shipping_fee]].filter(([k, v]) => k !== 'discount' || (v as number) < 0).map(([k, v]) => (
+          {[['subtotal', order.subtotal], ['discount', -order.discount]].filter(([k, v]) => k !== 'discount' || (v as number) < 0).map(([k, v]) => (
             <div key={k as string} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#64748b', marginBottom: 6 }}>
               <span>{t(`money.${k}`)}</span><span style={{ fontWeight: 700, color: (v as number) < 0 ? '#059669' : '#0f172a' }}>{(v as number) < 0 ? '−' + fmt(-(v as number)) : fmt(v as number)}</span>
             </div>
           ))}
+          {Number(order.multi_item_discount ?? 0) > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#198f41', marginBottom: 6 }}>
+              <span>{tm('discountLine')}</span><span style={{ fontWeight: 700 }}>−{fmt(Number(order.multi_item_discount))}</span>
+            </div>
+          )}
+          {/* Orders placed before delivery was included keep their real delivery amount */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#64748b', marginBottom: 6 }}>
+            <span>{t('money.delivery')}</span>
+            {order.shipping_fee > 0
+              ? <span style={{ fontWeight: 700, color: '#0f172a' }}>{fmt(order.shipping_fee)}</span>
+              : <FreeDeliveryValue />}
+          </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '2px solid #f1f5f9', fontSize: 15, fontWeight: 900, color: '#0f172a' }}>
             <span>{order.payment_method === 'cod' ? t('money.toPay') : t('money.total')}</span><span style={{ color: '#dc2626' }}>{fmt(order.total)}</span>
           </div>

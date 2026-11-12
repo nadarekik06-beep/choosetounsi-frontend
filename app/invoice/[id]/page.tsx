@@ -70,6 +70,9 @@ interface InvoiceData {
   discount_amount?: number     // seller coupon, 0 / absent on old invoices
   coupon_code?: string | null
   shipping_fee: number
+  /** Client amounts (delivery included in the prices): the invoice may go in the parcel */
+  free_delivery?: boolean
+  multi_item_discount?: number
   grand_total: number          // 0 when cancelled
   original_total?: number      // checkout total, history only
   is_cancelled?: boolean
@@ -85,6 +88,7 @@ export default function InvoicePage() {
   const params = useParams()
   const id = Number(params?.id)
   const t = useTranslations('invoice')
+  const tm = useTranslations('multiItem')
   const { price, date } = useFormat()
   const statusLabel = useStatusLabel()
   const fmt = (n: number) => price(n, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
@@ -548,9 +552,18 @@ export default function InvoicePage() {
                     <span>−{fmt(Number(data.discount_amount))}</span>
                   </div>
                 )}
+                {Number(data.multi_item_discount ?? 0) > 0 && (
+                  <div style={{ ...totalRowStyle(false), color: '#198f41' }}>
+                    <span>{tm('discountLine')}</span>
+                    <span>−{fmt(Number(data.multi_item_discount))}</span>
+                  </div>
+                )}
+                {/* Orders placed before delivery was included keep their delivery amount */}
                 <div style={totalRowStyle(false)}>
                   <span>{t('shipping')}</span>
-                  <span>{fmt(data.shipping_fee)}</span>
+                  {data.free_delivery || Number(data.shipping_fee) === 0
+                    ? <span style={{ color: '#198f41', fontWeight: 800 }}>{tm('deliveryFree')}</span>
+                    : <span>{fmt(data.shipping_fee)}</span>}
                 </div>
                 <div style={totalRowStyle(true)}>
                   <span>{t('grandTotal')}</span>

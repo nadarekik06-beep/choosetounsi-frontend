@@ -103,6 +103,7 @@
   "nav": {
     "announcement": "🇹🇳 100% Tunisian sellers, all over Tunisia",
     "announcementTail": " — ChooseTounsi",
+    "announcementFreeDelivery": "🚚 Free delivery all over Tunisia",
     "helpSupport": "Help & Support",
     "myOrders": "My Orders",
     "myComplaints": "My Complaints",
@@ -380,7 +381,17 @@
     "hot": "Hot",
     "bestSellerRank": "#{rank} best seller"
   },
+  "multiItem": {
+    "total": "Total",
+    "lucky": "🎉 Lucky you! You save {amount} by ordering several items from {shop}.",
+    "upsell": "Add another item from {shop} and save at least {amount}",
+    "discountLine": "Multi-item discount",
+    "deliveryLabel": "Delivery",
+    "deliveryFree": "Free",
+    "thisShop": "this shop"
+  },
   "productCard": {
+    "freeDelivery": "Free delivery",
     "sponsored": "Sponsored",
     "hot": "🔥 Hot",
     "trending": "⚡ Trending",
@@ -589,7 +600,7 @@
     "inStock": "{count} in stock",
     "ownProduct": "This is your product",
     "trustDelivery": "Delivery",
-    "trustFreeDeliveryDesc": "This product ships for free — no delivery fee at checkout!",
+    "trustFreeDeliveryDesc": "All over Tunisia, nothing to add at checkout: delivery is included in the price.",
     "trustDeliveryDesc": "Delivery all over Tunisia",
     "trustFreeDeliveryPackDesc": "This bundle ships for free — no delivery fee at checkout!",
     "trustReturns": "Easy returns",
@@ -3057,7 +3068,8 @@
       "lowStockThresholdShop": "Shop: {n}",
       "lowStockThresholdDefault": "Shop threshold",
       "lowStockThresholdHint": "Empty = threshold set in your shop settings.",
-      "freeDeliveryCostHint": "If you turn it on, free delivery costs you {cost} per order shipment.",
+      "deliveryIncludedInfo": "The price shown to the customer includes delivery, handled by ChooseTounsi. You receive your price minus the commission.",
+      "parcelSizeConfirm": "Please confirm this product's parcel size (currently: {size}). It sets the delivery included in the price shown to the customer.",
       "parcelSize": "Parcel size",
       "parcelSizeSelect": "Choose the size of the packed item",
       "parcelSizeHint": "S: fits in a shoebox (clothes, jewelry, cosmetics). L: a large box (shoes, small appliances, bags). XL: bulky or heavy (furniture, large appliances, carpets). The delivery price depends on it.",
@@ -3785,7 +3797,8 @@
         "status": "Status",
         "paidOn": "Paid On",
         "receipt": "Receipt"
-      }
+      },
+      "deliveryIncludedInfo": "The price shown to the customer includes delivery, handled by ChooseTounsi. You receive your price minus the commission."
     },
     "receipt": {
       "generating": "Generating earnings report…",
@@ -4272,7 +4285,8 @@
       "referencePrice": "Crossed-out price: {price} (lowest of the last 30 days)",
       "fromRadar": "Pre-filled by Growth Radar — adjust anything before saving.",
       "perCustomer": "Max per customer",
-      "perCustomerHint": "Units one customer (account or phone) can buy at the flash price."
+      "perCustomerHint": "Units one customer (account or phone) can buy at the flash price.",
+      "clientWillSee": "The customer will see −{percent}% ({price}, delivery included)"
     },
     "couponForm": {
       "editTitle": "Edit Coupon",
@@ -5110,7 +5124,7 @@
       "shipping": "Shipping",
       "shippingYou": "Delivery paid by you (free shipping)",
       "shippingYouNote": "You offered free shipping, so your share of the delivery company's cost is deducted from your earnings.",
-      "shippingCustomer": "Paid by the customer — this doesn't affect your earnings.",
+      "shippingCustomer": "Included in the price shown to the customer and handled by ChooseTounsi — this doesn't affect your earnings.",
       "shippingPlatform": "Paid by ChooseTounsi — this doesn't affect your earnings.",
       "shippingNone": "No delivery cost was charged to you.",
       "adjustment": "Adjustment",
@@ -6193,6 +6207,7 @@
       "label": "Shopping with confidence",
       "delivery": "Delivery across Tunisia",
       "deliveryFee": "Standard delivery {fee}",
+      "deliveryFree": "Free all over Tunisia, included in the price",
       "freeCount": "{count, plural, one {# product ships free} other {# products ship free}}",
       "cod": "Cash on delivery",
       "codBody": "Pay when your order arrives.",
@@ -6231,7 +6246,8 @@
     "endsInDays": "{count, plural, one {Ends tomorrow} other {Ends in # days}}",
     "ctaProduct": "Shop now",
     "ctaSeller": "Visit the store",
-    "ctaDeals": "See the deals"
+    "ctaDeals": "See the deals",
+    "upToPercent": "Up to -{value}%"
   },
   "imageSearch": {
     "title": "Photo search",

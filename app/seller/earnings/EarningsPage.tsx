@@ -287,6 +287,14 @@ export default function EarningsPage() {
   
                   </div>
   
+                  {/* Delivery is included in the displayed price and handled by ChooseTounsi: never deducted here */}
+                  <p style={{
+                    fontSize: 12, fontWeight: 600, color: ink('#198f41', dark), margin: 0, lineHeight: 1.5,
+                    background: 'rgba(25,143,65,0.07)', border: '1px solid rgba(25,143,65,0.25)', borderRadius: 12, padding: '10px 14px',
+                  }}>
+                    🚚 {t('deliveryIncludedInfo')}
+                  </p>
+
                   {/* Revenue split */}
                   <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
                     <div style={{ padding: '14px 20px', borderBottom: `1px solid ${border}` }}>
