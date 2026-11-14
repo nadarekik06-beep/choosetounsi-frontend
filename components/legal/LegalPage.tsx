@@ -5,7 +5,7 @@ import TunisianPattern from '@/app/components/home/illustrations/TunisianPattern
 import type { LegalDoc, MadeBy } from '@/lib/legal/types'
 import './legal.css'
 
-type Page = 'privacy' | 'terms' | 'contact'
+type Page = 'privacy' | 'terms' | 'contact' | 'returns'
 
 /**
  * Shared shell of the information pages (/privacy, /terms, /contact): hero
@@ -45,6 +45,7 @@ async function RelatedPages({ current }: { current: Page }) {
   const pages: { key: Page; href: string }[] = [
     { key: 'privacy', href: '/privacy' },
     { key: 'terms', href: '/terms' },
+    { key: 'returns', href: '/returns-policy' },
     { key: 'contact', href: '/contact' },
   ]
   return (
@@ -75,7 +76,7 @@ function TocList({ doc }: { doc: LegalDoc }) {
 }
 
 /** A legal document: table of contents + numbered sections + "made by" block. */
-export async function LegalDocument({ doc, madeBy, current }: { doc: LegalDoc; madeBy: MadeBy; current: 'privacy' | 'terms' }) {
+export async function LegalDocument({ doc, madeBy, current }: { doc: LegalDoc; madeBy: MadeBy; current: 'privacy' | 'terms' | 'returns' }) {
   const t = await getTranslations('legal')
   return (
     <InfoShell current={current} eyebrow={t('eyebrow')} title={doc.title} intro={doc.intro} meta={doc.updated}>

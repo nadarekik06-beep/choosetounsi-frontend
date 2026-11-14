@@ -312,7 +312,8 @@
     "contactPage": "Contact",
     "privacy": "Confidentialité",
     "terms": "Conditions d’utilisation",
-    "trackOrder": "Suivre ma commande"
+    "trackOrder": "Suivre ma commande",
+    "returnsPolicy": "Échange et remboursement"
   },
   "home": {
     "quickActions": {
@@ -628,7 +629,10 @@
     "colorHint": "Choisissez une couleur",
     "optionHint": "Choisissez une option",
     "unavailable": "indisponible",
-    "axisLabel": "{axis} :"
+    "axisLabel": "{axis} :",
+    "returnsExchangeEasy": "Échange facile sous 48h",
+    "returnsDefectOnly": "Échange/remboursement uniquement si défectueux ou non conforme",
+    "returnsPolicyLink": "En savoir plus"
   },
   "recommendations": {
     "flash": "FLASH",
@@ -4106,7 +4110,44 @@
       "exchangeFeeClient": "Le client paie les frais d’échange au livreur.",
       "exchangeNoCommission": "Même vente, autre variante : pas de nouvelle commission ni de nouveau versement.",
       "oldItemOverdue": "Ancien article non confirmé après 7 jours : vérifiez et confirmez-le.",
-      "guestBadge": "Invité"
+      "guestBadge": "Invité",
+      "receivedOpen": "Colis retour reçu",
+      "receivedToast": "Réception confirmée : vous pouvez maintenant inspecter le colis.",
+      "exchangeImpossible": {
+        "open": "Échange impossible",
+        "title": "Cet échange est impossible",
+        "hint": "Le client sera prévenu et pourra demander un remboursement en un clic. Indiquez la raison.",
+        "placeholder": "ex. La taille demandée est épuisée",
+        "reasonShort": "Indiquez la raison (10 caractères minimum).",
+        "confirm": "Confirmer",
+        "toast": "Le client a été prévenu.",
+        "flagged": "Vous avez indiqué que l’échange est impossible : en attente du choix du client."
+      },
+      "inspect": {
+        "open": "Inspecter le colis",
+        "title": "Inspection du colis retour",
+        "oldItemTitle": "Inspection de l’ancien article",
+        "hint": "Le client a déjà été remboursé (ou son échange livré) : l’inspection décide du stock et d’un éventuel litige.",
+        "conform": "Conforme",
+        "nonconform": "Non conforme",
+        "choose": "Choisissez Conforme ou Non conforme.",
+        "nonconformNeeds": "Pour un colis non conforme, ajoutez un commentaire et au moins une photo.",
+        "nonconformNote": "ChooseTounsi examinera vos photos et décidera. Le colis ne retourne pas en stock et votre paiement reste en attente de cette décision.",
+        "stockNote": "Conforme : l’article retourne en stock (+1 sur la bonne variante) et la vente est annulée.",
+        "commentPlaceholder": "Décrivez le problème (état, taches, usure…)",
+        "photos": "Photos (1 à 5)",
+        "photosCount": "{count} photo(s) sélectionnée(s)",
+        "confirm": "Valider l’inspection",
+        "toast": "Inspection enregistrée."
+      },
+      "frozen": {
+        "title": "En attente de retour.",
+        "body": "Le client a été remboursé en espèces : le paiement de ce colis est suspendu jusqu’à l’inspection de l’article retourné."
+      },
+      "dispute": {
+        "title": "Litige en cours.",
+        "body": "Votre colis a été marqué non conforme : ChooseTounsi examine vos photos et décidera."
+      }
     },
     "reviews": {
       "title": "Avis et réputation",
@@ -6431,7 +6472,8 @@
       "photoSize": "Chaque photo doit faire moins de 5 Mo.",
       "photoMax": "{count} photos maximum.",
       "photoN": "Photo {n}",
-      "removePhoto": "Retirer la photo"
+      "removePhoto": "Retirer la photo",
+      "photosHintRange": "{min} à {max} photos · JPG, PNG, WEBP · 5 Mo chacune"
     },
     "hintCash": {
       "admin_approved": "Approuvé ! Un livreur va vous contacter, vérifier l'article et vous rembourser {amount} en espèces.",
@@ -6466,6 +6508,18 @@
       "items": "Articles à échanger",
       "qtyFor": "{count} × → {label}",
       "reference": "Échange {ref}"
+    },
+    "exchangeImpossible": {
+      "title": "Échange impossible",
+      "body": "La boutique a indiqué que cet échange n’est pas possible. Vous pouvez demander un remboursement en un clic.",
+      "unused": "Je confirme que l’article est neuf, non porté et avec ses étiquettes.",
+      "switch": "Demander un remboursement"
+    },
+    "sentBack": {
+      "title": "Article renvoyé",
+      "body": "Après contrôle, l’article n’a pas été jugé conforme : il vous est renvoyé en paiement à la livraison. Le livreur vous demandera {cod} en espèces : le remboursement que vous avez déjà reçu ({refunded}) + la livraison ({fee}). Si vous refusez le colis, l’article retourne chez la boutique.",
+      "reason": "Motif du contrôle",
+      "photo": "Photo {n}"
     }
   },
   "pickupAddress": {
@@ -6541,6 +6595,9 @@
     },
     "contact": {
       "title": "Nous contacter"
+    },
+    "returns": {
+      "title": "Échange et remboursement"
     }
   },
   "contactPage": {
@@ -6779,8 +6836,23 @@
       "photo": "Au moins une photo justificative est requise.",
       "replacement": "Choisissez la taille / couleur de remplacement pour « {item} ».",
       "noOption": "« {item} » ne peut pas être échangé : choisissez plutôt un retour.",
-      "submit": "Échec de l’envoi. Veuillez réessayer."
-    }
+      "submit": "Échec de l’envoi. Veuillez réessayer.",
+      "unused": "Confirmez que l’article est neuf, non porté et avec ses étiquettes.",
+      "photoRange": "Ajoutez {min} à {max} photos de l’article."
+    },
+    "promise": "Échange facile sous 48h. Remboursement si le produit est défectueux, non conforme ou si l’échange est impossible.",
+    "policyLink": "Politique d’échange et de remboursement",
+    "recommended": "Recommandé",
+    "refund": "Remboursement",
+    "refundHint": "Renvoyer l’article et être remboursé(e) en espèces",
+    "reasonUnavailable": "Indisponible pour cette sélection",
+    "exchangeUnavailable": "L’échange n’est pas possible pour cette sélection (rupture de stock) : le remboursement est proposé.",
+    "refundNotAllowed": "Pour ce motif, le remboursement n’est possible que si l’échange est impossible.",
+    "unusedConfirm": "Je confirme que l’article est neuf, non porté et avec ses étiquettes.",
+    "refundBreakdown": "Remboursement : {amount} DT ({items} − {fee} frais de retour)",
+    "refundBreakdownFull": "Remboursement : {amount} DT (100 % de ce que vous avez payé pour ces articles)",
+    "proofHintRange": "{min} à {max} photos",
+    "returnNoteV2": "📦 Votre demande est d’abord validée par la boutique (elle examine vos photos). Ensuite un livreur récupère l’article et vous remet le remboursement en espèces : le montant est fixé avant l’enlèvement."
   },
   "sellerActivated": {
     "title": "Votre compte vendeur est actif 🎉",

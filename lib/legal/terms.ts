@@ -8,8 +8,9 @@ import { SOCIAL_HANDLE, SUPPORT_GMAIL, WHATSAPP_DISPLAY } from '@/lib/contactInf
 //   identity of the operator.
 // Keep it customer-facing: no provider names, technical details, internal rules or fees/rates.
 // Facts it relies on (check them when the platform changes): cash on delivery only, complaints
-// within 48 h of delivery and one per order (Complaint::COMPLAINT_WINDOW_HOURS), cash refund at
-// pickup, return fee deducted only when the buyer changes their mind (ReturnService).
+// within 48 h of the real delivered date (Complaint::COMPLAINT_WINDOW_HOURS), 2-3 photos, exchange first,
+// cash refund at pickup (amount fixed before), return fee deducted only when the buyer changes their mind,
+// changed-mind exclusions per category, delivery free everywhere (included in the prices).
 
 const UPDATED = '22/10/2026'
 
@@ -44,7 +45,7 @@ const fr: LegalDoc = {
       id: 'commander', heading: '3. Commander',
       items: [
         'Les prix sont affichés en dinars tunisiens (DT).',
-        'Avant de confirmer, vous voyez le total de votre commande, frais de livraison compris.',
+        'Avant de confirmer, vous voyez le total de votre commande. La livraison est gratuite : elle est déjà comprise dans les prix affichés.',
         'Une fois votre commande confirmée, le vendeur la prépare et la remet à notre partenaire de livraison.',
         'Si vous commandez dans plusieurs boutiques, vous recevez un colis par boutique.',
         'Vous suivez chaque étape dans « Mes commandes » et par e-mail.',
@@ -63,26 +64,36 @@ const fr: LegalDoc = {
       id: 'livraison', heading: '5. Livraison',
       items: [
         'Nous livrons partout en Tunisie, à l’adresse indiquée dans votre commande.',
-        'Les frais de livraison sont affichés avant la confirmation.',
+        'La livraison est gratuite partout en Tunisie. Aucun frais de livraison n’est ajouté au prix affiché.',
         'Restez joignable : le livreur peut vous appeler.',
         'Vous recevez un message quand le colis part et quand il est livré.',
         'Les délais sont donnés à titre indicatif.',
       ],
     },
     {
-      id: 'reclamations', heading: '6. Réclamations, retours et remboursements',
-      body: ['Un problème avec votre commande ? Voici comment faire :'],
+      id: 'reclamations', heading: '6. Échanges, retours et remboursements',
+      body: [
+        '**Échange facile sous 48h.** Remboursement si le produit est défectueux, non conforme ou si l’échange est impossible.',
+      ],
+      items: [
+        '**L’échange est toujours proposé en premier.** Le remboursement n’est proposé qu’ensuite, quand le motif le permet.',
+        '**La taille ne me va pas** : échange. Remboursement uniquement si l’échange est impossible (article en rupture de stock). Les frais de l’échange sont à votre charge, payés au livreur.',
+        '**Article défectueux, endommagé, mauvais article ou non conforme à la description** : échange ou remboursement, sans aucun frais pour vous.',
+        '**J’ai changé d’avis** : échange, ou remboursement si l’article est neuf, non porté et avec ses étiquettes. Pour un échange, les frais de l’échange sont à votre charge, payés au livreur. Pour un remboursement, les frais de retour sont déduits du remboursement ; leur montant exact est affiché avant l’envoi de la demande.',
+        '**Pas de retour pour changement d’avis** (hygiène et nature du produit) : sous-vêtements et lingerie, maillots de bain, cosmétiques et beauté, hygiène intime, produits alimentaires, articles personnalisés. Pour ces produits, l’échange ou le remboursement n’est possible que s’ils sont défectueux ou non conformes.',
+      ],
       steps: [
-        '**Allez dans « Mes réclamations »** (ou « Aide / Réclamation ») dans les **48 heures après la livraison**.',
-        '**Choisissez les articles concernés** et le motif : mauvais produit, mauvaise taille ou couleur, produit abîmé, ou autre.',
-        '**Décrivez le problème et ajoutez au moins une photo.**',
-        '**Le vendeur répond.** S’il refuse, notre équipe réexamine votre demande.',
-        '**Un livreur vient récupérer l’article**, qui doit être complet et dans l’état décrit.',
-        '**Vous êtes remboursé** en espèces par le livreur, au moment où il récupère l’article.',
+        '**Allez dans « Mes réclamations »** (ou « Aide / Réclamation ») dans les **48 heures après la livraison de votre colis** (date de livraison réelle indiquée par notre transporteur).',
+        '**Choisissez les articles concernés** et le motif.',
+        '**Ajoutez 2 à 3 photos** de l’article, pour tous les motifs, et décrivez le problème.',
+        '**Le vendeur examine vos photos** et accepte la demande ; notre équipe la valide. S’il refuse, notre équipe réexamine votre demande.',
+        '**Un livreur vient récupérer l’article** (ou apporte le nouvel article et reprend l’ancien, en cas d’échange).',
+        '**Vous êtes remboursé en espèces par le livreur**, au moment où il récupère l’article. Le montant est calculé et affiché avant l’envoi de la demande, puis fixé avant l’enlèvement : c’est exactement la somme que le livreur vous remet.',
       ],
       after: [
-        'Si le produit reçu est erroné ou abîmé, le retour ne vous coûte rien. Si vous changez simplement d’avis, les frais de retour sont déduits du remboursement.',
-        'Une seule réclamation est possible par commande.',
+        'Si l’échange est impossible (rupture de stock, ou la boutique nous le signale), le remboursement vous est proposé en un clic.',
+        'Quand l’article arrive chez la boutique, elle le contrôle. S’il n’est pas conforme à ce que vous avez décrit, notre équipe examine les photos et décide au cas par cas. Si l’article vous est renvoyé, il est livré en paiement à la livraison : le livreur vous demande le remboursement déjà reçu plus les frais de livraison. Si vous refusez le colis, l’article retourne chez la boutique.',
+        'Un même article ne peut pas être retourné deux fois. Le détail complet est sur la page « Échange et remboursement ».',
       ],
     },
     {
@@ -173,7 +184,7 @@ const en: LegalDoc = {
       id: 'commander', heading: '3. Ordering',
       items: [
         'Prices are shown in Tunisian dinars (DT).',
-        'Before you confirm, you see your order total, delivery fees included.',
+        'Before you confirm, you see your order total. Delivery is free: it is already included in the displayed prices.',
         'Once your order is confirmed, the seller prepares it and hands it to our delivery partner.',
         'If you order from several shops, you get one parcel per shop.',
         'You can follow every step in “My orders” and by e-mail.',
@@ -192,26 +203,36 @@ const en: LegalDoc = {
       id: 'livraison', heading: '5. Delivery',
       items: [
         'We deliver all over Tunisia, to the address given in your order.',
-        'Delivery fees are shown before you confirm.',
+        'Delivery is free all over Tunisia. No delivery fee is added to the displayed price.',
         'Keep your phone close: the courier may call you.',
         'You get a message when your parcel leaves and when it is delivered.',
         'Delivery times are an estimate.',
       ],
     },
     {
-      id: 'reclamations', heading: '6. Complaints, returns and refunds',
-      body: ['A problem with your order? Here is what to do:'],
+      id: 'reclamations', heading: '6. Exchanges, returns and refunds',
+      body: [
+        '**Easy exchange within 48h.** Refund if the product is defective, not as described, or if the exchange is impossible.',
+      ],
+      items: [
+        '**An exchange is always offered first.** A refund is offered second, when the reason allows it.',
+        '**The size doesn’t fit**: exchange. A refund is only possible if the exchange is impossible (item out of stock). The exchange delivery is at your expense, paid to the courier.',
+        '**Defective, damaged, wrong item or not as described**: exchange or refund, at no cost to you.',
+        '**I changed my mind**: exchange, or a refund if the item is new, unworn and still has its tags. For an exchange, the exchange delivery is at your expense, paid to the courier. For a refund, the return fee is deducted from the refund; the exact amount is shown before you send the request.',
+        '**No “changed my mind” returns** (hygiene and product nature): underwear and lingerie, swimwear, cosmetics and beauty, intimate hygiene, food, personalised items. For these, exchange or refund is only possible if the product is defective or not as described.',
+      ],
       steps: [
-        '**Go to “My complaints”** (or “Help / Complaint”) within **48 hours of delivery**.',
-        '**Choose the items concerned** and the reason: wrong product, wrong size or colour, damaged product, or other.',
-        '**Describe the problem and add at least one photo.**',
-        '**The seller answers.** If they refuse, our team looks at your request again.',
-        '**A courier comes to collect the item**, which must be complete and in the condition you described.',
-        '**You get your refund** in cash from the courier when they collect the item.',
+        '**Go to “My complaints”** (or “Help / Complaint”) within **48 hours of your parcel’s delivery** (the real delivery date given by our carrier).',
+        '**Choose the items concerned** and the reason.',
+        '**Add 2 to 3 photos** of the item, for every reason, and describe the problem.',
+        '**The seller reviews your photos** and accepts the request; our team validates it. If they refuse, our team looks at your request again.',
+        '**A courier collects the item** (or brings the new item and takes the old one back, for an exchange).',
+        '**You are refunded in cash by the courier**, when they collect the item. The amount is calculated and shown before you send the request, then fixed before the pick-up: it is exactly the sum the courier hands you.',
       ],
       after: [
-        'If the product you received is wrong or damaged, the return costs you nothing. If you simply changed your mind, the return fee is taken off your refund.',
-        'You can file one complaint per order.',
+        'If the exchange is impossible (out of stock, or the shop tells us), a refund is offered in one click.',
+        'When the item reaches the shop, the shop checks it. If it is not as you described, our team reviews the photos and decides case by case. If the item is sent back to you, it is delivered cash on delivery: the courier asks for the refund you already received plus the delivery fee. If you refuse the parcel, the item goes back to the shop.',
+        'The same item cannot be returned twice. The full details are on the “Exchange and refund” page.',
       ],
     },
     {
@@ -302,7 +323,7 @@ const ar: LegalDoc = {
       id: 'commander', heading: '3. الطلب',
       items: [
         'الأسعار معروضة بالدينار التونسي (DT).',
-        'قبل التأكيد، ترى المبلغ الجملي لطلبك بما فيه مصاريف التوصيل.',
+        'قبل التأكيد، ترى المبلغ الجملي لطلبك. التوصيل مجاني: فهو مشمول مسبقًا في الأسعار المعروضة.',
         'بعد تأكيد طلبك، يحضّره البائع ويسلّمه إلى شريك التوصيل.',
         'إذا طلبت من عدّة متاجر، تتسلّم طردًا من كل متجر.',
         'تتابع كل مرحلة في «طلباتي» وعبر البريد الإلكتروني.',
@@ -321,26 +342,36 @@ const ar: LegalDoc = {
       id: 'livraison', heading: '5. التوصيل',
       items: [
         'نوصّل إلى كامل تراب الجمهورية، إلى العنوان المذكور في طلبك.',
-        'مصاريف التوصيل معروضة قبل التأكيد.',
+        'التوصيل مجاني في كامل أنحاء تونس. لا تُضاف أي مصاريف توصيل إلى السعر المعروض.',
         'ابقَ متاحًا على هاتفك: قد يتصل بك عون التوصيل.',
         'تصلك رسالة عند خروج الطرد وعند توصيله.',
         'آجال التوصيل تقريبية.',
       ],
     },
     {
-      id: 'reclamations', heading: '6. الشكاوى والإرجاع والاسترجاع',
-      body: ['عندك مشكلة في طلبك؟ إليك الخطوات:'],
+      id: 'reclamations', heading: '6. الاستبدال والإرجاع والاسترجاع',
+      body: [
+        '**استبدال سهل خلال 48 ساعة.** استرجاع المبلغ إذا كان المنتج معيبًا أو غير مطابق أو إذا تعذّر الاستبدال.',
+      ],
+      items: [
+        '**الاستبدال يُقترح دائمًا أولًا.** ويُقترح الاسترجاع ثانيًا عندما يسمح السبب بذلك.',
+        '**المقاس لا يناسبني**: استبدال. لا يمكن الاسترجاع إلا إذا تعذّر الاستبدال (نفاد المخزون). تكلفة توصيل الاستبدال عليك وتُدفع للموزّع.',
+        '**منتج معيب أو متضرر أو خاطئ أو غير مطابق للوصف**: استبدال أو استرجاع دون أي تكلفة عليك.',
+        '**غيّرت رأيي**: استبدال، أو استرجاع إذا كان المنتج جديدًا وغير مستعمل وبه بطاقاته. في حالة الاستبدال، تكلفة توصيل الاستبدال عليك وتُدفع للموزّع. وفي حالة الاسترجاع، تُخصم مصاريف الإرجاع من المبلغ المسترجع، ويُعرض المبلغ الدقيق قبل إرسال الطلب.',
+        '**لا إرجاع بسبب تغيير الرأي** (لأسباب النظافة وطبيعة المنتج): الملابس الداخلية، ملابس السباحة، مستحضرات التجميل، النظافة الحميمة، المواد الغذائية، المنتجات المخصصة. في هذه المنتجات لا يكون الاستبدال أو الاسترجاع ممكنًا إلا إذا كان المنتج معيبًا أو غير مطابق.',
+      ],
       steps: [
-        '**ادخل إلى «شكاواي»** (أو «مساعدة / شكوى») في أجل **48 ساعة بعد التوصيل**.',
-        '**اختر المنتجات المعنية** والسبب: منتج خاطئ، مقاس أو لون خاطئ، منتج متضرّر، أو سبب آخر.',
-        '**اشرح المشكلة وأضف صورة واحدة على الأقل.**',
-        '**يجيبك البائع.** إذا رفض، يعيد فريقنا دراسة طلبك.',
-        '**يأتي عون توصيل لاسترجاع المنتج**، ويجب أن يكون كاملًا وفي الحالة التي وصفتها.',
-        '**تسترجع أموالك** نقدًا من عون التوصيل عند استلامه للمنتج.',
+        '**ادخل إلى «شكاواي»** (أو «مساعدة / شكوى») في أجل **48 ساعة بعد تسليم طردك** (تاريخ التسليم الفعلي الذي يحدده شريك التوصيل).',
+        '**اختر المنتجات المعنية** والسبب.',
+        '**أضف من صورتين إلى 3 صور** للمنتج، مهما كان السبب، واشرح المشكلة.',
+        '**يراجع البائع صورك** ويقبل الطلب، ثم يصادق عليه فريقنا. إذا رفض، يعيد فريقنا دراسة طلبك.',
+        '**يأتي عون توصيل لاستلام المنتج** (أو يحضر المنتج الجديد ويستلم القديم في حالة الاستبدال).',
+        '**تسترجع أموالك نقدًا من عون التوصيل** عند استلامه للمنتج. يُحسب المبلغ ويُعرض قبل إرسال الطلب، ثم يُحدَّد قبل الاستلام: هو بالضبط المبلغ الذي يسلّمه لك عون التوصيل.',
       ],
       after: [
-        'إذا كان المنتج الذي وصلك خاطئًا أو متضرّرًا، فالإرجاع لا يكلّفك شيئًا. إذا غيّرت رأيك فقط، تُخصم مصاريف الإرجاع من المبلغ المسترجع.',
-        'يمكنك تقديم شكوى واحدة لكل طلب.',
+        'إذا تعذّر الاستبدال (نفاد المخزون، أو أبلغنا المتجر بذلك)، يُقترح عليك الاسترجاع بنقرة واحدة.',
+        'عند وصول المنتج إلى المتجر، يفحصه المتجر. إن لم يكن مطابقًا لما وصفته، يراجع فريقنا الصور ويقرر حالة بحالة. وإذا أُعيد المنتج إليك، يُسلَّم مقابل الدفع نقدًا عند الاستلام: يطلب منك عون التوصيل المبلغ الذي استرجعته مسبقًا مضافًا إليه تكلفة التوصيل. وإذا رفضت الطرد، يعود المنتج إلى المتجر.',
+        'لا يمكن إرجاع المنتج نفسه مرتين. التفاصيل الكاملة في صفحة «الاستبدال والاسترجاع».',
       ],
     },
     {

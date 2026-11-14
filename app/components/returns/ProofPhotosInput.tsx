@@ -12,12 +12,15 @@ const MAX_BYTES = 5 * 1024 * 1024
  * prints them for the courier's check), up to five, 5 MB each.
  */
 export default function ProofPhotosInput({
-  files, onChange, error, onError,
+  files, onChange, error, onError, min, max = MAX_PHOTOS,
 }: {
   files:    File[]
   onChange: (files: File[]) => void
   error?:   string
   onError?: (message: string | null) => void
+  /** Exchange-first policy: 2 to 3 photos (default: 1 to 5, as before) */
+  min?:     number
+  max?:     number
 }) {
   const t = useTranslations('returns.form')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -31,7 +34,7 @@ export default function ProofPhotosInput({
     for (const f of Array.from(list)) {
       if (!f.type.startsWith('image/')) { onError?.(t('photoType')); continue }
       if (f.size > MAX_BYTES)          { onError?.(t('photoSize')); continue }
-      if (next.length >= MAX_PHOTOS)   { onError?.(t('photoMax', { count: MAX_PHOTOS })); break }
+      if (next.length >= max)          { onError?.(t('photoMax', { count: max })); break }
       next.push(f)
     }
     onChange(next)
@@ -56,7 +59,7 @@ export default function ProofPhotosInput({
         </div>
       )}
 
-      {files.length < MAX_PHOTOS && (
+      {files.length < max && (
         <div
           role="button" tabIndex={0}
           onClick={() => inputRef.current?.click()}
@@ -73,7 +76,9 @@ export default function ProofPhotosInput({
           <p style={{ fontSize: 12.5, fontWeight: 700, color: '#475569', margin: 0 }}>
             {files.length ? t('addPhoto') : t.rich('dropPhotos', { b: c => <span style={{ color: RED }}>{c}</span> })}
           </p>
-          <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>{t('photosHint', { count: MAX_PHOTOS })}</p>
+          <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
+            {min != null ? t('photosHintRange', { min, max }) : t('photosHint', { count: max })}
+          </p>
         </div>
       )}
       <input ref={inputRef} type="file" multiple accept="image/jpeg,image/png,image/jpg,image/webp"

@@ -703,6 +703,126 @@ function ReceiveModal({ complaint, onClose, onDone, dark }: { complaint: Complai
   )
 }
 
+// ─── Exchange-first policy: « Échange impossible » (the client may then switch to a refund) ───
+
+function ExchangeImpossibleModal({ complaint, onClose, onDone, dark }: { complaint: Complaint; onClose: () => void; onDone: () => void; dark: boolean }) {
+  const t = useTranslations('seller.complaints')
+  const T = useColors(dark)
+  const [reason, setReason] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error,  setError]  = useState('')
+
+  const submit = async () => {
+    if (reason.trim().length < 10) { setError(t('exchangeImpossible.reasonShort')); return }
+    setSaving(true); setError('')
+    try {
+      await sellerComplaintApi.exchangeImpossible(complaint.id, reason.trim())
+      onDone(); onClose()
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } }
+      setError(e?.response?.data?.message ?? t('errors.failed'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <>
+      <div data-ct-modal="" onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', zIndex: 10000 }} />
+      <div role="dialog" aria-modal="true" aria-label={t('exchangeImpossible.title')} style={{
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '92%', maxWidth: 480,
+        background: T.cardBg, border: `1px solid ${T.border}`, borderRadius: 20, padding: '26px 26px 22px', zIndex: 10001,
+      }}>
+        <h3 style={{ fontSize: 17, fontWeight: 800, color: T.textMain, margin: '0 0 5px' }}>{t('exchangeImpossible.title')}</h3>
+        <p style={{ fontSize: 12.5, color: T.textMuted, lineHeight: 1.5, margin: '0 0 14px' }}>{t('exchangeImpossible.hint')}</p>
+        <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3} maxLength={500} placeholder={t('exchangeImpossible.placeholder')}
+          aria-label={t('exchangeImpossible.placeholder')}
+          style={{ width: '100%', padding: '10px 12px', borderRadius: 10, fontSize: 13, border: `1.5px solid ${T.inputBorder}`,
+            background: T.inputBg, color: T.inputText, boxSizing: 'border-box', resize: 'vertical', marginBottom: 14 }} />
+        {error && <p style={{ fontSize: 12.5, color: C.red, fontWeight: 600, margin: '0 0 12px' }}>⚠ {error}</p>}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} disabled={saving} className="action-btn" style={{ padding: '11px 22px', border: `1.5px solid ${T.border}`, borderRadius: 10, background: 'transparent', color: T.textSub, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>{t('cancel')}</button>
+          <button onClick={submit} disabled={saving} className="action-btn" style={{ padding: '11px 24px', borderRadius: 10, fontSize: 13, fontWeight: 800, border: 'none', cursor: saving ? 'not-allowed' : 'pointer', background: C.orange, color: '#fff', opacity: saving ? 0.7 : 1 }}>
+            {saving ? t('submitting') : t('exchangeImpossible.confirm')}
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ─── Exchange-first policy: Conforme / Non conforme (photos + comment for Non conforme) ───
+
+function InspectModal({ complaint, onClose, onDone, dark }: { complaint: Complaint; onClose: () => void; onDone: () => void; dark: boolean }) {
+  const t = useTranslations('seller.complaints')
+  const T = useColors(dark)
+  const oldItem = isNewExchange(complaint)
+  const [result,  setResult]  = useState<'conform' | 'nonconform' | ''>('')
+  const [comment, setComment] = useState('')
+  const [photos,  setPhotos]  = useState<File[]>([])
+  const [saving,  setSaving]  = useState(false)
+  const [error,   setError]   = useState('')
+
+  const submit = async () => {
+    if (!result) { setError(t('inspect.choose')); return }
+    if (result === 'nonconform' && (!comment.trim() || photos.length < 1)) { setError(t('inspect.nonconformNeeds')); return }
+    setSaving(true); setError('')
+    try {
+      await sellerComplaintApi.inspect(complaint.id, result, comment.trim() || undefined, photos)
+      onDone(); onClose()
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } }
+      setError(e?.response?.data?.message ?? t('errors.failed'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const choice = (active: boolean, color: string): React.CSSProperties => ({
+    flex: 1, padding: '10px 12px', borderRadius: 9, fontSize: 13, fontWeight: 800, cursor: 'pointer',
+    border: `1.5px solid ${active ? color : T.border}`, background: active ? `${color}1f` : 'transparent',
+    color: active ? ink(color, dark) : T.textMuted,
+  })
+
+  return (
+    <>
+      <div data-ct-modal="" onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', zIndex: 10000 }} />
+      <div role="dialog" aria-modal="true" aria-label={t('inspect.title')} style={{
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '92%', maxWidth: 520,
+        maxHeight: '90vh', overflowY: 'auto', background: T.cardBg, border: `1px solid ${T.border}`, borderRadius: 20,
+        padding: '26px 26px 22px', zIndex: 10001,
+      }}>
+        <h3 style={{ fontSize: 17, fontWeight: 800, color: T.textMain, margin: '0 0 5px' }}>{oldItem ? t('inspect.oldItemTitle') : t('inspect.title')}</h3>
+        <p style={{ fontSize: 12.5, color: T.textMuted, lineHeight: 1.5, margin: '0 0 16px' }}>{t('inspect.hint')}</p>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <button type="button" aria-pressed={result === 'conform'} onClick={() => setResult('conform')} style={choice(result === 'conform', C.green)}>✓ {t('inspect.conform')}</button>
+          <button type="button" aria-pressed={result === 'nonconform'} onClick={() => setResult('nonconform')} style={choice(result === 'nonconform', C.red)}>✕ {t('inspect.nonconform')}</button>
+        </div>
+        <p style={{ fontSize: 11.5, color: T.textMuted, margin: '0 0 12px', lineHeight: 1.55 }}>{result === 'nonconform' ? t('inspect.nonconformNote') : t('inspect.stockNote')}</p>
+        {result === 'nonconform' && (
+          <>
+            <textarea value={comment} onChange={e => setComment(e.target.value)} rows={3} maxLength={1000} placeholder={t('inspect.commentPlaceholder')}
+              aria-label={t('inspect.commentPlaceholder')}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 10, fontSize: 13, border: `1.5px solid ${T.inputBorder}`,
+                background: T.inputBg, color: T.inputText, boxSizing: 'border-box', resize: 'vertical', marginBottom: 12 }} />
+            <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: T.textSub, marginBottom: 6 }}>{t('inspect.photos')}</label>
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple
+              onChange={e => setPhotos(Array.from(e.target.files ?? []).slice(0, 5))} style={{ fontSize: 12.5, color: T.textSub, marginBottom: 6 }} />
+            <p style={{ fontSize: 11.5, color: T.textMuted, margin: '0 0 14px' }}>{t('inspect.photosCount', { count: photos.length })}</p>
+          </>
+        )}
+        {error && <p style={{ fontSize: 12.5, color: C.red, fontWeight: 600, margin: '0 0 12px' }}>⚠ {error}</p>}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} disabled={saving} className="action-btn" style={{ padding: '11px 22px', border: `1.5px solid ${T.border}`, borderRadius: 10, background: 'transparent', color: T.textSub, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>{t('cancel')}</button>
+          <button onClick={submit} disabled={saving} className="action-btn" style={{ padding: '11px 24px', borderRadius: 10, fontSize: 13, fontWeight: 800, border: 'none', cursor: saving ? 'not-allowed' : 'pointer', background: C.green, color: '#fff', opacity: saving ? 0.7 : 1 }}>
+            {saving ? t('submitting') : t('inspect.confirm')}
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
 // ─── Drawer section helper ────────────────────────────────────────────────────
 
 interface DrawerSectionProps {
@@ -746,20 +866,42 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
   const { price } = useFormat()
   const [decisionMode, setDecisionMode] = useState<'approve' | 'reject' | null>(null)
   const [receiving,    setReceiving]    = useState(false)
+  const [impossible,   setImpossible]   = useState(false)
+  const [inspecting,   setInspecting]   = useState(false)
+  const [busyReceived, setBusyReceived] = useState(false)
   const [toast,        setToast]        = useState('')
   const T = useColors(dark)
 
   if (!complaint) return null
 
   const exchange   = isNewExchange(complaint)
-  const canAct     = complaint.status === 'requested'
-  // Return picked up, or an exchange's old item on its way back: the shop confirms reception
-  const canReceive = exchange ? complaint.status === 'exchanged' : complaint.status === 'picked_up' && complaint.resolution_type !== 'exchange'
+  // Exchange-first policy (v2): « Colis retour reçu », then Conforme / Non conforme; the shop may also say an exchange is impossible
+  const v2flow      = !!complaint.inspection_flow
+  const impossibleAt = complaint.exchange_impossible_at
+  const canAct     = complaint.status === 'requested' && !(complaint.policy_version === 2 && exchange && impossibleAt)
+  const canSayImpossible = complaint.policy_version === 2 && exchange && complaint.status === 'requested' && !impossibleAt
+  const canMarkReceived  = v2flow && !exchange && complaint.status === 'picked_up'
+  const canInspect       = v2flow && !complaint.inspection_result && (exchange ? complaint.status === 'exchanged' : complaint.status === 'returned_to_seller')
+  // Old flow: return picked up, or an exchange's old item on its way back: the shop confirms reception with the condition
+  const canReceive = !v2flow && (exchange ? complaint.status === 'exchanged' : complaint.status === 'picked_up' && complaint.resolution_type !== 'exchange')
   const caseFee    = Number(exchange ? complaint.exchange_fee ?? 0 : complaint.return_shipping_fee ?? 0)
   const explainKey = exchange && t.has(`explainExchange.${complaint.status}`) ? `explainExchange.${complaint.status}` : `explain.${complaint.status}`
   const photos     = complaint.image_urls?.length ? complaint.image_urls : (complaint.image_url ? [complaint.image_url] : [])
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
+
+  const markReceived = async () => {
+    setBusyReceived(true)
+    try {
+      await sellerComplaintApi.received(complaint.id)
+      showToast(t('receivedToast')); onRefresh(); onClose()
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } }
+      showToast(e?.response?.data?.message ?? t('errors.failed'))
+    } finally {
+      setBusyReceived(false)
+    }
+  }
 
   return (
     <>
@@ -936,6 +1078,23 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
             </DrawerSection>
           )}
 
+          {/* Exchange-first policy: payout frozen until the inspection, dispute pending, exchange flagged impossible */}
+          {complaint.policy_version === 2 && complaint.payout_frozen_at && !complaint.payout_released_at && (
+            <div style={{ padding: '12px 14px', borderRadius: 12, background: C.amberDim, border: `1px solid ${C.amber}40`, fontSize: 12.5, color: T.textSub, lineHeight: 1.6 }}>
+              ⏳ <strong>{t('frozen.title')}</strong> {t('frozen.body')}
+            </div>
+          )}
+          {complaint.dispute_status === 'open' && (
+            <div style={{ padding: '12px 14px', borderRadius: 12, background: C.redDim, border: `1px solid ${C.red}40`, fontSize: 12.5, color: T.textSub, lineHeight: 1.6 }}>
+              ⚖️ <strong>{t('dispute.title')}</strong> {t('dispute.body')}
+            </div>
+          )}
+          {impossibleAt && complaint.status === 'requested' && (
+            <div style={{ padding: '12px 14px', borderRadius: 12, background: C.amberDim, border: `1px solid ${C.amber}40`, fontSize: 12.5, color: T.textSub, lineHeight: 1.6 }}>
+              🔁 {t('exchangeImpossible.flagged')}{complaint.exchange_impossible_reason ? ` « ${complaint.exchange_impossible_reason} »` : ''}
+            </div>
+          )}
+
           {/* Where the return stands, from the shop's side */}
           {t.has(explainKey) && (
             <div style={{
@@ -962,6 +1121,34 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
           </p>
         </div>
 
+        {canMarkReceived && (
+          <div style={{ padding: '14px 24px', borderTop: `1px solid ${T.drawerBorder}`, position: 'sticky', bottom: 0, background: T.drawerBg }}>
+            <button onClick={markReceived} disabled={busyReceived} className="action-btn" style={{
+              width: '100%', padding: '12px 0', background: C.green, color: '#fff', border: 'none', borderRadius: 10, opacity: busyReceived ? 0.7 : 1,
+              fontSize: 13, fontWeight: 800, cursor: busyReceived ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}>
+              <IconInbox size={16} /> {t('receivedOpen')}
+            </button>
+          </div>
+        )}
+        {canInspect && (
+          <div style={{ padding: '14px 24px', borderTop: `1px solid ${T.drawerBorder}`, position: 'sticky', bottom: 0, background: T.drawerBg }}>
+            <button onClick={() => setInspecting(true)} className="action-btn" style={{
+              width: '100%', padding: '12px 0', background: C.green, color: '#fff', border: 'none', borderRadius: 10,
+              fontSize: 13, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}>
+              <IconCheckCircle size={16} /> {t('inspect.open')}
+            </button>
+          </div>
+        )}
+        {canSayImpossible && (
+          <div style={{ padding: '10px 24px 0', background: T.drawerBg }}>
+            <button onClick={() => setImpossible(true)} className="action-btn" style={{
+              width: '100%', padding: '10px 0', background: 'transparent', color: C.orange, border: `1px dashed ${C.orange}80`, borderRadius: 10,
+              fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+            }}>🔁 {t('exchangeImpossible.open')}</button>
+          </div>
+        )}
         {canReceive && (
           <div style={{ padding: '14px 24px', borderTop: `1px solid ${T.drawerBorder}`, position: 'sticky', bottom: 0, background: T.drawerBg }}>
             <button onClick={() => setReceiving(true)} className="action-btn" style={{
@@ -1011,6 +1198,15 @@ function ComplaintDrawer({ complaint, dark, onClose, onRefresh }: ComplaintDrawe
           </div>
         )}
       </div>
+
+      {impossible && (
+        <ExchangeImpossibleModal complaint={complaint} dark={dark} onClose={() => setImpossible(false)}
+          onDone={() => { showToast(t('exchangeImpossible.toast')); onRefresh(); onClose() }} />
+      )}
+      {inspecting && (
+        <InspectModal complaint={complaint} dark={dark} onClose={() => setInspecting(false)}
+          onDone={() => { showToast(t('inspect.toast')); onRefresh(); onClose() }} />
+      )}
 
       {receiving && (
         <ReceiveModal complaint={complaint} dark={dark} onClose={() => setReceiving(false)}

@@ -12,7 +12,7 @@ import { X, CheckCircle, ShieldAlert, Lock, Clock, PackageCheck } from 'lucide-r
 import { useLocale, useTranslations } from 'next-intl'
 import BrandLoader from '@/components/brand/BrandLoader'
 import Link from 'next/link'
-import type { AfterSaleFees, ComplaintType, EligibleOrder } from '@/types/complaint'
+import type { AfterSaleFees, ComplaintType, EligibleOrder, ReturnPolicyInfo } from '@/types/complaint'
 import { complaintApi } from '@/lib/complaintApi'
 import ComplaintRequestForm from '@/app/components/returns/ComplaintRequestForm'
 
@@ -47,6 +47,8 @@ export default function ComplaintModal({
   const [eligibleOrder, setEligibleOrder] = useState<EligibleOrder | null>(null)
   const [fees,          setFees]          = useState<AfterSaleFees | null>(null)
   const [sellerFault,   setSellerFault]   = useState<ComplaintType[] | undefined>(undefined)
+  const [policy,        setPolicy]        = useState<ReturnPolicyInfo | null>(null)
+  const [closedReason,  setClosedReason]  = useState<string | null>(null)
   const hoursLeft = eligibleOrder?.hours_left ?? null
 
   const isEligible      = orderStatuses.some(s => ELIGIBLE_STATUSES.includes(s))
@@ -62,6 +64,8 @@ export default function ComplaintModal({
       const json = await complaintApi.getEligibleOrders()
       setFees(json.after_sale_fees ?? null)
       setSellerFault(json.seller_fault_types)
+      setPolicy(json.policy ?? null)
+      setClosedReason((json.closed_orders ?? []).find(o => o.id === orderId)?.closed_reason ?? null)
       setEligibleOrder((json.data ?? []).find(o => o.id === orderId) ?? null)
     } catch {
       // Non-critical
@@ -418,10 +422,11 @@ export default function ComplaintModal({
                   </div>
                 ) : !eligibleOrder ? (
                   <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.65, margin: 0 }}>
+                    {closedReason && <strong style={{ display: 'block', color: '#b45309', marginBottom: 6 }}>⏱ {closedReason}</strong>}
                     {tf.rich('noEligibleBody', { b: c => <strong style={{ color: '#374151' }}>{c}</strong> })}
                   </p>
                 ) : (
-                  <ComplaintRequestForm order={eligibleOrder} fees={fees} sellerFaultTypes={sellerFault} layout="drawer"
+                  <ComplaintRequestForm order={eligibleOrder} fees={fees} sellerFaultTypes={sellerFault} policy={policy} layout="drawer"
                     onSubmitted={c => { setCreatedId(c?.id ?? null); setSuccess(true) }} />
                 )}
               </div>

@@ -3,7 +3,9 @@
  */
 
 import { currentLocale, fallbackError } from '@/lib/i18n/clientLocale'
-import type { AfterSaleFees, BuyerComplaint, Complaint, ComplaintFormPayload, ComplaintType, EligibleOrder } from '@/types/complaint'
+import type {
+  AfterSaleFees, BuyerComplaint, ClosedReturnOrder, Complaint, ComplaintFormPayload, ComplaintType, EligibleOrder, RefundPreview, ReturnPolicyInfo,
+} from '@/types/complaint'
 import { API_BASE } from '@/lib/constants'
 
 
@@ -64,6 +66,10 @@ function buyerComplaintClient(base: '/client' | '/guest', headers: Headers) {
         /** Per parcel size; one fee per shop parcel, at its largest size */
         after_sale_fees?: AfterSaleFees
         seller_fault_types?: ComplaintType[]
+        /** Exchange-first policy (v2): off until the admin switches it on */
+        policy?: ReturnPolicyInfo
+        /** Parcels delivered within 30 days whose 48 h are over, with the reason */
+        closed_orders?: ClosedReturnOrder[]
       }>(
         'GET', `${base}/complaints/eligible-orders`, undefined, headers
       ),
@@ -89,6 +95,7 @@ function buyerComplaintClient(base: '/client' | '/guest', headers: Headers) {
       fd.append('description',    payload.description)
       if (payload.other_reason) fd.append('other_reason', payload.other_reason)
       if (payload.resolution_type) fd.append('resolution_type', payload.resolution_type)
+      if (payload.item_unused_confirmed != null) fd.append('item_unused_confirmed', payload.item_unused_confirmed ? '1' : '0')
       payload.images.forEach(f => fd.append('images[]', f))
       if (payload.return_all && payload.resolution_type !== 'exchange') {
         fd.append('return_all', '1')
@@ -106,14 +113,21 @@ function buyerComplaintClient(base: '/client' | '/guest', headers: Headers) {
      * What returning these units would refund, computed by the server (delivery
      * is included in the prices, so a refund is not a sum of unit prices).
      */
-    preview: (payload: { order_id: number; complaint_type: string; return_all?: boolean; items?: { order_item_id: number; quantity: number }[] }) =>
-      jsonRequest<{ success: boolean; data: { items_amount: number; client_fee: number; refund_amount: number; shipping_payer: 'client' | 'seller' } }>(
+    preview: (payload: { order_id: number; complaint_type: string; resolution_type?: string; return_all?: boolean; items?: { order_item_id: number; quantity: number }[] }) =>
+      jsonRequest<{ success: boolean; data: RefundPreview }>(
         'POST', `${base}/complaints/preview`, payload.return_all ? { ...payload, items: undefined, return_all: 1 } : payload, headers
       ),
 
     /** Contest the shop's refusal: ChooseTounsi decides. */
     escalate: (id: number, note?: string) =>
       jsonRequest<{ success: boolean; message: string; data: BuyerComplaint }>('PATCH', `${base}/complaints/${id}/escalate`, { note }, headers),
+
+    /** The shop said the exchange is impossible: one click turns the request into a refund. */
+    switchToRefund: (id: number, itemUnusedConfirmed?: boolean) =>
+      jsonRequest<{ success: boolean; message: string; data: BuyerComplaint }>(
+        'PATCH', `${base}/complaints/${id}/switch-to-refund`,
+        itemUnusedConfirmed == null ? undefined : { item_unused_confirmed: itemUnusedConfirmed }, headers
+      ),
 
     /** Withdraw a request the shop hasn't answered yet. */
     cancel: (id: number) =>
@@ -161,6 +175,23 @@ export const sellerComplaintApi = {
     jsonRequest<{ success: boolean; message: string; data: Complaint }>(
       'PATCH', `/seller/complaints/${id}/reject`, { seller_note, rejection_reason }
     ),
+
+  /** Exchange-first policy: the shop cannot do this exchange (the client may then switch to a refund). */
+  exchangeImpossible: (id: number, reason: string) =>
+    jsonRequest<{ success: boolean; message: string; data: Complaint }>('PATCH', `/seller/complaints/${id}/exchange-impossible`, { reason }),
+
+  /** « Colis retour reçu »: starts the inspection clock. */
+  received: (id: number, note?: string) =>
+    jsonRequest<{ success: boolean; message: string; data: Complaint }>('PATCH', `/seller/complaints/${id}/received`, { note }),
+
+  /** Conforme / Non conforme (photos + comment required for Non conforme). */
+  inspect: (id: number, result: 'conform' | 'nonconform', comment?: string, photos: File[] = []) => {
+    const fd = new FormData()
+    fd.append('result', result)
+    if (comment) fd.append('comment', comment)
+    photos.forEach(f => fd.append('photos[]', f))
+    return formRequest<{ success: boolean; message: string; data: Complaint }>(`/seller/complaints/${id}/inspect`, fd)
+  },
 
   /** Parcel back at the shop: condition of each returned line (resaleable → restocked). */
   receive: (id: number, conditions: Record<number, 'resaleable' | 'damaged'>, note?: string) =>

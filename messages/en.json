@@ -312,7 +312,8 @@
     "contactPage": "Contact",
     "privacy": "Privacy",
     "terms": "Terms of use",
-    "trackOrder": "Track my order"
+    "trackOrder": "Track my order",
+    "returnsPolicy": "Exchange and refund"
   },
   "home": {
     "quickActions": {
@@ -628,7 +629,10 @@
     "colorHint": "Choose a color",
     "optionHint": "Choose an option",
     "unavailable": "unavailable",
-    "axisLabel": "{axis}:"
+    "axisLabel": "{axis}:",
+    "returnsExchangeEasy": "Easy exchange within 48h",
+    "returnsDefectOnly": "Exchange/refund only if defective or not as described",
+    "returnsPolicyLink": "Learn more"
   },
   "recommendations": {
     "flash": "FLASH",
@@ -4106,7 +4110,44 @@
       "exchangeFeeClient": "The client pays the exchange fee to the courier.",
       "exchangeNoCommission": "Same sale, another variant: no new commission and no new payout.",
       "oldItemOverdue": "Old item not confirmed after 7 days: please check and confirm it.",
-      "guestBadge": "Guest"
+      "guestBadge": "Guest",
+      "receivedOpen": "Return parcel received",
+      "receivedToast": "Reception confirmed: you can now inspect the parcel.",
+      "exchangeImpossible": {
+        "open": "Exchange impossible",
+        "title": "This exchange is impossible",
+        "hint": "The client will be told and can ask for a refund in one click. Give the reason.",
+        "placeholder": "e.g. The requested size is sold out",
+        "reasonShort": "Give the reason (10 characters minimum).",
+        "confirm": "Confirm",
+        "toast": "The client has been told.",
+        "flagged": "You said the exchange is impossible: waiting for the client's choice."
+      },
+      "inspect": {
+        "open": "Inspect the parcel",
+        "title": "Return parcel inspection",
+        "oldItemTitle": "Old item inspection",
+        "hint": "The client was already refunded (or the exchange delivered): the inspection decides the stock and any dispute.",
+        "conform": "Conforming",
+        "nonconform": "Not conforming",
+        "choose": "Choose Conforming or Not conforming.",
+        "nonconformNeeds": "For a non-conforming parcel, add a comment and at least one photo.",
+        "nonconformNote": "ChooseTounsi will review your photos and decide. The item does not go back to stock and your payout stays on hold until that decision.",
+        "stockNote": "Conforming: the item goes back to stock (+1 on the right variant) and the sale is reversed.",
+        "commentPlaceholder": "Describe the problem (condition, stains, wear…)",
+        "photos": "Photos (1 to 5)",
+        "photosCount": "{count} photo(s) selected",
+        "confirm": "Confirm inspection",
+        "toast": "Inspection saved."
+      },
+      "frozen": {
+        "title": "Awaiting return.",
+        "body": "The client was refunded in cash: the payout of this parcel is on hold until the returned item is inspected."
+      },
+      "dispute": {
+        "title": "Dispute in progress.",
+        "body": "Your parcel was marked not conforming: ChooseTounsi is reviewing your photos and will decide."
+      }
     },
     "reviews": {
       "title": "Reviews & Reputation",
@@ -6431,7 +6472,8 @@
       "photoSize": "Each photo must be under 5 MB.",
       "photoMax": "Up to {count} photos.",
       "photoN": "Photo {n}",
-      "removePhoto": "Remove photo"
+      "removePhoto": "Remove photo",
+      "photosHintRange": "{min} to {max} photos · JPG, PNG, WEBP · 5 MB each"
     },
     "hintCash": {
       "admin_approved": "Approved! A courier will contact you, check the item and pay you back {amount} in cash.",
@@ -6466,6 +6508,18 @@
       "items": "Items to exchange",
       "qtyFor": "{count} × → {label}",
       "reference": "Exchange {ref}"
+    },
+    "exchangeImpossible": {
+      "title": "Exchange impossible",
+      "body": "The shop said this exchange is not possible. You can ask for a refund in one click.",
+      "unused": "I confirm the item is new, unworn and still has its tags.",
+      "switch": "Ask for a refund"
+    },
+    "sentBack": {
+      "title": "Item sent back",
+      "body": "After checking, the item was not found conforming: it is sent back to you cash on delivery. The courier will ask you for {cod} in cash: the refund you already received ({refunded}) + the delivery ({fee}). If you refuse the parcel, the item goes back to the shop.",
+      "reason": "Reason from the check",
+      "photo": "Photo {n}"
     }
   },
   "pickupAddress": {
@@ -6541,6 +6595,9 @@
     },
     "contact": {
       "title": "Contact us"
+    },
+    "returns": {
+      "title": "Exchange and refund"
     }
   },
   "contactPage": {
@@ -6779,8 +6836,23 @@
       "photo": "At least one proof photo is required.",
       "replacement": "Choose the replacement size / color for “{item}”.",
       "noOption": "“{item}” can’t be exchanged: choose a return instead.",
-      "submit": "Failed to submit. Please try again."
-    }
+      "submit": "Failed to submit. Please try again.",
+      "unused": "Please confirm the item is new, unworn and still has its tags.",
+      "photoRange": "Add {min} to {max} photos of the item."
+    },
+    "promise": "Easy exchange within 48h. Refund if the product is defective, not as described, or if the exchange is impossible.",
+    "policyLink": "Exchange and refund policy",
+    "recommended": "Recommended",
+    "refund": "Refund",
+    "refundHint": "Send the item back and be refunded in cash",
+    "reasonUnavailable": "Not available for this selection",
+    "exchangeUnavailable": "An exchange is not possible for this selection (out of stock): a refund is offered instead.",
+    "refundNotAllowed": "For this reason, a refund is only possible if the exchange is impossible.",
+    "unusedConfirm": "I confirm the item is new, unworn and still has its tags.",
+    "refundBreakdown": "Refund: {amount} TND ({items} − {fee} return fee)",
+    "refundBreakdownFull": "Refund: {amount} TND (100% of what you paid for these items)",
+    "proofHintRange": "{min} to {max} photos",
+    "returnNoteV2": "📦 The shop first validates your request (it reviews your photos). Then a courier collects the item and hands you the refund in cash: the amount is fixed before the pick-up."
   },
   "sellerActivated": {
     "title": "Your seller account is active 🎉",

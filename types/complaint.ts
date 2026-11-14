@@ -130,6 +130,10 @@ export interface EligibleOrderItem extends PurchasedItem {
   exchange_same_product?: boolean
   /** Some in-stock variants were left out because their price differs */
   exchange_other_price?: boolean
+  /** Policy v2: no valid replacement can be offered (zero stock, or only other-price variants) */
+  exchange_impossible?: boolean
+  /** Policy v2: 'exchange_easy' | 'defect_only' (category excluded from "changed my mind") */
+  returns_mode?: 'exchange_easy' | 'defect_only'
 }
 
 export type ParcelSize = 'S' | 'L' | 'XL'
@@ -262,6 +266,30 @@ export interface Complaint {
   exchange_failed_at?: string | null
   old_item_received_at?: string | null
   old_item_overdue?:   boolean
+  // Policy v2 (client-visible parts)
+  policy_version?:     number | null
+  exchange_impossible?: { at: string; reason: string | null; can_switch_to_refund: boolean } | null
+  switched_to_refund_at?: string | null
+  /** Only when the admin decided to send the non-conforming item back to the client */
+  sent_back?:          { fee: number; cod: number; refunded: number; reason: string | null; photos: string[]; tracking: string | null } | null
+  // Staff views (seller / admin)
+  payout_frozen_at?:   string | null
+  payout_released_at?: string | null
+  refund_amount_locked?: number | string | null
+  inspection_result?:  'conform' | 'nonconform' | null
+  inspection_comment?: string | null
+  inspection_photos?:  string[] | null
+  inspection_due_at?:  string | null
+  dispute_status?:     'open' | 'resolved' | null
+  dispute_decision?:   'charge_seller' | 'absorb' | 'contact_client' | 'send_back' | 'treat_as_conform' | null
+  dispute_amount?:     number | string | null
+  dispute_note?:       string | null
+  sent_back_nid?:      string | null
+  sent_back_fee?:      number | string | null
+  exchange_impossible_at?: string | null
+  exchange_impossible_reason?: string | null
+  inspection_flow?: boolean   // seller view: new reception flow (received → inspect)
+  v2?: { inspection_flow: boolean; refund_locked: number | null; payout_frozen: boolean; inspection_photos: string[]; dispute_decisions: string[] } | null
 }
 
 /**
@@ -291,4 +319,49 @@ export interface ComplaintFormPayload {
   images:         File[]
   return_all?:    boolean
   items?:         ReturnLineInput[]
+  /** Changed my mind (exchange-first policy): the item is new, unworn, tags on */
+  item_unused_confirmed?: boolean
+}
+
+// ─── Exchange-first policy (v2) ───────────────────────────────────────────────
+// The backend decides what is allowed and why; the form only renders these.
+
+export type PolicyReason = 'doesnt_fit' | 'damaged_product' | 'wrong_product' | 'changed_mind'
+
+export interface ReasonOptions {
+  exchange_allowed:    boolean
+  refund_allowed:      boolean
+  shipping_payer:      'client' | 'seller'
+  unused_required:     boolean
+  disabled:            boolean
+  disabled_reason:     string | null
+  refund_note:         string | null
+  exchange_impossible: boolean
+}
+
+export interface ReturnPolicyInfo {
+  v2:         boolean
+  promise?:   string
+  reasons?:   PolicyReason[]
+  min_photos: number
+  max_photos: number
+}
+
+/** A delivered parcel whose 48 h are over: the orders page says why the button is closed. */
+export interface ClosedReturnOrder {
+  id:              number
+  order_number:    string
+  delivered_at:    string
+  window_ended_at: string
+  closed_reason:   string
+}
+
+/** Server-computed refund preview (same calculator as the refund itself). */
+export interface RefundPreview {
+  items_amount:   number
+  client_fee:     number
+  refund_amount:  number
+  shipping_payer: 'client' | 'seller'
+  deductions?:    { key: 'return_fee' | 'exchange_fee'; amount: number }[]
+  policy?:        Record<PolicyReason, ReasonOptions>
 }

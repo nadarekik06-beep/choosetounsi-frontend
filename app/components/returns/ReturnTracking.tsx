@@ -40,7 +40,8 @@ export function ReturnStatusBadge({ status, resolution }: { status: string; reso
 export default function ReturnTracking({ complaint, onChanged, api = complaintApi }: { complaint: BuyerComplaint; onChanged?: (c: BuyerComplaint) => void; api?: BuyerComplaintClient }) {
   const t   = useTranslations('returns')
   const fmt = useFormat()
-  const [busy, setBusy]       = useState<null | 'escalate' | 'cancel'>(null)
+  const [busy, setBusy]       = useState<null | 'escalate' | 'cancel' | 'switch'>(null)
+  const [unused, setUnused]   = useState(false)
   const [note, setNote]       = useState('')
   const [askNote, setAskNote] = useState(false)
   const [error, setError]     = useState<string | null>(null)
@@ -61,12 +62,14 @@ export default function ReturnTracking({ complaint, onChanged, api = complaintAp
   const stepLabel = (s: string) => (isExchange && t.has(`statusExchange.${s}`) ? t(`statusExchange.${s}`) : t(`status.${s}`))
   const replacements = (complaint.complained_items ?? []).filter(i => i.replacement_label)
 
-  const run = async (kind: 'escalate' | 'cancel') => {
+  const run = async (kind: 'escalate' | 'cancel' | 'switch') => {
     setBusy(kind); setError(null)
     try {
       const res = kind === 'escalate'
         ? await api.escalate(complaint.id, note.trim() || undefined)
-        : await api.cancel(complaint.id)
+        : kind === 'switch'
+          ? await api.switchToRefund(complaint.id, complaint.complaint_type === 'changed_mind' ? unused : undefined)
+          : await api.cancel(complaint.id)
       const fresh = await api.getOne(complaint.id).then(r => r.data).catch(() => res.data)
       onChanged?.(fresh)
       setAskNote(false)
@@ -118,6 +121,44 @@ export default function ReturnTracking({ complaint, onChanged, api = complaintAp
               )
             })}
           </ol>
+        </div>
+      )}
+
+      {/* Exchange-first policy: the shop said the exchange is impossible, a refund is one click away */}
+      {complaint.exchange_impossible?.can_switch_to_refund && (
+        <div style={{ ...box('#4f46e5'), background: 'rgba(79,70,229,0.06)' }}>
+          <p style={boxTitle('#3730a3')}>{t('exchangeImpossible.title')}</p>
+          <p style={{ margin: '0 0 8px', fontSize: 12.5, color: '#3730a3', lineHeight: 1.55 }}>
+            {t('exchangeImpossible.body')}
+            {complaint.exchange_impossible.reason ? ` « ${complaint.exchange_impossible.reason} »` : ''}
+          </p>
+          {complaint.complaint_type === 'changed_mind' && (
+            <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 12.5, fontWeight: 600, marginBottom: 8, cursor: 'pointer' }}>
+              <input type="checkbox" checked={unused} onChange={e => setUnused(e.target.checked)} style={{ marginTop: 3 }} />
+              <span>{t('exchangeImpossible.unused')}</span>
+            </label>
+          )}
+          <button type="button" disabled={!!busy || (complaint.complaint_type === 'changed_mind' && !unused)}
+            onClick={() => run('switch')} style={actionBtn('#4f46e5', !!busy || (complaint.complaint_type === 'changed_mind' && !unused))}>
+            {busy === 'switch' ? t('actions.sending') : `↩️ ${t('exchangeImpossible.switch')}`}
+          </button>
+        </div>
+      )}
+
+      {/* Non-conforming item sent back (only when ChooseTounsi decided so): the photos and the reason */}
+      {complaint.sent_back && (
+        <div style={box('#f59e0b')}>
+          <p style={boxTitle('#b45309')}>{t('sentBack.title')}</p>
+          <p style={{ margin: '0 0 6px', fontSize: 12.5, color: '#92400e', lineHeight: 1.55 }}>{t('sentBack.body', { cod: fmt.price(complaint.sent_back.cod), refunded: fmt.price(complaint.sent_back.refunded), fee: fmt.price(complaint.sent_back.fee) })}</p>
+          {complaint.sent_back.reason && <p style={{ margin: '0 0 8px', fontSize: 13, color: '#78350f', lineHeight: 1.6 }}>{t('sentBack.reason')} : {complaint.sent_back.reason}</p>}
+          {complaint.sent_back.photos.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {complaint.sent_back.photos.map((src, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <a key={src} href={src} target="_blank" rel="noreferrer"><img src={src} alt={t('sentBack.photo', { n: i + 1 })} style={{ width: 84, height: 84, objectFit: 'cover', borderRadius: 8, border: '1.5px solid #fde68a' }} /></a>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

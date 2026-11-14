@@ -12,7 +12,7 @@ import { useTranslations } from 'next-intl'
 import { RotateCcw, MessageCircle, CheckCircle, Clock } from 'lucide-react'
 import BrandLoader from '@/components/brand/BrandLoader'
 import { guestComplaintApi } from '@/lib/complaintApi'
-import type { AfterSaleFees, BuyerComplaint, ComplaintType, EligibleOrder } from '@/types/complaint'
+import type { AfterSaleFees, BuyerComplaint, ComplaintType, EligibleOrder, ReturnPolicyInfo } from '@/types/complaint'
 import ComplaintRequestForm from '@/app/components/returns/ComplaintRequestForm'
 import ComplaintCard from '@/app/components/returns/ComplaintCard'
 
@@ -34,6 +34,7 @@ export default function GuestReturns({ token, orderNumber, canRequest, returnsCo
   const [eligible, setEligible]     = useState<EligibleOrder | null>(null)
   const [fees, setFees]             = useState<AfterSaleFees | null>(null)
   const [sellerFault, setSellerFault] = useState<ComplaintType[] | undefined>(undefined)
+  const [policy,      setPolicy]      = useState<ReturnPolicyInfo | null>(null)
   const [formOpen, setFormOpen]     = useState(false)
   const [submitted, setSubmitted]   = useState(false)
 
@@ -49,6 +50,7 @@ export default function GuestReturns({ token, orderNumber, canRequest, returnsCo
       if (elig) {
         setFees(elig.after_sale_fees ?? null)
         setSellerFault(elig.seller_fault_types)
+        setPolicy(elig.policy ?? null)
         setEligible(elig.data?.[0] ?? null)
       }
     } catch { /* the section stays empty; WhatsApp help remains */ }
@@ -106,6 +108,7 @@ export default function GuestReturns({ token, orderNumber, canRequest, returnsCo
           order={eligible}
           fees={fees}
           sellerFaultTypes={sellerFault}
+          policy={policy}
           api={api}
           onSubmitted={() => { setFormOpen(false); setSubmitted(true) }}
           onCancel={() => setFormOpen(false)}

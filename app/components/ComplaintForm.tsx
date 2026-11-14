@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from 'react'
 import { complaintApi } from '@/lib/complaintApi'
-import type { AfterSaleFees, BuyerComplaint, ComplaintType, EligibleOrder } from '@/types/complaint'
+import type { AfterSaleFees, BuyerComplaint, ComplaintType, EligibleOrder, ReturnPolicyInfo } from '@/types/complaint'
 import ComplaintRequestForm from '@/app/components/returns/ComplaintRequestForm'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -35,6 +35,7 @@ export default function ComplaintForm({ prefilledOrderId, onSuccess, onCancel, c
   const [orders,      setOrders]      = useState<EligibleOrder[]>([])
   const [fees,        setFees]        = useState<AfterSaleFees | null>(null)
   const [sellerFault, setSellerFault] = useState<ComplaintType[] | undefined>(undefined)
+  const [policy,      setPolicy]      = useState<ReturnPolicyInfo | null>(null)
   const [loading,     setLoading]     = useState(true)
   const [noEligible,  setNoEligible]  = useState(false)
   const [orderId,     setOrderId]     = useState<number | ''>(prefilledOrderId ?? '')
@@ -45,6 +46,7 @@ export default function ComplaintForm({ prefilledOrderId, onSuccess, onCancel, c
         setOrders(res.data)
         setFees(res.after_sale_fees ?? null)
         setSellerFault(res.seller_fault_types)
+        setPolicy(res.policy ?? null)
         if (res.data.length === 0) setNoEligible(true)
       })
       .catch(() => setNoEligible(true))
@@ -116,7 +118,7 @@ export default function ComplaintForm({ prefilledOrderId, onSuccess, onCancel, c
 
       {order && (
         // key: a new order starts a fresh form
-        <ComplaintRequestForm key={order.id} order={order} fees={fees} sellerFaultTypes={sellerFault}
+        <ComplaintRequestForm key={order.id} order={order} fees={fees} sellerFaultTypes={sellerFault} policy={policy}
           layout={compact ? 'drawer' : 'page'} onSubmitted={c => onSuccess?.(c)} onCancel={onCancel} />
       )}
     </div>

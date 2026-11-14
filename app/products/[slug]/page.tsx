@@ -74,6 +74,8 @@ interface Product {
   category: { id: number; name: string; slug: string } | null
   subcategory: { id: number; name: string; slug: string } | null
   is_platform_product?: boolean
+  /** Exchange-first policy line (null while the policy is off): 'exchange_easy' | 'defect_only' */
+  returns_mode?: 'exchange_easy' | 'defect_only' | null
   seller: { id: number; name: string; email: string; business_name?: string; avatar?: string | null } | null
   attribute_data?: Record<string, AttributeData>
   has_variants: boolean
@@ -698,6 +700,12 @@ export default function ProductDetailPage() {
                 </p>
               )}
               <div style={{ marginTop: 8 }}><FreeDeliveryBadge size="md" /></div>
+              {product.returns_mode && (
+                <p style={{ margin: '6px 0 0', fontSize: 12.5, fontWeight: 700, color: product.returns_mode === 'defect_only' ? '#b45309' : '#4f46e5', lineHeight: 1.45 }}>
+                  🔁 {t(product.returns_mode === 'defect_only' ? 'returnsDefectOnly' : 'returnsExchangeEasy')}{' '}
+                  <Link href="/returns-policy" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 800 }}>{t('returnsPolicyLink')}</Link>
+                </p>
+              )}
               {product.sku && (
                 <p style={{ fontSize: 11, color: '#94a3b8', margin: '6px 0 0', fontFamily: 'monospace' }}>
                   {t('sku', { sku: selectedVariant?.sku ?? product.sku })}

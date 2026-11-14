@@ -57,6 +57,7 @@ export default function SiteFooter() {
           <Link href="/contact">{t('contactPage')}</Link>
           <Link href="/privacy">{t('privacy')}</Link>
           <Link href="/terms">{t('terms')}</Link>
+          <Link href="/returns-policy">{t('returnsPolicy')}</Link>
         </nav>
 
         <div className="sf-col">
