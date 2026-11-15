@@ -76,7 +76,7 @@ export async function fetchPopular(params: { category_id?: number; seller_id?: n
 /** Absolute image URL (the API normally sends absolute URLs; older rows may hold a storage path). */
 export function resolveImageUrl(url: string | null | undefined): string | null {
   if (!url) return null
-  if (/^https?:\/\//.test(url)) return url
+  if (/^(https?:\/\/|blob:|data:)/.test(url)) return url   // blob:/data: = a photo just picked in a seller form (preview)
   const origin = API_BASE.replace(/\/api\/?$/, '')
   return `${origin}/storage/${url.replace(/^\/?storage\//, '').replace(/^\//, '')}`
 }

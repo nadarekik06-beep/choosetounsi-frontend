@@ -3566,8 +3566,20 @@
         "required": "Obligatoire.",
         "price": "Saisissez un prix valide.",
         "items": "Ajoutez au moins un produit.",
-        "saveFailed": "Échec de l'enregistrement. Veuillez réessayer."
-      }
+        "saveFailed": "Échec de l'enregistrement. Veuillez réessayer.",
+        "priceFormat": "3 décimales maximum (ex. 99.000).",
+        "imageType": "Format non accepté : utilisez une image JPG, PNG ou WebP."
+      },
+      "pickIntro": "Choisissez les produits du pack, puis réglez la quantité de chacun.",
+      "normalPrice": "Prix normal : {total}",
+      "packPriceLine": "Prix du pack : {price}",
+      "savingsLine": "Économie {amount} (-{pct} %)",
+      "createdToast": "Pack créé avec succès.",
+      "updatedToast": "Pack mis à jour.",
+      "previewFailed": "Impossible de calculer l'aperçu des prix pour le moment.",
+      "summary": "Récapitulatif",
+      "normalPriceLabel": "Prix normal",
+      "packPriceLabel": "Prix du pack"
     },
     "orders": {
       "fee": "Commission {pct} %",
@@ -4321,14 +4333,46 @@
         "discountMax": "Une remise ne peut pas dépasser 90 jours.",
         "products": "Choisissez au moins un produit.",
         "fixBelow": "Veuillez corriger les erreurs ci-dessous.",
-        "saveFailed": "Échec de l'enregistrement. Veuillez réessayer."
+        "saveFailed": "Échec de l'enregistrement. Veuillez réessayer.",
+        "startPast": "Le début ne peut pas être dans le passé.",
+        "fixedTooHigh": "Le montant doit rester inférieur au prix de « {name} ».",
+        "perCustomer": "Entre 1 et 100.",
+        "flashStock": "Saisissez un nombre entier supérieur ou égal à 1.",
+        "conflict": "« {name} » est déjà dans la promotion « {promo} » ({from} → {to}). Un produit ne peut avoir qu'une promotion à la fois.",
+        "unavailableSelected": "Retirez les produits indisponibles : {names}."
       },
       "prefill": "Pré-rempli depuis votre changement de prix : les clients paieront {price} au lieu de {was}.",
       "referencePrice": "Prix barré : {price} (le plus bas des 30 derniers jours)",
       "fromRadar": "Pré-rempli par Radar de croissance — ajustez ce que vous voulez avant d'enregistrer.",
       "perCustomer": "Maximum par client",
       "perCustomerHint": "Nombre d'articles qu'un même client (compte ou téléphone) peut acheter au prix flash.",
-      "clientWillSee": "Le client verra −{percent} % ({price}, livraison incluse)"
+      "clientWillSee": "Le client verra −{percent} % ({price}, livraison incluse)",
+      "pickIntro": "Choisissez d'abord les produits concernés par la promotion.",
+      "typeFlashRule": "{max} % max. · de 1 h à 72 h · compte à rebours affiché sur la carte",
+      "typeDiscountRule": "{max} % max. · de 1 à 90 jours",
+      "typeLocked": "Le type, le mode de remise et la date de début ne peuvent plus être modifiés après la création.",
+      "maxValueHint": "Maximum : {max} %",
+      "fixedHint": "Montant retiré du prix de chaque produit ({currency}).",
+      "durationLive": "Durée : {value}",
+      "dur": {
+        "days": "{count} j",
+        "hours": "{count} h",
+        "minutes": "{count} min"
+      },
+      "pricePreview": "Aperçu des prix",
+      "pricePreviewEmpty": "Saisissez une valeur pour voir le prix de chaque produit.",
+      "conflictFlash": "Déjà dans une vente flash : « {name} » jusqu'au {date}",
+      "conflictPromo": "Déjà dans une promotion : « {name} » jusqu'au {date}",
+      "summary": "Récapitulatif",
+      "sumValue": "Valeur",
+      "sumDuration": "Durée",
+      "unlimited": "Illimité",
+      "goesLive": "Mise en ligne automatique le {date}.",
+      "liveNow": "Mise en ligne immédiate.",
+      "createdToast": "Promotion créée avec succès.",
+      "updatedToast": "Promotion mise à jour.",
+      "badgeHint": "Le badge affiché aux acheteurs est calculé sur le prix final affiché : il peut donc être inférieur au pourcentage saisi.",
+      "badgeHintExample": "Ici : {entered} % → −{shown} %."
     },
     "couponForm": {
       "editTitle": "Modifier le coupon",
@@ -5824,6 +5868,37 @@
       },
       "error": "Impossible de charger l'analyse.",
       "retry": "Réessayer"
+    },
+    "wizard": {
+      "steps": {
+        "products": "Produits",
+        "details": "Détails",
+        "preview": "Aperçu"
+      },
+      "stepOf": "Étape {current} sur {total}",
+      "back": "Retour",
+      "next": "Suivant",
+      "cancel": "Annuler",
+      "close": "Fermer",
+      "selectedCount": "{count, plural, =0 {Aucun produit sélectionné} one {# produit sélectionné} other {# produits sélectionnés}}",
+      "searchPlaceholder": "Rechercher parmi vos produits…",
+      "clearSearch": "Effacer la recherche",
+      "loading": "Chargement…",
+      "noProducts": "Aucun produit trouvé. Ajoutez d'abord un produit à votre boutique.",
+      "noMatch": "Aucun produit ne correspond à votre recherche.",
+      "reason": {
+        "outOfStock": "Rupture de stock — non sélectionnable",
+        "inactive": "Produit inactif — non sélectionnable",
+        "pending": "En attente de validation — non sélectionnable"
+      },
+      "inStock": "{count} en stock",
+      "variantCount": "{count, plural, one {# variante} other {# variantes}}",
+      "remove": "Retirer {name}",
+      "previewLabel": "Aperçu client",
+      "previewHint": "Voici exactement ce que verront vos clients sur la boutique.",
+      "previewMore": "+ {count, plural, one {# autre produit} other {# autres produits}}",
+      "retry": "Réessayer",
+      "summaryProducts": "Produits"
     }
   },
   "invoice": {

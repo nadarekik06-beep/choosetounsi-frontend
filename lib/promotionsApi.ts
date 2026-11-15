@@ -100,6 +100,9 @@ export const sellerPromotionsApi = {
   update:  (id: number, payload: Partial<PromotionPayload>) =>
                                                         req<any>('PUT',    `/seller/promotions/${id}`, payload),
   delete:  (id: number)                              => req<any>('DELETE', `/seller/promotions/${id}`),
+  /** Read-only: which products already sit in a live / upcoming promotion overlapping these dates */
+  conflicts: (body: { product_ids: number[]; starts_at: string; ends_at: string; ignore_id?: number | null }) =>
+                                                        req<any>('POST',   '/seller/promotions/conflicts', body),
 }
 
 // ─── Public Promotions API ────────────────────────────────────────────────────

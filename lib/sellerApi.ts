@@ -517,6 +517,13 @@ export const packsApi = {
   getSellerProducts: (search = '') =>
     jsonRequest<any>('GET', `/seller/packs/products${search ? `?search=${encodeURIComponent(search)}` : ''}`),
 
+  /** Wizards: every product of the seller, inactive / pending ones included and flagged (shown greyed out) */
+  getAllSellerProducts: () => jsonRequest<any>('GET', '/seller/packs/products?all=1'),
+
+  /** Read-only: a draft pack's prices as buyers see them (nothing saved) */
+  preview: (pack_price: number, items: { product_id: number; quantity: number }[]) =>
+    jsonRequest<any>('POST', '/seller/packs/preview', { pack_price, items }),
+
   create: (payload: PackPayload) =>
     formRequest<any>('POST', '/seller/packs', buildPackFormData(payload, false)),
 

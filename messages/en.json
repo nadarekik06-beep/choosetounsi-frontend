@@ -3566,8 +3566,20 @@
         "required": "Required.",
         "price": "Enter a valid price.",
         "items": "Add at least one product.",
-        "saveFailed": "Failed to save. Please try again."
-      }
+        "saveFailed": "Failed to save. Please try again.",
+        "priceFormat": "3 decimals maximum (e.g. 99.000).",
+        "imageType": "Format not accepted: use a JPG, PNG or WebP image."
+      },
+      "pickIntro": "Choose the products in the pack, then set the quantity of each.",
+      "normalPrice": "Normal price: {total}",
+      "packPriceLine": "Pack price: {price}",
+      "savingsLine": "Savings {amount} (-{pct}%)",
+      "createdToast": "Pack created successfully.",
+      "updatedToast": "Pack updated.",
+      "previewFailed": "The price preview can't be calculated right now.",
+      "summary": "Summary",
+      "normalPriceLabel": "Normal price",
+      "packPriceLabel": "Pack price"
     },
     "orders": {
       "fee": "Fee {pct}%",
@@ -4321,14 +4333,46 @@
         "discountMax": "Discount cannot exceed 90 days.",
         "products": "Select at least one product.",
         "fixBelow": "Please fix the errors highlighted below.",
-        "saveFailed": "Failed to save. Please try again."
+        "saveFailed": "Failed to save. Please try again.",
+        "startPast": "The start can't be in the past.",
+        "fixedTooHigh": "The amount must stay below the price of \"{name}\".",
+        "perCustomer": "Between 1 and 100.",
+        "flashStock": "Enter a whole number of 1 or more.",
+        "conflict": "\"{name}\" is already in the promotion \"{promo}\" ({from} → {to}). A product can only have one promotion at a time.",
+        "unavailableSelected": "Remove the unavailable products: {names}."
       },
       "prefill": "Pre-filled from your price change: customers will pay {price} instead of {was}.",
       "referencePrice": "Crossed-out price: {price} (lowest of the last 30 days)",
       "fromRadar": "Pre-filled by Growth Radar — adjust anything before saving.",
       "perCustomer": "Max per customer",
       "perCustomerHint": "Units one customer (account or phone) can buy at the flash price.",
-      "clientWillSee": "The customer will see −{percent}% ({price}, delivery included)"
+      "clientWillSee": "The customer will see −{percent}% ({price}, delivery included)",
+      "pickIntro": "First, choose the products this promotion applies to.",
+      "typeFlashRule": "Max {max}% · 1 h to 72 h · countdown shown on the card",
+      "typeDiscountRule": "Max {max}% · 1 to 90 days",
+      "typeLocked": "The type, discount mode and start date can't be changed after creation.",
+      "maxValueHint": "Maximum: {max}%",
+      "fixedHint": "Amount taken off each product's price ({currency}).",
+      "durationLive": "Duration: {value}",
+      "dur": {
+        "days": "{count} d",
+        "hours": "{count} h",
+        "minutes": "{count} min"
+      },
+      "pricePreview": "Price preview",
+      "pricePreviewEmpty": "Enter a value to see each product's price.",
+      "conflictFlash": "Already in a flash sale: \"{name}\" until {date}",
+      "conflictPromo": "Already in a promotion: \"{name}\" until {date}",
+      "summary": "Summary",
+      "sumValue": "Value",
+      "sumDuration": "Duration",
+      "unlimited": "Unlimited",
+      "goesLive": "Goes live automatically on {date}.",
+      "liveNow": "Goes live immediately.",
+      "createdToast": "Promotion created successfully.",
+      "updatedToast": "Promotion updated.",
+      "badgeHint": "The badge buyers see is calculated on the final displayed price, so it can be lower than the % you entered.",
+      "badgeHintExample": "Here: {entered}% → −{shown}%."
     },
     "couponForm": {
       "editTitle": "Edit Coupon",
@@ -5824,6 +5868,37 @@
       },
       "error": "Couldn't load the analysis.",
       "retry": "Retry"
+    },
+    "wizard": {
+      "steps": {
+        "products": "Products",
+        "details": "Details",
+        "preview": "Preview"
+      },
+      "stepOf": "Step {current} of {total}",
+      "back": "Back",
+      "next": "Next",
+      "cancel": "Cancel",
+      "close": "Close",
+      "selectedCount": "{count, plural, =0 {No product selected} one {# product selected} other {# products selected}}",
+      "searchPlaceholder": "Search your products…",
+      "clearSearch": "Clear search",
+      "loading": "Loading…",
+      "noProducts": "No product found. Add a product to your store first.",
+      "noMatch": "No product matches your search.",
+      "reason": {
+        "outOfStock": "Out of stock — can't be selected",
+        "inactive": "Inactive product — can't be selected",
+        "pending": "Awaiting approval — can't be selected"
+      },
+      "inStock": "{count} in stock",
+      "variantCount": "{count, plural, one {# variant} other {# variants}}",
+      "remove": "Remove {name}",
+      "previewLabel": "Customer preview",
+      "previewHint": "This is exactly what your customers will see in the store.",
+      "previewMore": "+ {count, plural, one {# more product} other {# more products}}",
+      "retry": "Try again",
+      "summaryProducts": "Products"
     }
   },
   "invoice": {

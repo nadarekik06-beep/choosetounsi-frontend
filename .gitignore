@@ -44,3 +44,6 @@ next-env.d.ts
 # JVM crash dumps
 hs_err_pid*.log
 replay_pid*.log
+
+# written by `next dev` (agent rules block); not part of the project
+AGENTS.md

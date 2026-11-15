@@ -64,6 +64,7 @@ function CardPrice({ product }: { product: CardProduct }) {
 export default function ProductCard({
   product, index = 0, section, eager = false, layout = 'default',
   badge, label, overlay, footer, variantId, onFavorite, showShop = true, className = '', href: hrefOverride, onSelect,
+  preview = false,
 }: {
   product: CardProduct
   index?: number
@@ -90,6 +91,8 @@ export default function ProductCard({
   href?: string
   /** Called when the card is opened (photo search logs the clicked result). */
   onSelect?: () => void
+  /** Seller preview (promotion wizard): same markup, but no tracking, no ad reporting; the caller makes it inert. */
+  preview?: boolean
   className?: string
 }) {
   const t  = useTranslations('productCard')
@@ -107,12 +110,12 @@ export default function ProductCard({
   const [pop, setPop] = useState(false)
 
   // Paid placement: no label, but impressions and clicks still go to the ad engine
-  const isPaid = !!product.is_sponsored && product.placement === 'sponsored'
+  const isPaid = !preview && !!product.is_sponsored && product.placement === 'sponsored'
   const adToken = isPaid ? (product.sponsor_data?.token ?? product.ad_token) : undefined
   useAdImpression(ref, adToken)
   // Seller funnel: a paid slot counts as "sponsored" traffic, whatever page it sits on
   const funnelSection = isPaid ? `sponsored_${section}` : section
-  useImpression(ref, product.id, funnelSection)
+  useImpression(ref, preview ? undefined : product.id, funnelSection)
 
   const allImages = useMemo(() => cardImages(product), [product])
   const images = useMemo(() => allImages.filter(u => !broken.includes(u)), [allImages, broken])
@@ -136,6 +139,7 @@ export default function ProductCard({
   const savings = pricing.hasDiscount ? pricing.original - pricing.final : 0
 
   const onOpen = () => {
+    if (preview) return
     trackClick(product.id, funnelSection)
     onSelect?.()
     if (adToken) recordAdClick(adToken)

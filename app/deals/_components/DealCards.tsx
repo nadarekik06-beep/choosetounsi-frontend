@@ -75,7 +75,7 @@ export function DealCard({ item, index }: { item: DealItem; index: number }) {
 }
 
 /** Pack: cover (or the items' mosaic), second image on hover, "Voir le pack" opens the pack page (variants are chosen there). */
-function PackCard({ item, index }: { item: DealItem; index: number }) {
+export function PackCard({ item, index }: { item: DealItem; index: number }) {
   const t  = useTranslations('deals')
   const tc = useTranslations('shopPage.card')
   const fmt = useFormat()

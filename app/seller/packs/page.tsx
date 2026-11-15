@@ -9,6 +9,7 @@ import {
   RefreshCw, Tag, TrendingDown, CheckCircle, Clock
 } from 'lucide-react'
 import PackModal from '@/app/seller/packs/PackModal'
+import { useSellerToast } from '@/app/seller/components/wizard/SellerToast'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { ink } from '@/app/seller/ink';
@@ -44,6 +45,7 @@ export default function PacksPage() {
     open: false, pack: null,
   })
   const [deleting, setDeleting] = useState<number | null>(null)
+  const { toast, show: showToast } = useSellerToast()
 
   const bg        = dark ? '#0D1117' : '#f0f2f5'
   const cardBg    = dark ? '#161b27' : '#ffffff'
@@ -179,9 +181,10 @@ export default function PacksPage() {
         <PackModal
           pack={modal.pack}
           onClose={() => setModal({ open: false, pack: null })}
-          onSaved={() => { setModal({ open: false, pack: null }); load() }}
+          onSaved={(msg) => { setModal({ open: false, pack: null }); load(); if (msg) showToast(msg) }}
         />
       )}
+      {toast}
     </div>
   )
 }
@@ -203,7 +206,7 @@ function PackCard({
   const subBg     = dark ? 'rgba(255,255,255,0.04)' : '#f8fafc'
 
   const savings = pack.savings ?? Math.max(0, pack.original_price - pack.pack_price)
-  const itemCount = pack.items?.length ?? 0
+  const itemCount = pack.items_count ?? pack.items?.length ?? 0
 
   return (
     <div style={{

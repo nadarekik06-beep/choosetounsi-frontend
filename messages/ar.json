@@ -3566,8 +3566,20 @@
         "required": "مطلوب.",
         "price": "أدخل سعراً صحيحاً.",
         "items": "أضف منتجاً واحداً على الأقل.",
-        "saveFailed": "فشل الحفظ. يرجى المحاولة مرة أخرى."
-      }
+        "saveFailed": "فشل الحفظ. يرجى المحاولة مرة أخرى.",
+        "priceFormat": "ثلاث خانات عشرية كحد أقصى (مثال: 99.000).",
+        "imageType": "صيغة غير مقبولة: استخدم صورة JPG أو PNG أو WebP."
+      },
+      "pickIntro": "اختر منتجات الحزمة ثم حدّد كمية كل منتج.",
+      "normalPrice": "السعر العادي: {total}",
+      "packPriceLine": "سعر الحزمة: {price}",
+      "savingsLine": "التوفير {amount} (-{pct}%)",
+      "createdToast": "تم إنشاء الحزمة بنجاح.",
+      "updatedToast": "تم تحديث الحزمة.",
+      "previewFailed": "تعذّر حساب معاينة الأسعار حالياً.",
+      "summary": "الملخص",
+      "normalPriceLabel": "السعر العادي",
+      "packPriceLabel": "سعر الحزمة"
     },
     "orders": {
       "fee": "عمولة {pct}%",
@@ -4321,14 +4333,46 @@
         "discountMax": "لا يمكن أن يتجاوز التخفيض 90 يوماً.",
         "products": "اختر منتجاً واحداً على الأقل.",
         "fixBelow": "يرجى تصحيح الأخطاء أدناه.",
-        "saveFailed": "فشل الحفظ. يرجى المحاولة مرة أخرى."
+        "saveFailed": "فشل الحفظ. يرجى المحاولة مرة أخرى.",
+        "startPast": "لا يمكن أن تكون البداية في الماضي.",
+        "fixedTooHigh": "يجب أن يبقى المبلغ أقل من سعر «{name}».",
+        "perCustomer": "بين 1 و100.",
+        "flashStock": "أدخل عدداً صحيحاً يساوي 1 أو أكثر.",
+        "conflict": "«{name}» موجود بالفعل في العرض «{promo}» ({from} ← {to}). لا يمكن أن يكون للمنتج أكثر من عرض واحد في نفس الوقت.",
+        "unavailableSelected": "أزل المنتجات غير المتاحة: {names}."
       },
       "prefill": "مُعبّأ من تغيير السعر: سيدفع العملاء {price} بدل {was}.",
       "referencePrice": "السعر المشطوب: {price} (الأدنى خلال آخر 30 يومًا)",
       "fromRadar": "معبّأ مسبقًا من رادار النمو — عدّل ما تريد قبل الحفظ.",
       "perCustomer": "الحد الأقصى لكل حريف",
       "perCustomerHint": "عدد القطع التي يمكن لنفس الحريف (حساب أو هاتف) شراؤها بسعر التخفيض السريع.",
-      "clientWillSee": "سيرى الحريف ‎−{percent}% ({price}، التوصيل مشمول)"
+      "clientWillSee": "سيرى الحريف ‎−{percent}% ({price}، التوصيل مشمول)",
+      "pickIntro": "اختر أولاً المنتجات التي يشملها العرض.",
+      "typeFlashRule": "{max}% كحد أقصى · من ساعة إلى 72 ساعة · عدّاد تنازلي على البطاقة",
+      "typeDiscountRule": "{max}% كحد أقصى · من يوم إلى 90 يوماً",
+      "typeLocked": "لا يمكن تغيير النوع ونمط التخفيض وتاريخ البداية بعد الإنشاء.",
+      "maxValueHint": "الحد الأقصى: {max}%",
+      "fixedHint": "مبلغ يُخصم من سعر كل منتج ({currency}).",
+      "durationLive": "المدة: {value}",
+      "dur": {
+        "days": "{count} يوم",
+        "hours": "{count} س",
+        "minutes": "{count} د"
+      },
+      "pricePreview": "معاينة الأسعار",
+      "pricePreviewEmpty": "أدخل قيمة لرؤية سعر كل منتج.",
+      "conflictFlash": "موجود بالفعل في تخفيض خاطف: «{name}» حتى {date}",
+      "conflictPromo": "موجود بالفعل في عرض: «{name}» حتى {date}",
+      "summary": "الملخص",
+      "sumValue": "القيمة",
+      "sumDuration": "المدة",
+      "unlimited": "غير محدود",
+      "goesLive": "يبدأ تلقائياً في {date}.",
+      "liveNow": "يبدأ فوراً.",
+      "createdToast": "تم إنشاء العرض بنجاح.",
+      "updatedToast": "تم تحديث العرض.",
+      "badgeHint": "الشارة التي يراها المشترون تُحسب على السعر النهائي المعروض، لذلك قد تكون أقل من النسبة التي أدخلتها.",
+      "badgeHintExample": "هنا: {entered}% ← −{shown}%."
     },
     "couponForm": {
       "editTitle": "تعديل القسيمة",
@@ -5824,6 +5868,37 @@
       },
       "error": "تعذّر تحميل التحليل.",
       "retry": "إعادة المحاولة"
+    },
+    "wizard": {
+      "steps": {
+        "products": "المنتجات",
+        "details": "التفاصيل",
+        "preview": "المعاينة"
+      },
+      "stepOf": "الخطوة {current} من {total}",
+      "back": "رجوع",
+      "next": "التالي",
+      "cancel": "إلغاء",
+      "close": "إغلاق",
+      "selectedCount": "{count, plural, =0 {لم تختر أي منتج} one {تم اختيار منتج واحد} two {تم اختيار منتجين} few {تم اختيار # منتجات} many {تم اختيار # منتجًا} other {تم اختيار # منتج}}",
+      "searchPlaceholder": "ابحث في منتجاتك…",
+      "clearSearch": "مسح البحث",
+      "loading": "جارٍ التحميل…",
+      "noProducts": "لا توجد منتجات. أضف منتجاً إلى متجرك أولاً.",
+      "noMatch": "لا يوجد منتج يطابق بحثك.",
+      "reason": {
+        "outOfStock": "نفد المخزون — لا يمكن اختياره",
+        "inactive": "منتج غير نشط — لا يمكن اختياره",
+        "pending": "بانتظار المراجعة — لا يمكن اختياره"
+      },
+      "inStock": "{count} في المخزون",
+      "variantCount": "{count, plural, one {متغيّر واحد} two {متغيّران} few {# متغيّرات} many {# متغيّرًا} other {# متغيّر}}",
+      "remove": "إزالة {name}",
+      "previewLabel": "معاينة العميل",
+      "previewHint": "هذا بالضبط ما سيراه عملاؤك في المتجر.",
+      "previewMore": "+ {count, plural, one {منتج آخر} two {منتجان آخران} few {# منتجات أخرى} many {# منتجًا آخر} other {# منتج آخر}}",
+      "retry": "إعادة المحاولة",
+      "summaryProducts": "المنتجات"
     }
   },
   "invoice": {

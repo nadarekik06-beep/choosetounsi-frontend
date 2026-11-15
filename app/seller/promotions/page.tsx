@@ -10,6 +10,7 @@ import {
   XCircle, Pause, Ticket, Users,
 } from 'lucide-react'
 import PromotionModal, { type PromotionPrefill } from './PromotionModal'
+import { useSellerToast } from '@/app/seller/components/wizard/SellerToast'
 import CouponModal, { type CouponPrefill } from './CouponModal'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -129,6 +130,7 @@ export default function PromotionsPage() {
   //   ?create=discount|flash_sale&product=1,2&starts_at=…&ends_at=…&card=…
   //   ?create=coupon&product=…&discount_value=…&days=…&audience=…&card=…
   const [prefill, setPrefill] = useState<PromotionPrefill | null>(null)
+  const { toast, show: showToast } = useSellerToast()
   const [couponPrefill, setCouponPrefill] = useState<CouponPrefill | null>(null)
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
@@ -372,7 +374,7 @@ export default function PromotionsPage() {
           promotion={modal.promotion}
           prefill={modal.promotion ? null : prefill}
           onClose={() => { setModal({ open: false, promotion: null }); setPrefill(null) }}
-          onSaved={() => { setModal({ open: false, promotion: null }); setPrefill(null); load() }}
+          onSaved={(msg) => { setModal({ open: false, promotion: null }); setPrefill(null); load(); if (msg) showToast(msg) }}
         />
       )}
       </>
@@ -449,6 +451,7 @@ export default function PromotionsPage() {
       )}
 
       <style>{`.promo-card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,0.15)!important}`}</style>
+      {toast}
     </div>
   )
 }
