@@ -124,9 +124,9 @@ export const PLAN_META = {
     color:       '#198f41',
     accentColor: '#15803d',
     emoji:       '🌱',
-    maxProducts: 30,
+    maxProducts: null,
     // Static fallback copy — live values come from /api/seller-plans (lib/platformApi.ts).
-    commission:  '3–15%',
+    commission:  '5–15%',
   },
   red: {
     name:        'Red Pepper',
@@ -135,8 +135,8 @@ export const PLAN_META = {
     color:       '#db142e',
     accentColor: '#dc2626',
     emoji:       '🔴',
-    maxProducts: 150,
-    commission:  '3–12%',
+    maxProducts: null,
+    commission:  '5–13%',
   },
   black: {
     name:        'Black Pepper',
@@ -146,7 +146,7 @@ export const PLAN_META = {
     accentColor: '#f59e0b',
     emoji:       '⚫',
     maxProducts: null,
-    commission:  '3–9%',
+    commission:  '5–11%',
   },
 } as const
 

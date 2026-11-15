@@ -45,7 +45,7 @@ const fr: LegalDoc = {
       id: 'commander', heading: '3. Commander',
       items: [
         'Les prix sont affichés en dinars tunisiens (DT).',
-        'Avant de confirmer, vous voyez le total de votre commande. La livraison est gratuite : elle est déjà comprise dans les prix affichés.',
+        'Avant de confirmer, vous voyez le total de votre commande. La livraison est gratuite.',
         'Une fois votre commande confirmée, le vendeur la prépare et la remet à notre partenaire de livraison.',
         'Si vous commandez dans plusieurs boutiques, vous recevez un colis par boutique.',
         'Vous suivez chaque étape dans « Mes commandes » et par e-mail.',
@@ -64,7 +64,7 @@ const fr: LegalDoc = {
       id: 'livraison', heading: '5. Livraison',
       items: [
         'Nous livrons partout en Tunisie, à l’adresse indiquée dans votre commande.',
-        'La livraison est gratuite partout en Tunisie. Aucun frais de livraison n’est ajouté au prix affiché.',
+        'La livraison est gratuite partout en Tunisie.',
         'Restez joignable : le livreur peut vous appeler.',
         'Vous recevez un message quand le colis part et quand il est livré.',
         'Les délais sont donnés à titre indicatif.',
@@ -184,7 +184,7 @@ const en: LegalDoc = {
       id: 'commander', heading: '3. Ordering',
       items: [
         'Prices are shown in Tunisian dinars (DT).',
-        'Before you confirm, you see your order total. Delivery is free: it is already included in the displayed prices.',
+        'Before you confirm, you see your order total. Delivery is free.',
         'Once your order is confirmed, the seller prepares it and hands it to our delivery partner.',
         'If you order from several shops, you get one parcel per shop.',
         'You can follow every step in “My orders” and by e-mail.',
@@ -203,7 +203,7 @@ const en: LegalDoc = {
       id: 'livraison', heading: '5. Delivery',
       items: [
         'We deliver all over Tunisia, to the address given in your order.',
-        'Delivery is free all over Tunisia. No delivery fee is added to the displayed price.',
+        'Delivery is free all over Tunisia.',
         'Keep your phone close: the courier may call you.',
         'You get a message when your parcel leaves and when it is delivered.',
         'Delivery times are an estimate.',
@@ -323,7 +323,7 @@ const ar: LegalDoc = {
       id: 'commander', heading: '3. الطلب',
       items: [
         'الأسعار معروضة بالدينار التونسي (DT).',
-        'قبل التأكيد، ترى المبلغ الجملي لطلبك. التوصيل مجاني: فهو مشمول مسبقًا في الأسعار المعروضة.',
+        'قبل التأكيد، ترى المبلغ الجملي لطلبك. التوصيل مجاني.',
         'بعد تأكيد طلبك، يحضّره البائع ويسلّمه إلى شريك التوصيل.',
         'إذا طلبت من عدّة متاجر، تتسلّم طردًا من كل متجر.',
         'تتابع كل مرحلة في «طلباتي» وعبر البريد الإلكتروني.',
@@ -342,7 +342,7 @@ const ar: LegalDoc = {
       id: 'livraison', heading: '5. التوصيل',
       items: [
         'نوصّل إلى كامل تراب الجمهورية، إلى العنوان المذكور في طلبك.',
-        'التوصيل مجاني في كامل أنحاء تونس. لا تُضاف أي مصاريف توصيل إلى السعر المعروض.',
+        'التوصيل مجاني في كامل أنحاء تونس.',
         'ابقَ متاحًا على هاتفك: قد يتصل بك عون التوصيل.',
         'تصلك رسالة عند خروج الطرد وعند توصيله.',
         'آجال التوصيل تقريبية.',

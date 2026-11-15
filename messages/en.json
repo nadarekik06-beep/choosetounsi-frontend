@@ -490,7 +490,6 @@
     "selectedSubtotal": "Selected ({selected} of {count, plural, one {# item} other {# items}})",
     "subtotal": "Subtotal ({count, plural, one {# item} other {# items}})",
     "allFreeDelivery": "🚚 All items have free delivery!",
-    "shippingAtCheckout": "Shipping calculated at checkout",
     "onlySelectedCheckout": "{count, plural, one {Only the selected item will be checked out.} other {Only the # selected items will be checked out.}}",
     "selectToCheckout": "Select items to checkout",
     "checkout": "Proceed to checkout",
@@ -601,11 +600,9 @@
     "inStock": "{count} in stock",
     "ownProduct": "This is your product",
     "trustDelivery": "Delivery",
-    "trustFreeDeliveryDesc": "All over Tunisia, nothing to add at checkout: delivery is included in the price.",
+    "trustFreeDeliveryDesc": "All over Tunisia, nothing to add at checkout: delivery is free.",
     "trustDeliveryDesc": "Delivery all over Tunisia",
     "trustFreeDeliveryPackDesc": "This bundle ships for free — no delivery fee at checkout!",
-    "trustReturns": "Easy returns",
-    "trustReturnsDesc": "Easy returns within 48h",
     "trustPayment": "Secure payment",
     "trustPaymentDesc": "Your transaction is fully protected",
     "trustSeller": "Verified seller",
@@ -630,9 +627,7 @@
     "optionHint": "Choose an option",
     "unavailable": "unavailable",
     "axisLabel": "{axis}:",
-    "returnsExchangeEasy": "Easy exchange within 48h",
-    "returnsDefectOnly": "Exchange/refund only if defective or not as described",
-    "returnsPolicyLink": "Learn more"
+    "returnsDefectOnly": "Exchange/refund only if defective or not as described"
   },
   "recommendations": {
     "flash": "FLASH",
@@ -803,7 +798,6 @@
     "codToPayParcels": "You pay {amount} in cash, across {count} parcels (one per shop).",
     "quoteLoading": "Calculating…",
     "quoteFailed": "We couldn't calculate your total. Please try again.",
-    "parcelSizeTitle": "Parcel size {size}: the delivery fee depends on it",
     "guest": {
       "chooseTitle": "How do you want to order?",
       "asGuest": "Continue as guest",
@@ -866,7 +860,6 @@
       "paymentMethod": "Payment method",
       "subtotal": "Subtotal",
       "couponDiscounts": "Coupon discounts",
-      "deliveryFees": "Delivery fees",
       "promoSavings": "You save {amount} with promotions (already deducted).",
       "totalToPay": "Total to pay",
       "edit": "Edit",
@@ -2034,7 +2027,7 @@
     "plans": {
       "green": {
         "target": "Perfect for beginners",
-        "cta": "Start for free",
+        "cta": "Join for free",
         "f1": "Basic seller dashboard",
         "f2": "Coupon creation",
         "f3": "Flash sales",
@@ -2353,7 +2346,7 @@
         "currentTag": "Your plan",
         "currentCta": "Your current plan",
         "currentActive": "Active",
-        "ctaFree": "Start for free",
+        "ctaFree": "Join for free",
         "ctaChoose": "Choose {plan}",
         "loading": "Loading plans",
         "loadError": "We couldn't load the plans right now. Please try again in a moment.",
@@ -4067,7 +4060,7 @@
         "rejected": "This return was rejected.",
         "cancelled": "This return was cancelled.",
         "closed": "This request is closed.",
-        "exchange_in_transit": "Intigo picks the replacement up at your address and delivers it to the client.",
+        "exchange_in_transit": "The courier picks the replacement up at your address and delivers it to the client.",
         "exchanged": "The client got the replacement. The courier brings the old item back: confirm it when you receive it.",
         "exchange_failed": "The client did not take the replacement; it comes back to you. ChooseTounsi decides the next step.",
         "exchange_completed": "Exchange complete: you confirmed the old item is back."
@@ -4101,8 +4094,8 @@
         "admin_approved": "Exchange approved"
       },
       "explainExchange": {
-        "seller_accepted": "You accepted this exchange. ChooseTounsi validates it and books the Intigo exchange.",
-        "admin_approved": "Approved: prepare the replacement, Intigo picks it up at your address."
+        "seller_accepted": "You accepted this exchange. ChooseTounsi validates it and books the exchange with our delivery partner.",
+        "admin_approved": "Approved: prepare the replacement, the courier picks it up at your address."
       },
       "replacement": "Replacement: {label}",
       "exchangeAmount": "Items exchanged (price paid)",
@@ -5174,7 +5167,7 @@
       "shipping": "Shipping",
       "shippingYou": "Delivery paid by you (free shipping)",
       "shippingYouNote": "You offered free shipping, so your share of the delivery company's cost is deducted from your earnings.",
-      "shippingCustomer": "Included in the price shown to the customer and handled by ChooseTounsi — this doesn't affect your earnings.",
+      "shippingCustomer": "The delivery cost is added automatically to the displayed price; you receive your price minus the commission.",
       "shippingPlatform": "Paid by ChooseTounsi — this doesn't affect your earnings.",
       "shippingNone": "No delivery cost was charged to you.",
       "adjustment": "Adjustment",
@@ -6256,8 +6249,7 @@
     "trust": {
       "label": "Shopping with confidence",
       "delivery": "Delivery across Tunisia",
-      "deliveryFee": "Standard delivery {fee}",
-      "deliveryFree": "Free all over Tunisia, included in the price",
+      "deliveryFree": "Free all over Tunisia",
       "freeCount": "{count, plural, one {# product ships free} other {# products ship free}}",
       "cod": "Cash on delivery",
       "codBody": "Pay when your order arrives.",
@@ -6499,7 +6491,7 @@
     "exchange": {
       "title": "Exchange",
       "toPay": "To pay the courier",
-      "tracking": "Intigo tracking",
+      "tracking": "Parcel tracking",
       "carrierStatus": "Courier status",
       "exchangedAt": "Exchanged on",
       "paidByShop": "The exchange is paid by the shop (wrong or defective item).",
@@ -6524,7 +6516,7 @@
   },
   "pickupAddress": {
     "title": "Pickup address",
-    "subtitle": "Where the Intigo courier collects your parcels. Be precise: a wrong address sends the courier to the wrong place.",
+    "subtitle": "Where the courier collects your parcels. Be precise: a wrong address sends the courier to the wrong place.",
     "adresse": "Full address",
     "adressePlaceholder": "e.g. 12 Rue des Fleurs, Imm. Jasmin, Apt 4",
     "zone": "Zone (Delegation/Sector)",
@@ -6562,7 +6554,7 @@
     "loadFailed": "Could not load your pickup address.",
     "pendingTitle": "Validation pending",
     "pendingNotice": "Your address was changed. The CHOOSE’Tounsi team must validate it before your next pickups: new orders will wait for this validation.",
-    "needsReviewNotice": "Complete your address with the Intigo zone and the map position: the courier needs them to collect your parcels.",
+    "needsReviewNotice": "Complete your address with the delivery zone and the map position: the courier needs them to collect your parcels.",
     "verifiedNotice": "Address validated by the CHOOSE’Tounsi team.",
     "status": {
       "needs_review": "To complete",
@@ -6762,7 +6754,7 @@
     },
     "view": {
       "address": "Delivery address",
-      "trackingRef": "Intigo tracking no.",
+      "trackingRef": "Parcel tracking no.",
       "courierHistory": "Delivery history",
       "returnsTitle": "Returns & exchanges",
       "requestReturn": "Request a return or exchange",

@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Heart, ShoppingCart, ChevronRight, Star, Shield, Truck,
-  RotateCcw, Share2, Minus, Plus,
+  Share2, Minus, Plus,
   CheckCircle, Zap, Check,
 } from 'lucide-react'
 import ProductGallery, { type GalleryFocusRequest } from '@/app/components/product/gallery/ProductGallery'
@@ -700,10 +700,9 @@ export default function ProductDetailPage() {
                 </p>
               )}
               <div style={{ marginTop: 8 }}><FreeDeliveryBadge size="md" /></div>
-              {product.returns_mode && (
-                <p style={{ margin: '6px 0 0', fontSize: 12.5, fontWeight: 700, color: product.returns_mode === 'defect_only' ? '#b45309' : '#4f46e5', lineHeight: 1.45 }}>
-                  🔁 {t(product.returns_mode === 'defect_only' ? 'returnsDefectOnly' : 'returnsExchangeEasy')}{' '}
-                  <Link href="/returns-policy" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 800 }}>{t('returnsPolicyLink')}</Link>
+              {product.returns_mode === 'defect_only' && (
+                <p style={{ margin: '6px 0 0', fontSize: 12.5, fontWeight: 700, color: '#b45309', lineHeight: 1.45 }}>
+                  🔁 {t('returnsDefectOnly')}
                 </p>
               )}
               {product.sku && (
@@ -789,7 +788,6 @@ export default function ProductDetailPage() {
                   title: t('freeDelivery'),
                   desc: t('trustFreeDeliveryDesc'),
                 },
-                { icon: <RotateCcw size={18} color="#3b82f6" />,   title: t('trustReturns'),  desc: t('trustReturnsDesc') },
                 { icon: <Shield size={18} color="#f59e0b" />,      title: t('trustPayment'),  desc: t('trustPaymentDesc') },
                 { icon: <CheckCircle size={18} color="#dc2626" />, title: t('trustSeller'),   desc: t('trustSellerDesc') },
               ].map(({ icon, title, desc }) => (

@@ -490,7 +490,6 @@
     "selectedSubtotal": "Sélection ({selected} sur {count, plural, one {# article} other {# articles}})",
     "subtotal": "Sous-total ({count, plural, one {# article} other {# articles}})",
     "allFreeDelivery": "🚚 Tous vos articles sont livrés gratuitement !",
-    "shippingAtCheckout": "Frais de livraison calculés à la commande",
     "onlySelectedCheckout": "{count, plural, one {Seul l'article sélectionné sera commandé.} other {Seuls les # articles sélectionnés seront commandés.}}",
     "selectToCheckout": "Sélectionnez des articles à commander",
     "checkout": "Passer la commande",
@@ -601,11 +600,9 @@
     "inStock": "{count} en stock",
     "ownProduct": "C'est votre produit",
     "trustDelivery": "Livraison",
-    "trustFreeDeliveryDesc": "Partout en Tunisie, sans frais à la commande : la livraison est incluse dans le prix.",
+    "trustFreeDeliveryDesc": "Partout en Tunisie, sans frais à la commande : la livraison est gratuite.",
     "trustDeliveryDesc": "Livraison partout en Tunisie",
     "trustFreeDeliveryPackDesc": "Ce pack est livré gratuitement — aucun frais de livraison à la commande !",
-    "trustReturns": "Retours faciles",
-    "trustReturnsDesc": "Retour facile sous 48h",
     "trustPayment": "Paiement sécurisé",
     "trustPaymentDesc": "Votre transaction est entièrement protégée",
     "trustSeller": "Vendeur vérifié",
@@ -630,9 +627,7 @@
     "optionHint": "Choisissez une option",
     "unavailable": "indisponible",
     "axisLabel": "{axis} :",
-    "returnsExchangeEasy": "Échange facile sous 48h",
-    "returnsDefectOnly": "Échange/remboursement uniquement si défectueux ou non conforme",
-    "returnsPolicyLink": "En savoir plus"
+    "returnsDefectOnly": "Échange/remboursement uniquement si défectueux ou non conforme"
   },
   "recommendations": {
     "flash": "FLASH",
@@ -803,7 +798,6 @@
     "codToPayParcels": "Vous payez {amount} en espèces, en {count} colis (un par boutique).",
     "quoteLoading": "Calcul en cours…",
     "quoteFailed": "Impossible de calculer votre total. Veuillez réessayer.",
-    "parcelSizeTitle": "Colis de taille {size} : les frais de livraison en dépendent",
     "guest": {
       "chooseTitle": "Comment voulez-vous commander ?",
       "asGuest": "Continuer sans compte",
@@ -866,7 +860,6 @@
       "paymentMethod": "Mode de paiement",
       "subtotal": "Sous-total",
       "couponDiscounts": "Réductions coupons",
-      "deliveryFees": "Frais de livraison",
       "promoSavings": "Vous économisez {amount} grâce aux promotions (déjà déduit).",
       "totalToPay": "Total à payer",
       "edit": "Modifier",
@@ -2034,7 +2027,7 @@
     "plans": {
       "green": {
         "target": "Idéal pour débuter",
-        "cta": "Commencer gratuitement",
+        "cta": "Rejoindre gratuitement",
         "f1": "Tableau de bord vendeur de base",
         "f2": "Création de codes promo",
         "f3": "Ventes flash",
@@ -2353,7 +2346,7 @@
         "currentTag": "Votre plan",
         "currentCta": "Votre plan actuel",
         "currentActive": "Actif",
-        "ctaFree": "Commencer gratuitement",
+        "ctaFree": "Rejoindre gratuitement",
         "ctaChoose": "Choisir {plan}",
         "loading": "Chargement des offres",
         "loadError": "Impossible de charger les offres pour le moment. Réessayez dans un instant.",
@@ -4067,7 +4060,7 @@
         "rejected": "Ce retour a été rejeté.",
         "cancelled": "Ce retour a été annulé.",
         "closed": "Cette demande est clôturée.",
-        "exchange_in_transit": "Intigo récupère le remplacement à votre adresse et le livre au client.",
+        "exchange_in_transit": "Le livreur récupère le remplacement à votre adresse et le livre au client.",
         "exchanged": "Le client a reçu le remplacement. Le livreur vous rapporte l’ancien article : confirmez sa réception.",
         "exchange_failed": "Le client n’a pas pris le remplacement ; il vous revient. ChooseTounsi décide de la suite.",
         "exchange_completed": "Échange terminé : vous avez confirmé le retour de l’ancien article."
@@ -4101,8 +4094,8 @@
         "admin_approved": "Échange approuvé"
       },
       "explainExchange": {
-        "seller_accepted": "Vous avez accepté cet échange. ChooseTounsi le valide et réserve l’échange Intigo.",
-        "admin_approved": "Approuvé : préparez le remplacement, Intigo vient le chercher à votre adresse."
+        "seller_accepted": "Vous avez accepté cet échange. ChooseTounsi le valide et réserve l’échange auprès de notre partenaire de livraison.",
+        "admin_approved": "Approuvé : préparez le remplacement, le livreur vient le chercher à votre adresse."
       },
       "replacement": "Remplacement : {label}",
       "exchangeAmount": "Articles échangés (prix payé)",
@@ -5174,7 +5167,7 @@
       "shipping": "Livraison",
       "shippingYou": "Livraison payée par vous (livraison gratuite)",
       "shippingYouNote": "Vous avez offert la livraison : votre part du coût de la société de livraison est déduite de vos gains.",
-      "shippingCustomer": "Incluse dans le prix affiché au client et gérée par ChooseTounsi — cela n'affecte pas vos gains.",
+      "shippingCustomer": "Le coût de livraison est ajouté automatiquement au prix affiché ; vous recevez votre prix moins la commission.",
       "shippingPlatform": "Payée par ChooseTounsi — cela n'affecte pas vos gains.",
       "shippingNone": "Aucun frais de livraison ne vous a été facturé.",
       "adjustment": "Ajustement",
@@ -6256,8 +6249,7 @@
     "trust": {
       "label": "Acheter en confiance",
       "delivery": "Livraison partout en Tunisie",
-      "deliveryFee": "Livraison standard {fee}",
-      "deliveryFree": "Gratuite partout en Tunisie, incluse dans le prix",
+      "deliveryFree": "Gratuite partout en Tunisie",
       "freeCount": "{count, plural, one {# produit livré gratuitement} other {# produits livrés gratuitement}}",
       "cod": "Paiement à la livraison",
       "codBody": "Payez à la réception de votre commande.",
@@ -6499,7 +6491,7 @@
     "exchange": {
       "title": "Échange",
       "toPay": "À payer au livreur",
-      "tracking": "Suivi Intigo",
+      "tracking": "Suivi du colis",
       "carrierStatus": "Statut du livreur",
       "exchangedAt": "Échangé le",
       "paidByShop": "L’échange est payé par la boutique (article non conforme ou défectueux).",
@@ -6524,7 +6516,7 @@
   },
   "pickupAddress": {
     "title": "Adresse d'enlèvement",
-    "subtitle": "Là où le livreur Intigo récupère vos colis. Soyez précis : une mauvaise adresse envoie le livreur au mauvais endroit.",
+    "subtitle": "Là où le livreur récupère vos colis. Soyez précis : une mauvaise adresse envoie le livreur au mauvais endroit.",
     "adresse": "Adresse complète",
     "adressePlaceholder": "Ex. : 12 Rue des Fleurs, Imm. Jasmin, Apt 4",
     "zone": "Zone (Délégation/Secteur)",
@@ -6562,7 +6554,7 @@
     "loadFailed": "Impossible de charger votre adresse d’enlèvement.",
     "pendingTitle": "Validation en attente",
     "pendingNotice": "Votre adresse a été modifiée. Elle doit être validée par l’équipe CHOOSE’Tounsi avant vos prochains enlèvements : les nouvelles commandes attendront cette validation.",
-    "needsReviewNotice": "Complétez votre adresse avec la zone Intigo et la position sur la carte : le livreur en a besoin pour venir chercher vos colis.",
+    "needsReviewNotice": "Complétez votre adresse avec la zone de livraison et la position sur la carte : le livreur en a besoin pour venir chercher vos colis.",
     "verifiedNotice": "Adresse validée par l’équipe CHOOSE’Tounsi.",
     "status": {
       "needs_review": "À compléter",
@@ -6762,7 +6754,7 @@
     },
     "view": {
       "address": "Adresse de livraison",
-      "trackingRef": "N° de suivi Intigo",
+      "trackingRef": "N° de suivi du colis",
       "courierHistory": "Historique de livraison",
       "returnsTitle": "Retours et échanges",
       "requestReturn": "Demander un retour ou un échange",

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   ChevronRight, ChevronLeft, ShoppingCart,
   Zap, CheckCircle, Shield, Truck,
-  RotateCcw, Package2, TrendingDown, ZoomIn,
+  Package2, TrendingDown, ZoomIn,
   AlertCircle, Tag,
 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
@@ -761,7 +761,6 @@ export default function PackDetailPage() {
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden', marginBottom: 20 }}>
               {[
                 { icon: <Truck size={17} color="#198f41" />,       title: tp('freeDelivery'),  desc: tp('trustFreeDeliveryDesc') },
-                { icon: <RotateCcw size={17} color="#3b82f6" />,   title: tp('trustReturns'),  desc: tp('trustReturnsDesc') },
                 { icon: <Shield size={17} color="#f59e0b" />,      title: tp('trustPayment'),  desc: tp('trustPaymentDesc') },
                 { icon: <CheckCircle size={17} color="#db142e" />, title: t('verifiedBundle'), desc: tp('trustSellerDesc') },
               ].map(({ icon, title, desc }) => (
