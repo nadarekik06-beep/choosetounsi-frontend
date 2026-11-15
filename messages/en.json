@@ -3581,7 +3581,6 @@
       "loadFailed": "Failed to load order details.",
       "updateFailed": "Failed to update order status.",
       "details": "Order Details",
-      "printInvoice": "🖨 Print Invoice",
       "close": "Close",
       "orderNumber": "Order Number",
       "date": "Date",
@@ -3650,7 +3649,7 @@
       "steps": {
         "stock": "Verify all items are in stock",
         "pack": "Pack the order securely",
-        "invoice": "Attach the order Invoice"
+        "bordereau": "Print the Intigo bordereau and stick it on the parcel"
       },
       "cols": {
         "order": "Order",

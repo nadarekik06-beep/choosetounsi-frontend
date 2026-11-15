@@ -398,12 +398,6 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
         <div className="ct-sheet-head" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: `1px solid ${border}` }}>
           <h2 style={{ fontSize: 15, fontWeight: 800, color: textMain, margin: 0 }}>{t('details')}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button
-              onClick={() => window.open(`/invoice/${orderId}`, '_blank')}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'linear-gradient(135deg,#db142e,#a50f22)', color: '#fff', fontWeight: 700, fontSize: 12, borderRadius: 8, border: 'none', cursor: 'pointer' }}
-            >
-              {t('printInvoice')}
-            </button>
             <button onClick={onClose} aria-label={t('close')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: textMuted, padding: 6, borderRadius: 10 }}>
               <X size={16} />
             </button>
@@ -545,7 +539,7 @@ function OrderDetailModal({ orderId, onClose, onUpdated, dark }: {
                     </div>
                   </div>
 
-                  {[t('steps.stock'), t('steps.pack'), t('steps.invoice')].map((step, i) => (
+                  {[t('steps.stock'), t('steps.pack'), t('steps.bordereau')].map((step, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 12, fontWeight: 600, color: dark ? 'rgba(255,255,255,0.6)' : '#374151' }}>
                       <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: ink('#10b981', dark) }}>
                         {i + 1}
