@@ -14,3 +14,13 @@ export function textDir(text: string | null | undefined): ChatDir {
 
   return arabic > latin ? 'rtl' : 'ltr'
 }
+
+/**
+ * Language of the product cards under a chat reply: they follow the SCRIPT of the reply, not the storefront
+ * language. "107 DT" next to Arabizi / French / English text, "د.ت" only next to Arabic script.
+ */
+export function cardLang(text: string | null | undefined, dialect?: string | null, lang?: string | null): 'ar' | 'fr' | 'en' {
+  if (textDir(text) === 'rtl') return 'ar'
+  if (dialect === 'en' || (!dialect && lang === 'en')) return 'en'
+  return 'fr'
+}

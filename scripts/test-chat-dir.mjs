@@ -23,3 +23,19 @@ test('Arabic script is RTL, even with a Latin product name inside', () => {
   assert.equal(textDir('لقيتلك 5 سباط لصاحبتك. نقترحلك "Sandale femme" (44 د.ت).'), 'rtl')
   assert.equal(textDir('شكون أحنا'), 'rtl')
 })
+
+import { cardLang } from '../lib/chatDir.ts'
+
+test('Arabizi chip labels render LTR', () => {
+  assert.equal(textDir('Chouf el boutique'), 'ltr')
+  assert.equal(textDir('Kol el 7wayej lel rjel'), 'ltr')
+  assert.equal(textDir('9asmet o5ra'), 'ltr')
+})
+
+test('product cards: DT next to Arabizi / French / English, د.ت only next to Arabic script', () => {
+  // the storefront language (msg.lang = "ar" for every Tunisian reply) must not decide the currency
+  assert.equal(cardLang("L9itelek 5 sbabet. Nan9a7lek \"Sandale femme\" (44 DT).", 'tn_arabizi', 'ar'), 'fr')
+  assert.equal(cardLang('J\'ai trouvé 3 robes pour vous.', 'fr', 'fr'), 'fr')
+  assert.equal(cardLang("I found 3 dresses.", 'en', 'en'), 'en')
+  assert.equal(cardLang('لقيتلك 5 سباط لصاحبتك. نقترحلك "Sandale femme" (44 د.ت).', 'tn_arabic', 'ar'), 'ar')
+})

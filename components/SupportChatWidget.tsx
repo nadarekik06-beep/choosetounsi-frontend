@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import BrandLogoCircle from './BrandLogoCircle'
 import { useCart } from '@/context/CartContext'
-import { textDir } from '@/lib/chatDir'
+import { textDir, cardLang as cardLangOf } from '@/lib/chatDir'
 import ChatProductCard, { CHAT_PRODUCT_CARD_CSS, type ChatLang, type ChatProduct } from './chat/ChatProductCard'
 import ChatStepsCard, { type ChatStep } from './chat/ChatStepsCard'
 import ChatActions, { CHAT_ACTIONS_CSS, sanitizeActions, type ChatAction } from './chat/ChatActions'
@@ -468,6 +468,8 @@ function Bubble({ msg, onRetry, onQuickReply, onNavigate, onOpenCart, busy }: { 
   // Direction comes from the text itself: only Arabic script is RTL. Arabizi, French and English stay LTR,
   // even on the Arabic storefront (where the page is RTL).
   const dir: 'rtl' | 'ltr' = isBot ? textDir(msg.text) : 'ltr'
+  // Product cards follow the SCRIPT of the reply, not the storefront language: "107 DT" next to Arabizi / French / English text, "د.ت" only next to Arabic script
+  const cardLang: ChatLang = cardLangOf(msg.text, msg.dialect, msg.lang)
   const stepsDir = textDir((msg.steps ?? []).map(s => `${s.title} ${s.description}`).join(' ') || msg.text)
   const isError = Boolean(msg.retryText)
   const wide    = Boolean(msg.products?.length || msg.steps?.length || msg.chatActions?.length)
@@ -525,7 +527,7 @@ function Bubble({ msg, onRetry, onQuickReply, onNavigate, onOpenCart, busy }: { 
             animation: 'ct-fadein 0.3s ease 0.1s both',
           }}>
             {msg.products.map(p => (
-              <ChatProductCard key={p.id} product={p} lang={lang} />
+              <ChatProductCard key={p.id} product={p} lang={cardLang} />
             ))}
           </div>
         )}
