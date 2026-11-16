@@ -1,9 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { MapPin } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useWilayaLabel } from '@/lib/i18n/wilayas'
 import { SectionHeading, type ShowcaseSeller } from './shared'
 
 const PLAN_LABEL: Record<string, { name: string; tone: string }> = {
@@ -17,7 +15,6 @@ const MARQUEE_MIN = 5
 
 function SellerCard({ s, hidden }: { s: ShowcaseSeller; hidden?: boolean }) {
   const t = useTranslations('vendor.landing.showcase')
-  const wilayaLabel = useWilayaLabel()
   const plan = PLAN_LABEL[s.plan] ?? PLAN_LABEL.free
   const initials = s.business_name.trim().slice(0, 2).toUpperCase()
 
@@ -32,7 +29,6 @@ function SellerCard({ s, hidden }: { s: ShowcaseSeller; hidden?: boolean }) {
         <span className="vl-seller__body">
           <span className="vl-seller__name">{s.business_name}</span>
           <span className="vl-seller__meta">
-            {s.wilaya && <><MapPin size={12} aria-hidden="true" />{wilayaLabel(s.wilaya)}</>}
             <span className={`vl-seller__plan vl-seller__plan--${plan.tone}`}>{plan.name}</span>
           </span>
           {s.quote && <span className="vl-seller__quote" dir="auto">“{s.quote}”</span>}

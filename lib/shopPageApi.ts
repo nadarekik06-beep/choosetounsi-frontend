@@ -36,7 +36,6 @@ export interface ShopSeller {
   business_name: string
   avatar: string | null
   cover: string | null
-  wilaya: string | null
   plan: PepperTier
   products_count: number
   followers: number

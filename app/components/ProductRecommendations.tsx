@@ -61,7 +61,6 @@ interface SellerInfo {
   name: string
   business_name: string | null
   plan: string
-  wilaya: string | null
   avatar: string | null
   total_products: number
 }
@@ -187,9 +186,7 @@ function FromSellerSection({ slug }: { slug: string }) {
                 </span>
               </div>
               <p style={{ fontSize: 11, color: '#94a3b8', margin: 0, fontWeight: 500 }}>
-                {t('productsCount', { count: seller.total_products })}
-                {seller.wilaya && ` · ${seller.wilaya}`}
-              </p>
+                {t('productsCount', { count: seller.total_products })}              </p>
             </div>
           </div>
           <Link href={`/sellers/${seller.id}`} style={{ fontSize: 12, fontWeight: 700, color: '#dc2626', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>

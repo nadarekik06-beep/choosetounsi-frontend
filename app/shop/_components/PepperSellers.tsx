@@ -27,7 +27,6 @@ function SellerCard({ s, index }: { s: ShopSeller; index: number }) {
         </div>
         <div className="sp-seller__body">
           <h3 className="sp-seller__name">{s.business_name}</h3>
-          {s.wilaya && <p className="sp-seller__where">{s.wilaya}</p>}
           <ul className="sp-seller__stats">
             <li className="sp-seller__stat">
               <b className="ltr-iso">{s.rating != null ? `${number(s.rating, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}★` : '—'}</b>

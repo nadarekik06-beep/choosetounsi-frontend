@@ -49,7 +49,6 @@ export interface LandingStats {
 export interface ShowcaseSeller {
   id: number
   business_name: string
-  wilaya: string | null
   category: string | null
   avatar: string | null
   quote: string | null

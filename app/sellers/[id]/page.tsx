@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ChevronRight, MapPin, Package, Store, Heart, Users, Search,
+  ChevronRight, Package, Store, Heart, Users, Search,
   Star, Truck, Tag, Copy, Check, Zap, Home as HomeIcon,
 } from 'lucide-react'
 import type { PricedProduct } from '@/app/components/promotions/ProductPrice'
@@ -15,7 +15,6 @@ import { getToken, getUser, isAuthenticated } from '@/lib/auth'
 import ProductFilterSidebar, { DEFAULT_FILTERS, appendFilterParams, hasActiveFilters, type F } from '@/app/components/filters/ProductFilterSidebar'
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
-import { useWilayaLabel } from '@/lib/i18n/wilayas'
 import { parseSellerId, storePath } from '@/lib/storeLink'
 import { ShareStoreButtons } from '@/app/components/seller/ShareStore'
 import BrandLoader, { BusyLabel } from '@/components/brand/BrandLoader'
@@ -70,7 +69,6 @@ interface SellerProfile {
   name: string
   business_name: string
   business_description: string | null
-  wilaya: string | null
   avatar: string | null
   cover_photo: string | null
   total_products: number
@@ -287,7 +285,6 @@ export default function SellerStorefrontPage() {
   const t   = useTranslations('storefront')
   const tc  = useTranslations('common')
   const tf  = useTranslations('filters')
-  const wilayaLabel = useWilayaLabel()
   // The segment is "12" or the clean "12-store-name"; every API call uses the numeric id
   const { id: segment } = useParams<{ id: string }>()
   const id = parseSellerId(segment)
@@ -507,11 +504,6 @@ export default function SellerStorefrontPage() {
               <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>
                 <Users size={13} /> {t('followers', { count: followersCount })}
               </span>
-              {seller.wilaya && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>
-                  <MapPin size={13} /> {wilayaLabel(seller.wilaya)}
-                </span>
-              )}
             </div>
           </div>
 
