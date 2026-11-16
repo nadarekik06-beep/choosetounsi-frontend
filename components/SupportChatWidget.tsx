@@ -33,6 +33,8 @@ interface AiChatApiResult {
   steps: ChatStep[]
   actions: ChatAction[]
   language: ChatLang
+  /** fr | en | tn_arabizi (Tunisian in Latin letters) | tn_arabic (Tunisian in Arabic script) | msa */
+  dialect?: string
   intent: string
 }
 
@@ -41,6 +43,8 @@ interface ChatMessage {
   role: MsgRole
   text: string
   lang?: ChatLang
+  /** The script of the reply decides the direction: Arabic script = RTL, Arabizi stays LTR */
+  dialect?: string
   products?: ChatProduct[]
   steps?: ChatStep[]
   /** AI tab: link / quick-reply buttons from the backend (or the starter buttons). */
@@ -460,7 +464,9 @@ interface BubbleHandlers {
 function Bubble({ msg, onRetry, onQuickReply, onNavigate, onOpenCart, busy }: { msg: ChatMessage } & BubbleHandlers) {
   const isBot   = msg.role === 'bot'
   const lang    = msg.lang ?? 'fr'
-  const dir     = msg.lang === 'ar' ? 'rtl' : msg.lang ? 'ltr' : 'auto'
+  const dir     = msg.dialect
+    ? (msg.dialect === 'tn_arabic' || msg.dialect === 'msa' ? 'rtl' : 'ltr')
+    : msg.lang === 'ar' ? 'rtl' : msg.lang ? 'ltr' : 'auto'
   const isError = Boolean(msg.retryText)
   const wide    = Boolean(msg.products?.length || msg.steps?.length || msg.chatActions?.length)
 
@@ -982,6 +988,7 @@ export default function SupportChatWidget() {
                 role:     'bot' as MsgRole,
                 text:        result.reply,
                 lang:        result.language,
+                dialect:     result.dialect,
                 products:    result.products,
                 steps:       result.steps,
                 chatActions: result.actions,
