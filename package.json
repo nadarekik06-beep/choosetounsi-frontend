@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "check:mobile": "node scripts/check-mobile-overflow.mjs",
+    "test:chatdir": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/test-chat-dir.mjs",
     "test:gallery": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/test-product-gallery.mjs",
     "check:gallery": "node scripts/check-product-gallery.mjs"
   },

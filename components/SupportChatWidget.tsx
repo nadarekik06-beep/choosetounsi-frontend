@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import BrandLogoCircle from './BrandLogoCircle'
 import { useCart } from '@/context/CartContext'
+import { textDir } from '@/lib/chatDir'
 import ChatProductCard, { CHAT_PRODUCT_CARD_CSS, type ChatLang, type ChatProduct } from './chat/ChatProductCard'
 import ChatStepsCard, { type ChatStep } from './chat/ChatStepsCard'
 import ChatActions, { CHAT_ACTIONS_CSS, sanitizeActions, type ChatAction } from './chat/ChatActions'
@@ -464,9 +465,10 @@ interface BubbleHandlers {
 function Bubble({ msg, onRetry, onQuickReply, onNavigate, onOpenCart, busy }: { msg: ChatMessage } & BubbleHandlers) {
   const isBot   = msg.role === 'bot'
   const lang    = msg.lang ?? 'fr'
-  const dir     = msg.dialect
-    ? (msg.dialect === 'tn_arabic' || msg.dialect === 'msa' ? 'rtl' : 'ltr')
-    : msg.lang === 'ar' ? 'rtl' : msg.lang ? 'ltr' : 'auto'
+  // Direction comes from the text itself: only Arabic script is RTL. Arabizi, French and English stay LTR,
+  // even on the Arabic storefront (where the page is RTL).
+  const dir: 'rtl' | 'ltr' = isBot ? textDir(msg.text) : 'ltr'
+  const stepsDir = textDir((msg.steps ?? []).map(s => `${s.title} ${s.description}`).join(' ') || msg.text)
   const isError = Boolean(msg.retryText)
   const wide    = Boolean(msg.products?.length || msg.steps?.length || msg.chatActions?.length)
 
@@ -504,7 +506,7 @@ function Bubble({ msg, onRetry, onQuickReply, onNavigate, onOpenCart, busy }: { 
               fontSize: 14, lineHeight: 1.6, fontWeight: 500,
               whiteSpace: 'pre-line', overflowWrap: 'anywhere',
               textAlign: 'start',
-              fontFamily: msg.lang === 'ar' ? "'Segoe UI', Tahoma, 'Noto Sans Arabic', sans-serif" : 'inherit',
+              fontFamily: dir === 'rtl' ? "'Segoe UI', Tahoma, 'Noto Sans Arabic', sans-serif" : 'inherit',
               boxShadow: isBot ? 'none' : `0 4px 12px ${RED}40`,
             }}>
             {msg.text}
@@ -513,7 +515,7 @@ function Bubble({ msg, onRetry, onQuickReply, onNavigate, onOpenCart, busy }: { 
 
         {!msg.typing && msg.steps && msg.steps.length > 0 && (
           <div style={{ width: '100%', animation: 'ct-fadein 0.3s ease 0.05s both' }}>
-            <ChatStepsCard steps={msg.steps} dir={dir} />
+            <ChatStepsCard steps={msg.steps} dir={stepsDir} />
           </div>
         )}
 

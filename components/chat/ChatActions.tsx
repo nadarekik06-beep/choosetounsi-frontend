@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { textDir } from '@/lib/chatDir'
 
 const GREEN = '#198f41'
 const RED   = '#db142e'
@@ -44,7 +45,7 @@ export default function ChatActions({
   if (actions.length === 0) return null
 
   return (
-    <div dir={dir} style={{ display: 'flex', flexWrap: 'wrap', gap: 6, width: '100%' }}>
+    <div dir={textDir(actions.map(a => a.label).join(' '))} style={{ display: 'flex', flexWrap: 'wrap', gap: 6, width: '100%' }}>
       {actions.map((action, i) => {
         if (action.type === 'quick_reply') {
           return (
@@ -52,6 +53,7 @@ export default function ChatActions({
               key={i}
               type="button"
               className="ct-chip ct-chip-reply"
+              dir={textDir(action.label)}
               disabled={disabled}
               onClick={() => onQuickReply(action.message)}
             >
@@ -62,15 +64,15 @@ export default function ChatActions({
 
         if (action.url === '#cart') {
           return (
-            <button key={i} type="button" className="ct-chip ct-chip-link" onClick={onOpenCart}>
+            <button key={i} type="button" className="ct-chip ct-chip-link" dir={textDir(action.label)} onClick={onOpenCart}>
               🛒 {action.label}
             </button>
           )
         }
 
         return (
-          <Link key={i} href={action.url} className="ct-chip ct-chip-link" onClick={onNavigate}>
-            {action.label} <span aria-hidden>{dir === 'rtl' ? '←' : '→'}</span>
+          <Link key={i} href={action.url} className="ct-chip ct-chip-link" dir={textDir(action.label)} onClick={onNavigate}>
+            {action.label} <span aria-hidden>{textDir(action.label) === 'rtl' ? '←' : '→'}</span>
           </Link>
         )
       })}
