@@ -166,6 +166,8 @@ function Inner() {
   const sp      = useSearchParams()
   const slug    = params?.slug as string
   const subSlug = sp.get('sub') ?? ''
+  // ?concept=shoes (from the chatbot): every subcategory of a product type, e.g. all the shoes
+  const concept = /^[a-z]+$/.test(sp.get('concept') ?? '') ? (sp.get('concept') as string) : ''
   const router   = useRouter()
   const pathname = usePathname()
 
@@ -239,6 +241,7 @@ function Inner() {
       const qp=new URLSearchParams()
       qp.set('page',String(page)); qp.set('sort',f.sort); qp.set('category_slug',slug)
       if(subSlug) qp.set('subcategory_slug',subSlug)
+      if(concept) qp.set('concept',concept)
       if(gender) qp.set('gender',gender)
       appendFilterParams(qp,f)
       const r=await fetch(`${API_BASE}/products?${qp}`,{headers:{Accept:'application/json'}})
@@ -246,10 +249,10 @@ function Inner() {
       setProds((await r.json()).data)
     } catch { setProds(null) } finally { setLoad(false) }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- filterKey covers f's server-side filters
-  },[slug,subSlug,gender,waitGender,f.sort,filterKey,page])
+  },[slug,subSlug,concept,gender,waitGender,f.sort,filterKey,page])
 
   useEffect(()=>{ fetchP() },[fetchP])
-  useEffect(()=>{ setPage(1) },[f.sort,filterKey,subSlug,gender])
+  useEffect(()=>{ setPage(1) },[f.sort,filterKey,subSlug,concept,gender])
 
   const displayed=useMemo(()=>{
     if(!prods?.data) return []
