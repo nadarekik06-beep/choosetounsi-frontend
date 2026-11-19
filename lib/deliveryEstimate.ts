@@ -164,8 +164,9 @@ export function estimateDelivery(
 
 /**
  * Seconds left to order before the cutoff, ONLY when ordering before it really gives an earlier
- * delivery than ordering after it, and today is a business day (so it disappears on Friday evening,
- * Saturday, Sunday and holidays).
+ * delivery than ordering after it (pure comparison of the two estimates). It disappears whenever the date
+ * would not change, e.g. on Friday and Saturday; on Sunday it shows, because a Sunday order really does
+ * arrive earlier than a Monday one.
  * Returns null otherwise.
  */
 export function secondsToBetterEstimate(
@@ -176,8 +177,6 @@ export function secondsToBetterEstimate(
   const clock = tunisClock(now)
   const end = cutoffEndSeconds(settings.order_cutoff_time)
   if (clock.secondsOfDay >= end) return null // already past the cutoff: nothing earlier to catch
-  // Weekend / holiday: no order is processed today, so no cutoff to race (the date can still shift at midnight)
-  if (!isBusinessDay(clock.date, settings)) return null
   const n = preparationDays || 0
   const today = estimateFromOrderDay(clock.date, n, settings)
   const later = estimateFromOrderDay(addCalendarDays(clock.date, 1), n, settings)

@@ -80,10 +80,11 @@ test('countdown only when ordering before the cutoff gives an earlier date', () 
   const early = { ...S, order_cutoff_time: '16:00' }
   // Thursday 14:00: ordering now → Mon 23 / Tue 24, after 16:00 → Tue 24 / Wed 25
   assert.equal(secondsToBetterEstimate(at('2026-11-19 14:00'), 0, early), 2 * 3600 + 60)
-  // Friday: tomorrow (Saturday) gives the same dates; Saturday / Sunday: not a business day, no countdown
+  // Friday and Saturday: the next day's order gives the same dates, so no countdown
   assert.equal(secondsToBetterEstimate(at('2026-11-20 14:00'), 0, early), null)
   assert.equal(secondsToBetterEstimate(at('2026-11-21 10:00'), 0, early), null)
-  assert.equal(secondsToBetterEstimate(at('2026-11-22 10:00'), 0, early), null)
+  // Sunday: a Monday order arrives a day later than a Sunday one, so the countdown is shown (until 16:00 here)
+  assert.equal(secondsToBetterEstimate(at('2026-11-22 10:00'), 0, early), 6 * 3600 + 60)
   // Monday morning: ordering today beats ordering tomorrow
   assert.notEqual(secondsToBetterEstimate(at('2026-11-23 10:00'), 0, early), null)
   // After the cutoff: nothing to catch
@@ -92,8 +93,8 @@ test('countdown only when ordering before the cutoff gives an earlier date', () 
   assert.notEqual(secondsToBetterEstimate(at('2026-12-15 10:00'), 0, early), null)
   // Wed 16 Dec: Wednesday and Thursday orders both end up Mon 21 / Tue 22: nothing to catch
   assert.equal(secondsToBetterEstimate(at('2026-12-16 10:00'), 0, early), null)
-  // The holiday itself (Thu 17 Dec) shows nothing
-  assert.equal(secondsToBetterEstimate(at('2026-12-17 10:00'), 0, early), null)
+  // The holiday itself (Thu 17 Dec): a Thursday order is Mon 21 / Tue 22, a Friday one Tue 22 / Wed 23: shown
+  assert.notEqual(secondsToBetterEstimate(at('2026-12-17 10:00'), 0, early), null)
   // Made to order shifts both estimates equally: still a difference on a Thursday
   assert.notEqual(secondsToBetterEstimate(at('2026-11-19 10:00'), 3, early), null)
 })
