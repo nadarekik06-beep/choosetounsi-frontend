@@ -10,6 +10,7 @@ import { useCart } from '@/context/CartContext'
 import { API_BASE } from '@/lib/constants'
 import { currentLocale } from '@/lib/i18n/clientLocale'
 import ProductPrice, { type PricedProduct } from '@/app/components/promotions/ProductPrice'
+import DeliveryEstimateBox, { MadeToOrderInfo } from '@/app/components/delivery/DeliveryEstimateBox'
 import { Stars, TierBadge, asTier } from './primitives'
 
 interface QuickProduct extends PricedProduct {
@@ -25,6 +26,9 @@ interface QuickProduct extends PricedProduct {
   seller?: { id: number; business_name?: string | null; name?: string } | null
   has_variants?: boolean
   variants?: { id: number; stock: number }[]
+  /** "Sur commande": business days to make it (null for regular products) */
+  is_made_to_order?: boolean
+  preparation_days?: number | null
 }
 
 /** What the card already knows, shown instantly while the full product loads. */
@@ -103,6 +107,9 @@ function QuickViewModal({ seed, onClose }: { seed: QuickSeed; onClose: () => voi
     window.addEventListener('keydown', onKey)
     return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
   }, [onClose])
+
+  // Made to order only counts with a valid number of days
+  const madeToOrderDays = product?.is_made_to_order && product.preparation_days ? product.preparation_days : null
 
   const images = (() => {
     const out: string[] = []
@@ -186,6 +193,10 @@ function QuickViewModal({ seed, onClose }: { seed: QuickSeed; onClose: () => voi
                 <p className="sp-qv__desc">{product.short_description || product.description}</p>
               )}
               {needsOptions && <p className="sp-qv__note">{t('options')}</p>}
+              <div style={{ marginTop: 12 }}>
+                {madeToOrderDays !== null && <MadeToOrderInfo preparationDays={madeToOrderDays} compact />}
+                <DeliveryEstimateBox preparationDays={madeToOrderDays} compact />
+              </div>
             </>
           )}
 

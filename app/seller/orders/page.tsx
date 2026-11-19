@@ -226,6 +226,7 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
   item: OrderItem; dark: boolean; border: string; textMain: string; textMuted: string; bgSub: string;
 }) {
   const t = useTranslations('seller.orders');
+  const tm = useTranslations('deliveryEstimate');
   const { dt, bare } = useDt();
   const { currency } = useFormat();
   const hasVariant = !!item.variant_id;
@@ -255,6 +256,11 @@ function OrderItemCard({ item, dark, border, textMain, textMuted, bgSub }: {
           <p style={{ fontWeight: 800, color: item.item_status === 'returned' ? (dark ? '#6b7280' : '#5b6472') : textMain, fontSize: 13, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: item.item_status === 'returned' ? 'line-through' : 'none' }}>
             {item.product_name}
           </p>
+          {item.is_made_to_order && item.preparation_days ? (
+            <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }}>
+              {tm('orderBadge', { days: item.preparation_days })}
+            </span>
+          ) : null}
           {item.item_status === 'returned' && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'rgba(219,20,46,0.15)', color: '#db142e', border: '1px solid rgba(219,20,46,0.35)' }}>{t('returned')}</span>}
           {item.item_status === 'partially_returned' && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'rgba(217,70,239,0.15)', color: ink('#d946ef', dark), border: '1px solid rgba(217,70,239,0.35)' }}>{t('returnedQty', { count: item.returned_quantity ?? 0 })}</span>}
         </div>

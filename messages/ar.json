@@ -1,4 +1,20 @@
 {
+  "deliveryEstimate": {
+    "estimatedRange": "التوصيل المتوقع بين {from} و {to}",
+    "estimatedRangeCity": "التوصيل المتوقع إلى {city} بين {from} و {to}",
+    "estimatedSingle": "التوصيل المتوقع يوم {date}",
+    "estimatedSingleCity": "التوصيل المتوقع إلى {city} يوم {date}",
+    "orderInHours": "اطلب خلال {hours} س {minutes} د",
+    "orderInMinutes": "اطلب خلال {minutes} د",
+    "withinRange": "{max, plural, one {خلال يوم عمل واحد} two {خلال {range} أيام عمل} few {خلال {range} أيام عمل} many {خلال {range} يومًا من أيام العمل} other {خلال {range} يوم عمل}}",
+    "withinSingle": "{n, plural, one {خلال يوم عمل واحد} two {خلال يومَي عمل} few {خلال # أيام عمل} many {خلال # يومًا من أيام العمل} other {خلال # يوم عمل}}",
+    "cod": "الدفع عند الاستلام",
+    "madeToOrder": "حسب الطلب",
+    "readyIn": "{days, plural, one {يُحضَّر خلال يوم عمل واحد} two {يُحضَّر خلال يومَي عمل} few {يُحضَّر خلال # أيام عمل} many {يُحضَّر خلال # يومًا من أيام العمل} other {يُحضَّر خلال # يوم عمل}}",
+    "sellerPreviewRange": "سيرى العميل: التوصيل المتوقع خلال {range} أيام عمل.",
+    "sellerPreviewSingle": "سيرى العميل: التوصيل المتوقع {n, plural, one {خلال يوم عمل واحد} two {خلال يومَي عمل} few {خلال # أيام عمل} many {خلال # يومًا من أيام العمل} other {خلال # يوم عمل}}.",
+    "orderBadge": "حسب الطلب — {days} ي"
+  },
   "meta": {
     "title": "ChooseTounsi — السوق الإلكتروني للبائعين التونسيين",
     "description": "تسوّق عبر الإنترنت من بائعين تونسيين 100%. أزياء، منزل، تجميل، إلكترونيات والمزيد، مع التوصيل إلى كامل أنحاء تونس. الدفع عند الاستلام."
@@ -2972,6 +2988,11 @@
       "stockVariantsTooltip": "المخزون حسب المتغيّر"
     },
     "productForm": {
+      "madeToOrder": "هذا المنتج يُصنع / يُحضَّر حسب الطلب",
+      "madeToOrderHint": "فعّل هذا الخيار إذا كنت تصنع أو تحضّر هذا المنتج فقط بعد طلب الزبون.",
+      "preparationDays": "مدة التحضير (أيام عمل، من الاثنين إلى الجمعة)",
+      "preparationDaysHint": "عدد أيام العمل قبل أن يصبح المنتج جاهزًا للاستلام. كن واقعيًا: الزبون يرى هذه المدة.",
+      "errorPreparationDays": "أدخل مدة تحضير بين 1 و30 يوم عمل.",
       "active": "نشط",
       "inactive": "غير نشط",
       "stock": "المخزون",

@@ -1,4 +1,20 @@
 {
+  "deliveryEstimate": {
+    "estimatedRange": "Estimated delivery: {from} – {to}",
+    "estimatedRangeCity": "Estimated delivery to {city}: {from} – {to}",
+    "estimatedSingle": "Estimated delivery: {date}",
+    "estimatedSingleCity": "Estimated delivery to {city}: {date}",
+    "orderInHours": "Order within {hours} h {minutes} min",
+    "orderInMinutes": "Order within {minutes} min",
+    "withinRange": "{max, plural, one {Within # business day} other {Within {range} business days}}",
+    "withinSingle": "{n, plural, one {Within # business day} other {Within # business days}}",
+    "cod": "Cash on delivery",
+    "madeToOrder": "Made to order",
+    "readyIn": "{days, plural, one {Ready in # business day} other {Ready in # business days}}",
+    "sellerPreviewRange": "The customer will see: estimated delivery in {range} business days.",
+    "sellerPreviewSingle": "The customer will see: estimated delivery in {n, plural, one {# business day} other {# business days}}.",
+    "orderBadge": "Made to order — {days} d"
+  },
   "meta": {
     "title": "ChooseTounsi — The marketplace for Tunisian sellers",
     "description": "Shop online from 100% Tunisian sellers. Fashion, home, beauty, electronics and more, delivered anywhere in Tunisia. Cash on delivery."
@@ -2972,6 +2988,11 @@
       "stockVariantsTooltip": "Stock by variant"
     },
     "productForm": {
+      "madeToOrder": "This product is made / prepared to order",
+      "madeToOrderHint": "Tick if you only make or prepare this product after the customer orders it.",
+      "preparationDays": "Preparation time (business days, Mon–Fri)",
+      "preparationDaysHint": "Number of business days before the product is ready for pickup. Be realistic: the customer sees this delay.",
+      "errorPreparationDays": "Enter a preparation time between 1 and 30 business days.",
       "active": "Active",
       "inactive": "Inactive",
       "stock": "Stock",

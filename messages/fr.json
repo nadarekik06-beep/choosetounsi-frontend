@@ -1,4 +1,20 @@
 {
+  "deliveryEstimate": {
+    "estimatedRange": "Livraison estimée entre {from} et {to}",
+    "estimatedRangeCity": "Livraison estimée entre {from} et {to} à {city}",
+    "estimatedSingle": "Livraison estimée le {date}",
+    "estimatedSingleCity": "Livraison estimée le {date} à {city}",
+    "orderInHours": "Commandez dans {hours} h {minutes} min",
+    "orderInMinutes": "Commandez dans {minutes} min",
+    "withinRange": "{max, plural, one {Sous # jour ouvrable} other {Sous {range} jours ouvrables}}",
+    "withinSingle": "{n, plural, one {Sous # jour ouvrable} other {Sous # jours ouvrables}}",
+    "cod": "Paiement à la livraison",
+    "madeToOrder": "Sur commande",
+    "readyIn": "{days, plural, one {Préparé en # jour ouvrable} other {Préparé en # jours ouvrables}}",
+    "sellerPreviewRange": "Le client verra : livraison estimée en {range} jours ouvrables.",
+    "sellerPreviewSingle": "Le client verra : livraison estimée en {n, plural, one {# jour ouvrable} other {# jours ouvrables}}.",
+    "orderBadge": "Sur commande — {days} j"
+  },
   "meta": {
     "title": "ChooseTounsi — La marketplace des vendeurs tunisiens",
     "description": "Achetez en ligne auprès de vendeurs 100 % tunisiens. Mode, maison, beauté, high-tech et plus, livrés partout en Tunisie. Paiement à la livraison."
@@ -2972,6 +2988,11 @@
       "stockVariantsTooltip": "Stock par variante"
     },
     "productForm": {
+      "madeToOrder": "Ce produit est fabriqué / préparé sur commande",
+      "madeToOrderHint": "Cochez si vous fabriquez ou préparez ce produit seulement après la commande du client.",
+      "preparationDays": "Délai de préparation (jours ouvrables, lun–ven)",
+      "preparationDaysHint": "Nombre de jours ouvrables avant que le produit soit prêt pour le ramassage. Soyez réaliste : le client voit ce délai.",
+      "errorPreparationDays": "Indiquez un délai de préparation entre 1 et 30 jours ouvrables.",
       "active": "Actif",
       "inactive": "Inactif",
       "stock": "Stock",

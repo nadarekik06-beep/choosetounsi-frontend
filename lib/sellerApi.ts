@@ -173,6 +173,12 @@ function buildFormData(payload: ProductPayload, isUpdate = false): FormData {
     fd.append('pack_contents', payload.is_pack ? (payload.pack_contents ?? '') : '')
   }
 
+  // "Sur commande": business days to make the product. The server forces preparation_days to null when off.
+  if (payload.is_made_to_order !== undefined) {
+    fd.append('is_made_to_order', payload.is_made_to_order ? '1' : '0')
+    if (payload.is_made_to_order && payload.preparation_days) fd.append('preparation_days', String(payload.preparation_days))
+  }
+
   // ── Images ─────────────────────────────────────────────────────────────────
   if (payload.images?.length) {
     payload.images.forEach((file, i) => fd.append(`images[${i}]`, file))
@@ -277,6 +283,9 @@ export interface ProductPayload {
   pack_contents?: string
   occasions?: string[]
   parcel_size?: '' | 'S' | 'L' | 'XL'
+  /** Made to order ("Sur commande"): preparation_days = business days (1–30), only when is_made_to_order */
+  is_made_to_order?: boolean
+  preparation_days?: number | null
   images?: File[]
   delete_image_ids?: number[]
   attributes?: Record<string, string>

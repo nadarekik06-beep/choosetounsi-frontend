@@ -23,6 +23,7 @@ import PriceDecreaseDialog, { type PriceDrop, discountFor } from '../components/
 import AiDescriptionPanel from '../components/AiDescriptionPanel';
 import CommissionPreview from '@/app/seller/components/CommissionPreview'
 import { useLocale, useTranslations } from 'next-intl'
+import { useDeliveryEstimate } from '@/app/components/delivery/useDeliveryEstimate'
 import { holdLocaleRemount } from '@/lib/i18n/localeRemount'
 import { useFormat } from '@/lib/i18n/useFormat'
 import { OCCASIONS, normalizeOccasions, useOccasionCategories, type Occasion } from '@/lib/occasions'
@@ -133,6 +134,48 @@ function OccasionPicker({ selected, onChange }: { selected: Occasion[]; onChange
   )
 }
 
+// ─── Made to order ("Sur commande") ───────────────────────────────────────────
+// Per-product preparation time in business days (Mon–Fri, minus holidays), like Etsy's processing
+// time. The live preview uses the SAME estimate function as the storefront (lib/deliveryEstimate).
+
+function MadeToOrderField({ checked, days, error, onToggle, onDays }: {
+  checked: boolean; days: string; error?: string
+  onToggle: (on: boolean) => void; onDays: (v: string) => void
+}) {
+  const t  = useTranslations('seller.productForm')
+  const td = useTranslations('deliveryEstimate')
+  const n  = Number(days)
+  const valid = checked && Number.isInteger(n) && n >= 1 && n <= 30
+  const live = useDeliveryEstimate(valid ? n : null)
+  return (
+    <div id="pf-made-to-order" style={{ marginTop: 14 }}>
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+        <input type="checkbox" checked={checked} onChange={e => onToggle(e.target.checked)}
+          style={{ marginTop: 3, width: 16, height: 16, accentColor: '#db142e', flexShrink: 0 }} />
+        <span>
+          <span style={{ display: 'block', fontSize: 13, fontWeight: 800, color: '#111' }}>{t('madeToOrder')}</span>
+          <span style={{ display: 'block', fontSize: 11.5, color: '#5b6472', marginTop: 2 }}>{t('madeToOrderHint')}</span>
+        </span>
+      </label>
+      {checked && (
+        <div style={{ marginTop: 12, maxWidth: 360 }}>
+          <Field label={t('preparationDays')} required error={error} hint={t('preparationDaysHint')}>
+            <input type="number" min="1" max="30" inputMode="numeric" value={days} aria-required="true"
+              onChange={e => onDays(e.target.value)} className={inputCls(error)} />
+          </Field>
+          {valid && live && (
+            <p role="status" style={{ fontSize: 12, fontWeight: 700, color: '#0f766e', margin: '8px 0 0' }}>
+              {live.estimate.businessDaysMin === live.estimate.businessDaysMax
+                ? td('sellerPreviewSingle', { n: live.estimate.businessDaysMax })
+                : td('sellerPreviewRange', { range: `${live.estimate.businessDaysMin}–${live.estimate.businessDaysMax}` })}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Delivery is included in the price the client sees ────────────────────────
 // Sellers no longer offer (or pay for) free delivery: ChooseTounsi handles it.
 
@@ -217,7 +260,7 @@ function stepOfKey(k: string, priceInVariants = false): WizardStep {
   if (k === 'images' || k.startsWith('images')) return 'photos'
   if (k === 'variants' || k === 'multicolor_label' || k.startsWith('variants.')) return 'variants'
   if (k === 'price' && priceInVariants) return 'variants'
-  if (['price', 'stock', 'occasions', 'pack_quantity', 'pack_contents', 'parcel_size', 'low_stock_threshold', 'delivery_fee'].includes(k)) return 'pricing'
+  if (['price', 'stock', 'occasions', 'pack_quantity', 'pack_contents', 'parcel_size', 'is_made_to_order', 'preparation_days', 'low_stock_threshold', 'delivery_fee'].includes(k)) return 'pricing'
   return 'basic'
 }
 
@@ -363,6 +406,9 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
     // displayed price. A product whose size was never confirmed (older products silently got S)
     // starts empty, so the seller picks it again before saving.
     parcel_size:       (sizeUnconfirmed ? '' : ((p as any)?.parcel_size ?? '')) as '' | 'S' | 'L' | 'XL',
+    // Made to order ("Sur commande"): business days (Mon–Fri) before the product is ready for pickup
+    is_made_to_order:  !!(p as any)?.is_made_to_order,
+    preparation_days:  (p as any)?.preparation_days != null ? String((p as any).preparation_days) : '',
   })
   const [form, setForm] = useState(makeForm)
 
@@ -536,6 +582,10 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
     else if (isGenericText(short)) e.short_description = tw('shortGeneric')
   }
   if (!form.parcel_size) e.parcel_size = t('errors.parcelSize')
+  if (form.is_made_to_order) {
+    const days = Number(form.preparation_days)
+    if (!Number.isInteger(days) || days < 1 || days > 30) e.preparation_days = t('errorPreparationDays')
+  }
 
   if (!form.category_id) e.category_id = t('errors.category')
 
@@ -820,6 +870,8 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
         // Other categories are stored as all_season by the backend
         occasions:         occasionsApply ? form.occasions : undefined,
         parcel_size:       form.parcel_size,
+        is_made_to_order:  form.is_made_to_order,
+        preparation_days:  form.is_made_to_order ? parseInt(form.preparation_days, 10) : null,
         ...buildImageManifest(images, groupKeys),
         attributes:        serializeAttributes(attrValues),
         price:             baseDropped ? parseFloat(String(p?.price ?? 0)) : parseFloat(form.price),
@@ -1200,6 +1252,15 @@ function ProductForm({ product, radar, onClose, onSaved }: ProductModalProps) { 
                   </select>
                 </Field>
               </div>
+
+              {/* Made to order: the customer sees the preparation time in the delivery estimate */}
+              <MadeToOrderField
+                checked={form.is_made_to_order}
+                days={form.preparation_days}
+                error={errors.preparation_days}
+                onToggle={on => setForm(f => ({ ...f, is_made_to_order: on, preparation_days: on ? f.preparation_days : '' }))}
+                onDays={v => set('preparation_days', v.replace(/\D/g, '').slice(0, 2))}
+              />
 
               <DeliveryIncludedNote />
             </section>

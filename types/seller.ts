@@ -263,6 +263,9 @@ export interface OrderItem {
   platform_funded_amount?: number;
   product_id: number;
   product_name: string;
+  /** "Sur commande": display only (preparation time in business days) */
+  is_made_to_order?: boolean;
+  preparation_days?: number | null;
   unit_price: number;
   quantity: number;
   price: number;

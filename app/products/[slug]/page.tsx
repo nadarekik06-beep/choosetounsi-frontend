@@ -19,6 +19,7 @@ import AdStrip from '@/components/ads/AdStrip'
 import CountdownTimer from '@/app/components/promotions/CountdownTimer'
 import ProductPrice, { ProductPromoBadges, type PricedProduct } from '@/app/components/promotions/ProductPrice'
 import FreeDeliveryBadge from '@/app/components/product/FreeDeliveryBadge'
+import DeliveryEstimateBox, { MadeToOrderInfo } from '@/app/components/delivery/DeliveryEstimateBox'
 import ProductReviewsSection from '@/app/components/reviews/ProductReviewsSection';
 import { useTranslations } from 'next-intl'
 import { useFormat } from '@/lib/i18n/useFormat'
@@ -102,6 +103,9 @@ interface Product {
   })[]
   color_images: Record<string, string[]>
   is_free_delivery?: boolean
+  /** "Sur commande": business days to make it (null for regular products) */
+  is_made_to_order?: boolean
+  preparation_days?: number | null
   // Multi-pack: pack_quantity is null for packs saved before it existed
   is_pack?: boolean
   pack_quantity?: number | null
@@ -700,6 +704,10 @@ export default function ProductDetailPage() {
                 </p>
               )}
               <div style={{ marginTop: 8 }}><FreeDeliveryBadge size="md" /></div>
+              <div style={{ marginTop: 12 }}>
+                {product.is_made_to_order && product.preparation_days ? <MadeToOrderInfo preparationDays={product.preparation_days} /> : null}
+                <DeliveryEstimateBox preparationDays={product.is_made_to_order ? product.preparation_days : null} />
+              </div>
               {product.returns_mode === 'defect_only' && (
                 <p style={{ margin: '6px 0 0', fontSize: 12.5, fontWeight: 700, color: '#b45309', lineHeight: 1.45 }}>
                   🔁 {t('returnsDefectOnly')}
