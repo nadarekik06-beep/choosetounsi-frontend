@@ -2975,6 +2975,9 @@
       "filterLowOut": "Low stock / Sold out",
       "filterOut": "Sold out only",
       "editStock": "Edit stock",
+      "editLabel": "Edit",
+      "editStockTitle": "Edit the stock of the variants",
+      "editStockHint": "Tap to edit stock",
       "quickStock": {
         "title": "Edit stock",
         "total": "Total: {count}",

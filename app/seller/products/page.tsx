@@ -303,6 +303,17 @@ export default function ProductsPage() {
         .product-row:hover td { background: ${rowHover} !important; }
         .act-btn:hover { opacity: 1 !important; }
         .restock-btn:hover { opacity: 1 !important; background: rgba(16,185,129,0.15) !important; }
+        .stock-pill { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 999px; cursor: pointer; font-weight: 800; font-size: 13px; color: ${dark ? '#ff6b7d' : '#db142e'}; background: rgba(219,20,46,${dark ? '0.16' : '0.08'}); border: 1px solid rgba(219,20,46,${dark ? '0.4' : '0.25'}); transition: background .15s; touch-action: manipulation; }
+        .stock-pill:hover { background: rgba(219,20,46,${dark ? '0.26' : '0.15'}); }
+        .stock-pill:active { background: rgba(219,20,46,${dark ? '0.34' : '0.22'}); }
+        .stock-pill[aria-expanded="true"] { border-color: #db142e; }
+        .stock-pill-num { font-size: 15px; font-weight: 900; }
+        .stock-pill-label { font-size: 12px; font-weight: 800; }
+        .stock-pill-hint { display: none; font-size: 11px; font-weight: 600; }
+        @media (max-width: 767px) {
+          .stock-pill { flex: 1 1 auto; justify-content: center; min-width: 60%; }
+          .stock-pill-hint { display: block; }
+        }
         @keyframes sheetUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes alertSlideIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
@@ -486,21 +497,25 @@ export default function ProductsPage() {
   
                             {/* Stock — the number itself opens the quick editor */}
                             <td style={{ padding: '6px 12px', textAlign: 'end' }}>
-                              <button
-                                type="button"
-                                onClick={() => setStockEdit(cur => (cur?.id === product.id ? null : product))}
-                                title={t('editStock')}
-                                aria-label={`${t('editStock')} — ${product.name}`}
-                                aria-expanded={stockEdit?.id === product.id}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 44, minWidth: 44, padding: '0 10px', borderRadius: 10, cursor: 'pointer', justifyContent: 'flex-end',
-                                  border: `1px dashed ${stockEdit?.id === product.id ? '#198f41' : border}`, background: 'transparent', fontWeight: 800, fontSize: 13,
-                                  color: displayStock === 0 ? ink('#ef4444', dark) : displayStock <= 5 ? ink('#f59e0b', dark) : textMain }}
-                              >
-                                <span>{displayStock}</span>
-                                {displayStock === 0 && <span style={{ fontSize: 10, color: ink('#ef4444', dark) }}>{t('outTag')}</span>}
-                                {displayStock > 0 && displayStock <= 5 && <span style={{ fontSize: 10, color: ink('#f59e0b', dark) }}>{t('lowTag')}</span>}
-                                <Pencil size={12} style={{ opacity: 0.6, flexShrink: 0 }} />
-                              </button>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, minWidth: 0 }}>
+                                <button
+                                  type="button"
+                                  className="stock-pill"
+                                  onClick={() => setStockEdit(cur => (cur?.id === product.id ? null : product))}
+                                  title={t('editStockTitle')}
+                                  aria-label={`${t('editStock')} — ${product.name}`}
+                                  aria-expanded={stockEdit?.id === product.id}
+                                >
+                                  <span className="stock-pill-num" style={{ color: displayStock === 0 ? ink('#ef4444', dark) : displayStock <= 5 ? ink('#f59e0b', dark) : textMain }}>{displayStock}</span>
+                                  {displayStock === 0 && <span style={{ fontSize: 10, color: ink('#ef4444', dark) }}>{t('outTag')}</span>}
+                                  {displayStock > 0 && displayStock <= 5 && <span style={{ fontSize: 10, color: ink('#f59e0b', dark) }}>{t('lowTag')}</span>}
+                                  <Pencil size={14} style={{ flexShrink: 0 }} aria-hidden />
+                                  <span className="stock-pill-label">{t('editLabel')}</span>
+                                </button>
+                                {data?.data[0]?.id === product.id && (
+                                  <span className="stock-pill-hint" style={{ color: textMuted }}>{t('editStockHint')}</span>
+                                )}
+                              </div>
                             </td>
 
                             {/* Status */}

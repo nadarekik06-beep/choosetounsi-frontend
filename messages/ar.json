@@ -2975,6 +2975,9 @@
       "filterLowOut": "مخزون منخفض / نفد",
       "filterOut": "نفد فقط",
       "editStock": "تعديل المخزون",
+      "editLabel": "تعديل",
+      "editStockTitle": "تعديل مخزون الخيارات",
+      "editStockHint": "اضغط لتعديل المخزون",
       "quickStock": {
         "title": "تعديل المخزون",
         "total": "المجموع: {count}",

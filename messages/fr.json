@@ -2975,6 +2975,9 @@
       "filterLowOut": "Stock faible / Épuisé",
       "filterOut": "Épuisé uniquement",
       "editStock": "Modifier le stock",
+      "editLabel": "Modifier",
+      "editStockTitle": "Modifier le stock des variantes",
+      "editStockHint": "Appuyez pour modifier le stock",
       "quickStock": {
         "title": "Modifier le stock",
         "total": "Total : {count}",
