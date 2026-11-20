@@ -3525,19 +3525,7 @@
     },
     "alerts": {
       "critical": "Critique",
-      "warning": "Attention",
-      "actionRequired": "⚠️ Action requise",
-      "opportunity": "💡 Piste d'amélioration",
-      "performanceAlert": "Alerte de performance",
-      "unitsSold": "{count, plural, one {# unité vendue} other {# unités vendues}} en {days} jours",
-      "upgradeToUse": "Passez à Red Pepper pour utiliser « {action} »",
-      "collapse": "Réduire",
-      "expand": "Afficher les détails",
-      "dismiss": "Masquer l'alerte",
-      "recommended": "Actions recommandées",
-      "upgradeToUnlock": "Passez à Red Pepper pour débloquer",
-      "unlockAi": "Débloquez les actions assistées par IA avec <b>Red Pepper (49 DT/mois)</b>",
-      "upgrade": "Passer au plan supérieur →"
+      "warning": "Attention"
     },
     "packs": {
       "title": "Packs",

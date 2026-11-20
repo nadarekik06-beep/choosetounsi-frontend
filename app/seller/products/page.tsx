@@ -8,7 +8,7 @@
  *   2. RestockModal mounted + wired up
  *   3. After restock, list refreshes and product goes "back in stock"
  *   4. Restock button uses a green color to differentiate from Edit (grey)
- *   5. ProductAlertPanel + AlertIndicator wired up per row
+ *   5. AlertIndicator badge per row (the full-width alert row was removed)
  *   6. Critical/warning row highlight via borderLeft + background tint
  *
  * Everything else is IDENTICAL to the original.
@@ -33,7 +33,7 @@ import RestockModal, { type RestockProduct } from '../components/RestockModal';
 import { useTheme } from '../SellerShell';
 import { useLocale, useTranslations } from 'next-intl';
 import { useFormat } from '@/lib/i18n/useFormat';
-import ProductAlertPanel, {
+import {
   AlertIndicator,
   type ProductAlertData,
 } from '@/app/components/seller/ProductAlertPanel';
@@ -316,7 +316,6 @@ export default function ProductsPage() {
         }
         @keyframes sheetUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes alertSlideIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
         @keyframes alertPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
         @keyframes toastIn { from{opacity:0;transform:translate(-50%,12px)} to{opacity:1;transform:translate(-50%,0)} }
       `}</style>
@@ -652,17 +651,6 @@ export default function ProductsPage() {
                                 />
                               </td>
                             </tr>
-                          )}
-
-                          {/* ── Alert panel (expands as a full-width row below the product row) ── */}
-                          {alertData.has_alert && (
-                            <ProductAlertPanel
-                              key={`alert-${product.id}`}
-                              productId={product.id}
-                              productName={product.name}
-                              alertData={alertData}
-                              dark={dark}
-                            />
                           )}
                         </React.Fragment>
                       );

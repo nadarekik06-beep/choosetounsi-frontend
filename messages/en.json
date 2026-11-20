@@ -3525,19 +3525,7 @@
     },
     "alerts": {
       "critical": "Critical",
-      "warning": "Warning",
-      "actionRequired": "⚠️ Action Required",
-      "opportunity": "💡 Optimization Opportunity",
-      "performanceAlert": "Performance alert",
-      "unitsSold": "{count, plural, one {# unit} other {# units}} sold in {days} days",
-      "upgradeToUse": "Upgrade to Red Pepper to use {action}",
-      "collapse": "Collapse",
-      "expand": "Show details",
-      "dismiss": "Dismiss alert",
-      "recommended": "Recommended actions",
-      "upgradeToUnlock": "Upgrade to Red Pepper to unlock",
-      "unlockAi": "Unlock AI-powered actions with <b>Red Pepper (49 DT/mo)</b>",
-      "upgrade": "Upgrade →"
+      "warning": "Warning"
     },
     "packs": {
       "title": "Packs",

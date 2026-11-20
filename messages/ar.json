@@ -3525,19 +3525,7 @@
     },
     "alerts": {
       "critical": "حرج",
-      "warning": "تنبيه",
-      "actionRequired": "⚠️ إجراء مطلوب",
-      "opportunity": "💡 فرصة للتحسين",
-      "performanceAlert": "تنبيه أداء",
-      "unitsSold": "{count} وحدة مباعة خلال {days} يوماً",
-      "upgradeToUse": "انتقل إلى Red Pepper لاستخدام «{action}»",
-      "collapse": "طي",
-      "expand": "عرض التفاصيل",
-      "dismiss": "إخفاء التنبيه",
-      "recommended": "إجراءات مقترحة",
-      "upgradeToUnlock": "انتقل إلى Red Pepper للتفعيل",
-      "unlockAi": "فعّل الإجراءات المدعومة بالذكاء الاصطناعي مع <b>Red Pepper (49 د.ت شهرياً)</b>",
-      "upgrade": "ترقية ←"
+      "warning": "تنبيه"
     },
     "packs": {
       "title": "الحزم",
