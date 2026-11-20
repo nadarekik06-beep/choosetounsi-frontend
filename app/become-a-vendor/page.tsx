@@ -12,7 +12,6 @@ import { useReducedMotion } from '@/app/hooks/useReducedMotion'
 import Navbar from '@/app/components/layout/Navbar'
 import TunisianPattern from '@/app/components/home/illustrations/TunisianPattern'
 import VendorHero from './_components/VendorHero'
-import StatsStrip from './_components/StatsStrip'
 import WhySection from './_components/WhySection'
 import HowItWorks from './_components/HowItWorks'
 import PlansSection from './_components/PlansSection'
@@ -223,7 +222,6 @@ export default function BecomeVendorPage() {
         <>
           <main className="vl">
             <VendorHero ref={heroRef} onPrimary={scrollToForm} onPlans={scrollToPlans} hasApplication={application !== null} />
-            <StatsStrip stats={landing.data?.stats ?? null} failed={landing.failed} />
             <WhySection />
             <HowItWorks />
             <PlansSection ref={plansRef} plans={livePlans} failed={plansFailed} onRetry={retryPlans} onSelect={selectPlan} />

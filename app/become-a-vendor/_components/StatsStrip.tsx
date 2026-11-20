@@ -1,11 +1,9 @@
 'use client'
 
-import { Store, PackageCheck, MapPin, Star, type LucideIcon } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { type LucideIcon } from 'lucide-react'
 import { useInView } from '@/app/hooks/useInView'
 import { useFormat } from '@/lib/i18n/useFormat'
 import CountUp from '@/app/components/home/CountUp'
-import type { LandingStats } from './shared'
 
 export interface StatTile { key: string; label: string; Icon: LucideIcon; tone: 'red' | 'green' | 'gold'; end: number; suffix?: string; decimals?: number }
 
@@ -38,19 +36,4 @@ export function StatTiles({ items, label, skeletons = 4, compact = false }: {
       </div>
     </section>
   )
-}
-
-/** Live platform numbers (GET /api/seller-landing). Hidden if the request failed; zero values are skipped. */
-export default function StatsStrip({ stats, failed }: { stats: LandingStats | null; failed: boolean }) {
-  const t = useTranslations('vendor.landing.stats')
-  if (failed) return null
-
-  const items: StatTile[] | null = stats ? ([
-    { key: 'sellers', label: t('sellers'), Icon: Store,        tone: 'red',   end: stats.sellers },
-    { key: 'orders',  label: t('orders'),  Icon: PackageCheck, tone: 'green', end: stats.orders_delivered },
-    { key: 'wilayas', label: t('wilayas'), Icon: MapPin,       tone: 'red',   end: stats.wilayas_served },
-    { key: 'rating',  label: t('rating'),  Icon: Star,         tone: 'gold',  end: stats.average_rating ?? 0, suffix: '/5', decimals: 1 },
-  ] as StatTile[]).filter(s => s.end > 0) : null
-
-  return <StatTiles items={items} label={t('label')} />
 }
