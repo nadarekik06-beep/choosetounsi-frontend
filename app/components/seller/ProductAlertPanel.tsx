@@ -116,6 +116,18 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
   return (
     <tr>
       <td colSpan={7} style={{ padding: 0 }}>
+        <style>{`
+          @media (max-width: 767px) {
+            .pap-head { display: grid !important; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 6px 10px !important; align-items: start !important; }
+            .pap-text, .pap-actions { display: contents !important; }
+            .pap-icon { grid-column: 1; grid-row: 1; }
+            .pap-title { grid-column: 2; grid-row: 1; min-width: 0; text-align: start !important; margin: 2px 0 0 !important; }
+            .pap-ctl { grid-column: 3; grid-row: 1; }
+            .pap-desc { grid-column: 1 / -1; grid-row: 2; min-width: 0; text-align: start !important; }
+            .pap-quick { grid-column: 1 / -1; grid-row: 3; flex-wrap: wrap; min-width: 0; }
+            .pap-quick > button { flex: 1 1 140px; justify-content: center; min-height: 36px; white-space: normal !important; text-align: center; }
+          }
+        `}</style>
         <div style={{
           margin: '0 12px 8px',
           background: dark
@@ -128,14 +140,14 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
         }}>
 
           {/* ── Header row ── */}
-          <div style={{
+          <div className="pap-head" style={{
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '10px 14px',
             borderBottom: expanded ? `1px solid ${accentColor}20` : 'none',
             cursor: 'pointer',
           }} onClick={() => setExpanded(e => !e)}>
 
-            <div style={{
+            <div className="pap-icon" style={{
               width: 26, height: 26, borderRadius: 8, flexShrink: 0,
               background: `${accentColor}15`,
               border: `1px solid ${accentColor}30`,
@@ -144,12 +156,12 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
               <AlertTriangle size={12} style={{ color: ink(accentColor, dark) }} />
             </div>
 
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 11, fontWeight: 800, color: ink(accentColor, dark), margin: '0 0 1px' }}>
+            <div className="pap-text" style={{ flex: 1, minWidth: 0 }}>
+              <p className="pap-title" style={{ fontSize: 11, fontWeight: 800, color: ink(accentColor, dark), margin: '0 0 1px', overflowWrap: 'break-word' }}>
                 {isCritical ? t('actionRequired') : t('opportunity')}
                 {' · '}{productName}
               </p>
-              <p style={{ fontSize: 10, color: muted, margin: 0 }}>
+              <p className="pap-desc" style={{ fontSize: 10, color: muted, margin: 0, overflowWrap: 'break-word' }}>
                 {alertData.reasons?.[0]?.label ?? t('performanceAlert')}
                 {alertData.units_sold_window !== undefined && (
                   <> · {t('unitsSold', { count: alertData.units_sold_window, days: alertData.window_days ?? 0 })}</>
@@ -157,8 +169,9 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
               </p>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <div className="pap-actions" style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
               {/* Quick action buttons (always visible) */}
+              <div className="pap-quick" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {alertData.suggested_actions?.slice(0, 2).map(action => {
                 const isLocked = action.requires_plan && !canUseRedFeature;
                 return (
@@ -184,7 +197,9 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
                   </button>
                 );
               })}
+              </div>
 
+              <div className="pap-ctl" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {/* Expand/collapse */}
               <button
                 onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
@@ -203,6 +218,7 @@ export default function ProductAlertPanel({ productId, productName, alertData, d
               >
                 <XCircle size={12} />
               </button>
+              </div>
             </div>
           </div>
 
