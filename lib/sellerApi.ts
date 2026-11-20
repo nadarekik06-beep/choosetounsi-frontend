@@ -446,6 +446,23 @@ export interface RestockResponse {
   }
 }
 
+export interface QuickStockResponse {
+  success: boolean
+  data: {
+    id: number
+    stock: number
+    has_variants: boolean
+    variant_stock: number | null
+    variants: Array<{ id: number; stock: number; is_active: boolean }>
+  }
+}
+
+export const quickStockApi = {
+  /** PATCH /api/seller/products/{id}/stock — stock only, applies at once, no admin validation */
+  update: (productId: number, payload: { stock: number } | { variants: Array<{ variant_id: number; stock: number }> }) =>
+    jsonRequest<QuickStockResponse>('PATCH', `/seller/products/${productId}/stock`, payload),
+}
+
 export const restockApi = {
   /**
    * POST /api/seller/products/{id}/restock

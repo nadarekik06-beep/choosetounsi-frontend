@@ -16,13 +16,14 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { productsApi, storageUrl, isNetworkError } from '@/lib/sellerApi';
+import { productsApi, quickStockApi, storageUrl, isNetworkError } from '@/lib/sellerApi';
+import QuickStockEditor, { type QuickStockPayload } from './QuickStockEditor';
 import type { Product, PaginatedResponse } from '@/types/seller';
 import {
   Plus, Search, Filter, Edit2, Trash2, Package,
   CheckCircle, XCircle, ChevronLeft, ChevronRight,
   Clock, Image as ImageIcon, Eye, Layers,
-  RefreshCw,
+  RefreshCw, Pencil, AlertTriangle,
 } from 'lucide-react';
 import ProductModal, { PRODUCT_FORM_FOCUS, type ProductFormFocus, type ProductRadarPrefill } from './ProductModal';
 import { growthRadarApi } from '@/lib/growthRadarApi';
@@ -62,6 +63,9 @@ export default function ProductsPage() {
   const [search,     setSearch]     = useState('');
   const [isActive,   setIsActive]   = useState('');
   const [isApproved, setIsApproved] = useState('');
+  const [stockLow,   setStockLow]   = useState(false);
+  const [stockEdit,  setStockEdit]  = useState<Product | null>(null);
+  const [isMobile,   setIsMobile]   = useState(false);
   const [page,       setPage]       = useState(1);
   const [modal,      setModal]      = useState<ModalState>(MODAL_CLOSED);
   const [deleting,   setDeleting]   = useState<number | null>(null);
@@ -90,6 +94,34 @@ export default function ProductsPage() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [modal.open, restockProduct]);
 
+  // Phones get a bottom sheet, wider screens an inline row
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const apply = () => setIsMobile(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+
+  /** Optimistic: the list total moves at once; rolled back with an error toast if the save fails. */
+  const handleQuickStockSave = async (product: Product, payload: QuickStockPayload, newTotal: number) => {
+    const snapshot = data;
+    const patch = (stock: number, variantStock?: number | null) =>
+      setData(d => d && ({ ...d, data: d.data.map(p => p.id === product.id
+        ? ({ ...p, stock, ...(variantStock != null ? { variant_stock: variantStock } : {}) } as Product) : p) }));
+    const hasVariants = !!(product as any).has_variants;
+    patch(hasVariants ? ((product as any).stock ?? 0) : newTotal, hasVariants ? newTotal : null);
+    try {
+      const res = await quickStockApi.update(product.id, payload);
+      patch(res.data.stock, res.data.variant_stock);
+      showToast(t('quickStock.saved'), true);
+    } catch {
+      setData(snapshot);
+      showToast(t('quickStock.saveFailed'), false);
+      throw new Error('stock save failed');
+    }
+  };
+
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
@@ -99,6 +131,7 @@ export default function ProductsPage() {
         ...(search     && { search }),
         ...(isActive   && { is_active: isActive }),
         ...(isApproved && { is_approved: isApproved }),
+        ...(stockLow   && { stock_filter: 'low' }),
       });
       setData(res.data as unknown as PaginatedResponse<Product>);
     } catch {
@@ -107,7 +140,7 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, isActive, isApproved, showToast, t]);
+  }, [page, search, isActive, isApproved, stockLow, showToast, t]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
@@ -270,6 +303,7 @@ export default function ProductsPage() {
         .product-row:hover td { background: ${rowHover} !important; }
         .act-btn:hover { opacity: 1 !important; }
         .restock-btn:hover { opacity: 1 !important; background: rgba(16,185,129,0.15) !important; }
+        @keyframes sheetUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes alertSlideIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
         @keyframes alertPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
@@ -320,6 +354,17 @@ export default function ProductsPage() {
               <option value="false">{t('pending')}</option>
             </select>
           </div>
+          <button
+            type="button"
+            onClick={() => { setStockLow(v => !v); setPage(1); }}
+            aria-pressed={stockLow}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 36, padding: '0 14px', borderRadius: 999, fontSize: 12, fontWeight: 800, cursor: 'pointer',
+              border: `1px solid ${stockLow ? '#db142e' : border}`,
+              background: stockLow ? 'rgba(219,20,46,0.12)' : inputBg,
+              color: stockLow ? ink('#db142e', dark) : textMain }}
+          >
+            <AlertTriangle size={13} /> {t('filterLowOut')}
+          </button>
           {data && (
             <span style={{ fontSize: 11, fontWeight: 700, color: textMuted, marginInlineStart: 'auto' }}>
               {t('count', { count: data.total })}
@@ -439,17 +484,25 @@ export default function ProductsPage() {
                               {price(product.price, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                             </td>
   
-                            {/* Stock */}
-                            <td style={{ padding: '12px 20px', textAlign: 'end' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
-                                <span style={{ fontWeight: 800, color: displayStock === 0 ? ink('#ef4444', dark) : displayStock <= 10 ? ink('#f59e0b', dark) : textMain }}>
-                                  {displayStock}
-                                  {displayStock === 0 && <span style={{ fontSize: 10, marginInlineStart: 4, color: ink('#ef4444', dark) }}>{t('outTag')}</span>}
-                                  {displayStock > 0 && displayStock <= 10 && <span style={{ fontSize: 10, marginInlineStart: 4, color: ink('#f59e0b', dark) }}>{t('lowTag')}</span>}
-                                </span>
-                              </div>
+                            {/* Stock — the number itself opens the quick editor */}
+                            <td style={{ padding: '6px 12px', textAlign: 'end' }}>
+                              <button
+                                type="button"
+                                onClick={() => setStockEdit(cur => (cur?.id === product.id ? null : product))}
+                                title={t('editStock')}
+                                aria-label={`${t('editStock')} — ${product.name}`}
+                                aria-expanded={stockEdit?.id === product.id}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 44, minWidth: 44, padding: '0 10px', borderRadius: 10, cursor: 'pointer', justifyContent: 'flex-end',
+                                  border: `1px dashed ${stockEdit?.id === product.id ? '#198f41' : border}`, background: 'transparent', fontWeight: 800, fontSize: 13,
+                                  color: displayStock === 0 ? ink('#ef4444', dark) : displayStock <= 5 ? ink('#f59e0b', dark) : textMain }}
+                              >
+                                <span>{displayStock}</span>
+                                {displayStock === 0 && <span style={{ fontSize: 10, color: ink('#ef4444', dark) }}>{t('outTag')}</span>}
+                                {displayStock > 0 && displayStock <= 5 && <span style={{ fontSize: 10, color: ink('#f59e0b', dark) }}>{t('lowTag')}</span>}
+                                <Pencil size={12} style={{ opacity: 0.6, flexShrink: 0 }} />
+                              </button>
                             </td>
-  
+
                             {/* Status */}
                             <td style={{ padding: '12px 20px', textAlign: 'center' }}>
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999, background: product.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: product.is_active ? ink('#10b981', dark) : ink('#ef4444', dark), border: `1px solid ${product.is_active ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
@@ -571,6 +624,21 @@ export default function ProductsPage() {
                             </td>
                           </tr>
   
+                          {/* ── Quick stock editor (desktop: full-width row under the product) ── */}
+                          {stockEdit?.id === product.id && !isMobile && (
+                            <tr>
+                              <td colSpan={7} style={{ padding: '10px 20px 16px', background: rowHover }}>
+                                <QuickStockEditor
+                                  product={{ id: product.id, name: product.name, stock: displayStock ?? 0, has_variants: !!hasVariants }}
+                                  dark={dark}
+                                  sheet={false}
+                                  onSave={(payload, total) => handleQuickStockSave(product, payload, total)}
+                                  onClose={() => setStockEdit(null)}
+                                />
+                              </td>
+                            </tr>
+                          )}
+
                           {/* ── Alert panel (expands as a full-width row below the product row) ── */}
                           {alertData.has_alert && (
                             <ProductAlertPanel
@@ -640,6 +708,18 @@ export default function ProductsPage() {
           {toast.ok ? <CheckCircle size={15} color="#10b981" /> : <XCircle size={15} color="#f87171" />}
           {toast.msg}
         </div>
+      )}
+
+      {/* Quick stock editor — phone bottom sheet */}
+      {stockEdit && isMobile && (
+        <QuickStockEditor
+          key={stockEdit.id}
+          product={{ id: stockEdit.id, name: stockEdit.name, stock: ((stockEdit as any).has_variants ? (stockEdit as any).variant_stock : stockEdit.stock) ?? 0, has_variants: !!(stockEdit as any).has_variants }}
+          dark={dark}
+          sheet
+          onSave={(payload, total) => handleQuickStockSave(stockEdit, payload, total)}
+          onClose={() => setStockEdit(null)}
+        />
       )}
 
       {/* Restock modal */}
